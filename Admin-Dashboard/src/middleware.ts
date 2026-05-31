@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { verifyAdminTokenEdge, signAdminTokenEdge, ADMIN_COOKIE_NAME } from '@/lib/auth/admin-edge';
-
-const publicAdminPages = ['/admin/login', '/admin/reset-password'];
+import { isPublicAdminPage, matchProtectedAdminRoute } from '@/lib/admin-routes';
 
 /**
  * Routes that require a specific CASL subject to be readable.
@@ -11,37 +10,13 @@ const publicAdminPages = ['/admin/login', '/admin/reset-password'];
  * For the frontend we guard by checking isSuperAdmin OR whether roleId exists (lazy guard).
  * Fine-grained guard is done by CASL in the backend + Sidebar filtering.
  */
-const PROTECTED_ROUTE_PREFIXES: Record<string, string> = {
-  '/admin/roles': 'Role',
-  '/admin/admins': 'Admin',
-  '/admin/users': 'User',
-  '/admin/exercises': 'Exercise',
-  '/admin/workouts': 'Workout',
-  '/admin/programs/map': 'ProgramMap',
-  '/admin/programs': 'Program',
-  '/admin/attributes': 'Attribute',
-  '/admin/messages': 'FeedbackMessage',
-  '/admin/camera-positions': 'PosePosition',
-  '/admin/levels': 'Level',
-  '/admin/assessment-templates': 'AssessmentTemplate',
-  '/admin/exercise-progression': 'ProgressionRule',
-  '/admin/progression-rules': 'ProgressionRule',
-  '/admin/exercise-progression': 'ExerciseProgressionProfile',
-  '/admin/analytics/programs': 'ProgramAnalytics',
-  '/admin/analytics/levels': 'LevelAnalytics',
-  '/admin/analytics/assessments': 'AssessmentAnalytics',
-  '/admin/analytics': 'Analytics',
-  '/admin/uploads': 'Upload',
-};
-
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Always pass through API routes
   if (pathname.startsWith('/api/')) return NextResponse.next();
 
-  const isPublicPage = publicAdminPages.some((path) => pathname.startsWith(path));
-  if (isPublicPage) return NextResponse.next();
+  if (isPublicAdminPage(pathname)) return NextResponse.next();
 
   const token = request.cookies.get(ADMIN_COOKIE_NAME)?.value;
 
@@ -52,12 +27,10 @@ export async function middleware(request: NextRequest) {
       // ── Super admin bypasses all frontend route guards ──
       if (!payload.isSuperAdmin) {
         // Check if this route requires a subject they might not have access to
-        const matchedPrefix = Object.keys(PROTECTED_ROUTE_PREFIXES).find(
-          (prefix) => pathname.startsWith(prefix)
-        );
+        const matchedRoute = matchProtectedAdminRoute(pathname);
 
         // If no roleId → redirect to /admin (dashboard only)
-        if (matchedPrefix && !payload.roleId) {
+        if (matchedRoute && !payload.roleId) {
           const dashboardUrl = request.nextUrl.clone();
           dashboardUrl.pathname = '/admin';
           return NextResponse.redirect(dashboardUrl);

@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Input } from '@/components/ui';
+import { toast } from 'sonner';
+import { Button, Checkbox, Input, Label, Select } from '@/components/ui';
+import { FormShell, PageHeader } from '@/components/common';
 
 interface RoleOption {
   id: string;
@@ -53,13 +55,14 @@ export default function NewAdminPage() {
 
       const data = await res.json();
       if (data.success) {
+        toast.success('Admin created');
         router.push('/admin/admins');
       } else {
-        alert('Error: ' + data.error);
+        toast.error(data.error || 'Error creating admin');
       }
     } catch (error) {
       console.error('Error creating admin:', error);
-      alert('Error creating admin');
+      toast.error('Error creating admin');
     } finally {
       setSaving(false);
     }
@@ -69,25 +72,34 @@ export default function NewAdminPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">New Admin</h1>
-          <p className="text-gray-600 mt-1">Create a new dashboard admin</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => router.push('/admin/admins')}
-          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-        >
-          Cancel
-        </button>
-      </div>
+      <PageHeader
+        title="New Admin"
+        description="Create a new dashboard admin"
+        breadcrumbs={[
+          { label: 'Admins', href: '/admin/admins' },
+          { label: 'New Admin' },
+        ]}
+        actions={
+          <Button type="button" variant="outline" onClick={() => router.push('/admin/admins')}>
+            Cancel
+          </Button>
+        }
+      />
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Name <span className="text-red-500">*</span>
-          </label>
+      <form onSubmit={handleSubmit}>
+        <FormShell
+          title="Admin Details"
+          description="Assign dashboard access and optional doctor privileges."
+          footer={
+            <Button type="submit" loading={saving} disabled={!canSubmit}>
+              Create Admin
+            </Button>
+          }
+        >
+        <div className="space-y-2">
+          <Label>
+            Name <span className="text-destructive">*</span>
+          </Label>
           <Input
             value={formData.name}
             onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
@@ -96,10 +108,10 @@ export default function NewAdminPage() {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Email <span className="text-red-500">*</span>
-          </label>
+        <div className="space-y-2">
+          <Label>
+            Email <span className="text-destructive">*</span>
+          </Label>
           <Input
             type="email"
             value={formData.email}
@@ -109,10 +121,10 @@ export default function NewAdminPage() {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Password <span className="text-red-500">*</span>
-          </label>
+        <div className="space-y-2">
+          <Label>
+            Password <span className="text-destructive">*</span>
+          </Label>
           <Input
             type="password"
             value={formData.password}
@@ -122,44 +134,26 @@ export default function NewAdminPage() {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-          <select
+        <div className="space-y-2">
+          <Label>Role</Label>
+          <Select
             value={formData.roleId}
             onChange={(e) => setFormData((prev) => ({ ...prev, roleId: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-          >
-            <option value="">— No Role —</option>
-            {roles.map((role) => (
-              <option key={role.id} value={role.id}>
-                {role.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="isDoctor"
-            checked={formData.isDoctor}
-            onChange={(e) => setFormData((prev) => ({ ...prev, isDoctor: e.target.checked }))}
-            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+            options={[
+              { value: '', label: '- No Role -' },
+              ...roles.map((role) => ({ value: role.id, label: role.name })),
+            ]}
           />
-          <label htmlFor="isDoctor" className="text-sm font-medium text-gray-700">
-            Is Doctor
-          </label>
         </div>
 
-        <div className="flex justify-end pt-4 border-t border-gray-200">
-          <button
-            type="submit"
-            disabled={saving || !canSubmit}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-          >
-            {saving ? 'Saving...' : 'Create Admin'}
-          </button>
+        <div className="flex items-center gap-3">
+          <Checkbox
+            checked={formData.isDoctor}
+            onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, isDoctor: Boolean(checked) }))}
+          />
+          <Label>Is Doctor</Label>
         </div>
+        </FormShell>
       </form>
     </div>
   );

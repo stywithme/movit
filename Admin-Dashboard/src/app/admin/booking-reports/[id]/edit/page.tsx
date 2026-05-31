@@ -2,6 +2,8 @@
 
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui';
+import { PageHeader } from '@/components/common';
 import { BookingReportForm } from '../../components/BookingReportForm';
 
 export default function EditBookingReportPage({ params }: { params: Promise<{ id: string }> }) {
@@ -32,28 +34,29 @@ export default function EditBookingReportPage({ params }: { params: Promise<{ id
         fetchReport();
     }, [resolvedParams.id]);
 
-    if (loading) return <div className="p-8 text-center text-gray-500">Loading Report...</div>;
+    if (loading) return <div className="p-8 text-center text-muted-foreground">Loading Report...</div>;
 
     if (error || !data) {
         return (
             <div className="p-8 text-center">
-                <p className="text-red-500 mb-4">{error || 'Medical Report not found'}</p>
-                <button
-                    onClick={() => router.back()}
-                    className="text-blue-600 hover:underline"
-                >
+                <p className="mb-4 text-destructive">{error || 'Medical Report not found'}</p>
+                <Button type="button" variant="outline" onClick={() => router.back()}>
                     Go back
-                </button>
+                </Button>
             </div>
         );
     }
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold text-gray-900">Edit Medical Report</h1>
-                <p className="text-gray-600 mt-1">Update diagnosis or prescription</p>
-            </div>
+            <PageHeader
+                title="Edit Medical Report"
+                description="Update diagnosis or prescription"
+                breadcrumbs={[
+                    { label: 'Medical Reports', href: '/admin/booking-reports' },
+                    { label: 'Edit Medical Report' },
+                ]}
+            />
 
             <BookingReportForm initialData={data} isEditing />
         </div>

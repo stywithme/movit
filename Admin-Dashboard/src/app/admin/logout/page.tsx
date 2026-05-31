@@ -24,8 +24,8 @@ export default function AdminLogoutPage() {
   }, [router, logout]);
 
   return (
-    <div className="flex items-center justify-center min-h-[300px]">
-      <div className="text-gray-500">Logging out...</div>
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="text-muted-foreground">Logging out...</div>
     </div>
   );
 }

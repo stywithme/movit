@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -157,16 +157,16 @@ export function CreateBookingModal({ onClose, onSuccess, initialDoctorId, initia
 
     return (
         <Dialog open onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[800px]">
+            <DialogContent size="xl">
                 <DialogHeader>
-                    <DialogTitle className="text-xl font-bold text-black border-b pb-4">Create New Booking</DialogTitle>
+                    <DialogTitle>Create New Booking</DialogTitle>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="flex flex-col h-full max-h-[85vh]">
                     <DialogBody className="space-y-8 py-8">
                         {/* Patient Selection */}
                         <div className="space-y-3">
-                            <Label className="text-black font-bold text-sm tracking-tight">Patient / Client</Label>
+                            <Label className="text-sm font-semibold">Patient / Client</Label>
                             <Select
                                 value={selectedUserId}
                                 onChange={(e) => setSelectedUserId(e.target.value)}
@@ -183,7 +183,7 @@ export function CreateBookingModal({ onClose, onSuccess, initialDoctorId, initia
                         {/* Date & Doctor Grid */}
                         <div className="grid grid-cols-2 gap-8 pt-2">
                             <div className="space-y-3">
-                                <Label className="text-black font-bold text-sm tracking-tight">Preferred Date</Label>
+                                <Label className="text-sm font-semibold">Preferred Date</Label>
                                 <Input
                                     type="date"
                                     value={selectedDate}
@@ -195,7 +195,7 @@ export function CreateBookingModal({ onClose, onSuccess, initialDoctorId, initia
                                 />
                             </div>
                             <div className="space-y-3">
-                                <Label className="text-black font-bold text-sm tracking-tight">Doctor</Label>
+                                <Label className="text-sm font-semibold">Doctor</Label>
                                 <Select
                                     value={selectedDoctorId}
                                     onChange={(e) => setSelectedDoctorId(e.target.value)}
@@ -208,14 +208,14 @@ export function CreateBookingModal({ onClose, onSuccess, initialDoctorId, initia
                                     className="mt-1"
                                 />
                                 {!loadingDoctors && selectedDate && doctors.length === 0 && (
-                                    <p className="text-xs text-red-500 font-medium">No doctors found working on this date.</p>
+                                    <p className="text-xs font-medium text-destructive">No doctors found working on this date.</p>
                                 )}
                             </div>
                         </div>
 
                         {/* Slots */}
                         <div className="space-y-3 pt-2">
-                            <Label className="text-black font-bold text-sm tracking-tight">Available Time Slots</Label>
+                            <Label className="text-sm font-semibold">Available Time Slots</Label>
                             <Select
                                 value={selectedSlot}
                                 onChange={(e) => setSelectedSlot(e.target.value)}
@@ -231,30 +231,30 @@ export function CreateBookingModal({ onClose, onSuccess, initialDoctorId, initia
                                 className="mt-1"
                             />
                             {!loadingSlots && selectedDoctorId && slots.length === 0 && (
-                                <p className="text-xs text-orange-600 font-medium">No work hours or slots found for this doctor on the selected date.</p>
+                                <p className="text-xs font-medium text-warning">No work hours or slots found for this doctor on the selected date.</p>
                             )}
                         </div>
 
                         {/* Notes */}
                         <div className="space-y-3 pt-2">
-                            <Label className="text-black font-bold text-sm tracking-tight">Booking Notes (Optional)</Label>
+                            <Label className="text-sm font-semibold">Booking Notes (Optional)</Label>
                             <Textarea
                                 placeholder="Add specific session requirements, clinical notes, or patient instructions..."
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
-                                className="text-black min-h-[120px] mt-1"
+                                className="min-h-[120px] mt-1"
                             />
                         </div>
                     </DialogBody>
 
-                    <DialogFooter className="py-6 bg-gray-50/50">
+                    <DialogFooter className="bg-muted/30">
                         <Button type="button" variant="outline" onClick={onClose} disabled={submitting} className="px-10 h-11">
                             Cancel
                         </Button>
                         <Button
                             type="submit"
                             disabled={submitting || !selectedSlot}
-                            className="px-10 h-11 bg-blue-600 hover:bg-blue-700 font-bold"
+                            className="px-10 h-11 font-semibold"
                         >
                             {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Create Booking Instance

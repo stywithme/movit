@@ -1,14 +1,24 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Input, Select } from '@/components/ui';
+import { toast } from 'sonner';
+import { Badge, Button } from '@/components/ui';
+import {
+  ConfirmDialog,
+  DataTable,
+  FilterBar,
+  PageHeader,
+  Pagination as TablePagination,
+  StatusBadge,
+  type DataTableColumn,
+} from '@/components/common';
 import {
   MessageFormModal,
   MessageBulkAudioModal,
   TtsDefaultsModal,
   type MessageFormData,
 } from '@/components/messages';
-import { Settings } from 'lucide-react';
+import { Plus, Settings, Volume2 } from 'lucide-react';
 import type { LocalizedTextWithAudio } from '@/lib/types/localized';
 
 interface MessageTemplate {
@@ -57,6 +67,8 @@ const AUDIO_FILTER_OPTIONS = [
 
 const PAGE_SIZE = 20;
 
+type ConfirmAction = { type: 'delete'; id: string; label: string } | null;
+
 function AudioStatusCell({ content }: { content: LocalizedTextWithAudio }) {
   const enText = !!content.en?.trim();
   const arText = !!content.ar?.trim();
@@ -64,11 +76,11 @@ function AudioStatusCell({ content }: { content: LocalizedTextWithAudio }) {
   const arOk = !arText || !!content.audioAr;
   return (
     <div className="flex flex-col gap-0.5 text-xs">
-      <span className={enOk ? 'text-green-700' : 'text-amber-700'} title="English TTS">
-        EN {enOk ? '✓' : '—'}
+      <span className={enOk ? 'text-success' : 'text-warning'} title="English TTS">
+        EN {enOk ? 'Ready' : 'Missing'}
       </span>
-      <span className={arOk ? 'text-green-700' : 'text-amber-700'} title="Arabic TTS">
-        AR {arOk ? '✓' : '—'}
+      <span className={arOk ? 'text-success' : 'text-warning'} title="Arabic TTS">
+        AR {arOk ? 'Ready' : 'Missing'}
       </span>
     </div>
   );
@@ -89,6 +101,8 @@ export default function MessagesListPage() {
   const [editingMessage, setEditingMessage] = useState<MessageFormData | null>(null);
   const [bulkAudioOpen, setBulkAudioOpen] = useState(false);
   const [ttsDefaultsOpen, setTtsDefaultsOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedSearch(searchQuery), 400);
@@ -126,12 +140,14 @@ export default function MessagesListPage() {
           setMessages([]);
           setPagination(null);
           setPageError(data.error || 'Failed to load messages');
+          toast.error(data.error || 'Failed to load messages');
         }
       } catch (error) {
         console.error('Error fetching messages:', error);
         setMessages([]);
         setPagination(null);
         setPageError('Failed to load messages');
+        toast.error('Failed to load messages');
       } finally {
         setLoading(false);
       }
@@ -169,7 +185,7 @@ export default function MessagesListPage() {
 
   const handleToggleActive = async (id: string, currentStatus: boolean, isSystem: boolean) => {
     if (isSystem) {
-      window.alert('System messages cannot be deactivated.');
+      toast.warning('System messages cannot be deactivated.');
       return;
     }
     try {
@@ -180,250 +196,218 @@ export default function MessagesListPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.success) {
+        toast.success(currentStatus ? 'Message deactivated' : 'Message activated');
         fetchMessages(pagination?.page || 1);
       } else {
-        window.alert(data.error || 'Failed to update message status');
+        toast.error(data.error || 'Failed to update message status');
       }
     } catch (error) {
       console.error('Error toggling status:', error);
-      window.alert('Failed to update message status');
+      toast.error('Failed to update message status');
     }
   };
 
-  const handleDelete = async (id: string, isSystem: boolean) => {
-    if (isSystem) {
-      window.alert('System messages cannot be deleted.');
+  const requestDelete = (message: MessageTemplate) => {
+    if (message.isSystem) {
+      toast.warning('System messages cannot be deleted.');
       return;
     }
-    if (!confirm('Delete this message permanently? If it is used in exercises, you should deactivate it instead.')) return;
+
+    setConfirmAction({ type: 'delete', id: message.id, label: message.code });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!confirmAction) return;
+
+    setActionLoading(true);
     try {
-      const res = await fetch(`/api/messages/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/messages/${confirmAction.id}`, { method: 'DELETE' });
       const data = await res.json().catch(() => ({}));
-      if (res.ok && data.success) fetchMessages(pagination?.page || 1);
-      else if (data.error) window.alert(data.error);
+      if (res.ok && data.success) {
+        toast.success('Message deleted');
+        setConfirmAction(null);
+        fetchMessages(pagination?.page || 1);
+      } else {
+        toast.error(data.error || 'Failed to delete message');
+      }
     } catch (error) {
       console.error('Error deleting message:', error);
-      window.alert('Failed to delete message');
+      toast.error('Failed to delete message');
+    } finally {
+      setActionLoading(false);
     }
   };
+
+  const columns: DataTableColumn<MessageTemplate>[] = [
+    {
+      key: 'code',
+      header: 'Code',
+      cell: (message) => (
+        <div className="flex min-w-[180px] items-center gap-2">
+          {message.isSystem && <Badge variant="secondary">System</Badge>}
+          <span className="font-mono text-sm text-muted-foreground">{message.code}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'category',
+      header: 'Category',
+      cell: (message) => <Badge variant="outline" className="capitalize">{message.category}</Badge>,
+    },
+    {
+      key: 'context',
+      header: 'Context',
+      cell: (message) => <span className="text-muted-foreground">{message.context || '-'}</span>,
+    },
+    {
+      key: 'content',
+      header: 'Content',
+      cell: (message) => (
+        <div className="max-w-xs space-y-1">
+          <div className="truncate">{message.content.en}</div>
+          <div className="truncate text-muted-foreground" dir="rtl">
+            {message.content.ar}
+          </div>
+        </div>
+      ),
+      className: 'max-w-xs',
+    },
+    {
+      key: 'audio',
+      header: 'Audio',
+      cell: (message) => <AudioStatusCell content={message.content} />,
+    },
+    {
+      key: 'tags',
+      header: 'Tags',
+      cell: (message) => (
+        <div className="flex max-w-[220px] flex-wrap gap-1">
+          {message.tags.length > 0 ? (
+            message.tags.slice(0, 3).map((tag) => (
+              <Badge key={tag} variant="secondary">
+                {tag}
+              </Badge>
+            ))
+          ) : (
+            <span className="text-muted-foreground">-</span>
+          )}
+          {message.tags.length > 3 && <Badge variant="outline">+{message.tags.length - 3}</Badge>}
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      cell: (message) => <StatusBadge status={message.isActive ? 'active' : 'inactive'} />,
+    },
+    {
+      key: 'actions',
+      header: <span className="sr-only">Actions</span>,
+      headerClassName: 'text-right',
+      className: 'text-right',
+      cell: (message) => (
+        <div className="flex items-center justify-end gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={message.isSystem}
+            onClick={() => handleToggleActive(message.id, message.isActive, message.isSystem)}
+          >
+            {message.isActive ? 'Deactivate' : 'Activate'}
+          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={() => handleEdit(message)}>
+            Edit
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            disabled={message.isSystem}
+            onClick={() => requestDelete(message)}
+          >
+            Delete
+          </Button>
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Messages Library</h1>
-          <p className="text-gray-600 mt-1">Manage reusable feedback messages</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setTtsDefaultsOpen(true)}
-            className="p-2.5 bg-white border border-gray-300 text-gray-800 rounded-lg hover:bg-gray-50 transition-colors"
-            title="Default TTS settings"
-            aria-label="Default TTS settings"
-          >
-            <Settings className="w-5 h-5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setBulkAudioOpen(true)}
-            className="px-4 py-2 bg-white border border-gray-300 text-gray-800 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
-              />
-            </svg>
-            Bulk audio (AI)
-          </button>
-          <button
-            onClick={handleCreate}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            New Message
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Messages Library"
+        description="Manage reusable feedback messages and generated audio coverage."
+        actions={
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => setTtsDefaultsOpen(true)}
+              title="Default TTS settings"
+              aria-label="Default TTS settings"
+            >
+              <Settings className="size-4" />
+            </Button>
+            <Button type="button" variant="outline" onClick={() => setBulkAudioOpen(true)}>
+              <Volume2 className="size-4" />
+              Bulk audio (AI)
+            </Button>
+            <Button type="button" onClick={handleCreate}>
+              <Plus className="size-4" />
+              New Message
+            </Button>
+          </>
+        }
+      />
 
-      {pageError && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-          {pageError}
-        </div>
-      )}
+      <FilterBar
+        searchValue={searchQuery}
+        searchPlaceholder="Search by code, text, or tags..."
+        onSearchChange={setSearchQuery}
+        selects={[
+          {
+            id: 'category',
+            value: categoryFilter,
+            onChange: setCategoryFilter,
+            options: CATEGORY_OPTIONS,
+            className: 'lg:w-52',
+          },
+          {
+            id: 'status',
+            value: statusFilter,
+            onChange: setStatusFilter,
+            options: STATUS_OPTIONS,
+            className: 'lg:w-44',
+          },
+          {
+            id: 'audio',
+            value: audioFilter,
+            onChange: setAudioFilter,
+            options: AUDIO_FILTER_OPTIONS,
+            className: 'lg:w-60',
+          },
+        ]}
+        onReset={() => {
+          setSearchQuery('');
+          setCategoryFilter('');
+          setStatusFilter('');
+          setAudioFilter('');
+        }}
+      />
 
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-        <div className="flex flex-wrap gap-4 items-end">
-          <div className="flex-1 min-w-[200px]">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
-            <Input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by code, text, or tags..."
-              className="flex-1"
-            />
-          </div>
-
-          <div className="min-w-[200px]">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-            <Select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              options={CATEGORY_OPTIONS}
-            />
-          </div>
-
-          <div className="min-w-[200px]">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-            <Select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              options={STATUS_OPTIONS}
-            />
-          </div>
-
-          <div className="min-w-[220px]">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Audio</label>
-            <Select
-              value={audioFilter}
-              onChange={(e) => setAudioFilter(e.target.value)}
-              options={AUDIO_FILTER_OPTIONS}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        {loading ? (
-          <div className="p-6 text-center text-gray-500">Loading messages...</div>
-        ) : messages.length === 0 ? (
-          <div className="p-6 text-center text-gray-500">No messages found.</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Context</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Content</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
-                    Audio
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tags</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {messages.map((message) => (
-                  <tr key={message.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-mono text-gray-700">
-                      <span className="inline-flex items-center gap-1">
-                        {message.isSystem && (
-                          <span title="System message" className="text-xs text-slate-500 font-sans">
-                            [sys]
-                          </span>
-                        )}
-                        {message.code}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900">{message.category}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{message.context || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900 max-w-xs">
-                      <div className="space-y-1">
-                        <div className="text-gray-900 truncate">{message.content.en}</div>
-                        <div className="text-gray-600 truncate" dir="rtl">{message.content.ar}</div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 align-top">
-                      <AudioStatusCell content={message.content} />
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-700">
-                      {message.tags.length > 0 ? message.tags.join(', ') : '-'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                          message.isActive
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-600'
-                        }`}
-                      >
-                        {message.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-3">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleActive(message.id, message.isActive, message.isSystem)}
-                          disabled={message.isSystem}
-                          className={`text-sm ${
-                            message.isActive ? 'text-yellow-600 hover:text-yellow-900' : 'text-green-600 hover:text-green-900'
-                          } disabled:opacity-40 disabled:cursor-not-allowed`}
-                        >
-                          {message.isActive ? 'Deactivate' : 'Activate'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleEdit(message)}
-                          className="text-blue-600 hover:text-blue-900 text-sm"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(message.id, message.isSystem)}
-                          disabled={message.isSystem}
-                          className="text-red-600 hover:text-red-900 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {pagination && pagination.total > 0 && (
-          <div className="px-6 py-4 border-t border-gray-200 flex flex-wrap justify-between items-center gap-3">
-            <p className="text-sm text-gray-600">
-              Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
-              {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
-            </p>
-            {pagination.totalPages > 1 && (
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => fetchMessages(pagination.page - 1)}
-                  disabled={pagination.page === 1 || loading}
-                  className="px-3 py-1.5 border border-gray-300 bg-white text-gray-800 rounded text-sm hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed"
-                >
-                  Previous
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fetchMessages(pagination.page + 1)}
-                  disabled={pagination.page === pagination.totalPages || loading}
-                  className="px-3 py-1.5 border border-gray-300 bg-white text-gray-800 rounded text-sm hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed"
-                >
-                  Next
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      <DataTable
+        columns={columns}
+        data={messages}
+        getRowKey={(message) => message.id}
+        loading={loading}
+        error={pageError}
+        emptyTitle="No messages found"
+        emptyDescription="Create a new message or adjust the current filters."
+        footer={<TablePagination pagination={pagination} onPageChange={fetchMessages} disabled={loading} />}
+      />
 
       <MessageFormModal
         open={formModalOpen}
@@ -445,6 +429,17 @@ export default function MessagesListPage() {
       />
 
       <TtsDefaultsModal open={ttsDefaultsOpen} onOpenChange={setTtsDefaultsOpen} />
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        onOpenChange={(open) => !open && setConfirmAction(null)}
+        title="Delete message?"
+        description={`Delete "${confirmAction?.label || 'this message'}" permanently? If it is used in exercises, deactivation is safer.`}
+        confirmLabel="Delete"
+        destructive
+        loading={actionLoading}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }

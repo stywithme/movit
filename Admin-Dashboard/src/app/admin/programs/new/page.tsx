@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Input, Select, Label, Button, Card, Textarea, SearchableSelect } from '@/components/ui';
 import type { LocalizedText } from '@/lib/types/localized';

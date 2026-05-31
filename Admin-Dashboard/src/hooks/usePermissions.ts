@@ -2,9 +2,9 @@
 
 import { useAuthStore } from '@/lib/auth/auth-store';
 import { useCallback } from 'react';
+import type { Action, Subject } from '@/lib/types/permissions';
 
-export type Action = 'manage' | 'create' | 'read' | 'update' | 'delete' | 'publish' | 'all';
-export type Subject = 'all' | 'Admin' | 'Role' | 'User' | 'Exercise' | 'Workout' | 'Program' | 'ProgramMap' | 'ProgramAnalytics' | 'Recipe' | 'MealPlan' | 'TrainingProvider' | 'Muscle' | 'Equipment' | 'Level' | 'LevelAnalytics' | 'AssessmentTemplate' | 'AssessmentAnalytics' | 'Reassessment' | 'ProgressionRule' | 'ExerciseProgressionProfile' | 'Config' | 'Reports' | 'Analytics' | 'Attribute' | 'PosePosition' | 'FeedbackMessage' | 'Upload' | 'DoctorWorkTime' | 'CloseTime' | 'Booking' | 'BookingReport' | 'System' | 'Plan' | 'Subscription';
+export type { Action, Subject };
 
 export function usePermissions() {
     const { user } = useAuthStore();

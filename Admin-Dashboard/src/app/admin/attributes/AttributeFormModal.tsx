@@ -154,14 +154,14 @@ export function AttributeFormModal({
         <DialogBody>
           <div className="space-y-5">
             {error && (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
                 {error}
               </div>
             )}
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                Code <span className="text-red-500">*</span>
+              <label className="mb-1 block text-sm font-medium">
+                Code <span className="text-destructive">*</span>
               </label>
               <Input
                 value={formData.code}
@@ -174,7 +174,7 @@ export function AttributeFormModal({
                 }}
                 placeholder="custom_tag"
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-muted-foreground">
                 Unique key used internally. Lowercase letters, numbers, and underscores only.
               </p>
             </div>
@@ -187,7 +187,7 @@ export function AttributeFormModal({
             />
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
+              <label className="mb-1 block text-sm font-medium">
                 Description
               </label>
               <Textarea

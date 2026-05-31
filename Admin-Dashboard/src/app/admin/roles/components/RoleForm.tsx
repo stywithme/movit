@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Button, Card, Input, Checkbox, Label } from '@/components/ui';
-import { ChevronLeft, Save, Info, X, UserPlus, Search } from 'lucide-react';
+import { Save, Info, X, UserPlus, Search } from 'lucide-react';
+import { PageHeader } from '@/components/common';
 import type { Role } from '@/lib/types/roles';
 
 interface RoleFormProps {
@@ -233,13 +235,14 @@ export function RoleForm({ initialData, isEdit }: RoleFormProps) {
 
             const data = await res.json();
             if (data.success) {
+                toast.success(isEdit ? 'Role updated' : 'Role created');
                 router.push('/admin/roles');
             } else {
-                alert('Error: ' + data.error);
+                toast.error(data.error || 'Error saving role');
             }
         } catch (error) {
             console.error('Error saving role:', error);
-            alert('Error saving role');
+            toast.error('Error saving role');
         } finally {
             setLoading(false);
         }
@@ -247,81 +250,72 @@ export function RoleForm({ initialData, isEdit }: RoleFormProps) {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-8 animate-in fade-in duration-500">
-            {/* Top Header */}
-            <div className="flex justify-between items-center -mt-2">
-                <div className="flex items-center gap-4">
-                    <button
-                        type="button"
-                        onClick={() => router.back()}
-                        className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
-                    >
-                        <ChevronLeft className="w-6 h-6" />
-                    </button>
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900">
-                            {isEdit ? 'Update Role' : 'Create Role'}
-                        </h1>
-                        <p className="text-sm text-gray-500 mt-0.5">Define a new set of permissions</p>
-                    </div>
-                </div>
-                <Button
-                    type="submit"
-                    disabled={loading || fetchingPerms}
-                    className="flex items-center gap-2 px-6 shadow-md shadow-blue-200"
-                >
-                    <Save className="w-4 h-4" />
-                    {loading || fetchingPerms ? 'Saving...' : 'Save Role'}
-                </Button>
-            </div>
+            <PageHeader
+                title={isEdit ? 'Update Role' : 'Create Role'}
+                description="Define a set of permissions and optional admin assignments."
+                breadcrumbs={[
+                    { label: 'Roles', href: '/admin/roles' },
+                    { label: isEdit ? 'Update Role' : 'Create Role' },
+                ]}
+                actions={
+                    <>
+                        <Button type="button" variant="outline" onClick={() => router.back()}>
+                            Cancel
+                        </Button>
+                        <Button type="submit" loading={loading || fetchingPerms}>
+                            <Save className="w-4 h-4" />
+                            Save Role
+                        </Button>
+                    </>
+                }
+            />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left Column */}
                 <div className="lg:col-span-2 space-y-8">
                     {/* General Information */}
-                    <Card className="p-8 border-none shadow-sm">
-                        <h2 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-4 mb-6">General Information</h2>
+                    <Card className="p-8">
+                        <h2 className="mb-6 border-b pb-4 text-lg font-semibold">General Information</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <Label className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
-                                    <span className="text-red-500">*</span> Role Name
+                                <Label className="flex items-center gap-1.5 text-sm font-semibold">
+                                    <span className="text-destructive">*</span> Role Name
                                 </Label>
                                 <Input
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                     placeholder="e.g. Content Manager"
                                     required
-                                    className="bg-gray-50/50 border-gray-200 focus:bg-white transition-all"
                                 />
                             </div>
 
                             <div className="space-y-2">
-                                <Label className="text-sm font-semibold text-gray-700">Description</Label>
+                                <Label className="text-sm font-semibold">Description</Label>
                                 <Input
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                     placeholder="Briefly describe what this role is for..."
-                                    className="bg-gray-50/50 border-gray-200 focus:bg-white transition-all"
                                 />
                             </div>
                         </div>
                     </Card>
 
                     {/* Permission Matrix — NO horizontal scroll */}
-                    <Card className="border-none shadow-sm overflow-hidden">
+                    <Card className="overflow-hidden">
                         <div className="p-8 pb-4">
                             <div className="flex items-center justify-between">
-                                <h2 className="text-lg font-bold text-gray-900">Permission Matrix</h2>
-                                <span className="text-sm font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                                <h2 className="text-lg font-semibold">Permission Matrix</h2>
+                                <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
                                     {totalEnabled} Actions Enabled
                                 </span>
                             </div>
                         </div>
 
-                        <div className="mx-8 mb-6 p-4 bg-blue-50/50 border border-blue-100 rounded-xl flex items-start gap-3">
-                            <Info className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
+                        <div className="mx-8 mb-6 flex items-start gap-3 rounded-xl border bg-muted/50 p-4">
+                            <Info className="mt-0.5 w-5 h-5 shrink-0 text-primary" />
                             <div>
-                                <h3 className="text-sm font-bold text-blue-900">Configure Access Levels</h3>
-                                <p className="text-xs text-blue-700 mt-1 leading-relaxed">
+                                <h3 className="text-sm font-semibold">Configure Access Levels</h3>
+                                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                                     Select the actions this role is allowed to perform. <span className="font-bold">×</span> means the action is not available for that module.
                                 </p>
                             </div>
@@ -335,31 +329,31 @@ export function RoleForm({ initialData, isEdit }: RoleFormProps) {
                                     <col className="w-[200px]" />
                                     {ACTIONS.map(a => <col key={a.id} />)}
                                 </colgroup>
-                                <thead className="bg-gray-50/80 text-gray-500 uppercase tracking-wider text-[10px] font-bold">
+                                <thead className="bg-muted/50 text-muted-foreground uppercase tracking-wider text-[10px] font-bold">
                                     <tr>
-                                        <th className="px-4 py-4 border-b border-gray-100 text-center">ALL</th>
-                                        <th className="px-4 py-4 border-b border-gray-100">MODULE</th>
+                                        <th className="px-4 py-4 border-b text-center">ALL</th>
+                                        <th className="px-4 py-4 border-b">MODULE</th>
                                         {ACTIONS.map((action) => (
-                                            <th key={action.id} className={`px-2 py-4 border-b border-gray-100 text-center ${action.color}`}>
+                                            <th key={action.id} className={`px-2 py-4 border-b text-center ${action.color}`}>
                                                 {action.name}
                                             </th>
                                         ))}
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100">
+                                <tbody className="divide-y">
                                     {modules.map((module) => {
                                         return (
-                                            <tr key={module.id} className="hover:bg-gray-50/30 transition-colors group">
+                                            <tr key={module.id} className="group transition-colors hover:bg-muted/30">
                                                 <td className="px-4 py-3 text-center">
                                                     <div className="flex justify-center">
                                                         <Checkbox
                                                             checked={isAllInModuleChecked(module.id)}
                                                             onCheckedChange={(checked) => toggleAllInModule(module.id, !!checked)}
-                                                            className="border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                                            className="border-input data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                                         />
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-3 font-semibold text-gray-700 group-hover:text-blue-600 transition-colors text-xs leading-tight">
+                                                <td className="px-4 py-3 text-xs font-semibold leading-tight transition-colors group-hover:text-primary">
                                                     {module.name}
                                                 </td>
                                                 {ACTIONS.map((action) => {
@@ -371,10 +365,10 @@ export function RoleForm({ initialData, isEdit }: RoleFormProps) {
                                                                     <Checkbox
                                                                         checked={permissions[module.id]?.[action.id] || false}
                                                                         onCheckedChange={() => togglePermission(module.id, action.id)}
-                                                                        className="border-gray-200 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                                                        className="border-input data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                                                     />
                                                                 ) : (
-                                                                    <span className="text-gray-200 font-bold select-none text-base">×</span>
+                                                                    <span className="select-none text-base font-bold text-muted-foreground/40">×</span>
                                                                 )}
                                                             </div>
                                                         </td>
@@ -391,25 +385,25 @@ export function RoleForm({ initialData, isEdit }: RoleFormProps) {
 
                 {/* Right Column — Assign Admins */}
                 <div className="space-y-8">
-                    <Card className="border-none shadow-sm h-fit sticky top-8 overflow-hidden">
-                        <div className="p-6 border-b border-gray-100">
+                    <Card className="sticky top-8 h-fit overflow-hidden">
+                        <div className="border-b p-6">
                             <div className="flex items-center gap-2 mb-1">
-                                <UserPlus className="w-5 h-5 text-blue-600" />
-                                <h3 className="text-base font-bold text-gray-900">Assign Admins</h3>
+                                <UserPlus className="w-5 h-5 text-primary" />
+                                <h3 className="text-base font-semibold">Assign Admins</h3>
                             </div>
-                            <p className="text-xs text-gray-500">Select which admins will have this role.</p>
+                            <p className="text-xs text-muted-foreground">Select which admins will have this role.</p>
                         </div>
 
                         {/* Search */}
                         <div className="px-4 pt-4 pb-2">
                             <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <input
                                     type="text"
                                     value={adminSearch}
                                     onChange={(e) => setAdminSearch(e.target.value)}
                                     placeholder="Search admins..."
-                                    className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                                    className="w-full rounded-lg border border-input bg-background py-2 pl-9 pr-4 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-ring"
                                 />
                             </div>
                         </div>
@@ -421,9 +415,9 @@ export function RoleForm({ initialData, isEdit }: RoleFormProps) {
                                     const a = allAdmins.find(x => x.id === id);
                                     if (!a) return null;
                                     return (
-                                        <span key={id} className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 border border-blue-100 rounded-full px-2 py-0.5 font-medium">
+                                        <span key={id} className="flex items-center gap-1 rounded-full border bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                                             {a.name.split(' ')[0]}
-                                            <button type="button" onClick={() => toggleAdmin(id)} className="hover:text-red-500 transition-colors">
+                                            <button type="button" onClick={() => toggleAdmin(id)} className="transition-colors hover:text-destructive">
                                                 <X className="w-3 h-3" />
                                             </button>
                                         </span>
@@ -433,27 +427,27 @@ export function RoleForm({ initialData, isEdit }: RoleFormProps) {
                         )}
 
                         {/* Admin List */}
-                        <div className="max-h-80 overflow-y-auto divide-y divide-gray-50">
+                        <div className="max-h-80 overflow-y-auto divide-y">
                             {filteredAdmins.length === 0 ? (
-                                <div className="p-6 text-center text-sm text-gray-400">No admins found</div>
+                                <div className="p-6 text-center text-sm text-muted-foreground">No admins found</div>
                             ) : filteredAdmins.map((admin) => {
                                 const isAssigned = assignedAdminIds.includes(admin.id);
                                 return (
                                     <label
                                         key={admin.id}
-                                        className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${isAssigned ? 'bg-blue-50/60' : 'hover:bg-gray-50'}`}
+                                        className={`flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors ${isAssigned ? 'bg-primary/10' : 'hover:bg-muted/50'}`}
                                     >
                                         <Checkbox
                                             checked={isAssigned}
                                             onCheckedChange={() => toggleAdmin(admin.id)}
-                                            className="border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 shrink-0"
+                                            className="shrink-0 border-input data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                         />
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-semibold text-gray-900 truncate">{admin.name}</p>
-                                            <p className="text-xs text-gray-400 truncate">{admin.email}</p>
+                                            <p className="truncate text-sm font-semibold">{admin.name}</p>
+                                            <p className="truncate text-xs text-muted-foreground">{admin.email}</p>
                                         </div>
                                         {admin.role && (
-                                            <span className="text-[10px] bg-gray-100 text-gray-500 rounded-full px-2 py-0.5 font-medium shrink-0">
+                                            <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                                                 {admin.role.name}
                                             </span>
                                         )}
@@ -462,7 +456,7 @@ export function RoleForm({ initialData, isEdit }: RoleFormProps) {
                             })}
                         </div>
 
-                        <div className="p-4 border-t border-gray-100">
+                        <div className="border-t p-4">
                             <Button
                                 type="button"
                                 variant="secondary"

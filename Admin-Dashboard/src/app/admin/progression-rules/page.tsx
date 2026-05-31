@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState, useCallback } from 'react';
+import Link from 'next/link';
+import { toast } from 'sonner';
 import {
   Input,
   Select,
@@ -15,6 +17,7 @@ import {
   DialogBody,
   DialogFooter,
 } from '@/components/ui';
+import { DataTable, PageHeader, StatusBadge, type DataTableColumn } from '@/components/common';
 
 interface Condition {
   metric: string;
@@ -121,6 +124,7 @@ export default function ProgressionRulesPage() {
   const [saving, setSaving] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<ProgressionRule | null>(null);
+  const [deletingRule, setDeletingRule] = useState<ProgressionRule | null>(null);
 
   const [formName, setFormName] = useState('');
   const [formScope, setFormScope] = useState<'global' | 'program' | 'exercise'>('global');
@@ -247,7 +251,7 @@ export default function ProgressionRulesPage() {
 
   const handleSave = async () => {
     if (!formName.trim()) {
-      alert('Rule name is required');
+      toast.error('Rule name is required');
       return;
     }
     setSaving(true);
@@ -267,13 +271,14 @@ export default function ProgressionRulesPage() {
       if (data.success) {
         setDialogOpen(false);
         resetForm();
+        toast.success(editingRule ? 'Rule updated' : 'Rule created');
         fetchRules();
       } else {
-        alert(data.error || 'Failed to save rule');
+        toast.error(data.error || 'Failed to save rule');
       }
     } catch (error) {
       console.error('Error saving rule:', error);
-      alert('Failed to save rule');
+      toast.error('Failed to save rule');
     } finally {
       setSaving(false);
     }
@@ -296,16 +301,17 @@ export default function ProgressionRulesPage() {
   };
 
   const handleDelete = async (rule: ProgressionRule) => {
-    if (!confirm(`Are you sure you want to delete "${rule.name}"?`)) return;
     try {
       const res = await fetch(`/api/admin/progression-rules/${rule.id}`, {
         method: 'DELETE',
       });
       const data = await res.json();
       if (data.success) {
+        setDeletingRule(null);
+        toast.success('Rule deleted');
         fetchRules();
       } else {
-        alert(data.error || 'Failed to delete rule');
+        toast.error(data.error || 'Failed to delete rule');
       }
     } catch (error) {
       console.error('Error deleting rule:', error);
@@ -314,118 +320,89 @@ export default function ProgressionRulesPage() {
 
   const showAmountField = ['increase_weight', 'decrease_weight', 'increase_reps', 'decrease_reps', 'increase_sets'].includes(formAction.type);
 
+  const columns: DataTableColumn<ProgressionRule>[] = [
+    {
+      key: 'name',
+      header: 'Name',
+      cell: (rule) => (
+        <div className="min-w-[240px]">
+          <p className="font-medium">{rule.name}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {rule.scope === 'program' && rule.programId
+              ? `Program: ${programs.find((p) => p.id === rule.programId)?.name.en || rule.programId}`
+              : rule.scope === 'exercise' && rule.exerciseSlug
+                ? `Exercise: ${rule.exerciseSlug}`
+                : ''}
+          </p>
+        </div>
+      ),
+    },
+    {
+      key: 'scope',
+      header: 'Scope',
+      cell: (rule) => (
+        <Badge variant={SCOPE_BADGE_VARIANT[rule.scope] || 'secondary'} className="capitalize">
+          {rule.scope}
+        </Badge>
+      ),
+    },
+    {
+      key: 'trigger',
+      header: 'Trigger',
+      cell: (rule) => <span className="text-sm text-muted-foreground">{rule.trigger.replace(/_/g, ' ')}</span>,
+    },
+    {
+      key: 'priority',
+      header: 'Priority',
+      cell: (rule) => <span className="text-sm text-muted-foreground">{rule.priority}</span>,
+    },
+    {
+      key: 'active',
+      header: 'Status',
+      cell: (rule) => <StatusBadge status={rule.isActive ? 'active' : 'inactive'} />,
+    },
+    {
+      key: 'executions',
+      header: 'Executions',
+      cell: (rule) => <span className="text-sm text-muted-foreground">{rule._count?.history ?? 0}</span>,
+    },
+    {
+      key: 'archiveStatus',
+      header: <span className="sr-only">Archive status</span>,
+      headerClassName: 'text-right',
+      className: 'text-right',
+      cell: () => <span className="text-xs text-muted-foreground">Read-only</span>,
+    },
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Progression Rules (Archive)</h1>
-          <p className="text-gray-600 mt-1">Legacy rules — read-only archive. Progression logic is now managed from Exercise Progression.</p>
-        </div>
-        <a href="/admin/exercise-progression" className="text-blue-600 hover:underline text-sm font-medium">
-          Go to Exercise Progression &rarr;
-        </a>
-      </div>
+      <PageHeader
+        title="Progression Rules (Archive)"
+        description="Legacy rules read-only archive. Progression logic is now managed from Exercise Progression."
+        actions={
+          <Button asChild variant="outline">
+            <Link href="/admin/exercise-progression">Go to Exercise Progression</Link>
+          </Button>
+        }
+      />
 
       {/* Archive Notice */}
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-        <p className="text-sm text-amber-800 font-medium">
+      <div className="rounded-xl border border-warning/30 bg-warning/10 p-4">
+        <p className="text-sm font-medium text-warning-foreground">
           This page is now a read-only archive. The progression engine no longer reads from these rules.
           All progression logic is managed through Exercise Progression Profiles.
         </p>
       </div>
 
-      {/* Rules Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading...</div>
-        ) : rules.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            <p>No progression rules found.</p>
-            <button
-              onClick={openCreateDialog}
-              className="text-blue-600 hover:underline mt-2 inline-block"
-            >
-              Create your first rule
-            </button>
-          </div>
-        ) : (
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Scope
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Trigger
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Priority
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Executions
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                  Status
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {rules.map((rule) => (
-                <tr key={rule.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <p className="font-medium text-gray-900">{rule.name}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {rule.scope === 'program' && rule.programId
-                        ? `Program: ${programs.find((p) => p.id === rule.programId)?.name.en || rule.programId}`
-                        : rule.scope === 'exercise' && rule.exerciseId
-                          ? `Exercise: ${rule.exerciseId}`
-                          : ''}
-                    </p>
-                  </td>
-                  <td className="px-6 py-4">
-                    <Badge variant={SCOPE_BADGE_VARIANT[rule.scope] || 'default'}>
-                      {rule.scope}
-                    </Badge>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {rule.trigger.replace(/_/g, ' ')}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{rule.priority}</td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-                        rule.isActive
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-gray-100 text-gray-500'
-                      }`}
-                    >
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          rule.isActive ? 'bg-green-500' : 'bg-gray-400'
-                        }`}
-                      />
-                      {rule.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {rule._count?.history ?? 0}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <span className="text-xs text-gray-400">Read-only</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      <DataTable
+        columns={columns}
+        data={rules}
+        getRowKey={(rule) => rule.id}
+        loading={loading}
+        emptyTitle="No progression rules found"
+        emptyDescription="Legacy progression rules will appear here when available."
+      />
 
       {/* Create / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -438,7 +415,7 @@ export default function ProgressionRulesPage() {
             <div className="space-y-6">
               {/* Basic Info */}
               <Card className="p-4 space-y-4">
-                <h3 className="text-sm font-semibold text-gray-700">Basic Information</h3>
+                <h3 className="text-sm font-semibold">Basic Information</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label>Name *</Label>
@@ -505,9 +482,9 @@ export default function ProgressionRulesPage() {
                         type="checkbox"
                         checked={formIsActive}
                         onChange={(e) => setFormIsActive(e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="h-4 w-4 rounded border-input text-primary focus:ring-ring"
                       />
-                      <span className="text-sm font-medium text-gray-700">Is Active</span>
+                      <span className="text-sm font-medium">Is Active</span>
                     </label>
                   </div>
                 </div>
@@ -516,14 +493,14 @@ export default function ProgressionRulesPage() {
               {/* Conditions Builder */}
               <Card className="p-4 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-gray-700">Conditions</h3>
+                <h3 className="text-sm font-semibold">Conditions</h3>
                   <Button type="button" variant="outline" size="sm" onClick={addCondition}>
                     Add Condition
                   </Button>
                 </div>
 
                 {formConditions.map((condition, index) => (
-                  <div key={index} className="flex items-end gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div key={index} className="flex items-end gap-3 rounded-lg bg-muted p-3">
                     <div className="flex-1">
                       <Label>Metric</Label>
                       <Select
@@ -564,7 +541,7 @@ export default function ProgressionRulesPage() {
                       size="sm"
                       onClick={() => removeCondition(index)}
                       disabled={formConditions.length === 1}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
+                      className="shrink-0 text-destructive hover:text-destructive"
                     >
                       Remove
                     </Button>
@@ -574,7 +551,7 @@ export default function ProgressionRulesPage() {
 
               {/* Action Section */}
               <Card className="p-4 space-y-4">
-                <h3 className="text-sm font-semibold text-gray-700">Action</h3>
+                <h3 className="text-sm font-semibold">Action</h3>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>

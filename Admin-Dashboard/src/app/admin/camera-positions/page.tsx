@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { Camera } from 'lucide-react';
+import { toast } from 'sonner';
 import { LocalizedText } from '@/lib/types/localized';
+import { Button } from '@/components/ui';
+import { DataTable, PageHeader, StatusBadge, type DataTableColumn } from '@/components/common';
 
 interface CameraPosition {
   id: string;
@@ -16,18 +20,26 @@ interface CameraPosition {
 export default function CameraPositionsListPage() {
   const [cameraPositions, setCameraPositions] = useState<CameraPosition[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pageError, setPageError] = useState<string | null>(null);
 
   const fetchCameraPositions = async () => {
     setLoading(true);
+    setPageError(null);
     try {
       const res = await fetch('/api/camera-positions?includeInactive=true');
       const data = await res.json();
 
       if (data.success) {
         setCameraPositions(data.data);
+      } else {
+        const message = data.error || 'Failed to load camera positions';
+        setPageError(message);
+        toast.error(message);
       }
     } catch (error) {
       console.error('Error fetching camera positions:', error);
+      setPageError('Failed to load camera positions');
+      toast.error('Failed to load camera positions');
     } finally {
       setLoading(false);
     }
@@ -44,81 +56,96 @@ export default function CameraPositionsListPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive: !currentStatus }),
       });
-      if (res.ok) fetchCameraPositions();
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.success !== false) {
+        toast.success(currentStatus ? 'Camera position deactivated' : 'Camera position activated');
+        fetchCameraPositions();
+      } else {
+        toast.error(data?.error || 'Failed to update camera position');
+      }
     } catch (error) {
       console.error('Error toggling status:', error);
+      toast.error('Failed to update camera position');
     }
   };
 
+  const columns: DataTableColumn<CameraPosition>[] = [
+    {
+      key: 'position',
+      header: 'Camera Position',
+      cell: (cp) => (
+        <div className="flex min-w-[260px] items-center gap-4">
+          {cp.imageUrl ? (
+            <img
+              src={cp.imageUrl}
+              alt={cp.name.en || 'Camera position image'}
+              className="size-16 rounded-md border object-cover"
+            />
+          ) : (
+            <div className="flex size-16 items-center justify-center rounded-md bg-muted text-muted-foreground">
+              <Camera className="size-7" />
+            </div>
+          )}
+          <div className="min-w-0">
+            <Button asChild variant="link" className="h-auto p-0 text-base">
+              <Link href={`/admin/camera-positions/${cp.id}/edit`}>{cp.name.en}</Link>
+            </Button>
+            <p className="truncate text-sm text-muted-foreground" dir="rtl">
+              {cp.name.ar}
+            </p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'code',
+      header: 'Code',
+      cell: (cp) => <span className="font-mono text-sm text-muted-foreground">{cp.code}</span>,
+    },
+    {
+      key: 'sortOrder',
+      header: 'Sort',
+      cell: (cp) => <span className="text-muted-foreground">{cp.sortOrder}</span>,
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      cell: (cp) => <StatusBadge status={cp.isActive ? 'active' : 'inactive'} />,
+    },
+    {
+      key: 'actions',
+      header: <span className="sr-only">Actions</span>,
+      headerClassName: 'text-right',
+      className: 'text-right',
+      cell: (cp) => (
+        <div className="flex justify-end gap-1">
+          <Button type="button" variant="ghost" size="sm" onClick={() => handleToggleActive(cp.id, cp.isActive)}>
+            {cp.isActive ? 'Deactivate' : 'Activate'}
+          </Button>
+          <Button asChild variant="ghost" size="sm">
+            <Link href={`/admin/camera-positions/${cp.id}/edit`}>Edit</Link>
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Camera Positions</h1>
-        <p className="text-gray-600 mt-1">Fixed pose positions for exercises — edit name, image, or status</p>
-      </div>
+      <PageHeader
+        title="Camera Positions"
+        description="Fixed pose positions for exercises. Edit the display name, reference image, or status."
+      />
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        {loading ? (
-          <div className="p-6 text-center text-gray-500">Loading camera positions...</div>
-        ) : cameraPositions.length === 0 ? (
-          <div className="p-6 text-center text-gray-500">No camera positions found.</div>
-        ) : (
-          <ul role="list" className="divide-y divide-gray-200">
-            {cameraPositions.map((cp) => (
-              <li key={cp.id} className="flex items-center justify-between p-4 hover:bg-gray-50">
-                <div className="flex items-center gap-4">
-                  {cp.imageUrl ? (
-                    <img
-                      src={cp.imageUrl}
-                      alt={cp.name.en || 'Camera position image'}
-                      className="h-16 w-16 rounded-md object-cover border border-gray-200"
-                    />
-                  ) : (
-                    <div className="h-16 w-16 rounded-md bg-gray-100 flex items-center justify-center text-gray-400">
-                      <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </div>
-                  )}
-                  <div>
-                    <Link
-                      href={`/admin/camera-positions/${cp.id}/edit`}
-                      className="text-lg font-semibold text-blue-600 hover:underline"
-                    >
-                      {cp.name.en} ({cp.name.ar})
-                    </Link>
-                    <p className="text-sm text-gray-500">Code: {cp.code}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      cp.isActive
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}
-                  >
-                    {cp.isActive ? 'Active' : 'Inactive'}
-                  </span>
-                  <button
-                    onClick={() => handleToggleActive(cp.id, cp.isActive)}
-                    className={`text-sm ${cp.isActive ? 'text-yellow-600 hover:text-yellow-900' : 'text-green-600 hover:text-green-900'}`}
-                  >
-                    {cp.isActive ? 'Deactivate' : 'Activate'}
-                  </button>
-                  <Link
-                    href={`/admin/camera-positions/${cp.id}/edit`}
-                    className="text-blue-600 hover:text-blue-900 text-sm"
-                  >
-                    Edit
-                  </Link>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      <DataTable
+        columns={columns}
+        data={cameraPositions}
+        getRowKey={(cameraPosition) => cameraPosition.id}
+        loading={loading}
+        error={pageError}
+        emptyTitle="No camera positions found"
+        emptyDescription="Camera positions are fixed system records and cannot be created here."
+      />
     </div>
   );
 }

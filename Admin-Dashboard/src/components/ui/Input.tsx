@@ -13,20 +13,21 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <input
           type={type}
           className={cn(
-            'w-full px-4 py-3 rounded-lg border-2 transition-colors',
-            'text-gray-900 font-medium placeholder:text-gray-500 placeholder:font-normal',
-            'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
-            'disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-70 disabled:text-gray-600',
-            error ? 'border-red-300 bg-red-50 text-gray-900' : 'border-gray-300 bg-white',
+            'flex h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none md:text-sm',
+            'placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground',
+            'focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
+            'disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50',
+            error ? 'border-destructive aria-invalid:ring-destructive/20' : 'border-input',
             className
           )}
+          aria-invalid={error || undefined}
           ref={ref}
           {...props}
         />
         {helperText && (
           <p className={cn(
             'mt-1.5 text-sm',
-            error ? 'text-red-500' : 'text-gray-500'
+            error ? 'text-destructive' : 'text-muted-foreground'
           )}>
             {helperText}
           </p>

@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePermissions } from '@/hooks/usePermissions';
-import { Button } from '@/components/ui';
+import { toast } from 'sonner';
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
+import { ConfirmDialog, DataTable, PageHeader, StatusBadge, type DataTableColumn } from '@/components/common';
 import { Plus, Shield, SquarePen, Trash2 } from 'lucide-react';
 import { AttributeFormModal } from './AttributeFormModal';
 import { AttributeValueFormModal } from './AttributeValueFormModal';
@@ -14,6 +16,11 @@ function getLocalizedLabel(
 ) {
   return value?.en || value?.ar || fallback;
 }
+
+type ConfirmAction =
+  | { type: 'delete-attribute'; attribute: Attribute }
+  | { type: 'delete-value'; value: AttributeValue }
+  | null;
 
 export default function AttributesPage() {
   const { can, isSuperAdmin } = usePermissions();
@@ -30,6 +37,8 @@ export default function AttributesPage() {
   const [valueFormOpen, setValueFormOpen] = useState(false);
   const [editingAttribute, setEditingAttribute] = useState<Attribute | null>(null);
   const [editingValue, setEditingValue] = useState<AttributeValue | null>(null);
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const fetchAttributes = useCallback(async (preferredAttributeId?: string | null) => {
     setLoading(true);
@@ -58,11 +67,11 @@ export default function AttributesPage() {
           return nextAttributes[0]?.id ?? null;
         });
       } else {
-        alert(`Error: ${data.error || 'Failed to fetch attributes'}`);
+        toast.error(data.error || 'Failed to fetch attributes');
       }
     } catch (error) {
       console.error('Error fetching attributes:', error);
-      alert('Failed to fetch attributes');
+      toast.error('Failed to fetch attributes');
     } finally {
       setLoading(false);
     }
@@ -89,28 +98,11 @@ export default function AttributesPage() {
 
   const handleDeleteAttribute = async (attribute: Attribute) => {
     if (attribute.isSystem) {
-      alert('System attributes cannot be deleted');
+      toast.warning('System attributes cannot be deleted');
       return;
     }
 
-    if (!confirm(`Are you sure you want to delete "${getLocalizedLabel(attribute.name, attribute.code)}"?`)) {
-      return;
-    }
-
-    try {
-      const res = await fetch(`/api/attributes/${attribute.id}`, { method: 'DELETE' });
-      const data = await res.json();
-
-      if (data.success) {
-        await fetchAttributes(selectedAttributeId === attribute.id ? null : selectedAttributeId);
-        return;
-      }
-
-      alert(`Error: ${data.error || 'Failed to delete attribute'}`);
-    } catch (error) {
-      console.error('Error deleting attribute:', error);
-      alert('Failed to delete attribute');
-    }
+    setConfirmAction({ type: 'delete-attribute', attribute });
   };
 
   const handleCreateValue = () => {
@@ -133,83 +125,189 @@ export default function AttributesPage() {
       const data = await res.json();
 
       if (data.success) {
+        toast.success(value.isActive ? 'Attribute value deactivated' : 'Attribute value activated');
         await fetchAttributes(selectedAttributeId);
         return;
       }
 
-      alert(`Error: ${data.error || 'Failed to update value status'}`);
+      toast.error(data.error || 'Failed to update value status');
     } catch (error) {
       console.error('Error updating attribute value status:', error);
-      alert('Failed to update value status');
+      toast.error('Failed to update value status');
     }
   };
 
   const handleDeleteValue = async (value: AttributeValue) => {
-    if (!confirm(`Are you sure you want to delete "${getLocalizedLabel(value.name, value.code)}"?`)) {
-      return;
-    }
+    setConfirmAction({ type: 'delete-value', value });
+  };
 
+  const handleConfirmDelete = async () => {
+    if (!confirmAction) return;
+
+    setActionLoading(true);
     try {
-      const res = await fetch(`/api/attributes/values/${value.id}`, {
-        method: 'DELETE',
-      });
+      const isAttributeDelete = confirmAction.type === 'delete-attribute';
+      const url = isAttributeDelete
+        ? `/api/attributes/${confirmAction.attribute.id}`
+        : `/api/attributes/values/${confirmAction.value.id}`;
+      const res = await fetch(url, { method: 'DELETE' });
       const data = await res.json();
 
       if (data.success) {
-        await fetchAttributes(selectedAttributeId);
+        toast.success(isAttributeDelete ? 'Attribute deleted' : 'Attribute value deleted');
+        const preferredId =
+          isAttributeDelete && selectedAttributeId === confirmAction.attribute.id
+            ? null
+            : selectedAttributeId;
+        setConfirmAction(null);
+        await fetchAttributes(preferredId);
         return;
       }
 
-      alert(`Error: ${data.error || 'Failed to delete attribute value'}`);
+      toast.error(data.error || (isAttributeDelete ? 'Failed to delete attribute' : 'Failed to delete attribute value'));
     } catch (error) {
-      console.error('Error deleting attribute value:', error);
-      alert('Failed to delete attribute value');
+      console.error('Error deleting attribute data:', error);
+      toast.error(confirmAction.type === 'delete-attribute' ? 'Failed to delete attribute' : 'Failed to delete attribute value');
+    } finally {
+      setActionLoading(false);
     }
+  };
+
+  const valueColumns: DataTableColumn<AttributeValue>[] = [
+    {
+      key: 'code',
+      header: 'Code',
+      cell: (value) => <span className="font-mono text-sm text-muted-foreground">{value.code}</span>,
+    },
+    {
+      key: 'name',
+      header: 'Name',
+      cell: (value) => (
+        <div className="min-w-[180px] space-y-1">
+          <div className="font-medium">
+            {value.icon && <span className="mr-2">{value.icon}</span>}
+            {getLocalizedLabel(value.name, value.code)}
+          </div>
+          <div className="text-xs text-muted-foreground" dir="rtl">
+            {value.name.ar || '-'}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'description',
+      header: 'Description',
+      cell: (value) => (
+        <span className="block max-w-xs truncate text-muted-foreground">
+          {getLocalizedLabel(value.description)}
+        </span>
+      ),
+    },
+    {
+      key: 'color',
+      header: 'Color',
+      cell: (value) =>
+        value.color ? (
+          <span
+            className="inline-block size-6 rounded-full border"
+            style={{ backgroundColor: value.color }}
+            title={value.color}
+          />
+        ) : (
+          <span className="text-muted-foreground">-</span>
+        ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      cell: (value) => <StatusBadge status={value.isActive ? 'active' : 'inactive'} />,
+    },
+    {
+      key: 'actions',
+      header: <span className="sr-only">Actions</span>,
+      headerClassName: 'text-right',
+      className: 'text-right',
+      cell: (value) => (
+        <div className="flex justify-end gap-1">
+          {canUpdateAttribute && (
+            <>
+              <Button type="button" variant="ghost" size="sm" onClick={() => handleToggleValueStatus(value)}>
+                {value.isActive ? 'Deactivate' : 'Activate'}
+              </Button>
+              <Button type="button" variant="ghost" size="sm" onClick={() => handleEditValue(value)}>
+                Edit
+              </Button>
+            </>
+          )}
+
+          {canDeleteAttribute && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              onClick={() => handleDeleteValue(value)}
+            >
+              Delete
+            </Button>
+          )}
+        </div>
+      ),
+    },
+  ];
+
+  const confirmCopy = {
+    title: confirmAction?.type === 'delete-attribute' ? 'Delete attribute?' : 'Delete attribute value?',
+    description:
+      confirmAction?.type === 'delete-attribute'
+        ? `This will permanently delete "${getLocalizedLabel(confirmAction.attribute.name, confirmAction.attribute.code)}".`
+        : `This will permanently delete "${getLocalizedLabel(confirmAction?.value.name, confirmAction?.value.code)}".`,
   };
 
   if (loading) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <div className="text-gray-500">Loading attributes...</div>
-      </div>
+      <Card>
+        <CardContent className="flex min-h-[320px] items-center justify-center text-sm text-muted-foreground">
+          Loading attributes...
+        </CardContent>
+      </Card>
     );
   }
 
   return (
     <>
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Attributes</h1>
-            <p className="mt-1 text-gray-600">
-              Manage attribute types and their values from one place.
-            </p>
-          </div>
-
-          {canCreateAttribute && (
-            <Button onClick={handleCreateAttribute}>
-              <Plus className="h-4 w-4" />
-              New Attribute
-            </Button>
-          )}
-        </div>
+        <PageHeader
+          title="Attributes"
+          description="Manage attribute types and their values from one place."
+          actions={
+            canCreateAttribute ? (
+              <Button onClick={handleCreateAttribute}>
+                <Plus className="size-4" />
+                New Attribute
+              </Button>
+            ) : null
+          }
+        />
 
         {attributes.length === 0 ? (
-          <div className="rounded-lg border border-gray-200 bg-white p-10 text-center text-gray-500">
-            <p>No attributes found.</p>
-            {canCreateAttribute && (
-              <Button className="mt-4" onClick={handleCreateAttribute}>
-                <Plus className="h-4 w-4" />
-                Create Attribute
-              </Button>
-            )}
-          </div>
+          <Card>
+            <CardContent className="p-10 text-center text-muted-foreground">
+              <p>No attributes found.</p>
+              {canCreateAttribute && (
+                <Button className="mt-4" onClick={handleCreateAttribute}>
+                  <Plus className="size-4" />
+                  Create Attribute
+                </Button>
+              )}
+            </CardContent>
+          </Card>
         ) : (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
-            <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-              <div className="border-b border-gray-200 p-4">
-                <h2 className="font-semibold text-gray-900">Attribute Types</h2>
-              </div>
+            <Card className="overflow-hidden">
+              <CardHeader className="border-b p-4">
+                <CardTitle className="text-base">Attribute Types</CardTitle>
+              </CardHeader>
 
               <nav className="space-y-1 p-2">
                 {attributes.map((attribute) => {
@@ -223,26 +321,24 @@ export default function AttributesPage() {
                       onClick={() => setSelectedAttributeId(attribute.id)}
                       className={`w-full rounded-lg px-3 py-3 text-left transition-colors ${
                         isSelected
-                          ? 'bg-blue-50 text-blue-700'
-                          : 'text-gray-600 hover:bg-gray-50'
+                          ? 'bg-accent text-accent-foreground ring-1 ring-ring/20'
+                          : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <div className="truncate font-medium text-gray-900">{label}</div>
-                          <div className="truncate font-mono text-xs text-gray-500">
+                          <div className="truncate font-medium text-foreground">{label}</div>
+                          <div className="truncate font-mono text-xs text-muted-foreground">
                             {attribute.code}
                           </div>
                         </div>
 
                         <div className="flex flex-col items-end gap-1">
-                          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-                            {attribute.values.length}
-                          </span>
+                          <Badge variant="secondary">{attribute.values.length}</Badge>
                           {attribute.isSystem && (
-                            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
+                            <Badge variant="warning">
                               System
-                            </span>
+                            </Badge>
                           )}
                         </div>
                       </div>
@@ -250,208 +346,88 @@ export default function AttributesPage() {
                   );
                 })}
               </nav>
-            </div>
+            </Card>
 
-            <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm lg:col-span-3">
+            <div className="space-y-4 lg:col-span-3">
               {selectedAttribute ? (
                 <>
-                  <div className="border-b border-gray-200 p-5">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-xl font-semibold text-gray-900">
-                            {getLocalizedLabel(selectedAttribute.name, selectedAttribute.code)}
-                          </h2>
+                  <Card>
+                    <CardContent className="p-5">
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h2 className="text-xl font-semibold">
+                              {getLocalizedLabel(selectedAttribute.name, selectedAttribute.code)}
+                            </h2>
+
+                            {selectedAttribute.isSystem && (
+                              <Badge variant="warning">
+                                <Shield className="size-3.5" />
+                                System Attribute
+                              </Badge>
+                            )}
+                          </div>
+
+                          <p className="font-mono text-xs text-muted-foreground">{selectedAttribute.code}</p>
+
+                          <p className="text-sm text-muted-foreground">
+                            {selectedAttribute.description || 'No description provided.'}
+                          </p>
 
                           {selectedAttribute.isSystem && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800">
-                              <Shield className="h-3.5 w-3.5" />
-                              System Attribute
-                            </span>
+                            <div className="rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning">
+                              The attribute definition is protected. Its values can still be managed
+                              from this page.
+                            </div>
                           )}
                         </div>
 
-                        <p className="font-mono text-xs text-gray-500">{selectedAttribute.code}</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {canUpdateAttribute && (
+                            <Button variant="secondary" onClick={handleCreateValue}>
+                              <Plus className="size-4" />
+                              Add Value
+                            </Button>
+                          )}
 
-                        <p className="text-sm text-gray-600">
-                          {selectedAttribute.description || 'No description provided.'}
-                        </p>
-
-                        {selectedAttribute.isSystem && (
-                          <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                            The attribute definition is protected. Its values can still be managed
-                            from this page.
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-2">
-                        {canUpdateAttribute && (
-                          <Button variant="secondary" onClick={handleCreateValue}>
-                            <Plus className="h-4 w-4" />
-                            Add Value
-                          </Button>
-                        )}
-
-                        {canUpdateAttribute && !selectedAttribute.isSystem && (
-                          <Button
-                            variant="outline"
-                            onClick={() => handleEditAttribute(selectedAttribute)}
-                          >
-                            <SquarePen className="h-4 w-4" />
-                            Edit Attribute
-                          </Button>
-                        )}
-
-                        {canDeleteAttribute && !selectedAttribute.isSystem && (
-                          <Button
-                            variant="danger"
-                            onClick={() => handleDeleteAttribute(selectedAttribute)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Delete Attribute
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {selectedAttribute.values.length === 0 ? (
-                    <div className="p-10 text-center text-gray-500">
-                      <p>No values defined yet.</p>
-                      {canUpdateAttribute && (
-                        <Button className="mt-4" onClick={handleCreateValue}>
-                          <Plus className="h-4 w-4" />
-                          Add First Value
-                        </Button>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead className="border-b border-gray-200 bg-gray-50">
-                          <tr>
-                            <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
-                              Code
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
-                              Name
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
-                              Description
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
-                              Color
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
-                              Status
-                            </th>
-                            <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">
-                              Actions
-                            </th>
-                          </tr>
-                        </thead>
-
-                        <tbody className="divide-y divide-gray-200">
-                          {selectedAttribute.values.map((value) => (
-                            <tr
-                              key={value.id}
-                              className={`hover:bg-gray-50 ${
-                                value.isActive ? '' : 'bg-gray-50/60 text-gray-500'
-                              }`}
+                          {canUpdateAttribute && !selectedAttribute.isSystem && (
+                            <Button
+                              variant="outline"
+                              onClick={() => handleEditAttribute(selectedAttribute)}
                             >
-                              <td className="px-4 py-3 align-top text-sm font-mono text-gray-700">
-                                {value.code}
-                              </td>
+                              <SquarePen className="size-4" />
+                              Edit Attribute
+                            </Button>
+                          )}
 
-                              <td className="px-4 py-3 align-top text-sm text-gray-900">
-                                <div className="space-y-1">
-                                  <div className="font-medium text-gray-900">
-                                    {value.icon && <span className="mr-2">{value.icon}</span>}
-                                    {getLocalizedLabel(value.name, value.code)}
-                                  </div>
-                                  <div className="text-xs text-gray-500" dir="rtl">
-                                    {value.name.ar || '-'}
-                                  </div>
-                                </div>
-                              </td>
+                          {canDeleteAttribute && !selectedAttribute.isSystem && (
+                            <Button
+                              variant="danger"
+                              onClick={() => handleDeleteAttribute(selectedAttribute)}
+                            >
+                              <Trash2 className="size-4" />
+                              Delete Attribute
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
 
-                              <td className="px-4 py-3 align-top text-sm text-gray-600">
-                                {getLocalizedLabel(value.description)}
-                              </td>
-
-                              <td className="px-4 py-3 align-top">
-                                {value.color ? (
-                                  <span
-                                    className="inline-block h-6 w-6 rounded-full border border-gray-200"
-                                    style={{ backgroundColor: value.color }}
-                                    title={value.color}
-                                  />
-                                ) : (
-                                  <span className="text-sm text-gray-400">-</span>
-                                )}
-                              </td>
-
-                              <td className="px-4 py-3 align-top">
-                                <span
-                                  className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                                    value.isActive
-                                      ? 'bg-green-100 text-green-800'
-                                      : 'bg-gray-100 text-gray-600'
-                                  }`}
-                                >
-                                  {value.isActive ? 'Active' : 'Inactive'}
-                                </span>
-                              </td>
-
-                              <td className="px-4 py-3 align-top text-right">
-                                <div className="flex justify-end gap-3 text-sm">
-                                  {canUpdateAttribute && (
-                                    <>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleToggleValueStatus(value)}
-                                        className={`font-medium ${
-                                          value.isActive
-                                            ? 'text-yellow-600 hover:text-yellow-800'
-                                            : 'text-green-600 hover:text-green-800'
-                                        }`}
-                                      >
-                                        {value.isActive ? 'Deactivate' : 'Activate'}
-                                      </button>
-
-                                      <button
-                                        type="button"
-                                        onClick={() => handleEditValue(value)}
-                                        className="font-medium text-blue-600 hover:text-blue-800"
-                                      >
-                                        Edit
-                                      </button>
-                                    </>
-                                  )}
-
-                                  {canDeleteAttribute && (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleDeleteValue(value)}
-                                      className="font-medium text-red-600 hover:text-red-800"
-                                    >
-                                      Delete
-                                    </button>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
+                  <DataTable
+                    columns={valueColumns}
+                    data={selectedAttribute.values}
+                    getRowKey={(value) => value.id}
+                    emptyTitle="No values defined yet"
+                    emptyDescription="Add the first value for this attribute type."
+                  />
                 </>
               ) : (
-                <div className="p-10 text-center text-gray-500">
-                  Select an attribute type to manage its values.
-                </div>
+                <Card>
+                  <CardContent className="p-10 text-center text-muted-foreground">
+                    Select an attribute type to manage its values.
+                  </CardContent>
+                </Card>
               )}
             </div>
           </div>
@@ -487,6 +463,17 @@ export default function AttributesPage() {
           setEditingValue(null);
           void fetchAttributes(selectedAttributeId);
         }}
+      />
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        onOpenChange={(open) => !open && setConfirmAction(null)}
+        title={confirmCopy.title}
+        description={confirmCopy.description}
+        confirmLabel="Delete"
+        destructive
+        loading={actionLoading}
+        onConfirm={handleConfirmDelete}
       />
     </>
   );

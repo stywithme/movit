@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { toast } from 'react-hot-toast';
-import { Card, CardContent, Button, Input } from '@/components/ui';
-import { ArrowLeft, RefreshCw, ArrowRight } from 'lucide-react';
+import { toast } from 'sonner';
+import { Card, CardContent, Button } from '@/components/ui';
+import { FilterBar, PageHeader } from '@/components/common';
+import { RefreshCw, ArrowRight } from 'lucide-react';
 import { LocalizedText } from '@/lib/types/localized';
 
 interface Level {
@@ -326,125 +327,93 @@ export default function ProgramsMapPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/admin/programs"
-            className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Programs &amp; assessments map</h1>
-            <p className="text-gray-600 mt-1">
-              Programs and assessment templates by training level (columns). Initial assessments are listed above the grid.
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link href="/admin/assessment-templates/new">
-            <Button variant="secondary">New assessment</Button>
-          </Link>
-          <Link href="/admin/programs/new">
-            <Button variant="secondary">New program</Button>
-          </Link>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={fetchData}
-            icon={<RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />}
-          >
-            Refresh
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Programs & assessments map"
+        description="Programs and assessment templates by training level. Initial assessments are listed above the grid."
+        breadcrumbs={[
+          { label: 'Programs', href: '/admin/programs' },
+          { label: 'Map' },
+        ]}
+        actions={
+          <>
+            <Button asChild variant="secondary">
+              <Link href="/admin/assessment-templates/new">New assessment</Link>
+            </Button>
+            <Button asChild variant="secondary">
+              <Link href="/admin/programs/new">New program</Link>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={fetchData}
+              icon={<RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />}
+            >
+              Refresh
+            </Button>
+          </>
+        }
+      />
 
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-wrap items-end gap-4">
-            <div className="min-w-[260px] flex-1">
-              <label className="mb-1 block text-sm font-medium text-gray-700">Search in map</label>
-              <Input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by name or slug..."
-              />
-            </div>
-
-            {FILTER_ATTR_CODES.map((code) => (
-              <div key={code} className="min-w-[140px]">
-                <label className="mb-1 block text-xs font-medium text-gray-600 capitalize">{code}</label>
-                <select
-                  className="w-full rounded-md border border-gray-300 px-2 py-2 text-sm"
-                  value={filters[code]}
-                  onChange={(e) => setFilters((f) => ({ ...f, [code]: e.target.value }))}
-                >
-                  <option value="">All</option>
-                  {(filterOptions[code] ?? []).map((opt) => (
-                    <option key={opt.code} value={opt.code}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ))}
-
-            <label className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700">
-              <input
-                type="checkbox"
-                checked={showPublishedOnly}
-                onChange={(e) => setShowPublishedOnly(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              Published only
-            </label>
-
-            {searchQuery || showPublishedOnly || Object.values(filters).some(Boolean) ? (
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => {
-                  setSearchQuery('');
-                  setShowPublishedOnly(false);
-                  setFilters({ domain: '', goal: '', equipment: '', gender: '', place: '' });
-                }}
-              >
-                Reset
-              </Button>
-            ) : null}
-          </div>
-        </CardContent>
-      </Card>
+      <FilterBar
+        searchValue={searchQuery}
+        searchPlaceholder="Search by name or slug..."
+        onSearchChange={setSearchQuery}
+        selects={FILTER_ATTR_CODES.map((code) => ({
+          id: code,
+          value: filters[code],
+          onChange: (value) => setFilters((f) => ({ ...f, [code]: value })),
+          options: [
+            { value: '', label: `All ${code}` },
+            ...(filterOptions[code] ?? []).map((opt) => ({ value: opt.code, label: opt.label })),
+          ],
+          className: 'lg:w-40',
+        }))}
+        onReset={() => {
+          setSearchQuery('');
+          setShowPublishedOnly(false);
+          setFilters({ domain: '', goal: '', equipment: '', gender: '', place: '' });
+        }}
+      >
+        <label className="flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-sm">
+          <input
+            type="checkbox"
+            checked={showPublishedOnly}
+            onChange={(e) => setShowPublishedOnly(e.target.checked)}
+            className="size-4 rounded border-input accent-primary"
+          />
+          Published only
+        </label>
+      </FilterBar>
 
       {loading ? (
         <Card className="animate-pulse">
           <CardContent className="pt-6">
-            <div className="h-96 bg-gray-100 rounded" />
+            <div className="h-96 rounded bg-muted" />
           </CardContent>
         </Card>
       ) : levels.length === 0 ? (
         <Card>
           <CardContent className="pt-6">
-            <p className="text-gray-500 text-center py-12">No levels defined. Create levels first to see the map.</p>
+            <p className="py-12 text-center text-muted-foreground">No levels defined. Create levels first to see the map.</p>
           </CardContent>
         </Card>
       ) : (
         <Card>
           <CardContent className="p-0">
             {initialAssessments.length > 0 ? (
-              <div className="border-b border-amber-100 bg-amber-50/50 px-3 py-3">
-                <p className="text-xs font-semibold text-amber-900 mb-2">Initial assessments (onboarding)</p>
+              <div className="border-b border-amber-200/70 bg-amber-50/50 px-3 py-3">
+                <p className="mb-2 text-xs font-semibold text-amber-900">Initial assessments (onboarding)</p>
                 <div className="flex flex-wrap gap-2">
                   {initialAssessments.map((t) => (
                     <Link
                       key={t.id}
                       href={`/admin/assessment-templates/${t.id}/edit`}
-                      className="inline-flex flex-col rounded-lg border border-amber-200 bg-white px-2.5 py-2 text-left hover:border-amber-400 hover:shadow-sm min-w-[140px]"
+                      className="inline-flex min-w-[140px] flex-col rounded-lg border border-amber-200 bg-card px-2.5 py-2 text-left hover:border-amber-400 hover:shadow-sm"
                     >
-                      <span className="text-xs font-medium text-gray-900 line-clamp-2">
+                      <span className="line-clamp-2 text-xs font-medium">
                         {t.name?.en || t.type}
                       </span>
-                      <span className="text-[10px] text-gray-500 mt-0.5">
+                      <span className="mt-0.5 text-[10px] text-muted-foreground">
                         {t._count?.exercises ?? 0} exercises
                         {!templateIsPublished(t) ? ' · draft' : ''}
                       </span>
@@ -455,18 +424,18 @@ export default function ProgramsMapPage() {
             ) : null}
             <div className="overflow-x-auto">
               <div className="min-w-[720px]">
-                <div className="flex border-b border-gray-200 bg-gray-50">
+                <div className="flex border-b bg-muted/50">
                   {levels.map((level) => (
                     <div
                       key={level.id}
-                      className="flex-1 min-w-[200px] px-3 py-3 text-center border-r border-gray-100 last:border-r-0"
+                      className="min-w-[200px] flex-1 border-r px-3 py-3 text-center last:border-r-0"
                     >
                       <div className="flex items-center justify-center gap-1.5">
                         <div
                           className="h-2.5 w-2.5 rounded-full"
                           style={{ backgroundColor: level.color || '#6B7280' }}
                         />
-                        <span className="text-xs font-semibold text-gray-700">
+                        <span className="text-xs font-semibold text-muted-foreground">
                           {level.name?.en || `Level ${level.order}`}
                         </span>
                       </div>
@@ -474,18 +443,18 @@ export default function ProgramsMapPage() {
                   ))}
                 </div>
 
-                <div className="flex border-b border-gray-100">
+                <div className="flex border-b">
                   {levels.map((level) => {
                     const cellPrograms = programsByLevelColumn[level.id] || [];
                     return (
                       <div
                         key={level.id}
-                        className="flex-1 min-w-[200px] px-2 py-2 border-r border-gray-50 last:border-r-0 align-top"
+                        className="min-w-[200px] flex-1 border-r px-2 py-2 align-top last:border-r-0"
                       >
                         <div className="space-y-2">
                           <Link
                             href={createHereHref(level)}
-                            className="inline-flex items-center rounded-md border border-dashed border-gray-300 px-2 py-1 text-[11px] font-medium text-gray-600 hover:border-blue-300 hover:text-blue-700"
+                            className="inline-flex items-center rounded-md border border-dashed px-2 py-1 text-[11px] font-medium text-muted-foreground hover:border-primary/50 hover:text-primary"
                           >
                             Create here
                           </Link>
@@ -503,48 +472,48 @@ export default function ProgramsMapPage() {
                                 <div
                                   className={`rounded-lg border ${typeColors.border} ${typeColors.bg} ${
                                     highlightedProgramId === program.id
-                                      ? 'ring-2 ring-blue-300 border-blue-400'
+                                      ? 'border-primary ring-2 ring-primary/30'
                                       : ''
                                   }`}
                                 >
                                   <Link
                                     href={`/admin/programs/${program.id}/edit`}
-                                    className="block p-2.5 hover:shadow-md transition-all group rounded-t-lg"
+                                    className="group block rounded-t-lg p-2.5 transition-all hover:shadow-md"
                                   >
-                                    <p className="text-xs font-semibold text-gray-900 leading-snug group-hover:text-blue-600 transition-colors">
+                                    <p className="text-xs font-semibold leading-snug transition-colors group-hover:text-primary">
                                       {program.name?.en || program.slug}
                                     </p>
                                     <div className="flex flex-wrap gap-1 mt-1.5">
                                       {badges.map((b) => (
                                         <span
                                           key={b}
-                                          className="text-[9px] px-1 py-0.5 rounded bg-white/80 text-gray-700 border border-gray-200"
+                                          className="rounded border bg-background/80 px-1 py-0.5 text-[9px] text-muted-foreground"
                                         >
                                           {b}
                                         </span>
                                       ))}
                                     </div>
                                     <div className="flex items-center gap-1.5 mt-1.5">
-                                      <span className="text-[10px] font-medium text-gray-700 bg-white/80 px-1 py-0.5 rounded border border-gray-200">
+                                      <span className="rounded border bg-background/80 px-1 py-0.5 text-[10px] font-medium text-muted-foreground">
                                         {formatProgramLevelRangeLabel(program)}
                                       </span>
-                                      <span className="text-[10px] text-gray-500">{program.durationWeeks}w</span>
+                                      <span className="text-[10px] text-muted-foreground">{program.durationWeeks}w</span>
                                       {!program.isPublished ? (
                                         <span className="text-[10px] text-amber-700">draft</span>
                                       ) : null}
                                     </div>
                                   </Link>
-                                  <div className="flex items-center justify-between border-t border-white/70 px-2.5 py-2">
+                                  <div className="flex items-center justify-between border-t border-background/70 px-2.5 py-2">
                                     <Link
                                       href={`/admin/programs/${program.id}/edit`}
-                                      className="text-[11px] font-medium text-blue-700 hover:text-blue-800"
+                                      className="text-[11px] font-medium text-primary hover:text-primary/80"
                                     >
                                       Edit
                                     </Link>
                                     <button
                                       type="button"
                                       onClick={() => handleDuplicateAndEdit(program.id)}
-                                      className="text-[11px] font-medium text-gray-600 hover:text-gray-900"
+                                      className="text-[11px] font-medium text-muted-foreground hover:text-foreground"
                                     >
                                       Duplicate &amp; Edit
                                     </button>
@@ -552,8 +521,8 @@ export default function ProgramsMapPage() {
                                 </div>
                                 {hasNext && (
                                   <div className="absolute -right-3 top-1/2 -translate-y-1/2 z-10">
-                                    <div className="h-5 w-5 rounded-full bg-white border-2 border-gray-300 flex items-center justify-center shadow-sm">
-                                      <ArrowRight className="h-3 w-3 text-gray-500" />
+                                    <div className="flex size-5 items-center justify-center rounded-full border-2 bg-card shadow-sm">
+                                      <ArrowRight className="size-3 text-muted-foreground" />
                                     </div>
                                   </div>
                                 )}
@@ -561,13 +530,13 @@ export default function ProgramsMapPage() {
                             );
                           })}
                           {cellPrograms.length === 0 && (
-                            <div className="h-12 rounded-lg border border-dashed border-gray-200 flex items-center justify-center">
-                              <span className="text-[10px] text-gray-300">—</span>
+                            <div className="flex h-12 items-center justify-center rounded-lg border border-dashed">
+                              <span className="text-[10px] text-muted-foreground">—</span>
                             </div>
                           )}
                           {(assessmentsByLevelColumn[level.id] ?? []).length > 0 ? (
-                            <div className="pt-3 mt-2 border-t border-gray-100">
-                              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                            <div className="mt-2 border-t pt-3">
+                              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                                 Assessments
                               </p>
                               <div className="space-y-1.5">
@@ -577,11 +546,11 @@ export default function ProgramsMapPage() {
                                     href={`/admin/assessment-templates/${t.id}/edit`}
                                     className="block rounded-md border border-teal-100 bg-teal-50/60 px-2 py-1.5 hover:border-teal-300 hover:bg-teal-50"
                                   >
-                                    <span className="text-[11px] font-medium text-gray-900 line-clamp-2">
+                                    <span className="line-clamp-2 text-[11px] font-medium">
                                       {t.name?.en || t.type}
                                     </span>
                                     <div className="flex items-center gap-1 mt-0.5">
-                                      <span className="text-[9px] text-teal-800 bg-white/80 px-1 rounded border border-teal-100">
+                                      <span className="rounded border border-teal-100 bg-background/80 px-1 text-[9px] text-teal-800">
                                         {t.type}
                                       </span>
                                       {!templateIsPublished(t) ? (
@@ -608,40 +577,40 @@ export default function ProgramsMapPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           <Card>
             <CardContent className="pt-6 text-center">
-              <p className="text-sm text-gray-500">Visible Programs</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{filteredPrograms.length}</p>
+              <p className="text-sm text-muted-foreground">Visible Programs</p>
+              <p className="mt-1 text-2xl font-bold">{filteredPrograms.length}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6 text-center">
-              <p className="text-sm text-gray-500">Published Visible</p>
-              <p className="text-2xl font-bold text-green-600 mt-1">
+              <p className="text-sm text-muted-foreground">Published Visible</p>
+              <p className="mt-1 text-2xl font-bold text-success">
                 {filteredPrograms.filter((p) => p.isPublished).length}
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6 text-center">
-              <p className="text-sm text-gray-500">Levels</p>
-              <p className="text-2xl font-bold text-blue-600 mt-1">{levels.length}</p>
+              <p className="text-sm text-muted-foreground">Levels</p>
+              <p className="mt-1 text-2xl font-bold text-primary">{levels.length}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6 text-center">
-              <p className="text-sm text-gray-500">With Sequences</p>
-              <p className="text-2xl font-bold text-purple-600 mt-1">{connectionsMap.size}</p>
+              <p className="text-sm text-muted-foreground">With Sequences</p>
+              <p className="mt-1 text-2xl font-bold text-violet-600">{connectionsMap.size}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6 text-center">
-              <p className="text-sm text-gray-500">Visible assessments</p>
-              <p className="text-2xl font-bold text-teal-700 mt-1">{filteredAssessments.length}</p>
+              <p className="text-sm text-muted-foreground">Visible assessments</p>
+              <p className="mt-1 text-2xl font-bold text-teal-700">{filteredAssessments.length}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6 text-center">
-              <p className="text-sm text-gray-500">Initial (onboarding)</p>
-              <p className="text-2xl font-bold text-amber-700 mt-1">{initialAssessments.length}</p>
+              <p className="text-sm text-muted-foreground">Initial (onboarding)</p>
+              <p className="mt-1 text-2xl font-bold text-amber-700">{initialAssessments.length}</p>
             </CardContent>
           </Card>
         </div>

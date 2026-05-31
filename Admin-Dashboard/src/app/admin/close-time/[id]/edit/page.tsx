@@ -3,6 +3,8 @@
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/auth/auth-store';
+import { Button } from '@/components/ui';
+import { PageHeader } from '@/components/common';
 import { CloseTimeForm } from '../../components/CloseTimeForm';
 
 export default function EditCloseTimePage({ params }: { params: Promise<{ id: string }> }) {
@@ -53,28 +55,29 @@ export default function EditCloseTimePage({ params }: { params: Promise<{ id: st
         fetchCloseTime();
     }, [resolvedParams.id]);
 
-    if (loading) return <div className="p-8 text-center text-gray-500">Loading...</div>;
+    if (loading) return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
 
     if (error || !data) {
         return (
             <div className="p-8 text-center">
-                <p className="text-red-500 mb-4">{error || 'Close time not found'}</p>
-                <button
-                    onClick={() => router.back()}
-                    className="text-blue-600 hover:underline"
-                >
+                <p className="mb-4 text-destructive">{error || 'Close time not found'}</p>
+                <Button type="button" variant="outline" onClick={() => router.back()}>
                     Go back
-                </button>
+                </Button>
             </div>
         );
     }
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold text-gray-900">Edit Close Time</h1>
-                <p className="text-gray-600 mt-1">Update vacation or closure period</p>
-            </div>
+            <PageHeader
+                title="Edit Close Time"
+                description="Update vacation or closure period"
+                breadcrumbs={[
+                    { label: 'Close Times', href: '/admin/close-time' },
+                    { label: 'Edit Close Time' },
+                ]}
+            />
 
             <CloseTimeForm initialData={data} isEditing />
         </div>

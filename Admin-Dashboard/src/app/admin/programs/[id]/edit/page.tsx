@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 import { useParams, useRouter } from 'next/navigation';
 import { Input, Select, Label, Button, Card, Textarea, SearchableSelect } from '@/components/ui';
 import type { LocalizedText } from '@/lib/types/localized';
@@ -398,7 +398,7 @@ export default function EditProgramPage() {
         const res = await fetch(`/api/programs/${programId}`);
         const data = await res.json();
         if (!data.success || !data.data) {
-          alert('Program not found');
+          toast.error('Program not found');
           router.push('/admin/programs');
           return;
         }
@@ -496,7 +496,7 @@ export default function EditProgramPage() {
         }
       } catch (error) {
         console.error('Error fetching program:', error);
-        alert('Error loading program');
+        toast.error('Error loading program');
         router.push('/admin/programs');
       } finally {
         setLoadingProgram(false);
@@ -1150,10 +1150,10 @@ export default function EditProgramPage() {
     e.preventDefault();
 
     if (isPublished && activeEnrollmentCount > 0) {
-      const ok = window.confirm(
-        `This program is published and has ${activeEnrollmentCount} active enrollment(s). Saving may change the template for users in progress. Continue?`
+      toast.warning(
+        `This program has ${activeEnrollmentCount} active enrollment(s). Saving may affect users in progress.`,
+        { duration: 6500 }
       );
-      if (!ok) return;
     }
 
     setLoading(true);

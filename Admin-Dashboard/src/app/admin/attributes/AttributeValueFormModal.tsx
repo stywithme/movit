@@ -181,19 +181,19 @@ export function AttributeValueFormModal({
         <DialogBody>
           <div className="space-y-5">
             {error && (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
                 {error}
               </div>
             )}
 
-            <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
-              Attribute Type: <span className="font-medium text-gray-900">{attributeLabel}</span>
-              <span className="ml-2 font-mono text-xs text-gray-500">({attribute.code})</span>
+            <div className="rounded-lg border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
+              Attribute Type: <span className="font-medium text-foreground">{attributeLabel}</span>
+              <span className="ml-2 font-mono text-xs text-muted-foreground">({attribute.code})</span>
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                Code <span className="text-red-500">*</span>
+              <label className="mb-1 block text-sm font-medium">
+                Code <span className="text-destructive">*</span>
               </label>
               <Input
                 value={formData.code}
@@ -225,7 +225,7 @@ export function AttributeValueFormModal({
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Icon</label>
+                <label className="mb-1 block text-sm font-medium">Icon</label>
                 <Input
                   value={formData.icon}
                   onChange={(event) =>
@@ -236,7 +236,7 @@ export function AttributeValueFormModal({
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Color</label>
+                <label className="mb-1 block text-sm font-medium">Color</label>
                 <div className="flex items-center gap-3">
                   <Input
                     value={formData.color}
@@ -246,7 +246,7 @@ export function AttributeValueFormModal({
                     placeholder="#3b82f6"
                   />
                   <div
-                    className="h-10 w-10 rounded-lg border border-gray-200"
+                    className="size-10 rounded-lg border"
                     style={{ backgroundColor: formData.color || 'transparent' }}
                     title={formData.color || 'No color'}
                   />
@@ -254,7 +254,7 @@ export function AttributeValueFormModal({
               </div>
             </div>
 
-            <label className="flex items-center gap-3 text-sm text-gray-700">
+            <label className="flex items-center gap-3 text-sm">
               <Checkbox
                 checked={formData.isActive}
                 onCheckedChange={(checked) =>

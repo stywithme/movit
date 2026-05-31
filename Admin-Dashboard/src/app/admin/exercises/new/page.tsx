@@ -18,6 +18,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { ConfirmDialog } from '@/components/common';
 import { useWizardStore } from '@/components/wizard/WizardContext';
 import { WizardStepper } from '@/components/wizard/WizardStepper';
 import { WizardHeader } from '@/components/wizard/WizardHeader';
@@ -80,6 +81,7 @@ export default function NewExercisePage() {
   const [lookupData, setLookupData] = useState<LookupData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [discardOpen, setDiscardOpen] = useState(false);
 
   const extractApiError = async (response: Response, fallbackMessage: string) => {
     try {
@@ -246,12 +248,7 @@ export default function NewExercisePage() {
     <div className="min-h-screen bg-gray-50">
       <WizardHeader
         title="Create Exercise"
-        onBack={() => {
-          if (confirm('Discard changes and go back?')) {
-            resetWizard();
-            router.push('/admin/exercises');
-          }
-        }}
+        onBack={() => setDiscardOpen(true)}
         onSave={handleSaveDraft}
         onPublish={handlePublish}
         isSaving={saveStatus === 'saving'}
@@ -277,6 +274,19 @@ export default function NewExercisePage() {
         totalSteps={TOTAL_STEPS}
         onPrevious={() => handleStepChange(currentStep - 1)}
         onNext={() => handleStepChange(currentStep + 1)}
+      />
+
+      <ConfirmDialog
+        open={discardOpen}
+        onOpenChange={setDiscardOpen}
+        title="Discard exercise draft?"
+        description="Unsaved wizard changes will be cleared."
+        confirmLabel="Discard"
+        destructive
+        onConfirm={() => {
+          resetWizard();
+          router.push('/admin/exercises');
+        }}
       />
     </div>
   );

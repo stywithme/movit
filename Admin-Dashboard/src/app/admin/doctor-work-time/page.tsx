@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/auth/auth-store';
 import { usePermissions } from '@/hooks/usePermissions';
+import { Badge, Button } from '@/components/ui';
+import { DataTable, PageHeader, type DataTableColumn } from '@/components/common';
 
 interface DoctorWorkTime {
     id: string;
@@ -88,7 +90,7 @@ export default function DoctorWorkTimePage() {
     };
 
     if (!user || loading) {
-        return <div className="p-8 text-center text-gray-500">Loading...</div>;
+        return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
     }
 
     // Double check if redirecting
@@ -96,110 +98,77 @@ export default function DoctorWorkTimePage() {
         return null;
     }
 
+    const columns: DataTableColumn<GroupedWorkTime>[] = [
+        {
+            key: 'doctor',
+            header: 'Doctor',
+            cell: (group) => (
+                <div>
+                    <p className="font-medium">{group.admin.name}</p>
+                    <p className="text-sm text-muted-foreground">{group.admin.email}</p>
+                </div>
+            ),
+        },
+        {
+            key: 'shifts',
+            header: 'Shifts',
+            cell: (group) => (
+                <div className="space-y-3">
+                    <Badge variant={group.workTimes.length > 0 ? 'primary' : 'secondary'}>
+                        {group.workTimes.length} Shifts
+                    </Badge>
+                    {expandedDoctorId === group.admin.id && (
+                        <div className="grid gap-2 rounded-lg border bg-muted/30 p-3 sm:grid-cols-2">
+                            {group.workTimes.map((wt) => (
+                                <div key={wt.id} className="flex items-center justify-between rounded-md bg-background px-3 py-2 text-sm">
+                                    <Badge variant="outline">{wt.day}</Badge>
+                                    <span className="text-muted-foreground">
+                                        {wt.startTime} - {wt.endTime}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            ),
+        },
+        {
+            key: 'actions',
+            header: 'Actions',
+            headerClassName: 'text-right',
+            className: 'text-right',
+            cell: (group) => (
+                <div className="flex justify-end gap-2">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleExpand(group.admin.id)}
+                        disabled={group.workTimes.length === 0}
+                    >
+                        {expandedDoctorId === group.admin.id ? 'Hide' : 'View'}
+                    </Button>
+                    {(can('update', 'DoctorWorkTime') || isSuperAdmin) && (
+                        <Button asChild variant="ghost" size="sm">
+                            <Link href={`/admin/doctor-work-time/${group.admin.id}/edit`}>Edit Schedule</Link>
+                        </Button>
+                    )}
+                </div>
+            ),
+        },
+    ];
+
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Doctor Work Times</h1>
-                    <p className="text-gray-600 mt-1">Manage global working hours for doctors</p>
-                </div>
-            </div>
+            <PageHeader title="Doctor Work Times" description="Manage global working hours for doctors" />
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                {groupedWorkTimes.length === 0 ? (
-                    <div className="p-8 text-center text-gray-500">
-                        <p>No work times found.</p>
-                        {can('create', 'DoctorWorkTime') && (
-                            <Link href="/admin/doctor-work-time/new" className="text-blue-600 hover:underline mt-2 inline-block">
-                                Create the first schedule
-                            </Link>
-                        )}
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="bg-gray-50 border-b border-gray-200">
-                                <tr>
-                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                                        Doctor
-                                    </th>
-                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                                        Total Shifts
-                                    </th>
-                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200">
-                                {groupedWorkTimes.map((group) => (
-                                    <React.Fragment key={group.admin.id}>
-                                        <tr className="hover:bg-gray-50">
-                                            <td className="px-6 py-4 text-center">
-                                                <div>
-                                                    <p className="font-medium text-gray-900">{group.admin.name}</p>
-                                                    <p className="text-sm text-gray-500">{group.admin.email}</p>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-600 text-center">
-                                                {group.workTimes.length} Shifts
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <button
-                                                    onClick={() => toggleExpand(group.admin.id)}
-                                                    className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-4"
-                                                    disabled={group.workTimes.length === 0}
-                                                    style={{ opacity: group.workTimes.length === 0 ? 0.5 : 1 }}
-                                                >
-                                                    {expandedDoctorId === group.admin.id ? 'Hide' : 'View'}
-                                                </button>
-                                                {(can('update', 'DoctorWorkTime') || isSuperAdmin) && (
-                                                    <Link
-                                                        href={`/admin/doctor-work-time/${group.admin.id}/edit`}
-                                                        className="text-blue-600 hover:text-blue-800 text-sm"
-                                                    >
-                                                        Edit Schedule
-                                                    </Link>
-                                                )}
-                                            </td>
-                                        </tr>
-                                        {expandedDoctorId === group.admin.id && (
-                                            <tr>
-                                                <td colSpan={3} className="bg-gray-50 px-6 py-4">
-                                                    <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
-                                                        <table className="w-full text-sm">
-                                                            <thead className="bg-gray-100 border-b border-gray-200 text-gray-600 text-center">
-                                                                <tr>
-                                                                    <th className="px-4 py-2 font-medium">Day</th>
-                                                                    <th className="px-4 py-2 font-medium">Time</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody className="divide-y divide-gray-100">
-                                                                {group.workTimes.map(wt => (
-                                                                    <tr key={wt.id} className="hover:bg-gray-50">
-                                                                        <td className="px-4 py-3 text-center">
-                                                                            <span className="inline-flex px-2 py-1 text-xs font-medium rounded bg-blue-50 text-blue-700">
-                                                                                {wt.day}
-                                                                            </span>
-                                                                        </td>
-                                                                        <td className="px-4 py-3 text-gray-600 text-center">
-                                                                            {wt.startTime} - {wt.endTime}
-                                                                        </td>
-                                                                    </tr>
-                                                                ))}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </React.Fragment>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </div>
+            <DataTable
+                columns={columns}
+                data={groupedWorkTimes}
+                getRowKey={(group) => group.admin.id}
+                emptyTitle="No work times found"
+                emptyDescription="Create schedules for doctors before opening booking slots."
+            />
         </div>
     );
 }

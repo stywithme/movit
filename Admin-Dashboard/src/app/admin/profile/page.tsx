@@ -1,8 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Input } from '@/components/ui';
+import { Button, Input, Label } from '@/components/ui';
+import { FormShell, PageHeader, StatusBadge } from '@/components/common';
+import { Card, CardContent } from '@/components/ui/Card';
 import { useAuthStore } from '@/lib/auth/auth-store';
+import { toast } from 'sonner';
 
 interface AdminProfile {
   id: string;
@@ -58,13 +61,13 @@ export default function AdminProfilePage() {
       if (data.success) {
         setProfile(data.data);
         setUser(data.data); // Update the global auth store
-        alert('Profile updated successfully');
+        toast.success('Profile updated successfully');
       } else {
-        alert('Error: ' + data.error);
+        toast.error(data.error || 'Error updating profile');
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      alert('Error updating profile');
+      toast.error('Error updating profile');
     } finally {
       setSaving(false);
     }
@@ -73,31 +76,37 @@ export default function AdminProfilePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[300px]">
-        <div className="text-gray-500">Loading...</div>
+        <div className="text-muted-foreground">Loading...</div>
       </div>
     );
   }
 
   if (!profile) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <p className="text-gray-600">Profile not found.</p>
-      </div>
+      <Card>
+        <CardContent className="p-6">
+          <p className="text-muted-foreground">Profile not found.</p>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
-        <p className="text-gray-600 mt-1">Manage your admin profile</p>
-      </div>
+      <PageHeader title="Profile" description="Manage your admin profile" />
 
-      <form onSubmit={handleSave} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Name
-          </label>
+      <form onSubmit={handleSave}>
+        <FormShell
+          title="Account Details"
+          description="Update the name and email shown across the dashboard."
+          footer={
+            <Button type="submit" loading={saving}>
+              Save Changes
+            </Button>
+          }
+        >
+        <div className="space-y-2">
+          <Label>Name</Label>
           <Input
             value={formData.name}
             onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
@@ -106,10 +115,8 @@ export default function AdminProfilePage() {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Email
-          </label>
+        <div className="space-y-2">
+          <Label>Email</Label>
           <Input
             type="email"
             value={formData.email}
@@ -120,27 +127,18 @@ export default function AdminProfilePage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
-            <p className="text-xs uppercase text-gray-500">Role</p>
-            <p className="text-sm font-medium text-gray-900 mt-1">{profile.role}</p>
+          <div className="rounded-lg border bg-muted/30 p-4">
+            <p className="text-xs uppercase text-muted-foreground">Role</p>
+            <p className="mt-1 text-sm font-medium">{profile.role}</p>
           </div>
-          <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
-            <p className="text-xs uppercase text-gray-500">Status</p>
-            <p className="text-sm font-medium text-gray-900 mt-1">
-              {profile.isActive ? 'Active' : 'Inactive'}
-            </p>
+          <div className="rounded-lg border bg-muted/30 p-4">
+            <p className="text-xs uppercase text-muted-foreground">Status</p>
+            <div className="mt-2">
+              <StatusBadge status={profile.isActive ? 'active' : 'inactive'} />
+            </div>
           </div>
         </div>
-
-        <div className="flex justify-end pt-4 border-t border-gray-200">
-          <button
-            type="submit"
-            disabled={saving}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-          >
-            {saving ? 'Saving...' : 'Save Changes'}
-          </button>
-        </div>
+        </FormShell>
       </form>
     </div>
   );

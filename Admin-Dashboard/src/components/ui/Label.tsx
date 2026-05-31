@@ -12,13 +12,13 @@ const Label = React.forwardRef<HTMLLabelElement, LabelProps>(
     <label
       ref={ref}
       className={cn(
-        'flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-1.5',
+        'mb-1.5 flex items-center gap-1.5 text-sm font-medium leading-none text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
         className
       )}
       {...props}
     >
       {children}
-      {required && <span className="text-red-500">*</span>}
+      {required && <span className="text-destructive">*</span>}
       {tooltip && <Tooltip content={tooltip} />}
     </label>
   )
