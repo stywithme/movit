@@ -318,7 +318,6 @@ class SubscriptionActivity : AppCompatActivity(), PurchasesUpdatedListener {
         "✓ ${getString(R.string.subscription_feature_ai)}",
         "✓ ${getString(R.string.subscription_feature_reports)}",
         "✓ ${getString(R.string.subscription_feature_programs)}",
-        "✓ ${getString(R.string.subscription_feature_video)}",
     )
 
     private fun localizedFeatureLines(features: JsonElement?): List<String> {

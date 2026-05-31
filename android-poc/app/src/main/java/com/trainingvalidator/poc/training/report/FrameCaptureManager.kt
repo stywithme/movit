@@ -372,7 +372,7 @@ class FrameCaptureManager(
         angles: Map<String, Double>?
     ): FrameCapture? {
         return try {
-            // Copy bitmap (important for video mode where original is recycled)
+            // Copy bitmap so captured frames are independent from the preview buffer.
             val bitmapCopy = bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, false)
                 ?: return null
             

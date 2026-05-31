@@ -543,10 +543,6 @@ class HomeFragment : Fragment() {
             (activity as? MainContainerActivity)?.navigateToTab(R.id.nav_explore)
         }
 
-        binding.cardAnalyzeVideo.setOnClickListener {
-            (activity as? MainContainerActivity)?.navigateToTab(R.id.nav_explore)
-        }
-
         binding.ivAvatar.setOnClickListener {
             startActivity(
                 Intent(requireContext(), com.trainingvalidator.poc.ui.profile.ProfileActivity::class.java)
@@ -556,10 +552,6 @@ class HomeFragment : Fragment() {
         binding.btnOpenReports.setOnClickListener {
             (activity as? MainContainerActivity)?.navigateToTab(R.id.nav_reports)
         }
-
-        // Hidden legacy buttons — kept to avoid crash if old layout is cached
-        binding.cardContinue.setOnClickListener { /* no-op */ }
-        binding.btnContinue.setOnClickListener { /* no-op */ }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

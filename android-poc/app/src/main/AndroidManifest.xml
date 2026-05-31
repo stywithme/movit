@@ -13,13 +13,6 @@
     <!-- Vibration Permission (for haptic feedback) -->
     <uses-permission android:name="android.permission.VIBRATE" />
     
-    <!-- Video/Media Permissions for video analysis -->
-    <!-- Android 13+ (API 33+) -->
-    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
-    <!-- Android 12 and below -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" 
-        android:maxSdkVersion="32" />
-
     <application
         android:name=".PoseApp"
         android:allowBackup="false"
@@ -148,13 +141,6 @@
         <!-- Training Activity -->
         <activity
             android:name=".ui.train.TrainingActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix.Training" />
-        
-        <!-- Debug Activity (Measurement Testing) -->
-        <activity
-            android:name=".ui.debug.DebugActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix.Training" />

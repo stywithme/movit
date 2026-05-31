@@ -37,7 +37,7 @@ enum class SessionState {
     /** Countdown before resuming (3-2-1-GO) - preserves rep count */
     RESUME_COUNTDOWN,
     
-    /** Training completed - target reached or video ended */
+    /** Training completed - target reached or stopped */
     COMPLETED;
     
     /**

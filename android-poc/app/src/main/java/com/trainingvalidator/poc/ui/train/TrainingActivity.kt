@@ -4,7 +4,6 @@ import android.Manifest
 import android.graphics.Color
 import android.media.AudioManager
 import android.media.ToneGenerator
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.VibrationEffect
@@ -33,7 +32,6 @@ import com.trainingvalidator.poc.training.session.SessionState
 import com.trainingvalidator.poc.ui.components.AnimationUtils
 import com.trainingvalidator.poc.ui.training.TrainingUIEvent
 import com.trainingvalidator.poc.ui.training.TrainingViewModel
-import com.trainingvalidator.poc.ui.training.VideoModeController
 import android.widget.TextView
 import com.google.android.material.button.MaterialButton
 import com.trainingvalidator.poc.training.engine.HoldState
@@ -57,11 +55,9 @@ import kotlinx.coroutines.launch
  * - SessionSupervisor via TrainingViewModel for state management (Single Source of Truth)
  * - PoseSetupGuide for rolling-window pose validation
  * - CountdownController for countdown logic
- * - VideoModeController for video mode
- * 
  * This Activity is primarily a thin host for:
  * - [TrainingLaunchCoordinator], [TrainingPreferenceDialogs], [TrainingSessionModeController],
- *   [CameraTrainingInputController], [VideoTrainingInputController],
+ *   [CameraTrainingInputController],
  *   [TrainingFeedbackBinder], [SetupCountdownBinder], [TrainingFrameCaptureController],
  *   [TrainingReportCoordinator]
  * - Android lifecycle, [ActivityTrainingBinding], and delegating
@@ -78,7 +74,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         const val EXTRA_DIFFICULTY = "difficulty"
         const val EXTRA_POSE_VARIANT = "pose_variant"
         const val EXTRA_TRAINING_MODE = "training_mode"
-        const val EXTRA_VIDEO_URI = "video_uri"
         const val EXTRA_TARGET_REPS_OVERRIDE = "target_reps_override"
         const val EXTRA_TARGET_DURATION_OVERRIDE = "target_duration_override"
         const val EXTRA_INDICATOR_TYPE = "indicator_type"
@@ -109,10 +104,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         const val RESULT_SESSION_REPORT_IDS = "session_report_ids"
         const val RESULT_SESSION_SESSION_IDS = "session_session_ids"
         
-        // Training modes
         const val MODE_CAMERA = "camera"
-        const val MODE_VIDEO = "video"
-        
+
         // Defaults
         private const val DEFAULT_EXERCISE = "squat"
         private const val DEFAULT_DIFFICULTY = "beginner"
@@ -135,12 +128,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
 
     private val launchCoordinator = TrainingLaunchCoordinator(this)
     
-    // Camera / video input (ML Kit + camera, or [VideoModeController] — see controllers)
     internal lateinit var cameraInput: CameraTrainingInputController
-    internal lateinit var videoInput: VideoTrainingInputController
-
-    // Video (owned by [VideoTrainingInputController] when in video mode)
-    internal var videoModeController: VideoModeController? = null
 
     internal lateinit var landmarkSmoother: LandmarkSmoother
     internal val elbowAngleEstimator = ElbowAngleEstimator()
@@ -149,10 +137,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
 
     // State
     internal var useFrontCamera = true
-    internal var isVideoMode = false
     internal var currentIndicatorType: String = "line"
     internal var currentModelType: String = "full"
-    internal var videoUri: Uri? = null
     private var lastRepCount = 0
 
     // Assessment mode (suppresses report page, returns report ID)
@@ -168,7 +154,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     // Tracks pose presence transitions to avoid leaving stale form feedback visible when pose is lost.
     // This is intentionally Activity-local (UI concern) and does not affect session state machine behavior.
     /**
-     * Pose present this frame; used to clear form UI once on pose→no-pose transition (camera and video).
+     * Pose present this frame; used to clear form UI once on pose→no-pose transition.
      */
     @Volatile
     internal var wasPoseDetectedLastFrame: Boolean = false
@@ -216,7 +202,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         preferenceDialogs = TrainingPreferenceDialogs(this)
         sessionModeController = TrainingSessionModeController(this, preferenceDialogs)
         cameraInput = CameraTrainingInputController(this)
-        videoInput = VideoTrainingInputController(this)
         frameCaptureController = TrainingFrameCaptureController(this)
         reportCoordinator = TrainingReportCoordinator(this)
 
@@ -246,12 +231,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         // Sync pending sessions before starting new training
         syncPendingSessionsOnTrainingStart()
         
-        // Initialize based on mode
-        if (isVideoMode) {
-            videoInput.setupVideoMode()
-        } else {
-            checkCameraPermission()
-        }
+        checkCameraPermission()
     }
     
     /**
@@ -313,7 +293,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     private fun parseIntentExtrasAfterRepositoryReady() {
         if (isSessionMode) {
             sessionModeController.initializeFromIntent()
-            viewModel.initializeFeedback(this, isVideoMode)
+            viewModel.initializeFeedback(this)
             feedbackBinder.rebindVisualMessageFlow()
             return
         }
@@ -345,8 +325,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
         val weightUnit = intent.getStringExtra(EXTRA_WEIGHT_UNIT) ?: "kg"
         
-        viewModel.supervisor.isVideoMode = isVideoMode
-
         if (!viewModel.loadExercise(
                 exerciseName,
                 difficultyStr,
@@ -371,7 +349,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
 
         // Initialize feedback
-        viewModel.initializeFeedback(this, isVideoMode)
+        viewModel.initializeFeedback(this)
         feedbackBinder.rebindVisualMessageFlow()
     }
 
@@ -403,11 +381,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         binding.tvFormStatus.text = getString(R.string.good)
         binding.tvFormStatus.setTextColor(ContextCompat.getColor(this, R.color.primary))
         
-        // Initial state (camera mode only - video mode sets its own UI in setupVideoMode)
-        if (!isVideoMode) {
-            updateUIForSessionState(SessionState.SETUP_POSE)
-            setupCountdownBinder.showSetupPoseUI()
-        }
+        updateUIForSessionState(SessionState.SETUP_POSE)
+        setupCountdownBinder.showSetupPoseUI()
     }
 
 
@@ -525,20 +500,13 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         dialogView.findViewById<View>(R.id.cameraCueSection).visibility = View.GONE
         feedbackChannelInfoViews.forEach { it.visibility = View.VISIBLE }
         
-        if (isVideoMode) {
-            // Hide camera section in video mode
-            cameraSectionContainer.visibility = View.GONE
-            dividerCamera.visibility = View.GONE
-        } else {
-            // Show camera section and update current camera text
-            cameraSectionContainer.visibility = View.VISIBLE
-            dividerCamera.visibility = View.VISIBLE
+        cameraSectionContainer.visibility = View.VISIBLE
+        dividerCamera.visibility = View.VISIBLE
+        tvCurrentCamera.text = if (useFrontCamera) getString(R.string.front_camera) else getString(R.string.back_camera)
+
+        btnSwitchCameraDialog.setOnClickListener {
+            cameraInput.applySwitchCameraFromSettings()
             tvCurrentCamera.text = if (useFrontCamera) getString(R.string.front_camera) else getString(R.string.back_camera)
-            
-            btnSwitchCameraDialog.setOnClickListener {
-                cameraInput.applySwitchCameraFromSettings()
-                tvCurrentCamera.text = if (useFrontCamera) getString(R.string.front_camera) else getString(R.string.back_camera)
-            }
         }
         
         // Apply button
@@ -714,7 +682,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     
     /**
      * Observe training engine jointStateInfos for visual feedback
-     * Called AFTER trainingEngine is created (in startVideoTraining or after countdown)
+     * Called AFTER trainingEngine is created (after countdown)
      * 
      * UPDATED: Now uses JointStateInfo instead of deprecated JointArrowInfo
      */
@@ -832,15 +800,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 feedbackBinder.handleNoPoseWarning(event.elapsedMs)
             }
             
-            is TrainingUIEvent.PauseVideoPlayback -> {
-                videoModeController?.pause()
-                updatePlayPauseIcon(isPlaying = false)
-            }
-            
-            is TrainingUIEvent.ResumeVideoPlayback -> {
-                videoModeController?.play()
-                updatePlayPauseIcon(isPlaying = true)
-            }
         }
     }
 
@@ -985,31 +944,10 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     }
     
     private fun handlePlayPauseClick() {
-        if (isVideoMode) {
-            val currentState = viewModel.supervisor.state.value
-            val isPlaying = videoModeController?.isPlaying() ?: false
-            
-            if (isPlaying) {
-                videoModeController?.pause()
-                updatePlayPauseIcon(isPlaying = false)
-                if (currentState == SessionState.TRAINING) {
-                    viewModel.requestPause()
-                }
-            } else {
-                videoModeController?.play()
-                updatePlayPauseIcon(isPlaying = true)
-                when (currentState) {
-                    SessionState.PAUSED, SessionState.AUTO_PAUSED -> viewModel.requestResume()
-                    else -> {}
-                }
-            }
-        } else {
-            val currentState = viewModel.supervisor.state.value
-            when (currentState) {
-                SessionState.TRAINING -> viewModel.requestPause()
-                SessionState.PAUSED, SessionState.AUTO_PAUSED -> viewModel.requestResume()
-                else -> {}
-            }
+        when (viewModel.supervisor.state.value) {
+            SessionState.TRAINING -> viewModel.requestPause()
+            SessionState.PAUSED, SessionState.AUTO_PAUSED -> viewModel.requestResume()
+            else -> {}
         }
     }
     
@@ -1129,7 +1067,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         frameCaptureController.onDestroy()
         sessionModeController.onDestroy()
         viewModel.countdownController.release()
-        videoInput.release()
         cameraInput.onDestroy()
     }
 }

@@ -27,7 +27,7 @@ import kotlinx.coroutines.withContext
 /**
  * Lightweight image-sequence player for temporary rep replays.
  *
- * It intentionally avoids introducing a video dependency and falls back to the
+ * It intentionally avoids introducing a media-encoder dependency and falls back to the
  * still image or placeholder if replay files are not available anymore.
  */
 class RepReplayPlayerView @JvmOverloads constructor(

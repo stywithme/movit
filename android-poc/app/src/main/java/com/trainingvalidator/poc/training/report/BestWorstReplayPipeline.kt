@@ -12,7 +12,7 @@ import java.io.File
  * Resolution order per rep:
  * 1. **burst** — live-sampled replay from [FrameCaptureManager.captureReplayFrame] (>= 2 frames).
  * 2. **synthetic** — built from existing [FrameCapture] stills for that rep (>= 2 distinct files),
- *    sorted by capture time (coarse motion from key moments, not a video).
+ *    sorted by capture time (coarse motion from key moments, not encoded media).
  * 3. **none** — UI falls back to still image only.
  */
 object BestWorstReplayPipeline {

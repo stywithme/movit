@@ -23,12 +23,8 @@ import kotlinx.coroutines.flow.SharedFlow
 import java.util.*
 
 /**
- * FeedbackManager - Professional mode-aware feedback delivery system
- * 
- * MODE-AWARE BEHAVIOR:
- * - Camera Mode: Voice-only feedback while the trainee is away from the phone
- * - Video Mode:  Text-only feedback while the trainee reviews performance
- * 
+ * FeedbackManager - Voice-first feedback during live camera training.
+ *
  * SMART MESSAGING (via FeedbackScheduler):
  * - First is loud, repeat is quiet
  * - Progressive silence after max repeats
@@ -61,7 +57,7 @@ class FeedbackManager(
         // NOTE: These are now configurable via SettingsManager
         private const val MIN_IDLE_TIME_FOR_RANDOM_MS_DEFAULT = 5000L
         private const val RANDOM_MESSAGE_COOLDOWN_MS_DEFAULT = 10000L
-        /** When TTS is off (e.g. video mode), approximate pacing for countdown sequencing */
+        /** When TTS is unavailable, approximate pacing for countdown sequencing */
         private const val NO_AUDIO_POSE_MS = 1200L
         private const val NO_AUDIO_COUNTDOWN_MS = 850L
     }
@@ -72,29 +68,21 @@ class FeedbackManager(
         cameraCueMode = CameraCueMode.from(SettingsManager.getCameraCueMode())
     )
     
-    // ===== MODE-AWARE SETTINGS =====
-    var isVideoMode: Boolean = false
-        set(value) {
-            field = value
-            Log.d(TAG, "Mode changed: ${if (value) "VIDEO" else "CAMERA"}")
-        }
-    
-    // TTS enabled only in Camera mode and if voice is enabled
     private val isTtsEnabled: Boolean
-        get() = !isVideoMode && isVoiceEnabled()
+        get() = isVoiceEnabled()
     
     // Haptic helpers remain for legacy call sites; feedback delivery is voice/text-only.
     private val isHapticEnabled: Boolean
         get() = config.enableHaptic
     
-    // Event flow for UI to observe (Glassmorphic messages in Video mode)
+    // Event flow for UI to observe
     private val _events = MutableSharedFlow<FeedbackEvent>(
         replay = 0,
         extraBufferCapacity = 10
     )
     val events: SharedFlow<FeedbackEvent> = _events
     
-    // Visual message events (for Glassmorphic pills in Video mode)
+    // Visual message events (legacy; camera coaching is voice-first)
     private val _visualMessages = MutableSharedFlow<VisualMessage>(
         replay = 0,
         extraBufferCapacity = 5
@@ -156,9 +144,7 @@ class FeedbackManager(
     private var availableMotivationalMessages: List<LocalizedText> = emptyList()
     private var availableTipMessages: List<LocalizedText> = emptyList()
     
-    /**
-     * Visual message for Glassmorphic UI (Video mode)
-     */
+    /** Visual message event retained for legacy UI consumers. */
     data class VisualMessage(
         val text: String,
         val type: MessageType,
@@ -442,8 +428,7 @@ class FeedbackManager(
         return true
     }
 
-    private fun currentFeedbackMode(): FeedbackRuntimeMode =
-        if (isVideoMode) FeedbackRuntimeMode.VIDEO else FeedbackRuntimeMode.CAMERA
+    private fun currentFeedbackMode(): FeedbackRuntimeMode = FeedbackRuntimeMode.CAMERA
 
     private fun refreshSchedulerSettings() {
         feedbackScheduler.updateSettings(
@@ -470,7 +455,7 @@ class FeedbackManager(
     }
 
     private fun playFeedbackTone(tone: FeedbackTone) {
-        if (isVideoMode || tone == FeedbackTone.NONE) return
+        if (tone == FeedbackTone.NONE) return
         try {
             val generator = toneGenerator ?: ToneGenerator(AudioManager.STREAM_MUSIC, 70).also {
                 toneGenerator = it
@@ -525,29 +510,24 @@ class FeedbackManager(
             correctRepStreak = 0
         }
         
-        if (isVideoMode) {
-            // Video mode is text-only; rep pulses are handled by the review UI.
-        } else {
-            // Announce rep count every N reps (NORMAL priority - shouldn't interrupt errors)
-            if (event.repNumber - lastAnnouncedRep >= REP_AUDIO_INTERVAL) {
-                val repLt = MobileMessageResolver.resolveTrainingNumeral(event.repNumber)
-                scheduleAndDeliver(
-                    kind = FeedbackKind.REP,
-                    severity = FeedbackSeverity.INFO,
-                    localizedText = repLt,
-                    displayText = repLt.get(config.language),
-                    dedupeKey = "rep_count:${event.repNumber}",
-                    activeKey = "rep_count",
-                    cooldownGroup = "rep_count:${event.repNumber}",
-                    messageType = MessageType.INFO,
-                    forceAudible = true,
-                    allowTone = false,
-                    allowVisual = false,
-                    allowHaptic = false,
-                    interruptPolicy = FeedbackInterruptPolicy.WAIT_FOR_SLOT
-                )
-                lastAnnouncedRep = event.repNumber
-            }
+        if (event.repNumber - lastAnnouncedRep >= REP_AUDIO_INTERVAL) {
+            val repLt = MobileMessageResolver.resolveTrainingNumeral(event.repNumber)
+            scheduleAndDeliver(
+                kind = FeedbackKind.REP,
+                severity = FeedbackSeverity.INFO,
+                localizedText = repLt,
+                displayText = repLt.get(config.language),
+                dedupeKey = "rep_count:${event.repNumber}",
+                activeKey = "rep_count",
+                cooldownGroup = "rep_count:${event.repNumber}",
+                messageType = MessageType.INFO,
+                forceAudible = true,
+                allowTone = false,
+                allowVisual = false,
+                allowHaptic = false,
+                interruptPolicy = FeedbackInterruptPolicy.WAIT_FOR_SLOT
+            )
+            lastAnnouncedRep = event.repNumber
         }
     }
     
@@ -721,7 +701,7 @@ class FeedbackManager(
                 }
                 Log.d(
                     TAG,
-                    "⚡ Position WARNING received: checkId=${pe.checkId}, text='${displayText.take(40)}', isVideoMode=$isVideoMode, isTtsEnabled=$isTtsEnabled"
+                    "⚡ Position WARNING received: checkId=${pe.checkId}, text='${displayText.take(40)}', isTtsEnabled=$isTtsEnabled"
                 )
                 val delivered = scheduleAndDeliver(
                     kind = FeedbackKind.POSITION_CHECK,
@@ -814,12 +794,8 @@ class FeedbackManager(
     }
     
     private fun handleVisibilityResumed(event: FeedbackEvent.VisibilityResumed) {
-        // Only provide feedback in camera mode
-        if (!isVideoMode) {
-            // Reset visibility message state so next warning is treated as new
-            feedbackScheduler.reset("visibility:warning")
-            feedbackScheduler.reset("visibility:paused")
-        }
+        feedbackScheduler.reset("visibility:warning")
+        feedbackScheduler.reset("visibility:paused")
     }
     
     // ==================== Visual Message Emission ====================

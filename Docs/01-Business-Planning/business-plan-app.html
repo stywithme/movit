@@ -1,0 +1,2215 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#07111f" />
+  <title>POSE | وثيقة خطة العمل التفاعلية</title>
+  <style>
+    :root {
+      --bg: #07111f;
+      --surface: #0b1728;
+      --surface-2: #101f35;
+      --surface-3: #152845;
+      --text: #f7fbff;
+      --muted: #a7bad5;
+      --soft: #d7e4f5;
+      --line: rgba(255, 255, 255, 0.12);
+      --brand: #4fd8ff;
+      --brand-2: #8c6cff;
+      --green: #46e6a6;
+      --yellow: #ffd166;
+      --red: #ff6f91;
+      --orange: #ff9f45;
+      --shadow: 0 20px 70px rgba(0, 0, 0, 0.35);
+      --radius: 24px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --tab-height: 76px;
+    }
+
+    [data-theme="light"] {
+      --bg: #eff5ff;
+      --surface: #ffffff;
+      --surface-2: #f5f8ff;
+      --surface-3: #eaf1ff;
+      --text: #0c1830;
+      --muted: #53657f;
+      --soft: #20324d;
+      --line: rgba(10, 23, 45, 0.13);
+      --shadow: 0 20px 60px rgba(50, 76, 122, 0.16);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 85% 0%, rgba(79, 216, 255, 0.18), transparent 28rem),
+        radial-gradient(circle at 5% 12%, rgba(140, 108, 255, 0.16), transparent 26rem),
+        linear-gradient(180deg, var(--bg), #060b14 120%);
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      line-height: 1.75;
+      overflow-x: hidden;
+    }
+
+    [data-theme="light"] body,
+    body[data-theme="light"] {
+      background:
+        radial-gradient(circle at 85% 0%, rgba(79, 216, 255, 0.18), transparent 28rem),
+        radial-gradient(circle at 5% 12%, rgba(140, 108, 255, 0.14), transparent 26rem),
+        linear-gradient(180deg, var(--bg), #ffffff 120%);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      min-height: 44px;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    p {
+      margin-top: 0;
+    }
+
+    .app {
+      min-height: 100vh;
+      padding-bottom: calc(var(--tab-height) + var(--safe-bottom) + 18px);
+    }
+
+    .app-bar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      padding: max(10px, env(safe-area-inset-top, 0px)) 14px 10px;
+      background: color-mix(in srgb, var(--bg) 78%, transparent);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .app-bar-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      color: #04111c;
+      font-weight: 1000;
+      background: linear-gradient(135deg, var(--brand), var(--green));
+      box-shadow: 0 12px 32px rgba(79, 216, 255, 0.18);
+      flex: 0 0 auto;
+    }
+
+    .brand small {
+      display: block;
+      color: var(--muted);
+      font-size: 0.76rem;
+      line-height: 1.2;
+    }
+
+    .brand strong {
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.25;
+    }
+
+    .icon-row {
+      display: flex;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+
+    .icon-btn {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border-radius: 16px;
+      color: var(--text);
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--surface) 82%, transparent);
+      cursor: pointer;
+    }
+
+    .read-progress {
+      height: 4px;
+      max-width: 760px;
+      margin: 10px auto 0;
+      border-radius: 999px;
+      overflow: hidden;
+      background: color-mix(in srgb, var(--surface-3) 60%, transparent);
+    }
+
+    .read-progress span {
+      display: block;
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--brand-2), var(--brand), var(--green));
+    }
+
+    .viewport {
+      width: min(100%, 760px);
+      margin: 0 auto;
+      padding: 18px 14px 0;
+    }
+
+    .view {
+      display: none;
+      animation: fadeUp 240ms ease both;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .hero-card,
+    .card,
+    .chapter-card,
+    .bottom-sheet-panel,
+    .callout,
+    .metric-card,
+    .risk-card,
+    .loop-card {
+      border: 1px solid var(--line);
+      background: linear-gradient(145deg, color-mix(in srgb, var(--surface) 92%, transparent), color-mix(in srgb, var(--surface-2) 86%, transparent));
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+    }
+
+    .hero-card {
+      position: relative;
+      overflow: hidden;
+      padding: 26px 20px;
+      min-height: 430px;
+    }
+
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      inset: auto -90px -120px auto;
+      width: 260px;
+      height: 260px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(70, 230, 166, 0.2), transparent 68%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+      padding: 6px 11px;
+      border-radius: 999px;
+      color: var(--green);
+      background: color-mix(in srgb, var(--green) 11%, transparent);
+      border: 1px solid color-mix(in srgb, var(--green) 28%, transparent);
+      font-size: 0.82rem;
+      font-weight: 800;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      font-size: clamp(2.05rem, 11vw, 4.2rem);
+      line-height: 1.08;
+      letter-spacing: -1px;
+      margin-bottom: 16px;
+    }
+
+    .gradient {
+      background: linear-gradient(90deg, var(--brand), var(--green), var(--text));
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+
+    .lead {
+      color: var(--muted);
+      font-size: 1.03rem;
+      margin-bottom: 18px;
+    }
+
+    .hero-actions,
+    .row-actions,
+    .chip-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 999px;
+      padding: 11px 16px;
+      color: #03111d;
+      background: linear-gradient(135deg, var(--green), var(--brand));
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .btn.secondary {
+      color: var(--text);
+      background: color-mix(in srgb, var(--surface-3) 72%, transparent);
+      border: 1px solid var(--line);
+    }
+
+    .stats-strip {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 22px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .mini-stat {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: color-mix(in srgb, var(--surface-3) 55%, transparent);
+    }
+
+    .mini-stat strong {
+      display: block;
+      font-size: 1.35rem;
+      line-height: 1.2;
+      color: var(--text);
+    }
+
+    .mini-stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.84rem;
+      margin-top: 4px;
+    }
+
+    .section-title {
+      margin: 26px 0 12px;
+    }
+
+    .section-title h2 {
+      margin-bottom: 4px;
+      font-size: 1.55rem;
+      line-height: 1.25;
+    }
+
+    .section-title p {
+      color: var(--muted);
+      margin-bottom: 0;
+    }
+
+    .card {
+      padding: 18px;
+      margin-bottom: 12px;
+      box-shadow: none;
+    }
+
+    .card h3 {
+      margin-bottom: 8px;
+    }
+
+    .card p {
+      color: var(--muted);
+      margin-bottom: 0;
+    }
+
+    .decision-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .decision {
+      display: grid;
+      grid-template-columns: 38px 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+    }
+
+    .decision span {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+      color: #04111c;
+      font-weight: 1000;
+      background: linear-gradient(135deg, var(--brand), var(--green));
+    }
+
+    .decision strong {
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .decision small {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .stage-selector {
+      position: sticky;
+      top: 72px;
+      z-index: 20;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      padding: 10px 0 12px;
+      margin: -4px -2px 8px;
+      scrollbar-width: none;
+      background: linear-gradient(180deg, var(--bg), color-mix(in srgb, var(--bg) 78%, transparent));
+    }
+
+    .stage-selector::-webkit-scrollbar {
+      display: none;
+    }
+
+    .stage-chip,
+    .tag,
+    .search-result {
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--surface) 78%, transparent);
+    }
+
+    .stage-chip {
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 10px 13px;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .stage-chip.active {
+      color: #04111c;
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--green), var(--brand));
+      font-weight: 900;
+    }
+
+    .stage-hero {
+      padding: 22px;
+      border-radius: 28px;
+      margin-bottom: 14px;
+      background:
+        radial-gradient(circle at 15% 10%, color-mix(in srgb, var(--brand) 18%, transparent), transparent 48%),
+        linear-gradient(145deg, color-mix(in srgb, var(--surface) 92%, transparent), color-mix(in srgb, var(--surface-2) 88%, transparent));
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .stage-hero h2 {
+      font-size: 1.8rem;
+      line-height: 1.22;
+      margin-bottom: 10px;
+    }
+
+    .stage-progress {
+      height: 9px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: color-mix(in srgb, var(--surface-3) 62%, transparent);
+      margin: 16px 0 4px;
+    }
+
+    .stage-progress span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--brand-2), var(--brand), var(--green));
+    }
+
+    .chapter-card {
+      display: block;
+      width: 100%;
+      text-align: inherit;
+      color: inherit;
+      padding: 16px;
+      box-shadow: none;
+      cursor: pointer;
+      margin-bottom: 12px;
+    }
+
+    .chapter-card:active {
+      transform: scale(0.99);
+    }
+
+    .chapter-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .doc-code {
+      display: inline-grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 15px;
+      flex: 0 0 auto;
+      font-weight: 1000;
+      color: #04111c;
+      background: linear-gradient(135deg, var(--brand), var(--green));
+    }
+
+    .chapter-card h3 {
+      margin-bottom: 6px;
+      font-size: 1.15rem;
+      line-height: 1.35;
+    }
+
+    .chapter-card p {
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .tag-row {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .tag.green {
+      color: var(--green);
+      border-color: color-mix(in srgb, var(--green) 30%, transparent);
+      background: color-mix(in srgb, var(--green) 8%, transparent);
+    }
+
+    .tag.yellow {
+      color: var(--yellow);
+      border-color: color-mix(in srgb, var(--yellow) 30%, transparent);
+      background: color-mix(in srgb, var(--yellow) 8%, transparent);
+    }
+
+    .stage-controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 16px 0 4px;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .funnel {
+      display: grid;
+      gap: 9px;
+    }
+
+    .funnel-step {
+      padding: 13px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--surface-2) 76%, transparent);
+    }
+
+    .funnel-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .bar {
+      height: 10px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--surface-3) 72%, transparent);
+    }
+
+    .bar span {
+      display: block;
+      height: 100%;
+      width: var(--value);
+      background: linear-gradient(90deg, var(--brand-2), var(--brand), var(--green));
+      border-radius: inherit;
+    }
+
+    .metric-grid,
+    .loop-grid,
+    .risk-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .metric-card,
+    .risk-card,
+    .loop-card {
+      padding: 16px;
+      box-shadow: none;
+    }
+
+    .metric-value {
+      font-size: 2.2rem;
+      line-height: 1;
+      color: var(--green);
+      font-weight: 1000;
+      margin: 10px 0 6px;
+    }
+
+    .loop-card details,
+    .risk-card details {
+      margin-top: 8px;
+    }
+
+    summary {
+      cursor: pointer;
+      color: var(--brand);
+      font-weight: 800;
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+    }
+
+    .risk-card.high {
+      border-top: 4px solid var(--red);
+    }
+
+    .risk-card.medium {
+      border-top: 4px solid var(--yellow);
+    }
+
+    .check-summary {
+      text-align: center;
+      padding: 20px;
+    }
+
+    .ring {
+      --p: 0;
+      width: 172px;
+      height: 172px;
+      border-radius: 50%;
+      margin: 8px auto 16px;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle closest-side, var(--surface) 74%, transparent 75%),
+        conic-gradient(var(--green) calc(var(--p) * 1%), color-mix(in srgb, var(--surface-3) 78%, transparent) 0);
+      border: 1px solid var(--line);
+    }
+
+    .ring strong {
+      font-size: 2rem;
+    }
+
+    .check-group {
+      margin-bottom: 18px;
+    }
+
+    .check-item {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 14px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+      margin-bottom: 10px;
+    }
+
+    .check-item input {
+      width: 22px;
+      height: 22px;
+      accent-color: var(--green);
+      margin-top: 4px;
+    }
+
+    .check-item strong {
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .check-item span {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .bottom-tabs {
+      position: fixed;
+      inset: auto 0 0 0;
+      z-index: 35;
+      padding: 9px 12px calc(9px + var(--safe-bottom));
+      border-top: 1px solid var(--line);
+      background: color-mix(in srgb, var(--bg) 84%, transparent);
+      backdrop-filter: blur(20px);
+    }
+
+    .bottom-tabs-inner {
+      width: min(100%, 760px);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .tab-btn {
+      display: grid;
+      place-items: center;
+      gap: 2px;
+      border: 0;
+      border-radius: 18px;
+      color: var(--muted);
+      background: transparent;
+      padding: 8px 4px;
+      cursor: pointer;
+      min-height: 58px;
+    }
+
+    .tab-btn span {
+      font-size: 1.16rem;
+      line-height: 1;
+    }
+
+    .tab-btn small {
+      font-size: 0.72rem;
+      white-space: nowrap;
+    }
+
+    .tab-btn.active {
+      color: #04111c;
+      background: linear-gradient(135deg, var(--green), var(--brand));
+      font-weight: 900;
+    }
+
+    .bottom-sheet {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      display: none;
+      align-items: flex-end;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(10px);
+    }
+
+    .bottom-sheet.open {
+      display: flex;
+    }
+
+    .bottom-sheet-panel {
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
+      max-height: min(88vh, 860px);
+      overflow: auto;
+      border-radius: 28px 28px 0 0;
+      padding: 10px 14px calc(22px + var(--safe-bottom));
+      animation: sheetUp 220ms ease both;
+    }
+
+    @keyframes sheetUp {
+      from {
+        transform: translateY(40px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .sheet-handle {
+      width: 48px;
+      height: 5px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--muted) 45%, transparent);
+      margin: 2px auto 12px;
+    }
+
+    .sheet-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .sheet-title h2 {
+      font-size: 1.55rem;
+      line-height: 1.25;
+      margin-bottom: 6px;
+    }
+
+    .sheet-title p {
+      color: var(--muted);
+      margin-bottom: 0;
+    }
+
+    .sheet-body {
+      padding-bottom: 18px;
+    }
+
+    .block {
+      margin-bottom: 14px;
+    }
+
+    .block h3 {
+      font-size: 1.16rem;
+      margin-bottom: 8px;
+    }
+
+    .block p,
+    .block li {
+      color: var(--muted);
+    }
+
+    .block ul,
+    .block ol {
+      padding: 0 22px 0 0;
+      margin: 0;
+    }
+
+    .callout {
+      padding: 15px;
+      box-shadow: none;
+      border-right: 4px solid var(--brand);
+    }
+
+    .callout.warning {
+      border-right-color: var(--yellow);
+    }
+
+    .callout.danger {
+      border-right-color: var(--red);
+    }
+
+    .quote {
+      padding: 16px;
+      border-radius: 20px;
+      color: var(--soft);
+      background: color-mix(in srgb, var(--brand) 9%, transparent);
+      border: 1px solid color-mix(in srgb, var(--brand) 22%, transparent);
+      font-size: 1.08rem;
+      font-weight: 800;
+    }
+
+    .grid-block {
+      display: grid;
+      gap: 10px;
+    }
+
+    .mini-card {
+      padding: 13px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+    }
+
+    .mini-card h4 {
+      margin-bottom: 6px;
+    }
+
+    .mini-card p {
+      color: var(--muted);
+      margin-bottom: 0;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 520px;
+      background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+    }
+
+    th,
+    td {
+      text-align: right;
+      vertical-align: top;
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    th {
+      color: var(--text);
+      background: color-mix(in srgb, var(--surface-3) 78%, transparent);
+    }
+
+    td {
+      color: var(--muted);
+    }
+
+    .split {
+      display: grid;
+      gap: 10px;
+    }
+
+    .search-input {
+      width: 100%;
+      min-height: 52px;
+      padding: 12px 15px;
+      border-radius: 18px;
+      color: var(--text);
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--surface-2) 80%, transparent);
+      outline: 0;
+      margin-bottom: 12px;
+    }
+
+    .search-result {
+      display: block;
+      width: 100%;
+      color: var(--text);
+      text-align: inherit;
+      border-radius: 18px;
+      padding: 14px;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+
+    .search-result small {
+      display: block;
+      color: var(--green);
+      margin-bottom: 3px;
+    }
+
+    .search-result p {
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .empty {
+      padding: 18px;
+      text-align: center;
+      color: var(--muted);
+      border: 1px dashed var(--line);
+      border-radius: 18px;
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(12px);
+      transition: 360ms ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (min-width: 700px) {
+      .stats-strip,
+      .metric-grid,
+      .risk-grid,
+      .loop-grid,
+      .grid-block,
+      .split {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .hero-card {
+        min-height: 360px;
+        padding: 34px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="app-bar">
+      <div class="app-bar-row">
+        <div class="brand">
+          <div class="brand-mark">P</div>
+          <div>
+            <small>POSE Business Plan</small>
+            <strong id="appTitle">وثيقة خطة العمل</strong>
+          </div>
+        </div>
+        <div class="icon-row">
+          <button class="icon-btn" id="searchBtn" aria-label="بحث">⌕</button>
+          <button class="icon-btn" id="themeBtn" aria-label="تغيير الثيم">◐</button>
+        </div>
+      </div>
+      <div class="read-progress"><span id="readProgress"></span></div>
+    </header>
+
+    <main class="viewport">
+      <section class="view active" id="view-home" data-title="نظرة عامة"></section>
+      <section class="view" id="view-journey" data-title="الرحلة المرحلية"></section>
+      <section class="view" id="view-dashboard" data-title="لوحة القرار"></section>
+      <section class="view" id="view-readiness" data-title="جاهزية البيتا"></section>
+    </main>
+
+    <nav class="bottom-tabs" aria-label="التنقل الرئيسي">
+      <div class="bottom-tabs-inner">
+        <button class="tab-btn active" data-view="home"><span>⌂</span><small>الرئيسية</small></button>
+        <button class="tab-btn" data-view="journey"><span>⇄</span><small>الرحلة</small></button>
+        <button class="tab-btn" data-view="dashboard"><span>◈</span><small>اللوحة</small></button>
+        <button class="tab-btn" data-view="readiness"><span>✓</span><small>الجاهزية</small></button>
+      </div>
+    </nav>
+  </div>
+
+  <div class="bottom-sheet" id="sheet" aria-hidden="true">
+    <div class="bottom-sheet-panel" id="sheetPanel">
+      <div class="sheet-handle" id="sheetHandle"></div>
+      <div class="sheet-head">
+        <div class="sheet-title">
+          <span class="tag green" id="sheetTag">وثيقة</span>
+          <h2 id="sheetTitle"></h2>
+          <p id="sheetSummary"></p>
+        </div>
+        <button class="icon-btn" id="closeSheet" aria-label="إغلاق">×</button>
+      </div>
+      <div class="sheet-body" id="sheetBody"></div>
+    </div>
+  </div>
+
+  <div class="bottom-sheet" id="searchSheet" aria-hidden="true">
+    <div class="bottom-sheet-panel">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head">
+        <div class="sheet-title">
+          <span class="tag green">بحث شامل</span>
+          <h2>ابحث في كل الوثائق</h2>
+          <p>البحث يعمل داخل كل المراحل والفصول والملاحظات، بدون إنترنت.</p>
+        </div>
+        <button class="icon-btn" id="closeSearch" aria-label="إغلاق">×</button>
+      </div>
+      <input class="search-input" id="searchInput" type="search" placeholder="مثال: Retention، السعر، Mahmoud، Safety..." />
+      <div id="searchResults"></div>
+    </div>
+  </div>
+
+  <script>
+    const appData = {
+      decisions: [
+        ["المنتج", "مدرب ذكي للمبتدئ في البيت، برنامج 28 يوم، والأساس التقني مبني ومختبر."],
+        ["السوق", "مصر كسوق تجريبي لإنضاج المنتج ثم التوسع للوطن العربي."],
+        ["البوابة الحالية", "Retention: هل يرجع المستخدم؟ هل يتطور؟ الدفع مؤجل عمداً."],
+        ["الخصوصية", "الفيديو لا يخرج من جهاز المستخدم إطلاقاً، وهذه رسالة ثقة أساسية."],
+        ["العينة الأولى", "حوالي 20 مستخدماً من المعارف كعينة دافئة، ثم موجة باردة لاحقاً."],
+        ["الموارد", "شركة البرمجة تبني وتحسن، وفريق التسويق أصل متاح لاحقاً، وProduct Owner قيد البحث."]
+      ],
+      stages: [
+        {
+          id: "compass",
+          number: "01",
+          title: "البوصلة الاستراتيجية",
+          subtitle: "ما الذي نبنيه، ولماذا لا نتوسع قبل إثبات السلوك؟",
+          narrative: "هذه المرحلة تثبت حدود القرار: لا نبيع تقنية، لا نطارد كل الشرائح، ولا نبني مزايا جذابة قبل أن نثبت أن المستخدم الأول يبدأ ويرجع ويتطور.",
+          chapters: [
+            {
+              code: "00",
+              file: "00-Core-Principles.md",
+              title: "المبادئ الأساسية للمشروع",
+              summary: "POSE هو مدرب ذكي للمبتدئ في البيت. التقنية وسيلة، والقيمة هي بداية واضحة، أداء آمن، تقدم مفهوم، واستمرار.",
+              tags: ["فلسفة", "Niche", "Safety", "Retention"],
+              blocks: [
+                { type: "quote", text: "برنامج 28 يوم للمبتدئ في البيت: تقييم أولي، خطة يومية، تصحيح أداء بالكاميرا، وتقرير تقدم أسبوعي." },
+                { type: "lead", text: "العميل الأول هو مبتدئ مشغول، غالباً يعمل من المكتب أو يجلس طويلاً، يريد تحسين لياقته من البيت ولا يثق في معرفته الرياضية. النموذج الحالي: محمود، 37 سنة، وقته محدود، يخاف من زيادة الوزن وضعف الجسم، ولا يعرف التمارين أو الأداء الصحيح." },
+                { type: "principles", title: "المبادئ الحاكمة العشرة", items: [
+                  ["Niche First", "نبدأ بشريحة واحدة واضحة: مبتدئون 30-45 سنة، في البيت، بلا خبرة منتظمة، هدفهم الصحة والحركة والالتزام."],
+                  ["Outcome Over Features", "لا نبيع AI أو كاميرا أو Skeleton. نبيع نتيجة: ابدأ تمرينك بثقة، بخطة واضحة وتصحيح فوري وتقدم قابل للقياس."],
+                  ["Trust Before Training", "لا نعطي خطة شخصية قبل أن يثق المستخدم أن التطبيق فهم جسمه وقدرته. أول تجربة تثبت أن الأسئلة صحيحة، التقييم مفهوم، والسبب واضح."],
+                  ["Safety First", "السلامة جزء من المنتج: فحص أهلية، تخفيف أو إيقاف عند الألم، عدم تشخيص طبي، وعرض النتائج كاحتمالات تدريبية."],
+                  ["One Clear Action", "في كل لحظة يجب أن يعرف المستخدم الخطوة التالية: أكمل التقييم، ابدأ تمرين اليوم، أعد اختبار الحركة، أو خذ يوم راحة."],
+                  ["Adherence Over Perfection", "برنامج بسيط يلتزم به المستخدم 4 أسابيع أفضل من برنامج مثالي يتركه بعد يومين."],
+                  ["Progress Must Be Visible", "التقدم يترجم إلى معنى: أصبحت أكثر ثباتاً، قلت العدات الخطرة، تحسن مدى الحركة، التزمت 3 أيام."],
+                  ["Every Rep Counts", "كل جلسة تنتج بيانات مفيدة، لكن الواجهة تعرض المعنى والنظام يحتفظ بالتفاصيل."],
+                  ["Start Manual, Then Automate", "نختبر القيمة يدوياً مع مستخدمين حقيقيين قبل بناء نظام كبير."],
+                  ["Build What Proves The Business", "الأولوية للميزة التي تثبت أن المنتج يمكن أن ينجح: Pain، Activation، Retention، Progress، Payment، Scale."]
+                ] },
+                { type: "list", title: "ما لا نفعله الآن", items: ["لا نستهدف الرياضيين المحترفين.", "لا نبني التغذية وAR وgamification قبل إثبات الالتزام.", "لا نستخدم لغة تشخيص طبي.", "لا نوسع السوق قبل النجاح مع الشريحة الأولى.", "لا نحكم بعدد الميزات بل بمؤشرات استخدام ودفع واضحة."] },
+                { type: "callout", tone: "warning", title: "ملاحظة على الحالة", text: "الأساس التقني مبني ومختبر: pose detection، تصحيح الأداء، التقارير. الأولوية الآن UI/UX، المحتوى، محرك البقاء، وإثبات العودة والتطور." }
+              ]
+            },
+            {
+              code: "12",
+              file: "12-Open-Questions.md",
+              title: "الأسئلة المفتوحة والمحسومة",
+              summary: "تجميع القرارات المحسومة والأسئلة التي لا تزال تحتاج حسم قبل التسويق أو الإيرادات.",
+              tags: ["قرارات", "مفتوح", "محسوم"],
+              blocks: [
+                { type: "grid", title: "محسوم", items: [
+                  ["النموذج القديم", "حجوزات وأطباء ملغى وخارج الحسبان."],
+                  ["WayToFix", "الاسم القديم ألغي لتعذر تسجيله."],
+                  ["السوق الأول", "مصر تجريبياً ثم الوطن العربي."],
+                  ["العميل الأول", "Mahmoud، مبتدئ مشغول 30-45، عمل مكتبي، تدريب من البيت."],
+                  ["البوابة الحالية", "Retention: العودة والتطور. الدفع مؤجل."],
+                  ["حفظ الفيديو", "لا يخرج من جهاز المستخدم إطلاقاً."],
+                  ["صياغة النتائج", "معنى واضح + confidence، بدون تشخيص طبي."],
+                  ["التغذية", "لا خطة تغذية كاملة في هذه المرحلة."],
+                  ["عمق التقييم الأول", "تقييم قصير للبدء السريع، وأعمق لاحقاً."],
+                  ["العينة الأولى", "حوالي 20 من المعارف ثم موجة باردة."],
+                  ["شكل beta", "مجانية مقابل feedback ومتابعة."],
+                  ["قناة البداية", "محتوى قصير + beta مغلقة."],
+                  ["السعر المرجعي", "حوالي 8 دولار شهرياً لاحقاً، يثبت في الخليج لا مصر."]
+                ] },
+                { type: "list", title: "ما زال مفتوحاً", items: ["الاسم التجاري الجديد.", "وعد المنتج الأساسي: حركة ولياقة عامة + تعلم الأداء الصحيح، ويُدقق عبر اختبار الرسالة.", "شكل العرض عند الإيرادات: برنامج 28 يوم أم Pro شهري أم الاثنان.", "Human Coach Add-on لاحقاً.", "اختيار Product Owner متفرغ."] },
+                { type: "steps", title: "تسلسل النقاش المقترح", items: ["حسم الاسم الجديد.", "تثبيت وعد المنتج عبر اختبار الرسالة.", "تشغيل التجربة الدافئة وقياسها.", "الموجة الباردة.", "قرار الانتقال لمرحلة الإيرادات في الخليج."] }
+              ]
+            },
+            {
+              code: "15",
+              file: "15-Resources-and-Team.md",
+              title: "الموارد والفريق",
+              summary: "الموارد المتاحة ومتى تستخدم، مع أولوية واضحة لتعيين Product Owner متفرغ.",
+              tags: ["موارد", "فريق", "Bootstrapped"],
+              blocks: [
+                { type: "grid", title: "وضع المؤسس والأصول", items: [
+                  ["وضع المؤسس", "يدير شركة البرمجة والمنتج حالياً، ويبحث عن Product Owner متفرغ. التمويل bootstrapped، والكفاءة في الإنفاق شرط."],
+                  ["شركة البرمجة والذكاء الاصطناعي", "محرك بناء المنتج. الأساس التقني مبني ومختبر. تتولى UI/UX، المحتوى، instrumentation، ومحرك البقاء."],
+                  ["شركة التجارة الإلكترونية", "أصل لا عبء. ليست تحت إدارة المؤسس، لكن مواردها متاحة: فريق تسويق، محتوى، funnel/CRO، analytics، وقنوات محتملة."]
+                ] },
+                { type: "split", title: "متى نستخدم كل مورد؟", leftTitle: "الآن: Retention والعينة الدافئة", left: ["شركة البرمجة: التحسين، المحتوى، القياس.", "فريق المحتوى: إنتاج محتوى قصير مبكر.", "لا نقحم فريق التسويق في تجربة الـ 20 الدافئين لأنها اختبار سلوك لا acquisition."], rightTitle: "لاحقاً: موجة باردة وGTM وإيرادات", right: ["فريق التسويق: تجنيد العينة الباردة، landing page، اختبار الرسالة، acquisition.", "خبرة الإيكومرس في funnel يعاد معايرتها لمنتج اشتراكي."] },
+                { type: "callout", tone: "danger", title: "تحذيرات", text: "تسويق الإيكومرس لا يساوي تسويق منتج اشتراكي. الفريق معار لا مخصص. الأولوية القصوى: Product Owner متفرغ حتى لا يموت منتج ناضج بسبب غياب مالك واحد." },
+                { type: "list", title: "ما لا نفعله الآن", items: ["لا نبني فريقاً كبيراً قبل إثبات العودة والتطور.", "لا paid acquisition قبل إثبات السلوك في عينة باردة."] }
+              ]
+            }
+          ]
+        },
+        {
+          id: "customer",
+          number: "02",
+          title: "العميل والمشكلة",
+          subtitle: "من هو المستخدم الأول؟ ما الألم الحقيقي؟ وكيف نتحقق منه؟",
+          narrative: "هذه المرحلة تمنع بناء منتج جميل لمستخدم غير محدد. الشريحة الأولى واضحة: مبتدئ مشغول يريد تدريباً آمناً من البيت، ولا يعرف أين يبدأ ولا هل يؤدي الحركة صح.",
+          chapters: [
+            {
+              code: "01",
+              file: "01-Product-Thesis.md",
+              title: "Product Thesis",
+              summary: "هناك شريحة كبيرة تريد تحسين لياقتها من البيت، لكنها لا تبدأ أو لا تستمر بسبب الغموض، الخوف من الأداء الخاطئ، وغياب التقدم الواضح.",
+              tags: ["فرضية", "مشكلة", "حل"],
+              blocks: [
+                { type: "quote", text: "المبتدئ لا يعاني من نقص المحتوى. الإنترنت مليء بالتمارين. المشكلة الحقيقية: كثرة الاختيارات، الخوف، ضعف المعرفة، غياب المتابعة، وفقدان الحافز بعد أيام قليلة." },
+                { type: "list", title: "العوائق الثلاثة", items: ["لا يعرف ماذا يتمرن.", "لا يعرف هل يؤدي التمرين صح.", "لا يرى تقدماً واضحاً بسرعة كافية."] },
+                { type: "steps", title: "الحل كتجربة واحدة موجهة", items: ["تقييم أولي بسيط.", "خطة 28 يوم.", "تمرين يومي واضح.", "تصحيح أداء فوري.", "تقرير تقدم أسبوعي."] },
+                { type: "grid", title: "لماذا الآن؟", items: [
+                  ["سلوك السوق", "المستخدم معتاد على التدريب من البيت بعد انتشار تطبيقات fitness."],
+                  ["العتاد", "كاميرات الهواتف أصبحت كافية لتجارب pose أولية."],
+                  ["قبول المدرب الرقمي", "المستخدم يقبل مدرباً رقمياً إذا أعطاه توجيهاً واضحاً."],
+                  ["اختبار منخفض التكلفة", "يمكن اختبار الاكتساب بمحتوى فيديو قصير قبل حملات كبيرة."]
+                ] },
+                { type: "list", title: "أساس المشروع التقني", items: ["Pose Detection.", "Form Validation.", "Rep Counting.", "Safety/Form metrics.", "Reports.", "Training programs."] },
+                { type: "stats", title: "تعريف النجاح الأول", items: [["60%", "يكملون التقييم الأول"], ["40%", "يرجعون لليوم الثاني"], ["25%", "يكملون الأسبوع الأول"], ["10%", "يطلبون الاستمرار أو يدفعون بعد التجربة"]] }
+              ]
+            },
+            {
+              code: "02",
+              file: "02-ICP-and-Personas.md",
+              title: "ICP And Personas",
+              summary: "العميل المثالي الأول مبتدئ مشغول، 30-45 سنة، يعمل كثيراً أو يجلس طويلاً، ويحتاج خطة آمنة وواضحة من البيت.",
+              tags: ["ICP", "Persona", "Mahmoud"],
+              blocks: [
+                { type: "grid", title: "Profile", items: [
+                  ["العمر", "30-45 سنة."],
+                  ["نمط الحياة", "عمل مكتبي أو جلوس طويل."],
+                  ["الخبرة الرياضية", "مبتدئ أو منقطع منذ فترة."],
+                  ["المكان", "البيت."],
+                  ["الوقت المتاح", "20-30 دقيقة، 3 مرات أسبوعياً."],
+                  ["الدافع", "صحة، حركة، شكل أفضل، تقليل آلام أو خمول."],
+                  ["العائق الأساسي", "لا يعرف يبدأ من أين."]
+                ] },
+                { type: "quote", text: "عندما يشعر المستخدم أن جسمه بدأ يضعف بسبب القعدة وقلة الحركة، يريد طريقة بسيطة وآمنة يتمرن بها في البيت حتى يستعيد لياقته بدون جيم أو مدرب شخصي." },
+                { type: "split", title: "Pains وNeeds", leftTitle: "Pains", left: ["لا يوجد وقت للجيم.", "لا يعرف التمارين المناسبة.", "يخاف من الأداء الخاطئ.", "يبدأ ثم يتوقف بسرعة.", "لا يرى تقدماً واضحاً.", "التطبيقات التقليدية تعرض مكتبة لا توجيهاً."], rightTitle: "Needs", right: ["خطة جاهزة.", "تمرين يومي واضح.", "تصحيح أداء.", "مؤشرات تقدم سهلة.", "تحفيز بدون ضغط زائد.", "إحساس بالأمان."] },
+                { type: "list", title: "Buying Triggers", items: ["زيادة وزن.", "ألم أو تيبس من الجلوس.", "إحساس بانخفاض اللياقة.", "مناسبة قريبة أو هدف شخصي.", "فشل متكرر مع الجيم أو تطبيقات سابقة."] },
+                { type: "list", title: "Objections", items: ["هل الكاميرا هتفهمني فعلاً؟", "هل ده آمن؟", "هل محتاج مساحة أو معدات؟", "هل هلتزم؟", "ليه أدفع وفي فيديوهات مجانية؟"] },
+                { type: "grid", title: "Persona 1: Mahmoud", items: [
+                  ["Snapshot", "Mahmoud، 37 سنة، موظف، وقت طويل أمام الكمبيوتر."],
+                  ["Goal", "يريد خطة بسيطة من البيت تساعده يرجع يتحرك ويحس أن جسمه أفضل."],
+                  ["Pains", "لا يملك وقتاً للجيم، لا يعرف الأداء الصحيح، لا يعرف تمارين تناسب مستواه، يخاف أن يؤذي نفسه."],
+                  ["Motivation", "يكمل تمرين صحيح اليوم، يرى التزام أسبوع، يرى تقدم حقيقي، ويشعر أن الخمول يقل."],
+                  ["Message", "ابدأ من البيت بخطة 28 يوم. التطبيق يشوف أداءك، يصححك، ويقولك تعمل إيه كل يوم."]
+                ] },
+                { type: "list", title: "شرائح لا نستهدفها الآن", items: ["لاعبو كمال أجسام محترفون.", "رياضيون يبحثون عن performance متقدم.", "حالات علاج طبيعي تحتاج إشراف طبي مباشر.", "مستخدم يريد خطة غذائية كاملة فقط.", "مستخدم يريد social fitness أو تحديات جماعية فقط."] },
+                { type: "list", title: "فرضيات تحتاج اختبار", items: ["هل العمر 30-45 أفضل شريحة بداية؟", "هل الألم/الخمول أقوى دافع من الشكل؟", "هل المستخدم يثق في تصحيح الكاميرا؟", "هل المستخدم مستعد يدفع قبل رؤية تقدم أسبوعين؟"] }
+              ]
+            },
+            {
+              code: "11",
+              file: "11-Market-Research-Plan.md",
+              title: "Market Research Plan",
+              summary: "خطة بحث السوق تجمع أدلة حول المشكلة، persona، المنافسين، السعر، الرسالة، القنوات، الثقة والسلامة، وسلوك البيتا.",
+              tags: ["Research", "Market", "Evidence"],
+              blocks: [
+                { type: "list", title: "الأسئلة التي يساعد البحث في حسمها", items: ["السوق الأول محسوم: مصر للتجربة ثم الوطن العربي.", "ما الرسالة الأقوى؟", "ما العرض القابل للبيع؟", "ما السعر المقبول؟", "ما المنافسون الحقيقيون؟", "ما مخاطر الثقة والسلامة؟"] },
+                { type: "details", title: "محاور البحث الثمانية", items: [
+                  ["Customer Problem Research", "لماذا لا يتمرن المستخدم من البيت؟ ما العائق الأكبر؟ ماذا جرب؟ لماذا توقف؟ المخرجات: pains مرتبة، لغة المستخدم، buying triggers، objections. العينة: 15-20 مقابلة."],
+                  ["Persona Validation", "اختبار هل Mahmoud أفضل persona أولى بمقارنة موظفين 30-45، شباب 20-30، آباء مشغولين، من تركوا الجيم، مستخدمي fitness apps. المخرجات: أكثر شريحة ألماً وتجربة ودفعاً."],
+                  ["Competitor Research", "مباشر: AI form correction، home workout، coaching plans. غير مباشر: YouTube، TikTok، الجيم، المدرب الشخصي، habit tracking. نحلل الرسالة، السعر، onboarding، assessment، progress، التقييمات السلبية."],
+                  ["Pricing Research", "مقابلات willingness to pay، landing بسعر ظاهر، عرض برنامج 28 يوم، عرض اشتراك شهري، خصم beta. أسئلة: اشتراك أم برنامج؟ ما السعر الرخيص جداً، المناسب، الغالي؟ هل يدفع أكثر لمراجعة بشرية؟"],
+                  ["Message Testing", "رسائل: تمرن في البيت كأن معك مدرب، التطبيق يصحح أداءك بالكاميرا، خطة 28 يوم، ابدأ من الصفر بدون جيم، اعرف هل تتمرن صح، حسن جسمك رغم شغل المكتب."],
+                  ["Channel Research", "TikTok، Instagram Reels، YouTube Shorts، Facebook Groups، Reddit/Quora حسب السوق، مجتمعات موظفين، شراكات مدربين. المخرجات: أفضل قناتين، تكلفة lead، نوع المحتوى."],
+                  ["Trust And Safety Research", "هل يقلق من الخصوصية؟ هل يريد حفظ الفيديو؟ هل يثق في AI؟ ما اللغة التي تطمئنه؟ متى يشعر أنها تشخيص طبي؟"],
+                  ["Beta Behavior Research", "أين يترك التجربة؟ هل يقرأ التعليمات؟ هل يفتح الكاميرا؟ هل يفهم التصحيح؟ هل يعود من تلقاء نفسه؟ هل التقرير يدفعه للتمرين التالي؟"]
+                ] },
+                { type: "steps", title: "ترتيب التنفيذ", items: ["الأسبوع 1: Customer Problem Research + Persona Validation.", "الأسبوع 2: Competitor Research + Message Testing.", "الأسبوع 3: Landing page + Channel Research + Pricing Research أولي.", "الأسبوع 4: Closed Beta + Trust/Safety + Beta Behavior Research."] },
+                { type: "list", title: "قرارات بعد البحث", items: ["السوق الأول.", "الرسالة الأساسية.", "عرض MVP.", "نموذج الدفع الأول.", "أهم 3 مخاطر.", "هل نكمل أم نعدل الشريحة أو الوعد."] }
+              ]
+            }
+          ]
+        },
+        {
+          id: "product",
+          number: "03",
+          title: "الوعد والمنتج",
+          subtitle: "كيف تتحول التقنية إلى تجربة يفهمها المستخدم من أول دقيقة؟",
+          narrative: "هذه المرحلة تجمع الوعد، نطاق MVP، وتجربة البداية. الهدف أن يصل المستخدم إلى لحظة: التطبيق فهمني فعلاً، بسرعة وبدون خوف.",
+          chapters: [
+            {
+              code: "03",
+              file: "03-Value-Proposition.md",
+              title: "Value Proposition",
+              summary: "مدرب ذكي من البيت للمبتدئين: يقيّم جسمك، يبني لك خطة، يصحح أداءك بالكاميرا، ويوريك تقدمك أسبوع بعد أسبوع.",
+              tags: ["Value", "Message", "Trust"],
+              blocks: [
+                { type: "quote", text: "المستخدم لا يريد تطبيق تمارين. يريد أن يعرف ماذا يفعل اليوم بثقة." },
+                { type: "list", title: "القيمة الأساسية", items: ["بداية واضحة.", "خطة مناسبة للمستوى.", "تصحيح فوري أثناء الحركة.", "متابعة تقدم مفهومة.", "تقليل خوف الأداء الخاطئ."] },
+                { type: "split", title: "Before / After", leftTitle: "Before", left: ["لا يعرف يبدأ من أين.", "يفتح فيديوهات كثيرة ويتشتت.", "يخاف يعمل التمرين غلط.", "لا يعرف هل يتحسن.", "يترك التمرين بعد أيام."], rightTitle: "After", right: ["يعرف تمرين اليوم.", "يبدأ خلال أقل من دقيقة.", "يرى تصحيحاً مباشراً.", "يحصل على تقرير واضح.", "يشعر أن التقدم قابل للقياس."] },
+                { type: "list", title: "Positioning", items: ["POSE ليس بديلاً عن الجيم.", "POSE بديل عن البحث العشوائي عن تمارين.", "بديل عن البدء بدون خطة.", "بديل عن التمرين دون معرفة هل الأداء صحيح.", "بديل عن تطبيقات fitness التي تعرض محتوى فقط."] },
+                { type: "callout", tone: "green", title: "الخصوصية كميزة", text: "الفيديو لا يخرج من جهاز المستخدم إطلاقاً. هذه ليست سياسة قانونية فقط، بل رسالة ثقة في التسويق وonboarding لتفكيك قلق الكاميرا." },
+                { type: "grid", title: "رسائل تسويقية مقترحة", items: [
+                  ["Short", "تمرن في البيت كأن معك مدرب."],
+                  ["Direct", "التطبيق يشوف أداءك بالكاميرا، يصححك، ويقولك تعمل إيه كل يوم."],
+                  ["Trust-Based", "ابدأ بتقييم بسيط، ثم احصل على خطة تناسب مستواك."],
+                  ["Progress-Based", "شوف تقدمك الحقيقي: التزامك، جودة الحركة، وعداتك الصحيحة."]
+                ] },
+                { type: "split", title: "الدفع وعدم الدفع", leftTitle: "أسباب الدفع", left: ["لا يريد التفكير في الخطة.", "يريد تصحيحاً أثناء التمرين.", "يريد التزاماً واضحاً لمدة قصيرة.", "يريد نتيجة ملموسة.", "يريد تجربة أكثر شخصية من فيديوهات مجانية."], rightTitle: "أسباب عدم الدفع", right: ["لا يثق في دقة الكاميرا.", "لا يرى فرقاً عن الفيديوهات المجانية.", "لا يشعر بنتيجة في أول أسبوع.", "السعر أعلى من إدراكه للقيمة.", "تجربة البداية معقدة."] },
+                { type: "list", title: "ما يجب إثباته في المنتج", items: ["التقييم مفهوم وليس مخيفاً.", "الخطة تبدو مخصصة فعلاً.", "التصحيح مفيد وليس مزعجاً.", "التقرير يوضح تقدماً أو خطوة تالية.", "المستخدم يستطيع البدء بسرعة."] }
+              ]
+            },
+            {
+              code: "04",
+              file: "04-MVP-Scope.md",
+              title: "MVP Scope",
+              summary: "إثبات أن المستخدم المبتدئ سيبدأ، يرجع، يلتزم، ويرى قيمة حقيقية. الدفع مؤجل، والبوابة هي العودة والتطور.",
+              tags: ["MVP", "28 يوم", "Scope"],
+              blocks: [
+                { type: "lead", text: "الأساس التقني مبني ومختبر. هذا الملف يصف نطاق المنتج القائم والعمل الحالي: تحسين التجربة، إضافة المحتوى، وبناء محرك البقاء، وليس البناء من الصفر." },
+                { type: "list", title: "عرض MVP", items: ["تقييم أولي بسيط.", "خطة أسبوعية واضحة.", "تمرين اليوم.", "تصحيح أداء بالكاميرا.", "تقرير بعد التمرين.", "تقرير أسبوعي مختصر."] },
+                { type: "details", title: "الوظائف الأساسية", items: [
+                  ["Onboarding", "يجمع أقل بيانات لازمة: الهدف، مستوى النشاط، الوقت المتاح، أيام التدريب، الطول والوزن، قيود أو ألم واضح."],
+                  ["Safety Gate", "فحص أهلية بسيط قبل أول تدريب. الهدف ليس التشخيص، بل تحديد هل يمكن البدء بأمان أو يحتاج استشارة مختص."],
+                  ["Initial Assessment", "تقييم قصير لحركات أساسية. المخرجات: مستوى عام، نقاط قوة، أولويات تحسين، توصية برنامج."],
+                  ["28-Day Plan", "3 أيام أسبوعياً، 20-30 دقيقة للجلسة، تمارين منزلية، تدرج بسيط."],
+                  ["Daily Training", "تمرين اليوم، تعليمات قصيرة، كاميرا وتصحيح، عدات أو مدة، ملخص نهاية الجلسة."],
+                  ["Progress Report", "الالتزام، متوسط جودة الأداء، أكثر خطأ متكرر، تحسن واضح أو خطوة تالية."]
+                ] },
+                { type: "list", title: "خارج نطاق MVP", items: ["خطة تغذية كاملة.", "AI يولد برامج من الصفر.", "AR Ghost Overlay.", "Wearables.", "تحديات اجتماعية.", "Marketplace للمدربين.", "برامج احترافية.", "تحليلات طبية أو تشخيصية."] },
+                { type: "list", title: "معايير قبول MVP", items: ["المستخدم يكمل أول تقييم بدون مساعدة.", "يعرف تمرين اليوم فور فتح التطبيق.", "الجلسة تبدأ بسرعة.", "التصحيح مفهوم ولا يربك.", "التقرير يعطي معنى لا أرقاماً فقط.", "يمكن قياس retention وcompletion وwillingness to pay."] },
+                { type: "callout", tone: "warning", title: "قرار مهم", text: "أي ميزة لا تخدم برنامج 28 يوم للمبتدئ تؤجل حتى بعد إثبات MVP." }
+              ]
+            },
+            {
+              code: "19",
+              file: "19-Onboarding-and-Aha-Spec.md",
+              title: "Onboarding and Aha Spec",
+              summary: "تصميم أول تجربة توصّل المستخدم للحظة ده فاهمني بأسرع وقت وأقل احتكاك، مبني على الشاشات الموجودة.",
+              tags: ["Onboarding", "Aha", "UX"],
+              blocks: [
+                { type: "quote", text: "لحظة Aha هي أول تصحيح فوري دقيق ومفهوم على حركة المستخدم بالكاميرا." },
+                { type: "steps", title: "المسار الحالي من الكود", items: ["Splash.", "SignIn / SignUp.", "OnboardingActivity.", "PreScreeningActivity.", "AssessmentSessionActivity.", "AssessmentResultActivity.", "LevelProfileActivity.", "Plan.", "MainContainerActivity / Home.", "Today session.", "TrainingActivity.", "SessionReportActivity."] },
+                { type: "callout", tone: "danger", title: "المشكلة المحتملة", text: "لحظة Aha تأتي متأخرة بعد onboarding + safety gate + تقييم كامل، وهذا يخالف قاعدة اجعل أول قيمة قريبة جداً." },
+                { type: "details", title: "المقترح: Aha مصغّرة", items: [
+                  ["جرّب حركة واحدة", "بعد onboarding القصير مباشرة، تمرين سهل 20-30 ثانية بتصحيح فوري قبل safety gate الكامل والتقييم."],
+                  ["الهدف", "يشعر بالقيمة في أقل من 90 ثانية فيكمل الباقي بثقة."],
+                  ["السلامة", "لو ظهرت إجابات خطر في onboarding، تخط التجربة المباشرة وحول للـ safety gate فوراً."]
+                ] },
+                { type: "list", title: "مبادئ Onboarding", items: ["أقل الأسئلة: الهدف، النشاط، الوقت، الأيام، الطول/الوزن، قيود أو ألم.", "خطوة واحدة لكل شاشة.", "اشرح لماذا تسأل كل سؤال.", "الخصوصية مبكراً قبل أول فتح كاميرا."] },
+                { type: "list", title: "المقاييس", items: ["onboarding_completed rate.", "الزمن من install حتى أول session_first_rep.", "نسبة من يصل للـ Aha المصغر.", "التسرب لكل شاشة."] },
+                { type: "list", title: "معايير القبول", items: ["أول تصحيح فوري في أقل من 90 ثانية من أول فتح في المسار المصغر.", "onboarding ضمن الأسئلة المحددة بدون اختيارات بلا توجيه.", "بعد التقييم، خطوة واحدة واضحة عبر TrainModeData.status."] }
+              ]
+            }
+          ]
+        },
+        {
+          id: "retention",
+          number: "04",
+          title: "محرك البقاء والقياس السلوكي",
+          subtitle: "كيف يتحول التصحيح بالكاميرا إلى عادة وتقدم مثبت؟",
+          narrative: "التقنية تجذب المستخدم أول مرة، لكن التقدم الشخصي والرسائل الذكية والقياس السلوكي هي ما يجعله يرجع.",
+          chapters: [
+            {
+              code: "13",
+              file: "13-Retention-Engine.md",
+              title: "Retention Engine",
+              summary: "Retention هو البوابة الحالية. السؤال لم يعد هل التقنية تعمل؟ بل هل يرجع العميل وهل يتطور؟",
+              tags: ["Retention", "Loops", "Habit"],
+              blocks: [
+                { type: "quote", text: "محرك البقاء مبني على البيانات التي تنتجها الكاميرا." },
+                { type: "callout", tone: "warning", title: "المميز ليس محرك البقاء", text: "تصحيح الأداء بالكاميرا يجذب المستخدم، لكن الجدة تزول بعد أيام. العلاج: حلقات بقاء صريحة لا صدفة." },
+                { type: "details", title: "حلقات البقاء الخمس", items: [
+                  ["Loop 1: التقدم الملموس", "الأقوى. المستخدم يرى أنه يتحسن بمعنى واضح: ثباتك تحسن من 60% إلى 75%، أو قلت عداتك الخطرة من 8 إلى 2. تغذيها الكاميرا: Form Score، ROM، الثبات، جودة العدات، تكرار الخطأ."],
+                  ["Loop 2: المدرب الذي يعرفني", "الأكثر تفرداً. التطبيق يتذكر آخر جلسة ويبني عليها: آخر مرة كانت ركبتك تميل للداخل، ركز عليها اليوم. الإشارة: العودة بعد رسالة شخصية وإكمال الجلسة التالية."],
+                  ["Loop 3: العادة Streak", "سلسلة بسيطة تبني عادة دون gamification كامل. التزام أسبوعي 3 أيام، سلسلة أسابيع، وتنبيه لطيف قبل كسر السلسلة دون عقاب."],
+                  ["Loop 4: التذكير Triggers", "المنتج يبادر بإشعار يوم التمرين مرتبط بالقيمة: اليوم يوم تمرينك، 22 دقيقة فقط. قلة مدروسة أفضل من كثرة مزعجة."],
+                  ["Loop 5: المتابعة المباشرة", "في العينة الدافئة نستخدم متابعة شخصية موثقة. أكثر 3 تدخلات تكراراً تتحول لاحقاً إلى features."]
+                ] },
+                { type: "steps", title: "الحلقة اليومية الأساسية", items: ["يفتح التطبيق.", "خطوة واحدة واضحة: تمرين اليوم.", "جلسة موجهة بالكاميرا ومعايرة في ثوان.", "ملخص بمعنى + إشارة تقدم.", "تمهيد للجلسة القادمة: متى وماذا."] },
+                { type: "grid", title: "الأسبوع الأول حرج", items: [
+                  ["الجلسة الأولى", "الوصول لأول قيمة بسرعة: Aha، تصحيح حقيقي ومفهوم."],
+                  ["بين الجلسات", "Trigger مرتبط بالقيمة لا تذكير فارغ."],
+                  ["نهاية الأسبوع", "تقرير يثبت: التزمت وتحسنت."]
+                ] },
+                { type: "list", title: "إشارات مضادة للبقاء", items: ["تصحيح كثير أو حاد يسبب إحباطاً. العلاج: أهم خطأ فقط ولغة أعد المحاولة.", "أرقام بلا معنى. العلاج: ترجمة الرقم إلى جملة.", "إعادة ضبط متكررة. العلاج: حفظ الوضعية ومعايرة سريعة.", "ملل التكرار. العلاج: تنويع محسوب مع ثبات الروتين."] },
+                { type: "list", title: "ما لا نفعله الآن", items: ["لا gamification كامل.", "لا social كامل أو leaderboards.", "لا مكافآت معقدة قبل إثبات الحلقة الأساسية."] }
+              ]
+            },
+            {
+              code: "18",
+              file: "18-Retention-Engine-Code-Map.md",
+              title: "Retention Engine Code Map",
+              summary: "ربط حلقات البقاء بالكود والشاشات الفعلية: ما هو موجود، ما هو ناقص، وأين يبنى.",
+              tags: ["Code Map", "Android", "Retention"],
+              blocks: [
+                { type: "details", title: "الوضع الحالي لكل حلقة", items: [
+                  ["Loop 1: التقدم الملموس", "موجود جزئياً: HomeStatsData، WeeklyReportActivity، HistoryFragment، ReportsTrendsFragment، ومقاييس SessionMetrics. الناقص: ترجمة الأرقام إلى معنى. يبنى في WeeklyReportActivity + MetricDisplayBuilder + HomeFragment."],
+                  ["Loop 2: المدرب الذي يعرفني", "البيانات موجودة: SessionSummary.commonErrors، RecentSessionData، آخر جلسة في ProgramSessionReportStore. الناقص UX يعرض آخر خطأ قبل/أثناء الجلسة. يبنى في PreWorkoutActivity / TrainingActivity."],
+                  ["Loop 3: العادة", "موجود غالباً: HomeStatsData.streak، ReportsModels، TrainFragment.getStreakDays، نصوص day streak، alert streak_at_risk. الناقص تعزيز بصري وربطه بالتذكير."],
+                  ["Loop 4: التذكير", "غير موجود. يوجد alert داخل التطبيق فقط، لا push. يبنى WorkManager محلي للتذكير في أيام التمرين، وFCM لاحقاً للموجة الباردة."],
+                  ["Loop 5: المتابعة المباشرة", "خارج الكود، تشغيلي في بروتوكول beta."]
+                ] },
+                { type: "callout", tone: "green", title: "الخطوة الواحدة الواضحة موجودة", text: "TrainModeData.status يرمز الحالة: no_assessment / no_plan / rest_day / active / program_complete / reassessment_due. HomeFragment يجب أن يترجم كل حالة إلى زر واحد واضح." },
+                { type: "steps", title: "أولوية البناء للتجربة", items: ["Loop 4: تذكير، الناقص الأكبر وأرخص أثر.", "Loop 2: شخصنة آخر جلسة، البيانات جاهزة.", "Loop 1: ترجمة الأرقام إلى معنى.", "Loop 3: تعزيز streak بسيط."] }
+              ]
+            },
+            {
+              code: "16",
+              file: "16-Correct-Session-Definition.md",
+              title: "Correct Session Definition",
+              summary: "المقياس الحقيقي ليس جودة الأداء المطلقة، بل الاستمرار لأسبوعين + التطور الشخصي.",
+              tags: ["North Star", "Session", "Metrics"],
+              blocks: [
+                { type: "quote", text: "لا نعاقب مبتدئاً على نقطة بدايته. نحتسب أنه أدى التمرين بأمان." },
+                { type: "list", title: "متى تحتسب الجلسة؟", items: ["اكتمال: totalSetsCompleted ≥ 0.8 × totalSetsPlanned.", "سلامة: invalidatedRatio ≤ 0.15.", "بدون حد أدنى على averageFormScore لأن الجودة المطلقة شأن شخصي."] },
+                { type: "details", title: "المقياس الحقيقي للنجاح", items: [
+                  ["Persistence", "المستخدم يتدرب باستمرار خلال نافذة 14 يوم. مبدئياً ≥ 5 جلسات محتسبة من أصل 6 مخطط تقريباً."],
+                  ["Personal Improvement", "تحسن المستخدم نسبة لنفسه لا لمعيار مطلق. الإشارات: reassessment like-for-like، averageFormScore ↑، avgStability ↑، avgRom ↑، invalidatedRatio ↓، formConsistency ↑."]
+                ] },
+                { type: "callout", tone: "green", title: "North Star الجديد", text: "نسبة المستخدمين الذين استمروا أسبوعين وأظهروا تطوراً شخصياً قابلاً للقياس، سواء delta موجب في المقياس الأساسي أو تحسن في إعادة التقييم." },
+                { type: "list", title: "خط الأساس مطلوب", items: ["التطور بلا baseline بلا معنى.", "خزن baseline من التقييم الأولي أو متوسط الأسبوع الأول لكل تمرين."] },
+                { type: "list", title: "أين يطبق في الكود؟", items: ["isCountedSession في ProgramSessionReportStore.ProgramSessionLocalReport.", "baseline per-exercise من التقييم أو الأسبوع 1.", "delta server-side من session_completed + reassessment_completed.", "الاستمرار: نافذة 14 يوم من app_opened + الجلسات المحتسبة."] }
+              ]
+            },
+            {
+              code: "17",
+              file: "17-Events-Implementation-Ticket.md",
+              title: "Events Implementation Ticket",
+              summary: "طبقة أحداث سلوكية لقياس funnel وretention، منفصلة عن رفع مقاييس الجلسة الموجود.",
+              tags: ["Analytics", "Events", "Privacy"],
+              blocks: [
+                { type: "grid", title: "الوضع الحالي", items: [
+                  ["يوجد", "رفع مقاييس الجلسة عبر SessionUpload / AnalyticsStorage / SessionSyncService / MobileSyncApi، تقارير محلية، HomeStatsData."],
+                  ["لا يوجد", "SDK تحليلات سلوكية ولا تتبع funnel onboarding/assessment/activation/retention."],
+                  ["الخلاصة", "نعرف ماذا حدث داخل التمرين، لكن لا نعرف أين يتسرب المستخدم في الرحلة."]
+                ] },
+                { type: "callout", tone: "green", title: "المطلوب", text: "طبقة أحداث خفيفة تحترم الخصوصية، لا فيديو ولا PII غير ضروري، offline-first queue + retry، وترسل إلى endpoint مثل POST /api/mobile/events." },
+                { type: "table", title: "الأحداث ومكان إطلاقها", headers: ["الحدث", "مكان الإطلاق"], rows: [
+                  ["app_opened", "MainContainerActivity.onCreate"],
+                  ["onboarding_started / completed", "OnboardingActivity"],
+                  ["safety_gate_completed", "PreScreeningActivity"],
+                  ["assessment_started / completed", "AssessmentSessionActivity إلى AssessmentResultActivity"],
+                  ["level_assigned", "LevelProfileActivity"],
+                  ["plan_started", "PlanOverviewActivity / أول ProgramDayActivity"],
+                  ["today_session_viewed", "HomeFragment / TrainFragment"],
+                  ["session_started", "SessionState IDLE→SETUP_POSE"],
+                  ["session_first_rep", "أول RepCompletionSignal، لحظة Aha"],
+                  ["session_completed", "SessionState→COMPLETED + isCorrectSession، formScore، reps، durationMs"],
+                  ["session_abandoned", "خروج قبل COMPLETED + at_state"],
+                  ["camera_setup_duration", "من SETUP_POSE حتى COUNTDOWN"],
+                  ["correction_shown", "MobileMessageResolver / feedback"],
+                  ["report_viewed", "SessionReportActivity.onCreate"],
+                  ["weekly_report_viewed", "WeeklyReportActivity.onCreate"],
+                  ["streak_updated", "عند تحديث streak"],
+                  ["reassessment_completed", "AssessmentResultActivity في إعادة التقييم"]
+                ] },
+                { type: "list", title: "تعريف الإنجاز", items: ["AnalyticsTracker مركزي بواجهة track(event, props).", "offline-first queue + retry.", "session_completed يحمل isCorrectSession.", "شيت أو لوحة تقرأ funnel من install حتى 3 جلسات/7 أيام.", "أي حدث بلا قرار مرتبط يؤجل."] }
+              ]
+            }
+          ]
+        },
+        {
+          id: "validation",
+          number: "05",
+          title: "القياس والتجربة",
+          subtitle: "كيف نثبت أن المستخدم يبدأ، يرجع، ويتطور بدون خداع العينة الدافئة؟",
+          narrative: "هذه المرحلة تحول التجربة إلى قرار. لا نقيس الإعجابات أو الكلام المجامل، بل نقيس أين يتسرب المستخدم، وهل يعود، وهل يتحسن نسبة لنفسه.",
+          chapters: [
+            {
+              code: "08",
+              file: "08-Success-Metrics.md",
+              title: "Success Metrics",
+              summary: "قياس هل المشروع يتحول إلى منتج ناجح، وليس فقط هل الميزات تعمل.",
+              tags: ["Metrics", "North Star"],
+              blocks: [
+                { type: "callout", tone: "green", title: "North Star Metric", text: "نسبة المستخدمين الذين استمروا أسبوعين وأظهروا تطوراً شخصياً قابلاً للقياس. النجاح الحقيقي = تطور الإنسان نسبة لنفسه + استمرار كشرط مسبق." },
+                { type: "list", title: "Leading indicator", items: ["عدد المستخدمين الذين يكملون 3 جلسات محتسبة خلال أول 7 أيام. هذا مؤشر تفعيل مبكر، وليس تعريف النجاح."] },
+                { type: "grid", title: "مجموعات المقاييس", items: [
+                  ["Activation", "إكمال onboarding، فحص الأهلية، التقييم الأول، بدء أول جلسة، إنهاء أول جلسة."],
+                  ["Retention", "Day 1 to Day 2، Week 1 retention، عدد الجلسات في أول 7 أيام، 3 جلسات، إكمال 28 يوم."],
+                  ["Value", "تحسن Form Score، انخفاض العدات الخطرة، زيادة الالتزام الأسبوعي، تحسن الثبات أو ROM، فهم المستخدم: أنا اتحسنت في إيه."],
+                  ["Revenue", "مؤجل. Trial to paid، Monthly conversion، Refund rate، Churn للمرجعية لاحقاً."],
+                  ["Product Quality", "وقت الوصول لأول تمرين، فشل الكاميرا أو التقييم، جلسات لم تكتمل بسبب تجربة سيئة، وضوح التقرير."]
+                ] },
+                { type: "stats", title: "Targets مبدئية", items: [["70%", "إكمال onboarding"], ["50%", "إكمال التقييم"], ["40%", "إنهاء أول جلسة"], ["30%", "الرجوع لجلسة ثانية"], ["20%", "3 جلسات في أسبوع"]] },
+                { type: "list", title: "إشارات خطر", items: ["يسجل ولا يبدأ التقييم.", "يبدأ التقييم ولا يكمله.", "يكمل جلسة واحدة ولا يعود.", "لا يفهم التقرير.", "يرى التصحيح مزعجاً أو غير موثوق.", "يحب الفكرة لكنه لا يستخدمها."] },
+                { type: "steps", title: "إيقاع المراجعة", items: ["يومياً أثناء beta: أخطاء البداية، الجلسات المكتملة، تعليقات المستخدمين.", "أسبوعياً: retention، أسباب التوقف، الاعتراضات، نية الدفع.", "بعد 28 يوم: نكمل؟ نغير الرسالة؟ نغير MVP؟ نبدأ monetization أوسع؟"] }
+              ]
+            },
+            {
+              code: "05",
+              file: "05-Validation-Plan.md",
+              title: "Validation Plan",
+              summary: "اختبار هل المنتج يحل مشكلة حقيقية ويعيد المستخدم ويطوره قبل التوسع. الدفع مؤجل عمداً.",
+              tags: ["Validation", "Hypotheses"],
+              blocks: [
+                { type: "details", title: "الفرضيات المطلوب إثباتها", items: [
+                  ["H1: المشكلة حقيقية", "المبتدئ المشغول لا يتمرن لأنه لا يعرف يبدأ ولا يثق في أدائه."],
+                  ["H2: العرض مفهوم", "مدرب ذكي من البيت يصحح أداءك بالكاميرا مفهومة وجذابة."],
+                  ["H3: المستخدم سيبدأ", "يكمل onboarding وتقييم أولي."],
+                  ["H4: المستخدم سيعود", "يرجع لتدريب ثاني وثالث خلال أسبوع."],
+                  ["H5: يرى قيمة ويتطور", "بعد أسبوع يشعر بالوضوح أو الالتزام أو تحسين الأداء ويرى تقدمه."],
+                  ["H6: مستعد للدفع", "مؤجلة بعد إثبات H4 وH5، ويفضل في الخليج."]
+                ] },
+                { type: "steps", title: "مراحل التحقق", items: ["مقابلات مشكلة: 15-20 شخص، لا نشرح المنتج في البداية.", "اختبار عرض القيمة: 20-30 شخص عبر landing page وفيديو ونموذج انتظار.", "تجربة 28 يوم: حوالي 20 مستخدماً من المعارف.", "الموجة الباردة: غرباء عبر المحتوى أو فريق التسويق.", "اختبار الدفع: مؤجل بعد العودة والتطور."] },
+                { type: "list", title: "أسئلة مقابلات المشكلة", items: ["آخر مرة حاولت تتمرن كانت إمتى؟", "إيه اللي خلاك تبدأ؟", "إيه اللي خلاك توقف؟", "بتتمرن فين عادة؟", "أكبر مشكلة: الوقت، المعرفة، الحافز، الخوف من الإصابة؟", "لما تشوف فيديو، إيه يخليك تثق أنه مناسب؟", "هل سبق دفعت لتطبيق أو مدرب أو جيم؟", "لو تطبيق قالك تمرين اليوم وصحح أداءك بالكاميرا، إيه أول اعتراض؟"] },
+                { type: "stats", title: "مؤشرات النجاح", items: [["70%", "تذكر نفس الألم بدون تلقين"], ["30%", "يطلبون تجربة المنتج"], ["50%", "يكملون أول جلسة"], ["30%", "يرجعون لجلسة ثانية"], ["20%", "يكملون أسبوعاً"]] },
+                { type: "list", title: "قرار بعد الاختبار", items: ["فشل activation: نراجع onboarding والقيمة الأولى.", "فشل retention: نراجع الخطة اليومية ومحرك البقاء.", "التطور غير محسوس: نراجع التقارير وترجمة التقدم.", "اختبار الدفع مؤجل."] }
+              ]
+            },
+            {
+              code: "14",
+              file: "14-Beta-Measurement.md",
+              title: "Beta Measurement",
+              summary: "قياس هل العميل يرجع ويتطور بدقة كافية لاتخاذ قرار واضح. لا نقيس الدفع الآن.",
+              tags: ["Beta", "Warm Cohort", "Funnel"],
+              blocks: [
+                { type: "callout", tone: "danger", title: "تحذير العينة الدافئة", text: "العينة الأولى حوالي 20 شخصاً من العائلة والموظفين والمعارف. ميزتها سرعة وتعاون وثقة، وخطرها retention متضخم وfeedback مجامل." },
+                { type: "list", title: "معالجات انحياز العينة", items: ["افصل الإشارة السلوكية عن الإشارة اللفظية.", "رجح السلوك المقاس على الرأي.", "اسأل: إمتى آخر مرة فتحت التطبيق؟ وليس عجبك؟", "اعتبر أرقام العينة سقفاً متفائلاً.", "خطط لموجة باردة قبل أي توسع."] },
+                { type: "steps", title: "Funnel القياس", items: ["Install.", "Onboarding complete.", "Safety gate complete.", "Assessment complete.", "First session start.", "First session complete.", "Day 2 return.", "3 جلسات في 7 أيام.", "Week 1 complete.", "28-day complete."] },
+                { type: "table", title: "الأحداث المطلوبة", headers: ["الحدث", "يقيس"], rows: [
+                  ["onboarding_started / completed", "احتكاك البداية"],
+                  ["safety_gate_completed", "وضوح وسلاسة الفحص"],
+                  ["assessment_completed", "هل التقييم مفهوم وغير مرهق"],
+                  ["session_started", "نية التدريب"],
+                  ["session_completed", "اكتمال القيمة + جودة الأداء"],
+                  ["session_abandoned", "أين ينكسر التدريب"],
+                  ["camera_setup_duration", "احتكاك الكاميرا اليومي"],
+                  ["correction_shown", "كثافة التصحيح"],
+                  ["report_viewed", "هل التقدم يرى"],
+                  ["day2_return", "بداية العادة"],
+                  ["streak_updated", "قوة حلقة العادة"],
+                  ["notification_sent / opened", "فاعلية triggers"],
+                  ["weekly_report_viewed", "إدراك التقدم على المدى"]
+                ] },
+                { type: "list", title: "نقاط التسرب", items: ["بعد التسجيل وقبل التقييم: onboarding طويل أو غير واضح.", "أثناء التقييم: معقد أو مخيف أو طويل.", "بعد الجلسة الأولى ولا يعود: لم تظهر قيمة كافية أو التصحيح مزعج.", "بين اليوم 2 و7: غياب trigger أو ملل أو احتكاك يومي."] },
+                { type: "details", title: "قياس التطور والاستمرار", items: [
+                  ["Baseline", "من التقييم الأولي أو متوسط الأسبوع الأول لكل تمرين."],
+                  ["Persistence", "عدد الجلسات المحتسبة عبر نافذة 14 يوم."],
+                  ["Personal Improvement", "delta موجب في formScore / stability / ROM / invalidatedRatio أو reassessment like-for-like."],
+                  ["قاعدة", "الاتجاه لا المستوى المطلق، وعلى نفس التمارين للمقارنة."]
+                ] },
+                { type: "list", title: "ما لا نقيسه الآن", items: ["الدفع والconversion.", "Vanity metrics مثل تحميلات وإعجابات ومتابعين.", "مقاييس متقدمة قبل أن يثبت الأساس."] }
+              ]
+            },
+            {
+              code: "20",
+              file: "20-Beta-Protocol-and-Scripts.md",
+              title: "Beta Protocol and Scripts",
+              summary: "تشغيل التجربة الدافئة حوالي 20 من المعارف بشكل موثق وقابل للقياس، مع سكريبتات جاهزة.",
+              tags: ["Scripts", "Beta", "Interviews"],
+              blocks: [
+                { type: "grid", title: "الإعداد", items: [
+                  ["العدد", "حوالي 20، أقرب ما يمكن لـ Mahmoud."],
+                  ["المدة", "28 يوم."],
+                  ["التتبع", "أحداث ملف 17 + شيت يدوي احتياطي."],
+                  ["التذكير", "شخصي ومباشر في البداية، وكل تدخل يوثق."]
+                ] },
+                { type: "details", title: "سكريبتات المقابلات", items: [
+                  ["قبل التجربة", "آخر مرة حاولت تتمرن؟ إيه اللي وقفك؟ بتتمرن فين؟ أكبر عائق؟ جربت تطبيقات؟ ليه بطلت؟"],
+                  ["بعد الجلسة الأولى", "إيه أول حاجة فاجأتك؟ في أي لحظة حسيت إن التطبيق فهمك؟ فين اتلخبطت أو زهقت؟ هتفتحه بكرة بدون تذكير؟"],
+                  ["نهاية الأسبوع الأول", "إيه اللي رجعك أو منعك؟ شايف نفسك اتحسنت في حاجة؟ إيه أكتر حاجة مزعجة؟"],
+                  ["نهاية 28 يوم", "لو هنوقف التطبيق بكرة، هتحس بإيه؟ إيه اللي خلاك تكمل أو تقطع؟"]
+                ] },
+                { type: "list", title: "شيت القياس اليدوي", items: ["المعرف، العمر، قربه من Mahmoud.", "onboarding مكتمل؟ الزمن للـ Aha.", "تاريخ كل جلسة، isCorrectSession، formScore، reps.", "عودة يوم 2؟ عدد جلسات الأسبوع 1، streak.", "أكمل الأسبوع؟ أكمل 28 يوم؟", "سبب التوقف، أهم اعتراض.", "التدخلات اليدوية: ماذا / لماذا / النتيجة."] },
+                { type: "steps", title: "الإيقاع والمخرجات", items: ["يومي: أخطاء البداية، الجلسات، الملاحظات.", "أسبوعي: retention، أسباب التوقف، الاعتراضات، تحديث الشيت.", "نهاية 28 يوم: أكبر 5 نقاط احتكاك، لحظة Aha الحقيقية، أهم 3 تدخلات يدوية، قرار نكمل أو نعدل."] },
+                { type: "people", title: "أسماء العينة الدافئة المقترحة", items: ["احمد", "محمود", "ابراهيم", "خالد", "اية", "ايمان", "محمد سليمان", "انس هانى", "بلال هانى", "نور", "عمر سلفى", "سارة", "عبدالله محمود", "زينب محمود", "يوسف محمد", "موظفين تسويق آخرين"] }
+              ]
+            },
+            {
+              code: "21",
+              file: "21-Content-Readiness.md",
+              title: "Content Readiness",
+              summary: "كل المحتوى المطلوب يجب أن يكون جاهزاً وصحيحاً قبل أول 20 مستخدم. الحد الحرج: أول أسبوعين + تقييم + إعادة تقييم.",
+              tags: ["Content", "Ready", "Beta"],
+              blocks: [
+                { type: "quote", text: "الحد الأدنى الحرج = محتوى أول أسبوعين كامل وصحيح + التقييم + إعادة التقييم." },
+                { type: "details", title: "مستويات المحتوى", items: [
+                  ["مكتبة التمارين", "لكل ExerciseConfig: name، description، instructions ar/en، category، muscles، equipment، tags، countingMethod، poseVariants، trackedJoints، ranges، difficultyLevels beginner، feedbackMessages، media."],
+                  ["برنامج 28 يوم", "4 أسابيع × 3 أيام ≈ 12 جلسة. كل جلسة تمارين مرتبة + sets/reps/duration/rest/warmup + 20-30 دقيقة. يستخدم تمارين جاهزة فقط."],
+                  ["التقييم وإعادة التقييم", "initial assessment، Safety Gate، reassessment like-for-like، نص نتيجة يشرح المستوى والسبب والخطوة التالية."],
+                  ["Onboarding وAha", "أسئلة onboarding، نص لماذا نسأل، نص الخصوصية، تمرين Aha مصغر."],
+                  ["نصوص التدريب والتصحيح", "رسائل تصحيح لكل مفصل/حالة، TTS، cues، نبرة أعد المحاولة لا أنت غلط، عامية مصرية."],
+                  ["نصوص التقارير", "تقرير الجلسة والأسبوع، صياغة التطور نسبة للbaseline، نصوص performance rating."],
+                  ["الإشعارات والتنبيهات", "نص push يوم التمرين وstreak_at_risk بعد بناء Loop 4."],
+                  ["اللغة والنبرة", "عامية مصرية، en ثانوي، نبرة محايدة جندرياً، خصوصية مهمة جداً للكوهورت وفيه سيدات."],
+                  ["الثقة والسلامة", "إشعار خصوصية، تنويه Wellness لا تشخيص، نصوص إحالة لمختص عند red flags."]
+                ] },
+                { type: "table", title: "مصفوفة الأولوية والملكية", headers: ["المستوى", "أولوية", "المالك"], rows: [
+                  ["تمارين أول أسبوعين", "حرج", "فريق التمارين + كاتب عربي + مراجعة مختص"],
+                  ["تقييم أولي + إعادة تقييم", "حرج", "فريق المحتوى + مختص"],
+                  ["Onboarding + Aha + خصوصية", "حرج", "المؤسس/PO + كاتب"],
+                  ["سلامة وثقة", "حرج", "مختص + المؤسس"],
+                  ["نصوص تصحيح", "مهم", "كاتب عربي"],
+                  ["نصوص تقارير", "مهم", "كاتب + PO"],
+                  ["باقي برنامج الأسبوع 3-4", "بالتوازي", "فريق التمارين"],
+                  ["نصوص الإشعارات", "بعد Loop 4", "كاتب"]
+                ] },
+                { type: "list", title: "Definition of Ready", items: ["التمرين جاهز إذا عدى validateStateRanges بدون errors.", "يحتوي difficultyLevels beginner.", "رسائل التصحيح ar لكل حالة مفصل أساسي.", "له فيديو/صورة.", "جرب فعلياً بالكاميرا مرة على الأقل.", "البرنامج جاهز إذا كل جلساته تحمل، وكل التمارين جاهزة، والدقائق 20-30، والصعوبة beginner.", "التقييم جاهز إذا initial + reassessment يحلان لملف مبتدئ والنتيجة فيها معنى."] },
+                { type: "list", title: "Pre-launch Checklist", items: ["تمارين أول أسبوعين جاهزة بالكامل.", "برنامج الأسبوعين 1-2 مبني ويحمّل.", "قالب التقييم الأولي يعمل.", "قالب إعادة التقييم جاهز.", "Safety Gate قواعد ونصوص.", "Onboarding + خصوصية + تمرين Aha.", "نصوص تقرير جلسة وأسبوع.", "نص الخصوصية وتنويه Wellness.", "مراجعة نبرة عامية مصرية ومحايدة.", "باقي برنامج 3-4 بالتوازي.", "نصوص الإشعارات مع Loop 4."] }
+              ]
+            }
+          ]
+        },
+        {
+          id: "growth",
+          number: "06",
+          title: "السوق والنمو والمخاطر",
+          subtitle: "كيف نصل لأول مستخدمين ثم نؤجل الدفع بوعي حتى لا نقرأ السوق خطأ؟",
+          narrative: "هذه المرحلة تفصل بين سوق السلوك وسوق الإيراد. مصر للتجربة والتعلم، والخليج لاحقاً لاختبار الدفع بعد إثبات العودة والتطور.",
+          chapters: [
+            {
+              code: "07",
+              file: "07-Go-To-Market.md",
+              title: "Go To Market",
+              summary: "الوصول لأول مستخدمين حقيقيين بأقل تكلفة، واختبار الرسالة والسلوك. الدفع مؤجل.",
+              tags: ["GTM", "Content", "Channels"],
+              blocks: [
+                { type: "grid", title: "السوق الأول والشريحة", items: [
+                  ["السوق الأول", "مصر كسوق تجريبي لإنضاج المنتج، ثم التوسع للوطن العربي."],
+                  ["أسباب السوق العربي", "رسالة أقرب ثقافياً، منافسة محلية AI form coaching أقل وضوحاً، المحتوى العربي عام وغير شخصي، والوصول عبر محتوى قصير ومجتمعات."],
+                  ["الشريحة الأولى", "مبتدئون مشغولون 30-45 يعملون في وظائف مكتبية ويريدون تمريناً من البيت."]
+                ] },
+                { type: "details", title: "القنوات المقترحة", items: [
+                  ["Short Video Content", "TikTok، Instagram Reels، YouTube Shorts. أفكار: 3 أخطاء في Squat، إزاي تعرف إنك بتتمرن غلط، لو قاعد 8 ساعات، تطبيق يشوف تمرينك ويصححك. الهدف اختبار الرسائل لا brand كامل."],
+                  ["Landing Page", "تعرض المشكلة، الوعد، فيديو قصير، وزر Join Waitlist أو Start 28-Day Beta. الهدف قياس interest وconversion."],
+                  ["Closed Beta", "20 مستخدماً من المعارف، 28 يوم، متابعة مباشرة موثقة، مقابلة قبل وبعد."],
+                  ["Communities", "مجموعات خسارة وزن، work from home، fitness عربية، موظفين ورواد أعمال."],
+                  ["Coaches And Physios", "مراجعة الرسالة، ترشيح مستخدمين، إعطاء ثقة، فهم الاعتراضات."]
+                ] },
+                { type: "callout", tone: "warning", title: "مورد متاح: فريق تسويق", text: "فريق تسويق شركة التجارة الإلكترونية أصل متاح لإنتاج المحتوى، تجنيد العينة الباردة لاحقاً، landing page واختبار الرسالة. لكن تسويق الإيكومرس يختلف عن منتج اشتراكي ويحتاج معايرة." },
+                { type: "quote", text: "لو عايز تتمرن من البيت ومش عارف تبدأ منين، جرب برنامج 28 يوم. التطبيق يقيم مستواك، يقولك تمرين اليوم، ويصحح أداءك بالكاميرا." },
+                { type: "steps", title: "Funnel أولي", items: ["فيديو قصير أو منشور.", "Landing page.", "تسجيل اهتمام.", "دعوة beta.", "إكمال تقييم.", "أول جلسة.", "نهاية الأسبوع الأول.", "استمرار والدفع مؤجل."] },
+                { type: "steps", title: "خطة أول 30 يوم", items: ["الأسبوع 1: landing page، 5 رسائل، اختيار 20 مستخدم محتمل.", "الأسبوع 2: نشر 10 محتويات قصيرة، مقابلات مشكلة، waitlist.", "الأسبوع 3: beta صغيرة، متابعة يومية، تسجيل الاعتراضات.", "الأسبوع 4: تحليل النتائج، التحضير للموجة الباردة، قرار تحسين الرسالة أو الشريحة أو التجربة."] },
+                { type: "list", title: "ما لا نفعله في البداية", items: ["حملات إعلانية كبيرة.", "Brand identity كامل قبل إثبات الرسالة.", "شراكات ضخمة.", "App Store launch واسع بدون beta.", "استهداف كل أهداف اللياقة في نفس الوقت."] }
+              ]
+            },
+            {
+              code: "06",
+              file: "06-Pricing-Strategy.md",
+              title: "Pricing Strategy",
+              summary: "إطار التسعير لمرحلة لاحقة. اختبار الدفع مؤجل الآن لأن البوابة الحالية هي Retention.",
+              tags: ["Pricing", "Revenue", "Deferred"],
+              blocks: [
+                { type: "callout", tone: "warning", title: "المبدأ", text: "لا نبدأ بسعر نهائي. عند الوصول للإيرادات نختبر نطاقات سعرية مرتبطة بقيمة واضحة." },
+                { type: "details", title: "النموذج المقترح مبدئياً", items: [
+                  ["Free", "لإثبات القيمة وجذب المستخدم. يشمل onboarding، تقييم أولي محدود، جلسات محدودة، تقرير بسيط."],
+                  ["Pro Monthly", "للاستخدام المستمر. يشمل خطة 28 يوم كاملة، تصحيح أداء غير محدود أو بحد عادل، تقارير أسبوعية، سجل التمارين، إعادة تقييم دورية."],
+                  ["28-Day Program", "بيع نتيجة محددة بدل اشتراك مفتوح. برنامج واحد واضح، متابعة تقدم، تجربة كاملة 28 يوم. مناسب للاختبار لأنه أسهل في الفهم."]
+                ] },
+                { type: "grid", title: "نطاق السعر المرجعي", items: [
+                  ["مصر", "سوق تجربة للسلوك لا للإيرادات. 8 دولار تعتبر مرتفعة مقارنة بالاشتراكات المحلية، لذلك التجربة مجانية أو رمزية."],
+                  ["الخليج", "سوق أعلى قدرة على الدفع، والأنسب لإثبات الإيرادات لاحقاً."]
+                ] },
+                { type: "split", title: "ماذا يوضع خلف الدفع؟", leftTitle: "مناسب للدفع", left: ["خطة 28 يوم كاملة.", "تقارير تقدم أسبوعية.", "إعادة تقييم.", "سجل تاريخي.", "تخصيص مستوى الصعوبة."], rightTitle: "غير مناسب كبداية", right: ["قفل أول تصحيح فورم بالكامل.", "قفل التقييم الأول.", "قفل تجربة القيمة قبل الثقة."] },
+                { type: "details", title: "اختبارات الدفع المؤجلة", items: [
+                  ["Test A: Program Purchase", "ابدأ برنامج 28 يوم بسعر ثابت. يقيس شراء نتيجة قصيرة."],
+                  ["Test B: Monthly Pro", "استمر بخطة وتقييم وتقارير شهرية. يقيس قيمة مستمرة."],
+                  ["Test C: Coach Add-on", "مراجعة بشرية أسبوعية. يقيس استعداد دفع أعلى مقابل ثقة إضافية."]
+                ] },
+                { type: "list", title: "أسئلة لمرحلة الإيرادات", items: ["اشتراك أم برنامج 28 يوم؟", "مدرب بشري كخدمة إضافية أم AI فقط؟", "الدفع داخل التطبيق أم روابط خارجية؟", "ما الحد المجاني المناسب قبل paywall؟"] },
+                { type: "quote", text: "الدفع مؤجل. لا نبني نظام billing الآن ولا نختبر سعراً." }
+              ]
+            },
+            {
+              code: "10",
+              file: "10-Partner-Strategy.md",
+              title: "Partner Strategy",
+              summary: "استخدام الشراكات لبناء الثقة والوصول، وليس للهروب من اختبار المنتج مع المستخدمين.",
+              tags: ["Partners", "Trust", "Coaches"],
+              blocks: [
+                { type: "details", title: "أنواع الشركاء", items: [
+                  ["Personal Trainers", "يراجعون البرامج، يعطون مصداقية، يرشحون مستخدمين، وربما يقدمون خدمة مدفوعة لاحقاً. البداية: 2-3 مدربين يراجعون برنامج 28 يوم وأخطاء المبتدئين."],
+                  ["Physiotherapists", "يراجعون صياغة السلامة، يقللون مبالغات التقييم، ويحددون حالات الإحالة. البداية: Safety Gate ولغة التقارير."],
+                  ["Corporate Wellness", "لاحقاً: موظفون يجلسون طويلاً وقناة توزيع واحدة لعدة مستخدمين، برنامج 28 يوم للموظفين وتحدي حركة بسيط."],
+                  ["Fitness Content Creators", "الوصول، اختبار الرسائل، بناء ثقة أولية. البداية: تعاون محتوى قصير وتجربة beta مع جمهور محدود."],
+                  ["Clinics / Rehab Adjacent", "لاحقاً فقط، لا ندخل هذا السوق قبل ضبط السلامة واللغة."]
+                ] },
+                { type: "callout", tone: "green", title: "الشراكة الأولى المقترحة", text: "ابدأ بمدرب واحد وأخصائي علاج طبيعي واحد لمراجعة برنامج 28 يوم، Safety Gate، أهم 10 أخطاء للمبتدئين، وصياغة آمنة للتقارير." },
+                { type: "list", title: "ما لا نفعله الآن", items: ["لا نبني marketplace للمدربين.", "لا نبيع للعيادات كمنتج علاجي.", "لا نعد بنتائج طبية.", "لا نعقد شراكات كبيرة قبل نجاح beta."] },
+                { type: "list", title: "أسئلة تحتاج قرار", items: ["هل نريد شريك خبير يظهر في التسويق؟", "هل توجد مراجعة بشرية مدفوعة لاحقاً؟", "هل نبدأ B2C فقط أم نختبر corporate wellness مبكراً؟", "ما الاسم التجاري الجديد؟"] }
+              ]
+            },
+            {
+              code: "09",
+              file: "09-Risk-Register.md",
+              title: "Risk Register",
+              summary: "تحديد المخاطر التجارية والمنتجية مبكراً، ووضع طريقة للتعامل معها.",
+              tags: ["Risks", "Mitigation"],
+              blocks: [
+                { type: "details", title: "مخاطر السوق", items: [
+                  ["ضعف الألم", "المستخدم يقول إنه يريد التمرين لكنه لا يشعر بألم كاف. التعامل: مقابلات مشكلة وملاحظة العودة كسلوك أقوى من الكلام."],
+                  ["منافسة المحتوى المجاني", "قد يرى YouTube كافياً. التعامل: التركيز على الخطة والتصحيح والمتابعة."],
+                  ["تضخم الثقة من العينة الدافئة", "Retention وآراء متفائلة. التعامل: فصل السلوك عن الرأي، اعتبار الأرقام سقفاً متفائلاً، وتشغيل موجة باردة."]
+                ] },
+                { type: "details", title: "مخاطر المنتج والسلامة", items: [
+                  ["ضعف الثقة في الكاميرا", "إذا لم يثق في التصحيح تنهار القيمة. التعامل: أسباب بسيطة، تجنب القطع الحاد، لغة أعد المحاولة."],
+                  ["احتكاك الإعداد اليومي", "ضبط الوضعية أول مرة سريع، لكن الخطر في التكرار. التعامل: حفظ الوضعية ومعايرة سريعة."],
+                  ["بداية معقدة", "إذا طال onboarding أو التقييم يترك قبل القيمة. التعامل: تقليل الأسئلة وأول جلسة قريبة."],
+                  ["تقارير تقنية جداً", "الأرقام وحدها لا معنى لها. التعامل: جملة واضحة: تحسنت في كذا وركز على كذا."],
+                  ["لغة تشخيص طبي", "قد يبدو أنه يشخص إصابات. التعامل: Wellness، إحالة للحالات الخطرة، عدم أحكام حتمية."],
+                  ["قرارات تدريب خاطئة", "قياس غير مؤكد قد ينتج توصية غير مناسبة. التعامل: confidence labels وneeds retest وقواعد safety."]
+                ] },
+                { type: "details", title: "مخاطر الربح والتشغيل", items: [
+                  ["قيمة غير كافية للدفع", "المستخدم يحب الفكرة لكنه لا يدفع. مؤجل: نثبت العودة والتطور ثم الدفع في الخليج."],
+                  ["سوء قراءة سوق التسعير", "ضعف الدفع في مصر قد يقرأ كفشل. التعامل: مصر للسلوك والخليج للإيرادات."],
+                  ["اعتماد على متابعة يدوية", "قد تنجح beta بسبب متابعة المؤسس. التعامل: توثيق التدخلات وتحويل أكثر 3 تدخلات إلى features."],
+                  ["توسع مبكر", "تغذية وAR وsocial وmarketplace قبل الأساس. التعامل: الالتزام بـ MVP Scope."],
+                  ["تشتت المؤسس", "مخفف لأن الإيكومرس مُدار بعيداً، وProduct Owner قيد البحث."]
+                ] },
+                { type: "list", title: "أعلى 5 مخاطر حالياً", items: ["المستخدم لا يلتزم بعد أول جلسة.", "التصحيح بالكاميرا لا يبني ثقة بسرعة.", "تضخم الثقة من العينة الدافئة.", "احتكاك الإعداد اليومي المتكرر.", "التقييم الأول طويل أو مربك."] }
+              ]
+            }
+          ]
+        }
+      ]
+    };
+
+    const dashboardData = {
+      funnel: [
+        ["Install", "100%"],
+        ["Onboarding complete", "70%"],
+        ["Safety gate complete", "62%"],
+        ["Assessment complete", "50%"],
+        ["First session start", "45%"],
+        ["First session complete", "40%"],
+        ["Day 2 return", "30%"],
+        ["3 sessions / 7 days", "20%"],
+        ["Week 1 complete", "25%"],
+        ["28-day complete", "10%"]
+      ],
+      metrics: [
+        ["70%+", "إكمال Onboarding", "لو فشل الرقم، البداية طويلة أو غير واضحة."],
+        ["50%+", "إكمال التقييم", "يثبت أن التقييم مفهوم وغير مرهق."],
+        ["40%+", "إكمال أول جلسة", "أول قيمة وصلت للمستخدم."],
+        ["30%+", "عودة اليوم الثاني", "بداية إشارة العادة."],
+        ["20%+", "3 جلسات في 7 أيام", "مؤشر مبكر، ليس North Star النهائي."],
+        ["14 يوم", "North Star الحقيقي", "استمرار + تطور شخصي قابل للقياس."]
+      ],
+      loops: [
+        ["التقدم الملموس", "الأقوى", "Form Score وROM والثبات والعدات الخطرة تتحول إلى جملة معنى يراها المستخدم."],
+        ["المدرب الذي يعرفني", "الأكثر تفرداً", "رسائل مبنية على آخر خطأ أو آخر إنجاز تكسر إحساس المحتوى العام."],
+        ["العادة البسيطة", "سهل التنفيذ", "Streak أسبوعي 3 أيام بدون عقاب أو gamification كامل."],
+        ["التذكير الذكي", "الناقص الأكبر", "Push/WorkManager في أيام التمرين برسالة مرتبطة بالقيمة."],
+        ["المتابعة اليدوية", "تعلم تشغيلي", "كل تدخل يدوي يوثق ثم يحول أكثر 3 تدخلات متكررة إلى features."]
+      ],
+      risks: [
+        ["high", "لا يعود بعد أول جلسة", "الحل: Aha أسرع، تقرير معنى، trigger واضح."],
+        ["high", "لا يثق في الكاميرا", "الحل: أسباب تصحيح بسيطة، لغة أعد المحاولة، confidence labels."],
+        ["high", "العينة الدافئة تخدعنا", "الحل: السلوك المقاس أهم من الكلام وموجة باردة قبل التوسع."],
+        ["medium", "احتكاك الإعداد اليومي", "الحل: حفظ الوضعية ومعايرة سريعة."],
+        ["medium", "التقييم طويل أو مخيف", "الحل: تقييم قصير وقيمة مبكرة قبل التقييم الكامل."],
+        ["medium", "التقارير تقنية جداً", "الحل: كل رقم يتحول إلى معنى وخطوة تالية."]
+      ]
+    };
+
+    const readinessGroups = [
+      {
+        title: "المحتوى الحرج للبيتا",
+        items: [
+          ["تمارين أول أسبوعين", "6-10 تمارين جاهزة بالكامل: ranges + feedback ar + media + beginner."],
+          ["برنامج الأسبوعين 1-2", "جلسات تحمل بالكامل، 20-30 دقيقة، وكل التمارين جاهزة."],
+          ["التقييم الأولي", "قالب يعمل لملف مبتدئ ويشرح المستوى والسبب."],
+          ["إعادة التقييم", "قالب like-for-like عند الأسبوعين لإثبات التطور الشخصي."],
+          ["Safety Gate", "أسئلة وقواعد red-flags ونص إحالة لمختص عند الحاجة."],
+          ["Onboarding وAha", "أسئلة قليلة، نص خصوصية، وتجربة حركة واحدة عند الأمان."]
+        ]
+      },
+      {
+        title: "القياس والتجربة",
+        items: [
+          ["تتبع الأحداث", "AnalyticsTracker أو sheet مؤقت لمسار البيتا."],
+          ["شيت يدوي احتياطي", "يسجل الجلسات، isCorrectSession، formScore، reps، التدخلات، سبب التوقف."],
+          ["سكريبت قبل التجربة", "أسئلة سلوكية بدون شرح المنتج في البداية."],
+          ["سكريبت بعد أول جلسة", "استخراج لحظة Aha الحقيقية ونقاط الارتباك."],
+          ["إيقاع يومي/أسبوعي", "مراجعة يومية للأخطاء والجلسات، وأسبوعية للretention والاعتراضات."]
+        ]
+      },
+      {
+        title: "الثقة والتجربة",
+        items: [
+          ["تقارير بمعنى", "نصوص جلسة وأسبوع تترجم الأرقام إلى تقدم وخطوة تالية."],
+          ["نبرة عامية مصرية", "محايدة جندرياً ومطمئنة خصوصاً مع قلق الكاميرا."],
+          ["تنويه Wellness", "لا تشخيص طبي، ونصوص إحالة للحالات الخطرة."],
+          ["رسائل تصحيح", "أعد المحاولة لا أنت غلط، ورسائل لكل حالة مفصل أساسي."],
+          ["باقي برنامج 28 يوم", "الأسبوع 3-4 يكتمل بالتوازي ولا يمنع بدء التجربة إذا الأساس جاهز."]
+        ]
+      }
+    ];
+
+    const state = {
+      view: "home",
+      stageIndex: 0,
+      activeChapter: null,
+      sheetStartY: null
+    };
+
+    const els = {
+      app: document.getElementById("app"),
+      appTitle: document.getElementById("appTitle"),
+      readProgress: document.getElementById("readProgress"),
+      home: document.getElementById("view-home"),
+      journey: document.getElementById("view-journey"),
+      dashboard: document.getElementById("view-dashboard"),
+      readiness: document.getElementById("view-readiness"),
+      tabs: Array.from(document.querySelectorAll(".tab-btn")),
+      sheet: document.getElementById("sheet"),
+      sheetPanel: document.getElementById("sheetPanel"),
+      sheetTag: document.getElementById("sheetTag"),
+      sheetTitle: document.getElementById("sheetTitle"),
+      sheetSummary: document.getElementById("sheetSummary"),
+      sheetBody: document.getElementById("sheetBody"),
+      searchSheet: document.getElementById("searchSheet"),
+      searchInput: document.getElementById("searchInput"),
+      searchResults: document.getElementById("searchResults")
+    };
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function allChapters() {
+      return appData.stages.flatMap((stage, stageIndex) =>
+        stage.chapters.map((chapter, chapterIndex) => ({ stage, stageIndex, chapter, chapterIndex }))
+      );
+    }
+
+    function textFromBlocks(blocks) {
+      return blocks.map(block => {
+        if (block.text) return block.text;
+        if (block.items) return JSON.stringify(block.items);
+        if (block.rows) return JSON.stringify(block.rows);
+        return "";
+      }).join(" ");
+    }
+
+    function renderHome() {
+      els.home.innerHTML = `
+        <div class="hero-card reveal">
+          <span class="eyebrow">ملف واحد يعمل مباشرة على الموبايل</span>
+          <h1>خطة العمل كـ <span class="gradient">تطبيق قرار تفاعلي</span></h1>
+          <p class="lead">هذه الوثيقة تجمع كل ملفات التخطيط في تجربة واحدة: من البوصلة والعميل والوعد، إلى Retention والقياس والبيتا والنمو. الهدف أن يرى الفريق كل خطوة، لماذا نفعلها، وما الدليل الذي يجعلنا ننتقل للخطوة التالية.</p>
+          <div class="hero-actions">
+            <button class="btn" data-go="journey">ابدأ الرحلة</button>
+            <button class="btn secondary" data-open-search>ابحث في الخطة</button>
+          </div>
+          <div class="stats-strip">
+            <div class="mini-stat"><strong>22</strong><span>وثيقة مدمجة</span></div>
+            <div class="mini-stat"><strong>6</strong><span>مراحل استراتيجية</span></div>
+            <div class="mini-stat"><strong>28 يوم</strong><span>عرض MVP الأول</span></div>
+            <div class="mini-stat"><strong>14 يوم</strong><span>North Star الحقيقي</span></div>
+          </div>
+        </div>
+
+        <div class="section-title reveal">
+          <h2>ما هو POSE الآن؟</h2>
+          <p>ليس عرضاً لتقنية Pose Detection، بل مدرب ذكي للمبتدئ في البيت.</p>
+        </div>
+        <div class="card reveal">
+          <h3>التعريف التنفيذي</h3>
+          <p>POSE يساعد المستخدم أن يعرف يبدأ من أين، يتمرن ماذا اليوم، يؤدي الحركة بأمان، يرى تقدمه، ويستمر حتى تتكون عادة. التقنية وسيلة، والقيمة هي الوضوح والثقة والتطور.</p>
+        </div>
+
+        <div class="section-title reveal">
+          <h2>القرارات المحسومة</h2>
+          <p>هذه القرارات هي حدود الحركة في المرحلة الأولى.</p>
+        </div>
+        <div class="decision-list">
+          ${appData.decisions.map((item, index) => `
+            <div class="decision reveal">
+              <span>${index + 1}</span>
+              <div><strong>${escapeHtml(item[0])}</strong><small>${escapeHtml(item[1])}</small></div>
+            </div>
+          `).join("")}
+        </div>
+
+        <div class="section-title reveal">
+          <h2>كيف تستخدم الوثيقة؟</h2>
+          <p>استخدمها كخريطة تنفيذ وليست عرضاً ثابتاً.</p>
+        </div>
+        <div class="card reveal">
+          <h3>طريقة القراءة المقترحة</h3>
+          <p>ابدأ من تبويب الرحلة لفهم المنطق المرحلي، ثم افتح الفصول حسب الحاجة. استخدم لوحة القرار لمراجعة المقاييس والمخاطر، ثم الجاهزية قبل تشغيل أول 20 مستخدم.</p>
+        </div>
+      `;
+    }
+
+    function renderJourney() {
+      const stage = appData.stages[state.stageIndex];
+      els.journey.innerHTML = `
+        <div class="stage-selector">
+          ${appData.stages.map((item, index) => `
+            <button class="stage-chip ${index === state.stageIndex ? "active" : ""}" data-stage="${index}">
+              ${item.number} ${escapeHtml(item.title)}
+            </button>
+          `).join("")}
+        </div>
+        <div class="stage-hero reveal" id="stageHero">
+          <span class="eyebrow">المرحلة ${stage.number} من 06</span>
+          <h2>${escapeHtml(stage.title)}</h2>
+          <p class="lead">${escapeHtml(stage.subtitle)}</p>
+          <p>${escapeHtml(stage.narrative)}</p>
+          <div class="stage-progress"><span style="width:${((state.stageIndex + 1) / appData.stages.length) * 100}%"></span></div>
+        </div>
+        <div>
+          ${stage.chapters.map((chapter, index) => `
+            <button class="chapter-card reveal" data-chapter="${index}">
+              <div class="chapter-top">
+                <div>
+                  <span class="tag green">${escapeHtml(chapter.file)}</span>
+                  <h3>${escapeHtml(chapter.title)}</h3>
+                </div>
+                <span class="doc-code">${chapter.code}</span>
+              </div>
+              <p>${escapeHtml(chapter.summary)}</p>
+              <div class="tag-row">${chapter.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}</div>
+            </button>
+          `).join("")}
+        </div>
+        <div class="stage-controls">
+          <button class="btn secondary" id="prevStage">المرحلة السابقة</button>
+          <button class="btn" id="nextStage">المرحلة التالية</button>
+        </div>
+      `;
+    }
+
+    function renderDashboard() {
+      els.dashboard.innerHTML = `
+        <div class="section-title reveal">
+          <h2>لوحة القرار</h2>
+          <p>الأرقام هنا ليست للزينة. كل رقم يؤدي إلى قرار: نكمل، نعدل، أو نؤجل.</p>
+        </div>
+        <div class="card reveal">
+          <h3>Funnel القياس</h3>
+          <div class="funnel">
+            ${dashboardData.funnel.map(([label, value]) => `
+              <div class="funnel-step">
+                <div class="funnel-head"><strong>${escapeHtml(label)}</strong><span>${value}</span></div>
+                <div class="bar" style="--value:${value}"><span></span></div>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+
+        <div class="section-title reveal">
+          <h2>المقاييس الحاكمة</h2>
+        </div>
+        <div class="metric-grid">
+          ${dashboardData.metrics.map(([value, title, text]) => `
+            <div class="metric-card reveal">
+              <span class="tag green">Target</span>
+              <div class="metric-value">${escapeHtml(value)}</div>
+              <h3>${escapeHtml(title)}</h3>
+              <p>${escapeHtml(text)}</p>
+            </div>
+          `).join("")}
+        </div>
+
+        <div class="section-title reveal">
+          <h2>حلقات Retention</h2>
+        </div>
+        <div class="loop-grid">
+          ${dashboardData.loops.map(([title, badge, text]) => `
+            <div class="loop-card reveal">
+              <span class="tag yellow">${escapeHtml(badge)}</span>
+              <h3>${escapeHtml(title)}</h3>
+              <p>${escapeHtml(text)}</p>
+            </div>
+          `).join("")}
+        </div>
+
+        <div class="section-title reveal">
+          <h2>خريطة المخاطر</h2>
+        </div>
+        <div class="risk-grid">
+          ${dashboardData.risks.map(([level, title, text]) => `
+            <div class="risk-card ${level} reveal">
+              <span class="tag ${level === "high" ? "yellow" : ""}">${level === "high" ? "عالي" : "متوسط"}</span>
+              <h3>${escapeHtml(title)}</h3>
+              <p>${escapeHtml(text)}</p>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function renderReadiness() {
+      els.readiness.innerHTML = `
+        <div class="section-title reveal">
+          <h2>جاهزية أول 20 مستخدم</h2>
+          <p>قائمة تفاعلية محفوظة على نفس المتصفح. الهدف إغلاق ما يلزم قبل التجربة الدافئة.</p>
+        </div>
+        <div class="card check-summary reveal">
+          <span class="eyebrow">Beta Readiness</span>
+          <div class="ring" id="readyRing"><strong id="readyPercent">0%</strong></div>
+          <div class="row-actions" style="justify-content:center">
+            <button class="btn secondary" id="resetReady">إعادة ضبط القائمة</button>
+          </div>
+        </div>
+        <div id="checklists">
+          ${readinessGroups.map((group, groupIndex) => `
+            <div class="check-group reveal">
+              <h3>${escapeHtml(group.title)}</h3>
+              ${group.items.map((item, itemIndex) => `
+                <label class="check-item">
+                  <input type="checkbox" data-check="${groupIndex}-${itemIndex}" />
+                  <div><strong>${escapeHtml(item[0])}</strong><span>${escapeHtml(item[1])}</span></div>
+                </label>
+              `).join("")}
+            </div>
+          `).join("")}
+        </div>
+      `;
+      restoreChecks();
+      updateReadinessProgress();
+    }
+
+    function renderBlock(block) {
+      const title = block.title ? `<h3>${escapeHtml(block.title)}</h3>` : "";
+      if (block.type === "lead") return `<div class="block"><p class="lead">${escapeHtml(block.text)}</p></div>`;
+      if (block.type === "quote") return `<div class="block quote">${escapeHtml(block.text)}</div>`;
+      if (block.type === "callout") return `<div class="block callout ${block.tone || ""}">${title}<p>${escapeHtml(block.text)}</p></div>`;
+      if (block.type === "list") return `<div class="block">${title}<ul>${block.items.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul></div>`;
+      if (block.type === "steps") return `<div class="block">${title}<ol>${block.items.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ol></div>`;
+      if (block.type === "grid") return `<div class="block">${title}<div class="grid-block">${block.items.map(([head, text]) => `<div class="mini-card"><h4>${escapeHtml(head)}</h4><p>${escapeHtml(text)}</p></div>`).join("")}</div></div>`;
+      if (block.type === "principles") return `<div class="block">${title}<div class="grid-block">${block.items.map(([head, text]) => `<div class="mini-card"><span class="tag green">Principle</span><h4>${escapeHtml(head)}</h4><p>${escapeHtml(text)}</p></div>`).join("")}</div></div>`;
+      if (block.type === "details") return `<div class="block">${title}${block.items.map(([head, text]) => `<details class="mini-card"><summary>${escapeHtml(head)}</summary><p>${escapeHtml(text)}</p></details>`).join("")}</div>`;
+      if (block.type === "split") return `<div class="block">${title}<div class="split"><div class="mini-card"><h4>${escapeHtml(block.leftTitle)}</h4><ul>${block.left.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul></div><div class="mini-card"><h4>${escapeHtml(block.rightTitle)}</h4><ul>${block.right.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul></div></div></div>`;
+      if (block.type === "stats") return `<div class="block">${title}<div class="stats-strip">${block.items.map(([value, text]) => `<div class="mini-stat"><strong>${escapeHtml(value)}</strong><span>${escapeHtml(text)}</span></div>`).join("")}</div></div>`;
+      if (block.type === "table") return `<div class="block">${title}<div class="table-wrap"><table><thead><tr>${block.headers.map(header => `<th>${escapeHtml(header)}</th>`).join("")}</tr></thead><tbody>${block.rows.map(row => `<tr>${row.map(cell => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table></div></div>`;
+      if (block.type === "people") return `<div class="block">${title}<div class="tag-row">${block.items.map(item => `<span class="tag">${escapeHtml(item)}</span>`).join("")}</div></div>`;
+      return "";
+    }
+
+    function openChapter(stageIndex, chapterIndex) {
+      const stage = appData.stages[stageIndex];
+      const chapter = stage.chapters[chapterIndex];
+      state.activeChapter = { stageIndex, chapterIndex };
+      els.sheetTag.textContent = `${chapter.code} • ${stage.title}`;
+      els.sheetTitle.textContent = chapter.title;
+      els.sheetSummary.textContent = chapter.summary;
+      els.sheetBody.innerHTML = chapter.blocks.map(renderBlock).join("");
+      openSheet(els.sheet);
+    }
+
+    function openSheet(sheetEl) {
+      sheetEl.classList.add("open");
+      sheetEl.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeSheet(sheetEl = els.sheet) {
+      sheetEl.classList.remove("open");
+      sheetEl.setAttribute("aria-hidden", "true");
+      if (!els.sheet.classList.contains("open") && !els.searchSheet.classList.contains("open")) {
+        document.body.style.overflow = "";
+      }
+    }
+
+    function setView(view) {
+      state.view = view;
+      document.querySelectorAll(".view").forEach(el => el.classList.remove("active"));
+      document.getElementById(`view-${view}`).classList.add("active");
+      els.tabs.forEach(tab => tab.classList.toggle("active", tab.dataset.view === view));
+      els.appTitle.textContent = document.getElementById(`view-${view}`).dataset.title;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      requestAnimationFrame(initReveal);
+    }
+
+    function setStage(index) {
+      state.stageIndex = (index + appData.stages.length) % appData.stages.length;
+      renderJourney();
+      requestAnimationFrame(initReveal);
+      const selector = document.querySelector(`.stage-chip[data-stage="${state.stageIndex}"]`);
+      if (selector) selector.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+    }
+
+    function storageKey() {
+      return "pose-plan-app-readiness";
+    }
+
+    function readChecks() {
+      try {
+        return JSON.parse(localStorage.getItem(storageKey())) || {};
+      } catch {
+        return {};
+      }
+    }
+
+    function writeChecks(value) {
+      localStorage.setItem(storageKey(), JSON.stringify(value));
+    }
+
+    function restoreChecks() {
+      const checks = readChecks();
+      document.querySelectorAll("[data-check]").forEach(input => {
+        input.checked = !!checks[input.dataset.check];
+      });
+    }
+
+    function updateReadinessProgress() {
+      const inputs = Array.from(document.querySelectorAll("[data-check]"));
+      if (!inputs.length) return;
+      const done = inputs.filter(input => input.checked).length;
+      const percent = Math.round((done / inputs.length) * 100);
+      const ring = document.getElementById("readyRing");
+      const label = document.getElementById("readyPercent");
+      if (ring) ring.style.setProperty("--p", percent);
+      if (label) label.textContent = `${percent}%`;
+    }
+
+    function renderSearchResults(query = "") {
+      const normalized = query.trim().toLowerCase();
+      const records = allChapters().filter(({ chapter, stage }) => {
+        const haystack = `${stage.title} ${chapter.title} ${chapter.summary} ${chapter.tags.join(" ")} ${chapter.file} ${textFromBlocks(chapter.blocks)}`.toLowerCase();
+        return !normalized || haystack.includes(normalized);
+      });
+
+      if (!records.length) {
+        els.searchResults.innerHTML = `<div class="empty">لا توجد نتائج مطابقة.</div>`;
+        return;
+      }
+
+      els.searchResults.innerHTML = records.map(({ stage, stageIndex, chapter, chapterIndex }) => `
+        <button class="search-result" data-stage="${stageIndex}" data-chapter="${chapterIndex}">
+          <small>${escapeHtml(stage.title)} • ${escapeHtml(chapter.file)}</small>
+          <strong>${escapeHtml(chapter.title)}</strong>
+          <p>${escapeHtml(chapter.summary)}</p>
+        </button>
+      `).join("");
+    }
+
+    function initReveal() {
+      const targets = document.querySelectorAll(".reveal:not(.visible)");
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.08 });
+      targets.forEach(target => observer.observe(target));
+    }
+
+    function updateReadProgress() {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      const value = max <= 0 ? 0 : (window.scrollY / max) * 100;
+      els.readProgress.style.width = `${Math.min(100, Math.max(0, value))}%`;
+    }
+
+    function applyTheme(theme) {
+      document.documentElement.dataset.theme = theme;
+      document.body.dataset.theme = theme;
+      localStorage.setItem("pose-plan-theme", theme);
+    }
+
+    function initTheme() {
+      applyTheme(localStorage.getItem("pose-plan-theme") || "dark");
+    }
+
+    function bindEvents() {
+      document.addEventListener("click", event => {
+        const tab = event.target.closest(".tab-btn");
+        if (tab) setView(tab.dataset.view);
+
+        const go = event.target.closest("[data-go]");
+        if (go) setView(go.dataset.go);
+
+        if (event.target.closest("[data-open-search]")) {
+          openSheet(els.searchSheet);
+          renderSearchResults("");
+          setTimeout(() => els.searchInput.focus(), 80);
+        }
+
+        const stageChip = event.target.closest("[data-stage]");
+        if (stageChip && stageChip.classList.contains("stage-chip")) {
+          setStage(Number(stageChip.dataset.stage));
+        }
+
+        const chapterCard = event.target.closest("[data-chapter]");
+        if (chapterCard && chapterCard.classList.contains("chapter-card")) {
+          openChapter(state.stageIndex, Number(chapterCard.dataset.chapter));
+        }
+
+        const searchResult = event.target.closest(".search-result");
+        if (searchResult) {
+          closeSheet(els.searchSheet);
+          setView("journey");
+          state.stageIndex = Number(searchResult.dataset.stage);
+          renderJourney();
+          openChapter(state.stageIndex, Number(searchResult.dataset.chapter));
+        }
+
+        if (event.target.id === "prevStage") setStage(state.stageIndex - 1);
+        if (event.target.id === "nextStage") setStage(state.stageIndex + 1);
+        if (event.target.id === "resetReady") {
+          localStorage.removeItem(storageKey());
+          restoreChecks();
+          updateReadinessProgress();
+        }
+      });
+
+      document.addEventListener("change", event => {
+        const input = event.target.closest("[data-check]");
+        if (!input) return;
+        const checks = readChecks();
+        checks[input.dataset.check] = input.checked;
+        writeChecks(checks);
+        updateReadinessProgress();
+      });
+
+      document.getElementById("closeSheet").addEventListener("click", () => closeSheet(els.sheet));
+      document.getElementById("closeSearch").addEventListener("click", () => closeSheet(els.searchSheet));
+      document.getElementById("searchBtn").addEventListener("click", () => {
+        openSheet(els.searchSheet);
+        renderSearchResults(els.searchInput.value);
+        setTimeout(() => els.searchInput.focus(), 80);
+      });
+      document.getElementById("themeBtn").addEventListener("click", () => {
+        const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+        applyTheme(next);
+      });
+      els.searchInput.addEventListener("input", () => renderSearchResults(els.searchInput.value));
+
+      [els.sheet, els.searchSheet].forEach(sheet => {
+        sheet.addEventListener("click", event => {
+          if (event.target === sheet) closeSheet(sheet);
+        });
+      });
+
+      document.addEventListener("keydown", event => {
+        if (event.key === "Escape") {
+          closeSheet(els.sheet);
+          closeSheet(els.searchSheet);
+        }
+      });
+
+      let startX = 0;
+      els.journey.addEventListener("touchstart", event => {
+        startX = event.touches[0].clientX;
+      }, { passive: true });
+
+      els.journey.addEventListener("touchend", event => {
+        const diff = event.changedTouches[0].clientX - startX;
+        if (Math.abs(diff) < 55) return;
+        if (diff > 0) setStage(state.stageIndex - 1);
+        else setStage(state.stageIndex + 1);
+      }, { passive: true });
+
+      [els.sheetPanel, document.querySelector("#searchSheet .bottom-sheet-panel")].forEach(panel => {
+        panel.addEventListener("touchstart", event => {
+          state.sheetStartY = event.touches[0].clientY;
+        }, { passive: true });
+        panel.addEventListener("touchend", event => {
+          if (state.sheetStartY === null) return;
+          const diff = event.changedTouches[0].clientY - state.sheetStartY;
+          if (diff > 90 && panel.scrollTop < 8) closeSheet(panel.closest(".bottom-sheet"));
+          state.sheetStartY = null;
+        }, { passive: true });
+      });
+
+      window.addEventListener("scroll", updateReadProgress, { passive: true });
+    }
+
+    function init() {
+      initTheme();
+      renderHome();
+      renderJourney();
+      renderDashboard();
+      renderReadiness();
+      bindEvents();
+      initReveal();
+      updateReadProgress();
+    }
+
+    init();
+  </script>
+</body>
+</html>

@@ -3,29 +3,31 @@
     <!-- ═══════════════════════════════════════════════════ -->
     <!-- MAIN APP THEME -->
     <!-- ═══════════════════════════════════════════════════ -->
-    <style name="Theme.WayToFix" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <!-- Base theme: ALL shared items. Colors auto-swap via values-night/colors_night.xml.
+         Only android:windowLightStatusBar differs per light/dark — see the two thin themes below
+         (light here, dark in values-night/themes.xml), both inheriting this base. -->
+    <style name="Base.Theme.WayToFix" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Primary colors -->
         <item name="colorPrimary">@color/primary</item>
         <item name="colorPrimaryVariant">@color/primary_variant</item>
         <item name="colorOnPrimary">@color/on_primary</item>
-        
+
         <item name="colorSecondary">@color/primary</item>
         <item name="colorOnSecondary">@color/on_primary</item>
-        
+
         <!-- Background -->
         <item name="android:colorBackground">@color/background</item>
         <item name="colorSurface">@color/surface</item>
         <item name="colorOnSurface">@color/text_primary</item>
-        
+
         <!-- Error -->
         <item name="colorError">@color/error</item>
         <item name="colorOnError">@color/text_primary</item>
-        
+
         <!-- System UI -->
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@color/surface</item>
-        <item name="android:windowLightStatusBar">true</item>
-        
+
         <!-- Default text appearances -->
         <item name="textAppearanceHeadline1">@style/TextAppearance.WayToFix.Headline1</item>
         <item name="textAppearanceHeadline2">@style/TextAppearance.WayToFix.Headline2</item>
@@ -34,6 +36,11 @@
         <item name="textAppearanceBody2">@style/TextAppearance.WayToFix.Body2</item>
         <item name="textAppearanceCaption">@style/TextAppearance.WayToFix.Caption</item>
         <item name="textAppearanceButton">@style/TextAppearance.WayToFix.Button</item>
+    </style>
+
+    <!-- Light-mode entry point: inherits everything from Base, sets dark status-bar icons. -->
+    <style name="Theme.WayToFix" parent="Base.Theme.WayToFix">
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 
     <!-- ═══════════════════════════════════════════════════ -->

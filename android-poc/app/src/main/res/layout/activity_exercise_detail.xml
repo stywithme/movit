@@ -375,61 +375,14 @@
 
         </LinearLayout>
 
-        <!-- Training Mode Selection -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Start Training"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="16dp">
-
-            <!-- Camera Mode Button -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnStartCamera"
-                android:layout_width="0dp"
-                android:layout_height="64dp"
-                android:layout_weight="1"
-                android:layout_marginEnd="8dp"
-                android:text="📷 Camera"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                app:cornerRadius="16dp"
-                app:backgroundTint="#00E676" />
-
-            <!-- Video Mode Button -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnStartVideo"
-                android:layout_width="0dp"
-                android:layout_height="64dp"
-                android:layout_weight="1"
-                android:layout_marginStart="8dp"
-                android:text="🎬 Video"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                app:cornerRadius="16dp"
-                app:backgroundTint="#2196F3" />
-
-        </LinearLayout>
-
-        <!-- Legacy Start Button (hidden, kept for compatibility) -->
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnStart"
+            android:id="@+id/btnStartCamera"
             android:layout_width="match_parent"
             android:layout_height="64dp"
             android:layout_margin="16dp"
-            android:text="Start Training"
-            android:textSize="18sp"
+            android:text="@string/start_exercise"
+            android:textSize="16sp"
             android:textStyle="bold"
-            android:visibility="gone"
             app:cornerRadius="16dp"
             app:backgroundTint="#00E676" />
 

@@ -11,9 +11,8 @@ import com.trainingvalidator.poc.analysis.SmoothedLandmark
  * [PoseSceneResult] that doesn't flicker frame to frame.
  *
  * **Warm-up**: while fewer than [requiredMajority] frames have been collected,
- * the raw single-frame result is trusted directly. This ensures that image mode
- * (single frame) and early video frames get an immediate real value rather than
- * UNKNOWN.
+ * the raw single-frame result is trusted directly so the first camera frame gets
+ * an immediate real value rather than UNKNOWN.
  *
  * Create one instance per training session / validator lifetime.
  */

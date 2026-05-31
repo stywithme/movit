@@ -80,9 +80,6 @@ class TrainingViewModel(
     private val _poseVariantIndex = MutableStateFlow(0)
     val poseVariantIndex: StateFlow<Int> = _poseVariantIndex.asStateFlow()
     
-    private val _isVideoMode = MutableStateFlow(false)
-    val isVideoMode: StateFlow<Boolean> = _isVideoMode.asStateFlow()
-    
     // ==================== Training State ====================
     
     private val _repCount = MutableStateFlow(0)
@@ -258,13 +255,9 @@ class TrainingViewModel(
      * Initialize feedback manager
      * 
      * @param context Android context
-     * @param isVideoMode Whether in video analysis mode
      * @param useRepository If true, uses ExerciseRepository for audio caching support
      */
-    fun initializeFeedback(context: Context, isVideoMode: Boolean, useRepository: Boolean = true) {
-        _isVideoMode.value = isVideoMode
-        supervisor.isVideoMode = isVideoMode
-        
+    fun initializeFeedback(context: Context, useRepository: Boolean = true) {
         // Align with app UI language (Profile / AppCompatDelegate), not app_settings.json alone
         val language = context.feedbackLanguageCode()
         poseSetupGuide.language = language
@@ -276,9 +269,7 @@ class TrainingViewModel(
                 enableHaptic = true,
                 language = language
             )
-        ).apply {
-            this.isVideoMode = isVideoMode
-        }
+        )
         
         // Initialize with audio cache if using repository
         if (useRepository) {
@@ -389,27 +380,6 @@ class TrainingViewModel(
         supervisor.processSignal(SupervisorSignal.StopRequested)
     }
     
-    /**
-     * Video mode start request
-     */
-    fun requestVideoStart() {
-        supervisor.processSignal(SupervisorSignal.StartRequested)
-    }
-    
-    /**
-     * Video ended
-     */
-    fun onVideoEnded() {
-        supervisor.processSignal(SupervisorSignal.VideoEnded)
-    }
-    
-    /**
-     * Video seeked
-     */
-    fun onVideoSeeked() {
-        supervisor.processSignal(SupervisorSignal.VideoSeeked)
-    }
-    
     // ==================== Action Execution ====================
     
     /**
@@ -452,12 +422,6 @@ class TrainingViewModel(
             is SupervisorAction.ResumeFromVisibilityPause -> {
                 releaseSetupTiltCorrection()
                 trainingEngine?.resume()
-            }
-            
-            is SupervisorAction.ResetEngine -> {
-                releaseSetupTiltCorrection()
-                trainingEngine?.stop()
-                trainingEngine?.start()
             }
             
             // Frame Processing - Run on background thread to keep UI responsive
@@ -598,18 +562,6 @@ class TrainingViewModel(
                 }
             }
             
-            // Video Commands
-            is SupervisorAction.PauseVideo -> {
-                viewModelScope.launch {
-                    _events.emit(TrainingUIEvent.PauseVideoPlayback)
-                }
-            }
-            
-            is SupervisorAction.ResumeVideo -> {
-                viewModelScope.launch {
-                    _events.emit(TrainingUIEvent.ResumeVideoPlayback)
-                }
-            }
         }
     }
     
@@ -617,12 +569,6 @@ class TrainingViewModel(
     
     @Deprecated("Use supervisor signals instead")
     fun startTraining() {
-        supervisor.processSignal(SupervisorSignal.StartRequested)
-    }
-    
-    @Deprecated("Use supervisor signals instead")
-    fun startVideoModeTraining() {
-        supervisor.isVideoMode = true
         supervisor.processSignal(SupervisorSignal.StartRequested)
     }
     
@@ -978,7 +924,6 @@ class TrainingViewModel(
     }
 
     private fun acquireSetupTiltCorrection() {
-        if (_isVideoMode.value) return
         PoseApp.instance.tiltProvider.acquire(setupTiltOwner)
     }
 
@@ -1051,10 +996,4 @@ sealed class TrainingUIEvent {
     
     /** No pose warning (before auto-pause) */
     data class NoPoseWarning(val elapsedMs: Long) : TrainingUIEvent()
-    
-    /** Pause video playback (video mode) */
-    object PauseVideoPlayback : TrainingUIEvent()
-    
-    /** Resume video playback (video mode) */
-    object ResumeVideoPlayback : TrainingUIEvent()
 }

@@ -889,7 +889,7 @@ object AngleColorResolver {
  * - NORMAL: INFO priority - delivered when no higher-priority message is active
  * - PERFECT: MOTIVATION priority - encouragement when reaching perfect form
  *
- * Output channel is mode-specific: camera uses voice only, video uses text only.
+ * Output channel is voice-first during live camera training.
  *
  * All messages are OPTIONAL - can have up only, down only, both, or none.
  */

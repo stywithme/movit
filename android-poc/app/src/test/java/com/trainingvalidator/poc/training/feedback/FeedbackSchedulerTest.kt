@@ -93,21 +93,6 @@ class FeedbackSchedulerTest {
     }
 
     @Test
-    fun videoModeUsesTextOnlyForWarnings() {
-        val scheduler = scheduler()
-
-        val plan = scheduler.schedule(
-            signal("warning", FeedbackSeverity.WARNING),
-            FeedbackRuntimeMode.VIDEO
-        )
-
-        assertTrue(plan.shouldDeliver)
-        assertEquals(FeedbackAudible.NONE, plan.audible)
-        assertTrue(plan.showVisual)
-        assertFalse(plan.vibrate)
-    }
-
-    @Test
     fun normalAndPadUseVoiceWhenNoHigherPriorityIsActive() {
         val scheduler = scheduler()
 

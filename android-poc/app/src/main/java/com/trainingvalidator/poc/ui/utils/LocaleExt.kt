@@ -23,7 +23,7 @@ val Context.currentLanguage: String
 /**
  * Language code for training feedback (text + TTS + cached audio).
  * Must match [currentLanguage] (Profile / app locale), not a static JSON language field,
- * so video overlay text and audio use the same ar/en choice.
+ * so UI text and audio use the same ar/en choice.
  */
 fun Context.feedbackLanguageCode(): String {
     val raw = currentLanguage.lowercase()

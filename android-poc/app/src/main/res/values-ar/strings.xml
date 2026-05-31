@@ -221,7 +221,6 @@
     <string name="cd_pro">احترافي</string>
     <string name="cd_exercise">تمرين</string>
     <string name="cd_camera">الكاميرا</string>
-    <string name="cd_video">الفيديو</string>
     <string name="cd_no_exercises">لا توجد تمارين</string>
     <string name="cd_no_history">لا يوجد سجل</string>
     <string name="cd_view_details">عرض التفاصيل</string>
@@ -234,14 +233,11 @@
     <string name="change_avatar_coming_soon">تغيير الصورة - قريبًا</string>
     <string name="google_sign_in_coming_soon">تسجيل Google - قريبًا</string>
     <string name="google_sign_up_coming_soon">إنشاء حساب Google - قريبًا</string>
-    <string name="no_video_selected">لم يتم اختيار فيديو</string>
     <string name="no_exercise_specified">لم يتم تحديد تمرين</string>
     <string name="failed_to_load_exercise">فشل تحميل التمرين</string>
     <string name="failed_to_load_exercise_format">فشل تحميل التمرين: %1$s</string>
     <string name="failed_to_load_workout_format">فشل تحميل البرنامج: %1$s</string>
     <string name="no_workout_specified">لم يتم تحديد برنامج</string>
-    <string name="video_permission_required">مطلوب إذن للوصول إلى الفيديوهات</string>
-    <string name="video_permission_rationale">نحتاج إذن الوصول إلى الفيديو لتحليل مقاطع التمرين</string>
     <string name="counting_method_up_down">أعلى وأسفل (مثل القرفصاء)</string>
     <string name="counting_method_hold">ثبات (مثل البلانك)</string>
     
@@ -504,7 +500,6 @@
     <string name="subscription_feature_ai">تحليل الأداء بالذكاء الاصطناعي</string>
     <string name="subscription_feature_reports">تقارير واتجاهات متقدمة</string>
     <string name="subscription_feature_programs">برامج تدريب مخصصة</string>
-    <string name="subscription_feature_video">أدوات مراجعة وتصدير الفيديو</string>
     <string name="subscription_feature_doctor_sessions">%1$d جلسات دكتور مشمولة</string>
     <string name="subscription_feature_workouts">%1$d تمارين مشمولة</string>
     <string name="subscription_feature_exercises">%1$d حركات مشمولة</string>
@@ -573,8 +568,7 @@
     
     <!-- Workout -->
     <string name="start">ابدأ</string>
-    <string name="start_camera">تشغيل الكاميرا</string>
-    <string name="analyze_video">تحليل فيديو</string>
+    <string name="start_exercise">ابدأ التمرين</string>
     <string name="body_scan_title">فحص الجسم</string>
     <string name="body_scan_subtitle">قيّم مرونتك وتوازنك وتماثلك</string>
     <string name="form_checklist">قائمة التحقق</string>
@@ -721,7 +715,6 @@
     <string name="feature_unlimited_ai">تصحيح AI غير محدود</string>
     <string name="feature_personalized">برامج تدريب مخصصة</string>
     <string name="feature_analytics">تحليلات تقدم مفصلة</string>
-    <string name="feature_video_export">تصدير فيديو وحركة بطيئة</string>
     
     <!-- Training Screen -->
     <string name="setup_position">إعداد الوضعية</string>
@@ -994,7 +987,6 @@
     <string name="error_expand_session_first">افتح جلسة أولاً</string>
 
     <!-- TrainingActivity messages -->
-    <string name="error_video_playback">خطأ في تشغيل الفيديو</string>
     <string name="results_saved">تم حفظ النتائج!</string>
     <string name="btn_saved">تم الحفظ ✓</string>
     <string name="error_save_failed">فشل حفظ النتائج</string>
@@ -1067,7 +1059,7 @@
     <string name="coach_standard">متوازن</string>
     <string name="coach_strict">صارم</string>
     <string name="camera_cue_mode">قنوات رسائل التدريب</string>
-    <string name="camera_cue_mode_desc">تدريب الكاميرا يستخدم رسائل صوتية فقط. مراجعة الفيديو تستخدم رسائل نصية فقط.</string>
+    <string name="camera_cue_mode_desc">تدريب الكاميرا يستخدم رسائل صوتية أثناء التدريب المباشر.</string>
 
     <!-- Assessment / Body Scan -->
     <string name="screening_title">فحص ما قبل الاختبار</string>

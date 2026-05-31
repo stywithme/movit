@@ -11,7 +11,7 @@ import com.trainingvalidator.poc.training.session.SessionState
 
 /**
  * [FrameCaptureManager] and [ReportStorage] init, rep-wide replay sampling, peak / error / danger
- * frame capture, and [getBitmapForCapture] for both camera and video.
+ * frame capture from the live camera preview.
  */
 class TrainingFrameCaptureController(
     private val host: TrainingActivity
@@ -35,10 +35,8 @@ class TrainingFrameCaptureController(
             val manager = host.frameCaptureManager
             val repNumber = (host.viewModel.trainingEngine?.getCurrentRep() ?: 0) + 1
             if (manager != null && repNumber >= 1) {
-                val bitmap = getBitmapForCapture()
-                if (bitmap != null) {
+                getBitmapForCapture()?.let { bitmap ->
                     manager.captureReplayFrame(bitmap = bitmap, repNumber = repNumber)
-                    if (host.isVideoMode) bitmap.recycle()
                 }
             }
             if (repWideReplayScheduled) {
@@ -55,9 +53,6 @@ class TrainingFrameCaptureController(
         host.reportStorage = ReportStorage(host)
     }
 
-    /**
-     * New [FrameCaptureManager] for the next session exercise; clears peak-phase de-dupe state.
-     */
     fun resetForNextExercise() {
         val newId = java.util.UUID.randomUUID().toString()
         Log.d(TrainingActivity.TAG, "Resetting FrameCaptureManager for next exercise: sessionId=$newId")
@@ -65,9 +60,6 @@ class TrainingFrameCaptureController(
         host.frameCaptureManager = FrameCaptureManager(host, newId)
     }
 
-    /**
-     * BOTTOM peak capture on phase change (matches prior [TrainingActivity] observer behaviour).
-     */
     fun onCurrentPhaseForPeakCapture(phase: Phase) {
         if (phase == lastCapturedPhase) return
         if (phase == Phase.BOTTOM) {
@@ -98,18 +90,11 @@ class TrainingFrameCaptureController(
         stopRepWideReplaySampler()
     }
 
-    /**
-     * Capture peak frame when reaching BOTTOM phase.
-     * Uses [com.trainingvalidator.poc.training.TrainingEngine.getCurrentRep] + 1 as repNumber so
-     * it matches [com.trainingvalidator.poc.training.feedback.FeedbackEvent.RepCompleted.repNumber]
-     * for the rep in progress.
-     */
     fun capturePeakFrame(phase: Phase) {
         if (host.viewModel.supervisor.state.value != SessionState.TRAINING) {
             return
         }
-        val bitmap = getBitmapForCapture()
-        bitmap?.let { bmp ->
+        getBitmapForCapture()?.let { bmp ->
             val currentRep = (host.viewModel.trainingEngine?.getCurrentRep() ?: 0) + 1
             val angles = host.viewModel.trainingEngine?.currentAngles?.value ?: emptyMap()
             host.frameCaptureManager?.capturePeakFrame(
@@ -119,9 +104,6 @@ class TrainingFrameCaptureController(
                 angles = angles
             )
             Log.d(TrainingActivity.TAG, "Captured peak frame for rep $currentRep at phase ${phase.name}")
-            if (host.isVideoMode) {
-                bmp.recycle()
-            }
         }
     }
 
@@ -129,8 +111,7 @@ class TrainingFrameCaptureController(
         if (host.viewModel.supervisor.state.value != SessionState.TRAINING) {
             return
         }
-        val bitmap = getBitmapForCapture()
-        bitmap?.let { bmp ->
+        getBitmapForCapture()?.let { bmp ->
             val angles = host.viewModel.trainingEngine?.currentAngles?.value ?: emptyMap()
             val captured = host.frameCaptureManager?.captureErrorFrame(
                 bitmap = bmp,
@@ -142,9 +123,6 @@ class TrainingFrameCaptureController(
             if (captured != null) {
                 Log.d(TrainingActivity.TAG, "Captured error frame for $errorKey at rep $repNumber")
             }
-            if (host.isVideoMode) {
-                bmp.recycle()
-            }
         }
     }
 
@@ -152,8 +130,7 @@ class TrainingFrameCaptureController(
         if (host.viewModel.supervisor.state.value != SessionState.TRAINING) {
             return
         }
-        val bitmap = getBitmapForCapture()
-        bitmap?.let { bmp ->
+        getBitmapForCapture()?.let { bmp ->
             val angles = host.viewModel.trainingEngine?.currentAngles?.value ?: emptyMap()
             val captured = host.frameCaptureManager?.captureDangerFrame(
                 bitmap = bmp,
@@ -164,19 +141,10 @@ class TrainingFrameCaptureController(
                 angles = angles
             )
             if (captured != null) {
-                Log.d(TrainingActivity.TAG, "🚨 Captured DANGER frame for $jointCode at ${actualAngle.toInt()}° (rep $repNumber)")
-            }
-            if (host.isVideoMode) {
-                bmp.recycle()
+                Log.d(TrainingActivity.TAG, "Captured DANGER frame for $jointCode at ${actualAngle.toInt()}° (rep $repNumber)")
             }
         }
     }
 
-    fun getBitmapForCapture(): android.graphics.Bitmap? {
-        return if (host.isVideoMode) {
-            host.videoModeController?.getCurrentFrameBitmap()
-        } else {
-            host.binding.previewView.bitmap
-        }
-    }
+    fun getBitmapForCapture(): android.graphics.Bitmap? = host.binding.previewView.bitmap
 }

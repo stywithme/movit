@@ -19,6 +19,7 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.trainingvalidator.poc.BuildConfig
 import com.trainingvalidator.poc.ui.utils.bindUserAvatar
 import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.R
@@ -178,8 +179,11 @@ class ProfileActivity : AppCompatActivity() {
             showLanguageDialog()
         }
 
+        binding.itemDebug.visibility = if (BuildConfig.DEBUG) View.VISIBLE else View.GONE
         binding.itemDebug.setOnClickListener {
-            startActivity(Intent(this, DebugActivity::class.java))
+            if (BuildConfig.DEBUG) {
+                startActivity(Intent(this, DebugActivity::class.java))
+            }
         }
 
         binding.itemLogOut.setOnClickListener {

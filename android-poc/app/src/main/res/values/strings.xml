@@ -219,7 +219,6 @@
     <string name="cd_pro">Pro</string>
     <string name="cd_exercise">Exercise</string>
     <string name="cd_camera">Camera</string>
-    <string name="cd_video">Video</string>
     <string name="cd_no_exercises">No exercises</string>
     <string name="cd_no_history">No history</string>
     <string name="cd_view_details">View details</string>
@@ -232,14 +231,11 @@
     <string name="change_avatar_coming_soon">Change Avatar - Coming Soon</string>
     <string name="google_sign_in_coming_soon">Google Sign In - Coming Soon</string>
     <string name="google_sign_up_coming_soon">Google Sign Up - Coming Soon</string>
-    <string name="no_video_selected">No video selected</string>
     <string name="no_exercise_specified">No exercise specified</string>
     <string name="failed_to_load_exercise">Failed to load exercise</string>
     <string name="failed_to_load_exercise_format">Failed to load exercise: %1$s</string>
     <string name="failed_to_load_workout_format">Failed to load workout: %1$s</string>
     <string name="no_workout_specified">No workout specified</string>
-    <string name="video_permission_required">Permission required to access videos</string>
-    <string name="video_permission_rationale">Video access permission is needed to analyze exercise videos</string>
     <string name="counting_method_up_down">Up &amp; Down (like Squat)</string>
     <string name="counting_method_hold">Hold (like Plank)</string>
     
@@ -369,7 +365,6 @@
     <string name="subscription_feature_ai">AI form analysis</string>
     <string name="subscription_feature_reports">Advanced reports and trends</string>
     <string name="subscription_feature_programs">Personalized programs</string>
-    <string name="subscription_feature_video">Video review and export tools</string>
     <string name="subscription_feature_doctor_sessions">%1$d doctor sessions included</string>
     <string name="subscription_feature_workouts">%1$d workouts included</string>
     <string name="subscription_feature_exercises">%1$d exercises included</string>
@@ -438,8 +433,7 @@
     
     <!-- Workout -->
     <string name="start">Start</string>
-    <string name="start_camera">Start Camera</string>
-    <string name="analyze_video">Analyze Video</string>
+    <string name="start_exercise">Start Exercise</string>
     <string name="body_scan_title">Body Scan</string>
     <string name="body_scan_subtitle">Assess your mobility, balance &amp; symmetry</string>
     <string name="form_checklist">Form Checklist</string>
@@ -609,7 +603,6 @@
     <string name="feature_unlimited_ai">Unlimited AI Form Correction</string>
     <string name="feature_personalized">Personalized Training Programs</string>
     <string name="feature_analytics">Detailed Progress Analytics</string>
-    <string name="feature_video_export">Video Export &amp; Slow Motion</string>
     
     <!-- Training Screen -->
     <string name="setup_position">Setup Position</string>
@@ -627,7 +620,7 @@
     <string name="coach_standard">Standard</string>
     <string name="coach_strict">Strict</string>
     <string name="camera_cue_mode">Feedback Channels</string>
-    <string name="camera_cue_mode_desc">Camera training uses spoken feedback only. Video review uses text feedback only.</string>
+    <string name="camera_cue_mode_desc">Camera training uses spoken feedback during live coaching.</string>
     <string name="detection_model">Detection Model</string>
     <string name="detection_model_desc">Heavy model is more accurate but slower</string>
     <string name="model_full">Full (Fast)</string>
@@ -1079,7 +1072,6 @@
     <string name="error_expand_session_first">Expand a session first</string>
 
     <!-- TrainingActivity messages -->
-    <string name="error_video_playback">Error playing video</string>
     <string name="results_saved">Results saved!</string>
     <string name="btn_saved">Saved ✓</string>
     <string name="error_save_failed">Failed to save results</string>

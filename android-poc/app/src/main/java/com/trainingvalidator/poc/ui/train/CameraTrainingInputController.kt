@@ -241,6 +241,5 @@ class CameraTrainingInputController(
     fun onDestroy() {
         cameraManager?.stopCamera()
         poseLandmarkerHelper?.close()
-        poseLandmarkerHelper?.closeVideoMode()
     }
 }

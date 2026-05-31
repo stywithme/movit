@@ -309,31 +309,12 @@
         android:elevation="8dp"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <!-- Analyze Video Button -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnAnalyzeVideo"
-            android:layout_width="0dp"
-            android:layout_height="@dimen/button_height"
-            android:layout_weight="1"
-            android:layout_marginEnd="@dimen/spacing_sm"
-            style="@style/Widget.WayToFix.Button.Secondary"
-            android:text="@string/analyze_video"
-            app:icon="@drawable/ic_video"
-            app:iconGravity="start"
-            app:iconTint="@color/text_primary"/>
-
-        <!-- Start Camera Button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnStartCamera"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="@dimen/button_height"
-            android:layout_weight="1"
-            android:layout_marginStart="@dimen/spacing_sm"
             style="@style/Widget.WayToFix.Button.Primary"
-            android:text="@string/start_camera"
-            app:icon="@drawable/ic_camera"
-            app:iconGravity="start"
-            app:iconTint="@color/on_primary"/>
+            android:text="@string/start_exercise" />
 
     </LinearLayout>
 

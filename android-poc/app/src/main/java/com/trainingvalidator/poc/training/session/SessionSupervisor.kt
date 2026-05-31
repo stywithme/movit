@@ -21,7 +21,6 @@ import kotlinx.coroutines.flow.asStateFlow
  * - Handle NoPose auto-pause (4s timeout)
  * - Coordinate countdown → training flow
  * - Distinguish between fresh start and resume (preserving rep count)
- * - Handle video mode specifics (pause video on auto-pause)
  * 
  * Usage:
  * 1. Create instance in ViewModel
@@ -50,11 +49,6 @@ class SessionSupervisor {
         extraBufferCapacity = 16
     )
     val actions: SharedFlow<SupervisorAction> = _actions.asSharedFlow()
-    
-    // ==================== Configuration ====================
-    
-    /** Whether in video mode (affects pause behavior) */
-    var isVideoMode: Boolean = false
     
     // ==================== Internal State ====================
     
@@ -106,19 +100,12 @@ class SessionSupervisor {
         }
     }
     
-    /**
-     * Notify that exercise was loaded - transitions from IDLE to SETUP_POSE (camera)
-     * or stays in IDLE (video mode, waiting for user to press play)
-     */
+    /** Notify that exercise was loaded - transitions from IDLE to SETUP_POSE */
     fun onExerciseLoaded() {
         if (_state.value == SessionState.IDLE) {
-            if (isVideoMode) {
-                Log.d(TAG, "Exercise loaded (video mode) - waiting for play")
-            } else {
-                transitionTo(SessionState.SETUP_POSE)
-                emit(SupervisorAction.ShowSetupPose)
-                Log.d(TAG, "Exercise loaded - showing setup pose")
-            }
+            transitionTo(SessionState.SETUP_POSE)
+            emit(SupervisorAction.ShowSetupPose)
+            Log.d(TAG, "Exercise loaded - showing setup pose")
         }
     }
     
@@ -136,7 +123,6 @@ class SessionSupervisor {
         noPoseStartTime = 0L
         isResumeCountdown = false
         activityPausedEngine = false
-        isVideoMode = false
         countdownInvalidStartMs = 0L
         countdownFrozen = false
         Log.d(TAG, "Supervisor reset to IDLE")
@@ -153,7 +139,6 @@ class SessionSupervisor {
             is SupervisorSignal.StopRequested -> {
                 if (currentState != SessionState.IDLE && currentState != SessionState.COMPLETED) {
                     transitionTo(SessionState.COMPLETED)
-                    if (isVideoMode) emit(SupervisorAction.PauseVideo)
                     emit(SupervisorAction.StopEngine)
                     emit(SupervisorAction.ShowCompleted)
                     Log.d(TAG, "Stop requested - transitioning to COMPLETED")
@@ -161,14 +146,6 @@ class SessionSupervisor {
                 }
             }
             
-            is SupervisorSignal.VideoSeeked -> {
-                if (currentState == SessionState.TRAINING) {
-                    emit(SupervisorAction.ResetEngine)
-                    Log.d(TAG, "Video seeked - resetting engine")
-                    return true
-                }
-            }
-
             is SupervisorSignal.ActivityPaused -> {
                 if (currentState == SessionState.TRAINING && !activityPausedEngine) {
                     activityPausedEngine = true
@@ -196,17 +173,6 @@ class SessionSupervisor {
     
     private fun handleIdle(signal: SupervisorSignal) {
         // Most signals ignored in IDLE - waiting for exercise to load
-        when (signal) {
-            is SupervisorSignal.StartRequested -> {
-                // Video mode can start immediately from IDLE if exercise is loaded
-                if (isVideoMode) {
-                    transitionTo(SessionState.TRAINING)
-                    emit(SupervisorAction.StartEngine)
-                    Log.d(TAG, "Video mode - starting immediately")
-                }
-            }
-            else -> {}
-        }
     }
     
     private fun handleSetupPose(signal: SupervisorSignal) {
@@ -223,14 +189,6 @@ class SessionSupervisor {
                 transitionTo(SessionState.COUNTDOWN)
                 emit(SupervisorAction.StartCountdown)
                 Log.d(TAG, "Pose confirmed - starting countdown")
-            }
-
-            is SupervisorSignal.StartRequested -> {
-                if (isVideoMode) {
-                    transitionTo(SessionState.TRAINING)
-                    emit(SupervisorAction.StartEngine)
-                    Log.d(TAG, "Video mode - skipping countdown")
-                }
             }
 
             is SupervisorSignal.NoPoseFrame -> {
@@ -343,7 +301,6 @@ class SessionSupervisor {
                 pauseReason = PauseReason.MANUAL
                 transitionTo(SessionState.PAUSED)
                 emit(SupervisorAction.PauseEngine)
-                if (isVideoMode) emit(SupervisorAction.PauseVideo)
                 Log.d(TAG, "Manual pause requested")
             }
             
@@ -354,13 +311,6 @@ class SessionSupervisor {
                 Log.d(TAG, "Target reached - training completed")
             }
             
-            is SupervisorSignal.VideoEnded -> {
-                transitionTo(SessionState.COMPLETED)
-                emit(SupervisorAction.StopEngine)
-                emit(SupervisorAction.ShowCompleted)
-                Log.d(TAG, "Video ended - training completed")
-            }
-            
             else -> {}
         }
     }
@@ -368,17 +318,10 @@ class SessionSupervisor {
     private fun handlePaused(signal: SupervisorSignal) {
         when (signal) {
             is SupervisorSignal.ResumeRequested -> {
-                if (isVideoMode) {
-                    transitionTo(SessionState.TRAINING)
-                    emit(SupervisorAction.ResumeEngine)
-                    emit(SupervisorAction.ResumeVideo)
-                    Log.d(TAG, "Video mode - resuming directly from manual pause")
-                } else {
-                    isResumeCountdown = true
-                    transitionTo(SessionState.COUNTDOWN)
-                    emit(SupervisorAction.StartCountdown)
-                    Log.d(TAG, "Resume requested - starting countdown")
-                }
+                isResumeCountdown = true
+                transitionTo(SessionState.COUNTDOWN)
+                emit(SupervisorAction.StartCountdown)
+                Log.d(TAG, "Resume requested - starting countdown")
             }
             
             else -> {}
@@ -389,29 +332,16 @@ class SessionSupervisor {
         when (signal) {
             is SupervisorSignal.PoseFrame -> {
                 if (pauseReason == PauseReason.NO_POSE) {
-                    if (isVideoMode) {
-                        transitionTo(SessionState.TRAINING)
-                        emit(SupervisorAction.ResumeFromVisibilityPause)
-                        Log.d(TAG, "Video mode - resuming directly after NoPose")
-                    } else {
-                        transitionTo(SessionState.RESUME_SETUP)
-                        emit(SupervisorAction.ShowSetupPose)
-                        Log.d(TAG, "Pose detected after NoPose - validating for resume")
-                    }
-                }
-            }
-            
-            is SupervisorSignal.ResumeRequested -> {
-                if (isVideoMode) {
-                    transitionTo(SessionState.TRAINING)
-                    emit(SupervisorAction.ResumeFromVisibilityPause)
-                    emit(SupervisorAction.ResumeVideo)
-                    Log.d(TAG, "Video mode - resuming directly from auto-pause")
-                } else {
                     transitionTo(SessionState.RESUME_SETUP)
                     emit(SupervisorAction.ShowSetupPose)
-                    Log.d(TAG, "Manual resume from auto-pause - showing setup")
+                    Log.d(TAG, "Pose detected after NoPose - validating for resume")
                 }
+            }
+
+            is SupervisorSignal.ResumeRequested -> {
+                transitionTo(SessionState.RESUME_SETUP)
+                emit(SupervisorAction.ShowSetupPose)
+                Log.d(TAG, "Manual resume from auto-pause - showing setup")
             }
             
             else -> {}
@@ -434,7 +364,6 @@ class SessionSupervisor {
                 // Lost pose during resume setup - go back to AUTO_PAUSED
                 transitionTo(SessionState.AUTO_PAUSED)
                 emit(SupervisorAction.ShowAutoPaused(pauseReason ?: PauseReason.NO_POSE))
-                if (isVideoMode) emit(SupervisorAction.PauseVideo)
                 Log.d(TAG, "Lost pose during resume setup - back to auto-paused")
             }
             
@@ -476,7 +405,6 @@ class SessionSupervisor {
                 if (_state.value == SessionState.SETUP_POSE) {
                     transitionTo(SessionState.AUTO_PAUSED)
                     emit(SupervisorAction.ShowAutoPaused(PauseReason.NO_POSE))
-                    if (isVideoMode) emit(SupervisorAction.PauseVideo)
                 }
             }
 
@@ -512,7 +440,6 @@ class SessionSupervisor {
                 transitionTo(SessionState.AUTO_PAUSED)
                 emit(SupervisorAction.PauseEngine)
                 emit(SupervisorAction.ShowAutoPaused(PauseReason.NO_POSE))
-                if (isVideoMode) emit(SupervisorAction.PauseVideo)
                 noPoseStartTime = 0L
                 Log.d(TAG, "NoPose for ${duration}ms - auto-pausing")
             }

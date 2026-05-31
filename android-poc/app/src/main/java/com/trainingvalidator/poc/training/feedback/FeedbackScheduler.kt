@@ -3,9 +3,7 @@ package com.trainingvalidator.poc.training.feedback
 /**
  * Single owner of feedback timing, priority, repetition, and mode routing.
  *
- * Channel policy:
- * - Camera mode is voice-only while the trainee is away from the phone.
- * - Video mode is text-only while the trainee reviews the completed exercise.
+ * Channel policy: live camera coaching is voice-first (no on-screen text pills during training).
  */
 class FeedbackScheduler(
     private var coachIntensity: CoachIntensity = CoachIntensity.STANDARD,
@@ -95,9 +93,7 @@ class FeedbackScheduler(
         val repeatBeforeDelivery = state.repeatCount
         val audible = audibleFor(signal, mode, repeatBeforeDelivery, now)
         val tone = FeedbackTone.NONE
-        val showVisual = mode == FeedbackRuntimeMode.VIDEO &&
-            signal.allowVisual &&
-            signal.text.isNotBlank()
+        val showVisual = false
         val vibrate = false
 
         if (audible == FeedbackAudible.NONE && !showVisual && !vibrate) {

@@ -395,7 +395,7 @@ object CameraPositionDetector {
  *
  * **Warm-up**: while fewer than [requiredMajority] frames are collected,
  * the raw detection is trusted directly so that the very first frame
- * (image mode, or start of video) returns a real value instead of UNKNOWN.
+ * returns a real value instead of UNKNOWN.
  *
  * Create one instance per training session / validator lifetime.
  */

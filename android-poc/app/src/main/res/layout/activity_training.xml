@@ -13,19 +13,12 @@
 
     <!-- ==================== LAYER 0: Media Background ==================== -->
     
-    <!-- Camera Preview (hidden in video mode) -->
+    <!-- Camera Preview -->
     <androidx.camera.view.PreviewView
         android:id="@+id/previewView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:scaleType="fillStart" />
-
-    <!-- Video TextureView (hidden in camera mode) -->
-    <TextureView
-        android:id="@+id/videoTextureView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="gone" />
 
     <!-- ==================== LAYER 1: Skeleton Overlay ==================== -->
     
@@ -695,20 +688,6 @@
             android:orientation="horizontal"
             android:layout_marginTop="@dimen/spacing_2xl">
 
-            <!-- Save Results Button (Video mode only) -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSaveResults"
-                android:layout_width="0dp"
-                android:layout_height="@dimen/button_height"
-                android:layout_weight="1"
-                android:layout_marginEnd="@dimen/spacing_sm"
-                android:text="@string/save"
-                android:textSize="16sp"
-                android:visibility="gone"
-                style="@style/Widget.WayToFix.Button.Secondary"
-                app:icon="@android:drawable/ic_menu_save"
-                app:iconGravity="textStart" />
-
             <!-- Finish Button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnFinish"
@@ -719,64 +698,6 @@
                 android:textSize="18sp"
                 android:textStyle="bold"
                 style="@style/Widget.WayToFix.Button.Primary" />
-
-        </LinearLayout>
-
-    </LinearLayout>
-
-    <!-- ==================== VIDEO CONTROLS (Glass Style) ==================== -->
-    
-    <LinearLayout
-        android:id="@+id/videoControlsPanel"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="@dimen/spacing_base"
-        android:layout_marginHorizontal="@dimen/spacing_base"
-        android:layout_marginBottom="@dimen/spacing_sm"
-        android:background="@drawable/glass_deck_background"
-        android:elevation="8dp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/bottomStatsBar"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <!-- Seek Bar -->
-        <SeekBar
-            android:id="@+id/videoSeekBar"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:progressTint="@color/primary"
-            android:thumbTint="@color/primary"
-            android:max="100" />
-
-        <!-- Time Display -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="4dp">
-
-            <TextView
-                android:id="@+id/tvVideoCurrentTime"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="00:00"
-                android:textColor="#CCFFFFFF"
-                android:textSize="12sp" />
-
-            <View
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
-
-            <TextView
-                android:id="@+id/tvVideoDuration"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="00:00"
-                android:textColor="#CCFFFFFF"
-                android:textSize="12sp" />
 
         </LinearLayout>
 

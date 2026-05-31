@@ -12,13 +12,12 @@ import com.trainingvalidator.poc.analysis.SmoothedLandmark
  * - PoseSetupGuide (confirmation of valid start pose)
  * - TrainingEngine (target reached, visibility events)
  * - CountdownController (countdown finished)
- * - Video playback (ended, seeked)
  */
 sealed class SupervisorSignal {
     
     // ==================== UI Commands ====================
     
-    /** User requested to start training (used in video mode for immediate start) */
+    /** User requested to start training */
     object StartRequested : SupervisorSignal()
     
     /** User pressed pause button */
@@ -38,8 +37,8 @@ sealed class SupervisorSignal {
     
     // ==================== Pose Data ====================
     
-    /** 
-     * Frame with detected pose - sent every frame from camera/video
+    /**
+     * Frame with detected pose - sent every frame from camera
      * 
      * @param angles Calculated joint angles
      * @param landmarks Smoothed landmarks for position validation
@@ -79,12 +78,4 @@ sealed class SupervisorSignal {
     
     /** Countdown finished (3-2-1-GO completed) */
     object CountdownFinished : SupervisorSignal()
-    
-    // ==================== Video Events ====================
-    
-    /** Video playback ended */
-    object VideoEnded : SupervisorSignal()
-    
-    /** User seeked in video - requires analysis reset */
-    object VideoSeeked : SupervisorSignal()
 }

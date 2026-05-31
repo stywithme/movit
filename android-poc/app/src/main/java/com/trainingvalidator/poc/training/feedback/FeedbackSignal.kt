@@ -3,7 +3,7 @@ package com.trainingvalidator.poc.training.feedback
 /**
  * A mode-neutral request for feedback. The scheduler is the only place that
  * turns this into the user-facing output:
- * camera mode uses voice only, video mode uses text only.
+ * live camera training uses voice-first delivery.
  */
 data class FeedbackSignal(
     val kind: FeedbackKind,
@@ -46,8 +46,7 @@ enum class FeedbackSeverity(val priority: Int) {
 }
 
 enum class FeedbackRuntimeMode {
-    CAMERA,
-    VIDEO
+    CAMERA
 }
 
 enum class FeedbackInterruptPolicy {

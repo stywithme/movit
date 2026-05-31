@@ -1,40 +1,29 @@
 package com.trainingvalidator.poc.ui.train
 
-import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.graphics.drawable.Animatable
-import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.provider.MediaStore
 import android.util.Log
 import android.view.ContextThemeWrapper
 import android.view.View
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import coil.load
 import com.google.android.material.chip.Chip
-import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityPreWorkoutBinding
+import com.trainingvalidator.poc.storage.EntityAudioPrefetchManager
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.ui.utils.LocalizationHelper
-import com.trainingvalidator.poc.storage.EntityAudioPrefetchManager
+import com.trainingvalidator.poc.ui.utils.currentLanguage
 import kotlinx.coroutines.launch
 
 /**
  * PreWorkoutActivity - Exercise detail screen before starting workout
- * 
- * Shows:
- * - Exercise preview image (static or animated)
- * - Exercise name, equipment, and target muscles
- * - Instructions and description
- * - Camera position selection (if multiple variants)
- * - Action buttons (Analyze Video / Start Camera)
+ *
+ * Shows exercise preview, instructions, camera position selection, and Start Camera.
  */
 class PreWorkoutActivity : AppCompatActivity() {
 
@@ -47,46 +36,12 @@ class PreWorkoutActivity : AppCompatActivity() {
     private var exerciseConfig: ExerciseConfig? = null
     private var selectedVariantIndex: Int = 0
 
-    // Modern Photo Picker (Android 13+ with backport)
-    private val photoPickerLauncher = registerForActivityResult(
-        ActivityResultContracts.PickVisualMedia()
-    ) { uri: Uri? ->
-        handleVideoSelection(uri)
-    }
-
-    // Legacy video picker for older devices
-    private val legacyPickerLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == RESULT_OK) {
-            handleVideoSelection(result.data?.data)
-        } else {
-            Toast.makeText(this, getString(R.string.no_video_selected), Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    // Permission request launcher
-    private val permissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            launchVideoPicker()
-        } else {
-            Toast.makeText(
-                this,
-                getString(R.string.video_permission_required),
-                Toast.LENGTH_LONG
-            ).show()
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         binding = ActivityPreWorkoutBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Get exercise name from intent
         val exerciseName = intent.getStringExtra(EXTRA_EXERCISE_NAME)
         if (exerciseName == null) {
             Toast.makeText(this, getString(R.string.no_exercise_specified), Toast.LENGTH_SHORT).show()
@@ -99,8 +54,6 @@ class PreWorkoutActivity : AppCompatActivity() {
     }
 
     private fun loadExercise(exerciseName: String) {
-        // Load from repository (cached/synced data from backend)
-        // No fallback to assets - repository is the single source of truth
         exerciseConfig = try {
             val repository = com.trainingvalidator.poc.storage.ExerciseRepository.getInstance(this)
             repository.getExercise(exerciseName)
@@ -124,35 +77,20 @@ class PreWorkoutActivity : AppCompatActivity() {
         val exercise = exerciseConfig ?: return
         val language = currentLanguage
 
-        // Setup toolbar
         binding.toolbar.setNavigationOnClickListener { finish() }
 
-        // Exercise info
         binding.tvExerciseName.text = exercise.name.get(language).ifBlank { exercise.name.en }
-
-        // Localized equipment
         binding.tvEquipment.text = LocalizationHelper.getEquipmentDisplayText(this, exercise.equipment)
 
         setupPreviewImage()
         setupTargetMuscles()
-
-        // Instructions
         setupInstructions()
         setupDescription()
-
-        // Setup camera position variants
         setupCameraPositions()
 
-        // Button actions
-        binding.btnStartCamera.setOnClickListener {
-            startCameraTraining()
-        }
-
-        binding.btnAnalyzeVideo.setOnClickListener {
-            openVideoPicker()
-        }
+        binding.btnStartCamera.setOnClickListener { startCameraTraining() }
     }
-    
+
     private fun setupInstructions() {
         val exercise = exerciseConfig ?: return
         val language = currentLanguage
@@ -241,7 +179,6 @@ class PreWorkoutActivity : AppCompatActivity() {
         }
     }
 
-
     private fun setupCameraPositions() {
         val exercise = exerciseConfig ?: return
         val language = currentLanguage
@@ -278,7 +215,6 @@ class PreWorkoutActivity : AppCompatActivity() {
     private fun selectVariant(index: Int) {
         selectedVariantIndex = index
 
-        // Update button states
         binding.btnVariant1.apply {
             if (index == 0) {
                 setBackgroundColor(ContextCompat.getColor(context, R.color.primary))
@@ -300,66 +236,6 @@ class PreWorkoutActivity : AppCompatActivity() {
         }
     }
 
-    private fun handleVideoSelection(uri: Uri?) {
-        if (uri != null) {
-            try {
-                contentResolver.takePersistableUriPermission(
-                    uri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
-            } catch (e: Exception) {
-                // Permission might not be persistable, continue anyway
-            }
-            startVideoTraining(uri)
-        } else {
-            Toast.makeText(this, getString(R.string.no_video_selected), Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun openVideoPicker() {
-        val permission = getRequiredVideoPermission()
-
-        when {
-            ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED -> {
-                launchVideoPicker()
-            }
-            shouldShowRequestPermissionRationale(permission) -> {
-                Toast.makeText(
-                    this,
-                    getString(R.string.video_permission_rationale),
-                    Toast.LENGTH_LONG
-                ).show()
-                permissionLauncher.launch(permission)
-            }
-            else -> {
-                permissionLauncher.launch(permission)
-            }
-        }
-    }
-
-    private fun getRequiredVideoPermission(): String {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            Manifest.permission.READ_MEDIA_VIDEO
-        } else {
-            Manifest.permission.READ_EXTERNAL_STORAGE
-        }
-    }
-
-    private fun launchVideoPicker() {
-        if (ActivityResultContracts.PickVisualMedia.isPhotoPickerAvailable(this)) {
-            photoPickerLauncher.launch(
-                androidx.activity.result.PickVisualMediaRequest(
-                    ActivityResultContracts.PickVisualMedia.VideoOnly
-                )
-            )
-        } else {
-            val intent = Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI).apply {
-                type = "video/*"
-            }
-            legacyPickerLauncher.launch(intent)
-        }
-    }
-
     private fun startCameraTraining() {
         val exercise = exerciseConfig ?: return
 
@@ -368,22 +244,6 @@ class PreWorkoutActivity : AppCompatActivity() {
             putExtra(TrainingActivity.EXTRA_DIFFICULTY, "")
             putExtra(TrainingActivity.EXTRA_POSE_VARIANT, selectedVariantIndex)
             putExtra(TrainingActivity.EXTRA_TRAINING_MODE, TrainingActivity.MODE_CAMERA)
-            // Get indicator type from settings
-            val indicatorType = com.trainingvalidator.poc.training.config.SettingsManager.getIndicatorType()
-            putExtra(TrainingActivity.EXTRA_INDICATOR_TYPE, indicatorType)
-        }
-        startActivity(intent)
-    }
-
-    private fun startVideoTraining(videoUri: Uri) {
-        val exercise = exerciseConfig ?: return
-
-        val intent = Intent(this, TrainingActivity::class.java).apply {
-            putExtra(TrainingActivity.EXTRA_EXERCISE_NAME, exercise.fileName)
-            putExtra(TrainingActivity.EXTRA_DIFFICULTY, "")
-            putExtra(TrainingActivity.EXTRA_POSE_VARIANT, selectedVariantIndex)
-            putExtra(TrainingActivity.EXTRA_TRAINING_MODE, TrainingActivity.MODE_VIDEO)
-            putExtra(TrainingActivity.EXTRA_VIDEO_URI, videoUri)
             val indicatorType = com.trainingvalidator.poc.training.config.SettingsManager.getIndicatorType()
             putExtra(TrainingActivity.EXTRA_INDICATOR_TYPE, indicatorType)
         }

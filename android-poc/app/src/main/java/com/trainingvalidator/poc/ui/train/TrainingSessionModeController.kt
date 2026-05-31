@@ -683,7 +683,7 @@ class TrainingSessionModeController(
         currentSessionSetRunId += 1L
         sessionSetStartTimeMs = System.currentTimeMillis()
         if (host.viewModel.feedbackManager == null) {
-            host.viewModel.initializeFeedback(host, host.isVideoMode)
+            host.viewModel.initializeFeedback(host)
         }
         host.feedbackBinder.rebindVisualMessageFlow()
     }

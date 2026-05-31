@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Dark mode: light status bar icons on dark backgrounds -->
-    <style name="Theme.WayToFix" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <!-- Dark mode: inherit ALL base items, only flip status-bar icons to light.
+         Must inherit Base.Theme.WayToFix — a bare style here would drop every other
+         theme item (colors, nav bar, text appearances) in dark mode. -->
+    <style name="Theme.WayToFix" parent="Base.Theme.WayToFix">
         <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>
