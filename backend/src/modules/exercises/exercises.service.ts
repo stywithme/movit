@@ -652,6 +652,24 @@ export const exerciseService = {
   },
 
   /**
+   * Unpublish multiple exercises (back to draft)
+   */
+  async bulkUnpublish(ids: string[], updatedBy?: string) {
+    if (ids.length === 0) {
+      return { count: 0 };
+    }
+    const prisma = await getPrisma();
+    const result = await prisma.exercise.updateMany({
+      where: { id: { in: ids }, deletedAt: null },
+      data: {
+        status: 'draft',
+        updatedBy,
+      },
+    });
+    return { count: result.count };
+  },
+
+  /**
    * Soft delete an exercise
    */
   async delete(id: string, deletedBy?: string) {
@@ -663,6 +681,24 @@ export const exerciseService = {
         updatedBy: deletedBy,
       },
     });
+  },
+
+  /**
+   * Soft delete multiple exercises
+   */
+  async bulkDelete(ids: string[], deletedBy?: string) {
+    if (ids.length === 0) {
+      return { count: 0 };
+    }
+    const prisma = await getPrisma();
+    const result = await prisma.exercise.updateMany({
+      where: { id: { in: ids }, deletedAt: null },
+      data: {
+        deletedAt: new Date(),
+        updatedBy: deletedBy,
+      },
+    });
+    return { count: result.count };
   },
 
   /**
