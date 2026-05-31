@@ -75,6 +75,8 @@
 | DELETE | `/exercises/:id` | Delete an exercise |
 | PUT | `/exercises/:id/publish` | Publish an exercise |
 | DELETE | `/exercises/:id/publish` | Unpublish an exercise |
+| POST | `/exercises/bulk/unpublish` | Unpublish multiple exercises (`{ ids: string[] }`) |
+| POST | `/exercises/bulk/delete` | Soft-delete multiple exercises (`{ ids: string[] }`) |
 | GET | `/exercises/:id/config` | Get Android-compatible config for the exercise |
 
 ---

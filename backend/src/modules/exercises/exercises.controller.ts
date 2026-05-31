@@ -24,6 +24,10 @@ const ExercisePayloadSchema = z.object({
   bilateralConfig: BilateralConfigPayloadSchema.nullable().optional(),
 }).passthrough();
 
+const BulkExerciseIdsSchema = z.object({
+  ids: z.array(z.string().min(1)).min(1, 'At least one exercise id is required'),
+});
+
 function validateExercisePayload(body: unknown) {
   const result = ExercisePayloadSchema.safeParse(body);
   if (!result.success) {
@@ -111,6 +115,44 @@ export class ExercisesController {
     } catch (error) {
       console.error('Error fetching published exercises:', error);
       return { success: false, error: 'Failed to fetch published exercises' };
+    }
+  }
+
+  @Post('bulk/unpublish')
+  @CheckPermission('publish', 'Exercise')
+  async bulkUnpublish(@Body() body: unknown, @Res({ passthrough: true }) res: Response) {
+    try {
+      const parsed = BulkExerciseIdsSchema.safeParse(body);
+      if (!parsed.success) {
+        res.status(400);
+        return { success: false, error: 'ids array is required' };
+      }
+
+      const result = await exerciseService.bulkUnpublish(parsed.data.ids);
+      return { success: true, data: result };
+    } catch (error) {
+      console.error('Error bulk unpublishing exercises:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to bulk unpublish exercises' };
+    }
+  }
+
+  @Post('bulk/delete')
+  @CheckPermission('delete', 'Exercise')
+  async bulkDelete(@Body() body: unknown, @Res({ passthrough: true }) res: Response) {
+    try {
+      const parsed = BulkExerciseIdsSchema.safeParse(body);
+      if (!parsed.success) {
+        res.status(400);
+        return { success: false, error: 'ids array is required' };
+      }
+
+      const result = await exerciseService.bulkDelete(parsed.data.ids);
+      return { success: true, data: result };
+    } catch (error) {
+      console.error('Error bulk deleting exercises:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to bulk delete exercises' };
     }
   }
 

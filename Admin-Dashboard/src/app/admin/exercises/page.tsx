@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { LocalizedText } from '@/lib/types/localized';
-import { Input, Select } from '@/components/ui';
+import { Button, Input, Select } from '@/components/ui';
 
 interface Exercise {
   id: string;
@@ -40,6 +40,8 @@ export default function ExercisesListPage() {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedSearch(searchQuery), 400);
@@ -108,6 +110,95 @@ export default function ExercisesListPage() {
     }
   };
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const pageIds = exercises.map((e) => e.id);
+  const allOnPageSelected =
+    pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id));
+
+  const toggleSelectAllOnPage = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allOnPageSelected) {
+        pageIds.forEach((id) => next.delete(id));
+      } else {
+        pageIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  };
+
+  const handleBulkUnpublish = async () => {
+    if (selectedIds.size === 0) return;
+    if (
+      !confirm(
+        `Unpublish ${selectedIds.size} exercise(s)? They will return to draft status.`,
+      )
+    ) {
+      return;
+    }
+
+    setBulkLoading(true);
+    try {
+      const res = await fetch('/api/exercises/bulk/unpublish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: Array.from(selectedIds) }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSelectedIds(new Set());
+        fetchExercises(pagination?.page || 1);
+      } else {
+        alert(data.error || 'Failed to unpublish selected exercises');
+      }
+    } catch (error) {
+      console.error('Error bulk unpublishing:', error);
+      alert('Failed to unpublish selected exercises');
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (
+      !confirm(
+        `Delete ${selectedIds.size} exercise(s)? This cannot be undone from the list.`,
+      )
+    ) {
+      return;
+    }
+
+    setBulkLoading(true);
+    try {
+      const res = await fetch('/api/exercises/bulk/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: Array.from(selectedIds) }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSelectedIds(new Set());
+        fetchExercises(pagination?.page || 1);
+      } else {
+        alert(data.error || 'Failed to delete selected exercises');
+      }
+    } catch (error) {
+      console.error('Error bulk deleting:', error);
+      alert('Failed to delete selected exercises');
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -166,6 +257,41 @@ export default function ExercisesListPage() {
         </div>
       </div>
 
+      {selectedIds.size > 0 && (
+        <div className="bg-amber-50 rounded-lg border border-amber-200 p-4 flex flex-wrap items-center gap-3">
+          <span className="text-sm font-medium text-amber-900">
+            {selectedIds.size} exercise(s) selected
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleBulkUnpublish}
+            disabled={bulkLoading}
+          >
+            Unpublish
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleBulkDelete}
+            disabled={bulkLoading}
+            className="text-red-700 border-red-200 hover:bg-red-50"
+          >
+            Delete
+          </Button>
+          <button
+            type="button"
+            onClick={() => setSelectedIds(new Set())}
+            className="text-sm text-gray-600 hover:text-gray-900 ml-auto"
+            disabled={bulkLoading}
+          >
+            Clear selection
+          </button>
+        </div>
+      )}
+
       {/* Exercises Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         {loading ? (
@@ -181,6 +307,15 @@ export default function ExercisesListPage() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
+                <th className="px-4 py-3 text-left w-10">
+                  <input
+                    type="checkbox"
+                    checked={allOnPageSelected}
+                    onChange={toggleSelectAllOnPage}
+                    className="h-4 w-4 rounded border-gray-300"
+                    aria-label="Select all on this page"
+                  />
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Exercise
                 </th>
@@ -203,7 +338,19 @@ export default function ExercisesListPage() {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {exercises.map((exercise) => (
-                <tr key={exercise.id} className="hover:bg-gray-50">
+                <tr
+                  key={exercise.id}
+                  className={`hover:bg-gray-50 ${selectedIds.has(exercise.id) ? 'bg-blue-50/50' : ''}`}
+                >
+                  <td className="px-4 py-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(exercise.id)}
+                      onChange={() => toggleSelect(exercise.id)}
+                      className="h-4 w-4 rounded border-gray-300"
+                      aria-label={`Select ${exercise.name.en}`}
+                    />
+                  </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       {exercise.media[0] ? (
