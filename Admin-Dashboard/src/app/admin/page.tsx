@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Activity, ClipboardCheck, DollarSign, ShieldAlert, TrendingUp, Users } from 'lucide-react';
+import { Activity, DollarSign, ShieldAlert, TrendingUp, Users } from 'lucide-react';
 import { PageHeader } from '@/components/common';
 import { AreaTrend, ChartCard, DonutChart, FunnelChart, LineTrend, StatCard } from '@/components/charts';
 import { PeriodFilter } from '@/components/charts/PeriodFilter';
@@ -11,27 +11,33 @@ import { analyticsService, type OverviewAnalytics } from '@/modules/analytics/an
 import { formatCurrency, formatNumber, formatPercent, metricDelta, metricValue } from '@/modules/analytics/format';
 import { useAnalyticsPeriod } from '@/modules/analytics/period-store';
 import { analyticsTerms } from '@/modules/analytics/terms';
+import { usePermissions, type Subject } from '@/hooks/usePermissions';
 
 const quickReports = [
-  { href: '/admin/analytics/activation', title: 'Activation Funnel', description: 'Signup to first value' },
-  { href: '/admin/analytics/retention', title: 'Retention', description: 'Cohorts and engagement' },
-  { href: '/admin/analytics/training', title: 'Training Quality', description: 'Sessions, form and safety' },
-  { href: '/admin/analytics/revenue', title: 'Revenue', description: 'MRR and conversion' },
-];
+  { href: '/admin/analytics/activation', title: 'Activation Funnel', description: 'Signup to first value', subject: 'ActivationAnalytics' },
+  { href: '/admin/analytics/retention', title: 'Retention', description: 'Cohorts and engagement', subject: 'EngagementAnalytics' },
+  { href: '/admin/analytics/training', title: 'Training Quality', description: 'Sessions, form and safety', subject: 'TrainingAnalytics' },
+  { href: '/admin/analytics/revenue', title: 'Revenue', description: 'MRR and conversion', subject: 'RevenueAnalytics' },
+] satisfies Array<{ href: string; title: string; description: string; subject: Subject }>;
 
 export default function AdminDashboard() {
   const params = useAnalyticsPeriod((state) => state.params);
+  const { can } = usePermissions();
   const [data, setData] = useState<OverviewAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
+    if (!can('read', 'OverviewAnalytics')) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       setData(await analyticsService.overview(params()));
     } finally {
       setLoading(false);
     }
-  }, [params]);
+  }, [can, params]);
 
   useEffect(() => {
     fetchData();
@@ -40,6 +46,18 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-6">
       <PageHeader title="Command Center" description="Operational view of acquisition, activation, training quality, revenue, and safety." />
+
+      {!can('read', 'OverviewAnalytics') ? (
+        <Card>
+          <CardContent className="pt-6">
+            <p className="font-semibold">Reports access is not enabled for this role.</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Ask a super admin to enable the "Reports / Overview" view permission.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
       <PeriodFilter onRefresh={fetchData} />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -103,7 +121,7 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {quickReports.map((report) => (
+        {quickReports.filter((report) => can('read', report.subject)).map((report) => (
           <Link key={report.href} href={report.href}>
             <Card interactive className="h-full">
               <CardContent className="flex items-center gap-3 pt-6">
@@ -117,6 +135,8 @@ export default function AdminDashboard() {
           </Link>
         ))}
       </div>
+        </>
+      )}
     </div>
   );
 }

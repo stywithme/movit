@@ -91,12 +91,16 @@ const permissions = [
 
     // Analytics
     { subject: 'Analytics', action: 'read' },
+    { subject: 'OverviewAnalytics', action: 'read' },
     { subject: 'UserAnalytics', action: 'read' },
+    { subject: 'ActivationAnalytics', action: 'read' },
     { subject: 'EngagementAnalytics', action: 'read' },
     { subject: 'TrainingAnalytics', action: 'read' },
+    { subject: 'ProgressionAnalytics', action: 'read' },
     { subject: 'RevenueAnalytics', action: 'read' },
     { subject: 'BookingAnalytics', action: 'read' },
     { subject: 'SafetyAnalytics', action: 'read' },
+    { subject: 'ContentAnalytics', action: 'read' },
 
     // Upload
     { subject: 'Upload', action: 'create' },

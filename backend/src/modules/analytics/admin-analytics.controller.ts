@@ -26,7 +26,7 @@ export class AdminAnalyticsController {
   constructor(private readonly reportsService: AdminReportsService) {}
 
   @Get('overview')
-  @CheckPermission('read', 'Analytics')
+  @CheckPermission('read', 'OverviewAnalytics')
   async getOverview(@Query() query: AnalyticsPeriodQuery) {
     return { success: true, data: await this.reportsService.getOverview(query) };
   }
@@ -38,7 +38,7 @@ export class AdminAnalyticsController {
   }
 
   @Get('activation')
-  @CheckPermission('read', 'Analytics')
+  @CheckPermission('read', 'ActivationAnalytics')
   async getActivation(@Query() query: AnalyticsPeriodQuery) {
     return { success: true, data: await this.reportsService.getActivation(query) };
   }
@@ -56,7 +56,7 @@ export class AdminAnalyticsController {
   }
 
   @Get('progression')
-  @CheckPermission('read', 'ProgressionRule')
+  @CheckPermission('read', 'ProgressionAnalytics')
   async getProgression(@Query() query: AnalyticsPeriodQuery) {
     return { success: true, data: await this.reportsService.getProgression(query) };
   }
@@ -84,7 +84,7 @@ export class AdminAnalyticsController {
   }
 
   @Get('content')
-  @CheckPermission('read', 'Analytics')
+  @CheckPermission('read', 'ContentAnalytics')
   async getContent(@Query() query: AnalyticsPeriodQuery) {
     return { success: true, data: await this.reportsService.getContent(query) };
   }
@@ -114,7 +114,7 @@ export class AdminAnalyticsController {
   }
 
   @Get('rules')
-  @CheckPermission('read', 'Analytics')
+  @CheckPermission('read', 'ProgressionAnalytics')
   async getRuleEffectiveness(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     try {
       const data = await progressionAnalyticsService.getRuleEffectiveness();
@@ -127,7 +127,7 @@ export class AdminAnalyticsController {
   }
 
   @Get('programs')
-  @CheckPermission('read', 'Analytics')
+  @CheckPermission('read', 'ProgramAnalytics')
   async getProgramEffectiveness(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     try {
       const data = await progressionAnalyticsService.getProgramEffectiveness();
@@ -140,7 +140,7 @@ export class AdminAnalyticsController {
   }
 
   @Get('user-trends')
-  @CheckPermission('read', 'Analytics')
+  @CheckPermission('read', 'UserAnalytics')
   async getUserTrends(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     try {
       const data = await progressionAnalyticsService.getUserTrends();
@@ -153,7 +153,7 @@ export class AdminAnalyticsController {
   }
 
   @Get('platform')
-  @CheckPermission('read', 'Analytics')
+  @CheckPermission('read', 'OverviewAnalytics')
   async getPlatformStats(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     try {
       const data = await progressionAnalyticsService.getPlatformStats();
@@ -166,7 +166,7 @@ export class AdminAnalyticsController {
   }
 
   @Get('levels')
-  @CheckPermission('read', 'Analytics')
+  @CheckPermission('read', 'LevelAnalytics')
   async getLevelDistribution(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     try {
       const data = await progressionAnalyticsService.getLevelDistribution();
@@ -179,7 +179,7 @@ export class AdminAnalyticsController {
   }
 
   @Get('assessments')
-  @CheckPermission('read', 'Analytics')
+  @CheckPermission('read', 'AssessmentAnalytics')
   async getAssessmentAnalytics(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     try {
       const data = await progressionAnalyticsService.getAssessmentAnalytics();
@@ -192,7 +192,7 @@ export class AdminAnalyticsController {
   }
 
   @Get('level-transitions')
-  @CheckPermission('read', 'Analytics')
+  @CheckPermission('read', 'LevelAnalytics')
   async getLevelTransitionStats(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     try {
       const data = await progressionAnalyticsService.getLevelTransitionStats();
