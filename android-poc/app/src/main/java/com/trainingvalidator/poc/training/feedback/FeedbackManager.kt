@@ -506,14 +506,19 @@ class FeedbackManager(
 
         scheduleAndDeliver(
             kind = FeedbackKind.REP,
-            severity = FeedbackSeverity.WARNING,
+            severity = FeedbackSeverity.ERROR,
             localizedText = localizedText,
             displayText = displayText,
             dedupeKey = "rep_incomplete:${event.reason}",
             activeKey = "correction",
             cooldownGroup = "rep_incomplete:${event.reason}",
+            // Keep amber visual (not a hard error), but raise delivery weight:
+            // ERROR + REPLACE_LOWER clears the active joint-WARNING slot, and
+            // forceAudible bypasses the min audible gap so the "rep not counted"
+            // cue is not swallowed by form chatter at end of the movement.
             messageType = MessageType.WARNING,
-            interruptPolicy = FeedbackInterruptPolicy.WAIT_FOR_SLOT
+            forceAudible = true,
+            interruptPolicy = FeedbackInterruptPolicy.REPLACE_LOWER
         )
     }
 
