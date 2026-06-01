@@ -6,23 +6,18 @@ const permissions = [
     { subject: 'Exercise', action: 'create' },
     { subject: 'Exercise', action: 'update' },
     { subject: 'Exercise', action: 'delete' },
-    { subject: 'Exercise', action: 'publish' },
 
     // Workout
     { subject: 'Workout', action: 'read' },
     { subject: 'Workout', action: 'create' },
     { subject: 'Workout', action: 'update' },
     { subject: 'Workout', action: 'delete' },
-    { subject: 'Workout', action: 'publish' },
-    { subject: 'Workout', action: 'duplicate' },
 
     // Program
     { subject: 'Program', action: 'read' },
     { subject: 'Program', action: 'create' },
     { subject: 'Program', action: 'update' },
     { subject: 'Program', action: 'delete' },
-    { subject: 'Program', action: 'publish' },
-    { subject: 'Program', action: 'duplicate' },
 
     // User
     { subject: 'User', action: 'read' },
@@ -45,21 +40,11 @@ const permissions = [
     // Program & ProgramMap
     { subject: 'ProgramMap', action: 'read' },
 
-    // ProgramAnalytics (Analytics section)
-    { subject: 'ProgramAnalytics', action: 'read' },
-
-    // LevelAnalytics (Analytics section)
-    { subject: 'LevelAnalytics', action: 'read' },
-
-    // AssessmentAnalytics (Analytics section)
-    { subject: 'AssessmentAnalytics', action: 'read' },
-
     // AssessmentTemplate
     { subject: 'AssessmentTemplate', action: 'read' },
     { subject: 'AssessmentTemplate', action: 'create' },
     { subject: 'AssessmentTemplate', action: 'update' },
     { subject: 'AssessmentTemplate', action: 'delete' },
-    { subject: 'AssessmentTemplate', action: 'publish' },
 
     // Attribute
     { subject: 'Attribute', action: 'read' },
@@ -89,18 +74,20 @@ const permissions = [
     { subject: 'ProgressionRule', action: 'update' },
     { subject: 'ProgressionRule', action: 'delete' },
 
-    // Analytics
-    { subject: 'Analytics', action: 'read' },
-    { subject: 'OverviewAnalytics', action: 'read' },
-    { subject: 'UserAnalytics', action: 'read' },
-    { subject: 'ActivationAnalytics', action: 'read' },
-    { subject: 'EngagementAnalytics', action: 'read' },
-    { subject: 'TrainingAnalytics', action: 'read' },
-    { subject: 'ProgressionAnalytics', action: 'read' },
-    { subject: 'RevenueAnalytics', action: 'read' },
-    { subject: 'BookingAnalytics', action: 'read' },
-    { subject: 'SafetyAnalytics', action: 'read' },
-    { subject: 'ContentAnalytics', action: 'read' },
+    // Reports (admin analytics dashboard)
+    { subject: 'ReportOverview', action: 'read' },
+    { subject: 'ReportUsers', action: 'read' },
+    { subject: 'ReportActivation', action: 'read' },
+    { subject: 'ReportRetention', action: 'read' },
+    { subject: 'ReportTraining', action: 'read' },
+    { subject: 'ReportProgram', action: 'read' },
+    { subject: 'ReportLevel', action: 'read' },
+    { subject: 'ReportAssessment', action: 'read' },
+    { subject: 'ReportProgression', action: 'read' },
+    { subject: 'ReportRevenue', action: 'read' },
+    { subject: 'ReportBooking', action: 'read' },
+    { subject: 'ReportSafety', action: 'read' },
+    { subject: 'ReportContent', action: 'read' },
 
     // Upload
     { subject: 'Upload', action: 'create' },

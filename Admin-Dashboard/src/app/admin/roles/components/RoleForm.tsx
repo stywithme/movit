@@ -34,21 +34,20 @@ const SUBJECT_GROUP_MAP: Record<string, { name: string; group: string }> = {
     Level: { name: 'Levels', group: 'Training' },
     AssessmentTemplate: { name: 'Assessment Templates', group: 'Training' },
     ProgressionRule: { name: 'Progression Rules', group: 'Training' },
-    // Analytics
-    Analytics: { name: 'Analytics (Legacy / General)', group: 'Analytics' },
-    OverviewAnalytics: { name: 'Reports / Overview', group: 'Analytics' },
-    UserAnalytics: { name: 'Reports / Users & Growth', group: 'Analytics' },
-    ActivationAnalytics: { name: 'Reports / Activation Funnel', group: 'Analytics' },
-    EngagementAnalytics: { name: 'Reports / Retention & Engagement', group: 'Analytics' },
-    TrainingAnalytics: { name: 'Reports / Training & Performance', group: 'Analytics' },
-    ProgramAnalytics: { name: 'Analytics / Programs', group: 'Analytics' },
-    LevelAnalytics: { name: 'Analytics / Levels', group: 'Analytics' },
-    AssessmentAnalytics: { name: 'Analytics / Assessments', group: 'Analytics' },
-    ProgressionAnalytics: { name: 'Reports / Progression Engine', group: 'Analytics' },
-    RevenueAnalytics: { name: 'Reports / Revenue', group: 'Analytics' },
-    BookingAnalytics: { name: 'Reports / Bookings & Clinic', group: 'Analytics' },
-    SafetyAnalytics: { name: 'Reports / Safety & Risk', group: 'Analytics' },
-    ContentAnalytics: { name: 'Reports / Content & Catalog', group: 'Analytics' },
+    // Reports
+    ReportOverview: { name: 'Reports / Overview', group: 'Reports' },
+    ReportUsers: { name: 'Reports / Users & Growth', group: 'Reports' },
+    ReportActivation: { name: 'Reports / Activation Funnel', group: 'Reports' },
+    ReportRetention: { name: 'Reports / Retention & Engagement', group: 'Reports' },
+    ReportTraining: { name: 'Reports / Training & Performance', group: 'Reports' },
+    ReportProgram: { name: 'Reports / Programs', group: 'Reports' },
+    ReportLevel: { name: 'Reports / Levels', group: 'Reports' },
+    ReportAssessment: { name: 'Reports / Assessments', group: 'Reports' },
+    ReportProgression: { name: 'Reports / Progression Engine', group: 'Reports' },
+    ReportRevenue: { name: 'Reports / Revenue', group: 'Reports' },
+    ReportBooking: { name: 'Reports / Bookings & Clinic', group: 'Reports' },
+    ReportSafety: { name: 'Reports / Safety & Risk', group: 'Reports' },
+    ReportContent: { name: 'Reports / Content & Catalog', group: 'Reports' },
     // Administration
     User: { name: 'Users', group: 'Admin' },
     Admin: { name: 'Admins', group: 'Admin' },
@@ -67,7 +66,6 @@ const SUBJECT_GROUP_MAP: Record<string, { name: string; group: string }> = {
     Recipe: { name: 'Recipes', group: 'Nutrition' },
     MealPlan: { name: 'Meal Plans', group: 'Nutrition' },
     // Other
-    Reports: { name: 'General Reports', group: 'Analytics' },
     Reassessment: { name: 'Reassessments', group: 'Training' },
     Muscle: { name: 'Muscles Library', group: 'Content' },
     Equipment: { name: 'Equipment Library', group: 'Content' },
@@ -78,8 +76,6 @@ const ACTIONS = [
     { id: 'update', name: 'EDIT', color: 'text-orange-500' },
     { id: 'create', name: 'CREATE', color: 'text-green-600' },
     { id: 'delete', name: 'DELETE', color: 'text-red-600' },
-    { id: 'publish', name: 'PUBLISH', color: 'text-purple-600' },
-    { id: 'duplicate', name: 'DUPLICATE', color: 'text-indigo-600' },
 ] as const;
 
 interface DerivedModule {

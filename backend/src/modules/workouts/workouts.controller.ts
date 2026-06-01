@@ -114,7 +114,7 @@ export class WorkoutsController {
   }
 
   @Post(':id/publish')
-  @CheckPermission('publish', 'Workout')
+  @CheckPermission('update', 'Workout')
   async publish(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       const workout = await workoutService.publish(id);
@@ -127,7 +127,7 @@ export class WorkoutsController {
   }
 
   @Delete(':id/publish')
-  @CheckPermission('publish', 'Workout')
+  @CheckPermission('update', 'Workout')
   async unpublish(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       const workout = await workoutService.unpublish(id);
@@ -140,7 +140,7 @@ export class WorkoutsController {
   }
 
   @Post(':id/duplicate')
-  @CheckPermission('create', 'Workout')
+  @CheckPermission('update', 'Workout')
   async duplicate(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       const workout = await workoutService.duplicate(id);
