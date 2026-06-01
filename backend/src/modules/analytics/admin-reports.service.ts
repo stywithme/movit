@@ -10,7 +10,7 @@ export interface AnalyticsPeriodQuery {
   limit?: string | number;
 }
 
-interface ResolvedPeriod {
+export interface ResolvedPeriod {
   period: PeriodKey;
   start: Date | null;
   end: Date;
@@ -19,7 +19,7 @@ interface ResolvedPeriod {
   bucket: 'day' | 'week' | 'month';
 }
 
-interface MetricDelta {
+export interface MetricDelta {
   value: number;
   previous: number;
   delta: number;

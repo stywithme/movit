@@ -56,8 +56,42 @@ export class CaslAbilityFactory {
 
         // Regular admin: build abilities from the database role
         if (role && role.permissions) {
+            const knownActions: Action[] = ['manage', 'read', 'create', 'update', 'delete'];
+            const legacyReportSubjects: Record<string, Subject> = {
+                Analytics: 'ReportOverview',
+                OverviewAnalytics: 'ReportOverview',
+                UserAnalytics: 'ReportUsers',
+                ActivationAnalytics: 'ReportActivation',
+                EngagementAnalytics: 'ReportRetention',
+                TrainingAnalytics: 'ReportTraining',
+                ProgramAnalytics: 'ReportProgram',
+                LevelAnalytics: 'ReportLevel',
+                AssessmentAnalytics: 'ReportAssessment',
+                ProgressionAnalytics: 'ReportProgression',
+                RevenueAnalytics: 'ReportRevenue',
+                BookingAnalytics: 'ReportBooking',
+                SafetyAnalytics: 'ReportSafety',
+                ContentAnalytics: 'ReportContent',
+            };
+
             for (const rp of role.permissions) {
-                can(rp.permission.action as Action, rp.permission.subject as Subject);
+                const { action, subject } = rp.permission;
+                const sub = subject as Subject;
+
+                // Legacy DB rows: publish/duplicate are treated as update (edit)
+                if (action === 'publish' || action === 'duplicate') {
+                    can('update', sub);
+                    continue;
+                }
+
+                if (knownActions.includes(action as Action)) {
+                    can(action as Action, sub);
+                }
+
+                const migratedReport = legacyReportSubjects[subject];
+                if (migratedReport && action === 'read') {
+                    can('read', migratedReport);
+                }
             }
         }
 

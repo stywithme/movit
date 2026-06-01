@@ -164,7 +164,7 @@ export class AssessmentTemplatesAdminController {
    * POST /admin/assessment-templates/:id/publish — Publish template.
    */
   @Post(':id/publish')
-  @CheckPermission('publish', 'AssessmentTemplate')
+  @CheckPermission('update', 'AssessmentTemplate')
   async publish(
     @Req() req: Request,
     @Param('id') id: string,
@@ -191,7 +191,7 @@ export class AssessmentTemplatesAdminController {
    * DELETE /admin/assessment-templates/:id/publish — Unpublish template.
    */
   @Delete(':id/publish')
-  @CheckPermission('publish', 'AssessmentTemplate')
+  @CheckPermission('update', 'AssessmentTemplate')
   async unpublish(
     @Req() req: Request,
     @Param('id') id: string,

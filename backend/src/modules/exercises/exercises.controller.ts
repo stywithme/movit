@@ -119,7 +119,7 @@ export class ExercisesController {
   }
 
   @Post('bulk/unpublish')
-  @CheckPermission('publish', 'Exercise')
+  @CheckPermission('update', 'Exercise')
   async bulkUnpublish(@Body() body: unknown, @Res({ passthrough: true }) res: Response) {
     try {
       const parsed = BulkExerciseIdsSchema.safeParse(body);
@@ -203,7 +203,7 @@ export class ExercisesController {
   }
 
   @Put(':id/publish')
-  @CheckPermission('publish', 'Exercise')
+  @CheckPermission('update', 'Exercise')
   async publish(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       const exercise = await exerciseService.publish(id);
@@ -216,7 +216,7 @@ export class ExercisesController {
   }
 
   @Delete(':id/publish')
-  @CheckPermission('publish', 'Exercise')
+  @CheckPermission('update', 'Exercise')
   async unpublish(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       const exercise = await exerciseService.unpublish(id);

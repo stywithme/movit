@@ -115,7 +115,7 @@ export class ProgramsController {
   }
 
   @Post(':id/publish')
-  @CheckPermission('publish', 'Program')
+  @CheckPermission('update', 'Program')
   async publish(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       const program = await programService.publish(id);
@@ -142,7 +142,7 @@ export class ProgramsController {
   }
 
   @Delete(':id/publish')
-  @CheckPermission('publish', 'Program')
+  @CheckPermission('update', 'Program')
   async unpublish(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       const program = await programService.unpublish(id);
@@ -155,7 +155,7 @@ export class ProgramsController {
   }
 
   @Post(':id/duplicate')
-  @CheckPermission('create', 'Program')
+  @CheckPermission('update', 'Program')
   async duplicate(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       const program = await programService.duplicate(id);

@@ -14,10 +14,10 @@ import { analyticsTerms } from '@/modules/analytics/terms';
 import { usePermissions, type Subject } from '@/hooks/usePermissions';
 
 const quickReports = [
-  { href: '/admin/analytics/activation', title: 'Activation Funnel', description: 'Signup to first value', subject: 'ActivationAnalytics' },
-  { href: '/admin/analytics/retention', title: 'Retention', description: 'Cohorts and engagement', subject: 'EngagementAnalytics' },
-  { href: '/admin/analytics/training', title: 'Training Quality', description: 'Sessions, form and safety', subject: 'TrainingAnalytics' },
-  { href: '/admin/analytics/revenue', title: 'Revenue', description: 'MRR and conversion', subject: 'RevenueAnalytics' },
+  { href: '/admin/analytics/activation', title: 'Activation Funnel', description: 'Signup to first value', subject: 'ReportActivation' },
+  { href: '/admin/analytics/retention', title: 'Retention', description: 'Cohorts and engagement', subject: 'ReportRetention' },
+  { href: '/admin/analytics/training', title: 'Training Quality', description: 'Sessions, form and safety', subject: 'ReportTraining' },
+  { href: '/admin/analytics/revenue', title: 'Revenue', description: 'MRR and conversion', subject: 'ReportRevenue' },
 ] satisfies Array<{ href: string; title: string; description: string; subject: Subject }>;
 
 export default function AdminDashboard() {
@@ -27,7 +27,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
-    if (!can('read', 'OverviewAnalytics')) {
+    if (!can('read', 'ReportOverview')) {
       setLoading(false);
       return;
     }
@@ -47,7 +47,7 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       <PageHeader title="Command Center" description="Operational view of acquisition, activation, training quality, revenue, and safety." />
 
-      {!can('read', 'OverviewAnalytics') ? (
+      {!can('read', 'ReportOverview') ? (
         <Card>
           <CardContent className="pt-6">
             <p className="font-semibold">Reports access is not enabled for this role.</p>

@@ -26,37 +26,37 @@ export class AdminAnalyticsController {
   constructor(private readonly reportsService: AdminReportsService) {}
 
   @Get('overview')
-  @CheckPermission('read', 'OverviewAnalytics')
+  @CheckPermission('read', 'ReportOverview')
   async getOverview(@Query() query: AnalyticsPeriodQuery) {
     return { success: true, data: await this.reportsService.getOverview(query) };
   }
 
   @Get('users')
-  @CheckPermission('read', 'UserAnalytics')
+  @CheckPermission('read', 'ReportUsers')
   async getUsersGrowth(@Query() query: AnalyticsPeriodQuery) {
     return { success: true, data: await this.reportsService.getUsersGrowth(query) };
   }
 
   @Get('activation')
-  @CheckPermission('read', 'ActivationAnalytics')
+  @CheckPermission('read', 'ReportActivation')
   async getActivation(@Query() query: AnalyticsPeriodQuery) {
     return { success: true, data: await this.reportsService.getActivation(query) };
   }
 
   @Get('retention')
-  @CheckPermission('read', 'EngagementAnalytics')
+  @CheckPermission('read', 'ReportRetention')
   async getRetention(@Query() query: AnalyticsPeriodQuery) {
     return { success: true, data: await this.reportsService.getRetention(query) };
   }
 
   @Get('training')
-  @CheckPermission('read', 'TrainingAnalytics')
+  @CheckPermission('read', 'ReportTraining')
   async getTrainingPerformance(@Query() query: AnalyticsPeriodQuery) {
     return { success: true, data: await this.reportsService.getTrainingPerformance(query) };
   }
 
   @Get('progression')
-  @CheckPermission('read', 'ProgressionAnalytics')
+  @CheckPermission('read', 'ReportProgression')
   async getProgression(@Query() query: AnalyticsPeriodQuery) {
     return { success: true, data: await this.reportsService.getProgression(query) };
   }
@@ -64,7 +64,7 @@ export class AdminAnalyticsController {
   @Get('revenue')
   @UseGuards(AdminGuard)
   @AdminOnly()
-  @CheckPermission('read', 'RevenueAnalytics')
+  @CheckPermission('read', 'ReportRevenue')
   async getRevenue(@Query() query: AnalyticsPeriodQuery) {
     return { success: true, data: await this.reportsService.getRevenue(query) };
   }
@@ -72,25 +72,25 @@ export class AdminAnalyticsController {
   @Get('bookings')
   @UseGuards(AdminGuard)
   @AdminOnly()
-  @CheckPermission('read', 'BookingAnalytics')
+  @CheckPermission('read', 'ReportBooking')
   async getBookings(@Query() query: AnalyticsPeriodQuery) {
     return { success: true, data: await this.reportsService.getBookings(query) };
   }
 
   @Get('safety')
-  @CheckPermission('read', 'SafetyAnalytics')
+  @CheckPermission('read', 'ReportSafety')
   async getSafety(@Query() query: AnalyticsPeriodQuery) {
     return { success: true, data: await this.reportsService.getSafety(query) };
   }
 
   @Get('content')
-  @CheckPermission('read', 'ContentAnalytics')
+  @CheckPermission('read', 'ReportContent')
   async getContent(@Query() query: AnalyticsPeriodQuery) {
     return { success: true, data: await this.reportsService.getContent(query) };
   }
 
   @Get('programs/:id')
-  @CheckPermission('read', 'ProgramAnalytics')
+  @CheckPermission('read', 'ReportProgram')
   async getProgramDetail(@Param('id') id: string, @Query() query: AnalyticsPeriodQuery) {
     const data = await this.reportsService.getProgramDetail(id, query);
     if (!data) throw new NotFoundException('Program not found');
@@ -98,7 +98,7 @@ export class AdminAnalyticsController {
   }
 
   @Get('users/:id/report')
-  @CheckPermission('read', 'UserAnalytics')
+  @CheckPermission('read', 'ReportUsers')
   async getUserReport(@Param('id') id: string) {
     const data = await this.reportsService.getUserReport(id);
     if (!data) throw new NotFoundException('User not found');
@@ -106,7 +106,7 @@ export class AdminAnalyticsController {
   }
 
   @Get('sessions/:id/report')
-  @CheckPermission('read', 'TrainingAnalytics')
+  @CheckPermission('read', 'ReportTraining')
   async getSessionReport(@Param('id') id: string) {
     const data = await this.reportsService.getSessionReport(id);
     if (!data) throw new NotFoundException('Session not found');
@@ -114,7 +114,7 @@ export class AdminAnalyticsController {
   }
 
   @Get('rules')
-  @CheckPermission('read', 'ProgressionAnalytics')
+  @CheckPermission('read', 'ReportProgression')
   async getRuleEffectiveness(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     try {
       const data = await progressionAnalyticsService.getRuleEffectiveness();
@@ -127,7 +127,7 @@ export class AdminAnalyticsController {
   }
 
   @Get('programs')
-  @CheckPermission('read', 'ProgramAnalytics')
+  @CheckPermission('read', 'ReportProgram')
   async getProgramEffectiveness(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     try {
       const data = await progressionAnalyticsService.getProgramEffectiveness();
@@ -140,7 +140,7 @@ export class AdminAnalyticsController {
   }
 
   @Get('user-trends')
-  @CheckPermission('read', 'UserAnalytics')
+  @CheckPermission('read', 'ReportUsers')
   async getUserTrends(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     try {
       const data = await progressionAnalyticsService.getUserTrends();
@@ -153,7 +153,7 @@ export class AdminAnalyticsController {
   }
 
   @Get('platform')
-  @CheckPermission('read', 'OverviewAnalytics')
+  @CheckPermission('read', 'ReportOverview')
   async getPlatformStats(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     try {
       const data = await progressionAnalyticsService.getPlatformStats();
@@ -166,7 +166,7 @@ export class AdminAnalyticsController {
   }
 
   @Get('levels')
-  @CheckPermission('read', 'LevelAnalytics')
+  @CheckPermission('read', 'ReportLevel')
   async getLevelDistribution(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     try {
       const data = await progressionAnalyticsService.getLevelDistribution();
@@ -179,7 +179,7 @@ export class AdminAnalyticsController {
   }
 
   @Get('assessments')
-  @CheckPermission('read', 'AssessmentAnalytics')
+  @CheckPermission('read', 'ReportAssessment')
   async getAssessmentAnalytics(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     try {
       const data = await progressionAnalyticsService.getAssessmentAnalytics();
@@ -192,7 +192,7 @@ export class AdminAnalyticsController {
   }
 
   @Get('level-transitions')
-  @CheckPermission('read', 'LevelAnalytics')
+  @CheckPermission('read', 'ReportLevel')
   async getLevelTransitionStats(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     try {
       const data = await progressionAnalyticsService.getLevelTransitionStats();
