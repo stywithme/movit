@@ -1,15 +1,21 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, Res, UseGuards } from '@nestjs/common';
-import type { Response } from 'express';
+import { Body, Controller, Delete, ForbiddenException, Get, Param, Post, Put, Query, Req, Res, UseGuards } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import { adminsService } from './admins.service';
 import { CaslGuard } from '@/lib/casl/casl.guard';
 import { CheckPermission } from '@/lib/casl/check-permission.decorator';
+import { getAdminFromRequest } from '@/lib/auth/admin';
 
 @UseGuards(CaslGuard)
 @Controller('admins')
 export class AdminsController {
+  private canAccessSuperAdmins(req: Request) {
+    return getAdminFromRequest(req)?.isSuperAdmin === true;
+  }
+
   @Get()
   @CheckPermission('read', 'Admin')
   async list(
+    @Req() req: Request,
     @Query('status') status?: string,
     @Query('search') search?: string,
     @Query('isDoctor') isDoctor?: string,
@@ -27,6 +33,7 @@ export class AdminsController {
         search: search || undefined,
         page: parsedPage,
         limit: parsedLimit,
+        includeSuperAdmins: this.canAccessSuperAdmins(req),
       });
 
       return {
@@ -77,9 +84,9 @@ export class AdminsController {
 
   @Get(':id')
   @CheckPermission('read', 'Admin')
-  async getById(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
+  async getById(@Param('id') id: string, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     try {
-      const admin = await adminsService.getById(id);
+      const admin = await adminsService.getById(id, this.canAccessSuperAdmins(req));
       if (!admin) {
         res.status(404);
         return { success: false, error: 'Admin not found' };
@@ -94,21 +101,26 @@ export class AdminsController {
 
   @Put(':id')
   @CheckPermission('update', 'Admin')
-  async update(@Param('id') id: string, @Body() body: any) {
+  async update(@Param('id') id: string, @Body() body: any, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     try {
+      const canAccessSuperAdmins = this.canAccessSuperAdmins(req);
       const admin =
         body?.isActive !== undefined
-          ? await adminsService.setActive(id, Boolean(body.isActive))
+          ? await adminsService.setActive(id, Boolean(body.isActive), canAccessSuperAdmins)
           : await adminsService.update(id, {
             name: body?.name,
             email: body?.email,
             roleId: body?.roleId,
             isActive: body?.isActive,
             isDoctor: body?.isDoctor,
-          });
+          }, canAccessSuperAdmins);
 
       return { success: true, data: admin };
     } catch (error) {
+      if (error instanceof ForbiddenException) {
+        res.status(403);
+        return { success: false, error: error.message };
+      }
       console.error('Error updating admin:', error);
       return { success: false, error: 'Failed to update admin' };
     }
@@ -116,16 +128,20 @@ export class AdminsController {
 
   @Put(':id/password')
   @CheckPermission('update', 'Admin')
-  async updatePassword(@Param('id') id: string, @Body() body: any, @Res({ passthrough: true }) res: Response) {
+  async updatePassword(@Param('id') id: string, @Body() body: any, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     try {
       if (!body?.password || String(body.password).length < 6) {
         res.status(400);
         return { success: false, error: 'Password must be at least 6 characters' };
       }
 
-      const admin = await adminsService.updatePassword(id, body.password);
+      const admin = await adminsService.updatePassword(id, body.password, this.canAccessSuperAdmins(req));
       return { success: true, data: admin };
     } catch (error) {
+      if (error instanceof ForbiddenException) {
+        res.status(403);
+        return { success: false, error: error.message };
+      }
       console.error('Error updating admin password:', error);
       res.status(500);
       return { success: false, error: 'Failed to update admin password' };
@@ -134,11 +150,15 @@ export class AdminsController {
 
   @Delete(':id')
   @CheckPermission('delete', 'Admin')
-  async remove(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
+  async remove(@Param('id') id: string, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     try {
-      await adminsService.delete(id);
+      await adminsService.delete(id, this.canAccessSuperAdmins(req));
       return { success: true, message: 'Admin deleted successfully' };
     } catch (error) {
+      if (error instanceof ForbiddenException) {
+        res.status(403);
+        return { success: false, error: error.message };
+      }
       console.error('Error deleting admin:', error);
       res.status(500);
       return { success: false, error: 'Failed to delete admin' };
