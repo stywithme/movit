@@ -25,6 +25,7 @@ const superAdminOnlyPermissionSubjects = [
     'ProgramMap',
     'ReportProgram',
     'ReportActivation',
+    'ReportRetention',
     'ReportAssessment',
     'ReportLevel',
     'Level',
@@ -118,9 +119,27 @@ export class PermissionsService {
         }
     }
 
+    private async assertAssignableAdmins(
+        prisma: Awaited<ReturnType<typeof getPrisma>>,
+        adminIds: string[] | undefined,
+        isSuperAdmin: boolean,
+    ) {
+        if (isSuperAdmin || !adminIds?.length) return;
+
+        const superAdmins = await prisma.admin.findMany({
+            where: { id: { in: adminIds }, isSuperAdmin: true, deletedAt: null },
+            select: { email: true },
+        });
+
+        if (superAdmins.length > 0) {
+            throw new ForbiddenException('Cannot assign roles to Super Admin accounts');
+        }
+    }
+
     async createRole(data: { name: string; displayName: any; description?: any; permissionIds?: string[]; assignedAdminIds?: string[] }, isSuperAdmin = false) {
         const prisma = await getPrisma();
         await this.assertAssignablePermissions(prisma, data.permissionIds, isSuperAdmin);
+        await this.assertAssignableAdmins(prisma, data.assignedAdminIds, isSuperAdmin);
 
         const createdRole = await prisma.$transaction(async (tx) => {
             const role = await tx.role.create({
@@ -160,6 +179,7 @@ export class PermissionsService {
     async updateRole(id: string, data: { name?: string; displayName?: any; description?: any; permissionIds?: string[]; assignedAdminIds?: string[] }, isSuperAdmin = false) {
         const prisma = await getPrisma();
         await this.assertAssignablePermissions(prisma, data.permissionIds, isSuperAdmin);
+        await this.assertAssignableAdmins(prisma, data.assignedAdminIds, isSuperAdmin);
 
         await prisma.$transaction(async (tx) => {
             const role = await tx.role.findUnique({ where: { id } });
@@ -206,9 +226,20 @@ export class PermissionsService {
 
             // Sync assigned admins: assign selected, unassign others that had this role
             if (data.assignedAdminIds !== undefined) {
+                const protectedAdminIds = isSuperAdmin
+                    ? []
+                    : (await tx.admin.findMany({
+                        where: { isSuperAdmin: true, deletedAt: null },
+                        select: { id: true },
+                    })).map((admin) => admin.id);
+
                 // Remove role from admins currently assigned to this role but not in the new list
                 await tx.modelHasRole.deleteMany({
-                    where: { roleId: id, modelType: 'Admin', modelId: { notIn: data.assignedAdminIds } },
+                    where: {
+                        roleId: id,
+                        modelType: 'Admin',
+                        modelId: { notIn: [...data.assignedAdminIds, ...protectedAdminIds] },
+                    },
                 });
                 // Assign role to newly selected admins
                 if (data.assignedAdminIds.length > 0) {

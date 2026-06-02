@@ -6,6 +6,7 @@
  */
 
 import bcrypt from 'bcryptjs';
+import { ForbiddenException } from '@nestjs/common';
 import { getPrisma } from '@/lib/prisma/client';
 import type { CreateAdminInput, UpdateAdminInput } from './admins.types';
 
@@ -53,11 +54,32 @@ async function prepareAdminsList(admins: any[]) {
   });
 }
 
+async function assertCanAccessAdmin(id: string, canAccessSuperAdmin: boolean) {
+  const prisma = await getPrisma();
+  const admin = await prisma.admin.findUnique({
+    where: { id, deletedAt: null },
+    select: { id: true, isSuperAdmin: true },
+  });
+
+  if (admin?.isSuperAdmin && !canAccessSuperAdmin) {
+    throw new ForbiddenException('Super admin accounts are only visible and manageable by Super Admins');
+  }
+
+  return admin;
+}
+
 export const adminsService = {
   /**
    * Get admin by ID
    */
-  async getById(id: string) {
+  async getById(id: string, canAccessSuperAdmin = false) {
+    try {
+      await assertCanAccessAdmin(id, canAccessSuperAdmin);
+    } catch (error) {
+      if (error instanceof ForbiddenException) return null;
+      throw error;
+    }
+
     const prisma = await getPrisma();
     const admin = await prisma.admin.findUnique({
       where: { id, deletedAt: null },
@@ -75,6 +97,7 @@ export const adminsService = {
     search?: string;
     page?: number;
     limit?: number;
+    includeSuperAdmins?: boolean;
   }) {
     const prisma = await getPrisma();
     const page = filters?.page || 1;
@@ -84,6 +107,10 @@ export const adminsService = {
     const where: Record<string, unknown> = {
       deletedAt: null,
     };
+
+    if (!filters?.includeSuperAdmins) {
+      where.isSuperAdmin = false;
+    }
 
     if (filters?.isActive !== undefined) {
       where.isActive = filters.isActive;
@@ -161,7 +188,9 @@ export const adminsService = {
   /**
    * Update admin details or status
    */
-  async update(id: string, data: UpdateAdminInput) {
+  async update(id: string, data: UpdateAdminInput, canAccessSuperAdmin = false) {
+    await assertCanAccessAdmin(id, canAccessSuperAdmin);
+
     const prisma = await getPrisma();
 
     const admin = await prisma.admin.update({
@@ -192,7 +221,9 @@ export const adminsService = {
   /**
    * Update admin password
    */
-  async updatePassword(id: string, password: string) {
+  async updatePassword(id: string, password: string, canAccessSuperAdmin = false) {
+    await assertCanAccessAdmin(id, canAccessSuperAdmin);
+
     const prisma = await getPrisma();
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
@@ -207,7 +238,9 @@ export const adminsService = {
   /**
    * Activate or deactivate an admin
    */
-  async setActive(id: string, isActive: boolean) {
+  async setActive(id: string, isActive: boolean, canAccessSuperAdmin = false) {
+    await assertCanAccessAdmin(id, canAccessSuperAdmin);
+
     const prisma = await getPrisma();
 
     const admin = await prisma.admin.update({
@@ -221,7 +254,9 @@ export const adminsService = {
   /**
    * Soft delete an admin
    */
-  async delete(id: string) {
+  async delete(id: string, canAccessSuperAdmin = false) {
+    await assertCanAccessAdmin(id, canAccessSuperAdmin);
+
     const prisma = await getPrisma();
 
     const admin = await prisma.admin.update({
