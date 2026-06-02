@@ -14,6 +14,7 @@ export class WorkoutsController {
     @Query('status') status?: string,
     @Query('search') search?: string,
     @Query('featured') featured?: string,
+    @Query('visibility') visibility?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string
   ) {
@@ -29,6 +30,7 @@ export class WorkoutsController {
         status: (status as 'draft' | 'published') || undefined,
         search: search || undefined,
         isFeatured,
+        visibility: (visibility as 'public' | 'private') || undefined,
         page: Number.parseInt(page || '1', 10),
         limit: Number.parseInt(limit || '20', 10),
       });
@@ -91,6 +93,16 @@ export class WorkoutsController {
         return { success: false, errors };
       }
 
+      const existing = await workoutService.getById(id);
+      if (!existing) {
+        res.status(404);
+        return { success: false, error: 'Workout not found' };
+      }
+      if ((existing as { visibility?: string }).visibility === 'private') {
+        res.status(403);
+        return { success: false, error: 'Private workouts cannot be edited' };
+      }
+
       const workout = await workoutService.update(id, body);
       return { success: true, data: workout };
     } catch (error) {
@@ -117,6 +129,15 @@ export class WorkoutsController {
   @CheckPermission('update', 'Workout')
   async publish(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
+      const existing = await workoutService.getById(id);
+      if (!existing) {
+        res.status(404);
+        return { success: false, error: 'Workout not found' };
+      }
+      if ((existing as { visibility?: string }).visibility === 'private') {
+        res.status(403);
+        return { success: false, error: 'Private workouts cannot be published' };
+      }
       const workout = await workoutService.publish(id);
       return { success: true, data: workout };
     } catch (error) {
@@ -130,6 +151,15 @@ export class WorkoutsController {
   @CheckPermission('update', 'Workout')
   async unpublish(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
+      const existing = await workoutService.getById(id);
+      if (!existing) {
+        res.status(404);
+        return { success: false, error: 'Workout not found' };
+      }
+      if ((existing as { visibility?: string }).visibility === 'private') {
+        res.status(403);
+        return { success: false, error: 'Private workouts cannot be unpublished' };
+      }
       const workout = await workoutService.unpublish(id);
       return { success: true, data: workout };
     } catch (error) {
@@ -143,6 +173,15 @@ export class WorkoutsController {
   @CheckPermission('update', 'Workout')
   async duplicate(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
+      const existing = await workoutService.getById(id);
+      if (!existing) {
+        res.status(404);
+        return { success: false, error: 'Workout not found' };
+      }
+      if ((existing as { visibility?: string }).visibility === 'private') {
+        res.status(403);
+        return { success: false, error: 'Private workouts cannot be duplicated' };
+      }
       const workout = await workoutService.duplicate(id);
       res.status(201);
       return { success: true, data: workout };

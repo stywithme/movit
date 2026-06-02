@@ -1,11 +1,32 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { getPrisma } from '@/lib/prisma/client';
 
+const legacyPermissionSubjects = [
+    'Analytics',
+    'OverviewAnalytics',
+    'UserAnalytics',
+    'ActivationAnalytics',
+    'EngagementAnalytics',
+    'TrainingAnalytics',
+    'ProgramAnalytics',
+    'LevelAnalytics',
+    'AssessmentAnalytics',
+    'ProgressionAnalytics',
+    'RevenueAnalytics',
+    'BookingAnalytics',
+    'SafetyAnalytics',
+    'ContentAnalytics',
+];
+
 @Injectable()
 export class PermissionsService {
     async getAllPermissions() {
         const prisma = await getPrisma();
         return prisma.permission.findMany({
+            where: {
+                subject: { notIn: legacyPermissionSubjects },
+                action: { notIn: ['publish', 'duplicate'] },
+            },
             orderBy: [{ subject: 'asc' }, { action: 'asc' }],
         });
     }

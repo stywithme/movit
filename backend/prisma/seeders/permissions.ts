@@ -1,5 +1,24 @@
 import type { PrismaClient } from '@prisma/client';
 
+const legacyReportSubjectMap: Record<string, string> = {
+    Analytics: 'ReportOverview',
+    OverviewAnalytics: 'ReportOverview',
+    UserAnalytics: 'ReportUsers',
+    ActivationAnalytics: 'ReportActivation',
+    EngagementAnalytics: 'ReportRetention',
+    TrainingAnalytics: 'ReportTraining',
+    ProgramAnalytics: 'ReportProgram',
+    LevelAnalytics: 'ReportLevel',
+    AssessmentAnalytics: 'ReportAssessment',
+    ProgressionAnalytics: 'ReportProgression',
+    RevenueAnalytics: 'ReportRevenue',
+    BookingAnalytics: 'ReportBooking',
+    SafetyAnalytics: 'ReportSafety',
+    ContentAnalytics: 'ReportContent',
+};
+
+const legacyEditActions = ['publish', 'duplicate'];
+
 const permissions = [
     // Exercise
     { subject: 'Exercise', action: 'read' },
@@ -149,5 +168,60 @@ export async function seedPermissions(prisma: PrismaClient) {
         });
         count++;
     }
+
+    for (const [legacySubject, reportSubject] of Object.entries(legacyReportSubjectMap)) {
+        const legacyPermission = await prisma.permission.findUnique({
+            where: { subject_action: { subject: legacySubject, action: 'read' } },
+            include: { roles: true },
+        });
+
+        if (!legacyPermission) continue;
+
+        const reportPermission = await prisma.permission.upsert({
+            where: { subject_action: { subject: reportSubject, action: 'read' } },
+            update: {},
+            create: { subject: reportSubject, action: 'read' },
+        });
+
+        if (legacyPermission.roles.length > 0) {
+            await prisma.rolePermission.createMany({
+                data: legacyPermission.roles.map((rolePermission) => ({
+                    roleId: rolePermission.roleId,
+                    permissionId: reportPermission.id,
+                })),
+                skipDuplicates: true,
+            });
+        }
+
+        await prisma.permission.delete({ where: { id: legacyPermission.id } });
+    }
+
+    for (const action of legacyEditActions) {
+        const legacyPermissions = await prisma.permission.findMany({
+            where: { action },
+            include: { roles: true },
+        });
+
+        for (const legacyPermission of legacyPermissions) {
+            const updatePermission = await prisma.permission.upsert({
+                where: { subject_action: { subject: legacyPermission.subject, action: 'update' } },
+                update: {},
+                create: { subject: legacyPermission.subject, action: 'update' },
+            });
+
+            if (legacyPermission.roles.length > 0) {
+                await prisma.rolePermission.createMany({
+                    data: legacyPermission.roles.map((rolePermission) => ({
+                        roleId: rolePermission.roleId,
+                        permissionId: updatePermission.id,
+                    })),
+                    skipDuplicates: true,
+                });
+            }
+
+            await prisma.permission.delete({ where: { id: legacyPermission.id } });
+        }
+    }
+
     console.log(`✅ Seeded ${count} permissions.`);
 }

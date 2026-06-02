@@ -78,6 +78,27 @@ const ACTIONS = [
     { id: 'delete', name: 'DELETE', color: 'text-red-600' },
 ] as const;
 
+const LEGACY_PERMISSION_SUBJECTS = new Set([
+    'Analytics',
+    'OverviewAnalytics',
+    'UserAnalytics',
+    'ActivationAnalytics',
+    'EngagementAnalytics',
+    'TrainingAnalytics',
+    'ProgramAnalytics',
+    'LevelAnalytics',
+    'AssessmentAnalytics',
+    'ProgressionAnalytics',
+    'RevenueAnalytics',
+    'BookingAnalytics',
+    'SafetyAnalytics',
+    'ContentAnalytics',
+]);
+
+function isVisiblePermission(permission: { subject: string; action: string }) {
+    return !LEGACY_PERMISSION_SUBJECTS.has(permission.subject) && permission.action !== 'publish' && permission.action !== 'duplicate';
+}
+
 interface DerivedModule {
     id: string;
     name: string;
@@ -110,10 +131,11 @@ export function RoleForm({ initialData, isEdit }: RoleFormProps) {
                 const res = await fetch('/api/admin/permissions');
                 const data = await res.json();
                 if (data.success) {
-                    setAllPermissions(data.data);
+                    const visiblePermissions = (data.data as Array<{ id: string; subject: string; action: string }>).filter(isVisiblePermission);
+                    setAllPermissions(visiblePermissions);
 
                     // Derive modules from unique subjects
-                    const subjects = Array.from(new Set((data.data as any[]).map(p => p.subject)));
+                    const subjects = Array.from(new Set(visiblePermissions.map(p => p.subject)));
                     const derived = subjects.map(s => ({
                         id: s,
                         name: SUBJECT_GROUP_MAP[s]?.name || s,
@@ -164,7 +186,7 @@ export function RoleForm({ initialData, isEdit }: RoleFormProps) {
     useEffect(() => {
         if (initialData?.permissions) {
             const perms: Record<string, Record<string, boolean>> = {};
-            initialData.permissions.forEach((p) => {
+            initialData.permissions.filter((p) => isVisiblePermission(p.permission)).forEach((p) => {
                 if (!perms[p.permission.subject]) perms[p.permission.subject] = {};
                 perms[p.permission.subject][p.permission.action] = true;
             });
