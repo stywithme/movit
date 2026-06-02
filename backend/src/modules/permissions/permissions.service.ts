@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { getPrisma } from '@/lib/prisma/client';
 
 const legacyPermissionSubjects = [
@@ -18,14 +18,35 @@ const legacyPermissionSubjects = [
     'ContentAnalytics',
 ];
 
+const legacyPermissionActions = ['publish', 'duplicate'];
+
+const superAdminOnlyPermissionSubjects = [
+    'Program',
+    'ProgramMap',
+    'ReportProgram',
+    'ReportActivation',
+    'ReportAssessment',
+    'ReportLevel',
+    'Level',
+    'AssessmentTemplate',
+    'ProgressionRule',
+    'ReportProgression',
+];
+
+function hiddenSubjectsFor(isSuperAdmin: boolean) {
+    return isSuperAdmin
+        ? legacyPermissionSubjects
+        : [...legacyPermissionSubjects, ...superAdminOnlyPermissionSubjects];
+}
+
 @Injectable()
 export class PermissionsService {
-    async getAllPermissions() {
+    async getAllPermissions(isSuperAdmin = false) {
         const prisma = await getPrisma();
         return prisma.permission.findMany({
             where: {
-                subject: { notIn: legacyPermissionSubjects },
-                action: { notIn: ['publish', 'duplicate'] },
+                subject: { notIn: hiddenSubjectsFor(isSuperAdmin) },
+                action: { notIn: legacyPermissionActions },
             },
             orderBy: [{ subject: 'asc' }, { action: 'asc' }],
         });
@@ -52,7 +73,7 @@ export class PermissionsService {
         }));
     }
 
-    async getRole(id: string) {
+    async getRole(id: string, isSuperAdmin = false) {
         const prisma = await getPrisma();
         const role = await prisma.role.findUnique({
             where: { id },
@@ -64,11 +85,43 @@ export class PermissionsService {
         });
 
         if (!role) throw new NotFoundException('Role not found');
-        return role;
+        return {
+            ...role,
+            permissions: role.permissions.filter((rolePermission) => (
+                !hiddenSubjectsFor(isSuperAdmin).includes(rolePermission.permission.subject)
+                && !legacyPermissionActions.includes(rolePermission.permission.action)
+            )),
+        };
     }
 
-    async createRole(data: { name: string; displayName: any; description?: any; permissionIds?: string[]; assignedAdminIds?: string[] }) {
+    private async assertAssignablePermissions(
+        prisma: Awaited<ReturnType<typeof getPrisma>>,
+        permissionIds: string[] | undefined,
+        isSuperAdmin: boolean,
+    ) {
+        if (!permissionIds?.length) return;
+
+        const disallowedPermissions = await prisma.permission.findMany({
+            where: {
+                id: { in: permissionIds },
+                OR: [
+                    { subject: { in: hiddenSubjectsFor(isSuperAdmin) } },
+                    { action: { in: legacyPermissionActions } },
+                ],
+            },
+            select: { subject: true, action: true },
+        });
+
+        if (disallowedPermissions.length > 0) {
+            const names = disallowedPermissions.map((permission) => `${permission.subject}:${permission.action}`).join(', ');
+            throw new ForbiddenException(`Cannot assign restricted permissions: ${names}`);
+        }
+    }
+
+    async createRole(data: { name: string; displayName: any; description?: any; permissionIds?: string[]; assignedAdminIds?: string[] }, isSuperAdmin = false) {
         const prisma = await getPrisma();
+        await this.assertAssignablePermissions(prisma, data.permissionIds, isSuperAdmin);
+
         const createdRole = await prisma.$transaction(async (tx) => {
             const role = await tx.role.create({
                 data: {
@@ -101,11 +154,13 @@ export class PermissionsService {
             return role;
         });
 
-        return this.getRole(createdRole.id);
+        return this.getRole(createdRole.id, isSuperAdmin);
     }
 
-    async updateRole(id: string, data: { name?: string; displayName?: any; description?: any; permissionIds?: string[]; assignedAdminIds?: string[] }) {
+    async updateRole(id: string, data: { name?: string; displayName?: any; description?: any; permissionIds?: string[]; assignedAdminIds?: string[] }, isSuperAdmin = false) {
         const prisma = await getPrisma();
+        await this.assertAssignablePermissions(prisma, data.permissionIds, isSuperAdmin);
+
         await prisma.$transaction(async (tx) => {
             const role = await tx.role.findUnique({ where: { id } });
             if (!role) throw new NotFoundException('Role not found');
@@ -120,7 +175,25 @@ export class PermissionsService {
             });
 
             if (data.permissionIds !== undefined) {
-                await tx.rolePermission.deleteMany({ where: { roleId: id } });
+                if (isSuperAdmin) {
+                    await tx.rolePermission.deleteMany({ where: { roleId: id } });
+                } else {
+                    const visiblePermissionIds = await tx.permission.findMany({
+                        where: {
+                            subject: { notIn: hiddenSubjectsFor(false) },
+                            action: { notIn: legacyPermissionActions },
+                        },
+                        select: { id: true },
+                    });
+
+                    await tx.rolePermission.deleteMany({
+                        where: {
+                            roleId: id,
+                            permissionId: { in: visiblePermissionIds.map((permission) => permission.id) },
+                        },
+                    });
+                }
+
                 if (data.permissionIds.length > 0) {
                     await tx.rolePermission.createMany({
                         data: data.permissionIds.map((permId) => ({
@@ -153,7 +226,7 @@ export class PermissionsService {
             }
         });
 
-        return this.getRole(id);
+        return this.getRole(id, isSuperAdmin);
     }
 
     async deleteRole(id: string) {
