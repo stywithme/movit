@@ -208,6 +208,7 @@ class SkeletonOverlayView @JvmOverloads constructor(
     private var displayOffsetX: Float = 0f
     private var displayOffsetY: Float = 0f
     private var useFitCenter: Boolean = false
+    private var useFillCenter: Boolean = false
     
     // OPTIMIZED: Cached view dimensions for scale factor calculation
     private var cachedViewWidth: Int = 0
@@ -487,8 +488,16 @@ class SkeletonOverlayView @JvmOverloads constructor(
                 displayOffsetY = (cachedViewHeight - imageHeight * scaleFactor) / 2f
             } else {
                 scaleFactor = max(scaleX, scaleY)
-                displayOffsetX = 0f
-                displayOffsetY = 0f
+                displayOffsetX = if (useFillCenter) {
+                    (cachedViewWidth - imageWidth * scaleFactor) / 2f
+                } else {
+                    0f
+                }
+                displayOffsetY = if (useFillCenter) {
+                    (cachedViewHeight - imageHeight * scaleFactor) / 2f
+                } else {
+                    0f
+                }
             }
         }
     }
@@ -496,6 +505,13 @@ class SkeletonOverlayView @JvmOverloads constructor(
     fun setScaleMode(fitCenter: Boolean) {
         if (useFitCenter != fitCenter) {
             useFitCenter = fitCenter
+            recalculateScaleFactor()
+        }
+    }
+
+    fun setFillCenterMode(enabled: Boolean) {
+        if (useFillCenter != enabled) {
+            useFillCenter = enabled
             recalculateScaleFactor()
         }
     }
