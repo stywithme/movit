@@ -42,6 +42,10 @@ class VideoTrainingInputController(
         b.btnSaveResults.visibility = View.VISIBLE
         host.updatePlayPauseIcon(isPlaying = false)
 
+        // Keep the video analysis path on the legacy FILL_START mapping.
+        b.skeletonOverlay.setScaleMode(fitCenter = false)
+        b.skeletonOverlay.setFillCenterMode(enabled = false)
+
         host.videoModeController = VideoModeController(host, host.lifecycleScope)
         host.videoModeController?.setListener(createVideoModeListener())
 

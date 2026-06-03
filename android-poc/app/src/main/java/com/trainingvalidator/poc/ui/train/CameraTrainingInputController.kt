@@ -107,6 +107,9 @@ class CameraTrainingInputController(
             poseLandmarkerHelper?.detectPose(imageProxy, host.useFrontCamera)
         }
         b.skeletonOverlay.updateFrontCameraState(host.useFrontCamera)
+        // Match previewView's FILL_CENTER crop so landmarks align with the fullscreen preview.
+        b.skeletonOverlay.setScaleMode(fitCenter = false)
+        b.skeletonOverlay.setFillCenterMode(enabled = true)
     }
 
     /**

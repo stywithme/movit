@@ -50,6 +50,8 @@ class CameraManager(
     /** Diagnostic info populated after binding. */
     var diagSupportedRanges: String = "N/A"; private set
     var diagAppliedRange: String = "N/A"; private set
+    var diagZoom: String = "N/A"; private set
+    var diagResolution: String = "N/A"; private set
 
     /**
      * Start camera with specified lens facing
@@ -87,9 +89,7 @@ class CameraManager(
 
         val rotation = previewView.display?.rotation ?: android.view.Surface.ROTATION_0
 
-        val resolutionSelector = ResolutionSelector.Builder()
-            .setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)
-            .build()
+        val resolutionSelector = buildResolutionSelector()
 
         val preview = Preview.Builder()
             .setResolutionSelector(resolutionSelector)
@@ -121,11 +121,31 @@ class CameraManager(
             )
 
             applyHighFps()
+            applyWidestZoom()
+            scheduleWidestZoomRetry()
+            captureResolutionDiagnostics(preview)
 
             Log.d(TAG, "Camera use cases bound successfully with 4:3 aspect ratio")
         } catch (e: Exception) {
             Log.e(TAG, "Use case binding failed: ${e.message}")
         }
+    }
+
+    /**
+     * 4:3 auto strategy shared by Preview and ImageAnalysis. CameraX resolves this to a light
+     * resolution (≈640x480 analysis, device-appropriate preview), keeping per-frame cost low.
+     */
+    private fun buildResolutionSelector(): ResolutionSelector =
+        ResolutionSelector.Builder()
+            .setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)
+            .build()
+
+    /** Log the resolutions CameraX actually resolved, to confirm the front-camera FOV lever. */
+    private fun captureResolutionDiagnostics(preview: Preview) {
+        val previewRes = runCatching { preview.resolutionInfo?.resolution }.getOrNull()
+        val analysisRes = runCatching { imageAnalysis?.resolutionInfo?.resolution }.getOrNull()
+        diagResolution = "preview=$previewRes, analysis=$analysisRes"
+        Log.d(TAG, "Resolved resolutions (front=$currentFacing): $diagResolution")
     }
 
     /**
@@ -167,6 +187,50 @@ class CameraManager(
         } catch (e: Exception) {
             Log.w(TAG, "Failed to apply high FPS: ${e.message}")
         }
+    }
+
+    /**
+     * Start every camera at its widest available zoom ratio.
+     *
+     * CameraX applies zoom to the camera pipeline, so keeping this at minZoomRatio preserves
+     * the largest frame for both Preview and ImageAnalysis. The fullscreen preview can still
+     * crop the displayed image independently.
+     */
+    private fun applyWidestZoom() {
+        val cam = camera ?: return
+
+        try {
+            // This works even before zoomState.value is populated.
+            cam.cameraControl.setLinearZoom(0f)
+
+            val zoomState = cam.cameraInfo.zoomState.value
+            if (zoomState != null) {
+                cam.cameraControl.setZoomRatio(zoomState.minZoomRatio)
+                diagZoom = "[min=${zoomState.minZoomRatio}, max=${zoomState.maxZoomRatio}]"
+                Log.d(
+                    TAG,
+                    "Applied widest zoom ratio: ${zoomState.minZoomRatio} (max=${zoomState.maxZoomRatio})"
+                )
+            } else {
+                Log.d(TAG, "Requested widest zoom via linearZoom=0 while zoomState is pending")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to apply widest zoom: ${e.message}")
+        }
+    }
+
+    private fun scheduleWidestZoomRetry() {
+        val boundCamera = camera ?: return
+        previewView.postDelayed({
+            if (camera === boundCamera) {
+                applyWidestZoom()
+            }
+        }, 300L)
+        previewView.postDelayed({
+            if (camera === boundCamera) {
+                applyWidestZoom()
+            }
+        }, 1000L)
     }
 
     /**

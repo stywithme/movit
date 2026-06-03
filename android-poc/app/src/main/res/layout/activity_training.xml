@@ -13,12 +13,13 @@
 
     <!-- ==================== LAYER 0: Media Background ==================== -->
     
-    <!-- Camera Preview (hidden in video mode) -->
+    <!-- Camera Preview (hidden in video mode). FILL_CENTER fills the full training screen;
+         the 4:3 camera frame is cropped symmetrically on tall screens. -->
     <androidx.camera.view.PreviewView
         android:id="@+id/previewView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:scaleType="fillStart" />
+        app:scaleType="fillCenter" />
 
     <!-- Video TextureView (hidden in camera mode) -->
     <TextureView
