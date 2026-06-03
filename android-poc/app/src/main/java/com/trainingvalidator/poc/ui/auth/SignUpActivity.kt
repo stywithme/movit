@@ -15,6 +15,8 @@ import com.trainingvalidator.poc.network.RegisterRequest
 import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.storage.UserDataCleaner
 import com.trainingvalidator.poc.ui.main.MainContainerActivity
+import com.trainingvalidator.poc.ui.onboarding.OnboardingGate
+import com.trainingvalidator.poc.ui.onboarding.ProfileOnboardingActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -130,8 +132,10 @@ class SignUpActivity : AppCompatActivity() {
                 if (body?.success == true && authData != null) {
                     UserDataCleaner.clearAll(this@SignUpActivity)
                     AuthManager.saveAuthData(this@SignUpActivity, authData)
+                    // Fresh email account → always collect the profile.
+                    AuthManager.setOnboardingCompleted(this@SignUpActivity, false)
                     Toast.makeText(this@SignUpActivity, getString(R.string.success), Toast.LENGTH_SHORT).show()
-                    startActivity(Intent(this@SignUpActivity, MainContainerActivity::class.java).apply {
+                    startActivity(ProfileOnboardingActivity.createIntent(this@SignUpActivity).apply {
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     })
                     finish()
@@ -194,7 +198,13 @@ class SignUpActivity : AppCompatActivity() {
                     UserDataCleaner.clearAll(this@SignUpActivity)
                     AuthManager.saveAuthData(this@SignUpActivity, authData)
                     Toast.makeText(this@SignUpActivity, getString(R.string.success), Toast.LENGTH_SHORT).show()
-                    startActivity(Intent(this@SignUpActivity, MainContainerActivity::class.java).apply {
+                    // Google may sign in an existing user — only onboard if the profile is incomplete.
+                    val next = if (OnboardingGate.isProfileComplete(this@SignUpActivity)) {
+                        MainContainerActivity::class.java
+                    } else {
+                        ProfileOnboardingActivity::class.java
+                    }
+                    startActivity(Intent(this@SignUpActivity, next).apply {
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     })
                     finish()

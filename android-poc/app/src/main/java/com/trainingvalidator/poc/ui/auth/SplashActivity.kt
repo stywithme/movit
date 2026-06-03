@@ -11,6 +11,9 @@ import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivitySplashBinding
+import com.trainingvalidator.poc.ui.main.MainContainerActivity
+import com.trainingvalidator.poc.ui.onboarding.OnboardingGate
+import com.trainingvalidator.poc.ui.onboarding.ProfileOnboardingActivity
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -105,10 +108,9 @@ class SplashActivity : AppCompatActivity() {
             val nextActivity = when {
                 isFirstLaunch -> OnboardingActivity::class.java
                 !isLoggedIn -> SignInActivity::class.java
-                else -> {
-                    // Navigate to main app with bottom navigation
-                    com.trainingvalidator.poc.ui.main.MainContainerActivity::class.java
-                }
+                !OnboardingGate.isProfileComplete(this@SplashActivity) ->
+                    ProfileOnboardingActivity::class.java
+                else -> MainContainerActivity::class.java
             }
             
             startActivity(Intent(this@SplashActivity, nextActivity))

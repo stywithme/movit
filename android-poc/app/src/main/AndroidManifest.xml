@@ -49,12 +49,20 @@
             </intent-filter>
         </activity>
         
-        <!-- Onboarding -->
+        <!-- Onboarding (intro slides) -->
         <activity
             android:name=".ui.auth.OnboardingActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
+
+        <!-- Profile Onboarding (trainee data collection) -->
+        <activity
+            android:name=".ui.onboarding.ProfileOnboardingActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix"
+            android:windowSoftInputMode="adjustResize" />
         
         <!-- Sign In -->
         <activity
