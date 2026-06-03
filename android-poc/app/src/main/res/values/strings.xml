@@ -1193,4 +1193,102 @@
     <string name="time_months_ago">%1$d months ago</string>
     <string name="time_years_ago">%1$d years ago</string>
 
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- PROFILE ONBOARDING -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <string name="onb_continue">Continue</string>
+    <string name="onb_start_journey">Start my journey</string>
+    <string name="onb_saving">Saving…</string>
+    <string name="onb_save_failed">Couldn\'t save your profile. Please try again.</string>
+    <string name="onb_step_counter">Step %1$d of %2$d</string>
+
+    <!-- Step 1: age + gender -->
+    <string name="onb_age_gender_title">Tell us about you</string>
+    <string name="onb_age_gender_subtitle">This helps us tailor your training to you.</string>
+    <string name="onb_age_label">Age</string>
+    <string name="onb_gender_label">Biological sex</string>
+    <string name="onb_gender_male">Male</string>
+    <string name="onb_gender_female">Female</string>
+
+    <!-- Step 2: metrics -->
+    <string name="onb_metrics_title">Your measurements</string>
+    <string name="onb_metrics_subtitle">Used to estimate loads and track your progress.</string>
+    <string name="onb_weight_label">Weight</string>
+    <string name="onb_height_label">Height</string>
+    <string name="onb_unit_kg">kg</string>
+    <string name="onb_unit_lb">lb</string>
+    <string name="onb_unit_cm">cm</string>
+    <string name="onb_unit_ft">ft</string>
+    <string name="onb_value_kg">%1$s kg</string>
+    <string name="onb_value_lb">%1$d lb</string>
+    <string name="onb_value_cm">%1$d cm</string>
+    <string name="onb_value_ft">%1$d\'%2$d\"</string>
+
+    <!-- Step 3: experience + days -->
+    <string name="onb_experience_title">What\'s your experience?</string>
+    <string name="onb_experience_subtitle">With resistance and strength training.</string>
+    <string name="onb_exp_beginner_title">Beginner</string>
+    <string name="onb_exp_beginner_desc">New to training, or returning after a long break.</string>
+    <string name="onb_exp_intermediate_title">Intermediate</string>
+    <string name="onb_exp_intermediate_desc">You train regularly and know the basics.</string>
+    <string name="onb_exp_advanced_title">Advanced</string>
+    <string name="onb_exp_advanced_desc">Experienced with structured programming.</string>
+    <string name="onb_days_label">Sessions per week</string>
+    <plurals name="onb_days_value">
+        <item quantity="one">%1$d day / week</item>
+        <item quantity="other">%1$d days / week</item>
+    </plurals>
+
+    <!-- Step 4: goal -->
+    <string name="onb_goal_title">What\'s your main goal?</string>
+    <string name="onb_goal_subtitle">We\'ll prioritize it in your plan.</string>
+    <string name="onb_goal_strength_title">Strength</string>
+    <string name="onb_goal_strength_desc">Lift heavier and build raw power.</string>
+    <string name="onb_goal_hypertrophy_title">Muscle growth</string>
+    <string name="onb_goal_hypertrophy_desc">Build size and muscle definition.</string>
+    <string name="onb_goal_power_title">Power</string>
+    <string name="onb_goal_power_desc">Explosive, athletic performance.</string>
+    <string name="onb_goal_health_title">General health</string>
+    <string name="onb_goal_health_desc">Stay fit, mobile and energized.</string>
+
+    <!-- Step 5: weekdays -->
+    <string name="onb_weekdays_title">Which days work for you?</string>
+    <string name="onb_weekdays_subtitle">Pick the days you can train.</string>
+    <string name="onb_weekdays_hint">%1$d of %2$d days selected</string>
+    <string-array name="onb_weekdays">
+        <item>Sunday</item>
+        <item>Monday</item>
+        <item>Tuesday</item>
+        <item>Wednesday</item>
+        <item>Thursday</item>
+        <item>Friday</item>
+        <item>Saturday</item>
+    </string-array>
+
+    <!-- Step 6: location + equipment -->
+    <string name="onb_location_title">Where will you train?</string>
+    <string name="onb_location_subtitle">We\'ll match exercises to your setup.</string>
+    <string name="onb_location_home">Home</string>
+    <string name="onb_location_gym">Gym</string>
+    <string name="onb_equipment_label">Available equipment</string>
+    <string name="onb_equipment_subtitle">Select everything you have access to.</string>
+    <string name="onb_equip_bodyweight">Bodyweight</string>
+    <string name="onb_equip_dumbbell">Dumbbells</string>
+    <string name="onb_equip_bands">Resistance bands</string>
+    <string name="onb_equip_kettlebell">Kettlebell</string>
+    <string name="onb_equip_pull_up_bar">Pull-up bar</string>
+    <string name="onb_equip_bench">Bench</string>
+    <string name="onb_equip_mat">Mat</string>
+
+    <!-- Step 7: summary -->
+    <string name="onb_summary_title">Review your profile</string>
+    <string name="onb_summary_subtitle">You can change any of this later in your profile.</string>
+    <string name="onb_experience_row">Experience</string>
+    <string name="onb_goal_row">Goal</string>
+    <string name="onb_days_row">Training days</string>
+    <string name="onb_location_row">Location</string>
+    <string name="onb_equipment_row">Equipment</string>
+    <string name="onb_equipment_all">Full gym</string>
+    <string name="onb_health_disclaimer">I confirm I\'m in good health with no medical condition that prevents me from exercising, and I take responsibility for training within my limits.</string>
+
 </resources>

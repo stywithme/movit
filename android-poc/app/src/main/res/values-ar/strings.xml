@@ -1059,7 +1059,7 @@
     <string name="coach_standard">متوازن</string>
     <string name="coach_strict">صارم</string>
     <string name="camera_cue_mode">قنوات رسائل التدريب</string>
-    <string name="camera_cue_mode_desc">تدريب الكاميرا يستخدم رسائل صوتية أثناء التدريب المباشر.</string>
+    <string name="camera_cue_mode_desc">تدريب الكاميرا يستخدم رسائل صوتية فقط. مراجعة الفيديو تستخدم رسائل نصية فقط.</string>
 
     <!-- Assessment / Body Scan -->
     <string name="screening_title">فحص ما قبل الاختبار</string>
@@ -1114,4 +1114,107 @@
     <string name="time_weeks_ago">منذ %1$d أسابيع</string>
     <string name="time_months_ago">منذ %1$d أشهر</string>
     <string name="time_years_ago">منذ %1$d سنوات</string>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- PROFILE ONBOARDING -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <string name="onb_continue">متابعة</string>
+    <string name="onb_start_journey">ابدأ رحلتي</string>
+    <string name="onb_saving">جارٍ الحفظ…</string>
+    <string name="onb_save_failed">تعذّر حفظ ملفك. حاول مرة أخرى.</string>
+    <string name="onb_step_counter">الخطوة %1$d من %2$d</string>
+
+    <!-- الخطوة 1: العمر + الجنس -->
+    <string name="onb_age_gender_title">أخبرنا عنك</string>
+    <string name="onb_age_gender_subtitle">يساعدنا هذا في تخصيص تدريبك لك.</string>
+    <string name="onb_age_label">العمر</string>
+    <string name="onb_gender_label">الجنس</string>
+    <string name="onb_gender_male">ذكر</string>
+    <string name="onb_gender_female">أنثى</string>
+
+    <!-- الخطوة 2: القياسات -->
+    <string name="onb_metrics_title">قياساتك</string>
+    <string name="onb_metrics_subtitle">تُستخدم لتقدير الأحمال وتتبّع تقدمك.</string>
+    <string name="onb_weight_label">الوزن</string>
+    <string name="onb_height_label">الطول</string>
+    <string name="onb_unit_kg">كجم</string>
+    <string name="onb_unit_lb">رطل</string>
+    <string name="onb_unit_cm">سم</string>
+    <string name="onb_unit_ft">قدم</string>
+    <string name="onb_value_kg">%1$s كجم</string>
+    <string name="onb_value_lb">%1$d رطل</string>
+    <string name="onb_value_cm">%1$d سم</string>
+    <string name="onb_value_ft">%1$d\'%2$d\"</string>
+
+    <!-- الخطوة 3: الخبرة + الأيام -->
+    <string name="onb_experience_title">ما مستوى خبرتك؟</string>
+    <string name="onb_experience_subtitle">في تمارين المقاومة والقوة.</string>
+    <string name="onb_exp_beginner_title">مبتدئ</string>
+    <string name="onb_exp_beginner_desc">جديد على التمرين أو عائد بعد انقطاع طويل.</string>
+    <string name="onb_exp_intermediate_title">متوسط</string>
+    <string name="onb_exp_intermediate_desc">تتمرّن بانتظام وتعرف الأساسيات.</string>
+    <string name="onb_exp_advanced_title">متقدّم</string>
+    <string name="onb_exp_advanced_desc">لديك خبرة بالبرامج التدريبية المنظّمة.</string>
+    <string name="onb_days_label">عدد الجلسات أسبوعياً</string>
+    <plurals name="onb_days_value">
+        <item quantity="zero">%1$d يوم / أسبوع</item>
+        <item quantity="one">يوم واحد / أسبوع</item>
+        <item quantity="two">يومان / أسبوع</item>
+        <item quantity="few">%1$d أيام / أسبوع</item>
+        <item quantity="many">%1$d يومًا / أسبوع</item>
+        <item quantity="other">%1$d يوم / أسبوع</item>
+    </plurals>
+
+    <!-- الخطوة 4: الهدف -->
+    <string name="onb_goal_title">ما هدفك الأساسي؟</string>
+    <string name="onb_goal_subtitle">سنعطيه الأولوية في خطتك.</string>
+    <string name="onb_goal_strength_title">القوة</string>
+    <string name="onb_goal_strength_desc">ارفع أثقل وابنِ قوة حقيقية.</string>
+    <string name="onb_goal_hypertrophy_title">بناء العضلات</string>
+    <string name="onb_goal_hypertrophy_desc">زيادة الحجم والوضوح العضلي.</string>
+    <string name="onb_goal_power_title">القدرة</string>
+    <string name="onb_goal_power_desc">أداء انفجاري ورياضي.</string>
+    <string name="onb_goal_health_title">الصحة العامة</string>
+    <string name="onb_goal_health_desc">حافظ على لياقتك وحركتك ونشاطك.</string>
+
+    <!-- الخطوة 5: أيام الأسبوع -->
+    <string name="onb_weekdays_title">ما الأيام المناسبة لك؟</string>
+    <string name="onb_weekdays_subtitle">اختر الأيام التي يمكنك التمرين فيها.</string>
+    <string name="onb_weekdays_hint">تم اختيار %1$d من %2$d أيام</string>
+    <string-array name="onb_weekdays">
+        <item>الأحد</item>
+        <item>الاثنين</item>
+        <item>الثلاثاء</item>
+        <item>الأربعاء</item>
+        <item>الخميس</item>
+        <item>الجمعة</item>
+        <item>السبت</item>
+    </string-array>
+
+    <!-- الخطوة 6: المكان + المعدات -->
+    <string name="onb_location_title">أين ستتمرّن؟</string>
+    <string name="onb_location_subtitle">سنطابق التمارين مع إمكاناتك.</string>
+    <string name="onb_location_home">المنزل</string>
+    <string name="onb_location_gym">النادي</string>
+    <string name="onb_equipment_label">المعدات المتاحة</string>
+    <string name="onb_equipment_subtitle">اختر كل ما يتوفّر لديك.</string>
+    <string name="onb_equip_bodyweight">وزن الجسم</string>
+    <string name="onb_equip_dumbbell">دمبل</string>
+    <string name="onb_equip_bands">أحزمة مقاومة</string>
+    <string name="onb_equip_kettlebell">كيتل بيل</string>
+    <string name="onb_equip_pull_up_bar">عقلة</string>
+    <string name="onb_equip_bench">بنش</string>
+    <string name="onb_equip_mat">سجادة</string>
+
+    <!-- الخطوة 7: الملخص -->
+    <string name="onb_summary_title">راجع ملفك</string>
+    <string name="onb_summary_subtitle">يمكنك تغيير أي من ذلك لاحقاً من ملفك الشخصي.</string>
+    <string name="onb_experience_row">الخبرة</string>
+    <string name="onb_goal_row">الهدف</string>
+    <string name="onb_days_row">أيام التمرين</string>
+    <string name="onb_location_row">المكان</string>
+    <string name="onb_equipment_row">المعدات</string>
+    <string name="onb_equipment_all">تجهيزات كاملة</string>
+    <string name="onb_health_disclaimer">أقر بأنني بصحة جيدة ولا أعاني من أي حالة طبية تمنعني من ممارسة التمارين، وأتحمّل مسؤولية التمرين ضمن حدودي.</string>
+
 </resources>

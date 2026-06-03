@@ -15,6 +15,8 @@ import com.trainingvalidator.poc.network.LoginRequest
 import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.storage.UserDataCleaner
 import com.trainingvalidator.poc.ui.main.MainContainerActivity
+import com.trainingvalidator.poc.ui.onboarding.OnboardingGate
+import com.trainingvalidator.poc.ui.onboarding.ProfileOnboardingActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -114,10 +116,7 @@ class SignInActivity : AppCompatActivity() {
                 if (body?.success == true && authData != null) {
                     UserDataCleaner.clearAll(this@SignInActivity)
                     AuthManager.saveAuthData(this@SignInActivity, authData)
-                    startActivity(Intent(this@SignInActivity, MainContainerActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    })
-                    finish()
+                    routeAfterAuth()
                 } else {
                     Toast.makeText(
                         this@SignInActivity,
@@ -176,10 +175,7 @@ class SignInActivity : AppCompatActivity() {
                 if (response.isSuccessful && body?.success == true && authData != null) {
                     UserDataCleaner.clearAll(this@SignInActivity)
                     AuthManager.saveAuthData(this@SignInActivity, authData)
-                    startActivity(Intent(this@SignInActivity, MainContainerActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    })
-                    finish()
+                    routeAfterAuth()
                 } else {
                     Toast.makeText(
                         this@SignInActivity,
@@ -197,6 +193,19 @@ class SignInActivity : AppCompatActivity() {
                 setLoading(false)
             }
         }
+    }
+
+    /** After a successful login, route to onboarding when the trainee profile is incomplete. */
+    private suspend fun routeAfterAuth() {
+        val next = if (OnboardingGate.isProfileComplete(this)) {
+            MainContainerActivity::class.java
+        } else {
+            ProfileOnboardingActivity::class.java
+        }
+        startActivity(Intent(this, next).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        })
+        finish()
     }
 
     private fun setLoading(isLoading: Boolean) {

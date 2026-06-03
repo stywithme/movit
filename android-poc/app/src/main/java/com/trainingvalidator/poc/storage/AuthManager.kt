@@ -33,6 +33,8 @@ object AuthManager {
     private const val KEY_IS_PRO = "is_pro"
     private const val KEY_SUBSCRIPTION_EXPIRY = "subscription_expiry"
 
+    private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
+
     private fun prefs(context: Context) =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
@@ -143,6 +145,17 @@ object AuthManager {
     fun getSubscriptionExpiryIso(context: Context): String? =
         prefs(context).getString(KEY_SUBSCRIPTION_EXPIRY, null)
 
+    /**
+     * Whether the user finished the profile onboarding (age/sex/metrics/goal/…).
+     * Source of truth is the backend TrainingProfile; this cache avoids re-prompting.
+     */
+    fun isOnboardingCompleted(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_ONBOARDING_COMPLETED, false)
+
+    fun setOnboardingCompleted(context: Context, completed: Boolean) {
+        prefs(context).edit().putBoolean(KEY_ONBOARDING_COMPLETED, completed).apply()
+    }
+
     fun clearAuthData(context: Context) {
         val editor = prefs(context).edit()
         editor.putBoolean(KEY_IS_LOGGED_IN, false)
@@ -157,6 +170,7 @@ object AuthManager {
         editor.remove(KEY_TOTAL_MINUTES)
         editor.remove(KEY_IS_PRO)
         editor.remove(KEY_SUBSCRIPTION_EXPIRY)
+        editor.remove(KEY_ONBOARDING_COMPLETED)
         editor.apply()
     }
     
