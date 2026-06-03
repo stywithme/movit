@@ -166,5 +166,37 @@
       "warning": 16.0,
       "error": 18.0
     }
+  },
+
+  "backgroundEffect": {
+    "_comment": "تأثير خلفية الصورة الرئيسية في تقرير ما بعد التدريب فقط",
+    "enabled": true,
+    "_enabled_comment": "false = عرض صورة التقرير الأصلية بدون segmentation/blur",
+    "mattingEngine": "modnet",
+    "_mattingEngine_comment": "modnet (أفضل للبورتريه) | u2net | mediapipe (selfie_segmenter fallback)",
+    "modelAsset": "modnet_photographic.onnx",
+    "_modelAsset_comment": "modnet: modnet_photographic.onnx | u2net: u2net_human_seg.onnx | mediapipe: selfie_segmenter.tflite",
+    "inputSize": 512,
+    "_inputSize_comment": "MODNet: 256 أو 512 | U²-Net: 320 | MediaPipe: 256",
+    "personCategoryIndexes": [1],
+    "_personCategoryIndexes_comment": "MediaPipe فقط — SelfieSegmenter: [1] | Multiclass: [1,2,3,4,5] | DeepLab: [15]",
+    "personThreshold": 0.50,
+    "_personThreshold_comment": "ثقة الشخص — فوقها يبقى المستخدم واضحاً بدون blur/tint",
+    "blurRadius": 10,
+    "_blurRadius_comment": "شدة blur للخلفية فقط: 0 بدون blur، 8 خفيف، 18 متوسط، 30 قوي",
+    "tintColor": "#68838A",
+    "_tintColor_comment": "لون الخلفية بعد العزل (hex)",
+    "tintAlpha": 0.99,
+    "_tintAlpha_comment": "قوة اللون على الخلفية فقط (0–1)"
+  },
+
+  "reportHeroOverlay": {
+    "_comment": "طبقة التعتيم فوق صورة التقرير الرئيسية (لقراءة النص)",
+    "enabled": false,
+    "_enabled_comment": "false = إخفاء الـ overlay بالكامل",
+    "color": "#000000",
+    "_color_comment": "لون طبقة التعتيم (hex)",
+    "overlayAlpha": 0.35,
+    "_overlayAlpha_comment": "درجة التأثير: 0 شفاف، 0.35 متوسط، 0.6 قوي"
   }
 }

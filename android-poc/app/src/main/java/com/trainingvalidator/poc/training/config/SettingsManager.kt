@@ -257,6 +257,23 @@ object SettingsManager {
      */
     fun useArcIndicator(): Boolean = getIndicatorType() == "arc"
     
+    // ==================== Background Effect ====================
+    
+    /**
+     * Report hero background segmentation / blur-tint settings from app_settings.json.
+     */
+    fun getBackgroundEffectSettings(): BackgroundEffectSettings = settings.backgroundEffect
+    
+    /**
+     * Whether report hero background effect should run.
+     */
+    fun isBackgroundEffectEnabled(): Boolean = settings.backgroundEffect.enabled
+
+    /**
+     * Full-screen overlay scrim on the report hero image.
+     */
+    fun getReportHeroOverlaySettings(): ReportHeroOverlaySettings = settings.reportHeroOverlay
+    
     /**
      * Check if Line indicator should be used
      * Reads from runtime settings first, then falls back to config

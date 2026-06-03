@@ -1,14 +1,22 @@
 package com.trainingvalidator.poc.ui.report
 
-import android.graphics.BitmapFactory
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.trainingvalidator.poc.databinding.FragmentReportPageBinding
+import com.trainingvalidator.poc.segmentation.ReportBackgroundEffectProcessor
+import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.training.report.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 /**
@@ -35,6 +43,7 @@ class ReportPageFragment : Fragment() {
     private var isArabic: Boolean = false
     private var totalPages: Int = 1
     private var currentPage: Int = 0
+    private var currentHeroImagePath: String? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -90,6 +99,7 @@ class ReportPageFragment : Fragment() {
             ?: report.repTimeline.firstOrNull { it.isBestRep }?.frameCapture?.frameUri
             ?: report.repTimeline.firstOrNull()?.frameCapture?.frameUri
         loadImage(heroImageUri)
+        applyHeroOverlay()
 
         // Primary stats row (Quality / Reps / Weight or Duration)
         val stats = MetricDisplayBuilder.buildPrimaryStats(report, isArabic)
@@ -118,24 +128,75 @@ class ReportPageFragment : Fragment() {
 
     private fun loadImage(uri: String?) {
         if (uri.isNullOrEmpty()) {
+            currentHeroImagePath = null
             binding.ivFullScreenImage.visibility = View.GONE
             binding.placeholderContainer.visibility = View.VISIBLE
             return
         }
         val file = File(uri)
         if (file.exists()) {
-            try {
-                val bitmap = BitmapFactory.decodeFile(file.absolutePath)
-                binding.ivFullScreenImage.setImageBitmap(bitmap)
-                binding.ivFullScreenImage.visibility = View.VISIBLE
-                binding.placeholderContainer.visibility = View.GONE
-            } catch (_: Exception) {
-                binding.ivFullScreenImage.visibility = View.GONE
-                binding.placeholderContainer.visibility = View.VISIBLE
-            }
-        } else {
+            val imagePath = file.absolutePath
+            currentHeroImagePath = imagePath
             binding.ivFullScreenImage.visibility = View.GONE
             binding.placeholderContainer.visibility = View.VISIBLE
+            val appContext = requireContext().applicationContext
+
+            viewLifecycleOwner.lifecycleScope.launch {
+                val bitmap = withContext(Dispatchers.IO) {
+                    try {
+                        ReportBackgroundEffectProcessor(appContext).apply(File(imagePath))
+                    } catch (e: Exception) {
+                        Log.e("ReportPageFragment", "Failed to load report hero image: ${e.message}", e)
+                        null
+                    }
+                }
+
+                if (_binding == null || currentHeroImagePath != imagePath) return@launch
+                if (bitmap != null) {
+                    binding.ivFullScreenImage.setImageBitmap(bitmap)
+                    binding.ivFullScreenImage.visibility = View.VISIBLE
+                    binding.placeholderContainer.visibility = View.GONE
+                } else {
+                    binding.ivFullScreenImage.visibility = View.GONE
+                    binding.placeholderContainer.visibility = View.VISIBLE
+                }
+            }
+        } else {
+            currentHeroImagePath = null
+            binding.ivFullScreenImage.visibility = View.GONE
+            binding.placeholderContainer.visibility = View.VISIBLE
+        }
+    }
+
+    private fun applyHeroOverlay() {
+        val overlaySettings = SettingsManager.getReportHeroOverlaySettings()
+        val overlay = binding.reportHeroOverlay
+
+        if (!overlaySettings.enabled) {
+            overlay.visibility = View.GONE
+            return
+        }
+
+        overlay.visibility = View.VISIBLE
+        val baseColor = parseOverlayColor(overlaySettings.color)
+        val strength = overlaySettings.overlayAlpha.coerceIn(0f, 1f)
+        if (strength <= 0f) {
+            overlay.visibility = View.GONE
+            return
+        }
+
+        val r = Color.red(baseColor)
+        val g = Color.green(baseColor)
+        val b = Color.blue(baseColor)
+        val alpha = (strength * 255f).toInt()
+        overlay.background = ColorDrawable(Color.argb(alpha, r, g, b))
+    }
+
+    private fun parseOverlayColor(hex: String): Int {
+        return try {
+            Color.parseColor(hex)
+        } catch (_: IllegalArgumentException) {
+            Color.BLACK
         }
     }
 

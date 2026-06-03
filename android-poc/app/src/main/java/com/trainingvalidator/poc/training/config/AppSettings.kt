@@ -20,7 +20,9 @@ data class AppSettings(
     val overlayOpacity: OverlayOpacitySettings = OverlayOpacitySettings(),
     val rangeIndicator: RangeIndicatorSettings = RangeIndicatorSettings(),
     val deviceTilt: DeviceTiltSettings = DeviceTiltSettings(),
-    val lineIndicator: LineIndicatorSettings = LineIndicatorSettings()
+    val lineIndicator: LineIndicatorSettings = LineIndicatorSettings(),
+    val backgroundEffect: BackgroundEffectSettings = BackgroundEffectSettings(),
+    val reportHeroOverlay: ReportHeroOverlaySettings = ReportHeroOverlaySettings()
 )
 
 /**
@@ -277,4 +279,46 @@ data class LineJointRadiusSettings(
     val normal: Float = 14f,
     val warning: Float = 18f,
     val error: Float = 22f
+)
+
+/**
+ * Report hero background effect.
+ *
+ * The segmenter runs only for the final report hero image, never during live camera training.
+ *
+ * @param enabled Master switch for the report hero effect.
+ * @param mattingEngine Portrait engine: modnet | u2net | mediapipe.
+ * @param modelAsset Model file in assets (ONNX for modnet/u2net, TFLite for mediapipe).
+ * @param inputSize Model input side length (MODNet 512, U²-Net 320).
+ * @param personCategoryIndexes MediaPipe-only category indexes treated as the user.
+ * @param personThreshold Confidence above which a pixel is treated as the user.
+ * @param blurRadius Background blur strength (0 disables blur).
+ * @param tintColor Hex color blended into background pixels.
+ * @param tintAlpha Tint strength on background pixels (0–1).
+ */
+data class BackgroundEffectSettings(
+    val enabled: Boolean = true,
+    val mattingEngine: String = "modnet",
+    val modelAsset: String = "modnet_photographic.onnx",
+    val inputSize: Int = 512,
+    val personCategoryIndexes: List<Int> = listOf(1),
+    val personThreshold: Float = 0.55f,
+    val blurRadius: Int = 18,
+    val tintColor: String = "#68838A",
+    val tintAlpha: Float = 0.45f
+)
+
+/**
+ * Full-screen scrim over the report hero image (for text readability).
+ *
+ * Separate from [BackgroundEffectSettings], which only affects segmented background pixels.
+ *
+ * @param enabled Show/hide the overlay layer above the hero image.
+ * @param color Hex overlay tint color.
+ * @param overlayAlpha Overlay strength (0 = transparent, 1 = fully opaque tint).
+ */
+data class ReportHeroOverlaySettings(
+    val enabled: Boolean = true,
+    val color: String = "#000000",
+    val overlayAlpha: Float = 0.35f
 )

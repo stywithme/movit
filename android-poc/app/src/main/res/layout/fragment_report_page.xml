@@ -31,8 +31,9 @@
 
     </LinearLayout>
 
-    <!-- Dark overlay -->
+    <!-- Configurable scrim — color/alpha from reportHeroOverlay in app_settings.json -->
     <View
+        android:id="@+id/reportHeroOverlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@drawable/gradient_report_overlay" />

@@ -272,6 +272,49 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         mainScope.cancel()
     }
 
+    private fun selectedPoseModelType(): ModelType {
+        return if (SettingsManager.getModelType() == "heavy") ModelType.HEAVY else ModelType.FULL
+    }
+
+    private fun ensurePoseLandmarkerHelper() {
+        if (poseLandmarkerHelper == null) {
+            poseLandmarkerHelper = PoseLandmarkerHelper(
+                context = applicationContext,
+                listener = this
+            )
+        }
+    }
+
+    private fun resetPoseAnalysisState() {
+        clearOverlay()
+        landmarkSmoother.reset()
+        elbowAngleEstimator.reset()
+        sceneDetector.reset()
+        resetFpsCounters()
+    }
+
+    private fun applyDebugModelType(modelType: String) {
+        if (SettingsManager.getModelType() == modelType) return
+
+        SettingsManager.setModelType(modelType)
+        resetPoseAnalysisState()
+        poseLandmarkerHelper?.close()
+        poseLandmarkerHelper = null
+
+        when (currentInputMode) {
+            InputMode.CAMERA -> initializePoseDetection()
+            InputMode.VIDEO -> {
+                poseLandmarkerHelper?.resetForVideo()
+                ensureVideoModeReady()
+            }
+            InputMode.IMAGE -> {
+                ensureImageModeReady(onReady = { reanalyzeCurrentImage() })
+            }
+        }
+
+        Toast.makeText(this, "Debug model: ${modelType.uppercase()}", Toast.LENGTH_SHORT).show()
+    }
+
     // ==================== UI Setup ====================
 
     private fun setupFullscreen() {
@@ -346,6 +389,23 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
                     switchInputMode(newMode)
                     btnPickFile.visibility = if (newMode != InputMode.CAMERA) View.VISIBLE else View.GONE
                 }
+            }
+
+            val modelGroup = view.findViewById<com.google.android.material.button.MaterialButtonToggleGroup>(R.id.modelToggleGroup)
+            val checkedModelId = if (SettingsManager.getModelType() == "heavy") {
+                R.id.btnDebugModelHeavy
+            } else {
+                R.id.btnDebugModelFull
+            }
+            modelGroup.check(checkedModelId)
+            modelGroup.addOnButtonCheckedListener { _, id, isChecked ->
+                if (!isChecked) return@addOnButtonCheckedListener
+                val selectedModel = when (id) {
+                    R.id.btnDebugModelHeavy -> "heavy"
+                    R.id.btnDebugModelFull -> "full"
+                    else -> return@addOnButtonCheckedListener
+                }
+                applyDebugModelType(selectedModel)
             }
 
             // Pick File Button
@@ -661,15 +721,13 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
     }
 
     private fun initializePoseDetection() {
-        poseLandmarkerHelper = PoseLandmarkerHelper(
-            context = applicationContext,
-            listener = this
-        )
+        ensurePoseLandmarkerHelper()
+        val modelType = selectedPoseModelType()
         mainScope.launch(Dispatchers.IO) {
-            poseLandmarkerHelper?.initialize(modelType = ModelType.FULL, useGpu = true)
+            poseLandmarkerHelper?.initialize(modelType = modelType, useGpu = true)
             withContext(Dispatchers.Main) {
                 if (poseLandmarkerHelper?.isReady() == true) {
-                    Log.d(TAG, "Pose detection LIVE_STREAM ready")
+                    Log.d(TAG, "Pose detection LIVE_STREAM ready ($modelType)")
                 }
             }
         }
@@ -691,10 +749,12 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
 
     private fun ensureVideoModeReady() {
         if (poseLandmarkerHelper?.isVideoModeReady() != true) {
+            ensurePoseLandmarkerHelper()
+            val modelType = selectedPoseModelType()
             mainScope.launch(Dispatchers.IO) {
-                poseLandmarkerHelper?.initializeForVideo(modelType = ModelType.FULL, useGpu = true)
+                poseLandmarkerHelper?.initializeForVideo(modelType = modelType, useGpu = true)
                 withContext(Dispatchers.Main) {
-                    Log.d(TAG, "Pose detection VIDEO mode ready")
+                    Log.d(TAG, "Pose detection VIDEO mode ready ($modelType)")
                 }
             }
         }
@@ -767,14 +827,19 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
 
     // ==================== Image Mode ====================
 
-    private fun ensureImageModeReady() {
+    private fun ensureImageModeReady(onReady: (() -> Unit)? = null) {
         if (poseLandmarkerHelper?.isImageModeReady() != true) {
+            ensurePoseLandmarkerHelper()
+            val modelType = selectedPoseModelType()
             mainScope.launch(Dispatchers.IO) {
-                poseLandmarkerHelper?.initializeForImage(modelType = ModelType.FULL, useGpu = true)
+                poseLandmarkerHelper?.initializeForImage(modelType = modelType, useGpu = true)
                 withContext(Dispatchers.Main) {
-                    Log.d(TAG, "Pose detection IMAGE mode ready")
+                    Log.d(TAG, "Pose detection IMAGE mode ready ($modelType)")
+                    onReady?.invoke()
                 }
             }
+        } else {
+            onReady?.invoke()
         }
     }
 
@@ -1177,8 +1242,11 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         sb.appendLine()
 
         sb.appendLine("--- SUMMARY ---")
+        sb.appendLine("Model:         ${SettingsManager.getModelType().uppercase()}")
         sb.appendLine("Pipeline:      ${data.pipelineSourceLabel}")
         sb.appendLine("Displayed:     ${formatAngleLong(data.displayedAngle)}")
+        sb.appendLine("Displayed note:same pre-engine angle sent to training")
+        sb.appendLine("Training note: TrainingEngine may smooth/filter tracked joints")
         sb.appendLine("Gate @0.50:    ${formatVisibilityGate(visibilityReference)}")
         sb.appendLine("Norm XY raw:   ${formatAngleLong(data.normalizedRaw?.xyAngle)}")
         sb.appendLine("Norm XY smth:  ${formatAngleLong(data.normalizedSmoothed?.xyAngle)}")

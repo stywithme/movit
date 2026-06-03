@@ -49,7 +49,7 @@ android {
     }
 
     androidResources {
-        noCompress += listOf("tflite", "task")
+        noCompress += listOf("tflite", "task", "onnx")
     }
 
     buildFeatures {
@@ -125,6 +125,9 @@ dependencies {
     implementation("com.google.ai.edge.litert:litert-support:$litertVersion") {
         exclude(group = "com.google.ai.edge.litert", module = "litert-support-api")
     }
+
+    // Portrait matting (MODNet / U²-Net ONNX) for report hero background effect
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.22.0")
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
