@@ -1,12 +1,13 @@
 package com.trainingvalidator.poc.ui.exercises
 
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.trainingvalidator.poc.storage.EntityAudioPrefetchManager
 import com.trainingvalidator.poc.ui.utils.LocalizationHelper
@@ -149,34 +150,26 @@ class ExerciseDetailActivity : AppCompatActivity() {
         // Line button
         binding.btnIndicatorLine.apply {
             if (isLineSelected) {
-                // Selected: filled green button
-                backgroundTintList = android.content.res.ColorStateList.valueOf(
-                    android.graphics.Color.parseColor("#00E676")
+                backgroundTintList = ColorStateList.valueOf(
+                    ContextCompat.getColor(this@ExerciseDetailActivity, R.color.primary)
                 )
-                setTextColor(android.graphics.Color.WHITE)
+                setTextColor(ContextCompat.getColor(this@ExerciseDetailActivity, R.color.on_primary))
             } else {
-                // Unselected: outlined button (transparent background)
-                backgroundTintList = android.content.res.ColorStateList.valueOf(
-                    android.graphics.Color.TRANSPARENT
-                )
-                setTextColor(android.graphics.Color.parseColor("#00E676"))
+                backgroundTintList = ColorStateList.valueOf(android.graphics.Color.TRANSPARENT)
+                setTextColor(ContextCompat.getColor(this@ExerciseDetailActivity, R.color.primary))
             }
         }
         
         // Arc button
         binding.btnIndicatorArc.apply {
             if (isArcSelected) {
-                // Selected: filled blue button
-                backgroundTintList = android.content.res.ColorStateList.valueOf(
-                    android.graphics.Color.parseColor("#2196F3")
+                backgroundTintList = ColorStateList.valueOf(
+                    ContextCompat.getColor(this@ExerciseDetailActivity, R.color.info)
                 )
-                setTextColor(android.graphics.Color.WHITE)
+                setTextColor(ContextCompat.getColor(this@ExerciseDetailActivity, R.color.on_primary))
             } else {
-                // Unselected: outlined button (transparent background)
-                backgroundTintList = android.content.res.ColorStateList.valueOf(
-                    android.graphics.Color.TRANSPARENT
-                )
-                setTextColor(android.graphics.Color.parseColor("#2196F3"))
+                backgroundTintList = ColorStateList.valueOf(android.graphics.Color.TRANSPARENT)
+                setTextColor(ContextCompat.getColor(this@ExerciseDetailActivity, R.color.info))
             }
         }
     }
@@ -187,8 +180,7 @@ class ExerciseDetailActivity : AppCompatActivity() {
         binding.btnNormal.visibility = View.GONE
         binding.btnAdvanced.visibility = View.GONE
 
-        // Replace difficulty label with unified evaluation message (UI text in English)
-        binding.tvTolerance.text = "Unified evaluation (no difficulty selection)"
+        binding.tvTolerance.text = getString(R.string.unified_evaluation_message)
 
         // Target display: user preference overrides defaults when present
         val exercise = exerciseConfig ?: return

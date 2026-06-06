@@ -1,39 +1,117 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    Night (Dark) mode color overrides.
-    The app's default design is dark-first; these values mirror the current dark palette
-    so that Material DayNight theming works correctly in system-dark mode.
-    
-    When light-mode values are defined in values/colors.xml, this file provides
-    the dark counterparts that Android uses when the system is in dark mode.
--->
 <resources>
+    <!-- WayToFix Design Tokens - Dark mode
+         Palette: #8ECFE3 (primary blue), #C4D489 (lime/success), #282828 (ink),
+                  #E76D46 (coral/action), #D8DCDF (mist). Same palette as light. -->
+
     <!-- Primary Brand -->
-    <color name="primary">#8AF851</color>
-    <color name="primary_variant">#6BD93A</color>
-    <color name="primary_light">#1A8AF851</color>
-    <color name="on_primary">#091801</color>
+    <color name="primary">#8ECFE3</color>
+    <color name="primary_variant">#A8DAEB</color>
+    <color name="primary_light">#1A8ECFE3</color>
+    <color name="on_primary">#282828</color>
+    <color name="accent_soft">#C4D489</color>
+    <color name="accent_action">#E76D46</color>
+    <color name="on_accent_soft">#282828</color>
+    <color name="on_accent_action">#FFFFFF</color>
+    <color name="text_on_primary">@color/on_primary</color>
+    <color name="nav_active">@color/primary</color>
+    <color name="card_form_accent">@color/primary</color>
+    <color name="chart_line">@color/primary</color>
 
-    <!-- Backgrounds (dark) -->
-    <color name="background">#040A01</color>
-    <color name="surface">#0A1804</color>
-    <color name="surface_variant">#102208</color>
-    <color name="surface_elevated">#142A0C</color>
-    <color name="surface_border">#1E3A12</color>
-    <color name="surface_border_accent">#2A4A1C</color>
-    <color name="divider">#1A2A1C</color>
+    <!-- Legacy accent aliases -->
+    <color name="brand_accent_legacy">@color/accent_action</color>
+    <color name="brand_accent_legacy_13">#22E76D46</color>
+    <color name="brand_accent_legacy_20">#33E76D46</color>
 
-    <!-- Text (dark mode — light text on dark bg) -->
-    <color name="text_primary">#E7F1F1</color>
-    <color name="text_secondary">#B8C8C8</color>
-    <color name="text_hint">#7A9090</color>
-    <color name="text_disabled">#5A7070</color>
-    <color name="text_tertiary">#4A6060</color>
-    <color name="text_on_primary">#091801</color>
+    <!-- Backgrounds -->
+    <color name="background">#1A2428</color>
+    <color name="background_gradient_start">#1A2428</color>
+    <color name="background_gradient_end">#141C20</color>
+    <color name="surface">#1E2C30</color>
+    <color name="surface_variant">#243438</color>
+    <color name="surface_elevated">#2A3C42</color>
+    <color name="surface_border">#2E3E44</color>
+    <color name="surface_border_accent">#8ECFE3</color>
+    <color name="divider">#263238</color>
 
-    <!-- Report colors (dark) -->
-    <color name="report_background">#FF121212</color>
-    <color name="report_card_background">#FF1E1E1E</color>
-    <color name="report_text_primary">#FFFFFFFF</color>
-    <color name="report_text_secondary">#FFB0B0B0</color>
+    <!-- Text -->
+    <color name="text_primary">#F0F8FA</color>
+    <color name="text_secondary">#BDD8DF</color>
+    <color name="text_hint">#7AAAB5</color>
+    <color name="text_disabled">#4E7A85</color>
+    <color name="text_tertiary">#5E8A96</color>
+
+    <!-- Semantic colors -->
+    <color name="success">#9FC379</color>
+    <color name="success_bg">#1A9FC379</color>
+    <color name="warning">#D99A45</color>
+    <color name="warning_bg">#1AD99A45</color>
+    <color name="error">#F07867</color>
+    <color name="error_bg">#1AF07867</color>
+    <color name="info">#8ECFE3</color>
+    <color name="info_bg">#1A8ECFE3</color>
+
+    <!-- Special / accent colors -->
+    <color name="pro_gold">#E0B84D</color>
+    <color name="pro_gold_variant">#E7BC50</color>
+    <color name="nav_inactive">#5E8A96</color>
+
+    <!-- Feedback / skeleton colors -->
+    <color name="feedback_correct">@color/success</color>
+    <color name="feedback_warning">@color/pro_gold_variant</color>
+    <color name="feedback_error">@color/error</color>
+    <color name="feedback_tip">@color/info</color>
+    <color name="feedback_info">#7AAAB5</color>
+    <color name="overlay_tracked">#8ECFE3</color>
+    <color name="overlay_faint">#40FFFFFF</color>
+    <color name="overlay_glow">#408ECFE3</color>
+    <color name="overlay_position_error">@color/accent_action</color>
+
+    <!-- Glass UI colors -->
+    <color name="glass_background">#401A2428</color>
+    <color name="glass_background_dark">#661A2428</color>
+    <color name="glass_border">#338ECFE3</color>
+    <color name="glass_border_subtle">#1A8ECFE3</color>
+    <color name="glass_card_bg">#331A2428</color>
+    <color name="glass_card_bg_light">#26FFFFFF</color>
+
+    <!-- State colors -->
+    <color name="state_perfect">@color/success</color>
+    <color name="state_normal">@color/accent_soft</color>
+    <color name="state_pad">@color/warning</color>
+    <color name="state_warning">@color/error</color>
+    <color name="state_danger">#D94C43</color>
+    <color name="state_transition">#5E8A96</color>
+    <color name="state_perfect_bg">@color/success_bg</color>
+    <color name="state_normal_bg">#22C4D489</color>
+    <color name="state_pad_bg">@color/warning_bg</color>
+    <color name="state_warning_bg">@color/error_bg</color>
+    <color name="state_danger_bg">#1AD94C43</color>
+
+    <!-- Report colors -->
+    <color name="report_background">@color/background</color>
+    <color name="report_card_background">@color/surface</color>
+    <color name="report_text_primary">@color/text_primary</color>
+    <color name="report_text_secondary">@color/text_secondary</color>
+
+    <!-- Report V2 -->
+    <color name="insight_celebration_bg">@color/success_bg</color>
+    <color name="insight_celebration_border">#339FC379</color>
+    <color name="insight_focus_bg">#228ECFE3</color>
+    <color name="insight_focus_border">#558ECFE3</color>
+    <color name="insight_danger_bg">@color/error_bg</color>
+    <color name="insight_danger_border">#33F07867</color>
+
+    <color name="metric_excellent">@color/success</color>
+    <color name="metric_good">#B1CA79</color>
+    <color name="metric_fair">@color/pro_gold_variant</color>
+    <color name="metric_needs_work">@color/error</color>
+
+    <color name="chart_bar_high">@color/success</color>
+    <color name="chart_bar_medium">@color/pro_gold_variant</color>
+    <color name="chart_bar_low">@color/error</color>
+    <color name="chart_grid">@color/glass_border_subtle</color>
+
+    <color name="hero_overlay_start">#001A2428</color>
+    <color name="hero_overlay_end">#DD1A2428</color>
 </resources>

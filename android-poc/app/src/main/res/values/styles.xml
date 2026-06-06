@@ -12,6 +12,23 @@
         <item name="rippleColor">@color/primary_variant</item>
         <item name="elevation">0dp</item>
     </style>
+
+    <style name="Widget.WayToFix.Button.Primary.Small" parent="Widget.WayToFix.Button.Primary">
+        <item name="android:layout_height">@dimen/button_height_small</item>
+        <item name="android:minHeight">@dimen/button_height_small</item>
+        <item name="android:paddingStart">@dimen/spacing_lg</item>
+        <item name="android:paddingEnd">@dimen/spacing_lg</item>
+    </style>
+
+    <style name="Widget.WayToFix.Button.Tonal" parent="Widget.MaterialComponents.Button">
+        <item name="android:layout_height">@dimen/button_height</item>
+        <item name="android:textAppearance">@style/TextAppearance.WayToFix.Button</item>
+        <item name="android:textColor">@color/on_accent_soft</item>
+        <item name="backgroundTint">@color/accent_soft</item>
+        <item name="cornerRadius">@dimen/radius_xl</item>
+        <item name="rippleColor">@color/primary_light</item>
+        <item name="elevation">0dp</item>
+    </style>
     
     <style name="Widget.WayToFix.Button.Secondary" parent="Widget.MaterialComponents.Button.OutlinedButton">
         <item name="android:layout_height">@dimen/button_height</item>
@@ -96,6 +113,23 @@
         <item name="cardCornerRadius">@dimen/radius_base</item>
         <item name="cardElevation">0dp</item>
         <item name="contentPadding">@dimen/spacing_base</item>
+    </style>
+
+    <style name="Widget.WayToFix.Card.Outlined" parent="Widget.WayToFix.Card">
+        <item name="strokeColor">@color/surface_border</item>
+        <item name="strokeWidth">@dimen/border_thin</item>
+        <item name="rippleColor">@color/primary_light</item>
+    </style>
+
+    <style name="Widget.WayToFix.Card.List" parent="Widget.WayToFix.Card.Outlined">
+        <item name="android:minHeight">@dimen/component_card_min_height</item>
+        <item name="cardCornerRadius">@dimen/radius_lg</item>
+        <item name="contentPadding">0dp</item>
+    </style>
+
+    <style name="Widget.WayToFix.Card.Stat" parent="Widget.WayToFix.Card.Outlined">
+        <item name="android:minHeight">@dimen/component_stat_card_min_height</item>
+        <item name="cardCornerRadius">@dimen/radius_lg</item>
     </style>
     
     <!-- ═══════════════════════════════════════════════════ -->

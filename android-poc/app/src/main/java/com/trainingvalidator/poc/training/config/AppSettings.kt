@@ -304,7 +304,7 @@ data class BackgroundEffectSettings(
     val personCategoryIndexes: List<Int> = listOf(1),
     val personThreshold: Float = 0.55f,
     val blurRadius: Int = 18,
-    val tintColor: String = "#68838A",
+    val tintColor: String = "#8ECFE3",
     val tintAlpha: Float = 0.45f
 )
 

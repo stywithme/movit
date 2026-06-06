@@ -157,7 +157,7 @@ class PerformanceCard @JvmOverloads constructor(
     
     private fun applyCardStyle(type: CardType) {
         val accentColor = when (type) {
-            CardType.FORM -> 0xFF8AF851.toInt()    // Primary green
+            CardType.FORM -> 0xFFC4D489.toInt()    // Brand lime
             CardType.SAFETY -> 0xFF4CAF50.toInt()   // Success green
             CardType.CONTROL -> 0xFF2196F3.toInt()  // Info blue
         }

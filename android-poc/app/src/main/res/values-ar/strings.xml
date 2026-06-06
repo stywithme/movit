@@ -542,6 +542,10 @@
     <string name="voice_feedback">التعليق الصوتي</string>
     <string name="voice_feedback_desc">تصحيح الأداء في الوقت الفعلي</string>
     <string name="notifications">الإشعارات</string>
+    <string name="theme_mode">Mode</string>
+    <string name="theme_mode_system">حسب النظام</string>
+    <string name="theme_mode_light">فاتح</string>
+    <string name="theme_mode_dark">داكن</string>
     <string name="language">اللغة</string>
     <string name="language_english">English</string>
     <string name="language_arabic">العربية</string>
@@ -569,6 +573,10 @@
     <!-- Workout -->
     <string name="start">ابدأ</string>
     <string name="start_exercise">ابدأ التمرين</string>
+    <string name="exercise_detail_title">تفاصيل التمرين</string>
+    <string name="difficulty_level">مستوى الصعوبة</string>
+    <string name="tracked_joints">المفاصل المتتبعة</string>
+    <string name="unified_evaluation_message">تقييم موحد، بدون اختيار مستوى صعوبة</string>
     <string name="body_scan_title">فحص الجسم</string>
     <string name="body_scan_subtitle">قيّم مرونتك وتوازنك وتماثلك</string>
     <string name="form_checklist">قائمة التحقق</string>

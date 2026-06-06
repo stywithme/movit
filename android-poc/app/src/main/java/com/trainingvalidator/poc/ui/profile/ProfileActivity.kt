@@ -33,6 +33,7 @@ import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.ui.auth.SignInActivity
 import com.trainingvalidator.poc.ui.subscription.SubscriptionActivity
 import com.trainingvalidator.poc.ui.debug.DebugActivity
+import com.trainingvalidator.poc.ui.theme.AppThemeManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -96,6 +97,7 @@ class ProfileActivity : AppCompatActivity() {
         loadUserData()
         setupListeners()
         updateLanguageDisplay()
+        updateThemeModeDisplay()
         trainingProfileState = trainingProfileState.copy(
             displayMode = SettingsManager.getTrainingDisplayMode()
         )
@@ -177,6 +179,10 @@ class ProfileActivity : AppCompatActivity() {
 
         binding.itemLanguage.setOnClickListener {
             showLanguageDialog()
+        }
+
+        binding.itemThemeMode.setOnClickListener {
+            showThemeModeDialog()
         }
 
         binding.itemDebug.visibility = if (BuildConfig.DEBUG) View.VISIBLE else View.GONE
@@ -340,6 +346,11 @@ class ProfileActivity : AppCompatActivity() {
         } else {
             getString(R.string.language_english)
         }
+    }
+
+    private fun updateThemeModeDisplay() {
+        val mode = AppThemeManager.getMode(this)
+        binding.tvCurrentThemeMode.text = getString(AppThemeManager.labelRes(mode))
     }
 
     private fun renderTrainingProfileSummary() {
@@ -538,6 +549,24 @@ class ProfileActivity : AppCompatActivity() {
             .setSingleChoiceItems(languages, currentIndex) { dialog, which ->
                 val newLocale = if (which == 1) Locale.forLanguageTag("ar") else Locale.forLanguageTag("en")
                 setAppLocale(newLocale)
+                dialog.dismiss()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun showThemeModeDialog() {
+        val modes = AppThemeManager.modes
+        val labels = modes
+            .map { mode -> getString(AppThemeManager.labelRes(mode)) }
+            .toTypedArray()
+        val currentIndex = modes.indexOf(AppThemeManager.getMode(this)).coerceAtLeast(0)
+
+        AlertDialog.Builder(this, R.style.Theme_WayToFix_Dialog)
+            .setTitle(R.string.theme_mode)
+            .setSingleChoiceItems(labels, currentIndex) { dialog, which ->
+                AppThemeManager.setMode(this, modes[which])
+                updateThemeModeDisplay()
                 dialog.dismiss()
             }
             .setNegativeButton(R.string.cancel, null)

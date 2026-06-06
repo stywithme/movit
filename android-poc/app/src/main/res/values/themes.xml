@@ -12,8 +12,8 @@
         <item name="colorPrimaryVariant">@color/primary_variant</item>
         <item name="colorOnPrimary">@color/on_primary</item>
 
-        <item name="colorSecondary">@color/primary</item>
-        <item name="colorOnSecondary">@color/on_primary</item>
+        <item name="colorSecondary">@color/accent_soft</item>
+        <item name="colorOnSecondary">@color/on_accent_soft</item>
 
         <!-- Background -->
         <item name="android:colorBackground">@color/background</item>

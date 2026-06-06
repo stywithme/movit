@@ -407,6 +407,10 @@
     <string name="voice_feedback">Voice Feedback</string>
     <string name="voice_feedback_desc">Real-time form correction</string>
     <string name="notifications">Notifications</string>
+    <string name="theme_mode">Mode</string>
+    <string name="theme_mode_system">System</string>
+    <string name="theme_mode_light">Light</string>
+    <string name="theme_mode_dark">Dark</string>
     <string name="language">Language</string>
     <string name="language_english">English</string>
     <string name="language_arabic">العربية</string>
@@ -434,6 +438,10 @@
     <!-- Workout -->
     <string name="start">Start</string>
     <string name="start_exercise">Start Exercise</string>
+    <string name="exercise_detail_title">Exercise Details</string>
+    <string name="difficulty_level">Difficulty Level</string>
+    <string name="tracked_joints">Tracked Joints</string>
+    <string name="unified_evaluation_message">Unified evaluation, no difficulty selection</string>
     <string name="body_scan_title">Body Scan</string>
     <string name="body_scan_subtitle">Assess your mobility, balance &amp; symmetry</string>
     <string name="form_checklist">Form Checklist</string>

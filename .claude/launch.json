@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ui-prototypes",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8765", "--directory", "Docs/02-Roadmaps-And-Plans/UI-UX/prototypes"],
+      "port": 8765
+    }
+  ]
+}

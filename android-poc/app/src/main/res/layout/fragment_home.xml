@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout 
+<androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background"
+    android:background="@drawable/bg_gradient_main"
     android:fitsSystemWindows="true">
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
@@ -17,751 +17,728 @@
             android:id="@+id/scrollContent"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:clipToPadding="false"
             android:fillViewport="true">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:paddingBottom="100dp">
+                android:paddingHorizontal="@dimen/screen_padding_horizontal"
+                android:paddingTop="@dimen/spacing_2xl"
+                android:paddingBottom="112dp">
 
-            <!-- Header -->
-            <LinearLayout
-                style="@style/Widget.WayToFix.Header.MainTab">
-
+                <!-- Header -->
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tvGreeting"
+                            style="@style/TextAppearance.WayToFix.Body2"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/text_secondary"
+                            tools:text="@string/greeting_morning" />
+
+                        <TextView
+                            android:id="@+id/tvUserName"
+                            style="@style/TextAppearance.WayToFix.Headline1"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/spacing_xs"
+                            android:textColor="@color/text_primary"
+                            tools:text="Mahmoud" />
+                    </LinearLayout>
+
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/ivAvatar"
+                        style="@style/Widget.WayToFix.Avatar.Small"
+                        android:contentDescription="@string/cd_profile"
+                        android:src="@drawable/ic_person" />
+                </LinearLayout>
+
+                <!-- Loading skeleton -->
+                <LinearLayout
+                    android:id="@+id/layoutLoading"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_xl"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="96dp"
+                        android:background="@drawable/bg_skeleton_block" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="160dp"
+                        android:layout_marginTop="@dimen/spacing_lg"
+                        android:background="@drawable/bg_skeleton_block" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="112dp"
+                        android:layout_marginTop="@dimen/spacing_lg"
+                        android:background="@drawable/bg_skeleton_block" />
+                </LinearLayout>
+
+                <!-- Content group -->
+                <LinearLayout
+                    android:id="@+id/layoutContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                     android:orientation="vertical">
 
-                    <TextView
-                        android:id="@+id/tvGreeting"
-                        style="@style/TextAppearance.WayToFix.Body1"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/text_secondary"
-                        tools:text="@string/greeting_morning" />
-
-                    <TextView
-                        android:id="@+id/tvUserName"
-                        style="@style/TextAppearance.WayToFix.Headline2"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/spacing_xs"
-                        android:textColor="@color/text_primary"
-                        tools:text="Mahmoud" />
-
-                </LinearLayout>
-
-                <com.google.android.material.imageview.ShapeableImageView
-                    android:id="@+id/ivAvatar"
-                    style="@style/Widget.WayToFix.Avatar.Small"
-                    android:contentDescription="@string/cd_profile"
-                    android:src="@drawable/ic_person" />
-
-            </LinearLayout>
-
-            <!-- ======================= LOADING SKELETON ======================= -->
-            <LinearLayout
-                android:id="@+id/layoutLoading"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingHorizontal="@dimen/screen_padding_horizontal"
-                android:paddingTop="@dimen/spacing_xl"
-                android:visibility="gone">
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="80dp"
-                    android:background="@drawable/bg_skeleton_block" />
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="120dp"
-                    android:layout_marginTop="@dimen/spacing_lg"
-                    android:background="@drawable/bg_skeleton_block" />
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="100dp"
-                    android:layout_marginTop="@dimen/spacing_lg"
-                    android:background="@drawable/bg_skeleton_block" />
-
-                <View
-                    android:layout_width="200dp"
-                    android:layout_height="48dp"
-                    android:layout_marginTop="@dimen/spacing_lg"
-                    android:background="@drawable/bg_skeleton_block" />
-
-            </LinearLayout>
-
-            <!-- ======================= CONTENT GROUP ======================= -->
-            <LinearLayout
-                android:id="@+id/layoutContent"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-            <!-- Quick Stats Card -->
-            <androidx.cardview.widget.CardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="@dimen/screen_padding_horizontal"
-                android:layout_marginTop="@dimen/spacing_sm"
-                app:cardBackgroundColor="@color/surface"
-                app:cardCornerRadius="@dimen/radius_lg"
-                app:cardElevation="0dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="@dimen/spacing_base">
-
-                    <!-- This Week -->
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:id="@+id/tvWeeklyWorkouts"
-                            style="@style/TextAppearance.WayToFix.Headline1"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/primary"
-                            tools:text="5" />
-
-                        <TextView
-                            style="@style/TextAppearance.WayToFix.Caption"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/this_week"
-                            android:textColor="@color/text_tertiary" />
-
-                    </LinearLayout>
-
-                    <View
-                        android:layout_width="1dp"
-                        android:layout_height="match_parent"
-                        android:background="@color/surface_border" />
-
-                    <!-- Form Score -->
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:id="@+id/tvFormScore"
-                            style="@style/TextAppearance.WayToFix.Headline1"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/success"
-                            tools:text="87%" />
-
-                        <TextView
-                            style="@style/TextAppearance.WayToFix.Caption"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/weekly_average"
-                            android:textColor="@color/text_tertiary" />
-
-                    </LinearLayout>
-
-                    <View
-                        android:layout_width="1dp"
-                        android:layout_height="match_parent"
-                        android:background="@color/surface_border" />
-
-                    <!-- Streak -->
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:id="@+id/tvStreak"
-                            style="@style/TextAppearance.WayToFix.Headline1"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/warning"
-                            tools:text="12" />
-
-                        <TextView
-                            style="@style/TextAppearance.WayToFix.Caption"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/streak"
-                            android:textColor="@color/text_tertiary" />
-
-                    </LinearLayout>
-
-                </LinearLayout>
-
-            </androidx.cardview.widget.CardView>
-
-            <!-- My Level Card -->
-            <androidx.cardview.widget.CardView
-                android:id="@+id/cardMyLevel"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="@dimen/screen_padding_horizontal"
-                android:layout_marginTop="@dimen/spacing_lg"
-                app:cardBackgroundColor="@color/surface_variant"
-                app:cardCornerRadius="@dimen/radius_lg"
-                app:cardElevation="0dp"
-                android:visibility="gone">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="@dimen/spacing_base">
-
+                    <!-- Quick Stats -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
+                        android:layout_marginTop="@dimen/spacing_xl"
+                        android:orientation="horizontal">
 
-                        <LinearLayout
+                        <com.google.android.material.card.MaterialCardView
+                            style="@style/Widget.WayToFix.Card.Stat"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
+                            android:layout_marginEnd="@dimen/spacing_sm"
+                            android:layout_weight="1">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center"
+                                android:minHeight="@dimen/component_stat_card_min_height"
+                                android:orientation="vertical"
+                                android:padding="@dimen/spacing_base">
+
+                                <TextView
+                                    android:id="@+id/tvWeeklyWorkouts"
+                                    style="@style/TextAppearance.WayToFix.Headline1"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:textColor="@color/primary"
+                                    tools:text="5" />
+
+                                <TextView
+                                    style="@style/TextAppearance.WayToFix.Caption"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="@dimen/spacing_xs"
+                                    android:gravity="center"
+                                    android:text="@string/this_week"
+                                    android:textColor="@color/text_secondary" />
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <com.google.android.material.card.MaterialCardView
+                            style="@style/Widget.WayToFix.Card.Stat"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="@dimen/spacing_xs"
+                            android:layout_weight="1">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center"
+                                android:minHeight="@dimen/component_stat_card_min_height"
+                                android:orientation="vertical"
+                                android:padding="@dimen/spacing_base">
+
+                                <TextView
+                                    android:id="@+id/tvFormScore"
+                                    style="@style/TextAppearance.WayToFix.Headline1"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:textColor="@color/success"
+                                    tools:text="87%" />
+
+                                <TextView
+                                    style="@style/TextAppearance.WayToFix.Caption"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="@dimen/spacing_xs"
+                                    android:gravity="center"
+                                    android:text="@string/weekly_average"
+                                    android:textColor="@color/text_secondary" />
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <com.google.android.material.card.MaterialCardView
+                            style="@style/Widget.WayToFix.Card.Stat"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/spacing_sm"
+                            android:layout_weight="1">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center"
+                                android:minHeight="@dimen/component_stat_card_min_height"
+                                android:orientation="vertical"
+                                android:padding="@dimen/spacing_base">
+
+                                <TextView
+                                    android:id="@+id/tvStreak"
+                                    style="@style/TextAppearance.WayToFix.Headline1"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:textColor="@color/warning"
+                                    tools:text="12" />
+
+                                <TextView
+                                    style="@style/TextAppearance.WayToFix.Caption"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="@dimen/spacing_xs"
+                                    android:gravity="center"
+                                    android:text="@string/streak"
+                                    android:textColor="@color/text_secondary" />
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
+                    </LinearLayout>
+
+                    <!-- My Level Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardMyLevel"
+                        style="@style/Widget.WayToFix.Card.Outlined"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_lg"
+                        android:visibility="gone">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="@dimen/spacing_lg">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <FrameLayout
+                                    android:layout_width="@dimen/component_icon_container"
+                                    android:layout_height="@dimen/component_icon_container"
+                                    android:background="@drawable/bg_component_icon_container">
+
+                                    <ImageView
+                                        android:layout_width="@dimen/icon_md"
+                                        android:layout_height="@dimen/icon_md"
+                                        android:layout_gravity="center"
+                                        android:contentDescription="@null"
+                                        android:src="@drawable/ic_muscle"
+                                        app:tint="@color/primary" />
+                                </FrameLayout>
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="@dimen/spacing_base"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        style="@style/TextAppearance.WayToFix.Caption"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/home_your_level_label"
+                                        android:textColor="@color/text_secondary" />
+
+                                    <TextView
+                                        android:id="@+id/tvLevelName"
+                                        style="@style/TextAppearance.WayToFix.Headline3"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="@dimen/spacing_xs"
+                                        android:textColor="@color/text_primary"
+                                        tools:text="Level 2 · Building" />
+
+                                    <TextView
+                                        android:id="@+id/tvLevelScore"
+                                        style="@style/TextAppearance.WayToFix.Body2"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="@dimen/spacing_xs"
+                                        android:textColor="@color/text_secondary"
+                                        tools:text="Body Score: 65" />
+                                </LinearLayout>
+
+                                <ImageView
+                                    android:layout_width="@dimen/icon_md"
+                                    android:layout_height="@dimen/icon_md"
+                                    android:contentDescription="@null"
+                                    android:src="@drawable/ic_arrow_forward"
+                                    app:tint="@color/text_tertiary" />
+                            </LinearLayout>
+
+                            <ProgressBar
+                                android:id="@+id/progressLevelBar"
+                                style="?android:attr/progressBarStyleHorizontal"
+                                android:layout_width="match_parent"
+                                android:layout_height="6dp"
+                                android:layout_marginTop="@dimen/spacing_base"
+                                android:max="100"
+                                android:progress="60"
+                                android:progressBackgroundTint="@color/surface_border"
+                                android:progressTint="@color/primary"
+                                android:visibility="gone" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Active Program Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardActiveProgram"
+                        style="@style/Widget.WayToFix.Card.Outlined"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_lg"
+                        android:visibility="gone">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="@dimen/spacing_lg">
 
                             <TextView
+                                android:id="@+id/tvActiveProgramLabel"
                                 style="@style/TextAppearance.WayToFix.Caption"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="@string/home_your_level_label"
+                                android:text="@string/active_program"
                                 android:textColor="@color/text_secondary" />
 
                             <TextView
-                                android:id="@+id/tvLevelName"
+                                android:id="@+id/tvActiveProgramName"
                                 style="@style/TextAppearance.WayToFix.Headline2"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:textColor="@android:color/white"
-                                android:layout_marginTop="2dp"
-                                tools:text="Level 2 · Building" />
+                                android:layout_marginTop="@dimen/spacing_xs"
+                                android:textColor="@color/text_primary"
+                                tools:text="Full Body 4-Week Challenge" />
 
                             <TextView
-                                android:id="@+id/tvLevelScore"
+                                android:id="@+id/tvActiveProgramStats"
                                 style="@style/TextAppearance.WayToFix.Body2"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/spacing_xs"
                                 android:textColor="@color/text_secondary"
-                                android:layout_marginTop="2dp"
-                                tools:text="Body Score: 65" />
+                                tools:text="4 weeks · 5 sessions" />
 
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnViewProgram"
+                                style="@style/Widget.WayToFix.Button.Primary.Small"
+                                android:layout_width="wrap_content"
+                                android:layout_height="@dimen/button_height_small"
+                                android:layout_marginTop="@dimen/spacing_lg"
+                                android:text="@string/view_program" />
                         </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/home_arrow"
-                            android:textColor="@android:color/white"
-                            android:textSize="24sp" />
-
-                    </LinearLayout>
-
-                    <!-- Level progress bar toward next level -->
-                    <ProgressBar
-                        android:id="@+id/progressLevelBar"
-                        style="?android:attr/progressBarStyleHorizontal"
+                    <!-- Today's Plan -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardTodayPlan"
+                        style="@style/Widget.WayToFix.Card.Outlined"
                         android:layout_width="match_parent"
-                        android:layout_height="6dp"
-                        android:layout_marginTop="@dimen/spacing_sm"
-                        android:max="100"
-                        android:progress="60"
-                        android:progressBackgroundTint="@color/surface_border"
-                        android:progressTint="@color/primary"
-                        android:visibility="gone" />
-
-                </LinearLayout>
-
-            </androidx.cardview.widget.CardView>
-
-            <!-- Active Program Card -->
-            <androidx.cardview.widget.CardView
-                android:id="@+id/cardActiveProgram"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="@dimen/screen_padding_horizontal"
-                android:layout_marginTop="@dimen/spacing_lg"
-                app:cardBackgroundColor="@color/surface"
-                app:cardCornerRadius="@dimen/radius_lg"
-                app:cardElevation="0dp"
-                android:visibility="gone">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="@dimen/spacing_base">
-
-                    <TextView
-                        android:id="@+id/tvActiveProgramLabel"
-                        style="@style/TextAppearance.WayToFix.Caption"
-                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/active_program"
-                        android:textColor="@color/text_secondary" />
-
-                    <TextView
-                        android:id="@+id/tvActiveProgramName"
-                        style="@style/TextAppearance.WayToFix.Headline3"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/text_primary"
-                        android:layout_marginTop="@dimen/spacing_xs"
-                        tools:text="Full Body 4-Week Challenge" />
-
-                    <TextView
-                        android:id="@+id/tvActiveProgramStats"
-                        style="@style/TextAppearance.WayToFix.Body2"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/text_secondary"
-                        android:layout_marginTop="@dimen/spacing_xs"
-                        tools:text="4 weeks · 5 sessions" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnViewProgram"
-                        style="@style/Widget.WayToFix.Button.Primary"
-                        android:layout_width="180dp"
-                        android:layout_height="44dp"
                         android:layout_marginTop="@dimen/spacing_lg"
-                        android:text="@string/view_program" />
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <!-- Today's Plan -->
-            <androidx.cardview.widget.CardView
-                android:id="@+id/cardTodayPlan"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="@dimen/screen_padding_horizontal"
-                android:layout_marginTop="@dimen/spacing_lg"
-                app:cardBackgroundColor="@color/surface"
-                app:cardCornerRadius="@dimen/radius_lg"
-                app:cardElevation="0dp"
-                android:visibility="gone">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="@dimen/spacing_base">
-
-                    <TextView
-                        android:id="@+id/tvTodayPlanLabel"
-                        style="@style/TextAppearance.WayToFix.Caption"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/today_plan"
-                        android:textColor="@color/text_secondary" />
-
-                    <TextView
-                        android:id="@+id/tvTodayPlanTitle"
-                        style="@style/TextAppearance.WayToFix.Headline3"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/text_primary"
-                        android:layout_marginTop="@dimen/spacing_xs"
-                        tools:text="Week 1 · Day 2" />
-
-                    <TextView
-                        android:id="@+id/tvTodayPlanSubtitle"
-                        style="@style/TextAppearance.WayToFix.Body2"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/text_secondary"
-                        android:layout_marginTop="@dimen/spacing_xs"
-                        tools:text="Morning Session • 5 items" />
-
-                    <TextView
-                        android:id="@+id/tvCalendarPaused"
-                        style="@style/TextAppearance.WayToFix.Caption"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/spacing_sm"
-                        android:textColor="@color/warning"
-                        android:visibility="gone"
-                        tools:text="Plan paused — calendar frozen" />
-
-                    <TextView
-                        android:id="@+id/tvCatchUpHint"
-                        style="@style/TextAppearance.WayToFix.Caption"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/spacing_xs"
-                        android:textColor="@color/text_secondary"
-                        android:visibility="gone"
-                        tools:text="Catch-up: you missed several training days" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnCatchUpOpen"
-                        style="@style/Widget.WayToFix.Button.Secondary"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/spacing_sm"
-                        android:text="@string/catch_up_open_missed"
-                        android:visibility="gone" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnStartTodayPlan"
-                        style="@style/Widget.WayToFix.Button.Primary"
-                        android:layout_width="match_parent"
-                        android:layout_height="52dp"
-                        android:layout_marginTop="@dimen/spacing_lg"
-                        android:text="@string/start_session" />
-
-                    <TextView
-                        android:id="@+id/tvSessionProgress"
-                        style="@style/TextAppearance.WayToFix.Caption"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/spacing_xs"
-                        android:layout_gravity="center_horizontal"
-                        android:textColor="@color/text_tertiary"
-                        android:visibility="gone"
-                        tools:text="Session 1 of 2" />
-
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <!-- ======================= ALERT CARD ======================= -->
-            <androidx.cardview.widget.CardView
-                android:id="@+id/cardAlert"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="@dimen/screen_padding_horizontal"
-                android:layout_marginTop="@dimen/spacing_lg"
-                app:cardBackgroundColor="@color/surface_elevated"
-                app:cardCornerRadius="@dimen/radius_base"
-                app:cardElevation="0dp"
-                android:visibility="gone">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:padding="@dimen/spacing_base">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:id="@+id/tvAlertTitle"
-                            style="@style/TextAppearance.WayToFix.Body2"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/text_primary"
-                            android:textStyle="bold"
-                            tools:text="Training Plan Adjusted" />
-
-                        <TextView
-                            android:id="@+id/tvAlertMessage"
-                            style="@style/TextAppearance.WayToFix.Caption"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:textColor="@color/text_secondary"
-                            tools:text="2 exercises adjusted based on your performance" />
-
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="→"
-                        android:textColor="@color/text_tertiary"
-                        android:textSize="18sp"
-                        android:layout_marginStart="@dimen/spacing_sm" />
-
-                </LinearLayout>
-
-            </androidx.cardview.widget.CardView>
-
-            <!-- ======================= PROGRESSION CARD ======================= -->
-            <androidx.cardview.widget.CardView
-                android:id="@+id/cardProgression"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="@dimen/screen_padding_horizontal"
-                android:layout_marginTop="@dimen/spacing_lg"
-                app:cardBackgroundColor="@color/surface_elevated"
-                app:cardCornerRadius="@dimen/radius_base"
-                app:cardElevation="0dp"
-                android:visibility="gone">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="@dimen/spacing_base">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="\uD83D\uDCC8"
-                            android:textSize="24sp"
-                            android:layout_marginEnd="@dimen/spacing_sm" />
+                        android:visibility="gone">
 
                         <LinearLayout
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
+                            android:orientation="vertical"
+                            android:padding="@dimen/spacing_lg">
 
                             <TextView
-                                android:id="@+id/tvProgressionHomeTitle"
-                                style="@style/TextAppearance.WayToFix.Body2"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/progression_home_title"
-                                android:textColor="@color/text_primary"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:id="@+id/tvProgressionHomeSubtitle"
+                                android:id="@+id/tvTodayPlanLabel"
                                 style="@style/TextAppearance.WayToFix.Caption"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:text="@string/progression_home_subtitle"
+                                android:text="@string/today_plan"
                                 android:textColor="@color/text_secondary" />
 
+                            <TextView
+                                android:id="@+id/tvTodayPlanTitle"
+                                style="@style/TextAppearance.WayToFix.Headline2"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/spacing_xs"
+                                android:textColor="@color/text_primary"
+                                tools:text="Week 1 · Day 2" />
+
+                            <TextView
+                                android:id="@+id/tvTodayPlanSubtitle"
+                                style="@style/TextAppearance.WayToFix.Body2"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/spacing_xs"
+                                android:textColor="@color/text_secondary"
+                                tools:text="Morning Session • 5 items" />
+
+                            <TextView
+                                android:id="@+id/tvCalendarPaused"
+                                style="@style/TextAppearance.WayToFix.Caption"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/spacing_sm"
+                                android:textColor="@color/warning"
+                                android:visibility="gone"
+                                tools:text="Plan paused — calendar frozen" />
+
+                            <TextView
+                                android:id="@+id/tvCatchUpHint"
+                                style="@style/TextAppearance.WayToFix.Caption"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/spacing_xs"
+                                android:textColor="@color/text_secondary"
+                                android:visibility="gone"
+                                tools:text="Catch-up: you missed several training days" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnCatchUpOpen"
+                                style="@style/Widget.WayToFix.Button.Secondary"
+                                android:layout_width="match_parent"
+                                android:layout_height="@dimen/button_height_small"
+                                android:layout_marginTop="@dimen/spacing_sm"
+                                android:text="@string/catch_up_open_missed"
+                                android:visibility="gone" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnStartTodayPlan"
+                                style="@style/Widget.WayToFix.Button.Primary"
+                                android:layout_width="match_parent"
+                                android:layout_height="@dimen/button_height"
+                                android:layout_marginTop="@dimen/spacing_lg"
+                                android:text="@string/start_session" />
+
+                            <TextView
+                                android:id="@+id/tvSessionProgress"
+                                style="@style/TextAppearance.WayToFix.Caption"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center_horizontal"
+                                android:layout_marginTop="@dimen/spacing_xs"
+                                android:textColor="@color/text_tertiary"
+                                android:visibility="gone"
+                                tools:text="Session 1 of 2" />
                         </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
 
-                    </LinearLayout>
-
-                    <!-- Changes container (cards built programmatically) -->
-                    <LinearLayout
-                        android:id="@+id/llProgressionHomeChanges"
+                    <!-- Alert Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardAlert"
+                        style="@style/Widget.WayToFix.Card.List"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_lg"
+                        android:visibility="gone">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:minHeight="@dimen/component_card_min_height"
+                            android:orientation="horizontal"
+                            android:padding="@dimen/spacing_base">
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:id="@+id/tvAlertTitle"
+                                    style="@style/TextAppearance.WayToFix.Body1"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:textColor="@color/text_primary"
+                                    tools:text="Training Plan Adjusted" />
+
+                                <TextView
+                                    android:id="@+id/tvAlertMessage"
+                                    style="@style/TextAppearance.WayToFix.Caption"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="@dimen/spacing_xs"
+                                    android:textColor="@color/text_secondary"
+                                    tools:text="2 exercises adjusted based on your performance" />
+                            </LinearLayout>
+
+                            <ImageView
+                                android:layout_width="@dimen/icon_md"
+                                android:layout_height="@dimen/icon_md"
+                                android:contentDescription="@null"
+                                android:src="@drawable/ic_arrow_forward"
+                                app:tint="@color/text_tertiary" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Progression Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardProgression"
+                        style="@style/Widget.WayToFix.Card.Outlined"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_lg"
+                        android:visibility="gone">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="@dimen/spacing_lg">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <FrameLayout
+                                    android:layout_width="@dimen/component_icon_container"
+                                    android:layout_height="@dimen/component_icon_container"
+                                    android:background="@drawable/bg_component_icon_container">
+
+                                    <ImageView
+                                        android:layout_width="@dimen/icon_md"
+                                        android:layout_height="@dimen/icon_md"
+                                        android:layout_gravity="center"
+                                        android:contentDescription="@null"
+                                        android:src="@drawable/ic_report"
+                                        app:tint="@color/primary" />
+                                </FrameLayout>
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="@dimen/spacing_base"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        android:id="@+id/tvProgressionHomeTitle"
+                                        style="@style/TextAppearance.WayToFix.Body1"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/progression_home_title"
+                                        android:textColor="@color/text_primary" />
+
+                                    <TextView
+                                        android:id="@+id/tvProgressionHomeSubtitle"
+                                        style="@style/TextAppearance.WayToFix.Caption"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="@dimen/spacing_xs"
+                                        android:text="@string/progression_home_subtitle"
+                                        android:textColor="@color/text_secondary" />
+                                </LinearLayout>
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:id="@+id/llProgressionHomeChanges"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/spacing_sm"
+                                android:orientation="vertical" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnProgressionHomeView"
+                                style="@style/Widget.WayToFix.Button.Secondary"
+                                android:layout_width="match_parent"
+                                android:layout_height="@dimen/button_height_small"
+                                android:layout_marginTop="@dimen/spacing_sm"
+                                android:text="@string/progression_home_view" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Report Summary -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardReportSummary"
+                        style="@style/Widget.WayToFix.Card.Outlined"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_xl">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="@dimen/spacing_lg">
+
+                            <TextView
+                                style="@style/TextAppearance.WayToFix.Headline3"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/reports_title"
+                                android:textColor="@color/text_primary" />
+
+                            <TextView
+                                android:id="@+id/tvHomeReportSummary"
+                                style="@style/TextAppearance.WayToFix.Body2"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/spacing_sm"
+                                android:textColor="@color/text_secondary"
+                                tools:text="This week: 5 workouts • Form 87% • Streak 12" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnOpenReports"
+                                style="@style/Widget.WayToFix.Button.Secondary"
+                                android:layout_width="match_parent"
+                                android:layout_height="@dimen/button_height_small"
+                                android:layout_marginTop="@dimen/spacing_md"
+                                android:text="@string/pg_view_full_reports" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Recent Activity -->
+                    <LinearLayout
+                        android:id="@+id/layoutRecentSessions"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_xl"
                         android:orientation="vertical"
-                        android:layout_marginTop="@dimen/spacing_sm" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnProgressionHomeView"
-                        style="@style/Widget.WayToFix.Button.Secondary"
-                        android:layout_width="match_parent"
-                        android:layout_height="40dp"
-                        android:layout_marginTop="@dimen/spacing_sm"
-                        android:text="@string/progression_home_view"
-                        android:textSize="13sp" />
-
-                </LinearLayout>
-
-            </androidx.cardview.widget.CardView>
-
-            <!-- ======================= REPORT SUMMARY ======================= -->
-            <androidx.cardview.widget.CardView
-                android:id="@+id/cardReportSummary"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="@dimen/screen_padding_horizontal"
-                android:layout_marginTop="@dimen/spacing_xl"
-                app:cardBackgroundColor="@color/surface"
-                app:cardCornerRadius="@dimen/radius_lg"
-                app:cardElevation="0dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="@dimen/spacing_base">
-
-                    <TextView
-                        style="@style/TextAppearance.WayToFix.Headline3"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/reports_title"
-                        android:textColor="@color/text_primary" />
-
-                    <TextView
-                        android:id="@+id/tvHomeReportSummary"
-                        style="@style/TextAppearance.WayToFix.Body2"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/spacing_sm"
-                        android:textColor="@color/text_secondary"
-                        tools:text="This week: 5 workouts • Form 87% • Streak 12" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnOpenReports"
-                        style="@style/Widget.WayToFix.Button.Secondary"
-                        android:layout_width="match_parent"
-                        android:layout_height="44dp"
-                        android:layout_marginTop="@dimen/spacing_md"
-                        android:text="@string/pg_view_full_reports" />
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <!-- ======================= RECENT ACTIVITY ======================= -->
-            <LinearLayout
-                android:id="@+id/layoutRecentSessions"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginTop="@dimen/spacing_xl"
-                android:visibility="gone">
-
-                <TextView
-                    style="@style/TextAppearance.WayToFix.Headline3"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="@dimen/screen_padding_horizontal"
-                    android:text="@string/recent_activity"
-                    android:textColor="@color/text_primary" />
-
-                <LinearLayout
-                    android:id="@+id/recentSessionsList"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:layout_marginTop="@dimen/spacing_sm"
-                    android:paddingHorizontal="@dimen/screen_padding_horizontal" />
-
-            </LinearLayout>
-
-            <!-- ======================= QUICK ACTIONS ======================= -->
-            <TextView
-                style="@style/TextAppearance.WayToFix.Headline3"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/screen_padding_horizontal"
-                android:layout_marginTop="@dimen/spacing_xl"
-                android:text="@string/quick_actions"
-                android:textColor="@color/text_primary" />
-
-            <!-- Body Scan CTA (prominent, full-width) -->
-            <androidx.cardview.widget.CardView
-                android:id="@+id/cardBodyScan"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="@dimen/screen_padding_horizontal"
-                android:layout_marginTop="@dimen/spacing_sm"
-                app:cardBackgroundColor="@color/surface_elevated"
-                app:cardCornerRadius="@dimen/radius_base"
-                app:cardElevation="0dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:padding="@dimen/spacing_lg">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
+                        android:visibility="gone">
 
                         <TextView
                             style="@style/TextAppearance.WayToFix.Headline3"
-                            android:layout_width="wrap_content"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="@string/body_scan_title"
-                            android:textColor="@android:color/white"
-                            android:textStyle="bold" />
+                            android:text="@string/recent_activity"
+                            android:textColor="@color/text_primary" />
 
-                        <TextView
-                            style="@style/TextAppearance.WayToFix.Body2"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="@string/body_scan_subtitle"
-                            android:textColor="@color/feedback_correct" />
-
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/home_arrow"
-                        android:textColor="@android:color/white"
-                        android:textSize="24sp" />
-
-                </LinearLayout>
-
-            </androidx.cardview.widget.CardView>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="@dimen/screen_padding_horizontal"
-                android:layout_marginTop="@dimen/spacing_sm"
-                android:orientation="horizontal">
-
-                <!-- Train (opens Explore) -->
-                <androidx.cardview.widget.CardView
-                    android:id="@+id/cardStartCamera"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:cardBackgroundColor="@color/primary"
-                    app:cardCornerRadius="@dimen/radius_base"
-                    app:cardElevation="0dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:padding="@dimen/spacing_lg">
-
-                        <ImageView
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
-                            android:src="@drawable/ic_exercise"
-                            app:tint="@color/on_primary"
-                            android:contentDescription="@string/nav_train" />
-
-                        <TextView
-                            style="@style/TextAppearance.WayToFix.Body2"
-                            android:layout_width="wrap_content"
+                        <LinearLayout
+                            android:id="@+id/recentSessionsList"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/spacing_sm"
-                            android:text="@string/nav_train"
-                            android:textColor="@color/on_primary"
-                            android:textStyle="bold" />
-
+                            android:orientation="vertical" />
                     </LinearLayout>
 
-                </androidx.cardview.widget.CardView>
+                    <!-- Quick Actions -->
+                    <TextView
+                        style="@style/TextAppearance.WayToFix.Headline3"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_xl"
+                        android:text="@string/quick_actions"
+                        android:textColor="@color/text_primary" />
 
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardBodyScan"
+                        style="@style/Widget.WayToFix.Card.Outlined"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_sm"
+                        app:cardBackgroundColor="@color/accent_soft"
+                        app:strokeColor="@color/accent_soft">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:padding="@dimen/spacing_lg">
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    style="@style/TextAppearance.WayToFix.Headline3"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/body_scan_title"
+                                    android:textColor="@color/on_accent_soft" />
+
+                                <TextView
+                                    style="@style/TextAppearance.WayToFix.Body2"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="@dimen/spacing_xs"
+                                    android:text="@string/body_scan_subtitle"
+                                    android:textColor="@color/on_accent_soft" />
+                            </LinearLayout>
+
+                            <ImageView
+                                android:layout_width="@dimen/icon_md"
+                                android:layout_height="@dimen/icon_md"
+                                android:contentDescription="@null"
+                                android:src="@drawable/ic_arrow_forward"
+                                app:tint="@color/on_accent_soft" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardStartCamera"
+                        style="@style/Widget.WayToFix.Card.Outlined"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_sm"
+                        app:cardBackgroundColor="@color/primary"
+                        app:strokeColor="@color/primary">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:padding="@dimen/spacing_lg">
+
+                            <FrameLayout
+                                android:layout_width="@dimen/component_icon_container"
+                                android:layout_height="@dimen/component_icon_container"
+                                android:background="@drawable/bg_component_icon_container">
+
+                                <ImageView
+                                    android:layout_width="@dimen/icon_md"
+                                    android:layout_height="@dimen/icon_md"
+                                    android:layout_gravity="center"
+                                    android:contentDescription="@string/nav_train"
+                                    android:src="@drawable/ic_exercise"
+                                    app:tint="@color/primary" />
+                            </FrameLayout>
+
+                            <TextView
+                                style="@style/TextAppearance.WayToFix.Body1"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="@dimen/spacing_base"
+                                android:layout_weight="1"
+                                android:text="@string/nav_train"
+                                android:textColor="@color/on_primary" />
+
+                            <ImageView
+                                android:layout_width="@dimen/icon_md"
+                                android:layout_height="@dimen/icon_md"
+                                android:contentDescription="@null"
+                                android:src="@drawable/ic_arrow_forward"
+                                app:tint="@color/on_primary" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
             </LinearLayout>
-
-            </LinearLayout> <!-- end layoutContent -->
-
-        </LinearLayout>
-
         </androidx.core.widget.NestedScrollView>
-
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
-
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

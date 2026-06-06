@@ -39,6 +39,10 @@
     <dimen name="chip_height">36dp</dimen>
     <dimen name="bottom_nav_height">80dp</dimen>
     <dimen name="app_header_height">56dp</dimen>
+    <dimen name="component_card_min_height">72dp</dimen>
+    <dimen name="component_stat_card_min_height">104dp</dimen>
+    <dimen name="component_icon_container">44dp</dimen>
+    <dimen name="component_empty_icon">72dp</dimen>
     
     <!-- Icon Sizes -->
     <dimen name="icon_xs">16dp</dimen>

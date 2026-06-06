@@ -202,7 +202,7 @@ class ExpandableMetricsSection @JvmOverloads constructor(
                         }
                         if (shouldShow(MetricCode.EST_1RM)) {
                             load.getFormattedEst1RM()?.let { rm ->
-                                addSimpleRow(it, if (isArabic) "القوة القصوى المقدرة" else "Estimated 1RM", rm, 0xFF8AF851.toInt())
+                                addSimpleRow(it, if (isArabic) "القوة القصوى المقدرة" else "Estimated 1RM", rm, 0xFFC4D489.toInt())
                             }
                         }
                     }

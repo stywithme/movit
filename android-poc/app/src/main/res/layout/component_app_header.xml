@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="@dimen/app_header_height"
     android:gravity="center_vertical"
@@ -11,10 +13,9 @@
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Back"
+        android:contentDescription="@string/cd_back"
         android:src="@drawable/ic_arrow_back"
-        app:tint="@color/text_primary"
-        xmlns:app="http://schemas.android.com/apk/res-auto" />
+        app:tint="@color/text_primary" />
 
     <TextView
         android:id="@+id/headerTitle"
@@ -23,10 +24,12 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:gravity="center"
-        android:text="Title" />
+        android:textColor="@color/text_primary"
+        tools:text="Title" />
 
     <!-- Placeholder for right-side balance or future actions -->
     <View
+        android:id="@+id/headerActionSlot"
         android:layout_width="48dp"
         android:layout_height="48dp" />
 

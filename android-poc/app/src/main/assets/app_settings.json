@@ -184,7 +184,7 @@
     "_personThreshold_comment": "ثقة الشخص — فوقها يبقى المستخدم واضحاً بدون blur/tint",
     "blurRadius": 10,
     "_blurRadius_comment": "شدة blur للخلفية فقط: 0 بدون blur، 8 خفيف، 18 متوسط، 30 قوي",
-    "tintColor": "#68838A",
+    "tintColor": "#8ECFE3",
     "_tintColor_comment": "لون الخلفية بعد العزل (hex)",
     "tintAlpha": 0.99,
     "_tintAlpha_comment": "قوة اللون على الخلفية فقط (0–1)"

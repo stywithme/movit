@@ -16,6 +16,7 @@ import com.trainingvalidator.poc.sensors.DeviceTiltProvider
 import com.trainingvalidator.poc.storage.SystemMessageStore
 import com.trainingvalidator.poc.training.engine.PostureMlpClassifier
 import com.trainingvalidator.poc.ui.main.MainContainerActivity
+import com.trainingvalidator.poc.ui.theme.AppThemeManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -63,6 +64,7 @@ class PoseApp : Application(), ImageLoaderFactory {
     override fun onCreate() {
         super.onCreate()
         _instance = this
+        AppThemeManager.applySavedMode(this)
         ApiClient.init(this)
         PostureMlpClassifier.getOrNull(this)
         SystemMessageStore(this).loadIntoRegistry()
