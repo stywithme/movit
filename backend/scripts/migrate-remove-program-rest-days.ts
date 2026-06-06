@@ -1,6 +1,6 @@
-/**
+﻿/**
  * One-off data migration: remove explicit rest ProgramDays, renumber training days per week,
- * set Program.weeklySessionTarget from week 1 training count.
+ * set Program.weeklyWorkoutTarget from week 1 training count.
  *
  * Run: npm run migrate:remove-rest-days --prefix backend
  */
@@ -95,7 +95,7 @@ async function main() {
             });
           }
           if (oldDn !== newDn) {
-            await tx.programSessionReport.updateMany({
+            await tx.plannedWorkoutReport.updateMany({
               where: {
                 programId: program.id,
                 weekNumber: week.weekNumber,
@@ -110,7 +110,7 @@ async function main() {
       if (trainingCountW1 > 0) {
         await tx.program.update({
           where: { id: program.id },
-          data: { weeklySessionTarget: trainingCountW1 },
+          data: { weeklyWorkoutTarget: trainingCountW1 },
         });
       }
     });

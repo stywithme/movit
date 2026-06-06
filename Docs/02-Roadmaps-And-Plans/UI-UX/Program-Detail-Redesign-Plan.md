@@ -1,7 +1,7 @@
 # Program Detail Page Redesign Plan
 
 ## 1. Primary Goal
-Transform the "Program Details" page from a basic informational list into an immersive, inspiring landing page for a training program. It should clearly communicate the value of the program (via images and descriptions) and explicitly break down its structure (Weeks > Days > Sessions) so the user knows exactly what to expect before starting.
+Transform the "Program Details" page from a basic informational list into an immersive, inspiring landing page for a training program. It should clearly communicate the value of the program (via images and descriptions) and explicitly break down its structure (Weeks > Days > Planned Workouts) so the user knows exactly what to expect before starting.
 
 ## 2. Key UI/UX Components
 
@@ -14,7 +14,7 @@ Transform the "Program Details" page from a basic informational list into an imm
 - **Stats Row**: A clean row of icons + text directly below the header showing:
   - ⏳ Duration (e.g., 4 Weeks)
   - 📅 Total Days (e.g., 20 Days)
-  - 🏋️ Sessions (e.g., 12 Sessions)
+  - 🏋️ Planned Workouts (e.g., 12 Planned Workouts)
   - ⚡ Difficulty (e.g., Advanced)
 - **Description**: A well-formatted, readable description explaining the program's goals. If long, it can be truncated with a "Read More" option.
 
@@ -25,10 +25,10 @@ Transform the "Program Details" page from a basic informational list into an imm
 ### D. The Journey (Syllabus Structure)
 Instead of a flat list, we will visualize the program's structure clearly:
 - **Week Cards (Expandable/Accordion)**:
-  - **Header**: "Week 1: Base Movement" • 5 Sessions, 2 Rest.
+  - **Header**: "Week 1: Base Movement" • 5 Planned Workouts, 2 Rest.
   - **Content (when expanded)**: A horizontal scrollable list or a compact vertical timeline of the **Days** within that week.
 - **Day Items**:
-  - Shows "Day 1" -> "Upper Body Focus" -> "2 Sessions (45 mins)".
+  - Shows "Day 1" -> "Upper Body Focus" -> "2 Planned Workouts (45 mins)".
   - Visual indicator if it's a "Rest Day" (e.g., a distinct color or icon).
 
 ## 3. Implementation Steps

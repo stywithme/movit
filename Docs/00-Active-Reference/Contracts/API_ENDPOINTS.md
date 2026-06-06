@@ -79,18 +79,20 @@
 
 ---
 
-## 🏃 Workouts (`/workouts`)
+## 🏃 Workout Templates (`/workout-templates`)
+
+Catalog presets (formerly `/workouts`). See [Workout-Domain-Naming.md](Workout-Domain-Naming.md).
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| GET | `/workouts` | List workouts |
-| POST | `/workouts` | Create a new workout |
-| GET | `/workouts/:id` | Get workout details (includes exercises) |
-| PUT | `/workouts/:id` | Update workout |
-| DELETE | `/workouts/:id` | Delete a workout |
-| POST | `/workouts/:id/publish` | Publish a workout |
-| DELETE | `/workouts/:id/publish` | Unpublish a workout |
-| POST | `/workouts/:id/duplicate` | Duplicate an existing workout |
+| GET | `/workout-templates` | List workout templates |
+| POST | `/workout-templates` | Create a template |
+| GET | `/workout-templates/:id` | Get template details (includes exercises) |
+| PUT | `/workout-templates/:id` | Update template |
+| DELETE | `/workout-templates/:id` | Delete a template |
+| POST | `/workout-templates/:id/publish` | Publish template |
+| DELETE | `/workout-templates/:id/publish` | Unpublish template |
+| POST | `/workout-templates/:id/duplicate` | Duplicate template |
 
 ---
 
@@ -100,7 +102,7 @@
 | :--- | :--- | :--- |
 | GET | `/programs` | List programs |
 | POST | `/programs` | Create a new program |
-| GET | `/programs/:id` | Get program full details (weeks, days, sessions) |
+| GET | `/programs/:id` | Get program full details (weeks, days, planned workouts) |
 | PUT | `/programs/:id` | Update program metadata |
 | DELETE | `/programs/:id` | Delete a program |
 | POST | `/programs/:id/publish` | Publish program |
@@ -114,11 +116,52 @@
 | POST | `/programs/:programId/weeks/:weekId/days` | Add a day to a week |
 | PUT | `/programs/:programId/weeks/:weekId/days/:dayId` | Update day info |
 | DELETE | `/programs/:programId/weeks/:weekId/days/:dayId` | Delete a day |
-| **Sessions** | | |
-| POST | `/programs/:programId/weeks/:weekId/days/:dayId/sessions` | Add session to a day |
-| PUT | `/programs/:programId/sessions/:sessionId` | Update session |
-| DELETE | `/programs/:programId/sessions/:sessionId` | Delete a session |
-| POST | `/programs/:programId/sessions/:sessionId/import-workout/:workoutId` | Import all exercises from a workout into a session |
+| **Planned workouts** | | |
+| POST | `/programs/:programId/weeks/:weekId/days/:dayId/planned-workouts` | Add planned workout to a day |
+| PUT | `/programs/:programId/planned-workouts/:plannedWorkoutId` | Update planned workout |
+| DELETE | `/programs/:programId/planned-workouts/:plannedWorkoutId` | Delete a planned workout |
+| POST | `/programs/:programId/planned-workouts/:plannedWorkoutId/items` | Add item to planned workout |
+| PUT | `/programs/:programId/planned-workouts/:plannedWorkoutId/items/:itemId` | Update planned workout item |
+| DELETE | `/programs/:programId/planned-workouts/:plannedWorkoutId/items/:itemId` | Delete planned workout item |
+| POST | `/programs/:programId/planned-workouts/:plannedWorkoutId/import-workout-template/:workoutTemplateId` | Import template exercises into planned workout |
+
+---
+
+## 📱 Mobile — Workout executions (`/mobile/workout-executions`)
+
+Per-exercise runs and history (formerly `/mobile/sessions`).
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| POST | `/mobile/workout-executions` | Upload single exercise execution + `executionMetrics` |
+| POST | `/mobile/workout-executions/explore` | Upload grouped explore/quick-start workout (`executions[]`) |
+| GET | `/mobile/workout-executions` | List execution history |
+| GET | `/mobile/workout-executions/exercise/:exerciseId` | Exercise history + aggregates |
+
+## 📱 Mobile — Planned workouts (`/mobile/planned-workouts`)
+
+Program block lifecycle (start/complete report).
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| POST | `/mobile/planned-workouts/:plannedWorkoutId/start` | Start planned workout report |
+| POST | `/mobile/planned-workouts/:plannedWorkoutId/complete` | Complete planned workout + progression |
+| POST | `/mobile/planned-workouts/:plannedWorkoutId/report` | Alias for complete (legacy clients) |
+
+## 📱 Mobile — Workout templates (`/mobile/workout-templates`)
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| GET | `/mobile/workout-templates` | Sync catalog templates |
+
+## 📱 Mobile — Home & plan
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| GET | `/mobile/home` | Home data; `todayWorkout`, `trainMode`, `recentWorkoutExecutions` |
+| GET | `/mobile/user-programs/:id/today` | Today plan; `currentProgram.plannedWorkouts[]` |
+| GET | `/mobile/user-programs/:id/effective-plan` | Merged template + overrides; `plannedWorkouts[]` |
+| GET | `/mobile/progression/planned-workout/:plannedWorkoutId` | Progression changes for a completed block |
 
 ---
 

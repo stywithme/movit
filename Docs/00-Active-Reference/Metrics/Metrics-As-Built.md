@@ -15,13 +15,13 @@
 | Layer | Path | Role |
 |-------|------|------|
 | **Calculation** | `android-poc/.../training/analytics/MetricsCalculator.kt` | ROM, symmetry, stability, velocity, VL, alignment, consistency, fatigue, tempo, 1RM, volume |
-| **Recording** | `android-poc/.../training/analytics/MotionRecorder.kt` | Per-rep frames → calls `MetricsCalculator.calculateRepMetrics` / session aggregate |
-| **Rep score (live)** | `android-poc/.../training/engine/ScoreCalculator.kt` | Joint state → rep score during session |
+| **Recording** | `android-poc/.../training/analytics/MotionRecorder.kt` | Per-rep frames → calls `MetricsCalculator.calculateRepMetrics` / planned workout aggregate |
+| **Rep score (live)** | `android-poc/.../training/engine/ScoreCalculator.kt` | Joint state → rep score during workout run |
 | **Report aggregate** | `android-poc/.../training/report/PostTrainingReport.kt` | `PerformanceSummary`, V2 fields, consistency helpers |
 | **UI cards** | `android-poc/.../training/report/PerformanceMetricsBuilder.kt` | Form / Safety / Control cards — **formats only**, no recalculation |
 | **Display filter** | `android-poc/.../ui/report/MetricDisplayBuilder.kt` | Which metrics show per exercise config |
-| **Backend persist** | `backend/prisma/schema.prisma` → `SessionMetrics`, `RepMetrics` | Integers scaled ×10 (see below) |
-| **Backend ingest** | `backend/src/modules/training-sessions/` | Maps mobile upload payload |
+| **Backend persist** | `backend/prisma/schema.prisma` → `WorkoutExecutionMetrics`, `RepMetrics` | Integers scaled ×10 (see below) |
+| **Backend ingest** | `backend/src/modules/workout-executions/` | Maps mobile upload payload |
 | **Reports API** | `backend/src/modules/reports/` | Aggregates for program/week/day scopes |
 
 ---
@@ -43,19 +43,19 @@ Most kinematic/quality values are stored as **int × 10** (e.g. `1000` = 100.0%)
 
 | Code | Calculated in | Shown in UI (V2 builder) | Uploaded to backend | Notes |
 |------|---------------|---------------------------|---------------------|-------|
-| `form_score` / rep score | `ScoreCalculator` → rep record | Form card (state %) | `RepMetrics.score`, `SessionMetrics.avgFormScore` | Weighted joint states |
-| `rep_count` | `RepCounter` | Summary | session payload | Rep-based only |
-| `duration` | session timers | Summary | `totalDurationMs` | Always |
+| `form_score` / rep score | `ScoreCalculator` → rep record | Form card (state %) | `RepMetrics.score`, `WorkoutExecutionMetrics.avgFormScore` | Weighted joint states |
+| `rep_count` | `RepCounter` | Summary | planned workout payload | Rep-based only |
+| `duration` | workout run timers | Summary | `totalDurationMs` | Always |
 | `rom` | `MetricsCalculator.calculateROM` | Form card if enabled | `RepMetrics.rom`, `avgRom` | **Raw** max−min°, not % of target |
 | `symmetry` | `calculateSymmetry` / `calculateBilateralRomSymmetry` | Form card (LSI path for bilateral) | `avgSymmetry` | LSI for alternating bilateral |
 | `stability` | `calculateTrunkStability` (spine) or `calculateStability` (hip fallback) | Safety card | `avgStability`, per-rep `stability` | Not COP / force plate |
 | `tempo` | phase timings from `PhaseStateMachine` | Control card | `tempo` JSON | Ecc / iso / con ms |
-| `tut` | sum of rep durations (`PerformanceMetricsBuilder` — not full session time) | Control card | `totalTUT` | Fixed vs old “session duration” |
+| `tut` | sum of rep durations (`PerformanceMetricsBuilder` — not full workout run time) | Control card | `totalTUT` | Fixed vs old “workout duration” |
 | `hold_duration` | `HoldTimer` / hold coordinator | Hold exercises | via duration fields | Hold-only |
 | `alignment` | `calculateAlignmentAccuracy` (PERFECT/NORMAL frames) + **also** PositionCheck severity in Safety builder | Safety (PositionCheck-based in V2) | `avgAlignmentAccuracy` | Dual sources — see gap below |
 | `form_consistency` | `calculateFormConsistency` / `FromScores` / DTW in report | Form card | `formConsistency` | Method depends on data |
 | `fatigue_index` | `calculateFatigueIndex` | Control card | `fatigueIndex` | Score-drop based |
-| `tempo_consistency` | `calculateTempoConsistency*` | Control card | nullable on session | Implemented |
+| `tempo_consistency` | `calculateTempoConsistency*` | Control card | nullable on planned workout | Implemented |
 | `velocity` | `calculateVelocity` (concentric phase) | optional | `avgVelocity` | Angular, not bar speed |
 | `velocity_loss` | per-rep + `calculateVelocityLoss` | Control card | derived in report | **Implemented** |
 | `weight` / `volume` / `est_1rm` | `calculateVolume`, `calculateEst1RM` | Load section | `totalVolume`, `est1RM` | Manual weight input |

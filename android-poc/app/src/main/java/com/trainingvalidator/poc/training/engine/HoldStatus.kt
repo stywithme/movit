@@ -1,7 +1,7 @@
 package com.trainingvalidator.poc.training.engine
 
 /**
- * Aggregated hold-exercise UI/session snapshot (replaces many separate [kotlinx.coroutines.flow.StateFlow] fields).
+ * Aggregated hold-exercise UI snapshot for one exercise run (replaces many separate [kotlinx.coroutines.flow.StateFlow] fields).
  * Null for rep-based exercises and when no engine hold context exists.
  */
 data class HoldStatus(

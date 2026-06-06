@@ -15,7 +15,7 @@ Lines 1153-1168
   - مستخدم
   - محرك التدرج
   - مدرب
-والسبب أن هذا الخلط يعيد نفس المشكلة الموجودة الآن فعلاً في الكود الحالي، حيث محرك التدرج لا يكتفي بتحديث الحالة بل يلمس ProgramSessionItem نفسه:
+والسبب أن هذا الخلط يعيد نفس المشكلة الموجودة الآن فعلاً في الكود الحالي، حيث محرك التدرج لا يكتفي بتحديث الحالة بل يلمس PlannedWorkoutItem نفسه:
 
 
 progression.service.ts
@@ -26,7 +26,7 @@ async materializeToNextItem(userProgramId: string, exerciseId: string) {
     where: { userProgramId_exerciseId: { userProgramId, exerciseId } },
   });
   if (!state) return;
-  const nextItems = await prisma.programSessionItem.findMany({
+  const nextItems = await prisma.programPlannedWorkoutItem.findMany({
     where: {
       exerciseId,
       session: {
@@ -43,7 +43,7 @@ async materializeToNextItem(userProgramId: string, exerciseId: string) {
     orderBy: { sortOrder: 'asc' },
   });
   for (const item of nextItems) {
-    await prisma.programSessionItem.update({
+    await prisma.programPlannedWorkoutItem.update({
       where: { id: item.id },
       data: {
         ...(state.currentTargetReps != null ? { targetReps: state.currentTargetReps } : {}),
@@ -138,7 +138,7 @@ targetDomain/targetRegions أو بديل structured أبسط
 
 Program-Blueprint.md
 Lines 1215-1229
-### على `ProgramSessionItem`
+### على `PlannedWorkoutItem`
 - `adaptationFocus` (اختياري)
 - `role`
 - `intent`

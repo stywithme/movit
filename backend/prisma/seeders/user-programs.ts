@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+﻿import type { PrismaClient } from '@prisma/client';
 import { ProgressStatus, ReportStatus } from '@prisma/client';
 
 // ============================================
@@ -42,8 +42,8 @@ function generateRepDetails(repsTarget: number, dayQuality: number) {
   return reps;
 }
 
-/** Generate a full SessionReport JSON for a session */
-function generateSessionReport(
+/** Generate a full PlannedWorkoutReport JSON for a planned workout */
+function generatePlannedWorkoutReport(
   exercises: { slug: string; name: string; sets: number; repsTarget: number; weightKg?: number }[],
   dayQuality: number, // 60-95 base quality for the day
 ): object {
@@ -188,10 +188,10 @@ export async function seedUserPrograms(prisma: PrismaClient) {
 
   // Clean up old seed data
   await prisma.userProgramProgress.deleteMany({ where: { userProgramId: userProgram.id } });
-  await prisma.programSessionReport.deleteMany({ where: { userId: user.id, programId: program.id } });
+  await prisma.plannedWorkoutReport.deleteMany({ where: { userId: user.id, programId: program.id } });
 
-  // Fetch all sessions with their exercises
-  const sessions = await prisma.programSession.findMany({
+  // Fetch all planned workouts with their exercises
+  const plannedWorkouts = await prisma.plannedWorkout.findMany({
     where: { day: { week: { programId: program.id } } },
     include: {
       day: { include: { week: true } },
@@ -240,18 +240,18 @@ export async function seedUserPrograms(prisma: PrismaClient) {
   let totalProgressCreated = 0;
 
   for (const td of trainingDays) {
-    // Find sessions for this day
-    const daySessions = sessions.filter(
-      (s) => s.day.week.weekNumber === td.weekNumber && s.day.dayNumber === td.dayNumber,
+    // Find planned workouts for this day
+    const dayPlannedWorkouts = plannedWorkouts.filter(
+      (pw) => pw.day.week.weekNumber === td.weekNumber && pw.day.dayNumber === td.dayNumber,
     );
 
-    if (daySessions.length === 0) continue;
+    if (dayPlannedWorkouts.length === 0) continue;
 
-    const sessionDate = new Date(startDate.getTime() + td.daysFromStart * 24 * 60 * 60 * 1000);
+    const workoutDate = new Date(startDate.getTime() + td.daysFromStart * 24 * 60 * 60 * 1000);
 
-    for (const session of daySessions) {
-      // Build exercise list from session items
-      const exercises = session.items
+    for (const plannedWorkout of dayPlannedWorkouts) {
+      // Build exercise list from planned workout items
+      const exercises = plannedWorkout.items
         .filter((item) => item.exercise)
         .map((item) => ({
           slug: item.exercise!.slug,
@@ -264,24 +264,24 @@ export async function seedUserPrograms(prisma: PrismaClient) {
       if (exercises.length === 0) continue;
 
       // Generate the full report
-      const report = generateSessionReport(exercises, td.quality);
+      const report = generatePlannedWorkoutReport(exercises, td.quality);
       const reportData = report as any;
 
-      // Session start time: morning (7-9am) with some variation
-      const sessionStart = new Date(sessionDate);
-      sessionStart.setUTCHours(7 + Math.floor(Math.random() * 2), Math.floor(Math.random() * 60), 0, 0);
-      const sessionEnd = new Date(sessionStart.getTime() + reportData.totalDurationMs);
+      // Workout start time: morning (7-9am) with some variation
+      const workoutStart = new Date(workoutDate);
+      workoutStart.setUTCHours(7 + Math.floor(Math.random() * 2), Math.floor(Math.random() * 60), 0, 0);
+      const workoutEnd = new Date(workoutStart.getTime() + reportData.totalDurationMs);
 
-      // Create ProgramSessionReport
-      await prisma.programSessionReport.create({
+      // Create PlannedWorkoutReport
+      await prisma.plannedWorkoutReport.create({
         data: {
           userId: user.id,
           programId: program.id,
-          programSessionId: session.id,
+          plannedWorkoutId: plannedWorkout.id,
           weekNumber: td.weekNumber,
           dayNumber: td.dayNumber,
-          startedAt: sessionStart,
-          completedAt: sessionEnd,
+          startedAt: workoutStart,
+          completedAt: workoutEnd,
           status: ReportStatus.completed,
           totalDurationMs: reportData.totalDurationMs,
           totalExercises: exercises.length,
@@ -295,22 +295,22 @@ export async function seedUserPrograms(prisma: PrismaClient) {
       });
       totalReportsCreated++;
 
-      // Create session-level progress entry
+      // Create planned-workout progress entry
       await prisma.userProgramProgress.create({
         data: {
           userProgramId: userProgram.id,
           weekNumber: td.weekNumber,
           dayNumber: td.dayNumber,
-          sessionId: session.id,
-          completedAt: sessionEnd,
+          plannedWorkoutId: plannedWorkout.id,
+          completedAt: workoutEnd,
           status: ProgressStatus.completed,
         },
       });
       totalProgressCreated++;
     }
 
-    // Mark the day as complete (all sessions done)
-    const dayComplete = new Date(sessionDate);
+    // Mark the day as complete (all planned workouts done)
+    const dayComplete = new Date(workoutDate);
     dayComplete.setUTCHours(10, 0, 0, 0);
 
     await prisma.userProgramProgress.create({
@@ -318,7 +318,7 @@ export async function seedUserPrograms(prisma: PrismaClient) {
         userProgramId: userProgram.id,
         weekNumber: td.weekNumber,
         dayNumber: td.dayNumber,
-        sessionId: '__day__',
+        plannedWorkoutId: '__day__',
         completedAt: dayComplete,
         status: ProgressStatus.completed,
       },
@@ -327,6 +327,6 @@ export async function seedUserPrograms(prisma: PrismaClient) {
   }
 
   console.log(
-    `✅ User programs seeded: ${totalReportsCreated} session reports, ${totalProgressCreated} progress entries across ${trainingDays.length} training days`,
+    `✅ User programs seeded: ${totalReportsCreated} planned workout reports, ${totalProgressCreated} progress entries across ${trainingDays.length} training days`,
   );
 }

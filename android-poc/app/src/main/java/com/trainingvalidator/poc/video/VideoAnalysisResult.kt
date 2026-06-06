@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.video
+﻿package com.trainingvalidator.poc.video
 
 import com.trainingvalidator.poc.training.models.LocalizedText
 import com.trainingvalidator.poc.training.models.RepResult
@@ -134,9 +134,9 @@ data class ErrorSummary(
 }
 
 /**
- * Extension function to create VideoAnalysisResult from SessionSummary
+ * Extension function to create VideoAnalysisResult from ExerciseWorkoutSummary
  */
-fun com.trainingvalidator.poc.training.models.SessionSummary.toVideoAnalysisResult(
+fun com.trainingvalidator.poc.training.models.ExerciseWorkoutSummary.toVideoAnalysisResult(
     exerciseId: String,
     exerciseName: LocalizedText,
     videoUri: String,

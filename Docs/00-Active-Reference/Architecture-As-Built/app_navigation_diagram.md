@@ -42,18 +42,18 @@ graph TD
     AssessmentSession --> AssessmentResult[AssessmentResultActivity]
 
     %% مسار البرامج
-    Programs --> ProgramSession[ProgramSessionActivity]
-    Programs --> ProgramSessionReport[ProgramSessionReportActivity]
+    Programs --> PlannedWorkout[ProgramWorkoutActivity]
+    Programs --> PlannedWorkoutReport[PlannedWorkoutReportActivity]
     Programs --> ProgramDetail[ProgramDetailActivity]
     Programs --> ProgramList
     Programs --> WeeklyReport[WeeklyReportActivity]
 
     ProgramList --> ProgramDetail
     ProgramDetail --> ProgramDay[ProgramDayActivity]
-    ProgramDay --> ProgramSession
+    ProgramDay --> PlannedWorkout
     ProgramDay --> Training
-    ProgramSession --> ProgramSessionReport
-    ProgramSession --> ReportPager[ReportPagerActivity]
+    PlannedWorkout --> PlannedWorkoutReport
+    PlannedWorkout --> ReportPager[ReportPagerActivity]
 
     %% مسار التمارين
     Exercises --> WorkoutList[WorkoutListActivity]
@@ -92,7 +92,7 @@ graph TD
 ## 2. تفاصيل جميع الشاشات المستخدمة وأهميتها
 
 ### أ. مسار المصادقة (Authentication Flow)
-*   **`SplashActivity`:** شاشة البداية للتطبيق (Launcher). تقوم بتوجيه المستخدم حسب حالة الجلسة الخاصة به إلى الـ Onboarding، أو شاشة تسجيل الدخول، أو مباشرة إلى داخل التطبيق إذا كان مسجلًا.
+*   **`SplashActivity`:** شاشة البداية للتطبيق (Launcher). تقوم بتوجيه المستخدم حسب حالة تسجيل الدخول (auth session) إلى الـ Onboarding، أو شاشة تسجيل الدخول، أو مباشرة إلى داخل التطبيق إذا كان مسجلًا.
 *   **`OnboardingActivity`:** شاشات تعريفية بمميزات التطبيق للمستخدمين الجدد.
 *   **`SignInActivity`:** شاشة تسجيل الدخول، وتعتبر بوابة العبور للتطبيق.
 *   **`SignUpActivity`:** شاشة إنشاء حساب جديد.
@@ -102,7 +102,7 @@ graph TD
 *   **`MainContainerActivity`:** الحاوية الأساسية للتطبيق التي تدير شريط التنقل السفلي (Bottom Navigation) وتتنقل بين الـ Fragments الخمسة الرئيسية.
     *   **`HomeFragment`:** الواجهة الرئيسية تعرض ملخص لتقدم المستخدم، روابط سريعة للبدء بالتدريب، خطة التطور، والتقييم الجسدي.
     *   **`ProgramsFragment`:** واجهة تتيح عرض البرامج التدريبية المخصصة للمستخدم وجداولها.
-    *   **`ExercisesFragment`:** واجهة مكتبة التمارين الفردية وجلسات التمرين المستقلة.
+    *   **`ExercisesFragment`:** واجهة مكتبة التمارين الفردية والتمارين المستقلة (كتالوج).
     *   **`HistoryFragment`:** سجل يعرض التقارير وإحصائيات أداء التمارين السابقة.
     *   **`ProfileFragment`:** واجهة إعدادات الحساب والانتقال إلى تفاصيل الملف الشخصي أو شاشة المطورين.
 
@@ -116,8 +116,8 @@ graph TD
 ### د. مسار التدريب وبرامج التمارين (Training & Programs)
 *   **`ProgramListActivity`:** قائمة بجميع البرامج التدريبية المتوفرة.
 *   **`ProgramDetailActivity`:** تفاصيل برنامج تدريبي محدد والمستهدفات الخاصة به.
-*   **`ProgramDayActivity`:** تفاصيل تمارين يوم محدد داخل البرنامج للانطلاق منه لعمل الجلسة.
-*   **`ProgramSessionActivity`:** شاشة إدارة الجلسة التدريبية المكتملة ضمن البرنامج.
+*   **`ProgramDayActivity`:** تفاصيل يوم محدد داخل البرنامج (قائمة التمرينات المخططة).
+*   **`ProgramWorkoutActivity`:** عرض يوم البرنامج: التمرينات المخططة، التخصيص، وبدء التنفيذ.
 *   **`WorkoutListActivity`:** عرض قوائم التمارين المجمعة المتوفرة للتأدية الحرّة.
 *   **`WorkoutDetailActivity`:** شاشة نظرة عامة قبل بدء التمرين توضح الخطة الزمنية للمراحل المختلفة للتدريب.
 *   **`ExerciseDetailActivity`:** تفاصيل تمرين محدد تتضمن إرشادات توجيه الكاميرا، المفاصل الأساسية المطلوبة، وتجهيز الكاميرا.
@@ -126,7 +126,7 @@ graph TD
 
 ### هـ. مسار التقارير (Reports Flow)
 *   **`ReportPagerActivity`:** شاشة قابلة للتمرير بكامل الشاشة تعرض تقارير وتفاصيل شاملة للأداء بعد انتهاء التمارين.
-*   **`ProgramSessionReportActivity`:** تقرير تفصيلي يظهر للمستخدم بعد إتمام جلسة البرنامج.
+*   **`WorkoutReportActivity`:** تقرير تفصيلي يظهر للمستخدم بعد إتمام التمرين (workout run).
 *   **`WeeklyReportActivity`:** إحصاءات ملخصة عن مستوى تقدم المستخدم على مدار الأسبوع.
 *   **`ExerciseHistoryActivity`:** توضح سجل التطور لأداء تمرين فردي على مدار الوقت.
 *   **`ProfileActivity`:** لتعديل بيانات الملف الشخصي، تفضيلات الحساب وتسجيل الخروج.

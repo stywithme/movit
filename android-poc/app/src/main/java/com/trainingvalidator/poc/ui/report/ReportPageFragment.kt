@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui.report
+﻿package com.trainingvalidator.poc.ui.report
 
 import android.graphics.BitmapFactory
 import android.os.Bundle
@@ -103,7 +103,7 @@ class ReportPageFragment : Fragment() {
         // Share button
         binding.tvShareLabel.text = if (isArabic) "مشاركة" else "Share"
         binding.btnShareHero.setOnClickListener {
-            (activity as? SessionReportActivity)?.shareReport()
+            (activity as? WorkoutReportActivity)?.shareReport()
         }
 
         // Swipe hint

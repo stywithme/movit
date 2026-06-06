@@ -1071,7 +1071,7 @@ function BilateralTabContent({ leftJoint, rightJoint, bilateralCode, onUpdateBot
           <p className="font-medium text-gray-800">Tracking mode</p>
           <p className="text-sm text-gray-500">
             Side-view camera often hides one side. <strong>Any side</strong> lets training continue when only one side is visible (below visibility threshold).
-            Symmetry is averaged over the whole session only on frames where both sides are visible; otherwise the metric is hidden.
+            Symmetry is averaged over the whole workout execution only on frames where both sides are visible; otherwise the metric is hidden.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

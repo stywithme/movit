@@ -1,8 +1,8 @@
-﻿| | |
+| | |
 |---|---|
 | **Status** | `ACTIVE` |
 | **SSOT for** | Post-training report (V1 UI / V2 data layer) |
-| **Code** | `PostTrainingReport.kt`, `ReportPagerActivity`, `POST /mobile/sessions` |
+| **Code** | `PostTrainingReport.kt`, `ReportPagerActivity`, `POST /mobile/workout-executions` |
 | **Verified** | 2026-05-29 |
 
 # تقرير ما بعد التمرين — المراجعة والرؤية الجديدة
@@ -33,34 +33,34 @@
 | المسار | الحالة |
 |--------|--------|
 | **حفظ محلي** | `ReportStorage` يحفظ `PostTrainingReport` كـ JSON — يعمل |
-| **إرسال تمرين مفرد** | `POST /mobile/sessions` → `TrainingSession` + `SessionMetrics` + `RepMetrics[]` — يعمل |
-| **إرسال جلسة متعددة** | `POST /mobile/sessions/:id/complete` → `ProgramSessionReport` بـ JSON report كامل — يعمل |
-| **استرجاع التقارير** | `GET /mobile/reports/metrics?scope=...` — يعمل (program/week/day/session/exercise) |
+| **إرسال تمرين مفرد** | `POST /mobile/workout-executions` → `WorkoutExecution` + `WorkoutExecutionMetrics` + `RepMetrics[]` — يعمل |
+| **إرسال جلسة متعددة** | `POST /mobile/planned-workouts/:id/complete` → `PlannedWorkoutReport` بـ JSON report كامل — يعمل |
+| **استرجاع التقارير** | `GET /mobile/reports/metrics?scope=...` — يعمل (program/week/day/plannedWorkout/exercise) |
 | **مزامنة** | `GET /mobile/sync` يُرجع التقارير المكتملة — يعمل |
 
 **الخلاصة:** التقارير **تُحفظ وتُرسل للباك إند بالفعل**. البنية التحتية كاملة لكلا النوعين (تمرين مفرد + جلسة متعددة).
 
 ---
 
-### هيكل التدريب: Exercise vs Session
+### هيكل التدريب: Exercise vs Planned Workout
 
 ```
 تمرين مفرد (Standalone Exercise)
-└── TrainingEngine → SessionSummary → PostTrainingReport
-    └── POST /mobile/sessions → TrainingSession + Metrics
+└── TrainingEngine → WorkoutRunSummary → PostTrainingReport
+    └── POST /mobile/workout-executions → WorkoutExecution + Metrics
 
-جلسة متعددة (Program Session)
-├── SessionTrainingEngine يُنسق عدة تمارين
+تمرين مخطط متعدد (Planned Workout)
+├── WorkoutTrainingEngine يُنسق عدة تمارين
 │   ├── Exercise 1 → PostTrainingReport (1)
 │   ├── Exercise 2 → PostTrainingReport (2)
 │   └── Exercise 3 → PostTrainingReport (3)
-├── SessionReport (ملخص كلي)
-└── POST /mobile/sessions/:id/complete → ProgramSessionReport
+├── WorkoutReport (ملخص كلي)
+└── POST /mobile/planned-workouts/:id/complete → PlannedWorkoutReport
 ```
 
 حالياً:
 - **تمرين مفرد**: يفتح `ReportPagerActivity` مباشرة
-- **جلسة متعددة**: يفتح `ProgramSessionReportActivity` (RecyclerView بكل التمارين) → الضغط على أي تمرين يفتح `ReportPagerActivity` الخاص به
+- **تمرين مخطط متعدد**: يفتح `WorkoutReportActivity` (RecyclerView بكل التمارين) → الضغط على أي تمرين يفتح `ReportPagerActivity` الخاص به
 
 ---
 
@@ -111,13 +111,13 @@
 
 ## 4. الرؤية الجديدة لهيكل التقرير
 
-### 4.1 الهيكل العام: Session vs Exercise
+### 4.1 الهيكل العام: Planned Workout vs Exercise
 
 ```
 ┌─────────────────────────────────────────────────┐
-│              جلسة متعددة (Session)               │
+│              جلسة متعددة (Planned Workout)               │
 │                                                  │
-│  صفحة الجلسة (Session Summary)                   │
+│  صفحة الجلسة (Planned Workout Summary)                   │
 │  ┌──────────────────────────────────────────┐    │
 │  │ اسم البرنامج + اليوم                      │    │
 │  │ Overall Score + عدد التمارين + المدة الكلية │    │
@@ -140,7 +140,7 @@
 └─────────────────────────────────────────────────┘
 ```
 
-**تمرين مفرد:** يدخل مباشرة في شاشات التمرين (بدون صفحة Session).
+**تمرين مفرد:** يدخل مباشرة في شاشات التمرين (بدون صفحة Planned Workout).
 
 **Navigation:**
 - **عمودي (Scroll Down):** التنقل بين التمارين
@@ -442,7 +442,7 @@ Hero         Performance   Best/Worst    Card Details  Tips & Export
 
 ---
 
-### 4.3 صفحة الجلسة (Session Summary) — للجلسات المتعددة فقط
+### 4.3 صفحة الجلسة (Planned Workout Summary) — للجلسات المتعددة فقط
 
 ```
 ┌──────────────────────────────────┐
@@ -471,9 +471,9 @@ Hero         Performance   Best/Worst    Card Details  Tips & Export
 │  └────────────────────────────┘  │
 │                                  │
 │  📦 Total Volume: 2,340 kg       │
-│  🔋 Session Difficulty: Medium   │
+│  🔋 Planned Workout Difficulty: Medium   │
 │                                  │
-│  [📤 Share Session]              │
+│  [📤 Share Planned Workout]              │
 │                                  │
 └──────────────────────────────────┘
 ```
@@ -509,7 +509,7 @@ Hero         Performance   Best/Worst    Card Details  Tips & Export
 | 14 | `velocity` | Screen 6 (في قسم Fatigue كرقم + في Best/Worst كمقارنة سرعة) | يظهر كسياق وليس كبطاقة مستقلة |
 | 15 | `velocity_loss` | Screen 2 (Control card) · Screen 6 (تفصيل + حكم الشدة) | **≥ 3 عدات فقط** |
 | 16 | `weight` | Screen 1 (رقم صغير إذا موجود) · Screen 6 (Load section) | **Weighted فقط** |
-| 17 | `volume` | Screen 6 (Load section) · Session Summary | **Weighted فقط** |
+| 17 | `volume` | Screen 6 (Load section) · Planned Workout Summary | **Weighted فقط** |
 | 18 | `est_1rm` | Screen 6 (Load section) | **Weighted فقط** |
 | — | Safety Score | Screen 2 (Safety card) · Screen 5 | Composite — دائماً |
 | — | Control Score | Screen 2 (Control card) · Screen 6 | Composite — دائماً |
@@ -555,7 +555,7 @@ Hero         Performance   Best/Worst    Card Details  Tips & Export
 |--------|--------|
 | **Screen 1 (Hero)** | لا يظهر رقم الوزن |
 | **Screen 6** | **قسم Load بالكامل مخفي** (لا Weight, لا Volume, لا 1RM). المساحة تُعطى لتفصيل Fatigue + Control أكثر |
-| **Session Summary** | لا يظهر Volume الكلي |
+| **Planned Workout Summary** | لا يظهر Volume الكلي |
 
 ---
 
@@ -697,7 +697,7 @@ No position checks:
 | **Target Tempo؟** | إضافة حقل اختياري `targetTempo` في ExerciseConfig. |
 | **Share؟** | صورة Hero + Score + Exercise name → Share intent. |
 | **PDF Export؟** | التقرير الكامل (7 شاشات) كـ PDF قابل للتصدير. |
-| **Session vs Exercise navigation؟** | Vertical scroll = بين التمارين. Horizontal scroll = داخل التمرين. |
+| **Planned Workout vs Exercise navigation؟** | Vertical scroll = بين التمارين. Horizontal scroll = داخل التمرين. |
 | **تحليل التعب؟** | مقارنة أول N/2 عدات بآخر N/2 (ROM + Speed + Form). |
 | **حكم شدة التمرين؟** | بناءً على VL% + Fatigue timing + Reps. |
 
@@ -721,4 +721,4 @@ No position checks:
 9. إضافة `targetTempo` في ExerciseConfig + Admin Dashboard
 10. نظام النصائح الذكية (من ErrorAnalysis + patterns)
 11. تصدير PDF
-12. تحديث Session Summary page للجلسات المتعددة
+12. تحديث Planned Workout Summary page للجلسات المتعددة

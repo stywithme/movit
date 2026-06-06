@@ -7,7 +7,7 @@ import { BarsChart, ChartCard, StatCard } from '@/components/charts';
 import { analyticsService } from '@/modules/analytics/analytics.service';
 import { formatNumber } from '@/modules/analytics/format';
 
-interface SessionRow {
+interface WorkoutExecutionRow {
   id: string;
   exercise: string;
   timestamp: string;
@@ -35,7 +35,7 @@ export default function UserDetailReportPage() {
     fetchData();
   }, [fetchData]);
 
-  const columns: DataTableColumn<SessionRow>[] = [
+  const columns: DataTableColumn<WorkoutExecutionRow>[] = [
     { key: 'exercise', header: 'Exercise', cell: (row) => row.exercise },
     { key: 'date', header: 'Date', cell: (row) => new Date(row.timestamp).toLocaleString() },
     { key: 'reps', header: 'Reps', cell: (row) => formatNumber(row.totalReps) },
@@ -53,10 +53,10 @@ export default function UserDetailReportPage() {
       <PageHeader title={data?.profile?.name ?? 'User Report'} description={data?.profile?.email ?? 'User-level drill-down'} />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <StatCard title="Total Workouts" value={formatNumber(data?.profile?.totalWorkouts)} />
+        <StatCard title="Total Executions" value={formatNumber(data?.profile?.totalWorkoutExecutions)} />
         <StatCard title="Total Minutes" value={formatNumber(data?.profile?.totalMinutes)} />
         <StatCard title="Assessments" value={formatNumber(data?.assessments?.length)} />
-        <StatCard title="Recent Sessions" value={formatNumber(data?.sessions?.length)} />
+        <StatCard title="Recent Executions" value={formatNumber(data?.workoutExecutions?.length)} />
       </div>
 
       <ChartCard title="Body Score Snapshots" loading={loading} empty={!levelTrend.length}>
@@ -65,11 +65,11 @@ export default function UserDetailReportPage() {
 
       <DataTable
         columns={columns}
-        data={data?.sessions ?? []}
+        data={data?.workoutExecutions ?? []}
         getRowKey={(row) => row.id}
         loading={loading}
-        emptyTitle="No sessions"
-        emptyDescription="This user does not have recent sessions."
+        emptyTitle="No workout executions"
+        emptyDescription="This user does not have recent workout executions."
       />
     </div>
   );

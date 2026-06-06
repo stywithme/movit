@@ -38,14 +38,14 @@ export default function SafetyAnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Safety & Risk" description="Danger reps, abandoned sessions, injuries, and high-risk exercises." />
+      <PageHeader title="Safety & Risk" description="Danger reps, abandoned planned workouts, injuries, and high-risk exercises." />
       <PeriodFilter onRefresh={fetchData} />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
         <StatCard title="Danger Rep Rate" value={formatPercent(data?.summary.dangerRepRate)} help={analyticsTerms.dangerRepRate} />
-        <StatCard title="High-Risk Sessions" value={formatNumber(data?.summary.highRiskSessions)} help={analyticsTerms.highRiskSessions} />
+        <StatCard title="High-Risk Executions" value={formatNumber(data?.summary.highRiskExecutions)} help={analyticsTerms.highRiskExecutions} />
         <StatCard title="Avg Safety Score" value={(data?.summary.avgSafetyScore ?? 0).toFixed(1)} help={analyticsTerms.safetyScore} />
-        <StatCard title="Abandoned Sessions" value={formatNumber(data?.summary.abandonedSessions)} help="Program sessions marked as abandoned in the selected period." />
+        <StatCard title="Abandoned Planned Workouts" value={formatNumber(data?.summary.abandonedPlannedWorkouts)} help="Planned workouts marked as abandoned in the selected period." />
         <StatCard title="Known Injuries" value={formatNumber(data?.summary.usersWithKnownInjuries)} help={analyticsTerms.knownInjuries} />
       </div>
 

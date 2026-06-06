@@ -92,12 +92,12 @@ class ExploreRepository private constructor(private val context: Context) {
             .values
             .sortedByDescending { it.updatedAt }
 
-        val mergedWorkouts = old.workouts
+        val mergedWorkouts = old.workoutTemplates
             .associateBy { it.id }
             .toMutableMap()
             .apply {
-                incoming.deletedWorkoutIds.forEach { remove(it) }
-                incoming.workouts.forEach { put(it.id, it) }
+                incoming.deletedWorkoutTemplateIds.forEach { remove(it) }
+                incoming.workoutTemplates.forEach { put(it.id, it) }
             }
             .values
             .sortedByDescending { it.updatedAt }
@@ -115,10 +115,10 @@ class ExploreRepository private constructor(private val context: Context) {
         return ExploreData(
             levels = if (incoming.levels.isNotEmpty()) incoming.levels else old.levels,
             programs = mergedPrograms,
-            workouts = mergedWorkouts,
+            workoutTemplates = mergedWorkouts,
             exercises = mergedExercises,
             deletedProgramIds = emptyList(),
-            deletedWorkoutIds = emptyList(),
+            deletedWorkoutTemplateIds = emptyList(),
             deletedExerciseIds = emptyList()
         )
     }

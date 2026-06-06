@@ -1,4 +1,4 @@
-﻿> **Status:** `ARCHIVED` â€” superseded, cancelled, or historical review only.
+> **Status:** `ARCHIVED` â€” superseded, cancelled, or historical review only.
 > **Current SSOT:** `Docs/00-Active-Reference/README.md`
 > **Archived:** 2026-05-29
 
@@ -50,7 +50,7 @@ TrainingActivity (UI + Camera + Pose Detection)
     ↓ onPoseFrame()
 TrainingViewModel (State coordination + Engine observation)
     ↓ processSignal()
-SessionSupervisor (Session state machine: IDLE → SETUP → COUNTDOWN → TRAINING → COMPLETED)
+WorkoutRunSupervisor (Planned Workout state machine: IDLE → SETUP → COUNTDOWN → TRAINING → COMPLETED)
     ↓ emits SupervisorAction
 TrainingViewModel.executeAction() (Executes commands)
     ↓
@@ -90,7 +90,7 @@ Camera → PoseLandmarkerHelper → onPoseDetected (Activity)
 
 **Location**: `TrainingViewModel.observeTrainingEngine()` lines 736-758
 
-**Problem**: TargetReached is signaled to SessionSupervisor TWICE:
+**Problem**: TargetReached is signaled to WorkoutRunSupervisor TWICE:
 
 ```
 Path A: engine.isCompleted → supervisor.processSignal(TargetReached)  [line 737-739]
@@ -100,7 +100,7 @@ Path B: engine.events → FeedbackEvent.TargetReached → supervisor.processSign
 Both fire when training completes. The first triggers TRAINING → COMPLETED transition. The second arrives at COMPLETED state and gets silently ignored. But this creates:
 - Unnecessary signal processing
 - Race condition risk if both arrive in same frame
-- For session mode: `tryHandleSessionSetCompleted()` has a guard (`lastCompletedSessionSetRunId`) that catches duplicates, but it's a symptom fix, not a root cause fix
+- For planned workout mode: `tryHandlePlanned WorkoutSetCompleted()` has a guard (`lastCompletedPlanned WorkoutSetRunId`) that catches duplicates, but it's a symptom fix, not a root cause fix
 
 **Fix**: Remove one of the two paths. Keep only the `isCompleted` flow observer since it's the canonical signal.
 
@@ -116,7 +116,7 @@ is SupervisorAction.ResumeFromVisibilityPause -> {
 }
 ```
 
-**Problem**: When `RESUME_COUNTDOWN` finishes in SessionSupervisor, it emits `ResumeFromVisibilityPause`, then transitions state to `TRAINING`. But the action does NOTHING. The engine is NOT told to resume. The engine's `isPaused` flag was set by `PauseEngine` when `AUTO_PAUSED` was entered (line 472-474 in SessionSupervisor), but no `ResumeEngine` is ever called to clear it.
+**Problem**: When `RESUME_COUNTDOWN` finishes in WorkoutRunSupervisor, it emits `ResumeFromVisibilityPause`, then transitions state to `TRAINING`. But the action does NOTHING. The engine is NOT told to resume. The engine's `isPaused` flag was set by `PauseEngine` when `AUTO_PAUSED` was entered (line 472-474 in WorkoutRunSupervisor), but no `ResumeEngine` is ever called to clear it.
 
 **Flow**:
 1. NoPose for 4s → Supervisor emits `PauseEngine` → engine.pause() → isPaused = true
@@ -158,7 +158,7 @@ This is 5 signals for a single completion.
 
 The system has THREE separate mechanisms handling pause/visibility:
 
-#### A. SessionSupervisor's NoPose Auto-Pause
+#### A. WorkoutRunSupervisor's NoPose Auto-Pause
 - Triggers when `onNoPoseDetected()` is called (no pose at all)
 - 4s timeout → AUTO_PAUSED state
 - Flow: AUTO_PAUSED → RESUME_SETUP → RESUME_COUNTDOWN → TRAINING
@@ -184,7 +184,7 @@ The system has THREE separate mechanisms handling pause/visibility:
 
 The countdown is managed by:
 1. **CountdownController** (actual timer logic)
-2. **SessionSupervisor** (COUNTDOWN/RESUME_COUNTDOWN state + freeze/unfreeze)
+2. **WorkoutRunSupervisor** (COUNTDOWN/RESUME_COUNTDOWN state + freeze/unfreeze)
 3. **TrainingViewModel** (validates pose during countdown)
 
 When pose is lost during countdown:
@@ -198,7 +198,7 @@ When pose is lost during countdown:
 `isCompleted` is tracked in:
 1. `TrainingEngine._isCompleted` (StateFlow)
 2. `TrainingViewModel._isCompleted` (StateFlow)  
-3. `SessionSupervisor` state (COMPLETED)
+3. `WorkoutRunSupervisor` state (COMPLETED)
 4. `RepCounter.targetReachedEmitted` (flag)
 5. `HoldTimer` state (COMPLETED)
 
@@ -359,7 +359,7 @@ Several `@Volatile` fields are read/written without synchronization:
 
 | Class/Field | Location | Replacement |
 |---|---|---|
-| `TrainingStateManager` | TrainingViewModel line 67 | SessionSupervisor |
+| `TrainingStateManager` | TrainingViewModel line 67 | WorkoutRunSupervisor |
 | `PoseValidator` | TrainingViewModel line 70 | PoseSetupGuide |
 | `ValidationResult` | FormValidator | JointStateInfo |
 | `JointStatus` | FormValidator | JointStateInfo |
@@ -396,7 +396,7 @@ is SupervisorAction.ResumeFromVisibilityPause -> {
 }
 ```
 
-Or redesign: make SessionSupervisor emit `ResumeEngine` instead of `ResumeFromVisibilityPause` when returning from AUTO_PAUSED flow.
+Or redesign: make WorkoutRunSupervisor emit `ResumeEngine` instead of `ResumeFromVisibilityPause` when returning from AUTO_PAUSED flow.
 
 ### Priority 2: Fix BUG-1 (Double TargetReached)
 
@@ -407,7 +407,7 @@ Option A: Remove the isCompleted observer (keep events):
 // REMOVE this block:
 launch {
     engine.isCompleted.collect { completed ->
-        if (completed && supervisor.state.value == SessionState.TRAINING) {
+        if (completed && supervisor.state.value == WorkoutRunState.TRAINING) {
             supervisor.processSignal(SupervisorSignal.TargetReached)
         }
     }
@@ -426,9 +426,9 @@ is FeedbackEvent.TargetReached -> {
 
 Choose ONE system for visibility handling:
 
-**Option A (Recommended)**: Keep TrainingEngine's internal VisibilityMonitor as the sole handler. Remove NoPose auto-pause from SessionSupervisor. The VisibilityMonitor already handles the full lifecycle including auto-resume.
+**Option A (Recommended)**: Keep TrainingEngine's internal VisibilityMonitor as the sole handler. Remove NoPose auto-pause from WorkoutRunSupervisor. The VisibilityMonitor already handles the full lifecycle including auto-resume.
 
-**Option B**: Move all visibility logic to SessionSupervisor and remove from TrainingEngine. This is a larger change but creates cleaner separation.
+**Option B**: Move all visibility logic to WorkoutRunSupervisor and remove from TrainingEngine. This is a larger change but creates cleaner separation.
 
 ### Priority 4: Remove Legacy Code
 
@@ -484,15 +484,15 @@ Keep the check in RepCounter only (it has the scoring context). Remove from Phas
 | `CountdownController.kt` | ~150 | Countdown timer | Clean |
 | `VideoModeController.kt` | ~300 | Video mode | Clean |
 
-### Session Layer (`training/session/`)
+### Planned Workout Layer (`training/session/`)
 
 | File | Lines | Role | Issues |
 |---|---|---|---|
-| `SessionSupervisor.kt` | 501 | State machine (SSOT) | CONFLICT-1 (NoPose overlap) |
-| `SessionState.kt` | 65 | State enum | Clean |
+| `WorkoutRunSupervisor.kt` | 501 | State machine (SSOT) | CONFLICT-1 (NoPose overlap) |
+| `WorkoutRunState.kt` | 65 | State enum | Clean |
 | `SupervisorAction.kt` | 110 | Output commands | BUG-2 |
 | `SupervisorSignal.kt` | 85 | Input signals | Clean |
-| `SessionTrainingEngine.kt` | ~500 | Multi-exercise session | Clean |
+| `WorkoutTrainingEngine.kt` | ~500 | Multi-exercise planned workout | Clean |
 
 ### Activity Layer (`ui/train/`)
 

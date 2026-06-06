@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui.programs
+﻿package com.trainingvalidator.poc.ui.programs
 
 import android.content.Intent
 import android.os.Bundle
@@ -16,10 +16,10 @@ import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityProgramDayBinding
 import com.trainingvalidator.poc.storage.ProgramRepository
-import com.trainingvalidator.poc.storage.ProgramSessionReportStore
+import com.trainingvalidator.poc.storage.ProgramWorkoutReportStore
 import com.trainingvalidator.poc.training.models.ProgramConfig
 import com.trainingvalidator.poc.training.models.ProgramDay
-import com.trainingvalidator.poc.training.models.ProgramSession
+import com.trainingvalidator.poc.training.models.ProgramWorkout
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
@@ -27,7 +27,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * ProgramDayActivity - Shows days and sessions for a selected week (Week Plan)
+ * ProgramDayActivity - Shows days and planned workouts for a selected week (Week Plan)
  */
 class ProgramDayActivity : AppCompatActivity() {
 
@@ -39,7 +39,7 @@ class ProgramDayActivity : AppCompatActivity() {
     private lateinit var binding: ActivityProgramDayBinding
     private var program: ProgramConfig? = null
     private var weekNumber: Int = 1
-    private val reportStore by lazy { ProgramSessionReportStore(this) }
+    private val reportStore by lazy { ProgramWorkoutReportStore(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -105,9 +105,9 @@ class ProgramDayActivity : AppCompatActivity() {
             getString(R.string.week_title_only, week.weekNumber)
         }
         
-        val sessionsCount = week.days.sumOf { it.sessions.size }
+        val workoutsCount = week.days.sumOf { it.workouts.size }
         val restDaysCount = week.days.count { it.isRestDay }
-        binding.tvWeekSubtitle.text = getString(R.string.week_sessions_rest_format, sessionsCount, restDaysCount)
+        binding.tvWeekSubtitle.text = getString(R.string.week_workouts_rest_format, workoutsCount, restDaysCount)
 
         // Sort days logically
         val sortedDays = week.days.sortedBy { it.dayNumber }
@@ -123,7 +123,7 @@ class ProgramDayActivity : AppCompatActivity() {
             val ivDayIcon: ImageView = view.findViewById(R.id.ivDayIcon)
             val tvDayTitle: TextView = view.findViewById(R.id.tvDayTitle)
             val tvDaySubtitle: TextView = view.findViewById(R.id.tvDaySubtitle)
-            val sessionsContainer: LinearLayout = view.findViewById(R.id.sessionsContainer)
+            val WorkoutsContainer: LinearLayout = view.findViewById(R.id.WorkoutsContainer)
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -147,92 +147,89 @@ class ProgramDayActivity : AppCompatActivity() {
                 holder.ivDayIcon.setImageResource(R.drawable.ic_rest)
                 holder.ivDayIcon.imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.text_tertiary))
                 holder.tvDaySubtitle.text = getString(R.string.rest_day)
-                holder.sessionsContainer.removeAllViews()
+                holder.WorkoutsContainer.removeAllViews()
                 return
             } else {
                 holder.ivDayIcon.setImageResource(R.drawable.ic_workout)
                 holder.ivDayIcon.imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.primary))
             }
 
-            val completedSessions = reportStore.getByDay(programId, weekNumber, day.dayNumber).size
+            val completedWorkouts = reportStore.getByDay(programId, weekNumber, day.dayNumber).size
             holder.tvDaySubtitle.text = getString(
-                R.string.sessions_progress_format,
-                completedSessions,
-                day.sessions.size
+                R.string.planned_workouts_progress_format,
+                completedWorkouts,
+                day.workouts.size
             )
 
-            holder.sessionsContainer.removeAllViews()
-            day.sessions.forEach { session ->
-                val sessionView = LayoutInflater.from(holder.itemView.context)
-                    .inflate(R.layout.item_program_session, holder.sessionsContainer, false)
+            holder.WorkoutsContainer.removeAllViews()
+            day.workouts.forEach { plannedWorkout ->
+                val workoutView = LayoutInflater.from(holder.itemView.context)
+                    .inflate(R.layout.item_program_workout, holder.WorkoutsContainer, false)
 
-                val ivSessionIcon = sessionView.findViewById<ImageView>(R.id.ivSessionIcon)
-                val tvSessionName = sessionView.findViewById<TextView>(R.id.tvSessionName)
-                val tvSessionDetails = sessionView.findViewById<TextView>(R.id.tvSessionDetails)
-                val ivSessionStatus = sessionView.findViewById<ImageView>(R.id.ivSessionStatus)
-                val ivSessionPlay = sessionView.findViewById<ImageView>(R.id.ivSessionPlay)
-                val layoutSessionScore = sessionView.findViewById<LinearLayout>(R.id.layoutSessionScore)
-                val btnSessionRestart = sessionView.findViewById<ImageView>(R.id.btnSessionRestart)
+                val ivWorkoutIcon = workoutView.findViewById<ImageView>(R.id.ivWorkoutIcon)
+                val tvWorkoutName = workoutView.findViewById<TextView>(R.id.tvWorkoutName)
+                val tvWorkoutDetails = workoutView.findViewById<TextView>(R.id.tvWorkoutDetails)
+                val ivWorkoutStatus = workoutView.findViewById<ImageView>(R.id.ivWorkoutStatus)
+                val ivWorkoutPlay = workoutView.findViewById<ImageView>(R.id.ivWorkoutPlay)
+                val layoutWorkoutScore = workoutView.findViewById<LinearLayout>(R.id.layoutWorkoutScore)
+                val btnWorkoutRestart = workoutView.findViewById<ImageView>(R.id.btnWorkoutRestart)
 
-                tvSessionName.text = session.name.get(language).ifBlank { session.name.en }
+                tvWorkoutName.text = plannedWorkout.name.get(language).ifBlank { plannedWorkout.name.en }
 
                 // Details (e.g., 6 exercises • ~25 min)
-                val durationText = session.estimatedDurationMin?.let { em ->
-                    getString(R.string.session_duration_badge, em)
-                } ?: "${session.items.size * 5} min"
-                tvSessionDetails.text = "${session.items.size} exercises • $durationText"
+                val durationText = plannedWorkout.estimatedDurationMin?.let { em ->
+                    getString(R.string.workout_duration_badge, em)
+                } ?: "${plannedWorkout.items.size * 5} min"
+                tvWorkoutDetails.text = "${plannedWorkout.items.size} exercises • $durationText"
 
-                val report = reportStore.getBySession(session.id)
+                val report = reportStore.getByWorkout(plannedWorkout.id)
                 val isCompleted = report != null
                 
                 if (isCompleted) {
-                    ivSessionStatus.visibility = View.VISIBLE
-                    ivSessionPlay.visibility = View.GONE
-                    layoutSessionScore.visibility = View.VISIBLE
+                    ivWorkoutStatus.visibility = View.VISIBLE
+                    ivWorkoutPlay.visibility = View.GONE
+                    layoutWorkoutScore.visibility = View.VISIBLE
                     
                     // Dim the entire card to show it's done
-                    sessionView.alpha = 0.7f
+                    workoutView.alpha = 0.7f
                 } else {
-                    ivSessionStatus.visibility = View.GONE
-                    ivSessionPlay.visibility = View.VISIBLE
-                    layoutSessionScore.visibility = View.GONE
+                    ivWorkoutStatus.visibility = View.GONE
+                    ivWorkoutPlay.visibility = View.VISIBLE
+                    layoutWorkoutScore.visibility = View.GONE
                     
-                    sessionView.alpha = 1.0f
+                    workoutView.alpha = 1.0f
                 }
 
-                // Click card to start/resume
-                sessionView.setOnClickListener {
-                    openSession(day.dayNumber, session)
+                workoutView.setOnClickListener {
+                    openPlannedWorkout(day.dayNumber, plannedWorkout)
                 }
 
-                // Click restart icon to reset
-                btnSessionRestart.setOnClickListener {
-                    reportStore.delete(session.id)
+                btnWorkoutRestart.setOnClickListener {
+                    reportStore.delete(plannedWorkout.id)
                     notifyItemChanged(position)
                 }
 
-                holder.sessionsContainer.addView(sessionView)
+                holder.WorkoutsContainer.addView(workoutView)
             }
         }
 
         override fun getItemCount() = days.size
     }
 
-    private fun openSession(dayNumber: Int, session: ProgramSession) {
+    private fun openPlannedWorkout(dayNumber: Int, plannedWorkout: ProgramWorkout) {
         val slug = program?.slug ?: return
-        val intent = Intent(this, ProgramSessionActivity::class.java).apply {
-            putExtra(ProgramSessionActivity.EXTRA_PROGRAM_SLUG, slug)
-            putExtra(ProgramSessionActivity.EXTRA_PROGRAM_ID, program?.id ?: "")
-            putExtra(ProgramSessionActivity.EXTRA_WEEK_NUMBER, weekNumber)
-            putExtra(ProgramSessionActivity.EXTRA_DAY_NUMBER, dayNumber)
-            putExtra(ProgramSessionActivity.EXTRA_TARGET_SESSION_ID, session.id)
+        val intent = Intent(this, ProgramWorkoutActivity::class.java).apply {
+            putExtra(ProgramWorkoutActivity.EXTRA_PROGRAM_SLUG, slug)
+            putExtra(ProgramWorkoutActivity.EXTRA_PROGRAM_ID, program?.id ?: "")
+            putExtra(ProgramWorkoutActivity.EXTRA_WEEK_NUMBER, weekNumber)
+            putExtra(ProgramWorkoutActivity.EXTRA_DAY_NUMBER, dayNumber)
+            putExtra(ProgramWorkoutActivity.EXTRA_TARGET_WORKOUT_ID, plannedWorkout.id)
         }
         startActivity(intent)
     }
 
     override fun onResume() {
         super.onResume()
-        // Refresh when coming back (might have completed a session)
         program?.let { bindWeek(it) }
     }
 }

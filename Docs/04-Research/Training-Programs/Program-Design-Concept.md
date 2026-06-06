@@ -16,7 +16,7 @@
 Body Scan الموجود حاليا، ومعاه اختبار بسيط حسب الهدف. مش لازم كل الناس تعمل كل الاختبارات.
 
 أنواع البرامج
-الموجود حاليا عندنا Program, UserProgram, ActivePlan, ProgramWeek/Day/Session/Item، وده أساس كويس. لكن محتاجين نفصل بين نوع البرنامج من ناحية الاستخدام وtype الحالي اللي معناه training/mobility/therapeutic.
+الموجود حاليا عندنا Program, UserProgram, ActivePlan, ProgramWeek/Day/PlannedWorkout/Item، وده أساس كويس. لكن محتاجين نفصل بين نوع البرنامج من ناحية الاستخدام وtype الحالي اللي معناه training/mobility/therapeutic.
 
 أقترح 3 تصنيفات واضحة:
 
@@ -29,7 +29,7 @@ General Program
 Custom Program
 برنامج خاص بمتدرب واحد. يحصل لما المتدرب يبني برنامج من الصفر، أو يعدل برنامج System/General بشكل يغيّر هويته. هنا لازم نعمل fork: البرنامج الجديد يبقى private، وعنده forkedFromProgramId.
 
-النقطة المهمة جدا: تقدم مستخدم واحد لا يجب أن يغير template البرنامج الأصلي. حاليا محرك الـ progression عنده خطر واضح لأنه يقدر يحدّث ProgramSessionItem نفسه، وده لو البرنامج مستخدم من ناس كتير ممكن يلمس template مش نسخة المستخدم. الأفضل نخلي التعديلات في UserProgramExerciseProgressionState أو جدول overrides خاص بالمستخدم، والـ API يرجع “effective plan” بعد دمج template + overrides.
+النقطة المهمة جدا: تقدم مستخدم واحد لا يجب أن يغير template البرنامج الأصلي. حاليا محرك الـ progression عنده خطر واضح لأنه يقدر يحدّث PlannedWorkoutItem نفسه، وده لو البرنامج مستخدم من ناس كتير ممكن يلمس template مش نسخة المستخدم. الأفضل نخلي التعديلات في UserProgramExerciseProgressionState أو جدول overrides خاص بالمستخدم، والـ API يرجع “effective plan” بعد دمج template + overrides.
 
 الأهداف التدريبية
 من الدراسة، الأهداف الأساسية التي تستحق تدخل في النظام:
@@ -102,7 +102,7 @@ Formalize entry/exit criteria، وتخلي نهاية البرنامج تقود 
 
 الخلاصة التصميمية
 
-أنا شايف إن أهم قرار هنا: لا نعامل البرنامج كـ “قائمة تمارين”، بل كـ وصفة تدريبية كاملة لها هدف، جمهور، جرعة، تقدم، اختبارات دخول وخروج، ونسخ مختلفة حسب المتدرب. الموجود عندنا حاليًا قريب من الهيكل: Program -> Week -> Day -> Session -> SessionItem -> Exercise في schema.prisma، لكن ينقصه طبقة “المعنى التدريبي” التي تجعل البرنامج احترافيًا.
+أنا شايف إن أهم قرار هنا: لا نعامل البرنامج كـ “قائمة تمارين”، بل كـ وصفة تدريبية كاملة لها هدف، جمهور، جرعة، تقدم، اختبارات دخول وخروج، ونسخ مختلفة حسب المتدرب. الموجود عندنا حاليًا قريب من الهيكل: Program -> Week -> Day -> Planned Workout -> PlannedWorkoutItem -> Exercise في schema.prisma، لكن ينقصه طبقة “المعنى التدريبي” التي تجعل البرنامج احترافيًا.
 
 الهرم الذي أقترحه يكون كالتالي:
 
@@ -110,8 +110,8 @@ Training Program
   -> Phase / Block
     -> Week / Microcycle
       -> Day
-        -> Session
-          -> Session Block
+        -> Planned Workout
+          -> Planned Workout Block
             -> Exercise Slot
               -> Set Prescription
                 -> Exercise
@@ -195,9 +195,9 @@ Weekly targets: عدد sets لكل muscle group أو movement pattern.
 قواعد التعديل: لو الأداء ضعيف، ماذا يتغير؟
 الناقص:
 
-عندنا session تقريبًا، لكن لا يوجد تقسيم داخلي احترافي للجلسة.
+عندنا planned workout تقريبًا، لكن لا يوجد تقسيم داخلي احترافي للجلسة.
 الجلسة يجب ألا تكون flat list من exercises.
-6. Session Block
+6. Planned Workout Block
 
 دي وحدة أرى أنها ضرورية جدًا.
 
@@ -244,7 +244,7 @@ regressions/progressions.
 شروط الإيقاف: ألم، form score منخفض، velocity loss عالي.
 الناقص:
 
-ProgramSessionItem يحتاج معنى تدريبي أوسع من مجرد وصفة أداء.
+PlannedWorkoutItem يحتاج معنى تدريبي أوسع من مجرد وصفة أداء.
 يجب ألا نعدّل item الأصلي للمستخدم أثناء التقدم؛ الأفضل وجود “effective prescription” أو user override. خطر موجود في منطق التقدم الحالي داخل progression.service.ts.
 8. Set Prescription
 

@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui.reports
+﻿package com.trainingvalidator.poc.ui.reports
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -18,7 +18,7 @@ import com.github.mikephil.charting.formatter.ValueFormatter
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.network.InsightData
 import com.trainingvalidator.poc.network.MetricsResponse
-import com.trainingvalidator.poc.training.session.ReportAggregator
+import com.trainingvalidator.poc.training.workout.ReportAggregator
 import kotlinx.coroutines.launch
 
 /**

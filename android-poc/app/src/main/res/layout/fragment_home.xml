@@ -291,7 +291,7 @@
                         android:layout_height="wrap_content"
                         android:textColor="@color/text_secondary"
                         android:layout_marginTop="@dimen/spacing_xs"
-                        tools:text="4 weeks · 5 sessions" />
+                        tools:text="4 weeks · 5 workouts" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnViewProgram"
@@ -345,7 +345,7 @@
                         android:layout_height="wrap_content"
                         android:textColor="@color/text_secondary"
                         android:layout_marginTop="@dimen/spacing_xs"
-                        tools:text="Morning Session • 5 items" />
+                        tools:text="Morning Workout • 5 items" />
 
                     <TextView
                         android:id="@+id/tvCalendarPaused"
@@ -382,10 +382,10 @@
                         android:layout_width="match_parent"
                         android:layout_height="52dp"
                         android:layout_marginTop="@dimen/spacing_lg"
-                        android:text="@string/start_session" />
+                        android:text="@string/start_workout" />
 
                     <TextView
-                        android:id="@+id/tvSessionProgress"
+                        android:id="@+id/tvWorkoutProgress"
                         style="@style/TextAppearance.WayToFix.Caption"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -393,7 +393,7 @@
                         android:layout_gravity="center_horizontal"
                         android:textColor="@color/text_tertiary"
                         android:visibility="gone"
-                        tools:text="Session 1 of 2" />
+                        tools:text="Workout 1 of 2" />
 
                 </LinearLayout>
             </androidx.cardview.widget.CardView>

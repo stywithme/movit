@@ -28,7 +28,7 @@
 
 ## North Star Metric
 
-نسبة من استمروا أسبوعين وأظهروا تطوراً شخصياً قابلاً للقياس (التعريف الكامل في `16-Correct-Session-Definition.md`).
+نسبة من استمروا أسبوعين وأظهروا تطوراً شخصياً قابلاً للقياس (التعريف الكامل في `16-Correct-Planned Workout-Definition.md`).
 
 "3 جلسات محتسبة في 7 أيام" = مؤشر تفعيل مبكر (leading)، لا تعريف النجاح.
 
@@ -40,8 +40,8 @@
 2. Onboarding complete.
 3. Safety gate complete.
 4. Assessment complete.
-5. First session start.
-6. First session complete.
+5. First planned workout start.
+6. First planned workout complete.
 7. Day 2 return.
 8. 3 جلسات في 7 أيام (North Star).
 9. Week 1 complete.
@@ -54,9 +54,9 @@
 | onboarding_started / completed | بداية ونهاية الـ onboarding | احتكاك البداية |
 | safety_gate_completed | إنهاء فحص الأهلية | وضوح وسلاسة الفحص |
 | assessment_completed | إنهاء التقييم الأول | هل التقييم مفهوم وغير مُرهِق |
-| session_started | بدء أي جلسة (+ التمرين، رقم اليوم) | نية التدريب |
-| session_completed | إنهاء جلسة (+ form_score، عدات، مدة) | اكتمال القيمة + جودة الأداء |
-| session_abandoned | ترك جلسة (+ عند أي خطوة) | أين ينكسر التدريب |
+| workout_run_started | بدء أي جلسة (+ التمرين، رقم اليوم) | نية التدريب |
+| workout_completed | إنهاء جلسة (+ form_score، عدات، مدة) | اكتمال القيمة + جودة الأداء |
+| workout_abandoned | ترك جلسة (+ عند أي خطوة) | أين ينكسر التدريب |
 | camera_setup_duration | زمن ضبط الوضعية | احتكاك الكاميرا اليومي |
 | correction_shown | عرض تصحيح | كثافة التصحيح |
 | report_viewed | فتح تقرير الجلسة | هل التقدم يُرى |
@@ -82,7 +82,7 @@
 | --- | --- |
 | Onboarding completion | 70%+ |
 | Assessment completion | 50%+ |
-| First session complete | 40%+ |
+| First planned workout complete | 40%+ |
 | Day 2 return | 30%+ |
 | 3 جلسات / 7 أيام (North Star) | 20%+ |
 | Week 1 retention | 25%+ |

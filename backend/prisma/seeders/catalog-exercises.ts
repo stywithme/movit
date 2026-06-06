@@ -1,5 +1,5 @@
-import { Prisma } from '@prisma/client';
-import type { LoadCapability, MovementPattern, PrismaClient, SessionItemIntent } from '@prisma/client';
+﻿import { Prisma } from '@prisma/client';
+import type { LoadCapability, MovementPattern, PrismaClient, WorkoutItemIntent } from '@prisma/client';
 import type { EnsureMessageTemplate } from './messages';
 import { CURATED_EXTENSION_EXERCISES } from './curated-catalog-extension';
 import { buildCuratedPoseVariants } from './curated-pose-blueprints';
@@ -199,7 +199,7 @@ export async function seedCuratedCatalogExtensions(
         familyKey: row.familyKey,
         familyOrder: row.familyOrder,
         reportMetrics: reportMetricsForCounting(row.countingMethodCode),
-        ...(row.intent !== undefined ? { intent: row.intent as SessionItemIntent } : {}),
+        ...(row.intent !== undefined ? { intent: row.intent as WorkoutItemIntent } : {}),
         ...(row.coachingNotes !== undefined
           ? {
               coachingNotes:
@@ -226,7 +226,7 @@ export async function seedCuratedCatalogExtensions(
         familyKey: row.familyKey,
         familyOrder: row.familyOrder,
         reportMetrics: reportMetricsForCounting(row.countingMethodCode),
-        ...(row.intent !== undefined ? { intent: row.intent as SessionItemIntent } : {}),
+        ...(row.intent !== undefined ? { intent: row.intent as WorkoutItemIntent } : {}),
         ...(row.coachingNotes !== undefined
           ? {
               coachingNotes:

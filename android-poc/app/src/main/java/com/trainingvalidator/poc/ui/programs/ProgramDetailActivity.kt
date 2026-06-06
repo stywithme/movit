@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui.programs
+﻿package com.trainingvalidator.poc.ui.programs
 
 import android.content.Intent
 import android.os.Bundle
@@ -176,11 +176,11 @@ class ProgramDetailActivity : AppCompatActivity() {
 
         val weeks = program.weeks.orEmpty()
         val totalDays = weeks.sumOf { it.days.size }
-        val totalSessions = weeks.sumOf { week -> week.days.sumOf { day -> day.sessions.size } }
+        val totalPlannedWorkouts = weeks.sumOf { week -> week.days.sumOf { day -> day.workouts.size } }
 
         binding.tvProgramWeeks.text = getString(R.string.weeks_count_format, program.durationWeeks)
         binding.tvProgramDays.text = getString(R.string.days_count_format, totalDays)
-        binding.tvProgramSessions.text = getString(R.string.sessions_count_format, totalSessions)
+        binding.tvProgramWorkouts.text = getString(R.string.planned_workouts_count_format, totalPlannedWorkouts)
         binding.tvProgramDifficulty.text = formatProgramLevelRange(program.levelRangeMin, program.levelRangeMax)
 
         binding.btnWeeklyReport.setOnClickListener {
@@ -197,11 +197,11 @@ class ProgramDetailActivity : AppCompatActivity() {
 
     private fun bindDiscoveryMetadata(program: ProgramConfig, isEnrolled: Boolean) {
         val lines = buildList {
-            program.weeklySessionTarget?.takeIf { it > 0 }?.let {
-                add(getString(R.string.program_detail_meta_weekly_sessions, it))
+            program.weeklyWorkoutTarget?.takeIf { it > 0 }?.let {
+                add(getString(R.string.program_detail_meta_weekly_workouts, it))
             }
-            program.estimatedSessionMinutes?.takeIf { it > 0 }?.let {
-                add(getString(R.string.program_detail_meta_session_length, it))
+            program.estimatedWorkoutMinutes?.takeIf { it > 0 }?.let {
+                add(getString(R.string.program_detail_meta_workout_length, it))
             }
         }
         if (lines.isEmpty()) {
@@ -223,7 +223,7 @@ class ProgramDetailActivity : AppCompatActivity() {
                 val pill = TextView(this).apply {
                     text = when {
                         day.isRestDay -> getString(R.string.program_week1_pill_rest)
-                        day.sessions.isEmpty() -> getString(R.string.program_week1_pill_light)
+                        day.workouts.isEmpty() -> getString(R.string.program_week1_pill_light)
                         else -> day.dayNumber.toString()
                     }
                     setPadding(gap, gap / 2, gap, gap / 2)
@@ -275,7 +275,7 @@ class ProgramDetailActivity : AppCompatActivity() {
                         append(getString(R.string.rest_day_label))
                     } else {
                         append(
-                            day.sessions.joinToString { ses ->
+                            day.workouts.joinToString { ses ->
                                 val n = ses.name.get(lang).ifBlank { ses.name.en }
                                 val c = ses.items.size
                                 "$n ($c)"
@@ -387,17 +387,17 @@ class ProgramDetailActivity : AppCompatActivity() {
                 getString(R.string.week_title_only, week.weekNumber)
             }
 
-            val sessions = week.days.sumOf { it.sessions.size }
+            val plannedWorkouts = week.days.sumOf { it.workouts.size }
             val restDays = week.days.count { it.isRestDay }
-            holder.tvWeekSubtitle.text = getString(R.string.week_sessions_rest_format, sessions, restDays)
+            holder.tvWeekSubtitle.text = getString(R.string.week_workouts_rest_format, plannedWorkouts, restDays)
 
-            val completedSessions = viewModel.reportStore.getByWeek(programId, week.weekNumber).size
-            holder.pbWeekProgress.max = if (sessions > 0) sessions else 1
-            holder.pbWeekProgress.progress = completedSessions
-            holder.tvWeekProgress.text = if (sessions > 0 && completedSessions >= sessions) {
+            val completedWorkouts = viewModel.reportStore.getByWeek(programId, week.weekNumber).size
+            holder.pbWeekProgress.max = if (plannedWorkouts > 0) plannedWorkouts else 1
+            holder.pbWeekProgress.progress = completedWorkouts
+            holder.tvWeekProgress.text = if (plannedWorkouts > 0 && completedWorkouts >= plannedWorkouts) {
                 getString(R.string.week_progress_completed)
             } else {
-                getString(R.string.week_progress_format, completedSessions, sessions)
+                getString(R.string.week_progress_format, completedWorkouts, plannedWorkouts)
             }
 
             renderWeekDays(holder.layoutWeekDays, week, programId, programSlug)
@@ -420,9 +420,9 @@ class ProgramDetailActivity : AppCompatActivity() {
         container.removeAllViews()
         val inflater = LayoutInflater.from(container.context)
         week.days.sortedBy { it.dayNumber }.forEach { day ->
-            val completedSessions = viewModel.reportStore.getByDay(programId, week.weekNumber, day.dayNumber)
-            val isCompleted = !day.isRestDay && completedSessions.isNotEmpty() &&
-                completedSessions.size >= day.sessions.size
+            val completedWorkoutReports = viewModel.reportStore.getByDay(programId, week.weekNumber, day.dayNumber)
+            val isCompleted = !day.isRestDay && completedWorkoutReports.isNotEmpty() &&
+                completedWorkoutReports.size >= day.workouts.size
 
             val view = inflater.inflate(R.layout.item_program_day_compact, container, false)
             val ivDayIcon = view.findViewById<ImageView>(R.id.ivDayIcon)
@@ -439,7 +439,7 @@ class ProgramDetailActivity : AppCompatActivity() {
             } else {
                 ivDayIcon.setImageResource(R.drawable.ic_workout)
                 ivDayIcon.imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.primary))
-                tvDayDetails.text = getString(R.string.sessions_count_format, day.sessions.size)
+                tvDayDetails.text = getString(R.string.planned_workouts_count_format, day.workouts.size)
             }
 
             ivDayStatus.visibility = if (isCompleted) View.VISIBLE else View.GONE

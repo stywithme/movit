@@ -1,4 +1,4 @@
-// casl.types.ts
+﻿// casl.types.ts
 
 // These should match the string values in the database permissions
 export type Action = 'manage' | 'read' | 'create' | 'update' | 'delete';
@@ -8,7 +8,7 @@ export type Subject =
     | 'Role'
     | 'User'
     | 'Exercise'
-    | 'Workout'
+    | 'WorkoutTemplate'
     | 'Program'
     | 'ProgramMap'
     | 'Recipe'

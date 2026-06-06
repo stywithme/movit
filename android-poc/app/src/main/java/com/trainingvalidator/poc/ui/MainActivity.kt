@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui
+﻿package com.trainingvalidator.poc.ui
 
 import android.Manifest
 import android.content.Intent
@@ -30,7 +30,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import com.trainingvalidator.poc.network.SessionSyncService
+import com.trainingvalidator.poc.network.WorkoutSyncService
 import com.trainingvalidator.poc.network.ApiConfig
 import com.trainingvalidator.poc.storage.AuthManager
 
@@ -104,20 +104,20 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionList
         setupUI()
         checkCameraPermission()
         
-        // Initialize session sync (pending sync + background + connectivity listener)
-        initializeSessionSync()
+        // Initialize workout sync (pending sync + background + connectivity listener)
+        initializeWorkoutSync()
     }
     
     /**
-     * Initialize session sync: sync pending, start background job, register connectivity listener
+     * Initialize workout sync: sync pending, start background job, register connectivity listener
      */
-    private fun initializeSessionSync() {
+    private fun initializeWorkoutSync() {
         val token = AuthManager.getAccessToken(this) ?: run {
-            Log.d(TAG, "No auth token, skipping session sync setup")
+            Log.d(TAG, "No auth token, skipping workout sync setup")
             return
         }
         
-        val syncService = SessionSyncService.getInstance(this, ApiConfig.getEffectiveBaseUrl())
+        val syncService = WorkoutSyncService.getInstance(this, ApiConfig.getEffectiveBaseUrl())
         syncService.setAuthToken(token)
         
         // Register connectivity listener for auto-sync when network comes back
@@ -126,12 +126,12 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionList
         // Start periodic background sync (every 10 minutes)
         syncService.startBackgroundSync()
         
-        // Sync any pending sessions now
+        // Sync any pending workout executions now
         mainScope.launch(Dispatchers.IO) {
             try {
                 val result = syncService.syncPending()
                 if (result.total > 0) {
-                    Log.d(TAG, "Synced ${result.successCount}/${result.total} pending sessions")
+                    Log.d(TAG, "Synced ${result.successCount}/${result.total} pending workouts")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Pending sync error: ${e.message}")

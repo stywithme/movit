@@ -10,7 +10,7 @@ import com.trainingvalidator.poc.training.models.TrackedJoint
 
 /**
  * Build [JointError] rows from per-joint [JointStateInfo] (angle-based form errors only).
- * Stateless — each call allocates its own list (no shared buffer across frames/sessions).
+ * Stateless — each call allocates its own list (no shared buffer across frames or runs).
  */
 object JointErrorCollection {
 

@@ -14,7 +14,7 @@ import com.trainingvalidator.poc.analysis.SmoothedLandmark
  * (single frame) and early video frames get an immediate real value rather than
  * UNKNOWN.
  *
- * Create one instance per training session / validator lifetime.
+ * Create one instance per exercise run / validator lifetime.
  */
 class PoseSceneDetector(
     private val windowSize: Int = 7,

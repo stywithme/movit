@@ -2,7 +2,7 @@
 |---|---|
 | **Status** | `ACTIVE` |
 | **SSOT for** | Metrics catalog (definitions & UX) |
-| **Code** | `MetricsCalculator.kt`, `MotionRecorder.kt`, `PerformanceMetricsBuilder.kt`, Prisma `SessionMetrics` / `RepMetrics` |
+| **Code** | `MetricsCalculator.kt`, `MotionRecorder.kt`, `PerformanceMetricsBuilder.kt`, Prisma `WorkoutExecutionMetrics` / `RepMetrics` |
 | **See also** | [Metrics README](README.md), [As-Built](Metrics-As-Built.md) |
 | **Verified** | 2026-05-29 |
 

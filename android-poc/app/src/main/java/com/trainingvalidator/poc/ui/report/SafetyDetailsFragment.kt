@@ -310,7 +310,7 @@ class SafetyDetailsFragment : Fragment() {
             textSize = 36f; gravity = Gravity.CENTER
         })
         card.addView(TextView(ctx).apply {
-            text = if (isArabic) "جلسة آمنة!" else "Safe Session!"
+            text = if (isArabic) "تمرين آمن!" else "Safe Workout!"
             textSize = 18f; setTextColor(H.colorGreen(requireContext())); gravity = Gravity.CENTER
             setPadding(0, H.dp(ctx, 6), 0, 0)
         })

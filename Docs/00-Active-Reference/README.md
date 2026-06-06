@@ -16,6 +16,7 @@
 |-------|-----------|
 | [`Contracts/Exercise-JSON-Schema.md`](Contracts/Exercise-JSON-Schema.md) | عقد JSON بين Admin و Android |
 | [`Contracts/API_ENDPOINTS.md`](Contracts/API_ENDPOINTS.md) | REST API |
+| [`Contracts/Workout-Domain-Naming.md`](Contracts/Workout-Domain-Naming.md) | تسمية Workout الموحّدة (PlannedWorkout، WorkoutExecution، …) |
 | [`Engine/training-engine.md`](Engine/training-engine.md) | محرك التدريب |
 | [`Metrics/Metrics-As-Built.md`](Metrics/Metrics-As-Built.md) | المقاييس كما في الكود (**SSOT**) |
 | [`Metrics/Metrics-Complete-Reference.md`](Metrics/Metrics-Complete-Reference.md) | كتالوج التعريفات |
@@ -24,6 +25,7 @@
 | [`Product-Master/Unified-User-Journey-Plan.md`](Product-Master/Unified-User-Journey-Plan.md) | مخطط المنتج المستقبلي |
 | [`Product-Master/Post-Training-Report-Review.md`](Product-Master/Post-Training-Report-Review.md) | تقرير ما بعد التمرين (V1/V2) |
 | [`Operations/Payment-gateway/README.md`](Operations/Payment-gateway/README.md) | الدفع والتشغيل |
+| [`Operations/Workout-Domain-Migration-Runbook.md`](Operations/Workout-Domain-Migration-Runbook.md) | ترحيل إنتاج توحيد Workout |
 
 ## لا تستخدم من هنا
 

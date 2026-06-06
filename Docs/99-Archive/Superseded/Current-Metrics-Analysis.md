@@ -1,4 +1,4 @@
-﻿> **Status:** `ARCHIVED` â€” superseded, cancelled, or historical review only.
+> **Status:** `ARCHIVED` â€” superseded, cancelled, or historical review only.
 > **Current SSOT:** `Docs/00-Active-Reference/README.md`
 > **Archived:** 2026-05-29
 
@@ -61,7 +61,7 @@ AngleSmoother → smoothedAngles (moving average)
        ثم يُحذف buffer الإطارات
   ↓
 عند انتهاء الجلسة:
-  ├→ MotionRecorder.finalize() → SessionMetrics
+  ├→ MotionRecorder.finalize() → WorkoutExecutionMetrics
   └→ ReportGenerator.generate() → PostTrainingReport
   ↓
 للعرض:

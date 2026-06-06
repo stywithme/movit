@@ -138,13 +138,13 @@ export class AdminReportsService {
     const [
       totalUsers,
       newUsers,
-      activeSessions,
+      activeWorkoutExecutions,
       proUsers,
       subscriptions,
       bookingPayments,
-      sessions,
-      prevSessions,
-      sessionMetrics,
+      workoutExecutions,
+      prevWorkoutExecutions,
+      executionMetrics,
       assessments,
       levels,
       pendingReassessments,
@@ -152,7 +152,7 @@ export class AdminReportsService {
     ] = await Promise.all([
       prisma.user.count({ where: { deletedAt: null } }),
       this.countWithDelta(prisma.user, 'createdAt', period, { deletedAt: null }),
-      prisma.trainingSession.findMany({ where: this.dateWhere('timestamp', period), select: { userId: true, timestamp: true } }),
+      prisma.workoutExecution.findMany({ where: this.dateWhere('timestamp', period), select: { userId: true, timestamp: true } }),
       prisma.user.count({ where: { isPro: true, deletedAt: null } }),
       prisma.subscription.findMany({
         where: { ...this.dateWhere('createdAt', period), status: { in: ['active', 'paid', 'completed'] } },
@@ -162,28 +162,28 @@ export class AdminReportsService {
         where: { ...this.dateWhere('createdAt', period), status: { in: ['paid', 'completed', 'authorized'] } },
         select: { totalAmount: true, createdAt: true, status: true },
       }),
-      prisma.trainingSession.findMany({
+      prisma.workoutExecution.findMany({
         where: this.dateWhere('timestamp', period),
         select: { timestamp: true, durationMs: true, totalReps: true, countedReps: true, invalidReps: true, context: true },
       }),
       period.prevStart
-        ? prisma.trainingSession.count({ where: this.prevDateWhere('timestamp', period) })
+        ? prisma.workoutExecution.count({ where: this.prevDateWhere('timestamp', period) })
         : Promise.resolve(0),
-      prisma.sessionMetrics.findMany({
-        where: { session: this.dateWhere('timestamp', period) as any },
+      prisma.workoutExecutionMetrics.findMany({
+        where: { workoutExecution: this.dateWhere('timestamp', period) as any },
         select: { avgFormScore: true, avgRom: true, avgSymmetry: true, avgStability: true, fatigueIndex: true },
       }),
       this.countWithDelta(prisma.bodyScanResult, 'completedAt', period),
       this.getLatestLevelDistribution(),
       prisma.reassessmentSchedule.count({ where: { status: 'pending' } }),
-      prisma.programSessionReport.count({ where: { status: 'abandoned', ...this.dateWhere('startedAt', period) } }),
+      prisma.plannedWorkoutReport.count({ where: { status: 'abandoned', ...this.dateWhere('startedAt', period) } }),
     ]);
 
-    const activeUsers = new Set(activeSessions.map((s) => s.userId)).size;
+    const activeUsers = new Set(activeWorkoutExecutions.map((s) => s.userId)).size;
     const revenue = subscriptions.reduce((sum, s) => sum + toNumber(s.amountPaid), 0)
       + bookingPayments.reduce((sum, p) => sum + toNumber(p.totalAmount), 0);
-    const avgFormScore = sessionMetrics.length
-      ? round(sessionMetrics.reduce((sum, m) => sum + (m.avgFormScore ?? 0), 0) / sessionMetrics.length)
+    const avgFormScore = executionMetrics.length
+      ? round(executionMetrics.reduce((sum, m) => sum + (m.avgFormScore ?? 0), 0) / executionMetrics.length)
       : 0;
 
     const firstWeekStar = await this.getNorthStar(period);
@@ -196,14 +196,14 @@ export class AdminReportsService {
         activeUsers: metric(activeUsers, 0),
         proUsers: metric(proUsers, 0),
         revenue: metric(revenue, 0),
-        sessions: metric(sessions.length, prevSessions),
+        workoutExecutions: metric(workoutExecutions.length, prevWorkoutExecutions),
         avgFormScore: metric(avgFormScore, 0),
         assessments,
       },
       northStar: firstWeekStar,
       activationFunnel: await this.getActivationFunnel(period),
       trends: {
-        sessions: groupByDate(sessions, (s) => s.timestamp, () => 1, period.bucket),
+        workoutExecutions: groupByDate(workoutExecutions, (s) => s.timestamp, () => 1, period.bucket),
         revenue: groupByDate(
           [
             ...subscriptions.map((s) => ({ date: s.createdAt, value: toNumber(s.amountPaid) })),
@@ -216,12 +216,12 @@ export class AdminReportsService {
       },
       distributions: {
         levels,
-        sessionContexts: this.countBy(sessions, (s) => s.context || 'unknown'),
+        executionContexts: this.countBy(workoutExecutions, (s) => s.context || 'unknown'),
       },
       safety: {
         dangerRepRate: this.safePercent(
-          sessions.reduce((sum, s) => sum + (s.invalidReps ?? 0), 0),
-          sessions.reduce((sum, s) => sum + (s.totalReps ?? 0), 0),
+          workoutExecutions.reduce((sum, s) => sum + (s.invalidReps ?? 0), 0),
+          workoutExecutions.reduce((sum, s) => sum + (s.totalReps ?? 0), 0),
         ),
         abandonedReports,
       },
@@ -275,7 +275,7 @@ export class AdminReportsService {
     return {
       period,
       funnel: await this.getActivationFunnel(period),
-      timeToFirstSession: await this.getTimeToFirstSession(period),
+      timeToFirstWorkout: await this.getTimeToFirstWorkout(period),
       northStar: await this.getNorthStar(period),
     };
   }
@@ -288,22 +288,22 @@ export class AdminReportsService {
       select: {
         id: true,
         createdAt: true,
-        trainingSessions: { select: { timestamp: true }, orderBy: { timestamp: 'asc' } },
+        workoutExecutions: { select: { timestamp: true }, orderBy: { timestamp: 'asc' } },
       },
     });
-    const sessions = await prisma.trainingSession.findMany({ where: this.dateWhere('timestamp', period), select: { userId: true, timestamp: true } });
-    const activeUserIds = new Set(sessions.map((s) => s.userId));
+    const periodExecutions = await prisma.workoutExecution.findMany({ where: this.dateWhere('timestamp', period), select: { userId: true, timestamp: true } });
+    const activeUserIds = new Set(periodExecutions.map((s) => s.userId));
     const lastSeen = new Map<string, Date>();
-    for (const session of sessions) lastSeen.set(session.userId, session.timestamp);
+    for (const execution of periodExecutions) lastSeen.set(execution.userId, execution.timestamp);
 
     return {
       activeUsers: activeUserIds.size,
       stickiness: {
-        dau: this.uniqueUsersByWindow(sessions, 1),
-        wau: this.uniqueUsersByWindow(sessions, 7),
-        mau: this.uniqueUsersByWindow(sessions, 30),
+        dau: this.uniqueUsersByWindow(periodExecutions, 1),
+        wau: this.uniqueUsersByWindow(periodExecutions, 7),
+        mau: this.uniqueUsersByWindow(periodExecutions, 30),
       },
-      sessionsPerActiveUser: activeUserIds.size ? round(sessions.length / activeUserIds.size, 2) : 0,
+      workoutExecutionsPerActiveUser: activeUserIds.size ? round(periodExecutions.length / activeUserIds.size, 2) : 0,
       cohorts: this.buildRetentionCohorts(users),
       churnSignals: {
         inactive7d: await this.countInactiveUsers(7),
@@ -316,16 +316,16 @@ export class AdminReportsService {
   async getTrainingPerformance(query: AnalyticsPeriodQuery = {}) {
     const prisma = await getPrisma();
     const period = this.resolvePeriod(query);
-    const [sessions, metrics, topExercises] = await Promise.all([
-      prisma.trainingSession.findMany({
+    const [workoutExecutions, metrics, topExercises] = await Promise.all([
+      prisma.workoutExecution.findMany({
         where: this.dateWhere('timestamp', period),
         select: { id: true, timestamp: true, context: true, totalReps: true, countedReps: true, invalidReps: true, durationMs: true },
       }),
-      prisma.sessionMetrics.findMany({
-        where: { session: this.dateWhere('timestamp', period) as any },
-        select: { avgFormScore: true, avgRom: true, avgSymmetry: true, avgStability: true, fatigueIndex: true, session: { select: { timestamp: true } } },
+      prisma.workoutExecutionMetrics.findMany({
+        where: { workoutExecution: this.dateWhere('timestamp', period) as any },
+        select: { avgFormScore: true, avgRom: true, avgSymmetry: true, avgStability: true, fatigueIndex: true, workoutExecution: { select: { timestamp: true } } },
       }),
-      prisma.trainingSession.groupBy({
+      prisma.workoutExecution.groupBy({
         by: ['exerciseId'],
         _count: { id: true },
         _sum: { invalidReps: true, totalReps: true },
@@ -342,16 +342,16 @@ export class AdminReportsService {
 
     return {
       volume: {
-        sessions: sessions.length,
-        totalReps: sessions.reduce((sum, s) => sum + (s.totalReps ?? 0), 0),
-        countedReps: sessions.reduce((sum, s) => sum + (s.countedReps ?? 0), 0),
-        invalidReps: sessions.reduce((sum, s) => sum + (s.invalidReps ?? 0), 0),
-        totalMinutes: round(sessions.reduce((sum, s) => sum + (s.durationMs ?? 0), 0) / 60000),
+        workoutExecutions: workoutExecutions.length,
+        totalReps: workoutExecutions.reduce((sum, s) => sum + (s.totalReps ?? 0), 0),
+        countedReps: workoutExecutions.reduce((sum, s) => sum + (s.countedReps ?? 0), 0),
+        invalidReps: workoutExecutions.reduce((sum, s) => sum + (s.invalidReps ?? 0), 0),
+        totalMinutes: round(workoutExecutions.reduce((sum, s) => sum + (s.durationMs ?? 0), 0) / 60000),
       },
-      contexts: this.countBy(sessions, (s) => s.context || 'unknown'),
+      contexts: this.countBy(workoutExecutions, (s) => s.context || 'unknown'),
       trends: {
-        sessions: groupByDate(sessions, (s) => s.timestamp, () => 1, period.bucket),
-        formScore: groupByDate(metrics, (m) => m.session.timestamp, (m) => m.avgFormScore ?? 0, period.bucket),
+        workoutExecutions: groupByDate(workoutExecutions, (s) => s.timestamp, () => 1, period.bucket),
+        formScore: groupByDate(metrics, (m) => m.workoutExecution.timestamp, (m) => m.avgFormScore ?? 0, period.bucket),
       },
       averages: {
         formScore: this.avg(metrics.map((m) => m.avgFormScore)),
@@ -365,7 +365,7 @@ export class AdminReportsService {
         return {
           exerciseId: row.exerciseId,
           name: this.localizedName(exercise?.name) || exercise?.slug || row.exerciseId,
-          sessions: row._count.id,
+          executions: row._count.id,
           dangerRepRate: this.safePercent(row._sum.invalidReps ?? 0, row._sum.totalReps ?? 0),
         };
       }),
@@ -481,20 +481,20 @@ export class AdminReportsService {
   async getSafety(query: AnalyticsPeriodQuery = {}) {
     const prisma = await getPrisma();
     const period = this.resolvePeriod(query);
-    const [reps, sessions, profiles, assessments, abandoned] = await Promise.all([
+    const [reps, workoutExecutions, profiles, assessments, abandoned] = await Promise.all([
       prisma.repMetrics.findMany({
-        where: { session: this.dateWhere('timestamp', period) as any },
-        include: { session: { include: { exercise: { select: { id: true, name: true, slug: true } } } } },
+        where: { workoutExecution: this.dateWhere('timestamp', period) as any },
+        include: { workoutExecution: { include: { exercise: { select: { id: true, name: true, slug: true } } } } },
       }),
-      prisma.trainingSession.findMany({ where: this.dateWhere('timestamp', period), select: { id: true, timestamp: true, invalidReps: true, totalReps: true } }),
+      prisma.workoutExecution.findMany({ where: this.dateWhere('timestamp', period), select: { id: true, timestamp: true, invalidReps: true, totalReps: true } }),
       prisma.trainingProfile.findMany({ select: { knownInjuries: true } }),
       prisma.bodyScanResult.findMany({ where: this.dateWhere('completedAt', period), select: { safetyScore: true, completedAt: true } }),
-      prisma.programSessionReport.findMany({ where: { status: 'abandoned', ...this.dateWhere('startedAt', period) }, select: { startedAt: true } }),
+      prisma.plannedWorkoutReport.findMany({ where: { status: 'abandoned', ...this.dateWhere('startedAt', period) }, select: { startedAt: true } }),
     ]);
     const dangerReps = reps.filter((rep) => rep.worstState >= 3).length;
     const exerciseMap = new Map<string, { name: string; danger: number; total: number }>();
     for (const rep of reps) {
-      const exercise = rep.session.exercise;
+      const exercise = rep.workoutExecution.exercise;
       const current = exerciseMap.get(exercise.id) ?? { name: this.localizedName(exercise.name) || exercise.slug, danger: 0, total: 0 };
       current.total += 1;
       if (rep.worstState >= 3) current.danger += 1;
@@ -504,9 +504,9 @@ export class AdminReportsService {
     return {
       summary: {
         dangerRepRate: this.safePercent(dangerReps, reps.length),
-        highRiskSessions: sessions.filter((s) => this.safePercent(s.invalidReps ?? 0, s.totalReps ?? 0) >= 20).length,
+        highRiskWorkouts: workoutExecutions.filter((s) => this.safePercent(s.invalidReps ?? 0, s.totalReps ?? 0) >= 20).length,
         avgSafetyScore: this.avg(assessments.map((a) => a.safetyScore)),
-        abandonedSessions: abandoned.length,
+        abandonedWorkouts: abandoned.length,
         usersWithKnownInjuries: profiles.length,
       },
       trends: {
@@ -527,11 +527,11 @@ export class AdminReportsService {
     const period = this.resolvePeriod(query);
     const [exercises, workouts, programs, messages, positions, usage] = await Promise.all([
       prisma.exercise.findMany({ select: { id: true, status: true, familyKey: true, category: { select: { name: true } } } }),
-      prisma.workout.findMany({ select: { id: true, status: true, difficulty: true, createdAt: true } }),
+      prisma.workoutTemplate.findMany({ select: { id: true, status: true, difficulty: true, createdAt: true } }),
       prisma.program.findMany({ select: { id: true, isPublished: true, programType: true, createdAt: true } }),
       prisma.feedbackMessageTemplate.findMany({ select: { id: true, category: true, isActive: true } }),
       prisma.posePosition.findMany({ select: { id: true, code: true, isActive: true } }),
-      prisma.trainingSession.groupBy({ by: ['exerciseId'], _count: { id: true }, where: this.dateWhere('timestamp', period), orderBy: { _count: { id: 'desc' } }, take: 15 }),
+      prisma.workoutExecution.groupBy({ by: ['exerciseId'], _count: { id: true }, where: this.dateWhere('timestamp', period), orderBy: { _count: { id: 'desc' } }, take: 15 }),
     ]);
     const exerciseIds = usage.map((u) => u.exerciseId);
     const usedExercises = exerciseIds.length
@@ -545,7 +545,7 @@ export class AdminReportsService {
         byCategory: this.countBy(exercises, (e) => this.localizedName(e.category?.name) || 'Uncategorized'),
         familyCoverage: this.countBy(exercises, (e) => e.familyKey || 'No family'),
       },
-      workouts: {
+      workoutTemplates: {
         total: workouts.length,
         byStatus: this.countBy(workouts, (w) => w.status),
         byDifficulty: this.countBy(workouts, (w) => w.difficulty),
@@ -567,7 +567,7 @@ export class AdminReportsService {
       mostUsedExercises: usage.map((u) => ({
         exerciseId: u.exerciseId,
         name: this.localizedName(exerciseMap.get(u.exerciseId)?.name) || exerciseMap.get(u.exerciseId)?.slug || u.exerciseId,
-        sessions: u._count.id,
+        executions: u._count.id,
       })),
     };
   }
@@ -580,14 +580,14 @@ export class AdminReportsService {
     const [enrollments, progress, reports] = await Promise.all([
       prisma.userProgram.findMany({ where: { programId }, include: { user: { select: { id: true, name: true, email: true } } } }),
       prisma.userProgramProgress.findMany({ where: { userProgram: { programId } } }),
-      prisma.programSessionReport.findMany({ where: { programId, ...this.dateWhere('startedAt', period) } }),
+      prisma.plannedWorkoutReport.findMany({ where: { programId, ...this.dateWhere('startedAt', period) } }),
     ]);
     return {
       program,
       summary: {
         enrollments: enrollments.length,
         activeUsers: enrollments.filter((e) => e.isActive).length,
-        completedSessions: progress.filter((p) => p.status === 'completed').length,
+        completedPlannedWorkouts: progress.filter((p) => p.status === 'completed').length,
         reports: reports.length,
         avgFormScore: this.avg(reports.map((r) => r.avgFormScore)),
       },
@@ -611,7 +611,7 @@ export class AdminReportsService {
         trainingProfile: true,
         levelProfiles: { orderBy: { classifiedAt: 'desc' }, take: 10 },
         bodyScanResults: { orderBy: { completedAt: 'desc' }, take: 10 },
-        trainingSessions: { orderBy: { timestamp: 'desc' }, take: 20, include: { exercise: { select: { name: true, slug: true } }, sessionMetrics: true } },
+        workoutExecutions: { orderBy: { timestamp: 'desc' }, take: 20, include: { exercise: { select: { name: true, slug: true } }, executionMetrics: true } },
         subscriptions: { orderBy: { createdAt: 'desc' }, take: 5, include: { plan: true } },
         bookings: { orderBy: { startAt: 'desc' }, take: 10 },
       },
@@ -623,7 +623,7 @@ export class AdminReportsService {
         name: user.name,
         email: user.email,
         isPro: user.isPro,
-        totalWorkouts: user.totalWorkouts,
+        totalWorkoutExecutions: user.totalWorkoutExecutions,
         totalMinutes: user.totalMinutes,
         trainingGoal: user.trainingGoal,
         createdAt: user.createdAt,
@@ -631,44 +631,44 @@ export class AdminReportsService {
       },
       levels: user.levelProfiles,
       assessments: user.bodyScanResults,
-      sessions: user.trainingSessions.map((session) => ({
-        id: session.id,
-        exercise: this.localizedName(session.exercise.name) || session.exercise.slug,
-        timestamp: session.timestamp,
-        totalReps: session.totalReps,
-        invalidReps: session.invalidReps,
-        avgFormScore: session.sessionMetrics?.avgFormScore ?? null,
+      workoutExecutions: user.workoutExecutions.map((execution) => ({
+        id: execution.id,
+        exercise: this.localizedName(execution.exercise.name) || execution.exercise.slug,
+        timestamp: execution.timestamp,
+        totalReps: execution.totalReps,
+        invalidReps: execution.invalidReps,
+        avgFormScore: execution.executionMetrics?.avgFormScore ?? null,
       })),
       subscriptions: user.subscriptions,
       bookings: user.bookings,
     };
   }
 
-  async getSessionReport(sessionId: string) {
+  async getWorkoutExecutionReport(workoutExecutionId: string) {
     const prisma = await getPrisma();
-    const session = await prisma.trainingSession.findUnique({
-      where: { id: sessionId },
+    const execution = await prisma.workoutExecution.findUnique({
+      where: { id: workoutExecutionId },
       include: {
         user: { select: { id: true, name: true, email: true } },
         exercise: { select: { id: true, name: true, slug: true } },
-        sessionMetrics: true,
+        executionMetrics: true,
         repMetrics: { orderBy: { repNumber: 'asc' } },
       },
     });
-    if (!session) return null;
+    if (!execution) return null;
     return {
-      id: session.id,
-      user: session.user,
-      exercise: { ...session.exercise, name: this.localizedName(session.exercise.name) || session.exercise.slug },
-      timestamp: session.timestamp,
-      durationMs: session.durationMs,
+      id: execution.id,
+      user: execution.user,
+      exercise: { ...execution.exercise, name: this.localizedName(execution.exercise.name) || execution.exercise.slug },
+      timestamp: execution.timestamp,
+      durationMs: execution.durationMs,
       totals: {
-        totalReps: session.totalReps,
-        countedReps: session.countedReps,
-        invalidReps: session.invalidReps,
+        totalReps: execution.totalReps,
+        countedReps: execution.countedReps,
+        invalidReps: execution.invalidReps,
       },
-      metrics: session.sessionMetrics,
-      reps: session.repMetrics,
+      metrics: execution.executionMetrics,
+      reps: execution.repMetrics,
     };
   }
 
@@ -699,12 +699,12 @@ export class AdminReportsService {
         levelProfiles: { select: { id: true } },
         userPrograms: { select: { id: true } },
         activePlan: { select: { id: true } },
-        trainingSessions: { select: { id: true, timestamp: true } },
+        workoutExecutions: { select: { id: true, timestamp: true } },
       },
     });
-    const withThreeSessions = users.filter((u) => {
+    const withThreeWorkoutsIn7d = users.filter((u) => {
       const deadline = new Date(u.createdAt.getTime() + 7 * DAY_MS);
-      return u.trainingSessions.filter((s) => s.timestamp <= deadline).length >= 3;
+      return u.workoutExecutions.filter((s) => s.timestamp <= deadline).length >= 3;
     }).length;
     return [
       { name: 'Signup', value: users.length },
@@ -713,8 +713,8 @@ export class AdminReportsService {
       { name: 'Assessment', value: users.filter((u) => u.bodyScanResults.length > 0).length },
       { name: 'Level', value: users.filter((u) => u.levelProfiles.length > 0).length },
       { name: 'Plan', value: users.filter((u) => u.userPrograms.length > 0 || u.activePlan).length },
-      { name: 'First Session', value: users.filter((u) => u.trainingSessions.length > 0).length },
-      { name: '3 Sessions / 7d', value: withThreeSessions },
+      { name: 'First Workout', value: users.filter((u) => u.workoutExecutions.length > 0).length },
+      { name: '3 Workouts / 7d', value: withThreeWorkoutsIn7d },
     ].map((step, index, all) => ({
       ...step,
       conversion: index === 0 ? 100 : this.safePercent(step.value, all[0].value),
@@ -726,35 +726,35 @@ export class AdminReportsService {
     const prisma = await getPrisma();
     const users = await prisma.user.findMany({
       where: { deletedAt: null, ...this.dateWhere('createdAt', period) },
-      select: { id: true, createdAt: true, trainingSessions: { select: { timestamp: true, invalidReps: true, totalReps: true } } },
+      select: { id: true, createdAt: true, workoutExecutions: { select: { timestamp: true, invalidReps: true, totalReps: true } } },
     });
     const completed = users.filter((user) => {
       const deadline = new Date(user.createdAt.getTime() + 7 * DAY_MS);
-      const goodSessions = user.trainingSessions.filter((session) =>
-        session.timestamp <= deadline && this.safePercent(session.invalidReps ?? 0, session.totalReps ?? 0) < 20,
+      const goodExecutions = user.workoutExecutions.filter((execution) =>
+        execution.timestamp <= deadline && this.safePercent(execution.invalidReps ?? 0, execution.totalReps ?? 0) < 20,
       );
-      return goodSessions.length >= 3;
+      return goodExecutions.length >= 3;
     }).length;
     return {
       completed,
       eligibleUsers: users.length,
       rate: this.safePercent(completed, users.length),
-      label: 'Users with 3 correct sessions in first 7 days',
+      label: 'Users with 3 correct workouts in first 7 days',
     };
   }
 
-  private async getTimeToFirstSession(period: ResolvedPeriod) {
+  private async getTimeToFirstWorkout(period: ResolvedPeriod) {
     const prisma = await getPrisma();
     const users = await prisma.user.findMany({
       where: { deletedAt: null, ...this.dateWhere('createdAt', period) },
-      select: { createdAt: true, trainingSessions: { select: { timestamp: true }, orderBy: { timestamp: 'asc' }, take: 1 } },
+      select: { createdAt: true, workoutExecutions: { select: { timestamp: true }, orderBy: { timestamp: 'asc' }, take: 1 } },
     });
     const values = users
-      .map((user) => user.trainingSessions[0]?.timestamp ? (user.trainingSessions[0].timestamp.getTime() - user.createdAt.getTime()) / 3600000 : null)
+      .map((user) => user.workoutExecutions[0]?.timestamp ? (user.workoutExecutions[0].timestamp.getTime() - user.createdAt.getTime()) / 3600000 : null)
       .filter((value): value is number => value != null && value >= 0);
     return {
       avgHours: this.avg(values),
-      usersWithFirstSession: values.length,
+      usersWithFirstWorkout: values.length,
       buckets: [
         { name: '< 1h', value: values.filter((v) => v < 1).length },
         { name: '1-24h', value: values.filter((v) => v >= 1 && v < 24).length },
@@ -764,13 +764,13 @@ export class AdminReportsService {
     };
   }
 
-  private buildRetentionCohorts(users: Array<{ createdAt: Date; trainingSessions: { timestamp: Date }[] }>) {
+  private buildRetentionCohorts(users: Array<{ createdAt: Date; workoutExecutions: { timestamp: Date }[] }>) {
     const cohorts = new Map<string, { users: number; day1: number; day2: number; week1: number; week4: number }>();
     for (const user of users) {
       const key = dateKey(user.createdAt, 'week');
       const current = cohorts.get(key) ?? { users: 0, day1: 0, day2: 0, week1: 0, week4: 0 };
       current.users += 1;
-      const offsets = user.trainingSessions.map((session) => Math.floor((session.timestamp.getTime() - user.createdAt.getTime()) / DAY_MS));
+      const offsets = user.workoutExecutions.map((execution) => Math.floor((execution.timestamp.getTime() - user.createdAt.getTime()) / DAY_MS));
       if (offsets.some((day) => day <= 1)) current.day1 += 1;
       if (offsets.some((day) => day >= 1 && day <= 2)) current.day2 += 1;
       if (offsets.some((day) => day <= 7)) current.week1 += 1;
@@ -792,14 +792,14 @@ export class AdminReportsService {
     const cutoff = new Date(Date.now() - days * DAY_MS);
     const users = await prisma.user.findMany({
       where: { deletedAt: null },
-      select: { trainingSessions: { orderBy: { timestamp: 'desc' }, take: 1, select: { timestamp: true } } },
+      select: { workoutExecutions: { orderBy: { timestamp: 'desc' }, take: 1, select: { timestamp: true } } },
     });
-    return users.filter((user) => !user.trainingSessions[0] || user.trainingSessions[0].timestamp < cutoff).length;
+    return users.filter((user) => !user.workoutExecutions[0] || user.workoutExecutions[0].timestamp < cutoff).length;
   }
 
-  private uniqueUsersByWindow(sessions: Array<{ userId: string; timestamp: Date }>, days: number) {
+  private uniqueUsersByWindow(workoutExecutions: Array<{ userId: string; timestamp: Date }>, days: number) {
     const cutoff = new Date(Date.now() - days * DAY_MS);
-    return new Set(sessions.filter((s) => s.timestamp >= cutoff).map((s) => s.userId)).size;
+    return new Set(workoutExecutions.filter((s) => s.timestamp >= cutoff).map((s) => s.userId)).size;
   }
 
   private countBy<T>(items: T[], keyFn: (item: T) => string) {

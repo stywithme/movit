@@ -31,7 +31,7 @@ export default function ContentAnalyticsPage() {
 
   const columns: DataTableColumn<UsedExercise>[] = [
     { key: 'name', header: 'Exercise', cell: (row) => row.name },
-    { key: 'sessions', header: 'Sessions', cell: (row) => formatNumber(row.sessions) },
+    { key: 'executions', header: 'Executions', cell: (row) => formatNumber(row.executions) },
   ];
 
   return (
@@ -41,7 +41,7 @@ export default function ContentAnalyticsPage() {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
         <StatCard title="Exercises" value={formatNumber(data?.exercises.total)} help={analyticsTerms.contentCoverage} />
-        <StatCard title="Workouts" value={formatNumber(data?.workouts.total)} help="Workout templates available in the catalog." />
+        <StatCard title="Workout Templates" value={formatNumber(data?.workoutTemplates.total)} help="Workout templates available in the catalog." />
         <StatCard title="Programs" value={formatNumber(data?.programs.total)} help="Training programs configured in the system." />
         <StatCard title="Messages" value={formatNumber(data?.messages.total)} help="Feedback message templates available for coaching cues." />
         <StatCard title="Camera Positions" value={formatNumber(data?.cameraPositions.total)} help="Camera position definitions used by pose variants." />
@@ -54,8 +54,8 @@ export default function ContentAnalyticsPage() {
         <ChartCard title="Exercise Categories" loading={loading} empty={!data?.exercises.byCategory?.length}>
           <BarsChart data={data?.exercises.byCategory ?? []} />
         </ChartCard>
-        <ChartCard title="Workout Difficulty" loading={loading} empty={!data?.workouts.byDifficulty?.length}>
-          <DonutChart data={data?.workouts.byDifficulty ?? []} />
+        <ChartCard title="Workout Template Difficulty" loading={loading} empty={!data?.workoutTemplates.byDifficulty?.length}>
+          <DonutChart data={data?.workoutTemplates.byDifficulty ?? []} />
         </ChartCard>
         <ChartCard title="Program Types" loading={loading} empty={!data?.programs.byType?.length}>
           <BarsChart data={data?.programs.byType ?? []} />
@@ -68,7 +68,7 @@ export default function ContentAnalyticsPage() {
         getRowKey={(row) => row.exerciseId}
         loading={loading}
         emptyTitle="No exercise usage"
-        emptyDescription="No sessions matched the selected period."
+        emptyDescription="No workout executions matched the selected period."
       />
     </div>
   );

@@ -1,4 +1,4 @@
-﻿> **Status:** `ARCHIVED` â€” superseded, cancelled, or historical review only.
+> **Status:** `ARCHIVED` â€” superseded, cancelled, or historical review only.
 > **Current SSOT:** `Docs/00-Active-Reference/README.md`
 > **Archived:** 2026-05-29
 
@@ -26,7 +26,7 @@ Assess → Classify → Prescribe → Train → Measure → Progress → Reasses
 |--------|---------|
 | **User Interface** | تطبيق Android + لوحة تحكم Admin |
 | **Application Layer** | Prescription Engine، Progression Engine، Reports |
-| **Data Layer** | Level Profile، Programs، Sessions، Assessments |
+| **Data Layer** | Level Profile، Programs، Planned Workouts، Assessments |
 | **Measurement Layer** | Pose Estimation، حساب الزوايا، التحقق من الشكل، عد التكرارات، جمع المقاييس |
 
 ---
@@ -47,15 +47,15 @@ User
  │           └── Program
  │                 └── ProgramWeek[]
  │                       └── ProgramDay[]
- │                             ├── ProgramSession[]
- │                             │     └── ProgramSessionItem[]
+ │                             ├── PlannedWorkout[]
+ │                             │     └── PlannedWorkoutItem[]
  │                             │           ├── Exercise
  │                             │           └── TimedRest
  │                             └── RestDay
  │
  ├── BodyScanResult[]          ← سجل التقييمات
- └── TrainingSession[]        ← سجل الجلسات التدريبية
-       ├── SessionMetrics
+ └── WorkoutExecution[]        ← سجل الجلسات التدريبية
+       ├── WorkoutExecutionMetrics
        └── RepMetrics[]
 ```
 
@@ -74,7 +74,7 @@ UserLevelProfile ──يغذي──▸ PrescriptionEngine         │
                           المستخدم يتدرب               │
                                  │                    │
                                  ▼                    │
-                          TrainingSession + Metrics    │
+                          WorkoutExecution + Metrics    │
                                  │                    │
                           ProgressionEngine يقيّم      │
                                  │                    │
@@ -146,7 +146,7 @@ UserLevelProfile ──يغذي──▸ PrescriptionEngine         │
 
 يحدد كيف تتغير معايير التدريب بناءً على بيانات الأداء.
 
-- **Trigger:** متى تُقيَّم القاعدة (session_completed، week_completed، set_completed)
+- **Trigger:** متى تُقيَّم القاعدة (workout_completed، week_completed، set_completed)
 - **Conditions:** الشروط (مثلاً avgFormScore >= 75، completionRate >= 90%)
 - **Action:** الإجراء (increase_weight، decrease_weight، increase_reps، suggest_reassessment، إلخ)
 
@@ -183,7 +183,7 @@ BodyScanResult
 
 ### تأثير المستوى على التدريب
 
-عند عدم تحديد قيم صريحة في ProgramSessionItem، تُملأ من:
+عند عدم تحديد قيم صريحة في PlannedWorkoutItem، تُملأ من:
 
 1. قيم العنصر نفسه
 2. levelOverride إن وُجد
@@ -249,7 +249,7 @@ avgFormScore، avgROM، avgSymmetry، avgStability، completionRate، totalVolum
 
 ### Progression History
 
-كل تغيير من Progression Engine يُسجَّل (ruleId، sessionId، field، previousValue، newValue، reason).
+كل تغيير من Progression Engine يُسجَّل (ruleId، plannedWorkoutId، field، previousValue، newValue، reason).
 
 ---
 
@@ -328,9 +328,9 @@ avgFormScore، avgROM، avgSymmetry، avgStability، completionRate، totalVolum
 ### الموجود (مبني بالفعل)
 
 - Exercise، Pose variants، Form validation، Rep counting، Bilateral support
-- Per-rep metrics، Session metrics
-- Program → Week → Day → Session → Item
-- UserProgram، ProgramSessionReport، Reports system
+- Per-rep metrics، Workout execution metrics
+- Program → Week → Day → Planned Workout → Item
+- UserProgram، PlannedWorkoutReport، Reports system
 - Assessment engine، BodyScanResult، Domain scores، Safety gates
 - PAR-Q+، Mobile sync، Admin Dashboard
 - Training flow، Report UI
@@ -343,7 +343,7 @@ avgFormScore، avgROM، avgSymmetry، avgStability، completionRate، totalVolum
 | **Phase 1** | Level entity، UserLevelProfile، Level Profile API + Mobile UI |
 | **Phase 2** | Program prescription metadata، Prescription Engine V1، Admin fields |
 | **Phase 3** | ActivePlan، ReassessmentSchedule، Plan Overview UI |
-| **Phase 4** | ProgressionRule، Progression Engine، ProgramSessionItem fields |
+| **Phase 4** | ProgressionRule، Progression Engine، PlannedWorkoutItem fields |
 | **Phase 5** | Level-up celebration، Admin ProgressionRule، تحليلات، تحسينات |
 
 ---

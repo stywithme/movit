@@ -388,7 +388,7 @@ if (user.displayMode === 'beginner') {
 | # | البند | أين | الجهد |
 |---|-------|-----|-------|
 | 5.1 | إضافة RPE/RIR كإدخال اختياري | Prisma + Android | متوسط |
-| 5.2 | `trainingIntent` (POWER/ECCENTRIC) على ProgramSessionItem | Prisma + Android | متوسط |
+| 5.2 | `trainingIntent` (POWER/ECCENTRIC) على PlannedWorkoutItem | Prisma + Android | متوسط |
 | 5.3 | ترتيب تمارين ذكي داخل الجلسة | Backend | منخفض |
 | 5.4 | `goalCompatibility` على Program لتحسين Prescription | Prisma + Backend | منخفض |
 

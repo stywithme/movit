@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Levels Admin Service
  * ====================
  *
@@ -33,8 +33,8 @@ export interface LevelCreateData {
   defaultRepsMax?: number;
   defaultIntensityGuide?: string;
   defaultRestBetweenSetsMs?: number;
-  defaultSessionDurMin?: number;
-  defaultSessionDurMax?: number;
+  defaultWorkoutDurMin?: number;
+  defaultWorkoutDurMax?: number;
   defaultWeeklyFreqMin?: number;
   defaultWeeklyFreqMax?: number;
 }
@@ -196,8 +196,8 @@ export const levelsAdminService = {
       defaultRepsMax: data.defaultRepsMax,
       defaultIntensityGuide: data.defaultIntensityGuide,
       defaultRestBetweenSetsMs: data.defaultRestBetweenSetsMs,
-      defaultSessionDurMin: data.defaultSessionDurMin,
-      defaultSessionDurMax: data.defaultSessionDurMax,
+      defaultWorkoutDurMin: data.defaultWorkoutDurMin,
+      defaultWorkoutDurMax: data.defaultWorkoutDurMax,
       defaultWeeklyFreqMin: data.defaultWeeklyFreqMin,
       defaultWeeklyFreqMax: data.defaultWeeklyFreqMax,
     };
@@ -271,8 +271,8 @@ export const levelsAdminService = {
     if (data.defaultRepsMax != null) prismaData.defaultRepsMax = data.defaultRepsMax;
     if (data.defaultIntensityGuide) prismaData.defaultIntensityGuide = data.defaultIntensityGuide;
     if (data.defaultRestBetweenSetsMs != null) prismaData.defaultRestBetweenSetsMs = data.defaultRestBetweenSetsMs;
-    if (data.defaultSessionDurMin != null) prismaData.defaultSessionDurMin = data.defaultSessionDurMin;
-    if (data.defaultSessionDurMax != null) prismaData.defaultSessionDurMax = data.defaultSessionDurMax;
+    if (data.defaultWorkoutDurMin != null) prismaData.defaultWorkoutDurMin = data.defaultWorkoutDurMin;
+    if (data.defaultWorkoutDurMax != null) prismaData.defaultWorkoutDurMax = data.defaultWorkoutDurMax;
     if (data.defaultWeeklyFreqMin != null) prismaData.defaultWeeklyFreqMin = data.defaultWeeklyFreqMin;
     if (data.defaultWeeklyFreqMax != null) prismaData.defaultWeeklyFreqMax = data.defaultWeeklyFreqMax;
 

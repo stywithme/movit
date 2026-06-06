@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Training profile — CRUD for mobile onboarding (1:1 with User).
  */
 
@@ -31,7 +31,7 @@ function buildProfileScalars(
     resistanceExperience: payload.resistanceExperience ?? undefined,
     availableDaysPerWeek: impliedDaysPerWeek ?? payload.availableDaysPerWeek ?? undefined,
     trainingWeekdays: payload.trainingWeekdays ?? undefined,
-    maxSessionMinutes: payload.maxSessionMinutes ?? undefined,
+    maxWorkoutMinutes: payload.maxWorkoutMinutes ?? undefined,
     availableEquipment: payload.availableEquipment as Prisma.InputJsonValue | undefined,
     trainingLocation: payload.trainingLocation ?? undefined,
     knownInjuries: payload.knownInjuries as Prisma.InputJsonValue | undefined,

@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.training
+﻿package com.trainingvalidator.poc.training
 
 import android.util.Log
 import android.os.SystemClock
@@ -12,9 +12,9 @@ import com.trainingvalidator.poc.training.engine.evaluation.JointEvaluator
 import com.trainingvalidator.poc.training.engine.evaluation.hasAnyDangerState
 import com.trainingvalidator.poc.training.engine.feedback.FrameFeedbackEmitter
 import com.trainingvalidator.poc.training.engine.observability.PipelineTrace
-import com.trainingvalidator.poc.training.engine.session.HoldSessionCoordinator
+import com.trainingvalidator.poc.training.engine.session.HoldExerciseCoordinator
 import com.trainingvalidator.poc.training.engine.session.RepCompletionCoordinator
-import com.trainingvalidator.poc.training.engine.session.SessionSummaryBuilder
+import com.trainingvalidator.poc.training.engine.session.ExerciseWorkoutSummaryBuilder
 import com.trainingvalidator.poc.training.engine.pipeline.FrameEvaluationPipeline
 import com.trainingvalidator.poc.training.engine.pipeline.FrameInput
 import com.trainingvalidator.poc.training.engine.pipeline.FramePipelineExecutor
@@ -32,7 +32,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Session facade for one exercise run.
+ * Workout execution facade for one exercise run.
  *
  * Milestones owned here:
  * - lifecycle/time/locks and public StateFlows
@@ -97,7 +97,7 @@ class TrainingEngine(
     val feedbackMessages: FeedbackMessages
         get() = poseVariant.feedbackMessages
     
-    // Milestone: frame components and session coordinators.
+    // Milestone: frame components and exercise-run coordinators.
     
     private val jointTracker = JointAngleTracker(trackedJoints, stabilityPolicy)
     
@@ -216,7 +216,7 @@ class TrainingEngine(
         pipelineTrace = pipelineTrace
     )
 
-    private val holdSession: HoldSessionCoordinator = HoldSessionCoordinator(
+    private val holdExercise: HoldExerciseCoordinator = HoldExerciseCoordinator(
         tag = TAG,
         holdTimer = holdTimer,
         repCounter = repCounter,
@@ -227,7 +227,7 @@ class TrainingEngine(
         pipelineTrace = pipelineTrace
     )
 
-    private val sessionSafety = SessionSafetyGuards(
+    private val executionSafety = ExecutionSafetyGuards(
         timingPolicy = timingPolicy,
         isHoldExercise = isHoldExercise,
         targetReps = completionTargetReps,
@@ -299,7 +299,7 @@ class TrainingEngine(
     private var isPaused = false
     
     @Volatile
-    private var sessionStartTimeMs: Long = 0L
+    private var executionStartTimeMs: Long = 0L
     
     @Volatile
     private var totalPausedDurationMs: Long = 0L
@@ -330,14 +330,14 @@ class TrainingEngine(
         }
     }
     
-    private fun getActiveSessionDurationMs(now: Long = nowMs()): Long {
-        if (sessionStartTimeMs <= 0L) return 0L
+    private fun getActiveExecutionDurationMs(now: Long = nowMs()): Long {
+        if (executionStartTimeMs <= 0L) return 0L
 
         val pendingPause = if (isPaused && pauseStartTimeMs > 0L) {
             pauseClockNowMs() - pauseStartTimeMs
         } else 0L
 
-        val elapsed = now - sessionStartTimeMs
+        val elapsed = now - executionStartTimeMs
         return maxOf(0L, elapsed - totalPausedDurationMs - maxOf(0L, pendingPause))
     }
 
@@ -353,7 +353,7 @@ class TrainingEngine(
 
         Log.w(
             TAG,
-            "Safety stop triggered: $reason, reps=${repCounter.count}, counted=${repCounter.countedCount}, duration=${getActiveSessionDurationMs()}ms"
+            "Safety stop triggered: $reason, reps=${repCounter.count}, counted=${repCounter.countedCount}, duration=${getActiveExecutionDurationMs()}ms"
         )
         pipelineTrace.record("safety stop: $reason (reps=${repCounter.count})")
     }
@@ -361,13 +361,13 @@ class TrainingEngine(
     private fun evaluateSafetyStop(now: Long = nowMs()): Boolean {
         if (safetyStopTriggered || _isCompleted.value) return true
 
-        if (repCounter.count >= sessionSafety.maxRepsGuard) {
-            triggerSafetyStop("max reps guard reached (${sessionSafety.maxRepsGuard})")
+        if (repCounter.count >= executionSafety.maxRepsGuard) {
+            triggerSafetyStop("max reps guard reached (${executionSafety.maxRepsGuard})")
             return true
         }
-        val activeDurationMs = getActiveSessionDurationMs(now)
-        if (activeDurationMs >= sessionSafety.maxSessionDurationGuardMs) {
-            triggerSafetyStop("max session duration guard reached (${activeDurationMs}ms)")
+        val activeDurationMs = getActiveExecutionDurationMs(now)
+        if (activeDurationMs >= executionSafety.maxExecutionDurationGuardMs) {
+            triggerSafetyStop("max execution duration guard reached (${activeDurationMs}ms)")
             return true
         }
 
@@ -419,11 +419,11 @@ class TrainingEngine(
             ))
         }
         
-        holdSession.installCallbacks(
+        holdExercise.installCallbacks(
             isHoldExercise = isHoldExercise,
             onEmit = { event -> emitEvent(event) },
             publishStatus = { s -> _holdStatus.value = s },
-            setSessionCompleted = { completed -> if (completed) _isCompleted.value = true }
+            setExerciseCompleted = { completed -> if (completed) _isCompleted.value = true }
         )
         
         Log.d(TAG, "TrainingEngine initialized (STATE-BASED)")
@@ -441,7 +441,7 @@ class TrainingEngine(
     
     private val stateLock = Any()
 
-    // Milestone: lifecycle API. These methods reset/settle session state under the same lock as frames.
+    // Milestone: lifecycle API. These methods reset/settle exercise-run state under the same lock as frames.
 
     fun start() {
         synchronized(stateLock) {
@@ -449,7 +449,7 @@ class TrainingEngine(
             isPaused = false
             currentFrameTimeMs = 0L
             usesExternalFrameTimeline = false
-            sessionStartTimeMs = 0L
+            executionStartTimeMs = 0L
             totalPausedDurationMs = 0L
             pauseStartTimeMs = 0L
             angleSmoother.reset()
@@ -472,7 +472,7 @@ class TrainingEngine(
             safetyStopTriggered = false
             positionValidator.unlockScene()
             
-            feedbackPolicy.resetSession()
+            feedbackPolicy.resetExecution()
             
             _currentPhase.value = Phase.IDLE
             _repCount.value = 0
@@ -489,10 +489,10 @@ class TrainingEngine(
             visibilityMonitor.reset()
             visibilityMonitor.resetStats()
             _visibilityState.value = VisibilityState.VISIBLE
-            pauseController.resetSession()
+            pauseController.resetExecution()
             
             if (isHoldExercise) {
-                holdSession.resetTracking { _holdStatus.value = it }
+                holdExercise.resetTracking { _holdStatus.value = it }
             } else {
                 _holdStatus.value = null
             }
@@ -554,11 +554,11 @@ class TrainingEngine(
         Log.d(TAG, "Auto-resumed from visibility pause at rep ${repCounter.count}")
     }
     
-    fun stop(): SessionSummary {
+    fun stop(): ExerciseWorkoutSummary {
         val actualDurationMs: Long
         synchronized(stateLock) {
             val now = nowMs()
-            val totalElapsed = if (sessionStartTimeMs > 0) now - sessionStartTimeMs else 0L
+            val totalElapsed = if (executionStartTimeMs > 0) now - executionStartTimeMs else 0L
             
             val pendingPause = if (isPaused && pauseStartTimeMs > 0) {
                 pauseClockNowMs() - pauseStartTimeMs
@@ -568,12 +568,12 @@ class TrainingEngine(
             
             isRunning = false
             isPaused = false
-            pauseController.resetSession()
+            pauseController.resetExecution()
             _anySideDimmedJointCodes.value = emptySet()
         }
         releaseTiltCorrection()
         
-        val summary = SessionSummaryBuilder.build(
+        val summary = ExerciseWorkoutSummaryBuilder.build(
             config = exerciseConfig,
             repCounter = repCounter,
             durationMs = actualDurationMs
@@ -616,8 +616,8 @@ class TrainingEngine(
             currentFrameTimeMs = frameTimeMs
             usesExternalFrameTimeline =
                 timestampMs > 0L && kotlin.math.abs(SystemClock.uptimeMillis() - frameTimeMs) > 30_000L
-            if (sessionStartTimeMs == 0L) {
-                sessionStartTimeMs = frameTimeMs
+            if (executionStartTimeMs == 0L) {
+                executionStartTimeMs = frameTimeMs
             }
             if (evaluateSafetyStop(frameTimeMs)) {
                 return
@@ -770,7 +770,7 @@ class TrainingEngine(
 
             if (isHoldExercise) {
                 val isInHoldZone = (currentPhase == Phase.COUNT)
-                holdSession.updateHoldTimer(isInHoldZone) { s -> _holdStatus.value = s }
+                holdExercise.updateHoldTimer(isInHoldZone) { s -> _holdStatus.value = s }
             } else {
                 repCompletion.consumeIfPendingAndHandle()
             }

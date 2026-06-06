@@ -1,4 +1,4 @@
-﻿> **Status:** `ARCHIVED` â€” implemented or superseded; not current product truth.
+> **Status:** `ARCHIVED` â€” implemented or superseded; not current product truth.
 > **Current SSOT:** `Docs/00-Active-Reference/Product-Master/Post-Training-Report-Review.md`
 > **Archived:** 2026-05-29
 
@@ -57,7 +57,7 @@
 
 ```kotlin
 // نوع الجلسة يحدد شكل التقرير
-enum class SessionType {
+enum class Planned WorkoutType {
     SINGLE_EXERCISE,    // تمرين واحد (Squats only)
     WORKOUT             // مجموعة تمارين (Leg Day)
 }
@@ -67,7 +67,7 @@ data class PostTrainingReport(
     // ... الحقول الموجودة ...
     
     // إضافات جديدة
-    val sessionType: SessionType,
+    val workoutType: Planned WorkoutType,
     val heroImage: String?,                    // صورة المتدرب الرئيسية
     val quickInsight: QuickInsight,            // الرسالة الرئيسية
     val performanceMetrics: PerformanceMetrics, // المقاييس المحسوبة
@@ -578,7 +578,7 @@ data class PostTrainingReport(
     // صورة Hero
     val heroImage: FrameCapture? = null,
     
-    // المقاييس المجمعة (من SessionMetrics)
+    // المقاييس المجمعة (من WorkoutExecutionMetrics)
     val performanceMetrics: PerformanceMetrics? = null,
     
     // تفاصيل الـ Workout (للجلسات متعددة التمارين)

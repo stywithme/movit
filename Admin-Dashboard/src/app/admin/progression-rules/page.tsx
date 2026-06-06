@@ -70,14 +70,14 @@ const OPERATOR_OPTIONS = [
 ];
 
 const WINDOW_OPTIONS = [
-  { value: 'last_session', label: 'Last Session' },
-  { value: 'last_2_sessions', label: 'Last 2 Sessions' },
+  { value: 'last_workout', label: 'Last Workout' },
+  { value: 'last_2_workouts', label: 'Last 2 Workouts' },
   { value: 'last_week', label: 'Last Week' },
   { value: 'entire_program', label: 'Entire Program' },
 ];
 
 const TRIGGER_OPTIONS = [
-  { value: 'session_complete', label: 'Session Complete' },
+  { value: 'workout_complete', label: 'Workout Complete' },
   { value: 'week_complete', label: 'Week Complete' },
   { value: 'set_complete', label: 'Set Complete' },
 ];
@@ -107,7 +107,7 @@ const emptyCondition = (): Condition => ({
   metric: 'avgFormScore',
   operator: '>=',
   value: 0,
-  window: 'last_session',
+  window: 'last_workout',
 });
 
 const emptyAction = (): RuleAction => ({
@@ -130,7 +130,7 @@ export default function ProgressionRulesPage() {
   const [formScope, setFormScope] = useState<'global' | 'program' | 'exercise'>('global');
   const [formProgramId, setFormProgramId] = useState('');
   const [formExerciseSlug, setFormExerciseSlug] = useState('');
-  const [formTrigger, setFormTrigger] = useState('session_complete');
+  const [formTrigger, setFormTrigger] = useState('workout_complete');
   const [formPriority, setFormPriority] = useState(50);
   const [formIsActive, setFormIsActive] = useState(true);
   const [formConditions, setFormConditions] = useState<Condition[]>([emptyCondition()]);
@@ -186,7 +186,7 @@ export default function ProgressionRulesPage() {
     setFormScope('global');
     setFormProgramId('');
     setFormExerciseSlug('');
-    setFormTrigger('session_complete');
+    setFormTrigger('workout_complete');
     setFormPriority(50);
     setFormIsActive(true);
     setFormConditions([emptyCondition()]);

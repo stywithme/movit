@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.network
+﻿package com.trainingvalidator.poc.network
 
 /**
  * API Models for Prescription, ActivePlan, Progression, and Reassessment endpoints.
@@ -120,13 +120,13 @@ data class TodayProgramData(
     val dayNumber: Int,
     val dayType: String,
     val isRestDay: Boolean,
-    val sessions: List<TodaySessionData>
+    val plannedWorkouts: List<TodayWorkoutData>
 )
 
-data class TodaySessionData(
+data class TodayWorkoutData(
     val id: String,
     val name: Map<String, String>,
-    /** Session block role (warmup / main / cooldown / …); replaces legacy sessionCategory. */
+    /** Planned workout block role (warmup / main / cooldown / …). */
     val role: String? = null,
     val estimatedDurationMin: Int? = null,
     val itemCount: Int,
@@ -210,10 +210,10 @@ data class EffectivePlanPayload(
     val programId: String?,
     val weekNumber: Int,
     val dayNumber: Int,
-    val sessions: List<EffectivePlanSessionData>
+    val plannedWorkouts: List<EffectivePlannedWorkoutData>
 )
 
-data class EffectivePlanSessionData(
+data class EffectivePlannedWorkoutData(
     val id: String,
     val name: Map<String, String>?,
     val sortOrder: Int,
@@ -263,7 +263,7 @@ data class UserProgramOverrideData(
     val userProgramId: String,
     val weekNumber: Int,
     val dayNumber: Int,
-    val sessionItemId: String,
+    val plannedWorkoutItemId: String,
     val overrideType: String,
     val reasonCode: String? = null,
     val data: Map<String, @JvmSuppressWildcards Any>? = null,
@@ -363,7 +363,7 @@ data class WeekProgressPoint(
     val weekNumber: Int,
     val totalVolumeLoad: Double,
     val avgFormScore: Double?,
-    val sessionCount: Int,
+    val plannedWorkoutCount: Int,
     val avgRpe: Double?,
     val volumeChangePercent: Double?
 )

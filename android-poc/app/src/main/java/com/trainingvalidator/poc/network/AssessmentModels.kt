@@ -124,10 +124,10 @@ data class UserStatsResponse(
 )
 
 data class UserStatsData(
-    val weeklyWorkouts: Int,
+    val weeklyPlannedWorkouts: Int,
     val avgFormScore: Double,
     val streak: Int,
-    val totalWorkouts: Int,
+    val totalWorkoutExecutions: Int,
     val totalMinutes: Int,
     val latestAssessment: LatestAssessmentInfo? = null
 )

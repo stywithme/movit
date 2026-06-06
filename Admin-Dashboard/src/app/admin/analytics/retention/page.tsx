@@ -44,7 +44,7 @@ export default function RetentionAnalyticsPage() {
         <StatCard title="Active Users" value={formatNumber(data?.activeUsers)} help={analyticsTerms.activeUsers} />
         <StatCard title="DAU" value={formatNumber(data?.stickiness.dau)} help={analyticsTerms.dau} />
         <StatCard title="WAU" value={formatNumber(data?.stickiness.wau)} help={analyticsTerms.wau} />
-        <StatCard title="Sessions / Active User" value={(data?.sessionsPerActiveUser ?? 0).toFixed(2)} help="Average number of sessions per active user in the selected period." />
+        <StatCard title="Executions / Active User" value={(data?.workoutExecutionsPerActiveUser ?? 0).toFixed(2)} help="Average number of workout executions per active user in the selected period." />
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">

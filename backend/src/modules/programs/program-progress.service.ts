@@ -1,10 +1,10 @@
-import { getPrisma } from '@/lib/prisma/client';
+﻿import { getPrisma } from '@/lib/prisma/client';
 
 export interface ProgramProgressWeekPoint {
   weekNumber: number;
   totalVolumeLoad: number;
   avgFormScore: number | null;
-  sessionCount: number;
+  plannedWorkoutCount: number;
   avgRpe: number | null;
   volumeChangePercent: number | null;
 }
@@ -59,7 +59,7 @@ export const programProgressService = {
     });
     if (!up?.programId) return null;
 
-    const reports = await prisma.programSessionReport.findMany({
+    const reports = await prisma.plannedWorkoutReport.findMany({
       where: {
         userId,
         programId: up.programId,
@@ -70,7 +70,7 @@ export const programProgressService = {
 
     const byWeek = new Map<
       number,
-      { volume: number; formSum: number; formCount: number; rpeSum: number; rpeCount: number; sessions: number }
+      { volume: number; formSum: number; formCount: number; rpeSum: number; rpeCount: number; workouts: number }
     >();
 
     for (const r of reports) {
@@ -82,7 +82,7 @@ export const programProgressService = {
           formCount: 0,
           rpeSum: 0,
           rpeCount: 0,
-          sessions: 0,
+          workouts: 0,
         };
       bucket.volume += estimateVolumeFromReport(r.report);
       if (r.avgFormScore != null) {
@@ -93,7 +93,7 @@ export const programProgressService = {
         bucket.rpeSum += r.rpe;
         bucket.rpeCount += 1;
       }
-      bucket.sessions += 1;
+      bucket.workouts += 1;
       byWeek.set(wn, bucket);
     }
 
@@ -112,7 +112,7 @@ export const programProgressService = {
         weekNumber: wn,
         totalVolumeLoad: Math.round(b.volume * 10) / 10,
         avgFormScore: avgForm != null ? Math.round(avgForm * 10) / 10 : null,
-        sessionCount: b.sessions,
+        plannedWorkoutCount: b.workouts,
         avgRpe: avgRpe != null ? Math.round(avgRpe * 10) / 10 : null,
         volumeChangePercent,
       });

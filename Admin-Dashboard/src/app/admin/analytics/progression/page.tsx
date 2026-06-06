@@ -35,8 +35,8 @@ export default function ProgressionAnalyticsPage() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <StatCard title="Changes Applied" value={formatNumber(data?.changes)} help={analyticsTerms.progression} />
         <StatCard title="Active Rules" value={formatNumber(data?.activeRules)} help={analyticsTerms.activeRules} />
-        <StatCard title="Avg Success Streak" value={(data?.streaks.avgSuccess ?? 0).toFixed(1)} help="Average consecutive successful sessions toward progression." />
-        <StatCard title="Avg Regression Streak" value={(data?.streaks.avgRegression ?? 0).toFixed(1)} help="Average consecutive sessions that may trigger a regression or deload." />
+        <StatCard title="Avg Success Streak" value={(data?.streaks.avgSuccess ?? 0).toFixed(1)} help="Average consecutive successful workouts toward progression." />
+        <StatCard title="Avg Regression Streak" value={(data?.streaks.avgRegression ?? 0).toFixed(1)} help="Average consecutive workouts that may trigger a regression or deload." />
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">

@@ -45,7 +45,7 @@ Every decision in this loop is driven by **real performance data** collected thr
 │  Prescription Engine · Progression Engine · Reports     │
 ├─────────────────────────────────────────────────────────┤
 │                     DATA LAYER                          │
-│  Level Profile · Programs · Sessions · Assessments      │
+│  Level Profile · Programs · Planned Workouts · Assessments      │
 ├─────────────────────────────────────────────────────────┤
 │                   MEASUREMENT LAYER                      │
 │  Pose Estimation · Angle Calculation · Form Validation  │
@@ -71,15 +71,15 @@ User
              └── Program
                    └── ProgramWeek[]
                          └── ProgramDay[]
-                               ├── ProgramSession[]
-                               │     └── ProgramSessionItem[]
+                               ├── PlannedWorkout[]
+                               │     └── PlannedWorkoutItem[]
                                │           ├── Exercise (sets, reps, weight, targets)
                                │           └── TimedRest
                                └── RestDay
 
  └── BodyScanResult[] ─────────────────── Assessment history
- └── TrainingSession[] ────────────────── Exercise-level session history
-       ├── SessionMetrics                  Aggregated session metrics
+ └── WorkoutExecution[] ────────────────── Exercise-level planned workout history
+       ├── WorkoutExecutionMetrics                  Aggregated workout execution metrics
        └── RepMetrics[]                    Per-rep detailed metrics
 ```
 
@@ -98,14 +98,14 @@ UserLevelProfile ──feeds──▸ PrescriptionEngine           │
                            user trains                   │
                                   │                      │
                                   ▼                      │
-                           TrainingSession + Metrics     │
+                           WorkoutExecution + Metrics     │
                                   │                      │
                            ProgressionEngine evaluates   │
                                   │                      │
                             ┌─────┴──────┐               │
                             ▼            ▼               │
                      adjust next    trigger              │
-                      session     reassessment ──────────┘
+                      planned workout     reassessment ──────────┘
 ```
 
 ---
@@ -135,7 +135,7 @@ A **Level** is a named stage in the user's training journey. It defines the diff
 | repsRange | {min, max} | Default reps range (e.g., {8,10} for Level 1) |
 | intensityGuide | String | "bodyweight_only" / "light" / "moderate" / "heavy" / "max_effort" |
 | restBetweenSetsMs | Int | Default rest between sets |
-| sessionDurationRange | {min, max} | Session duration in minutes |
+| workoutDurationRange | {min, max} | Planned Workout duration in minutes |
 | weeklyFrequencyRange | {min, max} | Recommended training days per week |
 
 **Level Thresholds (single source of truth — aligned with existing FitnessLevel):**
@@ -218,7 +218,7 @@ A structured training plan spanning multiple weeks. Enhanced from existing Progr
 
 **Existing fields** (already in schema — no changes):
 - id, name, description, slug, coverImageUrl, durationWeeks, difficulty, isDefault, isPublished, tags
-- Relationships: weeks[], userPrograms[], programSessionReports[]
+- Relationships: weeks[], userPrograms[], programWorkoutReports[]
 
 **New fields to add:**
 
@@ -245,7 +245,7 @@ A structured training plan spanning multiple weeks. Enhanced from existing Progr
 
 > Assessment remains a standalone process (not a program type) — it uses its own flow (PAR-Q+ screening → assessment exercises → BodyScanResult).
 
-> Warm-up / Cool-down are handled as Workouts (exercise groups) that can be included in any Session.
+> Warm-up / Cool-down are handled as Workouts (exercise groups) that can be included in any planned workout.
 
 > Recovery / Deload are built into programs as specific weeks with reduced volume.
 
@@ -283,9 +283,9 @@ A single day within a week.
 
 ---
 
-### 3.6 ProgramSession
+### 3.6 PlannedWorkout
 
-A training session within a day. A day can have multiple sessions (e.g., morning mobility + evening training).
+A planned workout within a day. A day can have multiple planned workouts (e.g., morning mobility + evening training).
 
 **Existing fields** (no changes needed):
 - id, dayId, name, sortOrder
@@ -295,18 +295,18 @@ A training session within a day. A day can have multiple sessions (e.g., morning
 
 | Field | Type | Description |
 |-------|------|-------------|
-| estimatedDurationMin | Int? | Expected session duration |
-| sessionCategory | String? | "main" / "warmup" / "cooldown" / "supplementary" |
-| sourceWorkoutId | String? | If this session was generated from a Workout template |
+| estimatedDurationMin | Int? | Expected workout duration |
+| workoutBlockRole | String? | "MAIN" / "WARMUP" / "COOLDOWN" / "SUPPLEMENTARY" (was `sessionCategory` / `SessionRole`) |
+| sourceWorkoutId | String? | If this planned workout was generated from a Workout template |
 
 ---
 
-### 3.7 ProgramSessionItem
+### 3.7 PlannedWorkoutItem
 
-An individual item within a session (exercise or rest).
+An individual item within a planned workout (exercise or rest).
 
 **Existing fields** (no changes needed):
-- id, sessionId, sortOrder, type (exercise/rest)
+- id, plannedWorkoutId, sortOrder, type (exercise/rest)
 - Exercise fields: exerciseId, sets, targetReps, targetDuration, restBetweenSetsMs, weightKg, weightPerSet, notes
 - Rest fields: restDurationMs
 - Workout tracking: sourceWorkoutId, isModified
@@ -342,7 +342,7 @@ An individual item within a session (exercise or rest).
 
 ### 3.9 Workout
 
-**No structural changes needed.** Workouts serve as reusable exercise group templates (super sets, circuits, warm-up routines, cool-down routines). They can be imported into any ProgramSession.
+**No structural changes needed.** Workouts serve as reusable exercise group templates (super sets, circuits, warm-up routines, cool-down routines). They can be imported into any PlannedWorkout.
 
 ---
 
@@ -392,7 +392,7 @@ Defines how training parameters change based on performance data.
 | scope | String | "global" / "program" / "exercise" |
 | programId | String? | If scope is "program", which program |
 | exerciseSlug | String? | If scope is "exercise", which exercise |
-| trigger | String | "session_completed" / "week_completed" / "set_completed" |
+| trigger | String | "workout_completed" / "week_completed" / "set_completed" |
 | conditions | ProgressionCondition[] | All must be true to fire |
 | action | ProgressionAction | What to change |
 | priority | Int | Higher priority rules evaluated first |
@@ -405,7 +405,7 @@ Defines how training parameters change based on performance data.
 | metric | String | "avgFormScore" / "completionRate" / "avgROM" / "totalVolume" / "symmetryScore" |
 | operator | String | ">=" / "<=" / ">" / "<" / "==" |
 | value | Float | Threshold value |
-| window | String | "last_session" / "last_2_sessions" / "last_week" / "all_program" |
+| window | String | "last_workout" / "last_2_workouts" / "last_week" / "all_program" |
 
 **ProgressionAction:**
 
@@ -418,13 +418,13 @@ Defines how training parameters change based on performance data.
 **Example Rules:**
 
 1. **Weight Progression (positive):**
-   - Trigger: session_completed
-   - Conditions: avgFormScore >= 75 for last_2_sessions AND completionRate >= 90%
+   - Trigger: workout_completed
+   - Conditions: avgFormScore >= 75 for last_2_workouts AND completionRate >= 90%
    - Action: increase_weight by 2.5 kg
 
 2. **Weight Regression (safety):**
-   - Trigger: session_completed
-   - Conditions: avgFormScore < 60 for last_2_sessions
+   - Trigger: workout_completed
+   - Conditions: avgFormScore < 60 for last_2_workouts
    - Action: decrease_weight by 2.5 kg + notification
 
 3. **Rep Progression:**
@@ -508,12 +508,12 @@ Limiting factors drive the Prescription Engine — they determine which programs
 
 ### 4.3 Level Influence on Training
 
-When a ProgramSessionItem doesn't define explicit reps/sets/weight, the system fills them from the user's level:
+When a PlannedWorkoutItem doesn't define explicit reps/sets/weight, the system fills them from the user's level:
 
 ```
 Resolve training parameters:
-  1. ProgramSessionItem has explicit value? → Use it
-  2. ProgramSessionItem has levelOverride? → Use that level's defaults
+  1. PlannedWorkoutItem has explicit value? → Use it
+  2. PlannedWorkoutItem has levelOverride? → Use that level's defaults
   3. User's domain level for this exercise's target domain → Use its defaults
   4. User's overallLevel → Use its defaults (final fallback)
 ```
@@ -530,11 +530,11 @@ The current system has an inconsistency in how metrics are stored:
 
 | Location | Field | Type | Scale | Example |
 |----------|-------|------|-------|---------|
-| `SessionMetrics` (DB) | avgFormScore | Int | x10 (0-1000) | 850 = 85.0% |
-| `SessionMetrics` (DB) | avgRom | Int | x10 (0-1800) | 900 = 90.0° |
+| `WorkoutExecutionMetrics` (DB) | avgFormScore | Int | x10 (0-1000) | 850 = 85.0% |
+| `WorkoutExecutionMetrics` (DB) | avgRom | Int | x10 (0-1800) | 900 = 90.0° |
 | `RepMetrics` (DB) | formScore | Int | x10 | 750 = 75.0% |
-| `ProgramSessionReport` (DB) | avgFormScore | Float | 0-100 | 85.0 |
-| `ProgramSessionReport` (DB) | avgAccuracy | Float | 0-100 | 92.5 |
+| `PlannedWorkoutReport` (DB) | avgFormScore | Float | 0-100 | 85.0 |
+| `PlannedWorkoutReport` (DB) | avgAccuracy | Float | 0-100 | 92.5 |
 | Android `RepMetrics` | formScore | Int | x10 | 850 |
 | Reports API response | averageFormScore | Float | 0-100 | 85.0 |
 
@@ -542,11 +542,11 @@ The same metric name (`avgFormScore`) means different things depending on where 
 
 ### 5.2 The Contract
 
-**Storage convention (DB):** All kinematic metrics are stored as **Int x10** for precision without floating point issues. This is already the convention in `SessionMetrics` and `RepMetrics`.
+**Storage convention (DB):** All kinematic metrics are stored as **Int x10** for precision without floating point issues. This is already the convention in `WorkoutExecutionMetrics` and `RepMetrics`.
 
 **API convention (responses):** All metrics are returned as **Float 0-100** (percentages) or natural units (degrees, ms, kg). The backend converts x10 → Float at the API boundary.
 
-**ProgramSessionReport alignment:** `avgFormScore` and `avgAccuracy` in `ProgramSessionReport` should follow the same convention as `SessionMetrics` (Int x10). This requires a migration.
+**PlannedWorkoutReport alignment:** `avgFormScore` and `avgAccuracy` in `PlannedWorkoutReport` should follow the same convention as `WorkoutExecutionMetrics` (Int x10). This requires a migration.
 
 ### 5.3 Conversion Rules
 
@@ -613,7 +613,7 @@ matchingPrograms = allPublishedPrograms.filter(program =>
 For each selected program, personalize the training parameters:
 
 ```
-For each ProgramSessionItem in the program:
+For each PlannedWorkoutItem in the program:
   1. Start with the item's defined values (admin-set)
   2. For any undefined value, apply LevelDefaults from user's level:
      - sets → LevelDefaults.setsRange.min
@@ -644,30 +644,30 @@ ActivePlan:
 
 ### 6.1 Overview
 
-The Progression Engine evaluates performance data after each training session and adjusts future sessions. It uses the **rich per-rep metrics** collected by the pose estimation system.
+The Progression Engine evaluates performance data after each planned workout and adjusts future planned workouts. It uses the **rich per-rep metrics** collected by the pose estimation system.
 
 ### 6.2 Available Metrics for Rules
 
-From the existing system (already collected per rep and per session):
+From the existing system (already collected per rep and per planned workout):
 
 | Metric | Source | Description |
 |--------|--------|-------------|
-| avgFormScore | SessionMetrics | Average form quality (0-100) |
-| avgROM | SessionMetrics | Average range of motion |
-| avgSymmetry | SessionMetrics | Bilateral symmetry |
-| avgStability | SessionMetrics | Trunk/core stability |
-| avgVelocity | SessionMetrics | Movement velocity |
-| formConsistency | SessionMetrics | DTW-based consistency |
-| fatigueIndex | SessionMetrics | When fatigue started |
-| totalVolume | SessionMetrics | Weight x reps |
-| est1RM | SessionMetrics | Estimated 1 rep max |
-| completionRate | ProgramSessionReport | Reps completed vs planned |
-| totalTUT | SessionMetrics | Time under tension |
+| avgFormScore | WorkoutExecutionMetrics | Average form quality (0-100) |
+| avgROM | WorkoutExecutionMetrics | Average range of motion |
+| avgSymmetry | WorkoutExecutionMetrics | Bilateral symmetry |
+| avgStability | WorkoutExecutionMetrics | Trunk/core stability |
+| avgVelocity | WorkoutExecutionMetrics | Movement velocity |
+| formConsistency | WorkoutExecutionMetrics | DTW-based consistency |
+| fatigueIndex | WorkoutExecutionMetrics | When fatigue started |
+| totalVolume | WorkoutExecutionMetrics | Weight x reps |
+| est1RM | WorkoutExecutionMetrics | Estimated 1 rep max |
+| completionRate | PlannedWorkoutReport | Reps completed vs planned |
+| totalTUT | WorkoutExecutionMetrics | Time under tension |
 
 ### 6.3 Evaluation Flow
 
 ```
-Session Completed
+Workout Completed
   │
   ▼
 Load applicable ProgressionRules (by scope: global → program → exercise)
@@ -676,11 +676,11 @@ Load applicable ProgressionRules (by scope: global → program → exercise)
 For each rule (by priority):
   │
   ├── Evaluate conditions against historical metrics
-  │     └── Query: "last N sessions for this exercise/program"
+  │     └── Query: "last N planned workouts for this exercise/program"
   │
   ├── All conditions met?
   │     ├── YES → Execute action
-  │     │     ├── Update next session's parameters
+  │     │     ├── Update next planned workout's parameters
   │     │     ├── Log the change (for audit trail)
   │     │     └── Generate notification for user
   │     └── NO → Skip rule
@@ -702,7 +702,7 @@ Every change made by the Progression Engine is logged:
 | id | String | Unique identifier |
 | userId | String | FK → User |
 | ruleId | String | FK → ProgressionRule that fired |
-| sessionId | String | FK → TrainingSession that triggered it |
+| plannedWorkoutId | String | FK → PlannedWorkout that triggered progression |
 | field | String | What changed ("weightKg" / "targetReps" / "sets") |
 | previousValue | Float | Before |
 | newValue | Float | After |
@@ -785,26 +785,26 @@ Step 7: User starts training
 
 ```
 Step 1: User opens app → sees today's plan
-          └── "Week 2, Day 3 — Upper Body Session"
+          └── "Week 2, Day 3 — Upper Body Planned Workout"
           └── 5 exercises with sets/reps/weight (personalized by level)
-Step 2: User starts session
-          └── SessionTrainingEngine orchestrates exercises
+Step 2: User starts workout run
+          └── WorkoutTrainingEngine orchestrates exercises
           └── Real-time pose feedback (state-based form validation)
           └── Per-rep metrics collected (ROM, form, symmetry, stability, tempo)
-Step 3: Session complete → Report generated
+Step 3: Workout complete → Report generated
           └── Performance summary, danger alerts, improvement tips
 Step 4: Data uploaded to backend
-          └── TrainingSession + SessionMetrics + RepMetrics saved
-          └── ProgramSessionReport updated
+          └── WorkoutExecution + WorkoutExecutionMetrics + RepMetrics saved
+          └── PlannedWorkoutReport updated
 Step 5: Progression Engine evaluates
-          └── "Form score 82% for last 2 sessions, completion 95% → increase weight 2.5kg next session"
+          └── "Form score 82% for last 2 workouts, completion 95% → increase weight 2.5kg next planned workout"
           └── User notified: "Great progress! We've increased your weight for next time."
 ```
 
 ### 8.3 Program Completion & Reassessment
 
 ```
-Step 1: User completes final session of program
+Step 1: User completes final planned workout of program
 Step 2: Program completion report shown (grade, progress charts, insights)
 Step 3: Reassessment triggered
           └── "You've completed 4 weeks of training. Let's check your progress!"
@@ -834,12 +834,12 @@ Step 8: New ActivePlan with next programs
 | Rep counting (reps + hold exercises) | Complete | Android: RepCounter, HoldTimer |
 | Bilateral exercise support | Complete | Android: TrainingEngine |
 | Per-rep metrics (ROM, form, symmetry, stability, tempo, velocity) | Complete | Android: MetricsCalculator → RepMetrics |
-| Session metrics (aggregated) | Complete | Android: SessionMetrics |
+| Workout execution metrics (aggregated) | Complete | Android: WorkoutExecutionMetrics |
 | Workout entity (super sets/circuits) | Complete | Backend: schema + workouts module |
-| Program → Week → Day → Session → Item hierarchy | Complete | Backend: schema + programs module |
+| Program → Week → Day → Planned Workout → Item hierarchy | Complete | Backend: schema + programs module |
 | UserProgram enrollment + progress tracking | Complete | Backend: schema + programs module |
-| ProgramSessionReport (per-session reports) | Complete | Backend: schema + training-sessions module |
-| Unified reports system (Rep→Set→Exercise→Session→Day→Week→Program) | Complete | Backend: reports module |
+| PlannedWorkoutReport (per-workout reports) | Complete | Backend: schema + workout-executions module |
+| Unified reports system (Rep→Set→Exercise→Planned Workout→Day→Week→Program) | Complete | Backend: reports module |
 | Assessment engine (3-layer: Measure→Interpret→Prescribe) | Complete | Android: assessment/engine/ |
 | BodyScanResult (domains, regions, hypotheses, safety gates) | Complete | Backend: schema + assessment module |
 | Assessment progress comparison | Complete | Backend: assessment module |
@@ -851,7 +851,7 @@ Step 8: New ActivePlan with next programs
 | PAR-Q+ pre-screening | Complete | Android: PreScreeningActivity |
 | Mobile sync (exercises, workouts, programs) | Complete | Backend: mobile-sync module |
 | Admin Dashboard CRUD (exercises, workouts, programs) | Complete | Admin-Dashboard |
-| Training flow (single exercise + multi-exercise sessions) | Complete | Android: TrainingActivity, SessionTrainingEngine |
+| Training flow (single exercise + multi-exercise workout runs) | Complete | Android: TrainingActivity, WorkoutTrainingEngine |
 | Report UI (performance cards, danger alerts, form analysis) | Complete | Android: report fragments |
 
 ### Needs To Be Built (New System)
@@ -861,7 +861,7 @@ Step 8: New ActivePlan with next programs
 | Component | Priority | Complexity | Description |
 |-----------|----------|------------|-------------|
 | **Wire BodyScanResult upload** | Critical | Low | Android calls POST `/assessment` after assessment (endpoint exists, just not wired) |
-| **Unify metrics scales** | Critical | Medium | Migrate ProgramSessionReport to Int x10 convention. Single conversion at API boundary. |
+| **Unify metrics scales** | Critical | Medium | Migrate PlannedWorkoutReport to Int x10 convention. Single conversion at API boundary. |
 | **Remove report active-program lock** | Critical | Low | Reports module allows querying historical programs, not just active enrollment. |
 | **Replace Home mock data** | Critical | Low | Wire Home stats to real data from existing APIs. |
 
@@ -880,8 +880,8 @@ Step 8: New ActivePlan with next programs
 | **ReassessmentSchedule** | 3 | Low | New DB table + trigger logic. |
 | **Plan Overview UI** | 3 | Medium | Screen showing active plan with program timeline. |
 | **ProgressionRule + ProgressionHistory** | 4 | Medium | New DB tables. Start with 3 rules only. |
-| **Progression Engine** | 4 | High | Evaluate rules after each session → adjust parameters → log changes. |
-| **ProgramSessionItem — new fields** | 4 | Low | Add targetROM, targetFormScore, progressionRuleId, isPersonalized. |
+| **Progression Engine** | 4 | High | Evaluate rules after each planned workout → adjust parameters → log changes. |
+| **PlannedWorkoutItem — new fields** | 4 | Low | Add targetROM, targetFormScore, progressionRuleId, isPersonalized. |
 | **Level-up celebration** | 5 | Low | Animation/modal when user advances a level. |
 | **Admin: ProgressionRule management** | 5 | Medium | Dashboard UI for creating/editing progression rules. |
 
@@ -899,12 +899,12 @@ This directly measures the product's core promise: "real, measurable progress."
 
 | Metric | What It Measures | Target |
 |--------|-----------------|--------|
-| Weekly session completion rate | Are users following the plan? | > 70% |
+| Weekly planned workout completion rate | Are users following the plan? | > 70% |
 | D7 retention | Do users come back after first week? | > 50% |
 | D30 retention | Do users stick for a full program cycle? | > 30% |
 | Reassessment completion rate | Do users close the feedback loop? | > 60% |
-| Average sessions per week | Training frequency | >= 3 |
-| Time-to-first-session | How fast from signup to first workout? | < 24 hours |
+| Average planned workouts per week | Training frequency | >= 3 |
+| Time-to-first-workout | How fast from signup to first workout run? | < 24 hours |
 
 ### Safety Guardrails
 
@@ -912,7 +912,7 @@ This directly measures the product's core promise: "real, measurable progress."
 |--------|----------------|-----------------|
 | Pain flag frequency | Users reporting pain during training | > 2 flags in 7 days |
 | Form score decline with weight increase | Progression too aggressive | FormScore drops > 15% after weight increase |
-| Danger rep percentage | Unsafe movement patterns | > 20% DANGER reps in a session |
+| Danger rep percentage | Unsafe movement patterns | > 20% DANGER reps in a planned workout |
 | Safety gate override attempts | Users ignoring restrictions | Any attempt to bypass blocked exercises |
 
 > These metrics should be tracked from Phase 0 onwards. They validate whether the system is actually helping users, not just technically working.
@@ -928,10 +928,10 @@ This directly measures the product's core promise: "real, measurable progress."
 **Tasks:**
 1. **Wire BodyScanResult upload:** Android `AssessmentSessionActivity` → POST `/assessment` (endpoint already exists, just not called)
 2. **Fetch previous assessment:** Use GET `/assessment/latest` for comparison in `AssessmentResultActivity`
-3. **Unify metrics scales:** Migrate `ProgramSessionReport.avgFormScore` and `avgAccuracy` to Int x10 convention (matching `SessionMetrics`). Update reports API to normalize consistently.
+3. **Unify metrics scales:** Migrate `PlannedWorkoutReport.avgFormScore` and `avgAccuracy` to Int x10 convention (matching `WorkoutExecutionMetrics`). Update reports API to normalize consistently.
 4. **Remove report active-program lock:** Update reports module to allow querying historical programs (not just `isActive: true`). Add `programId` filter without requiring active enrollment.
 5. **Connect assessment result to CTA:** After assessment, show "Your recommended program" with a direct enrollment button (even if manually curated for now)
-6. **Replace mock data:** Wire Home screen stats to real user data from existing APIs (`/mobile/sessions`, `/mobile/user-programs`)
+6. **Replace mock data:** Wire Home screen stats to real user data from existing APIs (`/mobile/workout-executions`, `/mobile/user-programs`)
 
 **Depends on:** Nothing — uses existing endpoints and infrastructure.
 
@@ -996,12 +996,12 @@ This directly measures the product's core promise: "real, measurable progress."
 **Tasks:**
 1. Create `ProgressionRule` + `ProgressionHistory` tables
 2. Start with **3 rules only** (proven, simple, high-impact):
-   - **Weight increase:** avgFormScore >= 75 for last 2 sessions AND completionRate >= 90% → +2.5kg
+   - **Weight increase:** avgFormScore >= 75 for last 2 planned workouts AND completionRate >= 90% → +2.5kg
    - **Rep increase:** avgFormScore >= 80 for full week AND avgROM >= 95% of target → +2 reps
-   - **Deload safety:** avgFormScore < 60 for last 2 sessions → -2.5kg + notification
-3. Add `targetROM`, `targetFormScore`, `progressionRuleId`, `isPersonalized` to ProgramSessionItem
+   - **Deload safety:** avgFormScore < 60 for last 2 planned workouts → -2.5kg + notification
+3. Add `targetROM`, `targetFormScore`, `progressionRuleId`, `isPersonalized` to PlannedWorkoutItem
 4. Build Progression Engine service (evaluate → act → log)
-5. Wire into session completion flow (after `ProgramSessionReport` is saved)
+5. Wire into planned workout completion flow (after `PlannedWorkoutReport` is saved)
 6. Add user notifications for progression changes
 7. Build admin UI for rule management (later — start with seed data)
 

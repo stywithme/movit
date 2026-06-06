@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui.programs
+﻿package com.trainingvalidator.poc.ui.programs
 
 import android.os.Bundle
 import android.util.Log
@@ -15,11 +15,11 @@ import com.trainingvalidator.poc.network.MetricsResponse
 import com.trainingvalidator.poc.network.WeekMetrics
 import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.storage.ProgramRepository
-import com.trainingvalidator.poc.storage.ProgramSessionReportStore
+import com.trainingvalidator.poc.storage.ProgramWorkoutReportStore
 import com.trainingvalidator.poc.storage.ReportRepository
 import com.trainingvalidator.poc.training.models.ProgramConfig
 import com.trainingvalidator.poc.training.models.ProgramWeek
-import com.trainingvalidator.poc.training.session.ReportAggregator
+import com.trainingvalidator.poc.training.workout.ReportAggregator
 import com.trainingvalidator.poc.ui.utils.currentLanguage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -38,7 +38,7 @@ class WeeklyReportActivity : AppCompatActivity() {
     }
 
     private lateinit var binding: ActivityWeeklyReportBinding
-    private val reportStore by lazy { ProgramSessionReportStore(this) }
+    private val reportStore by lazy { ProgramWorkoutReportStore(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -211,20 +211,20 @@ class WeeklyReportActivity : AppCompatActivity() {
          */
         private fun bindFromLocal(holder: ViewHolder, week: ProgramWeek, programId: String) {
             val reports = reportStore.getByWeek(programId, week.weekNumber)
-            val totalSessions = week.days.sumOf { day -> day.sessions.size }
-            val completedSessions = reports.size
+            val totalWorkouts = week.days.sumOf { day -> day.workouts.size }
+            val completedWorkouts = reports.size
 
             holder.tvWeekTitle.text = getString(R.string.week_title_only, week.weekNumber)
-            holder.tvWeekProgress.text = if (totalSessions > 0 && completedSessions >= totalSessions) {
+            holder.tvWeekProgress.text = if (totalWorkouts > 0 && completedWorkouts >= totalWorkouts) {
                 getString(R.string.week_progress_completed)
             } else {
-                getString(R.string.week_progress_format, completedSessions, totalSessions)
+                getString(R.string.week_progress_format, completedWorkouts, totalWorkouts)
             }
-            holder.progressWeek.progress = if (totalSessions > 0) {
-                (completedSessions * 100) / totalSessions
+            holder.progressWeek.progress = if (totalWorkouts > 0) {
+                (completedWorkouts * 100) / totalWorkouts
             } else 0
 
-            holder.tvWeekMessage.text = getWeekMessage(completedSessions, totalSessions, 0f)
+            holder.tvWeekMessage.text = getWeekMessage(completedWorkouts, totalWorkouts, 0f)
             holder.tvWeekReps.text = getString(R.string.week_reps_format, reports.sumOf { it.totalReps })
             holder.tvWeekAccuracy.text = getString(R.string.week_accuracy_format, 0)
             holder.tvWeekDuration.text = getString(

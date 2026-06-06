@@ -23,7 +23,7 @@ import kotlinx.coroutines.SupervisorJob
  *
  * Provides [applicationScope]: a CoroutineScope tied to the process lifetime,
  * not to any individual Activity. Use it for fire-and-forget background operations
- * (e.g. uploading session data) that must survive Activity destruction.
+ * (e.g. uploading workout execution data) that must survive Activity destruction.
  */
 class PoseApp : Application(), ImageLoaderFactory {
 

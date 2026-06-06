@@ -7,6 +7,10 @@ import type { Action, Subject } from '@/lib/types/permissions';
 export type { Action, Subject };
 
 /** Legacy analytics subjects still stored on some roles — map to Report* subjects */
+const LEGACY_SUBJECTS: Record<string, Subject> = {
+  Workout: 'WorkoutTemplate',
+};
+
 const LEGACY_REPORT_SUBJECTS: Record<string, Subject> = {
   Analytics: 'ReportOverview',
   OverviewAnalytics: 'ReportOverview',
@@ -26,6 +30,8 @@ const LEGACY_REPORT_SUBJECTS: Record<string, Subject> = {
 
 function subjectMatches(permissionSubject: string, requested: Subject): boolean {
   if (permissionSubject === requested || permissionSubject === 'all') return true;
+  const legacy = LEGACY_SUBJECTS[permissionSubject];
+  if (legacy === requested) return true;
   const migrated = LEGACY_REPORT_SUBJECTS[permissionSubject];
   return migrated === requested;
 }

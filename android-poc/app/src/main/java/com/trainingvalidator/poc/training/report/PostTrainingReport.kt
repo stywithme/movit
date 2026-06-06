@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.training.report
+﻿package com.trainingvalidator.poc.training.report
 
 import com.trainingvalidator.poc.training.engine.Phase
 import com.trainingvalidator.poc.training.models.AngleRange
@@ -7,12 +7,13 @@ import com.trainingvalidator.poc.training.models.ErrorType
 import com.trainingvalidator.poc.training.models.JointState
 import com.trainingvalidator.poc.training.models.LocalizedText
 import com.trainingvalidator.poc.training.models.MetricCode
+import com.google.gson.annotations.SerializedName
 import com.trainingvalidator.poc.training.models.RepQuality
 import com.trainingvalidator.poc.training.models.ReportMetricsConfig
 import java.util.UUID
 
 /**
- * PostTrainingReport - Complete report for a training session
+ * PostTrainingReport - Complete report for one exercise execution
  * 
  * STATE-BASED REPORT STRUCTURE:
  * - Uses JointState (PERFECT/NORMAL/PAD/WARNING/DANGER) for quality assessment
@@ -25,7 +26,7 @@ import java.util.UUID
  */
 data class PostTrainingReport(
     val id: String = UUID.randomUUID().toString(),
-    val sessionId: String,
+    val workoutId: String,
     val exerciseId: String,
     val exerciseName: LocalizedText,
     val timestamp: Long = System.currentTimeMillis(),
@@ -54,8 +55,8 @@ data class PostTrainingReport(
     // Consistency metrics
     val consistency: ConsistencyMetrics?,
     
-    // Session quality indicators
-    val sessionQuality: SessionQuality,
+    // Capture / tracking quality indicators
+    val executionQuality: ExecutionQuality,
     
     // Top improvement tips (max 2 + 1 next focus)
     val improvementTips: List<ImprovementTip>,
@@ -107,7 +108,7 @@ data class PostTrainingReport(
     fun hasDangerAlerts(): Boolean = summary.invalidatedReps > 0 || dangerAlerts.isNotEmpty()
     
     /**
-     * Check if session should be celebrated (many perfect, no danger)
+     * Check if this execution should be celebrated (many perfect, no danger)
      */
     fun shouldCelebrate(): Boolean = summary.shouldCelebrate
     
@@ -142,7 +143,7 @@ data class PostTrainingReport(
 // ==================== Performance Summary ====================
 
 /**
- * PerformanceSummary - Overview of training session performance
+ * PerformanceSummary - Overview of exercise-run performance
  * 
  * STATE-BASED METRICS:
  * - countedReps: Reps in PERFECT + NORMAL + PAD states
@@ -198,19 +199,19 @@ data class PerformanceSummary(
     // NEW METRICS (V2) ??? From MetricsCalculator/MotionRecorder
     // ?????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
     
-    /** Average Tempo [eccentric, isometric, concentric] in ms (from SessionMetrics) */
+    /** Average Tempo [eccentric, isometric, concentric] in ms (from WorkoutExecutionMetrics) */
     val avgTempo: IntArray? = null,
     
-    /** Average Velocity ?? 100 (from SessionMetrics) */
+    /** Average Velocity ?? 100 (from WorkoutExecutionMetrics) */
     val avgVelocity: Short? = null,
     
-    /** Velocity Loss % (0-100) ??? Max VL% in session (from SessionMetrics) */
+    /** Velocity Loss % (0-100) — Max VL% in execution (from WorkoutExecutionMetrics) */
     val velocityLoss: Float? = null,
     
-    /** Tempo Consistency (0-100) ??? how consistent rep timing is (from SessionMetrics) */
+    /** Tempo Consistency (0-100) ??? how consistent rep timing is (from WorkoutExecutionMetrics) */
     val tempoConsistency: Float? = null,
     
-    /** Total TUT in ms ??? sum of actual rep durations (from SessionMetrics) */
+    /** Total TUT in ms ??? sum of actual rep durations (from WorkoutExecutionMetrics) */
     val totalTUT: Int? = null,
     
     // ?????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
@@ -300,7 +301,7 @@ data class StateBreakdown(
         if (totalCounted > 0) perfectCount.toFloat() / totalCounted else 0f
     
     /**
-     * Check if session should be celebrated
+     * Check if this execution should be celebrated
      * Celebrate if: 50%+ perfect AND no danger
      */
     fun shouldCelebrate(): Boolean = perfectRatio >= 0.5f && dangerCount == 0
@@ -382,7 +383,7 @@ enum class PerformanceRating {
         
         /**
          * Get rating from score and counted ratio (state-based)
-         * Used by SessionSummary.getPerformanceRating()
+         * Used by ExerciseWorkoutSummary.getPerformanceRating()
          */
         fun fromScoreAndRatio(averageScore: Float, countedRatio: Float): PerformanceRating = when {
             averageScore >= 80f && countedRatio >= 0.9f -> EXCELLENT
@@ -681,8 +682,8 @@ enum class RepStatus {
     ACCEPTABLE, // PAD state
     HAS_ERRORS, // WARNING state
     DANGER,     // DANGER state
-    BEST_REP,   // Best rep in session
-    WORST_REP,  // Worst rep in session
+    BEST_REP,   // Best rep in execution
+    WORST_REP,  // Worst rep in execution
     FAILED;     // For hold exercises
     
     companion object {
@@ -755,12 +756,12 @@ data class ConsistencyMetrics(
     }
 }
 
-// ==================== Session Quality ====================
+// ==================== Execution Quality ====================
 
 /**
- * SessionQuality - Indicators of tracking quality during session
+ * ExecutionQuality - Indicators of tracking quality during one exercise run
  */
-data class SessionQuality(
+data class ExecutionQuality(
     val visibilityPauseCount: Int,
     val totalInvisibleMs: Long,
     val cameraWarningCount: Int,
@@ -810,7 +811,7 @@ data class SessionQuality(
 }
 
 /**
- * Quality level for session
+ * Quality level for capture / tracking
  */
 enum class QualityLevel {
     EXCELLENT,  // No issues
@@ -830,7 +831,7 @@ data class ImprovementTip(
     val title: LocalizedText,
     val description: LocalizedText,
     val priority: Int,              // 1 = highest priority
-    val isNextFocus: Boolean = false, // For "Next session focus"
+    val isNextFocus: Boolean = false, // For "Next workout focus"
     val icon: String = "????",        // Tip icon
     val severity: TipSeverity = TipSeverity.HELPFUL,
     val relatedReps: List<Int> = emptyList()  // Reps this tip addresses
@@ -997,7 +998,7 @@ data class QuickInsight(
             ),
             actionable = LocalizedText(
                 ar = "???????? ??????????: ??? ?????? ???????? ??? ???????",
-                en = "Next session: Try increasing weight or reps"
+                en = "Next workout: Try increasing weight or reps"
             ),
             icon = "????"
         )

@@ -34,7 +34,7 @@ export function PlanFormModal({ plan, onClose, onSuccess }: Props) {
     const [yearlyPrice, setYearlyPrice] = useState(plan?.yearlyPrice?.toString() || '0');
     const [currency, setCurrency] = useState(plan?.currency || 'SAR');
     const [discount, setDiscount] = useState(plan?.discount?.toString() || '0');
-    const [maxWorkouts, setMaxWorkouts] = useState(plan?.maxWorkoutsLimit?.toString() || '0');
+    const [maxWorkoutTemplates, setMaxWorkoutTemplates] = useState(plan?.maxWorkoutTemplatesLimit?.toString() || '0');
     const [maxExercises, setMaxExercises] = useState(plan?.maxExercisesLimit?.toString() || '0');
     const [freeSessions, setFreeSessions] = useState(plan?.freeDoctorSessionsLimit?.toString() || '0');
     const [monthlyGooglePlayProductId, setMonthlyGooglePlayProductId] = useState(plan?.monthlyGooglePlayProductId || '');
@@ -53,7 +53,7 @@ export function PlanFormModal({ plan, onClose, onSuccess }: Props) {
                 yearlyPrice: parseFloat(yearlyPrice),
                 currency: currency.trim() || 'SAR',
                 discount: parseFloat(discount),
-                maxWorkoutsLimit: parseInt(maxWorkouts, 10),
+                maxWorkoutTemplatesLimit: parseInt(maxWorkoutTemplates, 10),
                 maxExercisesLimit: parseInt(maxExercises, 10),
                 freeDoctorSessionsLimit: parseInt(freeSessions, 10),
                 monthlyGooglePlayProductId: monthlyGooglePlayProductId.trim() || null,
@@ -160,8 +160,8 @@ export function PlanFormModal({ plan, onClose, onSuccess }: Props) {
 
                     <div className="grid grid-cols-1 gap-4 border-t pt-4 md:grid-cols-3">
                         <div className="space-y-2">
-                            <Label>Max Workouts Limit</Label>
-                            <Input type="number" value={maxWorkouts} onChange={(e) => setMaxWorkouts(e.target.value)} placeholder="0 for unlimited" />
+                            <Label>Max Workout Templates Limit</Label>
+                            <Input type="number" value={maxWorkoutTemplates} onChange={(e) => setMaxWorkoutTemplates(e.target.value)} placeholder="0 for unlimited" />
                         </div>
                         <div className="space-y-2">
                             <Label>Max Exercises Limit</Label>

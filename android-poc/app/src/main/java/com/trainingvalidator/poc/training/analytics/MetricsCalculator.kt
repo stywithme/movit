@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.training.analytics
+﻿package com.trainingvalidator.poc.training.analytics
 
 import com.trainingvalidator.poc.training.models.*
 import kotlin.math.abs
@@ -7,7 +7,7 @@ import kotlin.math.sqrt
 /**
  * MetricsCalculator - Calculates performance metrics from motion data
  * 
- * All calculations are performed ONCE after session ends to avoid
+ * All calculations are performed ONCE after the exercise run ends to avoid
  * impacting real-time FPS during exercise.
  * 
  * Metric Categories:
@@ -94,28 +94,28 @@ object MetricsCalculator {
         )
     }
     
-    // ==================== Session-Level Metrics ====================
+    // ==================== Workout-Execution Metrics ====================
     
     /**
-     * Calculate all metrics for a session from rep records
+     * Calculate all metrics for one exercise execution from rep records
      * 
-     * @param reps All rep records for the session
+     * @param reps All rep records for the execution
      * @param primaryJointIndex Index of primary joint
      * @param leftJointIndex Index of left joint for symmetry
      * @param rightJointIndex Index of right joint for symmetry
      * @param stabilityJointIndex Index of spine joint for trunk stability
      * @param hipIndices Hip joint indices for stability fallback
      */
-    fun calculateSessionMetrics(
+    fun calculateWorkoutExecutionMetrics(
         reps: List<RepRecord>,
         primaryJointIndex: Int,
         leftJointIndex: Int? = null,
         rightJointIndex: Int? = null,
         stabilityJointIndex: Int? = null,
         hipIndices: Pair<Int, Int>? = null
-    ): SessionMetrics {
+    ): WorkoutExecutionMetrics {
         if (reps.isEmpty()) {
-            return createEmptySessionMetrics()
+            return createEmptyWorkoutExecutionMetrics()
         }
         
         // Track best velocity for VL% calculation
@@ -158,7 +158,7 @@ object MetricsCalculator {
             repMetricsList.map { it.tempo.getOrElse(i) { 0 } }.average().toInt()
         }
         
-        // Total TUT (sum of all rep durations — NOT session duration)
+        // Total TUT (sum of all rep durations — NOT wall-clock run duration)
         val totalTUT = reps.sumOf { it.durationMs }
         
         // Load metrics
@@ -180,7 +180,7 @@ object MetricsCalculator {
             .maxOrNull()
         val tempoConsistency = calculateTempoConsistencyFromRepMetrics(repMetricsList)
         
-        return SessionMetrics(
+        return WorkoutExecutionMetrics(
             avgRom = avgRom,
             avgSymmetry = avgSymmetry,
             avgStability = avgStability,
@@ -200,10 +200,10 @@ object MetricsCalculator {
     }
     
     /**
-     * Create empty session metrics
+     * Create empty workout-execution metrics
      */
-    private fun createEmptySessionMetrics(): SessionMetrics {
-        return SessionMetrics(
+    private fun createEmptyWorkoutExecutionMetrics(): WorkoutExecutionMetrics {
+        return WorkoutExecutionMetrics(
             avgRom = 0,
             avgSymmetry = null,
             avgStability = 1000,

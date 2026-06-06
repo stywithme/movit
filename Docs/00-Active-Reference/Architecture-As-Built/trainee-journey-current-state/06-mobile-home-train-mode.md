@@ -7,7 +7,7 @@
 ## بيانات المستخدم في الاستجابة
 
 - من `UserLevelProfile` الأحدث: `user.level`, `levelCode` (عبر `buildLevelProgress`), `bodyScore` من آخر `BodyScanResult`.
-- إحصاءات و`recentSessions` من جداول التدريب.
+- إحصاءات و`recentWorkoutExecutions` من جداول التدريب.
 
 ## حالات `trainMode.status`
 
@@ -19,16 +19,16 @@
 | `reassessment_due` | يوجد `ReassessmentSchedule` بحالة `pending` و`scheduledDate <= now` |
 | `no_plan` | يوجد تقييم لكن لا فتحة خطة نشطة أو لا برنامج مرتبط بالفتحة النشطة |
 | `program_complete` | منطق الموضع في البرنامج يعتبر البرنامج مكتملًا (`position.isProgramComplete`) |
-| `rest_day` | يوم راحة في القالب، أو يوم خارج جدول المستخدم، أو كل الجلسات لليوم مكتملة (`day_complete`) |
-| `active` | يوم تدريب مع جلسة غير مكتملة |
+| `rest_day` | يوم راحة في القالب، أو يوم خارج جدول المستخدم، أو كل التمارين المخططة لليوم مكتملة (`day_complete`) |
+| `active` | يوم تدريب مع تمرين مخطط غير مكتمل |
 
 **ملاحظة:** استعلام `pendingReassessment` في `buildHomeData` يستخدم `status: 'pending'` فقط (لا يشمل `overdue` في هذا الاستعلام)، بينما فرع `reassessment_due` يقارن التاريخ لجدول `pending`.
 
 ## مصادر البيانات داخل `buildTrainMode`
 
 - `activePlan` مع `programs where status: 'active'`.
-- `resolveTrainingPositionMeta`, `countTrainingDaySlots`, `getLastProgramSessionCompletedAt` — من وحدات الخطة.
-- `effectivePlanService.getEffectivePlan` لعدّ التمارين الفعلية للجلسة الحالية عند الحالة `active`.
+- `resolveTrainingPositionMeta`, `countTrainingDaySlots`, `getLastPlannedWorkoutCompletedAt` — من وحدات الخطة.
+- `effectivePlanService.getEffectivePlan` لعدّ التمارين الفعلية للتمرين المخطط الحالي عند الحالة `active`.
 
 ## التنبيهات (`alerts`)
 

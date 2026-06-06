@@ -13,7 +13,7 @@ export interface PhaseFormLike {
   endWeek: number;
 }
 
-export interface SessionItemFormLike {
+export interface PlannedWorkoutItemFormLike {
   id?: string;
   type: 'exercise' | 'rest';
   exerciseId?: string;
@@ -27,13 +27,13 @@ export interface SessionItemFormLike {
   restDurationMs?: number;
 }
 
-export interface SessionFormLike {
+export interface PlannedWorkoutFormLike {
   id?: string;
   name: LocalizedText;
   sortOrder: number;
   role?: string;
   estimatedDurationMin?: number | null;
-  items: SessionItemFormLike[];
+  items: PlannedWorkoutItemFormLike[];
 }
 
 export interface DayFormLike {
@@ -42,7 +42,7 @@ export interface DayFormLike {
   isRestDay: boolean;
   name: LocalizedText;
   dayFocus?: string;
-  sessions: SessionFormLike[];
+  plannedWorkouts: PlannedWorkoutFormLike[];
 }
 
 export interface WeekFormLike {
@@ -68,13 +68,13 @@ export interface ProgramPhaseApiPayload {
       isRestDay?: boolean;
       name?: LocalizedText;
       dayFocus?: string;
-      sessions?: Array<Record<string, unknown>>;
+      plannedWorkouts?: Array<Record<string, unknown>>;
     }>;
   };
 }
 
 function mapItemsForApi(
-  items: SessionItemFormLike[],
+  items: PlannedWorkoutItemFormLike[],
 ): Array<Record<string, unknown>> {
   return items.map((item, itemIndex) => ({
     ...(item.id ? { id: item.id } : {}),
@@ -98,21 +98,21 @@ function mapItemsForApi(
   }));
 }
 
-function mapSessionsForPattern(sessions: SessionFormLike[]): Array<Record<string, unknown>> {
-  return sessions.map((session, sessionIndex) => ({
-    ...(session.id ? { id: session.id } : {}),
-    name: session.name,
-    sortOrder: session.sortOrder ?? sessionIndex,
-    role: session.role || 'MAIN',
+function mapPlannedWorkoutsForPattern(plannedWorkouts: PlannedWorkoutFormLike[]): Array<Record<string, unknown>> {
+  return plannedWorkouts.map((workout, workoutIndex) => ({
+    ...(workout.id ? { id: workout.id } : {}),
+    name: workout.name,
+    sortOrder: workout.sortOrder ?? workoutIndex,
+    role: workout.role || 'MAIN',
     estimatedDurationMin:
-      session.estimatedDurationMin === undefined || session.estimatedDurationMin === null
+      workout.estimatedDurationMin === undefined || workout.estimatedDurationMin === null
         ? undefined
-        : session.estimatedDurationMin,
-    items: mapItemsForApi(session.items),
+        : workout.estimatedDurationMin,
+    items: mapItemsForApi(workout.items),
   }));
 }
 
-/** Semantic calendar fingerprint for one week — ignores DB ids on weeks/days/sessions/items. */
+/** Semantic calendar fingerprint for one week — ignores DB ids on weeks/days/plannedWorkouts/items. */
 export function weekCalendarFingerprint(week: WeekFormLike): string {
   const normalized = {
     weekType: week.weekType,
@@ -121,12 +121,12 @@ export function weekCalendarFingerprint(week: WeekFormLike): string {
       isRestDay: day.isRestDay,
       dayFocus: day.dayFocus ?? '',
       name: day.name,
-      sessions: day.sessions.map((session, sessionIndex) => ({
-        name: session.name,
-        sortOrder: session.sortOrder ?? sessionIndex,
-        role: session.role ?? 'MAIN',
-        estimatedDurationMin: session.estimatedDurationMin ?? undefined,
-        items: session.items.map((item, itemIndex) => ({
+      plannedWorkouts: day.plannedWorkouts.map((workout, workoutIndex) => ({
+        name: workout.name,
+        sortOrder: workout.sortOrder ?? workoutIndex,
+        role: workout.role ?? 'MAIN',
+        estimatedDurationMin: workout.estimatedDurationMin ?? undefined,
+        items: workout.items.map((item, itemIndex) => ({
           type: item.type,
           exerciseId: item.type === 'exercise' ? item.exerciseId : undefined,
           sets: item.type === 'exercise' ? item.sets : undefined,
@@ -192,7 +192,7 @@ export function buildProgramPhasesPayload(
           isRestDay: day.isRestDay,
           name: day.name.en || day.name.ar ? day.name : undefined,
           dayFocus: day.dayFocus?.trim() ? day.dayFocus : undefined,
-          sessions: mapSessionsForPattern(day.sessions),
+          plannedWorkouts: mapPlannedWorkoutsForPattern(day.plannedWorkouts),
         })),
       },
     };

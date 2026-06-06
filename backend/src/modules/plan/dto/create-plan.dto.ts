@@ -1,4 +1,4 @@
-export class CreatePlanDto {
+﻿export class CreatePlanDto {
     name: any;
     description?: any;
     monthlyPrice: number;
@@ -6,7 +6,7 @@ export class CreatePlanDto {
     currency?: string;
     discount?: number;
     maxExercisesLimit?: number;
-    maxWorkoutsLimit?: number;
+    maxWorkoutTemplatesLimit?: number;
     freeDoctorSessionsLimit?: number;
     monthlyGooglePlayProductId?: string;
     yearlyGooglePlayProductId?: string;

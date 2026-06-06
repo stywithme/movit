@@ -75,24 +75,24 @@
 | DELETE | `/exercises/:id` | Delete an exercise |
 | PUT | `/exercises/:id/publish` | Publish an exercise |
 | DELETE | `/exercises/:id/publish` | Unpublish an exercise |
-| POST | `/exercises/bulk/unpublish` | Unpublish multiple exercises (`{ ids: string[] }`) |
-| POST | `/exercises/bulk/delete` | Soft-delete multiple exercises (`{ ids: string[] }`) |
 | GET | `/exercises/:id/config` | Get Android-compatible config for the exercise |
 
 ---
 
-## 🏃 Workouts (`/workouts`)
+## 🏃 Workout Templates (`/workout-templates`)
+
+Catalog presets (formerly `/workouts`). See [Workout-Domain-Naming.md](Workout-Domain-Naming.md).
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| GET | `/workouts` | List workouts |
-| POST | `/workouts` | Create a new workout |
-| GET | `/workouts/:id` | Get workout details (includes exercises) |
-| PUT | `/workouts/:id` | Update workout |
-| DELETE | `/workouts/:id` | Delete a workout |
-| POST | `/workouts/:id/publish` | Publish a workout |
-| DELETE | `/workouts/:id/publish` | Unpublish a workout |
-| POST | `/workouts/:id/duplicate` | Duplicate an existing workout |
+| GET | `/workout-templates` | List workout templates |
+| POST | `/workout-templates` | Create a template |
+| GET | `/workout-templates/:id` | Get template details (includes exercises) |
+| PUT | `/workout-templates/:id` | Update template |
+| DELETE | `/workout-templates/:id` | Delete a template |
+| POST | `/workout-templates/:id/publish` | Publish template |
+| DELETE | `/workout-templates/:id/publish` | Unpublish template |
+| POST | `/workout-templates/:id/duplicate` | Duplicate template |
 
 ---
 
@@ -102,7 +102,7 @@
 | :--- | :--- | :--- |
 | GET | `/programs` | List programs |
 | POST | `/programs` | Create a new program |
-| GET | `/programs/:id` | Get program full details (weeks, days, sessions) |
+| GET | `/programs/:id` | Get program full details (weeks, days, planned workouts) |
 | PUT | `/programs/:id` | Update program metadata |
 | DELETE | `/programs/:id` | Delete a program |
 | POST | `/programs/:id/publish` | Publish program |
@@ -116,11 +116,52 @@
 | POST | `/programs/:programId/weeks/:weekId/days` | Add a day to a week |
 | PUT | `/programs/:programId/weeks/:weekId/days/:dayId` | Update day info |
 | DELETE | `/programs/:programId/weeks/:weekId/days/:dayId` | Delete a day |
-| **Sessions** | | |
-| POST | `/programs/:programId/weeks/:weekId/days/:dayId/sessions` | Add session to a day |
-| PUT | `/programs/:programId/sessions/:sessionId` | Update session |
-| DELETE | `/programs/:programId/sessions/:sessionId` | Delete a session |
-| POST | `/programs/:programId/sessions/:sessionId/import-workout/:workoutId` | Import all exercises from a workout into a session |
+| **Planned workouts** | | |
+| POST | `/programs/:programId/weeks/:weekId/days/:dayId/planned-workouts` | Add planned workout to a day |
+| PUT | `/programs/:programId/planned-workouts/:plannedWorkoutId` | Update planned workout |
+| DELETE | `/programs/:programId/planned-workouts/:plannedWorkoutId` | Delete a planned workout |
+| POST | `/programs/:programId/planned-workouts/:plannedWorkoutId/items` | Add item to planned workout |
+| PUT | `/programs/:programId/planned-workouts/:plannedWorkoutId/items/:itemId` | Update planned workout item |
+| DELETE | `/programs/:programId/planned-workouts/:plannedWorkoutId/items/:itemId` | Delete planned workout item |
+| POST | `/programs/:programId/planned-workouts/:plannedWorkoutId/import-workout-template/:workoutTemplateId` | Import template exercises into planned workout |
+
+---
+
+## 📱 Mobile — Workout executions (`/mobile/workout-executions`)
+
+Per-exercise workout execution runs and history.
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| POST | `/mobile/workout-executions` | Upload single exercise execution + `executionMetrics` |
+| POST | `/mobile/workout-executions/explore` | Upload grouped explore/quick-start workout (`executions[]`) |
+| GET | `/mobile/workout-executions` | List execution history |
+| GET | `/mobile/workout-executions/exercise/:exerciseId` | Exercise history + aggregates |
+
+## 📱 Mobile — Planned workouts (`/mobile/planned-workouts`)
+
+Program block lifecycle (start/complete report).
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| POST | `/mobile/planned-workouts/:plannedWorkoutId/start` | Start planned workout report |
+| POST | `/mobile/planned-workouts/:plannedWorkoutId/complete` | Complete planned workout + progression |
+| POST | `/mobile/planned-workouts/:plannedWorkoutId/report` | Alias for complete (legacy clients) |
+
+## 📱 Mobile — Workout templates (`/mobile/workout-templates`)
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| GET | `/mobile/workout-templates` | Sync catalog templates |
+
+## 📱 Mobile — Home & plan
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| GET | `/mobile/home` | Home data; `todayWorkout`, `trainMode`, `recentWorkoutExecutions` |
+| GET | `/mobile/user-programs/:id/today` | Today plan; `currentProgram.plannedWorkouts[]` |
+| GET | `/mobile/user-programs/:id/effective-plan` | Merged template + overrides; `plannedWorkouts[]` |
+| GET | `/mobile/progression/planned-workout/:plannedWorkoutId` | Progression changes for a completed block |
 
 ---
 
@@ -202,15 +243,21 @@
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| GET | `/bookings/available-doctors` | Get doctors with available slots today |
-| GET | `/bookings/available-slots/:adminId` | Get available slots for a specific doctor |
-| GET | `/bookings/my` | Get user's current and upcoming bookings |
-| GET | `/bookings/history` | Get user's past/cancelled bookings |
+| GET | `/bookings/available-doctors` | Get doctors with available slots for a selected date |
+| GET | `/bookings/available-slots/:adminId` | Get available slots for a specific doctor as `startAt`, `endAt`, `durationMinutes` |
+| GET | `/bookings/my` | Get user's current and upcoming bookings with backend-calculated `allowedActions` |
+| GET | `/bookings/history` | Get user's past/cancelled bookings with backend-calculated `allowedActions` |
 | POST | `/bookings` | Create a new booking |
-| PUT | `/bookings/:id/reschedule` | Reschedule a booking |
-| PUT | `/bookings/:id/cancel` | Cancel a booking |
+| PUT | `/bookings/:id/reschedule` | Reschedule a booking when `allowedActions.canReschedule` is true |
+| PUT | `/bookings/:id/cancel` | Cancel a booking when `allowedActions.canCancel` is true (`payment_pending`, `pending`) |
 
 ---
+
+Booking response notes:
+
+- Booking payloads returned by user booking endpoints include `allowedActions.canCancel`, `allowedActions.canReschedule`, and `allowedActions.canJoin`.
+- Slot payloads returned by `/bookings/available-slots/:adminId` use `startAt` and `endAt` only.
+- User cancellation is allowed for `payment_pending` and `pending` bookings.
 
 ## 📝 Booking Reports (`/admin/booking-reports`)
 
@@ -238,98 +285,3 @@ GET /bookings/available-slots/:adminId?date=
 GET /bookings/my / GET /bookings/history
 POST /bookings / PUT /bookings/:id/reschedule / PUT /bookings/:id/cancel
 GET /bookings/:id/report
-
----
-
-## 💎 Plans (`/admin/plans`)
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| GET | `/admin/plans` | List all plans |
-| POST | `/admin/plans` | Create a new plan |
-| GET | `/admin/plans/:id` | Get plan details |
-| PATCH | `/admin/plans/:id` | Update plan |
-| DELETE | `/admin/plans/:id` | Delete plan |
-
----
-
-## 💳 Subscriptions (`/admin/subscriptions`)
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| GET | `/admin/subscriptions` | List all subscriptions |
-| POST | `/admin/subscriptions` | Create a new subscription |
-| GET | `/admin/subscriptions/:id` | Get subscription details |
-| PATCH | `/admin/subscriptions/:id` | Update subscription |
-| DELETE | `/admin/subscriptions/:id` | Delete subscription |
-
----
-
-## 📱 Mobile Plans (`/mobile/plans`)
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| GET | `/mobile/plans` | List all active plans for mobile users |
-
----
-
-## 💳 Mobile Subscriptions (`/mobile/subscriptions`)
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| GET | `/mobile/subscriptions/mine` | View user's own subscriptions |
-| POST | `/mobile/subscriptions` | Subscribe to a plan (requires planId, amountPaid) |
-
----
-
-## 📅 Active Plan & Programs (`/mobile/plan`)
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| GET | `/mobile/plan` | Get current user's active plan/programs |
-| GET | `/mobile/plan/today` | Get today's targeted training session |
-| POST | `/mobile/plan/enroll` | Enroll in a new program (requires programId) |
-| POST | `/mobile/plan/complete` | Complete the active program and advance |
-
----
-
-## 📉 Training Sessions (`/mobile/sessions`)
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| GET | `/mobile/sessions` | List session history with metrics |
-| GET | `/mobile/sessions/stats` | Get home stats (streak, total reps, average score) |
-| POST | `/mobile/sessions` | Upload raw session metrics |
-| POST | `/mobile/sessions/:sessionId/start` | Mark a scheduled session as started |
-| POST | `/mobile/sessions/:sessionId/complete` | Mark session as completed with final metrics |
-
----
-
-## 📊 Mobile Reports (`/mobile/reports`)
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| GET | `/mobile/reports/dashboard` | Coach-style dashboard payload for all report sources (`all`, `program`, `free`, `workout`, `quick`, `explore`) |
-| GET | `/mobile/reports/metrics` | Unified scoped metrics (`program`, `week`, `day`, `session`, `exercise`) |
-
----
-
-## 🔍 Body Scan & Assessments (`/assessment`)
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| GET | `/assessment/latest` | Get latest body scan/assessment result |
-| GET | `/assessment/history` | List all past assessment results |
-| GET | `/assessment/progress` | Get comparison data with previous assessment |
-| POST | `/assessment` | Save a new body scan result |
-| GET | `/mobile/assessment-templates/resolve` | Get the right assessment template for the user |
-
----
-
-## 🔄 Reassessment Schedules (`/mobile/reassessment`)
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| GET | `/mobile/reassessment/upcoming` | List scheduled future reassessments |
-| GET | `/mobile/reassessment/history` | List past reassessment events |
-| POST | `/mobile/reassessment/request` | Manually request/schedule a new reassessment |

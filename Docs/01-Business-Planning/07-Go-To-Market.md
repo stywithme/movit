@@ -109,7 +109,7 @@
 - Landing conversion.
 - Beta acceptance.
 - Assessment completion.
-- First session completion.
+- First planned workout completion.
 - Week 1 retention.
 - (الدفع مؤجَّل)
 

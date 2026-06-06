@@ -239,21 +239,21 @@ class AnalysisResultStorage(private val context: Context) {
         if (results.isEmpty()) {
             return ExerciseStats(
                 exerciseId = exerciseId,
-                totalSessions = 0,
+                totalExecutions = 0,
                 totalReps = 0,
                 averageAccuracy = 0f,
                 bestAccuracy = 0f,
-                lastSessionDate = null
+                lastExecutionDate = null
             )
         }
         
         return ExerciseStats(
             exerciseId = exerciseId,
-            totalSessions = results.size,
+            totalExecutions = results.size,
             totalReps = results.sumOf { it.totalReps },
             averageAccuracy = results.map { it.accuracy }.average().toFloat(),
             bestAccuracy = results.maxOf { it.accuracy },
-            lastSessionDate = results.maxOf { it.analysisDate }
+            lastExecutionDate = results.maxOf { it.analysisDate }
         )
     }
 }
@@ -263,17 +263,17 @@ class AnalysisResultStorage(private val context: Context) {
  */
 data class ExerciseStats(
     val exerciseId: String,
-    val totalSessions: Int,
+    val totalExecutions: Int,
     val totalReps: Int,
     val averageAccuracy: Float,
     val bestAccuracy: Float,
-    val lastSessionDate: Long?
+    val lastExecutionDate: Long?
 ) {
     fun getFormattedAverageAccuracy(): String = String.format("%.0f%%", averageAccuracy)
     fun getFormattedBestAccuracy(): String = String.format("%.0f%%", bestAccuracy)
     
-    fun getFormattedLastSession(): String {
-        return lastSessionDate?.let {
+    fun getFormattedLastExecution(): String {
+        return lastExecutionDate?.let {
             val sdf = java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault())
             sdf.format(java.util.Date(it))
         } ?: "Never"

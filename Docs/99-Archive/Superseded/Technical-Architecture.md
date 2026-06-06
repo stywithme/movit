@@ -1,4 +1,4 @@
-﻿> **Status:** `ARCHIVED` â€” superseded, cancelled, or historical review only.
+> **Status:** `ARCHIVED` â€” superseded, cancelled, or historical review only.
 > **Current SSOT:** `Docs/00-Active-Reference/README.md`
 > **Archived:** 2026-05-29
 
@@ -33,7 +33,7 @@
 هذا هو "العقل المدبر" للتطبيق، ويعمل على Android و iOS بنفس الكود. يحتوي على:
 *   **Training Engine:** محرك التدريب (StateMachine, RepCounter, HoldTimer).
 *   **Form Validator:** منطق التحقق من صحة التمرين وحساب الزوايا.
-*   **Data Models:** نماذج البيانات (ExerciseConfig, Session, JointState).
+*   **Data Models:** نماذج البيانات (ExerciseConfig, Planned Workout, JointState).
 *   **Business Logic:** إدارة الجلسات، التقييم، المنطق الرياضي.
 
 ### ب. طبقة Android (Native Module)

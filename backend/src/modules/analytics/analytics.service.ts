@@ -10,8 +10,8 @@ export class AnalyticsService {
 
   constructor(@InjectQueue(ANALYTICS_QUEUE) private readonly queue: Queue) {}
 
-  async enqueueSessionAnalytics(userId: string, sessionId: string) {
-    await this.queue.add('session_analytics', { userId, sessionId }, { removeOnComplete: true });
+  async enqueueWorkoutExecutionAnalytics(userId: string, workoutExecutionId: string) {
+    await this.queue.add('workout_execution_analytics', { userId, workoutExecutionId }, { removeOnComplete: true });
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_3AM)

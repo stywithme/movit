@@ -36,7 +36,7 @@
 
 - يصفّي برامج لها `programAttributes.length > 0` و`isProgramEligibleForAutoAssignment` و`passesAttributeFilter`.
 - `narrowByFocusAndRegions` حسب التلميحات.
-- الترتيب: تطابق `weeklySessionTarget` مع عدد أيام التدريب للمستخدم إن وُجد؛ ثم `scoreProgramForLimitingFactor`؛ ثم `countOptionalMatches`؛ ثم `prescriptionPriority` تصاعديًا (الأصغر أولًا في المصفوفة بعد الفرز — الرجوع للكود للتفصيل الدقيق).
+- الترتيب: تطابق `weeklyPlannedWorkoutsTarget` مع عدد أيام التدريب للمستخدم إن وُجد؛ ثم `scoreProgramForLimitingFactor`؛ ثم `countOptionalMatches`؛ ثم `prescriptionPriority` تصاعديًا (الأصغر أولًا في المصفوفة بعد الفرز — الرجوع للكود للتفصيل الدقيق).
 
 ## واجهة التوصية للموبايل
 

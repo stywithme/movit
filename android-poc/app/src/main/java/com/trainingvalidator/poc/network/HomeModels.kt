@@ -1,4 +1,6 @@
-package com.trainingvalidator.poc.network
+﻿package com.trainingvalidator.poc.network
+
+import com.google.gson.annotations.SerializedName
 
 /**
  * Home API Models
@@ -17,7 +19,7 @@ data class HomeData(
     val user: HomeUserData?,
     val trainMode: TrainModeData?,
     val stats: HomeStatsData?,
-    val recentSessions: List<RecentSessionData>?,
+    val recentWorkouts: List<RecentWorkoutData>?,
     val alerts: List<HomeAlertData>?,
 
     // Legacy fields — kept for backward compatibility with cached data
@@ -47,14 +49,14 @@ data class HomeUserData(
  *   no_assessment   — User has never done a Body Scan
  *   no_plan         — Assessment done but no active program
  *   rest_day        — Active plan, but today is a rest/recovery day
- *   active          — Active plan with sessions to complete today
+ *   active          — Active plan with planned workouts to complete today
  *   program_complete— All weeks done, awaiting reassessment
  *   reassessment_due— A ReassessmentSchedule is pending and overdue
  */
 data class TrainModeData(
     val status: String,
     val activeProgram: TrainActiveProgramData?,
-    val todaySession: TrainTodaySessionData?,
+    val todayWorkout: TrainTodayWorkoutData?,
     val dayType: String?,
     val nextReassessment: NextReassessmentData?,
     /** True when the active user program calendar is paused */
@@ -76,30 +78,30 @@ data class WeekProgressData(
     val total: Int
 )
 
-data class TrainTodaySessionData(
-    val sessionId: String,
+data class TrainTodayWorkoutData(
+    val plannedWorkoutId: String,
     val name: Map<String, String>,
     val exerciseCount: Int,
     val estimatedMinutes: Int?,
     val role: String?,
     val isCompleted: Boolean,
-    val allSessionsCount: Int,
-    val completedSessionsCount: Int
+    val allWorkoutsCount: Int,
+    val completedWorkoutsCount: Int
 )
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
 
 data class HomeStatsData(
-    val totalSessions: Int,
+    val totalWorkoutExecutions: Int,
     val avgFormScore: Int,
     val streak: Int,
-    val thisWeekSessions: Int,
+    val thisWeekExecutions: Int,
     val totalMinutes: Int
 )
 
-// ── Recent Sessions ───────────────────────────────────────────────────────────
+// ── Recent Workouts ───────────────────────────────────────────────────────────
 
-data class RecentSessionData(
+data class RecentWorkoutData(
     val exerciseId: String,
     val exerciseName: Map<String, String>,
     val formScore: Int,

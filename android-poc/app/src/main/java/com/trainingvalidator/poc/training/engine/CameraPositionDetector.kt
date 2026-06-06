@@ -397,7 +397,7 @@ object CameraPositionDetector {
  * the raw detection is trusted directly so that the very first frame
  * (image mode, or start of video) returns a real value instead of UNKNOWN.
  *
- * Create one instance per training session / validator lifetime.
+ * Create one instance per exercise run / validator lifetime.
  */
 class StableCameraDetector(
     private val windowSize: Int = 7,

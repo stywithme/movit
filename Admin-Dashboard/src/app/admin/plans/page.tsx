@@ -109,7 +109,7 @@ export default function PlansPage() {
             header: 'Limits',
             cell: (plan) => (
                 <div className="text-sm text-muted-foreground">
-                    <div>Workouts: {plan.maxWorkoutsLimit}</div>
+                    <div>Workout Templates: {plan.maxWorkoutTemplatesLimit}</div>
                     <div>Exercises: {plan.maxExercisesLimit}</div>
                 </div>
             ),

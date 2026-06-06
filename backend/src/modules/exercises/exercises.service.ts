@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Exercise Service - State-Based System
  * ======================================
  * 
@@ -8,7 +8,7 @@
 
 import { getPrisma } from '@/lib/prisma/client';
 import { deleteByUrl } from '@/lib/storage';
-import type { LoadCapability, MovementPattern, SessionItemIntent } from '@prisma/client';
+import type { LoadCapability, MovementPattern, WorkoutItemIntent } from '@prisma/client';
 import type { CountingMethodCode, PhaseName } from '@/lib/types/localized';
 import type {
   TrackedJoint,
@@ -73,7 +73,7 @@ interface CreateExerciseInput {
   loadCapability?: LoadCapability | null;
   familyKey?: string | null;
   familyOrder?: number | null;
-  intent?: SessionItemIntent | null;
+  intent?: WorkoutItemIntent | null;
   coachingNotes?: Record<string, unknown> | null;
 }
 

@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.training.models
+﻿package com.trainingvalidator.poc.training.models
 
 import com.trainingvalidator.poc.training.engine.Phase
 import java.util.Arrays
@@ -8,13 +8,13 @@ import java.util.Arrays
  * 
  * Design Principles:
  * - Minimal memory footprint (ShortArray instead of Map<String, Double>)
- * - No redundancy (joint names stored once per session, not per frame)
+ * - No redundancy (joint names stored once per execution, not per frame)
  * - Fast serialization (primitive arrays)
  * 
  * Data Flow:
  * TrainingEngine.processFrame() → MotionRecorder.record() → FrameSample
  * RepCounter.completeRep() → MotionRecorder.finalizeRep() → RepRecord
- * Session end → MotionRecorder.finalize() → SessionRecord → JSON.gz
+ * Exercise run end → MotionRecorder.finalize() → WorkoutExecutionRecord → JSON.gz
  */
 
 // ==================== Constants ====================
@@ -86,9 +86,9 @@ object StateCode {
  * - states: ~5 bytes (5 joints × 1 byte, nullable)
  * Total: ~20 bytes/frame vs ~200+ bytes with Map<String, Double>
  * 
- * @param t Milliseconds since session start (not Unix timestamp for compactness)
+ * @param t Milliseconds since execution start (not Unix timestamp for compactness)
  * @param phase Current movement phase (PhaseCode)
- * @param angles Joint angles × 10 (e.g., 90.5° → 905). Order matches trackedJoints in SessionRecord
+ * @param angles Joint angles × 10 (e.g., 90.5° → 905). Order matches trackedJoints in WorkoutExecutionRecord
  * @param states Joint states (optional, only recorded on state change to save space)
  */
 data class FrameSample(
@@ -153,8 +153,8 @@ data class FrameSample(
  * Contains all frames and phase timings for detailed analysis.
  * 
  * @param num Rep number (1-based)
- * @param startT Start time in ms (relative to session start)
- * @param endT End time in ms (relative to session start)
+ * @param startT Start time in ms (relative to execution start)
+ * @param endT End time in ms (relative to execution start)
  * @param frames All frame samples during this rep
  * @param phases Phase durations [eccentric, isometric, concentric] in ms
  * @param worstState Worst joint state reached during this rep
@@ -287,11 +287,11 @@ data class RepMetrics(
 }
 
 /**
- * SessionMetrics - Aggregated metrics for the entire session
+ * WorkoutExecutionMetrics - Aggregated metrics for one exercise execution
  * 
- * Computed from all RepRecords after session ends.
+ * Computed from all RepRecords after the run ends.
  */
-data class SessionMetrics(
+data class WorkoutExecutionMetrics(
     // Kinematic metrics (averages)
     val avgRom: Short,
     val avgSymmetry: Short?,
@@ -318,7 +318,7 @@ data class SessionMetrics(
     val fatigueIndex: Short?,       // Rep number where fatigue started (null = no fatigue)
     
     // New metrics (V2)
-    val velocityLoss: Short? = null,        // Max VL% × 10 in session (0 = no loss, 1000 = 100% loss)
+    val velocityLoss: Short? = null,        // Max VL% × 10 in execution (0 = no loss, 1000 = 100% loss)
     val tempoConsistency: Short? = null     // Tempo consistency × 10 (1000 = perfectly consistent)
 ) {
     /**
@@ -340,7 +340,7 @@ data class SessionMetrics(
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
-        other as SessionMetrics
+        other as WorkoutExecutionMetrics
         return avgRom == other.avgRom &&
                avgSymmetry == other.avgSymmetry &&
                avgStability == other.avgStability &&
@@ -378,25 +378,25 @@ data class SessionMetrics(
     }
 }
 
-// ==================== Session Level ====================
+// ==================== Execution Level ====================
 
 /**
- * SessionRecord - Complete session data for storage and analysis
+ * WorkoutExecutionRecord - Complete exercise-execution data for storage and analysis
  * 
  * Contains all rep records and computed metrics.
  * Serialized to JSON.gz for persistent storage.
  * 
- * @param id Unique session identifier
+ * @param id Unique workout-execution identifier
  * @param exerciseId Exercise identifier (matches ExerciseConfig.fileName)
- * @param startEpoch Unix timestamp of session start
- * @param durationMs Total session duration in milliseconds
+ * @param startEpoch Unix timestamp of execution start
+ * @param durationMs Total execution duration in milliseconds
  * @param trackedJoints List of tracked joint names (order matches FrameSample.angles)
- * @param defaultWeightKg Default weight for the session (null for bodyweight)
+ * @param defaultWeightKg Default weight for the execution (null for bodyweight)
  * @param weightUnit Weight unit ("kg" or "lbs") - stored for display, conversion in UI
  * @param reps List of all rep records
- * @param metrics Computed session metrics
+ * @param metrics Computed workout-execution metrics
  */
-data class SessionRecord(
+data class WorkoutExecutionRecord(
     val id: String,
     val exerciseId: String,
     val startEpoch: Long,
@@ -405,7 +405,7 @@ data class SessionRecord(
     val defaultWeightKg: Float? = null,
     val weightUnit: String = "kg",
     val reps: List<RepRecord>,
-    val metrics: SessionMetrics
+    val metrics: WorkoutExecutionMetrics
 ) {
     /**
      * Total number of reps

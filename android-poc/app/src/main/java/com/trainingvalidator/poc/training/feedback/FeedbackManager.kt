@@ -617,7 +617,7 @@ class FeedbackManager(
             localizedText = lt,
             displayText = message,
             dedupeKey = "target:${event.totalReps}",
-            activeKey = "session_complete",
+            activeKey = "target_reached",
             cooldownGroup = "target",
             messageType = MessageType.MOTIVATION,
             forceAudible = true,

@@ -1,4 +1,6 @@
-package com.trainingvalidator.poc.training.models
+﻿package com.trainingvalidator.poc.training.models
+
+import com.google.gson.annotations.SerializedName
 
 /**
  * ProgramConfig - Program structure from backend
@@ -13,36 +15,46 @@ data class ProgramConfig(
     val levelRangeMin: Int = 0,
     val levelRangeMax: Int = 0,
     val tags: List<String> = emptyList(),
-    val weeks: List<ProgramWeek> = emptyList(),
-    val weeklySessionTarget: Int? = null,
-    val estimatedSessionMinutes: Int? = null,
+    @SerializedName("weeks") private val weeksField: List<ProgramWeek>? = null,
+    val weeklyWorkoutTarget: Int? = null,
+    val estimatedWorkoutMinutes: Int? = null,
     val isFeatured: Boolean = false
-)
+) {
+    val weeks: List<ProgramWeek> get() = weeksField.orEmpty()
+}
 
 data class ProgramWeek(
     val weekNumber: Int,
     val name: LocalizedText? = null,
     val description: LocalizedText? = null,
-    val days: List<ProgramDay> = emptyList()
-)
+    @SerializedName("days") private val daysField: List<ProgramDay>? = null
+) {
+    val days: List<ProgramDay> get() = daysField.orEmpty()
+}
 
 data class ProgramDay(
     val dayNumber: Int,
     val isRestDay: Boolean = false,
     val name: LocalizedText? = null,
-    val sessions: List<ProgramSession> = emptyList()
-)
+    @SerializedName("plannedWorkouts") private val plannedWorkoutsField: List<ProgramWorkout>? = null,
+    @SerializedName("sessions") private val legacySessionsField: List<ProgramWorkout>? = null
+) {
+    val workouts: List<ProgramWorkout>
+        get() = plannedWorkoutsField ?: legacySessionsField ?: emptyList()
+}
 
-data class ProgramSession(
+data class ProgramWorkout(
     val id: String,
     val name: LocalizedText,
     val sortOrder: Int = 0,
     val role: String = "MAIN",
     val estimatedDurationMin: Int? = null,
-    val items: List<ProgramSessionItem> = emptyList()
-)
+    @SerializedName("items") private val itemsField: List<WorkoutLineItem>? = null
+) {
+    val items: List<WorkoutLineItem> get() = itemsField.orEmpty()
+}
 
-data class ProgramSessionItem(
+data class WorkoutLineItem(
     val type: String,
     val serverItemId: String? = null,
     val exerciseSlug: String? = null,

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Level Profile Controller
  * ========================
  *
@@ -100,7 +100,7 @@ export class LevelProfileController {
             repsRange: { min: l.defaultRepsMin, max: l.defaultRepsMax },
             intensityGuide: l.defaultIntensityGuide,
             restBetweenSetsMs: l.defaultRestBetweenSetsMs,
-            sessionDurationRange: { min: l.defaultSessionDurMin, max: l.defaultSessionDurMax },
+            workoutDurationRange: { min: l.defaultWorkoutDurMin, max: l.defaultWorkoutDurMax },
             weeklyFrequencyRange: { min: l.defaultWeeklyFreqMin, max: l.defaultWeeklyFreqMax },
           },
         })),

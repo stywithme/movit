@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Progression Analytics Service — Phase 5.3 & 5.4
  *
  * Analyzes progression rule effectiveness and provides admin-level analytics:
@@ -69,7 +69,7 @@ export const progressionAnalyticsService = {
             progress: { where: { status: 'completed' } },
           },
         },
-        programSessionReports: {
+        plannedWorkoutReports: {
           where: { status: 'completed' },
           select: { avgFormScore: true, avgAccuracy: true },
         },
@@ -84,7 +84,7 @@ export const progressionAnalyticsService = {
         up.progress.length >= program.durationWeeks * 7 * 0.5,
       ).length;
 
-      const reports = program.programSessionReports;
+      const reports = program.plannedWorkoutReports;
       const avgFormScore = reports.length > 0
         ? reports.reduce((sum, r) => sum + (r.avgFormScore ?? 0), 0) / reports.length
         : 0;
@@ -175,7 +175,7 @@ export const progressionAnalyticsService = {
     ] = await Promise.all([
       prisma.user.count({ where: { isActive: true } }),
       prisma.bodyScanResult.count(),
-      prisma.trainingSession.count(),
+      prisma.workoutExecution.count(),
       prisma.progressionHistory.count(),
       prisma.userProgram.count({ where: { isActive: true } }),
       prisma.reassessmentSchedule.count({ where: { status: 'pending' } }),

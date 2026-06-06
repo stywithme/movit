@@ -8,14 +8,14 @@
 
 ### Loop 1 — التقدم الملموس: موجود جزئياً
 
-- موجود: `HomeStatsData` (avgFormScore، streak، thisWeekSessions)، `WeeklyReportActivity`، تاب Reports (`HistoryFragment`، `ReportsTrendsFragment`)، ومقاييس غنية (`SessionMetrics`: avgStability، avgRom، formConsistency، fatigueIndex).
+- موجود: `HomeStatsData` (avgFormScore، streak، thisWeekExecutions)، `WeeklyReportActivity`، تاب Reports (`HistoryFragment`، `ReportsTrendsFragment`)، ومقاييس غنية (`WorkoutExecutionMetrics`: avgStability، avgRom، formConsistency، fatigueIndex).
 - الناقص: **ترجمة الأرقام إلى معنى**. النظام يملك الأرقام، لكن الرسالة يجب أن تكون جملة: "ثباتك زاد من X% إلى Y%".
-- يُبنى في: `WeeklyReportActivity` + `MetricDisplayBuilder` + بطاقة في `HomeFragment`. أضِف "delta عن آخر أسبوع/جلسة" كجملة مفهومة.
+- يُبنى في: `WeeklyReportActivity` + `MetricDisplayBuilder` + بطاقة في `HomeFragment`. أضِف "delta عن آخر أسبوع/تمرين" كجملة مفهومة.
 
 ### Loop 2 — المدرب الذي يعرفني: البيانات موجودة، الـ UX ناقص
 
-- موجود: `SessionSummary.commonErrors`، `RecentSessionData`، آخر جلسة في `ProgramSessionReportStore`.
-- الناقص: استدعاء آخر جلسة قبل/أثناء جلسة اليوم بشكل شخصي.
+- موجود: `WorkoutRunSummary.commonErrors`، `RecentPlannedWorkoutData`، آخر تمرين في `ProgramWorkoutReportStore`.
+- الناقص: استدعاء آخر تمرين قبل/أثناء تمرين اليوم بشكل شخصي.
 - يُبنى في: `PreWorkoutActivity` / بداية `TrainingActivity` — اقرأ آخر `commonErrors` واعرض رسالة: "آخر مرة كانت ركبتك تميل — ركّز عليها اليوم".
 
 ### Loop 3 — العادة (Streak): موجود غالباً
@@ -46,6 +46,6 @@
 ## أولوية البناء للتجربة
 
 1. Loop 4 (تذكير) — الناقص الأكبر وأرخص أثر.
-2. Loop 2 (شخصنة آخر جلسة) — تفرّدك، والبيانات جاهزة.
+2. Loop 2 (شخصنة آخر تمرين) — تفرّدك، والبيانات جاهزة.
 3. Loop 1 (ترجمة لمعنى) — تحسين عرض على موجود.
 4. Loop 3 (streak) — تعزيز بسيط.

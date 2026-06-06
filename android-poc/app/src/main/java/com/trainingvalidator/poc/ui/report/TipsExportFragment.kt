@@ -83,7 +83,7 @@ class TipsExportFragment : Fragment() {
         // ── Layer 2 + 3: Exercise-specific tips + data context ───
         val tips = report.improvementTips
         if (tips.isEmpty()) {
-            col.addView(buildPerfectSessionMessage(ctx))
+            col.addView(buildPerfectWorkoutMessage(ctx))
         } else {
             // Group tips by severity
             val critical = tips.filter { it.severity == TipSeverity.CRITICAL }
@@ -135,12 +135,12 @@ class TipsExportFragment : Fragment() {
 
         val (icon, title, body) = when {
             hasDanger -> Triple("⚠️",
-                if (isArabic) "الجلسة القادمة: سلامة أولاً" else "Next Session: Safety First",
+                if (isArabic) "التمرين القادم: سلامة أولاً" else "Next Workout: Safety First",
                 if (isArabic) "ركز على تصحيح الأوضاع الخطرة قبل زيادة الحمل"
                 else "Focus on correcting unsafe positions before increasing load"
             )
             score >= 90 -> Triple("🚀",
-                if (isArabic) "الجلسة القادمة: تحدى نفسك!" else "Next Session: Challenge Yourself!",
+                if (isArabic) "التمرين القادم: تحدَّ نفسك!" else "Next Workout: Challenge Yourself!",
                 if (isHold) {
                     if (isArabic) "حاول زيادة مدة الثبات أو إضافة أوزان"
                     else "Try increasing hold duration or adding weight"
@@ -150,12 +150,12 @@ class TipsExportFragment : Fragment() {
                 }
             )
             score >= 70 -> Triple("🎯",
-                if (isArabic) "الجلسة القادمة: ثبّت الأساس" else "Next Session: Solidify Basics",
+                if (isArabic) "التمرين القادم: ثبّت الأساس" else "Next Workout: Solidify Basics",
                 if (isArabic) "حافظ على نفس الوزن وركز على تحسين الشكل"
                 else "Keep the same weight and focus on improving form"
             )
             else -> Triple("📈",
-                if (isArabic) "الجلسة القادمة: أساسيات أولاً" else "Next Session: Fundamentals First",
+                if (isArabic) "التمرين القادم: أساسيات أولاً" else "Next Workout: Fundamentals First",
                 if (isArabic) "قلل الوزن وركز على إتقان الحركة"
                 else "Reduce weight and focus on mastering the movement"
             )
@@ -347,10 +347,10 @@ class TipsExportFragment : Fragment() {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    //  Perfect session
+    //  Perfect workout
     // ═══════════════════════════════════════════════════════════════
 
-    private fun buildPerfectSessionMessage(ctx: android.content.Context): LinearLayout {
+    private fun buildPerfectWorkoutMessage(ctx: android.content.Context): LinearLayout {
         val card = H.glassCard(ctx, H.colorGreen(ctx))
         card.gravity = Gravity.CENTER
         card.addView(TextView(ctx).apply {

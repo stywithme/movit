@@ -27,7 +27,7 @@ Instead of identical horizontal lists, each section will have a distinct visual 
 2. **Programs (Long-term Goals)**: 
    - Medium-sized rectangular cards.
    - Focus on duration (e.g., "4 Weeks") and difficulty.
-3. **Workouts (Quick Sessions)**:
+3. **Workouts (Quick Planned Workouts)**:
    - Compact cards showing estimated time and muscle groups.
 4. **Exercises (Library)**:
    - Smaller, more compact items (maybe rounded rectangles with a simple icon) for quick browsing.

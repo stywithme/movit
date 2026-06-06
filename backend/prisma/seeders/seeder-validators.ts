@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+﻿import type { PrismaClient } from '@prisma/client';
 import {
   ASSESSMENT_EXERCISE_SLUGS,
   MIN_CURATED_EXERCISE_COUNT,
@@ -115,8 +115,8 @@ export async function runSeedValidatorsAndReport(prisma: PrismaClient): Promise<
       (r) => r.attributeValue.attribute.code === 'equipment' && r.mode !== 'EXCLUDED',
     );
     assert(hasEquip, `program ${p.slug} missing equipment ProgramAttribute`);
-    assert(p.weeklySessionTarget != null && p.weeklySessionTarget >= 2, `program ${p.slug} weeklySessionTarget < 2`);
-    assert(p.estimatedSessionMinutes != null && p.estimatedSessionMinutes > 0, `program ${p.slug} invalid estimatedSessionMinutes`);
+    assert(p.weeklyWorkoutTarget != null && p.weeklyWorkoutTarget >= 2, `program ${p.slug} weeklyWorkoutTarget < 2`);
+    assert(p.estimatedWorkoutMinutes != null && p.estimatedWorkoutMinutes > 0, `program ${p.slug} invalid estimatedWorkoutMinutes`);
   }
 
   const byMovementPattern: Record<string, number> = {};

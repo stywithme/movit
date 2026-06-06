@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui.train
+﻿package com.trainingvalidator.poc.ui.train
 
 import android.graphics.Color
 import android.util.Log
@@ -14,10 +14,10 @@ import com.trainingvalidator.poc.training.feedback.FeedbackSeverity
 import com.trainingvalidator.poc.training.feedback.JointQualityContent
 import com.trainingvalidator.poc.training.feedback.SystemMessageRegistry
 import com.trainingvalidator.poc.training.models.JointState
-import com.trainingvalidator.poc.training.session.PauseReason
+import com.trainingvalidator.poc.training.workout.PauseReason
 import com.trainingvalidator.poc.ui.training.SetupPhase
 import com.trainingvalidator.poc.ui.training.SetupResult
-import com.trainingvalidator.poc.training.session.SessionState
+import com.trainingvalidator.poc.training.workout.WorkoutRunState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
@@ -69,7 +69,7 @@ class TrainingFeedbackBinder(
             if (lines.isEmpty()) {
                 Toast.makeText(
                     host,
-                    "Pipeline trace (empty — start a session first)",
+                    "Pipeline trace (empty — start a workout first)",
                     Toast.LENGTH_SHORT
                 ).show()
             } else {
@@ -293,8 +293,8 @@ class TrainingFeedbackBinder(
             host.binding.vignetteOverlay.showWarning()
             return
         }
-        if (host.viewModel.supervisor.state.value == SessionState.SETUP_POSE ||
-            host.viewModel.supervisor.state.value == SessionState.RESUME_SETUP
+        if (host.viewModel.supervisor.state.value == WorkoutRunState.SETUP_POSE ||
+            host.viewModel.supervisor.state.value == WorkoutRunState.RESUME_SETUP
         ) {
             host.binding.glassmorphicMessage.clearAll()
             host.binding.vignetteOverlay.showWarning()

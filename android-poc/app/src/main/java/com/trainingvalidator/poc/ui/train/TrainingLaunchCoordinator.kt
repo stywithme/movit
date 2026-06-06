@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui.train
+﻿package com.trainingvalidator.poc.ui.train
 
 import android.util.Log
 import android.widget.Toast
@@ -50,7 +50,7 @@ class TrainingLaunchCoordinator(
         host.binding.skeletonOverlay.setIndicatorType(indicatorType)
 
         host.isAssessmentMode = host.intent.getBooleanExtra(TrainingActivity.EXTRA_ASSESSMENT_MODE, false)
-        host.isSessionMode = host.intent.getBooleanExtra(TrainingActivity.EXTRA_IS_SESSION_MODE, false)
+        host.isWorkoutMode = host.intent.getBooleanExtra(TrainingActivity.EXTRA_IS_WORKOUT_MODE, false)
         return true
     }
 

@@ -40,8 +40,8 @@
   - `ProgramListActivity`
   - `ProgramDetailActivity`
   - `ProgramDayActivity`
-  - `ProgramSessionActivity`
-  - `ProgramSessionReportActivity`
+  - `ProgramWorkoutActivity`
+  - `PlannedWorkoutReportActivity`
   - `WeeklyReportActivity`
   - `PlanOverviewActivity`
   - `ProgramDetailViewModel`

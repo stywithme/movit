@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Auth Service
  * =============
  * 
@@ -99,7 +99,7 @@ function toUserPublic(user: {
   notifications: boolean;
   isPro: boolean;
   subscriptionExpiry: Date | null;
-  totalWorkouts: number;
+  totalWorkoutExecutions: number;
   totalMinutes: number;
   emailVerified: boolean;
   createdAt: Date;
@@ -115,7 +115,7 @@ function toUserPublic(user: {
     notifications: user.notifications,
     isPro: user.isPro,
     subscriptionExpiry: user.subscriptionExpiry,
-    totalWorkouts: user.totalWorkouts,
+    totalWorkoutExecutions: user.totalWorkoutExecutions,
     totalMinutes: user.totalMinutes,
     emailVerified: user.emailVerified,
     createdAt: user.createdAt,
@@ -601,7 +601,7 @@ export const authService = {
     await prisma.user.update({
       where: { id: userId },
       data: {
-        totalWorkouts: { increment: workouts },
+        totalWorkoutExecutions: { increment: workouts },
         totalMinutes: { increment: minutes },
       },
     });

@@ -82,11 +82,11 @@ model Exercise {
   loadCapability            LoadCapability?
   familyKey                 String?
   familyOrder               Int?
-  intent                    SessionItemIntent?
+  intent                    WorkoutItemIntent?
   coachingNotes             Json?
-  programSessionItems       ProgramSessionItem[]
-  trainingSessions          TrainingSession[]
-  workoutExercises          WorkoutExercise[]
+  plannedWorkoutItems       PlannedWorkoutItem[]
+  workoutExecutions         WorkoutExecution[]
+  workoutTemplateExercises  WorkoutTemplateExercise[]
   progressionProfile        ExerciseProgressionProfile?
   progressionStates         UserProgramExerciseProgressionState[]
   userExercisePreferences   UserExercisePreference[]
@@ -292,55 +292,55 @@ model FeedbackMessageAssignment {
   @@map("feedback_message_assignments")
 }
 
-/// Workout - Super Set or Circuit training session
-model Workout {
-  id                   String               @id @default(uuid())
+/// WorkoutTemplate - Super Set or Circuit catalog template
+model WorkoutTemplate {
+  id                   String                    @id @default(uuid())
   name                 Json
   description          Json?
-  slug                 String               @unique
+  slug                 String                    @unique
   coverImageUrl        String?
-  difficulty           Difficulty           @default(beginner)
+  difficulty           Difficulty                @default(beginner)
   estimatedDurationMin Int?
   tags                 Json?
-  status               ContentStatus        @default(draft)
+  status               ContentStatus             @default(draft)
   publishedAt          DateTime?
   createdBy            String?
   updatedBy            String?
-  createdAt            DateTime             @default(now())
-  updatedAt            DateTime             @updatedAt
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @updatedAt
   deletedAt            DateTime?
-  isFeatured           Boolean              @default(false)
-  programSessionItems  ProgramSessionItem[]
-  exercises            WorkoutExercise[]
+  isFeatured           Boolean                   @default(false)
+  plannedWorkoutItems  PlannedWorkoutItem[]
+  exercises            WorkoutTemplateExercise[]
 
   @@index([status])
   @@index([deletedAt])
-  @@map("workouts")
+  @@map("workout_templates")
 }
 
-/// WorkoutExercise - Exercise within a workout with specific configuration
-model WorkoutExercise {
-  id                  String   @id @default(uuid())
-  workoutId           String
+/// WorkoutTemplateExercise - Exercise within a template with specific configuration
+model WorkoutTemplateExercise {
+  id                  String          @id @default(uuid())
+  workoutTemplateId   String
   exerciseId          String
-  variantIndex        Int      @default(0)
-  difficulty          String   @default("beginner")
+  variantIndex        Int             @default(0)
+  difficulty          String          @default("beginner")
   targetReps          Int?
   targetDuration      Int?
-  sets                Int      @default(1)
-  restBetweenSetsMs   Int      @default(30000)
-  restAfterExerciseMs Int      @default(60000)
+  sets                Int             @default(1)
+  restBetweenSetsMs   Int             @default(30000)
+  restAfterExerciseMs Int             @default(60000)
   weightKg            Float?
   weightPerSet        Json?
   notes               Json?
-  sortOrder           Int      @default(0)
-  createdAt           DateTime @default(now())
-  exercise            Exercise @relation(fields: [exerciseId], references: [id])
-  workout             Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  sortOrder           Int             @default(0)
+  createdAt           DateTime        @default(now())
+  exercise            Exercise        @relation(fields: [exerciseId], references: [id])
+  workoutTemplate     WorkoutTemplate @relation(fields: [workoutTemplateId], references: [id], onDelete: Cascade)
 
-  @@index([workoutId])
+  @@index([workoutTemplateId])
   @@index([exerciseId])
-  @@map("workout_exercises")
+  @@map("workout_template_exercises")
 }
 
 model Program {
@@ -369,10 +369,10 @@ model Program {
   ownerId               String?
   forkedFromId          String?
   coachingNotes         Json?
-  weeklySessionTarget   Int?
-  estimatedSessionMinutes Int?
-  isFeatured            Boolean                @default(false)
-  programSessionReports ProgramSessionReport[]
+  weeklyWorkoutTarget     Int?
+  estimatedWorkoutMinutes Int?
+  isFeatured              Boolean                @default(false)
+  plannedWorkoutReports   PlannedWorkoutReport[]
   programAttributes     ProgramAttribute[]
   weeks                 ProgramWeek[]
   nextProgram           Program?               @relation("ProgramNext", fields: [nextProgramId], references: [id])
@@ -459,57 +459,57 @@ model ProgramDay {
   dayType   String           @default("training")
   dayFocus  String?
   week      ProgramWeek      @relation(fields: [weekId], references: [id], onDelete: Cascade)
-  sessions  ProgramSession[]
+  plannedWorkouts PlannedWorkout[]
 
   @@unique([weekId, dayNumber])
   @@index([weekId])
   @@map("program_days")
 }
 
-model ProgramSession {
-  id                   String                 @id @default(uuid())
+model PlannedWorkout {
+  id                   String               @id @default(uuid())
   dayId                String
   name                 Json
-  sortOrder            Int                    @default(0)
-  createdAt            DateTime               @default(now())
-  updatedAt            DateTime               @updatedAt
+  sortOrder            Int                  @default(0)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
   estimatedDurationMin Int?
-  role                 SessionRole            @default(MAIN)
-  items                ProgramSessionItem[]
-  reports              ProgramSessionReport[]
-  day                  ProgramDay             @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  role                 WorkoutBlockRole     @default(MAIN)
+  items                PlannedWorkoutItem[]
+  reports              PlannedWorkoutReport[]
+  day                  ProgramDay           @relation(fields: [dayId], references: [id], onDelete: Cascade)
 
   @@index([dayId])
-  @@map("program_sessions")
+  @@map("planned_workouts")
 }
 
-model ProgramSessionItem {
-  id                String           @id @default(uuid())
-  sessionId         String
-  sortOrder         Int              @default(0)
-  type              String
-  exerciseId        String?
-  sets              Int?             @default(1)
-  targetReps        Int?
-  targetDuration    Int?
-  restBetweenSetsMs Int?             @default(30000)
-  weightKg          Float?
-  weightPerSet      Json?
-  notes             Json?
-  restDurationMs    Int?
-  sourceWorkoutId   String?
-  isModified        Boolean          @default(false)
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
-  exercise          Exercise?        @relation(fields: [exerciseId], references: [id])
-  session           ProgramSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  sourceWorkout     Workout?         @relation(fields: [sourceWorkoutId], references: [id])
-  userProgramOverrides UserProgramOverride[]
+model PlannedWorkoutItem {
+  id                    String            @id @default(uuid())
+  plannedWorkoutId      String
+  sortOrder             Int               @default(0)
+  type                  String
+  exerciseId            String?
+  sets                  Int?              @default(1)
+  targetReps            Int?
+  targetDuration        Int?
+  restBetweenSetsMs     Int?              @default(30000)
+  weightKg              Float?
+  weightPerSet          Json?
+  notes                 Json?
+  restDurationMs        Int?
+  sourceWorkoutTemplateId String?
+  isModified            Boolean           @default(false)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  exercise              Exercise?         @relation(fields: [exerciseId], references: [id])
+  plannedWorkout        PlannedWorkout    @relation(fields: [plannedWorkoutId], references: [id], onDelete: Cascade)
+  sourceWorkoutTemplate WorkoutTemplate?  @relation(fields: [sourceWorkoutTemplateId], references: [id])
+  userProgramOverrides  UserProgramOverride[]
 
-  @@index([sessionId])
+  @@index([plannedWorkoutId])
   @@index([exerciseId])
-  @@index([sourceWorkoutId])
-  @@map("program_session_items")
+  @@index([sourceWorkoutTemplateId])
+  @@map("planned_workout_items")
 }
 
 model UserProgram {
@@ -544,41 +544,41 @@ model UserProgramOverride {
   userProgramId  String
   weekNumber     Int
   dayNumber      Int
-  sessionItemId  String
-  overrideType   OverrideType
-  reasonCode     OverrideReason?
-  data           Json?
-  appliedBy      OverrideAppliedBy  @default(USER)
-  createdAt      DateTime           @default(now())
-  userProgram    UserProgram        @relation(fields: [userProgramId], references: [id], onDelete: Cascade)
-  sessionItem    ProgramSessionItem @relation(fields: [sessionItemId], references: [id], onDelete: Cascade)
+  plannedWorkoutItemId String
+  overrideType         OverrideType
+  reasonCode           OverrideReason?
+  data                 Json?
+  appliedBy            OverrideAppliedBy  @default(USER)
+  createdAt            DateTime           @default(now())
+  userProgram          UserProgram        @relation(fields: [userProgramId], references: [id], onDelete: Cascade)
+  plannedWorkoutItem   PlannedWorkoutItem @relation(fields: [plannedWorkoutItemId], references: [id], onDelete: Cascade)
 
   @@index([userProgramId, weekNumber, dayNumber])
-  @@index([sessionItemId])
+  @@index([plannedWorkoutItemId])
   @@map("user_program_overrides")
 }
 
 model UserProgramProgress {
-  id            String         @id @default(uuid())
-  userProgramId String
-  weekNumber    Int
-  dayNumber     Int
-  sessionId     String         @default("__day__")
-  completedAt   DateTime?
-  status        ProgressStatus @default(pending)
-  userProgram   UserProgram    @relation(fields: [userProgramId], references: [id], onDelete: Cascade)
+  id              String         @id @default(uuid())
+  userProgramId   String
+  weekNumber      Int
+  dayNumber       Int
+  plannedWorkoutId String        @default("__day__")
+  completedAt     DateTime?
+  status          ProgressStatus @default(pending)
+  userProgram     UserProgram    @relation(fields: [userProgramId], references: [id], onDelete: Cascade)
 
-  @@unique([userProgramId, weekNumber, dayNumber, sessionId])
+  @@unique([userProgramId, weekNumber, dayNumber, plannedWorkoutId])
   @@index([userProgramId])
   @@index([userProgramId, weekNumber])
   @@map("user_program_progress")
 }
 
-model ProgramSessionReport {
+model PlannedWorkoutReport {
   id               String         @id @default(uuid())
   userId           String
   programId        String?
-  programSessionId String
+  plannedWorkoutId String
   weekNumber       Int
   dayNumber        Int
   startedAt        DateTime       @default(now())
@@ -591,22 +591,22 @@ model ProgramSessionReport {
   totalReps        Int?
   avgAccuracy      Float?
   avgFormScore     Float?
-  /// User-reported perceived exertion (1–10) after session completion.
+  /// User-reported perceived exertion (1–10) after workout completion.
   rpe              Int?
   report           Json?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   program          Program?       @relation(fields: [programId], references: [id])
-  programSession   ProgramSession @relation(fields: [programSessionId], references: [id], onDelete: Cascade)
+  plannedWorkout   PlannedWorkout @relation(fields: [plannedWorkoutId], references: [id], onDelete: Cascade)
   user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([programId])
-  @@index([programSessionId])
+  @@index([plannedWorkoutId])
   @@index([userId, programId])
-  @@index([userId, programSessionId, status])
+  @@index([userId, plannedWorkoutId, status])
   @@index([userId, weekNumber, dayNumber])
-  @@map("program_session_reports")
+  @@map("planned_workout_reports")
 }
 
 model System {
@@ -735,7 +735,7 @@ model User {
   notifications         Boolean                @default(true)
   isPro                 Boolean                @default(false)
   subscriptionExpiry    DateTime?
-  totalWorkouts         Int                    @default(0)
+  totalWorkoutExecutions Int                   @default(0)
   totalMinutes          Int                    @default(0)
   resetToken            String?
   resetTokenExpiry      DateTime?
@@ -746,11 +746,11 @@ model User {
   deletedAt             DateTime?
   activePlan            ActivePlan?
   bodyScanResults       BodyScanResult[]
-  programSessionReports ProgramSessionReport[]
+  plannedWorkoutReports PlannedWorkoutReport[]
   progressionHistory    ProgressionHistory[]
   reassessmentSchedules ReassessmentSchedule[]
   refreshTokens         RefreshToken[]
-  trainingSessions      TrainingSession[]
+  workoutExecutions     WorkoutExecution[]
   levelProfiles         UserLevelProfile[]
   userPrograms          UserProgram[]
   userExercisePreferences UserExercisePreference[]
@@ -778,9 +778,9 @@ model TrainingProfile {
   trainingExperienceMonths Int?
   resistanceExperience     String?
   availableDaysPerWeek     Int?
-  /// 0=Sun … 6=Sat — which weekdays the user trains; length should match program weeklySessionTarget when enrolling.
+  /// 0=Sun … 6=Sat — which weekdays the user trains; length should match program weeklyWorkoutTarget when enrolling.
   trainingWeekdays         Int[]                 @default([])
-  maxSessionMinutes        Int?
+  maxWorkoutMinutes        Int?
   availableEquipment       Json?
   trainingLocation         String?
   knownInjuries            Json?
@@ -824,8 +824,8 @@ model Level {
   defaultRepsMax           Int                  @default(12)
   defaultIntensityGuide    String               @default("bodyweight_only")
   defaultRestBetweenSetsMs Int                  @default(60000)
-  defaultSessionDurMin     Int                  @default(20)
-  defaultSessionDurMax     Int                  @default(30)
+  defaultWorkoutDurMin     Int                  @default(20)
+  defaultWorkoutDurMax     Int                  @default(30)
   defaultWeeklyFreqMin     Int                  @default(2)
   defaultWeeklyFreqMax     Int                  @default(3)
   createdAt                DateTime             @default(now())
@@ -972,8 +972,8 @@ model ProgressionHistory {
   id            String   @id @default(uuid())
   userId        String
   ruleId        String?
-  sessionId     String?
-  field         String
+  plannedWorkoutId String?
+  field            String
   previousValue Float
   newValue      Float
   reason        String
@@ -1121,64 +1121,54 @@ model BodyScanResult {
   @@map("body_scan_results")
 }
 
-/// Training session - A completed exercise session
-model TrainingSession {
+/// WorkoutExecution - A completed single-exercise workout run
+model WorkoutExecution {
   id String @id @default(uuid())
 
-  // Foreign keys
   userId     String
   exerciseId String
 
-  // Session info
-  timestamp  DateTime // When session started
-  durationMs Int // Total duration in milliseconds
+  timestamp  DateTime
+  durationMs Int
 
-  // Rep counts
   totalReps   Int
-  countedReps Int // Reps with PERFECT/NORMAL/PAD state
-  invalidReps Int // Reps with DANGER state
+  countedReps Int
+  invalidReps Int
 
-  // Weight info (optional - for weighted exercises)
   weightKg   Float?
-  weightUnit String @default("kg") // kg or lbs
+  weightUnit String @default("kg")
 
-  // Session context — tracks the source/mode of the session
-  context   String @default("free") // free | program | assessment | explore_workout | quick_start
+  context String @default("free") // free | program | assessment | explore_workout | quick_start
 
-  // Grouping — links sessions done together in Explore/Quick Start mode
-  groupId   String? // Shared ID for sessions performed in the same multi-exercise free session
+  workoutGroupId String?
 
-  // Source workout — if session was started from a Workout template
-  workoutId String?
+  workoutTemplateId String?
 
-  // Legacy report data (images, danger alerts, etc.)
-  legacyReport Json? // PostTrainingReport for backward compatibility
+  legacyReport Json?
 
-  // Sync status
-  deviceId String? // Device that uploaded this session
+  deviceId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
-  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  exercise       Exercise        @relation(fields: [exerciseId], references: [id])
-  sessionMetrics SessionMetrics?
-  repMetrics     RepMetrics[]
+  user              User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise          Exercise                 @relation(fields: [exerciseId], references: [id])
+  executionMetrics  WorkoutExecutionMetrics?
+  repMetrics        RepMetrics[]
 
   @@index([userId])
   @@index([exerciseId])
   @@index([timestamp])
   @@index([userId, exerciseId])
-  @@index([groupId])
+  @@index([workoutGroupId])
   @@index([context])
-  @@map("training_sessions")
+  @@map("workout_executions")
 }
 
-/// Session-level aggregated metrics
-model SessionMetrics {
-  id                   String          @id @default(uuid())
-  sessionId            String          @unique
+/// Workout-level aggregated metrics for a single exercise execution
+model WorkoutExecutionMetrics {
+  id                   String           @id @default(uuid())
+  workoutExecutionId   String           @unique
   avgRom               Int
   avgSymmetry          Int?
   avgStability         Int
@@ -1194,34 +1184,34 @@ model SessionMetrics {
   intensityPercentage  Float?
   formConsistency      Int?
   fatigueIndex         Int?
-  createdAt            DateTime        @default(now())
-  session              TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  createdAt            DateTime         @default(now())
+  workoutExecution     WorkoutExecution @relation(fields: [workoutExecutionId], references: [id], onDelete: Cascade)
 
-  @@map("session_metrics")
+  @@map("workout_execution_metrics")
 }
 
 /// Individual rep metrics
 model RepMetrics {
-  id                String          @id @default(uuid())
-  sessionId         String
-  repNumber         Int
-  durationMs        Int
-  worstState        Int
-  score             Int
-  weightKg          Float?
-  side              String?
-  rom               Int
-  symmetry          Int?
-  stability         Int
-  velocity          Int?
-  formScore         Int
-  alignmentAccuracy Int
-  tempo             Json
-  createdAt         DateTime        @default(now())
-  session           TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  id                 String           @id @default(uuid())
+  workoutExecutionId String
+  repNumber          Int
+  durationMs         Int
+  worstState         Int
+  score              Int
+  weightKg           Float?
+  side               String?
+  rom                Int
+  symmetry           Int?
+  stability          Int
+  velocity           Int?
+  formScore          Int
+  alignmentAccuracy  Int
+  tempo              Json
+  createdAt          DateTime         @default(now())
+  workoutExecution   WorkoutExecution @relation(fields: [workoutExecutionId], references: [id], onDelete: Cascade)
 
-  @@index([sessionId])
-  @@index([sessionId, repNumber])
+  @@index([workoutExecutionId])
+  @@index([workoutExecutionId, repNumber])
   @@map("rep_metrics")
 }
 
@@ -1266,7 +1256,7 @@ enum ProgramAttributeMode {
   EXCLUDED
 }
 
-enum SessionRole {
+enum WorkoutBlockRole {
   WARMUP
   ACTIVATION
   MAIN
@@ -1276,7 +1266,7 @@ enum SessionRole {
   TEST
 }
 
-enum SessionItemIntent {
+enum WorkoutItemIntent {
   STANDARD
   POWER
   ECCENTRIC
@@ -1520,7 +1510,7 @@ model Plan {
   currency                  String         @default("SAR")
   discount                  Decimal?       @default(0) @db.Decimal(10, 2)
   maxExercisesLimit         Int            @default(0)
-  maxWorkoutsLimit          Int            @default(0)
+  maxWorkoutTemplatesLimit  Int            @default(0)
   freeDoctorSessionsLimit   Int            @default(0)
   monthlyGooglePlayProductId String?
   yearlyGooglePlayProductId  String?

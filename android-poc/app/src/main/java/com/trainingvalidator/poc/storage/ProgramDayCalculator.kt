@@ -11,7 +11,7 @@ import java.util.Locale
 import java.util.TimeZone
 
 /**
- * ProgramDayCalculator — Date-based program day calculation.
+ * ProgramDayCalculator ? Date-based program day calculation.
  *
  * Determines the current week/day based on the enrollment start date,
  * matching the backend's calculation logic exactly.
@@ -22,7 +22,7 @@ import java.util.TimeZone
  *   weekNumber = floor(dayIndex / 7) + 1
  *   dayNumber = (dayIndex % 7) + 1
  *
- * The program does NOT loop — when dayIndex >= totalDays, the program is complete.
+ * The program does NOT loop ? when dayIndex >= totalDays, the program is complete.
  */
 object ProgramDayCalculator {
 
@@ -104,11 +104,11 @@ object ProgramDayCalculator {
      */
     fun calculateProgress(
         program: ProgramConfig,
-        reportStore: ProgramSessionReportStore
+        reportStore: ProgramWorkoutReportStore
     ): Float {
         val allReports = reportStore.getAll().filter { it.programId == program.id }
         val totalNonRestDays = program.weeks.sumOf { w ->
-            w.days.count { d -> !d.isRestDay && d.sessions.isNotEmpty() }
+            w.days.count { d -> !d.isRestDay && d.workouts.isNotEmpty() }
         }
         if (totalNonRestDays == 0) return 0f
 
@@ -122,13 +122,13 @@ object ProgramDayCalculator {
     }
 
     /**
-     * Check if a specific day is completed (all sessions done).
+     * Check if a specific day is completed (all planned workouts done).
      */
     fun isDayComplete(
         program: ProgramConfig,
         weekNumber: Int,
         dayNumber: Int,
-        reportStore: ProgramSessionReportStore,
+        reportStore: ProgramWorkoutReportStore,
         customizationStore: DayCustomizationStore
     ): Boolean {
         val week = program.weeks.firstOrNull { it.weekNumber == weekNumber } ?: return false
@@ -136,24 +136,24 @@ object ProgramDayCalculator {
 
         if (day.isRestDay) return true
 
-        val effectiveSessions = customizationStore.getEffectiveSessions(
+        val effectivePlannedWorkouts = customizationStore.getEffectivePlannedWorkouts(
             programId = program.id,
             weekNumber = weekNumber,
             dayNumber = dayNumber,
-            originalSessions = day.sessions
+            originalWorkouts = day.workouts
         )
 
-        if (effectiveSessions.isEmpty()) return true
+        if (effectivePlannedWorkouts.isEmpty()) return true
 
         val reports = reportStore.getByDay(program.id, weekNumber, dayNumber)
-        val completedSessionIds = reports.map { it.sessionId }.toSet()
+        val completedWorkoutIds = reports.map { it.workoutId }.toSet()
 
-        return effectiveSessions.all { it.id in completedSessionIds }
+        return effectivePlannedWorkouts.all { it.id in completedWorkoutIds }
     }
 
-    // ═══════════════════════════════════════════════════════════
+    // -----------------------------------------------------------
     // Private helpers
-    // ═══════════════════════════════════════════════════════════
+    // -----------------------------------------------------------
 
     private fun getDayIndex(startDate: Date, now: Date, userProgram: UserProgramExport?): Int {
         val startCal = normalizeToDay(startDate)

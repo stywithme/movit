@@ -39,7 +39,7 @@
 14. `13-Retention-Engine.md`
 15. `14-Beta-Measurement.md`
 16. `15-Resources-and-Team.md`
-17. `16-Correct-Session-Definition.md`
+17. `16-Correct-Planned Workout-Definition.md`
 18. `17-Events-Implementation-Ticket.md`
 19. `18-Retention-Engine-Code-Map.md`
 20. `19-Onboarding-and-Aha-Spec.md`

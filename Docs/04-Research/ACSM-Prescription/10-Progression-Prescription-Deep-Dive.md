@@ -80,7 +80,7 @@ BodyScanResult + UserLevelProfile
    │ reps → difficulty            │  (motor_control)
    └──────────────────────────────┘
         ↓
-   materializeToNextItem() — تحديث ProgramSessionItem القادم
+   materializeToNextItem() — تحديث PlannedWorkoutItem القادم
 ```
 
 ---
@@ -138,7 +138,7 @@ BodyScanResult + UserLevelProfile
 │ ✗ ترتيب      │ ✓✓ QoE 88%  │ sortOrder ثابت — لا             │
 │   التمارين   │              │ توصية ذكية                     │
 │ ✗ نية        │ ✓✓ power RT  │ لا trainingIntent               │
-│   السرعة     │    يحسّن      │ على ProgramSessionItem          │
+│   السرعة     │    يحسّن      │ على PlannedWorkoutItem          │
 │              │    الوظيفة    │                                │
 │ ✗ eccentric  │ ✓ يحسّن       │ tempo يُسجل لكن لا يُصنف       │
 │   ratio      │   التضخم      │ كـ "eccentric-focused"          │
@@ -185,7 +185,7 @@ BodyScanResult + UserLevelProfile
    - **إضافة شرط**: لا ترقية إذا `intensityPercentage < 70%` (تحفيز على رفع الحمل أولاً).
    - **إضافة شرط ROM**: `minROM: 75` في qualityGate (لأن full ROM يحسّن القوة).
 
-3. **ترتيب الجلسة**: فرز تمارين القوة الأساسية أولاً في `ProgramSession`.
+3. **ترتيب الجلسة**: فرز تمارين القوة الأساسية أولاً في `PlannedWorkout`.
 
 **المسار المثالي للتقدم (قوة):**
 
@@ -222,7 +222,7 @@ BodyScanResult + UserLevelProfile
    - **إضافة eccentric metric**: إذا `eccentricRatio > 1.5` → bonus في qualityGate (تشجيع تدريب eccentric).
 
 2. **تجميع أسبوعي** — Backend endpoint:
-   - حساب `weeklySetsByMuscle` من `TrainingSession` + `Exercise.muscles`.
+   - حساب `weeklySetsByMuscle` من `WorkoutExecution` + `Exercise.muscles`.
    - مقارنة بـ 10 (الحد الأدنى) و18–20 (الأمثل).
    - تنبيه: "صدر 6/10 مجموعات هذا الأسبوع — أضف جلسة أو مجموعات".
 
@@ -256,7 +256,7 @@ BodyScanResult + UserLevelProfile
 
 **ما يحتاج التغيير:**
 
-1. **نمط جديد أو وضع**: `power_training` archetype أو `trainingIntent: POWER` على `ProgramSessionItem`.
+1. **نمط جديد أو وضع**: `power_training` archetype أو `trainingIntent: POWER` على `PlannedWorkoutItem`.
 
 2. **Progression** مختلف:
    - لا ترقية بالحجم (≤24 reps·sets).
@@ -332,8 +332,8 @@ const GOAL_PRIORITY_OVERRIDE: Record<string, Record<string, string[]>> = {
 #### B2. إضافة عوامل جديدة في evaluateEligibility
 
 ```typescript
-// progression.service.ts — مقترح توسيع SessionMetricsSummary
-interface SessionMetricsSummary {
+// progression.service.ts — مقترح توسيع WorkoutExecutionMetricsSummary
+interface WorkoutExecutionMetricsSummary {
   // الموجود:
   avgFormScore: number | null;
   completionRate: number | null;
@@ -426,7 +426,7 @@ model ActivePlan {
   trainingGoal  TrainingGoal?
 }
 
-// على ProgramSessionItem
+// على PlannedWorkoutItem
 enum TrainingIntent {
   STANDARD
   POWER
@@ -434,12 +434,12 @@ enum TrainingIntent {
   VELOCITY_BASED
 }
 
-model ProgramSessionItem {
+model PlannedWorkoutItem {
   trainingIntent  TrainingIntent  @default(STANDARD)
 }
 
-// توسيع SessionMetrics
-model SessionMetrics {
+// توسيع WorkoutExecutionMetrics
+model WorkoutExecutionMetrics {
   // الموجود: avgRom, avgSymmetry, avgStability, avgVelocity, ...
   // جديد:
   avgVelocityLoss     Int?    // ×10 int
@@ -483,15 +483,15 @@ model Program {
          ↓
 ┌─────────────────────────────────────┐
 │         Active Program              │
-│  ProgramWeeks → Days → Sessions    │
-│  ProgramSessionItem:               │
+│  ProgramWeeks → Days → Planned Workouts    │
+│  PlannedWorkoutItem:               │
 │    exercise, sets, reps, weight,    │
 │    trainingIntent, sortOrder        │
 │  (ترتيب ذكي: strength أولاً)       │
 └────────┬────────────────────────────┘
          ↓
 ┌─────────────────────────────────────┐
-│         Training Session            │
+│         Planned Workout            │
 │  (Android — TrainingEngine)         │
 │  قياس: ROM, velocity, tempo,       │
 │  formScore, velocityLoss            │
@@ -509,7 +509,7 @@ model Program {
 │      + velocityLoss + RIR)          │
 │  4. streak check                    │
 │  5. promote/regress/hold            │
-│  6. materialize → next session      │
+│  6. materialize → next planned workout      │
 └────────┬────────────────────────────┘
          ↓
 ┌─────────────────────────────────────┐
@@ -535,7 +535,7 @@ model Program {
 | **3** | إضافة `velocityLoss` في qualityGate | **يمنع الإفراط ويقدّر RIR** | متوسط |
 | **4** | تجميع حجم أسبوعي per muscle | **يضمن حجم كافٍ للتضخم** | متوسط |
 | **5** | إضافة RPE/RIR كإدخال اختياري | **يعطي بُعداً ذاتياً للقرار** | متوسط |
-| **6** | `trainingIntent` على ProgramSessionItem | **يُفعّل تنبيهات power/eccentric** | منخفض |
+| **6** | `trainingIntent` على PlannedWorkoutItem | **يُفعّل تنبيهات power/eccentric** | منخفض |
 | **7** | Goal-specific priority في Admin Dashboard | **يمكّن المصمم من الضبط** | منخفض |
 | **8** | ترتيب تمارين ذكي | **يحسّن القوة — QoE 88%** | منخفض |
 | **9** | `goalCompatibility` على Program | **يُحسّن الـ prescription** | منخفض |

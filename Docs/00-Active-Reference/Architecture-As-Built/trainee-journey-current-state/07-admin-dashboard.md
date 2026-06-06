@@ -13,7 +13,7 @@
 
 - قائمة: `src/app/admin/programs/page.tsx` — استدعاءات `/api/admin/programs`.
 - إنشاء/تعديل: `src/app/admin/programs/new/page.tsx`, `src/app/admin/programs/[id]/edit/page.tsx`.
-- الحقول ذات الصلة بالوصفة في الـ backend تشمل `levelRangeMin`/`Max`, `programAttributes`, `exitRecommendations`, `nextProgramId`, `autoAssignable`, `isPublished`, `weeklySessionTarget`, إلخ (انظر مخطط Prisma في `backend/prisma/schema.prisma`).
+- الحقول ذات الصلة بالوصفة في الـ backend تشمل `levelRangeMin`/`Max`, `programAttributes`, `exitRecommendations`, `nextProgramId`, `autoAssignable`, `isPublished`, `weeklyPlannedWorkoutsTarget`, إلخ (انظر مخطط Prisma في `backend/prisma/schema.prisma`).
 
 ## خريطة البرامج والقوالب
 

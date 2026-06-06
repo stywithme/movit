@@ -57,7 +57,7 @@ export interface BlueprintExerciseMeta {
   loadCapability: string;
   familyKey: string;
   familyOrder: string;
-  /** Maps to Exercise.intent (SessionItemIntent); empty string = unset */
+  /** Maps to Exercise.intent (WorkoutItemIntent); empty string = unset */
   intent: string;
   /** Raw JSON for Exercise.coachingNotes */
   coachingNotesJson: string;

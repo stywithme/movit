@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Exercise Types - State-Based System
  * ====================================
  * 
@@ -7,7 +7,7 @@
  */
 
 import type { LocalizedText, CountingMethodCode, JointStateName } from '@/lib/types/localized';
-import type { LoadCapability, MovementPattern, SessionItemIntent } from '@prisma/client';
+import type { LoadCapability, MovementPattern, WorkoutItemIntent } from '@prisma/client';
 
 // ============================================
 // ANGLE RANGE TYPES
@@ -629,8 +629,8 @@ export interface CreateExerciseInput {
   familyKey?: string | null;
   familyOrder?: number | null;
 
-  /** Coaching taxonomy — defaults into effective plan when session items omit overrides */
-  intent?: SessionItemIntent | null;
+  /** Coaching taxonomy — defaults into effective plan when planned workout items omit overrides */
+  intent?: WorkoutItemIntent | null;
   coachingNotes?: Record<string, unknown> | null;
 }
 

@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.network
+﻿package com.trainingvalidator.poc.network
 
 import android.util.Log
 
@@ -38,14 +38,14 @@ data class SyncData(
     /** Fixed-key system messages (training TTS/UI); looked up by code */
     val systemMessages: List<SystemMessageTemplate> = emptyList(),
     val deletedExerciseIds: List<String>,
-    val workouts: List<WorkoutConfigWithMeta> = emptyList(),
-    val deletedWorkoutIds: List<String> = emptyList(),
+    val workoutTemplates: List<WorkoutConfigWithMeta> = emptyList(),
+    val deletedWorkoutTemplateIds: List<String> = emptyList(),
     val programs: List<ProgramConfigWithMeta> = emptyList(),
     val deletedProgramIds: List<String> = emptyList(),
     val userPrograms: List<UserProgramExport> = emptyList(),
     /** Per-user targets for standalone training; null when not authenticated */
     val userExercisePreferences: List<UserExercisePreferenceSync>? = null,
-    val sessionReports: List<SessionReportExport> = emptyList(),
+    @SerializedName("plannedWorkoutReports") val workoutReports: List<WorkoutReportExport> = emptyList(),
     val audioManifest: AudioManifest
 )
 
@@ -75,12 +75,12 @@ data class ExercisePreferenceApiResponse(
 )
 
 /**
- * Completed session report from the backend.
+ * Completed planned-workout report from the backend.
  * Used to sync training history to the mobile app.
  */
-data class SessionReportExport(
+data class WorkoutReportExport(
     val id: String,
-    val sessionId: String,
+    val plannedWorkoutId: String,
     val programId: String,
     val weekNumber: Int,
     val dayNumber: Int,
@@ -235,12 +235,12 @@ data class ExerciseConfigWithMeta(
  */
 data class SyncMeta(
     val totalExercises: Int,
-    val totalWorkouts: Int = 0,
+    val totalWorkoutTemplates: Int = 0,
     val totalPrograms: Int = 0,
     val isFullSync: Boolean,
     val serverVersion: String,
     val exercisesInResponse: Int,
-    val workoutsInResponse: Int = 0,
+    val workoutTemplatesInResponse: Int = 0,
     val programsInResponse: Int = 0,
     val messageLibraryStats: MessageLibraryStats? = null
 )
@@ -323,8 +323,8 @@ data class ProgramConfigWithMeta(
     val levelRangeMax: Int = 0,
     val tags: List<String>? = emptyList(),
     val weeks: List<ProgramWeek>? = emptyList(),
-    val weeklySessionTarget: Int? = null,
-    val estimatedSessionMinutes: Int? = null,
+    val weeklyWorkoutTarget: Int? = null,
+    val estimatedWorkoutMinutes: Int? = null,
     val isFeatured: Boolean = false
 ) {
     fun toProgramConfig(): ProgramConfig {
@@ -338,9 +338,9 @@ data class ProgramConfigWithMeta(
             levelRangeMin = levelRangeMin,
             levelRangeMax = levelRangeMax,
             tags = tags ?: emptyList(),
-            weeks = weeks ?: emptyList(),
-            weeklySessionTarget = weeklySessionTarget,
-            estimatedSessionMinutes = estimatedSessionMinutes,
+            weeksField = weeks ?: emptyList(),
+            weeklyWorkoutTarget = weeklyWorkoutTarget,
+            estimatedWorkoutMinutes = estimatedWorkoutMinutes,
             isFeatured = isFeatured
         )
     }

@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+﻿import type { PrismaClient } from '@prisma/client';
 
 const legacyReportSubjectMap: Record<string, string> = {
     Analytics: 'ReportOverview',
@@ -27,10 +27,10 @@ const permissions = [
     { subject: 'Exercise', action: 'delete' },
 
     // Workout
-    { subject: 'Workout', action: 'read' },
-    { subject: 'Workout', action: 'create' },
-    { subject: 'Workout', action: 'update' },
-    { subject: 'Workout', action: 'delete' },
+    { subject: 'WorkoutTemplate', action: 'read' },
+    { subject: 'WorkoutTemplate', action: 'create' },
+    { subject: 'WorkoutTemplate', action: 'update' },
+    { subject: 'WorkoutTemplate', action: 'delete' },
 
     // Program
     { subject: 'Program', action: 'read' },

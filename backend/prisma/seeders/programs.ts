@@ -1,4 +1,4 @@
-import type { Prisma, PrismaClient, SessionRole } from '@prisma/client';
+﻿import type { Prisma, PrismaClient, WorkoutBlockRole } from '@prisma/client';
 import { ProgramAttributeMode } from '@prisma/client';
 import {
   PROGRAM_DOMAIN_VALUE_CODE,
@@ -69,18 +69,18 @@ export async function seedPrograms(prisma: PrismaClient) {
     sortOrder: opts.sortOrder,
   });
 
-  const buildSession = (
+  const buildPlannedWorkout = (
     name: { ar: string; en: string },
     items: Record<string, unknown>[],
     sortOrder = 1,
     estimatedDurationMin = 35,
-    sessionRole: SessionRole = 'MAIN',
+    blockRole: WorkoutBlockRole = 'MAIN',
   ) => ({
     name,
     sortOrder,
     estimatedDurationMin,
-    role: sessionRole,
-    items: { create: items as Prisma.ProgramSessionItemCreateWithoutSessionInput[] },
+    role: blockRole,
+    items: { create: items as Prisma.PlannedWorkoutItemCreateWithoutPlannedWorkoutInput[] },
   });
 
   const restItem = (durationMs: number, sortOrder: number) => ({
@@ -94,7 +94,7 @@ export async function seedPrograms(prisma: PrismaClient) {
     isRestDay?: boolean;
     dayType?: string;
     dayFocus?: string | null;
-    sessions?: ReturnType<typeof buildSession>[];
+    plannedWorkouts?: ReturnType<typeof buildPlannedWorkout>[];
   };
 
   const mapDayCreate = (day: DayDef): Prisma.ProgramDayCreateWithoutWeekInput => ({
@@ -103,7 +103,7 @@ export async function seedPrograms(prisma: PrismaClient) {
     dayType: day.isRestDay ? 'rest' : (day.dayType ?? 'training'),
     dayFocus: day.dayFocus ?? (day.isRestDay ? null : 'general'),
     name: day.isRestDay ? { ar: 'راحة', en: 'Rest' } : undefined,
-    sessions: day.sessions ? { create: day.sessions } : undefined,
+    plannedWorkouts: day.plannedWorkouts ? { create: day.plannedWorkouts } : undefined,
   });
 
   const createWeek = async (
@@ -217,8 +217,8 @@ export async function seedPrograms(prisma: PrismaClient) {
         prescriptionPriority: def.prescriptionPriority,
         autoAssignable: def.autoAssignable,
         version: def.version,
-        weeklySessionTarget: def.weeklySessionTarget ?? undefined,
-        estimatedSessionMinutes: def.estimatedSessionMinutes ?? undefined,
+        weeklyWorkoutTarget: def.weeklyWorkoutTarget ?? undefined,
+        estimatedWorkoutMinutes: def.estimatedWorkoutMinutes ?? undefined,
         coachingNotes: def.coachingNotes ?? undefined,
         prerequisiteProgramId: prerequisiteId,
         nextProgramId: nextId,
@@ -237,8 +237,8 @@ export async function seedPrograms(prisma: PrismaClient) {
         prescriptionPriority: def.prescriptionPriority,
         autoAssignable: def.autoAssignable,
         version: def.version,
-        weeklySessionTarget: def.weeklySessionTarget ?? undefined,
-        estimatedSessionMinutes: def.estimatedSessionMinutes ?? undefined,
+        weeklyWorkoutTarget: def.weeklyWorkoutTarget ?? undefined,
+        estimatedWorkoutMinutes: def.estimatedWorkoutMinutes ?? undefined,
         coachingNotes: def.coachingNotes ?? undefined,
         prerequisiteProgramId: prerequisiteId,
         nextProgramId: nextId,
@@ -253,7 +253,7 @@ export async function seedPrograms(prisma: PrismaClient) {
 
     for (const w of def.weeks) {
       const days: DayDef[] = w.days.map((d) => {
-        if (d.isRestDay || !d.sessions?.length) {
+        if (d.isRestDay || !d.plannedWorkouts?.length) {
           return {
             dayNumber: d.dayNumber,
             isRestDay: d.isRestDay,
@@ -261,10 +261,10 @@ export async function seedPrograms(prisma: PrismaClient) {
             dayFocus: d.dayFocus,
           };
         }
-        const sessions = d.sessions.map((sess) => {
+        const plannedWorkouts = d.plannedWorkouts.map((catalogWorkout) => {
           const prismaItems: Record<string, unknown>[] = [];
           let sortOrder = 1;
-          for (const raw of sess.items) {
+          for (const raw of catalogWorkout.items) {
             if ('restMs' in raw && !('slug' in raw)) {
               prismaItems.push(restItem(raw.restMs, sortOrder));
               sortOrder++;
@@ -285,12 +285,12 @@ export async function seedPrograms(prisma: PrismaClient) {
             );
             sortOrder++;
           }
-          return buildSession(
-            sess.name,
+          return buildPlannedWorkout(
+            catalogWorkout.name,
             prismaItems,
-            sess.sortOrder ?? 1,
-            sess.estimatedDurationMin ?? 35,
-            (sess.role as SessionRole) ?? 'MAIN',
+            catalogWorkout.sortOrder ?? 1,
+            catalogWorkout.estimatedDurationMin ?? 35,
+            (catalogWorkout.role as WorkoutBlockRole) ?? 'MAIN',
           );
         });
         return {
@@ -298,7 +298,7 @@ export async function seedPrograms(prisma: PrismaClient) {
           isRestDay: d.isRestDay,
           dayType: d.dayType,
           dayFocus: d.dayFocus,
-          sessions,
+          plannedWorkouts,
         };
       });
 

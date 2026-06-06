@@ -16,7 +16,7 @@ import { usePermissions, type Subject } from '@/hooks/usePermissions';
 const quickReports = [
   { href: '/admin/analytics/activation', title: 'Activation Funnel', description: 'Signup to first value', subject: 'ReportActivation' },
   { href: '/admin/analytics/retention', title: 'Retention', description: 'Cohorts and engagement', subject: 'ReportRetention' },
-  { href: '/admin/analytics/training', title: 'Training Quality', description: 'Sessions, form and safety', subject: 'ReportTraining' },
+  { href: '/admin/analytics/training', title: 'Training Quality', description: 'Workout executions, form and safety', subject: 'ReportTraining' },
   { href: '/admin/analytics/revenue', title: 'Revenue', description: 'MRR and conversion', subject: 'ReportRevenue' },
 ] satisfies Array<{ href: string; title: string; description: string; subject: Subject }>;
 
@@ -75,7 +75,7 @@ export default function AdminDashboard() {
           <CardContent>
             <p className="text-3xl font-bold">{formatPercent(data?.northStar.rate)}</p>
             <p className="mt-2 text-sm text-muted-foreground">
-              {formatNumber(data?.northStar.completed)} of {formatNumber(data?.northStar.eligibleUsers)} users completed 3 correct sessions in their first 7 days.
+              {formatNumber(data?.northStar.completed)} of {formatNumber(data?.northStar.eligibleUsers)} users completed 3 correct workout executions in their first 7 days.
             </p>
           </CardContent>
         </Card>
@@ -100,7 +100,7 @@ export default function AdminDashboard() {
           <CardContent className="space-y-2 text-sm">
             <p>{formatNumber(data?.alerts.pendingReassessments)} pending reassessments</p>
             <p>{formatNumber(data?.alerts.failedCheckouts)} failed checkouts</p>
-            <p>{formatNumber(data?.alerts.abandonedReports)} abandoned sessions</p>
+            <p>{formatNumber(data?.alerts.abandonedReports)} abandoned planned workouts</p>
           </CardContent>
         </Card>
       </div>
@@ -109,8 +109,8 @@ export default function AdminDashboard() {
         <ChartCard title="Activation Funnel" loading={loading} empty={!data?.activationFunnel?.length} help={analyticsTerms.activation}>
           <FunnelChart data={data?.activationFunnel ?? []} />
         </ChartCard>
-        <ChartCard title="Sessions Trend" loading={loading} empty={!data?.trends.sessions?.length} help={analyticsTerms.sessions}>
-          <LineTrend data={data?.trends.sessions ?? []} />
+        <ChartCard title="Workout Executions Trend" loading={loading} empty={!data?.trends.workoutExecutions?.length} help={analyticsTerms.workoutExecutions}>
+          <LineTrend data={data?.trends.workoutExecutions ?? []} />
         </ChartCard>
         <ChartCard title="Revenue Trend" loading={loading} empty={!data?.trends.revenue?.length} help={analyticsTerms.revenue}>
           <AreaTrend data={data?.trends.revenue ?? []} />

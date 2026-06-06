@@ -1,4 +1,6 @@
-# Correct Session Definition
+# Correct Workout Definition (Counted Workout)
+
+> **تسمية (2026-06):** اسم الملف تاريخي. «التمرين المحتسب» هنا = **workout run** يُحتسب للاستمرار/streak (`WorkoutExecution` / `PlannedWorkoutReport`) — وليس auth session ولا assessment session ولا doctor session. انظر [`Workout-Domain-Naming.md`](../00-Active-Reference/Contracts/Workout-Domain-Naming.md).
 
 ## تحديث جوهري (قرار المؤسس)
 
@@ -8,9 +10,9 @@
 
 لذلك نفصل مفهومين.
 
-## 1) متى "تُحتسب" الجلسة (للاستمرار / streak)
+## 1) متى «يُحتسب» التمرين (للاستمرار / streak)
 
-تُحتسب الجلسة بـ **الاكتمال والسلامة فقط**، لا بحد جودة مطلق:
+يُحتسب التمرين بـ **الاكتمال والسلامة فقط**، لا بحد جودة مطلق:
 
 - اكتمال: `totalSetsCompleted ≥ 0.8 × totalSetsPlanned`.
 - سلامة: `invalidatedRatio ≤ 0.15` (عدّات DANGER قليلة).
@@ -22,7 +24,7 @@
 
 ### أ) الاستمرار (Persistence)
 
-المستخدم يتدرب باستمرار عبر **أسبوعين** (نافذة 14 يوم). مبدئياً: ≥ 5 جلسات محتسبة في 14 يوم (قابل للضبط، البرنامج 3 أيام/أسبوع ≈ 6 مخطط).
+المستخدم يتدرب باستمرار عبر **أسبوعين** (نافذة 14 يوم). مبدئياً: ≥ 5 تمارين محتسبة في 14 يوم (قابل للضبط، البرنامج 3 أيام/أسبوع ≈ 6 مخطط).
 
 ### ب) التطور الشخصي (Personal Improvement)
 
@@ -42,7 +44,7 @@
 
 > نسبة المستخدمين الذين (أ) استمروا أسبوعين، و(ب) أظهروا تطوراً شخصياً قابلاً للقياس (delta موجب في مقياسهم الأساسي أو تحسّن في إعادة التقييم).
 
-المقياس القديم ("3 جلسات في 7 أيام") يبقى **مؤشراً مبكراً (leading)** للتفعيل، لكنه ليس تعريف النجاح.
+المقياس القديم ("3 تمارين في 7 أيام") يبقى **مؤشراً مبكراً (leading)** للتفعيل، لكنه ليس تعريف النجاح.
 
 ## خط الأساس (Baseline) — مطلوب للقياس
 
@@ -53,10 +55,10 @@
 
 ## أين يُطبَّق في الكود (للفريق)
 
-- احتساب الجلسة (اكتمال + سلامة): flag `isCountedSession` في `ProgramSessionReportStore.ProgramSessionLocalReport`.
+- احتساب التمرين (اكتمال + سلامة): flag `isCountedWorkout` (أو ما يعادله) في `ProgramWorkoutReportStore` / `PlannedWorkoutLocalReport`.
 - خط الأساس: خزّن baseline per-exercise (من التقييم أو الأسبوع 1).
-- التطور: احسب delta سيرفر-سايد من `session_completed` (ملف 17) + إعادة التقييم. فضّل reassessment للمقارنة like-for-like.
-- الاستمرار: نافذة 14 يوم من `app_opened` + الجلسات المحتسبة.
+- التطور: احسب delta سيرفر-سايد من حدث `workout_completed` (ملف 17) + إعادة التقييم. فضّل reassessment للمقارنة like-for-like.
+- الاستمرار: نافذة 14 يوم من `app_opened` + التمارين المحتسبة.
 
 ## ملاحظة على الضبط
 

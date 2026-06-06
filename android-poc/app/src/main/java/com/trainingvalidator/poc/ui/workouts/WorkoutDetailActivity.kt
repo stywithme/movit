@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui.workouts
+﻿package com.trainingvalidator.poc.ui.workouts
 
 import android.graphics.drawable.Animatable
 import android.os.Bundle
@@ -130,10 +130,10 @@ class WorkoutDetailActivity : AppCompatActivity() {
         // Timeline
         setupTimeline(config)
 
-        // Start workout — launches WorkoutSessionActivity for full multi-exercise training
+        // Start workout — launches WorkoutRunActivity for full multi-exercise training
         binding.btnStartWorkout.text = getString(R.string.start_workout)
         binding.btnStartWorkout.setOnClickListener {
-            startWorkoutSession(config)
+            launchWorkoutRun(config)
         }
 
         // Customize button — launches WorkoutCustomizeActivity to reorder/edit before starting
@@ -327,12 +327,12 @@ class WorkoutDetailActivity : AppCompatActivity() {
         return items
     }
 
-    private fun startWorkoutSession(config: WorkoutConfig) {
-        val intent = WorkoutSessionActivity.createIntent(
+    private fun launchWorkoutRun(config: WorkoutConfig) {
+        val intent = WorkoutRunActivity.createIntent(
             context = this,
             workoutConfig = config,
             workoutId = null, // local workout — no backend ID yet
-            sessionContext = "explore_workout"
+            workoutContext = "explore_workout"
         )
         startActivity(intent)
     }

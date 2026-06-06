@@ -30,7 +30,7 @@
 
 ### What is the Post-Training Report?
 
-A comprehensive feedback report shown to users after completing an exercise session. The report provides:
+A comprehensive feedback report shown to users after completing an workout run. The report provides:
 
 - **Performance evaluation** with accuracy metrics
 - **Visual feedback** with captured frames from camera/video
@@ -48,7 +48,7 @@ A comprehensive feedback report shown to users after completing an exercise sess
 | Rep Timeline | ✅ In Scope |
 | Improvement Tips | ✅ In Scope |
 | Frame Capture (Camera/Video) | ✅ In Scope |
-| Session Quality Indicators | ✅ In Scope (NEW) |
+| Planned Workout Quality Indicators | ✅ In Scope (NEW) |
 | Consistency Metrics | ✅ In Scope (NEW) |
 | Share Report | 🔜 Future Phase |
 | Sync to Admin Dashboard | 🔜 Future Phase |
@@ -80,23 +80,23 @@ A comprehensive feedback report shown to users after completing an exercise sess
 
 ### Currently Available in Codebase
 
-#### From `SessionSummary`
+#### From `WorkoutRunSummary`
 ```kotlin
-data class SessionSummary(
+data class WorkoutRunSummary(
     val exerciseName: String,
     val difficulty: DifficultyType,
     val totalReps: Int,
     val correctReps: Int,
     val incorrectReps: Int,
     val accuracy: Float,              // 0-100%
-    val durationMs: Long,             // ⚠️ Currently returns 0 - use ViewModel.getSessionDurationMs()
+    val durationMs: Long,             // ⚠️ Currently returns 0 - use ViewModel.getPlanned WorkoutDurationMs()
     val commonErrors: Map<String, Int>,
     val repDetails: List<RepResult>
 )
 ```
 
-> ⚠️ **Important**: `durationMs` in `SessionSummary` currently returns 0 (TODO in code).
-> Use `TrainingViewModel.getSessionDurationMs()` which calculates from `sessionStartTime`.
+> ⚠️ **Important**: `durationMs` in `WorkoutRunSummary` currently returns 0 (TODO in code).
+> Use `TrainingViewModel.getPlanned WorkoutDurationMs()` which calculates from `workoutStartTime`.
 
 #### From `RepResult`
 ```kotlin
@@ -146,7 +146,7 @@ val holdFormQuality: Float      // 0.0 - 1.0
 val holdJointErrorMap: Map<String, Int>  // Errors per joint
 ```
 
-#### Session Quality Data (NEW)
+#### Planned Workout Quality Data (NEW)
 ```kotlin
 // Available from VisibilityMonitor via TrainingEngine
 val visibilityStats: VisibilityStats  // Pause count, total invisible time
@@ -204,7 +204,7 @@ data class FrameMetadata(
 **Data Required:**
 - `exerciseName`, `difficulty`
 - `totalReps`, `correctReps`, `accuracy`
-- `TrainingViewModel.getSessionDurationMs()` (formatted as MM:SS)
+- `TrainingViewModel.getPlanned WorkoutDurationMs()` (formatted as MM:SS)
 
 **Rating Logic:**
 | Accuracy | Rating | Message (EN) | Message (AR) |
@@ -308,7 +308,7 @@ val groupedErrors = repDetails
 
 ### Section 4: Rep Timeline 📋
 
-**Purpose:** Visual overview of entire session
+**Purpose:** Visual overview of entire workout run
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -354,13 +354,13 @@ val groupedErrors = repDetails
 
 ### Section 5: Improvement Tips 📚
 
-**Purpose:** Actionable guidance for next session
+**Purpose:** Actionable guidance for next planned workout
 
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  📚 HOW TO IMPROVE                                       │
 │                                                          │
-│  Based on your session, focus on:                       │
+│  Based on your workout, focus on:                       │
 │                                                          │
 │  ┌─ TOP PRIORITY ──────────────────────────────────┐    │
 │  │  🎯 DEPTH                                        │    │
@@ -376,17 +376,17 @@ val groupedErrors = repDetails
 └─────────────────────────────────────────────────────────┘
 ```
 
-> **Simplified**: Show only **Top 2 errors** + **1 "Next Focus"** for next session.
+> **Simplified**: Show only **Top 2 errors** + **1 "Next Focus"** for next planned workout.
 > Too many tips overwhelm the user.
 
 **Tip Generation Logic:**
 1. Get top 2 most common errors
 2. Load tips from exercise JSON `feedbackMessages.tip` and `common_mistake`
-3. Add "Next Focus" as the 3rd most common error for next session
+3. Add "Next Focus" as the 3rd most common error for next planned workout
 
 ---
 
-### Section 6: Session Quality (NEW) 📋
+### Section 6: Planned Workout Quality (NEW) 📋
 
 **Purpose:** Explain factors that may have affected accuracy
 
@@ -455,7 +455,7 @@ The frame capture system captures actual camera/video frames at key moments duri
 | Trigger | When | Purpose | Limit |
 |---------|------|---------|-------|
 | **Peak Frame** | When entering BOTTOM/EXTENDED phase | Record form at target position | 1 per rep |
-| **Error Frame** | First error detected per error type | Show what went wrong | 1 per errorKey per session |
+| **Error Frame** | First error detected per error type | Show what went wrong | 1 per errorKey per planned workout |
 | **Best Rep Frame** | On rep completion if no errors | Highlight good form | Up to 3 best |
 | **Hold Sample** | At 5s, 15s, 25s during hold | Show form throughout hold | 3 max |
 
@@ -470,7 +470,7 @@ The frame capture system captures actual camera/video frames at key moments duri
  */
 class FrameCaptureManager(
     private val context: Context,
-    private val sessionId: String
+    private val plannedWorkoutId: String
 ) {
     companion object {
         private const val TAG = "FrameCaptureManager"
@@ -483,7 +483,7 @@ class FrameCaptureManager(
     }
     
     private val capturedFrames = mutableListOf<FrameCapture>()
-    private val storageDir: File = File(context.filesDir, "$STORAGE_DIR/$sessionId")
+    private val storageDir: File = File(context.filesDir, "$STORAGE_DIR/$plannedWorkoutId")
     
     // Track captured error types to avoid duplicates
     private val capturedErrorTypes = mutableSetOf<String>()
@@ -521,7 +521,7 @@ class FrameCaptureManager(
             }
             CaptureType.ERROR_FRAME -> {
                 if (errorType == null) return null
-                // Only one capture per error type per session
+                // Only one capture per error type per planned workout
                 if (capturedErrorTypes.contains(errorType)) return null
                 // Cooldown check
                 val lastTime = lastErrorCaptureTimes[errorType] ?: 0L
@@ -653,7 +653,7 @@ class FrameCaptureManager(
         }
     
     /**
-     * Cleanup all captures for this session
+     * Cleanup all captures for this planned workout
      */
     fun cleanup() {
         storageDir.deleteRecursively()
@@ -664,13 +664,13 @@ class FrameCaptureManager(
     }
     
     /**
-     * Cleanup old sessions (keep only last N)
+     * Cleanup old planned workouts (keep only last N)
      */
-    fun cleanupOldSessions(keepCount: Int = 5) {
+    fun cleanupOldPlanned Workouts(keepCount: Int = 5) {
         val parentDir = storageDir.parentFile ?: return
-        val sessions = parentDir.listFiles()?.sortedByDescending { it.lastModified() } ?: return
+        val planned workouts = parentDir.listFiles()?.sortedByDescending { it.lastModified() } ?: return
         
-        sessions.drop(keepCount).forEach { it.deleteRecursively() }
+        planned workouts.drop(keepCount).forEach { it.deleteRecursively() }
     }
 }
 ```
@@ -684,8 +684,8 @@ class FrameCaptureManager(
 private var frameCaptureManager: FrameCaptureManager? = null
 
 private fun initializeFrameCapture() {
-    val sessionId = UUID.randomUUID().toString()
-    frameCaptureManager = FrameCaptureManager(this, sessionId)
+    val plannedWorkoutId = UUID.randomUUID().toString()
+    frameCaptureManager = FrameCaptureManager(this, plannedWorkoutId)
 }
 
 // Capture from PreviewView
@@ -776,7 +776,7 @@ private fun processFrame(bitmap: Bitmap, timestampMs: Long) {
 ```
 /data/data/com.trainingvalidator.poc/files/
 └── frame_captures/
-    └── [session_id]/
+    └── [workout_execution_id]/
         ├── abc123.jpg              (full 720px)
         ├── abc123_thumb.jpg        (thumbnail 200px)
         ├── def456.jpg
@@ -792,11 +792,11 @@ private fun processFrame(bitmap: Bitmap, timestampMs: Long) {
 
 ```kotlin
 /**
- * PostTrainingReport - Complete report for a training session
+ * PostTrainingReport - Complete report for a planned workout
  */
 data class PostTrainingReport(
     val id: String = UUID.randomUUID().toString(),
-    val sessionId: String,
+    val plannedWorkoutId: String,
     val exerciseId: String,
     val exerciseName: LocalizedText,
     val difficulty: DifficultyType,
@@ -820,8 +820,8 @@ data class PostTrainingReport(
     // Consistency metrics
     val consistency: ConsistencyMetrics,
     
-    // Session quality
-    val sessionQuality: SessionQuality,
+    // Planned Workout quality
+    val workoutQuality: Planned WorkoutQuality,
     
     // Top improvement tips (max 2 + 1 next focus)
     val improvementTips: List<ImprovementTip>,
@@ -945,10 +945,10 @@ data class ConsistencyMetrics(
 }
 ```
 
-### Session Quality (NEW)
+### Planned Workout Quality (NEW)
 
 ```kotlin
-data class SessionQuality(
+data class Planned WorkoutQuality(
     val visibilityPauseCount: Int,
     val totalInvisibleMs: Long,
     val cameraWarningCount: Int,
@@ -973,7 +973,7 @@ data class ImprovementTip(
     val title: LocalizedText,
     val description: LocalizedText,
     val priority: Int,              // 1 = highest priority
-    val isNextFocus: Boolean = false // For "Next session focus"
+    val isNextFocus: Boolean = false // For "Next planned workout focus"
 )
 
 enum class TipCategory {
@@ -1190,11 +1190,11 @@ data class FrameMetadata(
 | Create `PostTrainingReport.kt` | `training/report/` | 🔄 In Progress |
 | Create `FrameCapture.kt` | `training/report/` | 🔄 In Progress |
 | Create `ConsistencyMetrics.kt` | `training/report/` | 🔄 In Progress |
-| Create `SessionQuality.kt` | `training/report/` | 🔄 In Progress |
+| Create `Planned WorkoutQuality.kt` | `training/report/` | 🔄 In Progress |
 | Create `ReportGenerator.kt` | `training/report/` | ⬜ Pending |
 | Create `ReportStorage.kt` | `storage/` | ⬜ Pending |
 
-**Deliverable:** Report can be generated from SessionSummary (without frames)
+**Deliverable:** Report can be generated from WorkoutRunSummary (without frames)
 
 ---
 
@@ -1268,7 +1268,7 @@ data class FrameMetadata(
 **Goals:**
 - Rep timeline section with consistency metrics
 - Hold exercise support
-- Session quality display
+- Planned Workout quality display
 - UI polish and animations
 
 **Tasks:**
@@ -1279,7 +1279,7 @@ data class FrameMetadata(
 | Rep detail dialog | `ui/report/` | ⬜ |
 | Create `HoldSummarySection.kt` | `ui/report/components/` | ⬜ |
 | Create `TipsSection.kt` | `ui/report/components/` | ⬜ |
-| Create `SessionQualitySection.kt` | `ui/report/components/` | ⬜ |
+| Create `Planned WorkoutQualitySection.kt` | `ui/report/components/` | ⬜ |
 | Tab navigation (ViewPager2) | `ui/report/` | ⬜ |
 | Animations and transitions | Various | ⬜ |
 | Dark mode support | `res/values/` | ⬜ |
@@ -1323,7 +1323,7 @@ app/src/main/java/com/trainingvalidator/poc/
 │       ├── PostTrainingReport.kt       // Main report model + all sub-models
 │       ├── FrameCapture.kt             // Frame capture model
 │       ├── FrameCaptureManager.kt      // Capture logic
-│       ├── ReportGenerator.kt          // Generate report from session
+│       ├── ReportGenerator.kt          // Generate report from workout run
 │       └── TipGenerator.kt             // Generate tips from errors
 │
 ├── storage/
@@ -1342,7 +1342,7 @@ app/src/main/java/com/trainingvalidator/poc/
             ├── RepTimeline.kt          // Rep timeline
             ├── RepDetailDialog.kt      // Rep detail popup
             ├── TipsSection.kt          // Improvement tips
-            ├── SessionQualityCard.kt   // Session quality
+            ├── Planned WorkoutQualityCard.kt   // Planned Workout quality
             └── HoldSummarySection.kt   // Hold-specific section
 
 app/src/main/res/
@@ -1374,7 +1374,7 @@ app/src/main/res/
 |------|---------|
 | `TrainingActivity.kt` | Add FrameCaptureManager, navigate to report |
 | `VideoModeController.kt` | Support frame capture (copy bitmap before recycle) |
-| `TrainingViewModel.kt` | Expose session duration properly |
+| `TrainingViewModel.kt` | Expose workout duration properly |
 
 ---
 
@@ -1400,7 +1400,7 @@ app/src/main/res/
 
 | Feature | Description |
 |---------|-------------|
-| Historical Comparison | Compare with last N sessions |
+| Historical Comparison | Compare with last N planned workouts |
 | Progress Charts | Line/bar charts over time |
 | Streaks | Track consecutive workout days |
 | Achievements | Badges and milestones |
@@ -1430,7 +1430,7 @@ app/src/main/res/
     <string name="report_errors_title">Areas to Improve</string>
     <string name="report_timeline_title">Rep Timeline</string>
     <string name="report_tips_title">How to Improve</string>
-    <string name="report_quality_title">Session Quality</string>
+    <string name="report_quality_title">Planned Workout Quality</string>
     <string name="report_consistency_title">Consistency</string>
     
     <string name="report_rating_excellent">Outstanding! Nearly perfect form!</string>
@@ -1496,17 +1496,17 @@ This plan provides a comprehensive implementation roadmap for the Post-Training 
 
 - **6 weeks** of development across 6 phases
 - **Core features**: Performance summary, best reps, error analysis, timeline, tips
-- **NEW features**: Consistency metrics, session quality, worst rep comparison
+- **NEW features**: Consistency metrics, planned workout quality, worst rep comparison
 - **Frame capture**: Real camera/video frames at key moments
 - **Simplified approach**: Use user's best rep as reference (no external assets)
 - **Localization**: Full Arabic and English support
 - **Future-ready**: Architecture supports upcoming share/sync/progress features
 
 **Key Improvements in v1.1:**
-1. Fixed duration tracking (use ViewModel instead of SessionSummary)
+1. Fixed duration tracking (use ViewModel instead of WorkoutRunSummary)
 2. Correct frame capture source (PreviewView for camera, copied bitmap for video)
 3. Best Rep as reference instead of external "correct form" images
-4. Added consistency metrics and session quality
+4. Added consistency metrics and planned workout quality
 5. Simplified tips (Top 2 + Next Focus)
 6. Added worst rep for comparison
 7. Frame capture limits to prevent storage bloat

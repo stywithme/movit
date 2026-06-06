@@ -30,7 +30,7 @@ data class UserPublic(
     val notifications: Boolean,
     val isPro: Boolean,
     val subscriptionExpiry: String? = null,
-    val totalWorkouts: Int,
+    val totalWorkoutExecutions: Int,
     val totalMinutes: Int,
     val emailVerified: Boolean,
     val createdAt: String

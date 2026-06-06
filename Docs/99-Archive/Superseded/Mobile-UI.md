@@ -1,4 +1,4 @@
-﻿> **Status:** `ARCHIVED` â€” superseded, cancelled, or historical review only.
+> **Status:** `ARCHIVED` â€” superseded, cancelled, or historical review only.
 > **Current SSOT:** `Docs/00-Active-Reference/README.md`
 > **Archived:** 2026-05-29
 
@@ -91,7 +91,7 @@
 
 ---
 
-## 4. Active Training Session (التنفيذ)
+## 4. Active Planned Workout (التنفيذ)
 
 ### 4.1 Training (Camera Mode)
 - **الهدف:** الشاشة الرئيسية أثناء التدريب.
@@ -109,7 +109,7 @@
 - **الهدف:** تحليل فيديو مسجل مسبقًا.
 - **العناصر:** مشغل فيديو (TextureView) بدلاً من الكاميرا، شريط تحكم (Seekbar)، زر `Save Results`.
 
-### 4.3 Workout Session Orchestrator
+### 4.3 Workout Planned Workout Orchestrator
 - **الهدف:** إدارة التنقل بين التمارين في البرامج (Workouts).
 - **العناصر:**
   - شاشات بينية (Interstitials): `Rest Time` (عداد تنازلي)، `Get Ready for [Next Exercise]`.

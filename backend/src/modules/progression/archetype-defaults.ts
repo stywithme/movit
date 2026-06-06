@@ -6,7 +6,7 @@
  *  - priorityOrder: which axis to try first when promoting
  *  - axis configs: { default, floor, cap, step } per axis
  *  - qualityGate: eligibility thresholds to allow promotion
- *  - promotionPolicy: how many consecutive qualifying sessions needed
+ *  - promotionPolicy: how many consecutive qualifying workout executions needed
  *  - regressionPolicy: when to reduce load/difficulty
  *  - difficultyLadder: ordered list of difficulty codes (if applicable)
  */
@@ -29,7 +29,7 @@ export interface QualityGate {
 }
 
 export interface PromotionPolicy {
-  requiredStreakSessions: number;
+  requiredStreakWorkouts: number;
 }
 
 export interface RegressionPolicy {
@@ -57,7 +57,7 @@ export const ARCHETYPE_DEFAULTS: Record<string, ArchetypeDefaults> = {
     loadAxis: { default: 0, floor: 0, cap: 200, step: 2.5 },
     setAxis: { default: 3, floor: 2, cap: 5, step: 1 },
     qualityGate: { minFormScore: 70, minCompletionRate: 85 },
-    promotionPolicy: { requiredStreakSessions: 2 },
+    promotionPolicy: { requiredStreakWorkouts: 2 },
     regressionPolicy: { maxFormScore: 55 },
   },
 
@@ -67,7 +67,7 @@ export const ARCHETYPE_DEFAULTS: Record<string, ArchetypeDefaults> = {
     repAxis: { default: 8, floor: 4, cap: 15, step: 1 },
     difficultyLadder: ['beginner', 'intermediate', 'advanced'],
     qualityGate: { minFormScore: 75, minCompletionRate: 85 },
-    promotionPolicy: { requiredStreakSessions: 2 },
+    promotionPolicy: { requiredStreakWorkouts: 2 },
     regressionPolicy: { maxFormScore: 55 },
   },
 
@@ -77,7 +77,7 @@ export const ARCHETYPE_DEFAULTS: Record<string, ArchetypeDefaults> = {
     durationAxis: { default: 15, floor: 5, cap: 45, step: 5 },
     difficultyLadder: ['beginner', 'intermediate', 'advanced'],
     qualityGate: { minFormScore: 70, minCompletionRate: 85 },
-    promotionPolicy: { requiredStreakSessions: 2 },
+    promotionPolicy: { requiredStreakWorkouts: 2 },
     regressionPolicy: { maxFormScore: 55 },
   },
 
@@ -87,7 +87,7 @@ export const ARCHETYPE_DEFAULTS: Record<string, ArchetypeDefaults> = {
     repAxis: { default: 8, floor: 5, cap: 15, step: 1 },
     durationAxis: { default: 3, floor: 2, cap: 10, step: 1 },
     qualityGate: { minFormScore: 70, minCompletionRate: 80, minROM: 70 },
-    promotionPolicy: { requiredStreakSessions: 3 },
+    promotionPolicy: { requiredStreakWorkouts: 3 },
     regressionPolicy: { maxFormScore: 50 },
   },
 
@@ -97,7 +97,7 @@ export const ARCHETYPE_DEFAULTS: Record<string, ArchetypeDefaults> = {
     repAxis: { default: 6, floor: 3, cap: 12, step: 1 },
     difficultyLadder: ['beginner', 'intermediate', 'advanced'],
     qualityGate: { minFormScore: 80, minCompletionRate: 90, minStability: 70 },
-    promotionPolicy: { requiredStreakSessions: 3 },
+    promotionPolicy: { requiredStreakWorkouts: 3 },
     regressionPolicy: { maxFormScore: 60 },
   },
 };

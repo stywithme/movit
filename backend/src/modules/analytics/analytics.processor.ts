@@ -9,8 +9,8 @@ export class AnalyticsProcessor extends WorkerHost {
 
   async process(job: Job): Promise<void> {
     switch (job.name) {
-      case 'session_analytics':
-        this.logger.log(`Processing session analytics: ${JSON.stringify(job.data)}`);
+      case 'workout_execution_analytics':
+        this.logger.log(`Processing workout execution analytics: ${JSON.stringify(job.data)}`);
         break;
       case 'daily_summary':
         this.logger.log(`Processing daily summary: ${JSON.stringify(job.data)}`);

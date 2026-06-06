@@ -173,7 +173,7 @@ class ProgramListActivity : AppCompatActivity() {
             val tvDescription: TextView = view.findViewById(R.id.tvDescription)
             val tvWeeks: TextView = view.findViewById(R.id.tvWeeks)
             val tvDifficulty: TextView = view.findViewById(R.id.tvDifficulty)
-            val tvSessions: TextView = view.findViewById(R.id.tvSessions)
+            val tvWorkouts: TextView = view.findViewById(R.id.tvWorkouts)
             val tvFeaturedBadge: TextView = view.findViewById(R.id.tvFeaturedBadge)
             val btnStart: View = view.findViewById(R.id.btnStart)
         }
@@ -193,30 +193,30 @@ class ProgramListActivity : AppCompatActivity() {
                 desc.get(language).ifBlank { desc.en }
             } ?: ""
 
-            val totalSessions = program.weeks.orEmpty().sumOf { week ->
-                week.days.sumOf { day -> day.sessions.size }
+            val totalPlannedWorkouts = program.weeks.orEmpty().sumOf { week ->
+                week.days.sumOf { day -> day.workouts.size }
             }
-            val weeklyTarget = program.weeklySessionTarget?.takeIf { it > 0 }
-            val sessionLabel = if (weeklyTarget != null) {
+            val weeklyTarget = program.weeklyWorkoutTarget?.takeIf { it > 0 }
+            val workoutsLabel = if (weeklyTarget != null) {
                 getString(
-                    R.string.program_card_sessions_weekly_format,
-                    totalSessions,
+                    R.string.program_card_workouts_weekly_format,
+                    totalPlannedWorkouts,
                     weeklyTarget
                 )
             } else {
-                getString(R.string.sessions_count_format, totalSessions)
+                getString(R.string.planned_workouts_count_format, totalPlannedWorkouts)
             }
 
             holder.tvWeeks.text = getString(R.string.weeks_count_format, program.durationWeeks)
-            holder.tvSessions.text = sessionLabel
+            holder.tvWorkouts.text = workoutsLabel
             holder.tvDifficulty.text = formatProgramLevelRange(program.levelRangeMin, program.levelRangeMax)
             holder.tvFeaturedBadge.visibility = if (program.isFeatured) View.VISIBLE else View.GONE
 
             val metaParts = buildList {
-                program.estimatedSessionMinutes?.takeIf { it > 0 }?.let { add("${it} min") }
+                program.estimatedWorkoutMinutes?.takeIf { it > 0 }?.let { add("${it} min") }
             }
             if (metaParts.isNotEmpty()) {
-                val extra = metaParts.joinToString(" · ")
+                val extra = metaParts.joinToString(" Â· ")
                 holder.tvDescription.text = buildString {
                     append(holder.tvDescription.text)
                     if (isNotEmpty()) append("\n")

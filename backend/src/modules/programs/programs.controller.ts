@@ -5,8 +5,8 @@ import { programService } from './programs.service';
 import {
   validateCreateProgram,
   validateDayInput,
-  validateSessionInput,
-  validateSessionItemInput,
+  validatePlannedWorkoutInput,
+  validatePlannedWorkoutItemInput,
   validateUpdateProgram,
   validateWeekInput,
 } from './programs.validation';
@@ -347,175 +347,179 @@ export class ProgramsController {
     }
   }
 
-  @Post(':programId/weeks/:weekId/days/:dayId/sessions')
+  @Post(':programId/weeks/:weekId/days/:dayId/planned-workouts')
   @CheckPermission('update', 'Program')
-  async createSession(
+  async createPlannedWorkout(
     @Param('programId') programId: string,
     @Param('dayId') dayId: string,
     @Body() body: any,
     @Res({ passthrough: true }) res: Response
   ) {
     try {
-      const errors = validateSessionInput(body);
+      const errors = validatePlannedWorkoutInput(body);
       if (errors.length > 0) {
         res.status(400);
         return { success: false, errors };
       }
-      const session = await programService.createSession(programId, dayId, body);
-      if (!session) {
+      const plannedWorkout = await programService.createPlannedWorkout(programId, dayId, body);
+      if (!plannedWorkout) {
         res.status(404);
         return { success: false, error: 'Day not found' };
       }
-      return { success: true, data: session };
+      return { success: true, data: plannedWorkout };
     } catch (error) {
-      console.error('Error creating session:', error);
+      console.error('Error creating planned workout:', error);
       res.status(500);
-      return { success: false, error: 'Failed to create session' };
+      return { success: false, error: 'Failed to create planned workout' };
     }
   }
 
-  @Put(':programId/sessions/:sessionId')
+  @Put(':programId/planned-workouts/:plannedWorkoutId')
   @CheckPermission('update', 'Program')
-  async updateSession(
+  async updatePlannedWorkout(
     @Param('programId') programId: string,
-    @Param('sessionId') sessionId: string,
+    @Param('plannedWorkoutId') plannedWorkoutId: string,
     @Body() body: any,
     @Res({ passthrough: true }) res: Response
   ) {
     try {
-      const errors = validateSessionInput(body);
+      const errors = validatePlannedWorkoutInput(body);
       if (errors.length > 0) {
         res.status(400);
         return { success: false, errors };
       }
-      const session = await programService.updateSession(programId, sessionId, body);
-      if (!session) {
+      const plannedWorkout = await programService.updatePlannedWorkout(programId, plannedWorkoutId, body);
+      if (!plannedWorkout) {
         res.status(404);
-        return { success: false, error: 'Session not found' };
+        return { success: false, error: 'Planned workout not found' };
       }
-      return { success: true, data: session };
+      return { success: true, data: plannedWorkout };
     } catch (error) {
-      console.error('Error updating session:', error);
+      console.error('Error updating planned workout:', error);
       res.status(500);
-      return { success: false, error: 'Failed to update session' };
+      return { success: false, error: 'Failed to update planned workout' };
     }
   }
 
-  @Delete(':programId/sessions/:sessionId')
+  @Delete(':programId/planned-workouts/:plannedWorkoutId')
   @CheckPermission('update', 'Program')
-  async deleteSession(
+  async deletePlannedWorkout(
     @Param('programId') programId: string,
-    @Param('sessionId') sessionId: string,
+    @Param('plannedWorkoutId') plannedWorkoutId: string,
     @Res({ passthrough: true }) res: Response
   ) {
     try {
-      const result = await programService.deleteSession(programId, sessionId);
+      const result = await programService.deletePlannedWorkout(programId, plannedWorkoutId);
       if (!result) {
         res.status(404);
-        return { success: false, error: 'Session not found' };
+        return { success: false, error: 'Planned workout not found' };
       }
-      return { success: true, message: 'Session deleted successfully' };
+      return { success: true, message: 'Planned workout deleted successfully' };
     } catch (error) {
-      console.error('Error deleting session:', error);
+      console.error('Error deleting planned workout:', error);
       res.status(500);
-      return { success: false, error: 'Failed to delete session' };
+      return { success: false, error: 'Failed to delete planned workout' };
     }
   }
 
-  @Post(':programId/sessions/:sessionId/items')
+  @Post(':programId/planned-workouts/:plannedWorkoutId/items')
   @CheckPermission('update', 'Program')
-  async createSessionItem(
+  async createPlannedWorkoutItem(
     @Param('programId') programId: string,
-    @Param('sessionId') sessionId: string,
+    @Param('plannedWorkoutId') plannedWorkoutId: string,
     @Body() body: any,
     @Res({ passthrough: true }) res: Response
   ) {
     try {
-      const errors = validateSessionItemInput(body);
+      const errors = validatePlannedWorkoutItemInput(body);
       if (errors.length > 0) {
         res.status(400);
         return { success: false, errors };
       }
-      const item = await programService.createSessionItem(programId, sessionId, body);
+      const item = await programService.createPlannedWorkoutItem(programId, plannedWorkoutId, body);
       if (!item) {
         res.status(404);
-        return { success: false, error: 'Session not found' };
+        return { success: false, error: 'Planned workout not found' };
       }
       return { success: true, data: item };
     } catch (error) {
-      console.error('Error creating session item:', error);
+      console.error('Error creating planned workout item:', error);
       res.status(500);
-      return { success: false, error: 'Failed to create session item' };
+      return { success: false, error: 'Failed to create planned workout item' };
     }
   }
 
-  @Put(':programId/sessions/:sessionId/items/:itemId')
+  @Put(':programId/planned-workouts/:plannedWorkoutId/items/:itemId')
   @CheckPermission('update', 'Program')
-  async updateSessionItem(
+  async updatePlannedWorkoutItem(
     @Param('programId') programId: string,
     @Param('itemId') itemId: string,
     @Body() body: any,
     @Res({ passthrough: true }) res: Response
   ) {
     try {
-      const errors = validateSessionItemInput(body);
+      const errors = validatePlannedWorkoutItemInput(body);
       if (errors.length > 0) {
         res.status(400);
         return { success: false, errors };
       }
-      const item = await programService.updateSessionItem(programId, itemId, body);
+      const item = await programService.updatePlannedWorkoutItem(programId, itemId, body);
       if (!item) {
         res.status(404);
         return { success: false, error: 'Item not found' };
       }
       return { success: true, data: item };
     } catch (error) {
-      console.error('Error updating session item:', error);
+      console.error('Error updating planned workout item:', error);
       res.status(500);
-      return { success: false, error: 'Failed to update session item' };
+      return { success: false, error: 'Failed to update planned workout item' };
     }
   }
 
-  @Delete(':programId/sessions/:sessionId/items/:itemId')
+  @Delete(':programId/planned-workouts/:plannedWorkoutId/items/:itemId')
   @CheckPermission('update', 'Program')
-  async deleteSessionItem(
+  async deletePlannedWorkoutItem(
     @Param('programId') programId: string,
     @Param('itemId') itemId: string,
     @Res({ passthrough: true }) res: Response
   ) {
     try {
-      const result = await programService.deleteSessionItem(programId, itemId);
+      const result = await programService.deletePlannedWorkoutItem(programId, itemId);
       if (!result) {
         res.status(404);
         return { success: false, error: 'Item not found' };
       }
       return { success: true, message: 'Item deleted successfully' };
     } catch (error) {
-      console.error('Error deleting session item:', error);
+      console.error('Error deleting planned workout item:', error);
       res.status(500);
-      return { success: false, error: 'Failed to delete session item' };
+      return { success: false, error: 'Failed to delete planned workout item' };
     }
   }
 
-  @Post(':programId/sessions/:sessionId/import-workout/:workoutId')
+  @Post(':programId/planned-workouts/:plannedWorkoutId/import-workout-template/:workoutTemplateId')
   @CheckPermission('update', 'Program')
-  async importWorkout(
+  async importWorkoutTemplate(
     @Param('programId') programId: string,
-    @Param('sessionId') sessionId: string,
-    @Param('workoutId') workoutId: string,
+    @Param('plannedWorkoutId') plannedWorkoutId: string,
+    @Param('workoutTemplateId') workoutTemplateId: string,
     @Res({ passthrough: true }) res: Response
   ) {
     try {
-      const session = await programService.importWorkoutToSession(programId, sessionId, workoutId);
-      if (!session) {
+      const plannedWorkout = await programService.importWorkoutTemplateToPlannedWorkout(
+        programId,
+        plannedWorkoutId,
+        workoutTemplateId,
+      );
+      if (!plannedWorkout) {
         res.status(404);
-        return { success: false, error: 'Session or workout not found' };
+        return { success: false, error: 'Planned workout or workout template not found' };
       }
-      return { success: true, data: session };
+      return { success: true, data: plannedWorkout };
     } catch (error) {
-      console.error('Error importing workout into session:', error);
+      console.error('Error importing workout template into planned workout:', error);
       res.status(500);
-      return { success: false, error: 'Failed to import workout' };
+      return { success: false, error: 'Failed to import workout template' };
     }
   }
 }

@@ -10,7 +10,7 @@
 
 ## المسار الحالي (من الكود)
 
-Splash ← SignIn/SignUp ← `OnboardingActivity` ← `PreScreeningActivity` (Safety Gate) ← `AssessmentSessionActivity` ← `AssessmentResultActivity` ← `LevelProfileActivity` ← Plan ← `MainContainerActivity` (Home) ← today session ← `TrainingActivity` ← `SessionReportActivity`.
+Splash ← SignIn/SignUp ← `OnboardingActivity` ← `PreScreeningActivity` (Safety Gate) ← `AssessmentSessionActivity` ← `AssessmentResultActivity` ← `LevelProfileActivity` ← Plan ← `MainContainerActivity` (Home) ← today planned workout ← `TrainingActivity` ← `WorkoutReportActivity`.
 
 ## المشكلة المحتملة
 
@@ -32,7 +32,7 @@ Splash ← SignIn/SignUp ← `OnboardingActivity` ← `PreScreeningActivity` (Sa
 ## المقاييس (تُربط بملف 17)
 
 - `onboarding_completed` rate.
-- الزمن من install حتى أول `session_first_rep` (وقت الوصول للـ Aha).
+- الزمن من install حتى أول `workout_first_rep` (وقت الوصول للـ Aha).
 - نسبة من يصل للـ Aha المصغّر.
 - التسرّب لكل شاشة.
 
@@ -40,4 +40,4 @@ Splash ← SignIn/SignUp ← `OnboardingActivity` ← `PreScreeningActivity` (Sa
 
 - المستخدم يصل لأول تصحيح فوري في أقل من 90 ثانية من أول فتح (في المسار المصغّر).
 - onboarding ضمن عدد الأسئلة المحدد، بلا شاشة اختيارات بلا توجيه.
-- بعد التقييم، خطوة واحدة واضحة (today session) عبر `TrainModeData.status`.
+- بعد التقييم، خطوة واحدة واضحة (today planned workout) عبر `TrainModeData.status`.

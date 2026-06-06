@@ -1,5 +1,7 @@
 # Comprehensive Plan: Programs - Workouts - Exercises Architecture
 
+> **Naming (2026-06):** Training-domain `Session` was removed. Use **PlannedWorkout** (program block), **WorkoutTemplate** (catalog), **WorkoutExecution** (per-exercise run). See [`Workout-Domain-Naming.md`](../../00-Active-Reference/Contracts/Workout-Domain-Naming.md).
+
 > **Vision**: Build an AI-powered fitness platform that guides beginners through safe, correct exercise execution within a structured, long-term training program. Simplicity, clarity, and safety are the core principles.
 
 ---
@@ -9,7 +11,7 @@
 1. [Architecture Overview](#1-architecture-overview)
 2. [Data Model — Backend Schema](#2-data-model--backend-schema)
 3. [Alternating in Exercise (New Concept)](#3-alternating-in-exercise-new-concept)
-4. [Program Structure — Weeks, Days, Sessions](#4-program-structure--weeks-days-sessions)
+4. [Program Structure — Weeks, Days, Planned Workouts](#4-program-structure--weeks-days-planned-workouts)
 5. [Simplified Workout (Template)](#5-simplified-workout-template)
 6. [Exercise Enhancement — Sets, Weight, Alternating](#6-exercise-enhancement--sets-weight-alternating)
 7. [Mobile App Flow — Complete User Experience](#7-mobile-app-flow--complete-user-experience)
@@ -43,10 +45,10 @@ Workout (complex: type + executionMode + rounds)
 Program
   └── Week
         └── Day
-              └── TrainingSession ("Morning", "Evening", etc.)
-                    └── SessionItem (Exercise + Sets + Rest)
+              └── WorkoutExecution ("Morning", "Evening", etc.)
+                    └── PlannedWorkoutItem (Exercise + Sets + Rest)
 
-Workout (Template — reusable preset, can be imported into any Session)
+Workout (Template — reusable preset, can be imported into any planned workout)
   └── WorkoutExercise (with Sets config)
 
 Exercise (enhanced — with Alternating Variants)
@@ -57,9 +59,9 @@ Exercise (enhanced — with Alternating Variants)
 ### Core Principles
 1. **Program** = The "big picture" — a complete training plan for weeks/months
 2. **Week** = Milestone unit — for tracking progress, copying plans, generating weekly reports
-3. **Day** = Container for Training Sessions
-4. **TrainingSession** = The actual training unit — a named period ("Morning", "Pre-sleep") containing exercises in order
-5. **Workout** = A reusable TEMPLATE (preset) — importable into any Training Session
+3. **Day** = Container for Planned Workouts
+4. **WorkoutExecution** = The actual training unit — a named period ("Morning", "Pre-sleep") containing exercises in order
+5. **Workout** = A reusable TEMPLATE (preset) — importable into any Planned Workout
 6. **Exercise** = The atomic unit of training — enhanced with Sets and Alternating support
 
 ---
@@ -114,24 +116,24 @@ model ProgramDay {
   name        Json?    // optional: { en: "Chest & Back Day" }
 
   week        ProgramWeek @relation(fields: [weekId], references: [id], onDelete: Cascade)
-  sessions    TrainingSession[]
+  plannedWorkouts    WorkoutExecution[]
 
   @@unique([weekId, dayNumber])
 }
 
-model TrainingSession {
+model WorkoutExecution {
   id          String   @id @default(uuid())
   dayId       String
   name        Json     // { en: "Morning", ar: "صباحا" } or { en: "Before Bed" }
   sortOrder   Int      @default(0)
 
   day         ProgramDay @relation(fields: [dayId], references: [id], onDelete: Cascade)
-  items       SessionItem[]
+  items       PlannedWorkoutItem[]
 }
 
-model SessionItem {
+model PlannedWorkoutItem {
   id                  String   @id @default(uuid())
-  sessionId           String
+  plannedWorkoutId           String
   sortOrder           Int      @default(0)
 
   // Either exercise or rest (mutually exclusive)
@@ -154,7 +156,7 @@ model SessionItem {
   // ── Rest fields (when type = "rest") ──
   restDurationMs      Int?     // rest duration between exercises
 
-  session             TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  planned workout             WorkoutExecution @relation(fields: [plannedWorkoutId], references: [id], onDelete: Cascade)
   exercise            Exercise? @relation(fields: [exerciseId], references: [id])
 }
 
@@ -175,7 +177,7 @@ model UserProgram {
   program     Program?  @relation(fields: [programId], references: [id])
 
   // User-level overrides stored as JSON patches
-  customizations Json?  // overrides for specific days/sessions/items
+  customizations Json?  // overrides for specific days/planned-workouts/items
 
   progress    UserProgramProgress[]
 }
@@ -185,7 +187,7 @@ model UserProgramProgress {
   userProgramId   String
   weekNumber      Int
   dayNumber       Int
-  sessionId       String?
+  plannedWorkoutId       String?
   completedAt     DateTime?
   status          String    @default("pending") // pending | in_progress | completed | skipped
 
@@ -273,7 +275,7 @@ model Exercise {
   // }
 
   // ... existing relations ...
-  sessionItems          SessionItem[]
+  plannedWorkoutItems          PlannedWorkoutItem[]
 }
 ```
 
@@ -376,7 +378,7 @@ This replaces the old Workout-level alternating with a much more flexible Exerci
 
 ---
 
-## 4. Program Structure — Weeks, Days, Sessions
+## 4. Program Structure — Weeks, Days, Planned Workouts
 
 ### Hierarchy
 
@@ -385,20 +387,20 @@ Program: "Full Body 4-Week Challenge"
 │
 ├── Week 1: "Foundation Week"
 │   ├── Day 1: "Upper Body Focus"
-│   │   ├── Session: "Morning Workout"
+│   │   ├── Planned Workout: "Morning Workout"
 │   │   │   ├── Exercise: Push-ups (3 sets × 10 reps, rest 60s)
 │   │   │   ├── [Rest: 90s]
 │   │   │   ├── Exercise: Squats (3 sets × 12 reps, rest 45s)
 │   │   │   ├── [Rest: 60s]
 │   │   │   └── Exercise: Plank (2 sets × 30s hold, rest 30s)
 │   │   │
-│   │   └── Session: "Evening Stretch"
+│   │   └── Planned Workout: "Evening Stretch"
 │   │       ├── Exercise: Cobra Stretch (1 set × 20s hold)
 │   │       └── Exercise: Chest Stretch (1 set × 20s hold)
 │   │
 │   ├── Day 2: "Rest Day" (isRestDay: true)
 │   ├── Day 3: "Lower Body Focus"
-│   │   └── Session: "Default"
+│   │   └── Planned Workout: "Default"
 │   │       └── [Imported from Workout Template: "Leg Day Basic"]
 │   │           ├── Lunges (3 × 10, rest 45s) — modified: 2 × 8
 │   │           ├── [Rest: 60s]
@@ -406,7 +408,7 @@ Program: "Full Body 4-Week Challenge"
 │   │
 │   ├── Day 4: "Rest Day"
 │   ├── Day 5: "Full Body"
-│   │   └── Session: "Morning"
+│   │   └── Planned Workout: "Morning"
 │   │       └── ...exercises...
 │   ├── Day 6: "Active Recovery"
 │   └── Day 7: "Rest Day"
@@ -422,22 +424,22 @@ Program: "Full Body 4-Week Challenge"
 ```
 
 ### Week as Milestone
-- **Reports**: Weekly summary report aggregating all training sessions
+- **Reports**: Weekly summary report aggregating all planned workouts
 - **Copy**: "Copy Week 1 to Week 3" — duplicate entire week structure
 - **Progress**: Weekly completion percentage displayed in calendar view
 - **Adaptation**: User can modify exercises/sets for specific weeks without affecting others
 
 ### Day Structure
-- A day can have **multiple Training Sessions** (morning, evening, etc.)
-- Each session is a **standalone training unit** — user can complete sessions independently
+- A day can have **multiple Planned Workouts** (morning, evening, etc.)
+- Each planned workout is a **standalone training unit** — user can complete planned workouts independently
 - Rest days are clearly marked — no exercises required
-- User can **name sessions freely**: "Morning", "Before Bed", "Lunch Break", "During Work"
+- User can **name planned workouts freely**: "Morning", "Before Bed", "Lunch Break", "During Work"
 
-### Importing Workouts into Sessions
-When user adds a Workout (template) to a Training Session:
-1. All exercises from the Workout are expanded into the session
+### Importing Workouts into planned workouts
+When user adds a Workout (template) to a Planned Workout:
+1. All exercises from the Workout are expanded into the planned workout
 2. Each exercise retains its sets, reps, rest, weight config
-3. User can modify any exercise LOCALLY (only in this session)
+3. User can modify any exercise LOCALLY (only in this planned workout)
 4. Original Workout template is NOT affected
 5. `sourceWorkoutId` tracks where the exercises came from
 6. `isModified` flag marks if user changed anything
@@ -456,10 +458,10 @@ The old complex types are now achievable through simple arrangement:
 
 | Old Type | New Equivalent |
 |----------|---------------|
-| CIRCUIT (3 rounds) | Add exercises to session, repeat the whole set 3 times using Sets per exercise |
+| CIRCUIT (3 rounds) | Add exercises to planned workout, repeat the whole set 3 times using Sets per exercise |
 | SUPER_SET | Place 2 exercises back-to-back with 0s rest between them |
 | ALTERNATING | Use Exercise-level alternating (Section 3) |
-| AMRAP | Set session time limit, no fixed rep targets |
+| AMRAP | Set workout run time limit, no fixed rep targets |
 | EMOM | Set exercises with 1-minute intervals (future enhancement) |
 
 ### Workout Template Structure
@@ -493,7 +495,7 @@ Workout Template: "Quick Upper Body"
 ## 6. Exercise Enhancement — Sets, Weight, Alternating
 
 ### Sets per Exercise
-Each exercise in a session/workout has:
+Each exercise in a planned workout/workout has:
 - **sets**: Number of sets (e.g., 3)
 - **targetReps**: Reps per set (for UP_DOWN exercises)
 - **targetDuration**: Duration per set in seconds (for HOLD exercises)
@@ -550,8 +552,8 @@ Before each exercise starts:
    │                                 │
    └─────────────────────────────────┘
    ```
-2. User can adjust weight for THIS session only
-3. Actual weight used is recorded in the session report
+2. User can adjust weight for THIS planned workout only
+3. Actual weight used is recorded in the planned workout report
 4. If next set has different planned weight → show dialog again with new recommendation
 
 ### Alternating at Exercise Level
@@ -651,7 +653,7 @@ Inspired by example app — shows weeks with day progression:
 
 ### 7.4 Day Detail Screen
 
-Shows training sessions for a specific day:
+Shows planned workouts for a specific day:
 
 ```
 ┌─────────────────────────────────┐
@@ -683,7 +685,7 @@ Shows training sessions for a specific day:
 │  └───────────┘ └────────────┘  │
 │                                 │
 │  ── Evening Stretch ───────    │
-│  (separate session card)       │
+│  (separate planned workout card)       │
 └─────────────────────────────────┘
 ```
 
@@ -693,7 +695,7 @@ Shows training sessions for a specific day:
 - [Adjust] button: enters edit mode (modify reps/sets per exercise using +/- controls)
 - Continue: resumes from last completed exercise
 - Restart: starts from beginning
-- Multiple sessions shown as separate sections
+- Multiple planned workouts shown as separate sections
 
 ### 7.5 Adjust/Edit Mode
 
@@ -856,12 +858,12 @@ Same as current TrainingActivity — camera feed with:
 └─────────────────────────────────┘
 ```
 
-### 7.11 Session Complete → Report
+### 7.11 Workout Complete → Report
 
 ```
 ┌─────────────────────────────────┐
 │                                 │
-│       🎉 Session Complete!     │
+│       🎉 Workout Complete!     │
 │                                 │
 │  Morning Workout               │
 │  ─────────────────────         │
@@ -902,12 +904,12 @@ Same as current TrainingActivity — camera feed with:
 ### New Architecture
 
 ```
-TrainingActivity (Single instance — never recreated during session)
+TrainingActivity (Single instance — never recreated during workout run)
 │
-├── SessionTrainingEngine (NEW — replaces WorkoutRunner + WorkoutTrainingEngine)
-│   ├── Manages the ENTIRE training session
+├── WorkoutTrainingEngine (NEW — replaces WorkoutRunner + WorkoutTrainingEngine)
+│   ├── Manages the ENTIRE planned workout
 │   ├── Handles: exercise sequence → sets → rest → next exercise
-│   ├── Maintains single camera session throughout
+│   ├── Maintains single camera stream throughout
 │   └── State Machine:
 │
 │       IDLE → PRE_EXERCISE → TRAINING → SET_REST → 
@@ -929,10 +931,10 @@ TrainingActivity (Single instance — never recreated during session)
 ### State Machine Flow
 
 ```
-SessionTrainingEngine State Machine:
+WorkoutTrainingEngine State Machine:
 
 ┌──────────┐
-│   IDLE   │ ← Session loaded, not started
+│   IDLE   │ ← Planned Workout loaded, not started
 └────┬─────┘
      │ user taps "Start"
      ▼
@@ -976,7 +978,7 @@ SessionTrainingEngine State Machine:
 
 ### Alternating Exercise Handling
 
-When `SessionTrainingEngine` encounters an alternating exercise:
+When `WorkoutTrainingEngine` encounters an alternating exercise:
 
 ```
 Exercise: "Squat + Push-up Combo" (3 sets × 6 reps, switchEvery: 1)
@@ -1005,15 +1007,15 @@ Set 3:
 **Camera handling**: The existing hot-swap mechanism in `WorkoutTrainingEngine` is reused inside `TrainingEngine` itself. When an alternating exercise switches variant:
 1. Current tracked joint indices are swapped
 2. New skeleton overlay is applied
-3. Camera session continues uninterrupted
+3. Camera planned workout continues uninterrupted
 4. If camera position changes needed → brief transition overlay
 
 ### Key Engine Components
 
 ```kotlin
-// NEW: SessionTrainingEngine
-class SessionTrainingEngine(
-    private val sessionItems: List<SessionExerciseItem>,
+// NEW: WorkoutTrainingEngine
+class WorkoutTrainingEngine(
+    private val plannedWorkoutItems: List<PlannedWorkoutExerciseItem>,
     private val context: Context
 ) {
     // State
@@ -1041,8 +1043,8 @@ class SessionTrainingEngine(
             val nextExerciseName: String,
             val nextExerciseImage: String?
         ) : State()
-        data class SessionComplete(
-            val report: SessionReport
+        data class WorkoutComplete(
+            val report: WorkoutReport
         ) : State()
     }
 
@@ -1105,7 +1107,7 @@ class SessionTrainingEngine(
 ### Report Hierarchy
 
 ```
-Session Report (Training Session level)
+Workout report (Planned Workout level)
 ├── Total time, total reps, avg accuracy, exercises completed
 │
 ├── Exercise Report 1: Push-ups
@@ -1123,10 +1125,10 @@ Session Report (Training Session level)
     ├── Overall: 2/2 sets, 60s total, 88% accuracy
     └── ...
 
-Weekly Report (aggregated from all sessions in the week)
+Weekly Report (aggregated from all planned workouts in the week)
 ├── Days completed: 5/7
 ├── Total training time: 2h 45m
-├── Total sessions: 8
+├── Total planned workouts: 8
 ├── Exercises performed: 35
 ├── Avg accuracy trend: 82% → 87% (improving!)
 └── Muscle group distribution chart
@@ -1156,8 +1158,8 @@ Per Exercise:
   - common form errors (aggregated)
   - improvement vs last time
 
-Per Session:
-  - sessionName, totalDuration
+Per Planned Workout:
+  - plannedWorkoutName, totalDuration
   - exercisesCompleted / exercisesTotal
   - totalSets, totalReps
   - avgAccuracy, calorieEstimate
@@ -1165,7 +1167,7 @@ Per Session:
 
 Per Week:
   - daysCompleted / daysTotal
-  - sessionsCompleted
+  - plannedWorkoutsCompleted
   - totalTrainingTime
   - accuracyTrend
   - muscleGroupDistribution
@@ -1176,14 +1178,14 @@ Per Week:
 
 ```
 Local (Mobile):
-  - Per-session reports stored as JSON in app storage
+  - Per-planned-workout reports stored as JSON in app storage
   - Cached for offline viewing
   - Synced to server when online
 
 Server:
-  - TrainingSession table stores session-level metrics
-  - SessionMetrics table stores per-exercise/set/rep details
-  - WeeklyReport generated on-demand from session data
+  - WorkoutExecution table stores workout-run-level metrics
+  - WorkoutExecutionMetrics table stores per-exercise/set/rep details
+  - WeeklyReport generated on-demand from planned workout data
 ```
 
 ---
@@ -1203,9 +1205,9 @@ Server:
   3. Day Builder:
      - 7 days per week
      - Mark rest days
-     - Add Training Sessions per day
-  4. Session Builder:
-     - Name the session
+     - Add Planned Workouts per day
+  4. Planned Workout Builder:
+     - Name the planned workout
      - Add exercises manually (search & add)
      - Import from Workout template
      - Set per-exercise: sets, reps/duration, rest, weight
@@ -1259,32 +1261,32 @@ DELETE /api/programs/:id
 POST   /api/programs/:id/publish
 POST   /api/programs/:id/duplicate
 
-// Program Weeks/Days/Sessions (Admin)
+// Program Weeks/Days/Planned Workouts (Admin)
 POST   /api/programs/:id/weeks
 PUT    /api/programs/:id/weeks/:weekId
 DELETE /api/programs/:id/weeks/:weekId
 POST   /api/programs/:id/weeks/:weekId/copy-to/:targetWeek
 
-POST   /api/programs/:programId/weeks/:weekId/days/:dayNumber/sessions
-PUT    /api/programs/.../sessions/:sessionId
-DELETE /api/programs/.../sessions/:sessionId
+POST   /api/programs/:programId/weeks/:weekId/days/:dayId/planned-workouts
+PUT    /api/programs/.../planned-workouts/:plannedWorkoutId
+DELETE /api/programs/.../planned-workouts/:plannedWorkoutId
 
-POST   /api/programs/.../sessions/:sessionId/items
-PUT    /api/programs/.../sessions/:sessionId/items/:itemId
-DELETE /api/programs/.../sessions/:sessionId/items/:itemId
-POST   /api/programs/.../sessions/:sessionId/import-workout/:workoutId
+POST   /api/programs/.../planned-workouts/:plannedWorkoutId/items
+PUT    /api/programs/.../planned-workouts/:plannedWorkoutId/items/:itemId
+DELETE /api/programs/.../planned-workouts/:plannedWorkoutId/items/:itemId
+POST   /api/programs/.../planned-workouts/:plannedWorkoutId/import-workout-template/:workoutTemplateId
 
 // Mobile — Program
 GET    /api/mobile/programs              // list available programs
-GET    /api/mobile/programs/:id          // full program with all weeks/days/sessions
+GET    /api/mobile/programs/:id          // full program with all weeks/days/planned-workouts
 POST   /api/mobile/programs/:id/enroll   // user enrolls in program
 PUT    /api/mobile/user-programs/:id     // update customizations
 GET    /api/mobile/user-programs/:id/today  // get today's plan
 
-// Mobile — Session Training
-POST   /api/mobile/sessions/:sessionId/start
-POST   /api/mobile/sessions/:sessionId/complete
-POST   /api/mobile/sessions/:sessionId/report  // submit session report
+// Mobile — Planned Workout Training
+POST   /api/mobile/planned-workouts/:plannedWorkoutId/start
+POST   /api/mobile/planned-workouts/:plannedWorkoutId/complete
+POST   /api/mobile/planned-workouts/:plannedWorkoutId/report  // submit planned workout report
 
 // Mobile — Sync (Enhanced)
 GET    /api/mobile/sync   // now includes programs + simplified workouts
@@ -1362,17 +1364,17 @@ interface ProgramDayExport {
   dayNumber: number;
   isRestDay: boolean;
   name?: LocalizedText;
-  sessions: TrainingSessionExport[];
+  executions: WorkoutExecutionExport[];
 }
 
-interface TrainingSessionExport {
+interface WorkoutExecutionExport {
   id: string;
   name: LocalizedText;
   sortOrder: number;
-  items: SessionItemExport[];
+  items: PlannedWorkoutItemExport[];
 }
 
-interface SessionItemExport {
+interface PlannedWorkoutItemExport {
   type: "exercise" | "rest";
   // exercise fields
   exerciseSlug?: string;
@@ -1395,7 +1397,7 @@ interface SessionItemExport {
 
 ### Phase 1: Backend Schema Migration
 
-1. **Add new tables**: Program, ProgramWeek, ProgramDay, TrainingSession, SessionItem, UserProgram, UserProgramProgress
+1. **Add new tables**: Program, ProgramWeek, ProgramDay, WorkoutExecution, PlannedWorkoutItem, UserProgram, UserProgramProgress
 2. **Modify Workout table**: 
    - Add: estimatedDurationMin, coverImageUrl, tags, difficulty
    - Mark deprecated (keep for backward compatibility): type, executionMode, rounds, repsPerSwitch, restBetweenSwitchMs
@@ -1405,14 +1407,14 @@ interface SessionItemExport {
    - Keep existing fields
 4. **Modify Exercise table**:
    - Add: isAlternating, alternatingConfig
-5. **Add relation**: SessionItem → Exercise
+5. **Add relation**: PlannedWorkoutItem → Exercise
 
 ### Phase 2: Backend Logic Migration
 
 1. Build Program CRUD module (controller, service, types)
 2. Update Workout CRUD to handle simplified model
 3. Update sync service to include programs
-4. Build "import workout to session" logic
+4. Build "import template to planned workout" logic
 5. Update exercise creation to support alternating config
 
 ### Phase 3: Admin Panel Migration
@@ -1424,23 +1426,23 @@ interface SessionItemExport {
 
 ### Phase 4: Mobile Migration
 
-1. Update data models (add Program, Session, Sets)
+1. Update data models (add Program, PlannedWorkout, Sets)
 2. Update sync to fetch programs
-3. Build new `SessionTrainingEngine`
+3. Build new `WorkoutTrainingEngine`
 4. Update `TrainingActivity` for set-based flow
 5. Build rest screens (between sets, between exercises)
 6. Build weight confirmation dialog
-7. Build new reporting (per set, per exercise, per session)
+7. Build new reporting (per set, per exercise, per planned workout)
 8. Build Home screen with today's plan
 9. Build Program calendar screen
 10. Build Day detail screen
-11. Build Session complete screen
+11. Build Workout complete screen
 
 ### Phase 5: Cleanup
 
 1. Remove deprecated Workout fields (type, executionMode, rounds, etc.)
-2. Remove `WorkoutRunner` (replaced by `SessionTrainingEngine`)
-3. Remove `WorkoutTrainingEngine` (absorbed into `SessionTrainingEngine` + `TrainingEngine`)
+2. Remove `WorkoutRunner` (replaced by `WorkoutTrainingEngine`)
+3. Remove `WorkoutTrainingEngine` (absorbed into `WorkoutTrainingEngine` + `TrainingEngine`)
 4. Remove `WorkoutActivity` (no longer needed — everything in `TrainingActivity`)
 5. Convert existing workouts to new format
 
@@ -1463,7 +1465,7 @@ interface SessionItemExport {
 
 ### Phase C: Mobile Core Engine — ~2 weeks
 1. New data models + sync
-2. `SessionTrainingEngine` (state machine)
+2. `WorkoutTrainingEngine` (state machine)
 3. Set-based training flow
 4. Alternating exercise handling in engine
 5. Rest countdown overlay
@@ -1479,7 +1481,7 @@ interface SessionItemExport {
 ### Phase E: Reporting — ~1 week
 1. Per-set metrics collection
 2. Per-exercise aggregation
-3. Session report screen
+3. Planned Workout report screen
 4. Weekly report (basic)
 
 ### Phase F: Polish & Migration — ~1 week
@@ -1495,15 +1497,15 @@ interface SessionItemExport {
 
 | Component | Current | New |
 |-----------|---------|-----|
-| **Top-level structure** | None | Program → Weeks → Days → Sessions |
+| **Top-level structure** | None | Program → Weeks → Days → Planned Workouts |
 | **Workout complexity** | 4 types + 2 modes + rounds | Simple template (exercise list with sets/rest) |
 | **Alternating** | Workout level (between exercises) | Exercise level (between joint configs) |
 | **Repetition** | Rounds (whole workout) | Sets (per exercise) |
 | **Weight** | Not tracked | Per set, with live confirmation |
-| **Training flow** | Breaks between exercises | Continuous session (single Activity) |
+| **Training flow** | Breaks between exercises | Continuous planned workout (single Activity) |
 | **Rest** | No visual rest screen | Countdown + Skip + Extend |
-| **Reports** | Per exercise only | Per Set → Per Exercise → Per Session → Per Week |
+| **Reports** | Per exercise only | Per Set → Per Exercise → Per Planned Workout → Per Week |
 | **Customization** | None | Copy program, modify exercises, replace alternatives |
 
-> **Goal**: A beginner opens the app, sees their plan for today, taps "Start Training", and the app guides them through every set, every rep, every rest — with AI-powered form correction — all within a single, seamless training session. No confusion, no complexity, just safe, effective exercise.
+> **Goal**: A beginner opens the app, sees their plan for today, taps "Start Training", and the app guides them through every set, every rep, every rest — with AI-powered form correction — all within a single, seamless planned workout. No confusion, no complexity, just safe, effective exercise.
 

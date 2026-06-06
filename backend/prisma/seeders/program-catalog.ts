@@ -1,4 +1,4 @@
-import type { Prisma, ProgramDomain, ProgramType, SessionRole, TrainingGoal } from '@prisma/client';
+﻿import type { Prisma, ProgramDomain, ProgramType, WorkoutBlockRole, TrainingGoal } from '@prisma/client';
 
 const defaultEquipmentStarter: Prisma.InputJsonValue = ['bodyweight', 'mat', 'dumbbell', 'resistance_band'];
 const defaultEquipmentMobility: Prisma.InputJsonValue = ['bodyweight', 'mat'];
@@ -14,15 +14,15 @@ export type CatalogExerciseSlot = {
   weightPerSet?: number[];
 };
 
-export type CatalogSessionItem = CatalogExerciseSlot | { restMs: number };
+export type CatalogPlannedWorkoutItem = CatalogExerciseSlot | { restMs: number };
 
-export type CatalogSession = {
+export type CatalogPlannedWorkout = {
   name: { ar: string; en: string };
   sortOrder?: number;
   estimatedDurationMin?: number;
-  /** Session-level role (replaces per-item roles + sessionCategory). */
-  role?: SessionRole;
-  items: CatalogSessionItem[];
+  /** Planned-workout block role (replaces per-item roles + legacy category). */
+  role?: WorkoutBlockRole;
+  items: CatalogPlannedWorkoutItem[];
 };
 
 export type CatalogDay = {
@@ -30,7 +30,7 @@ export type CatalogDay = {
   isRestDay?: boolean;
   dayType?: string;
   dayFocus?: string | null;
-  sessions?: CatalogSession[];
+  plannedWorkouts?: CatalogPlannedWorkout[];
 };
 
 export type CatalogWeek = {
@@ -60,17 +60,17 @@ export type ProgramCatalogEntry = {
   contraindications: string[];
   autoAssignable: boolean;
   version: number;
-  weeklySessionTarget: number | null;
-  estimatedSessionMinutes: number | null;
+  weeklyWorkoutTarget: number | null;
+  estimatedWorkoutMinutes: number | null;
   coachingNotes: Prisma.InputJsonValue | null;
   prerequisiteProgramSlug?: string | null;
   nextProgramSlug?: string | null;
   weeks: CatalogWeek[];
 };
 
-function sessionCategoryToRole(
+function workoutCategoryToBlockRole(
   category: 'strength' | 'mobility' | 'conditioning' | 'recovery' | 'mixed',
-): SessionRole {
+): WorkoutBlockRole {
   switch (category) {
     case 'mobility':
       return 'WARMUP';
@@ -196,8 +196,8 @@ function scaleSlots(slots: CatalogExerciseSlot[], bandIdx: number, goal: GoalKey
   }));
 }
 
-function withRests(items: CatalogExerciseSlot[]): CatalogSessionItem[] {
-  const out: CatalogSessionItem[] = [];
+function withRests(items: CatalogExerciseSlot[]): CatalogPlannedWorkoutItem[] {
+  const out: CatalogPlannedWorkoutItem[] = [];
   for (let i = 0; i < items.length; i++) {
     out.push({ ...items[i] });
     if (i < items.length - 1) out.push({ restMs: 45000 });
@@ -212,16 +212,16 @@ function buildSystemTrainingWeeks(goal: GoalKey, bandIdx: number): CatalogWeek[]
   const lo = scaleSlots(rot.lower, bandIdx, goal);
   const fu = scaleSlots(rot.full, bandIdx, goal);
 
-  const session = (
+  const catalogPlannedWorkout = (
     name: { ar: string; en: string },
     parts: CatalogExerciseSlot[],
     category: 'strength' | 'mobility' | 'conditioning' | 'recovery' | 'mixed',
     est: number,
-  ): CatalogSession => ({
+  ): CatalogPlannedWorkout => ({
     name,
     sortOrder: 1,
     estimatedDurationMin: est,
-    role: sessionCategoryToRole(category),
+    role: workoutCategoryToBlockRole(category),
     items: withRests(parts),
   });
 
@@ -232,19 +232,19 @@ function buildSystemTrainingWeeks(goal: GoalKey, bandIdx: number): CatalogWeek[]
       {
         dayNumber: 1,
         dayFocus: 'upper',
-        sessions: [session({ ar: 'صباحًا', en: 'Morning' }, [...wu, ...up], 'strength', 42)],
+        plannedWorkouts: [catalogPlannedWorkout({ ar: 'صباحًا', en: 'Morning' }, [...wu, ...up], 'strength', 42)],
       },
       { dayNumber: 2, isRestDay: true },
       {
         dayNumber: 3,
         dayFocus: 'lower',
-        sessions: [session({ ar: 'مساءً', en: 'Evening' }, [...wu, ...lo], 'strength', 44)],
+        plannedWorkouts: [catalogPlannedWorkout({ ar: 'مساءً', en: 'Evening' }, [...wu, ...lo], 'strength', 44)],
       },
       { dayNumber: 4, isRestDay: true },
       {
         dayNumber: 5,
         dayFocus: 'full_body',
-        sessions: [session({ ar: 'جلسة مختلطة', en: 'Mixed session' }, [...wu, ...fu], 'mixed', 40)],
+        plannedWorkouts: [catalogPlannedWorkout({ ar: 'تمرين مختلط', en: 'Mixed workout' }, [...wu, ...fu], 'mixed', 40)],
       },
       { dayNumber: 6, isRestDay: true },
       { dayNumber: 7, isRestDay: true },
@@ -287,8 +287,8 @@ function buildSystemTrainingMeta(goal: GoalKey, bandIdx: number): Omit<ProgramCa
     contraindications: [],
     autoAssignable: true,
     version: 1,
-    weeklySessionTarget: ACSM_STRENGTH_WEEKLY,
-    estimatedSessionMinutes: goal === 'POWER' ? 40 : 45,
+    weeklyWorkoutTarget: ACSM_STRENGTH_WEEKLY,
+    estimatedWorkoutMinutes: goal === 'POWER' ? 40 : 45,
     coachingNotes: {
       en: 'Prioritize technique; stop if sharp pain.',
       ar: 'ركّز على التقنية؛ توقف عند ألم حاد.',
@@ -320,7 +320,7 @@ function starterProgram(): ProgramCatalogEntry {
     restMs: 30000,
     ...o,
   });
-  const R = (ms: number): CatalogSessionItem => ({ restMs: ms });
+  const R = (ms: number): CatalogPlannedWorkoutItem => ({ restMs: ms });
 
   return {
     slug: 'starter-4-weeks',
@@ -346,8 +346,8 @@ function starterProgram(): ProgramCatalogEntry {
     contraindications: [],
     autoAssignable: true,
     version: 1,
-    weeklySessionTarget: 4,
-    estimatedSessionMinutes: 40,
+    weeklyWorkoutTarget: 4,
+    estimatedWorkoutMinutes: 40,
     coachingNotes: {
       ar: 'ابدأ بخفة وركّز على الجودة قبل الكمية.',
       en: 'Start light and prioritize quality before volume.',
@@ -362,7 +362,7 @@ function starterProgram(): ProgramCatalogEntry {
           {
             dayNumber: 1,
             dayFocus: 'upper',
-            sessions: [
+            plannedWorkouts: [
               {
                 name: { ar: 'صباحًا', en: 'Morning' },
                 sortOrder: 1,
@@ -381,7 +381,7 @@ function starterProgram(): ProgramCatalogEntry {
           {
             dayNumber: 2,
             dayFocus: 'lower',
-            sessions: [
+            plannedWorkouts: [
               {
                 name: { ar: 'قبل النوم', en: 'Evening' },
                 sortOrder: 1,
@@ -401,7 +401,7 @@ function starterProgram(): ProgramCatalogEntry {
           {
             dayNumber: 4,
             dayFocus: 'full_body',
-            sessions: [
+            plannedWorkouts: [
               {
                 name: { ar: 'صباحًا', en: 'Morning' },
                 sortOrder: 1,
@@ -420,7 +420,7 @@ function starterProgram(): ProgramCatalogEntry {
           {
             dayNumber: 6,
             dayFocus: 'core_upper',
-            sessions: [
+            plannedWorkouts: [
               {
                 name: { ar: 'مساءً', en: 'Evening' },
                 sortOrder: 1,
@@ -445,7 +445,7 @@ function starterProgram(): ProgramCatalogEntry {
           {
             dayNumber: 1,
             dayFocus: 'push',
-            sessions: [
+            plannedWorkouts: [
               {
                 name: { ar: 'صباحًا', en: 'Morning' },
                 sortOrder: 1,
@@ -464,7 +464,7 @@ function starterProgram(): ProgramCatalogEntry {
           {
             dayNumber: 3,
             dayFocus: 'core',
-            sessions: [
+            plannedWorkouts: [
               {
                 name: { ar: 'خلال العمل', en: 'Midday' },
                 sortOrder: 1,
@@ -483,7 +483,7 @@ function starterProgram(): ProgramCatalogEntry {
           {
             dayNumber: 5,
             dayFocus: 'full_body',
-            sessions: [
+            plannedWorkouts: [
               {
                 name: { ar: 'صباحًا', en: 'Morning' },
                 sortOrder: 1,
@@ -502,7 +502,7 @@ function starterProgram(): ProgramCatalogEntry {
           {
             dayNumber: 7,
             dayFocus: 'upper',
-            sessions: [
+            plannedWorkouts: [
               {
                 name: { ar: 'مساءً', en: 'Evening' },
                 sortOrder: 1,
@@ -526,7 +526,7 @@ function starterProgram(): ProgramCatalogEntry {
           {
             dayNumber: 1,
             dayFocus: 'full_body',
-            sessions: [
+            plannedWorkouts: [
               {
                 name: { ar: 'صباحًا', en: 'Morning' },
                 sortOrder: 1,
@@ -547,7 +547,7 @@ function starterProgram(): ProgramCatalogEntry {
           {
             dayNumber: 3,
             dayFocus: 'lower',
-            sessions: [
+            plannedWorkouts: [
               {
                 name: { ar: 'صباحًا', en: 'Morning' },
                 sortOrder: 1,
@@ -566,7 +566,7 @@ function starterProgram(): ProgramCatalogEntry {
           {
             dayNumber: 5,
             dayFocus: 'core_stability',
-            sessions: [
+            plannedWorkouts: [
               {
                 name: { ar: 'خلال العمل', en: 'Midday' },
                 sortOrder: 1,
@@ -584,7 +584,7 @@ function starterProgram(): ProgramCatalogEntry {
           {
             dayNumber: 6,
             dayFocus: 'upper',
-            sessions: [
+            plannedWorkouts: [
               {
                 name: { ar: 'مساءً', en: 'Evening' },
                 sortOrder: 1,
@@ -609,7 +609,7 @@ function starterProgram(): ProgramCatalogEntry {
           {
             dayNumber: 1,
             dayFocus: 'full_body',
-            sessions: [
+            plannedWorkouts: [
               {
                 name: { ar: 'صباحًا', en: 'Morning' },
                 sortOrder: 1,
@@ -627,7 +627,7 @@ function starterProgram(): ProgramCatalogEntry {
           {
             dayNumber: 2,
             dayFocus: 'full_body',
-            sessions: [
+            plannedWorkouts: [
               {
                 name: { ar: 'صباحًا', en: 'Morning' },
                 sortOrder: 1,
@@ -646,7 +646,7 @@ function starterProgram(): ProgramCatalogEntry {
           {
             dayNumber: 4,
             dayFocus: 'strength',
-            sessions: [
+            plannedWorkouts: [
               {
                 name: { ar: 'صباحًا', en: 'Morning' },
                 sortOrder: 1,
@@ -665,7 +665,7 @@ function starterProgram(): ProgramCatalogEntry {
           {
             dayNumber: 6,
             dayFocus: 'mixed',
-            sessions: [
+            plannedWorkouts: [
               {
                 name: { ar: 'صباحًا', en: 'Morning' },
                 sortOrder: 1,
@@ -705,9 +705,9 @@ function mobilityProgram(): ProgramCatalogEntry {
       {
         dayNumber: 1,
         dayFocus: 'shoulder_hip',
-        sessions: [
+        plannedWorkouts: [
           {
-            name: { ar: 'جلسة مرونة', en: 'Mobility Session' },
+            name: { ar: 'تمرين مرونة', en: 'Mobility Workout' },
             sortOrder: 1,
             estimatedDurationMin: 32,
             role: 'WARMUP',
@@ -729,7 +729,7 @@ function mobilityProgram(): ProgramCatalogEntry {
       {
         dayNumber: 3,
         dayFocus: 'spine',
-        sessions: [
+        plannedWorkouts: [
           {
             name: { ar: 'تمديد وتحرك', en: 'Stretch & Move' },
             sortOrder: 1,
@@ -752,7 +752,7 @@ function mobilityProgram(): ProgramCatalogEntry {
       {
         dayNumber: 5,
         dayFocus: 'full_mobility',
-        sessions: [
+        plannedWorkouts: [
           {
             name: { ar: 'مرونة شاملة', en: 'Full Mobility' },
             sortOrder: 1,
@@ -798,8 +798,8 @@ function mobilityProgram(): ProgramCatalogEntry {
     contraindications: [],
     autoAssignable: true,
     version: 1,
-    weeklySessionTarget: 3,
-    estimatedSessionMinutes: 30,
+    weeklyWorkoutTarget: 3,
+    estimatedWorkoutMinutes: 30,
     coachingNotes: {
       ar: 'تحرك ضمن نطاق مريح بدون ألم حاد.',
       en: 'Stay within a comfortable range — no sharp pain.',
@@ -830,7 +830,7 @@ function intermediateStrengthProgram(): ProgramCatalogEntry {
         {
           dayNumber: 1,
           dayFocus: 'upper_strength',
-          sessions: [
+          plannedWorkouts: [
             {
               name: { ar: 'قوة علوية', en: 'Upper Strength' },
               sortOrder: 1,
@@ -848,7 +848,7 @@ function intermediateStrengthProgram(): ProgramCatalogEntry {
         {
           dayNumber: 2,
           dayFocus: 'lower_strength',
-          sessions: [
+          plannedWorkouts: [
             {
               name: { ar: 'قوة سفلية', en: 'Lower Strength' },
               sortOrder: 1,
@@ -867,7 +867,7 @@ function intermediateStrengthProgram(): ProgramCatalogEntry {
         {
           dayNumber: 4,
           dayFocus: 'full_body',
-          sessions: [
+          plannedWorkouts: [
             {
               name: { ar: 'قوة شاملة', en: 'Full Body Power' },
               sortOrder: 1,
@@ -885,7 +885,7 @@ function intermediateStrengthProgram(): ProgramCatalogEntry {
         {
           dayNumber: 6,
           dayFocus: 'strength_challenge',
-          sessions: [
+          plannedWorkouts: [
             {
               name: { ar: 'تحدي القوة', en: 'Strength Challenge' },
               sortOrder: 1,
@@ -924,8 +924,8 @@ function intermediateStrengthProgram(): ProgramCatalogEntry {
     contraindications: [],
     autoAssignable: true,
     version: 1,
-    weeklySessionTarget: 4,
-    estimatedSessionMinutes: 50,
+    weeklyWorkoutTarget: 4,
+    estimatedWorkoutMinutes: 50,
     coachingNotes: {
       ar: 'زد الحمل تدريجيًا مع الحفاظ على تقنية آمنة.',
       en: 'Progress load gradually while keeping technique safe.',
@@ -967,8 +967,8 @@ function therapeuticLowBack(): ProgramCatalogEntry {
     contraindications: ['acute_radicular_pain'],
     autoAssignable: false,
     version: 1,
-    weeklySessionTarget: 2,
-    estimatedSessionMinutes: 25,
+    weeklyWorkoutTarget: 2,
+    estimatedWorkoutMinutes: 25,
     coachingNotes: {
       en: 'Manual-first progression; medical clearance recommended.',
       ar: 'تقدم يدوي أولًا؛ يُفضّل موافقة طبية.',
@@ -983,9 +983,9 @@ function therapeuticLowBack(): ProgramCatalogEntry {
           {
             dayNumber: 1,
             dayFocus: 'stability',
-            sessions: [
+            plannedWorkouts: [
               {
-                name: { ar: 'جلسة 1', en: 'Session 1' },
+                name: { ar: 'تمرين 1', en: 'Workout 1' },
                 sortOrder: 1,
                 estimatedDurationMin: 28,
                 role: 'COOLDOWN',
@@ -1002,9 +1002,9 @@ function therapeuticLowBack(): ProgramCatalogEntry {
           {
             dayNumber: 3,
             dayFocus: 'mobility',
-            sessions: [
+            plannedWorkouts: [
               {
-                name: { ar: 'جلسة 2', en: 'Session 2' },
+                name: { ar: 'تمرين 2', en: 'Workout 2' },
                 sortOrder: 1,
                 estimatedDurationMin: 26,
                 role: 'WARMUP',
@@ -1029,9 +1029,9 @@ function therapeuticLowBack(): ProgramCatalogEntry {
           {
             dayNumber: 1,
             dayFocus: 'stability',
-            sessions: [
+            plannedWorkouts: [
               {
-                name: { ar: 'جلسة 3', en: 'Session 3' },
+                name: { ar: 'تمرين 3', en: 'Workout 3' },
                 sortOrder: 1,
                 estimatedDurationMin: 30,
                 role: 'COOLDOWN',
@@ -1047,9 +1047,9 @@ function therapeuticLowBack(): ProgramCatalogEntry {
           {
             dayNumber: 3,
             dayFocus: 'hip',
-            sessions: [
+            plannedWorkouts: [
               {
-                name: { ar: 'جلسة 4', en: 'Session 4' },
+                name: { ar: 'تمرين 4', en: 'Workout 4' },
                 sortOrder: 1,
                 estimatedDurationMin: 28,
                 role: 'WARMUP',
@@ -1102,8 +1102,8 @@ function therapeuticShoulder(): ProgramCatalogEntry {
     contraindications: ['acute_shoulder_dislocation'],
     autoAssignable: false,
     version: 1,
-    weeklySessionTarget: 2,
-    estimatedSessionMinutes: 22,
+    weeklyWorkoutTarget: 2,
+    estimatedWorkoutMinutes: 22,
     coachingNotes: {
       en: 'Stay below symptom threshold; clinician-guided preferred.',
       ar: 'تحت عتبة الأعراض؛ يُفضّل إشراف سريري.',
@@ -1118,9 +1118,9 @@ function therapeuticShoulder(): ProgramCatalogEntry {
           {
             dayNumber: 1,
             dayFocus: 'shoulder',
-            sessions: [
+            plannedWorkouts: [
               {
-                name: { ar: 'جلسة كتف', en: 'Shoulder session' },
+                name: { ar: 'تمرين كتف', en: 'Shoulder workout' },
                 sortOrder: 1,
                 estimatedDurationMin: 24,
                 role: 'COOLDOWN',
@@ -1136,9 +1136,9 @@ function therapeuticShoulder(): ProgramCatalogEntry {
           {
             dayNumber: 3,
             dayFocus: 'shoulder',
-            sessions: [
+            plannedWorkouts: [
               {
-                name: { ar: 'جلسة كتف 2', en: 'Shoulder session 2' },
+                name: { ar: 'تمرين كتف 2', en: 'Shoulder workout 2' },
                 sortOrder: 1,
                 estimatedDurationMin: 22,
                 role: 'WARMUP',
@@ -1163,7 +1163,7 @@ function therapeuticShoulder(): ProgramCatalogEntry {
           {
             dayNumber: 1,
             dayFocus: 'shoulder',
-            sessions: [
+            plannedWorkouts: [
               {
                 name: { ar: 'تقدم خفيف', en: 'Light progression' },
                 sortOrder: 1,
@@ -1210,8 +1210,8 @@ function coachFixture(): ProgramCatalogEntry {
     contraindications: [],
     autoAssignable: false,
     version: 1,
-    weeklySessionTarget: 3,
-    estimatedSessionMinutes: 50,
+    weeklyWorkoutTarget: 3,
+    estimatedWorkoutMinutes: 50,
     coachingNotes: { en: 'Coach-owned template.', ar: 'قالب يملكه المدرب.' },
     prerequisiteProgramSlug: null,
     nextProgramSlug: null,
@@ -1240,8 +1240,8 @@ function customFixture(): ProgramCatalogEntry {
     contraindications: [],
     autoAssignable: false,
     version: 1,
-    weeklySessionTarget: 2,
-    estimatedSessionMinutes: 30,
+    weeklyWorkoutTarget: 2,
+    estimatedWorkoutMinutes: 30,
     coachingNotes: null,
     prerequisiteProgramSlug: null,
     nextProgramSlug: null,
@@ -1253,9 +1253,9 @@ function customFixture(): ProgramCatalogEntry {
           {
             dayNumber: 1,
             dayFocus: 'full_body',
-            sessions: [
+            plannedWorkouts: [
               {
-                name: { ar: 'جلسة واحدة', en: 'Single session' },
+                name: { ar: 'تمرين واحد', en: 'Single workout' },
                 sortOrder: 1,
                 estimatedDurationMin: 30,
                 role: 'MAIN',

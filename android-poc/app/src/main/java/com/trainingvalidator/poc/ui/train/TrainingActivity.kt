@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui.train
+﻿package com.trainingvalidator.poc.ui.train
 
 import android.Manifest
 import android.graphics.Color
@@ -29,7 +29,7 @@ import com.trainingvalidator.poc.databinding.ActivityTrainingBinding
 import com.trainingvalidator.poc.pose.PoseLandmarkerHelper
 import com.trainingvalidator.poc.pose.PoseResult
 import com.trainingvalidator.poc.training.config.SettingsManager
-import com.trainingvalidator.poc.training.session.SessionState
+import com.trainingvalidator.poc.training.workout.WorkoutRunState
 import com.trainingvalidator.poc.ui.components.AnimationUtils
 import com.trainingvalidator.poc.ui.training.TrainingUIEvent
 import com.trainingvalidator.poc.ui.training.TrainingViewModel
@@ -43,7 +43,7 @@ import com.trainingvalidator.poc.training.report.FrameCaptureManager
 import com.trainingvalidator.poc.storage.ReportStorage
 import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.storage.UserExercisePreferenceStore
-import com.trainingvalidator.poc.network.SessionSyncService
+import com.trainingvalidator.poc.network.WorkoutSyncService
 import com.trainingvalidator.poc.network.ApiConfig
 import com.trainingvalidator.poc.training.models.CheckSeverity
 import kotlinx.coroutines.Dispatchers
@@ -54,13 +54,13 @@ import kotlinx.coroutines.launch
  * TrainingActivity - Professional Training Screen
  * 
  * Now uses:
- * - SessionSupervisor via TrainingViewModel for state management (Single Source of Truth)
+ * - WorkoutRunSupervisor via TrainingViewModel for state management (Single Source of Truth)
  * - PoseSetupGuide for rolling-window pose validation
  * - CountdownController for countdown logic
  * - VideoModeController for video mode
  * 
  * This Activity is primarily a thin host for:
- * - [TrainingLaunchCoordinator], [TrainingPreferenceDialogs], [TrainingSessionModeController],
+ * - [TrainingLaunchCoordinator], [TrainingPreferenceDialogs], [TrainingWorkoutModeController],
  *   [CameraTrainingInputController], [VideoTrainingInputController],
  *   [TrainingFeedbackBinder], [SetupCountdownBinder], [TrainingFrameCaptureController],
  *   [TrainingReportCoordinator]
@@ -68,7 +68,7 @@ import kotlinx.coroutines.launch
  *   [PoseLandmarkerHelper.PoseDetectionListener] to [CameraTrainingInputController] in camera mode
  */
 class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionListener,
-    com.trainingvalidator.poc.training.session.SessionTrainingEngine.OnExerciseCompletedListener {
+    com.trainingvalidator.poc.training.workout.WorkoutTrainingEngine.OnExerciseCompletedListener {
 
     companion object {
         const val TAG = "TrainingActivity"
@@ -85,11 +85,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         const val EXTRA_WEIGHT_KG = "weight_kg"           // Weight in kilograms (optional)
         const val EXTRA_WEIGHT_UNIT = "weight_unit"       // "kg" or "lbs" (default: kg)
 
-        // Session mode extras
-        const val EXTRA_IS_SESSION_MODE = "is_session_mode"
-        const val EXTRA_SESSION_ITEMS_JSON = "session_items_json"
+        // Workout mode extras
+        const val EXTRA_IS_WORKOUT_MODE = "is_workout_mode"
+        const val EXTRA_WORKOUT_ITEMS_JSON = "workout_items_json"
         /** When set, used for session-level progress rules (warmup/cooldown vs main). */
-        const val EXTRA_SESSION_ROLE = "session_role"
+        const val EXTRA_WORKOUT_ROLE = "workout_role"
 
         // Assessment mode: skip report page, return report ID via result
         const val EXTRA_ASSESSMENT_MODE = "assessment_mode"
@@ -100,14 +100,14 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         const val RESULT_DURATION_MS = "duration_ms"
         const val RESULT_ACCURACY = "accuracy"
         const val RESULT_IS_COMPLETED = "is_completed"
-        const val RESULT_SESSION_SETS_COMPLETED = "session_sets_completed"
-        const val RESULT_SESSION_SETS_PLANNED = "session_sets_planned"
-        const val RESULT_SESSION_TOTAL_REPS = "session_total_reps"
-        const val RESULT_SESSION_AVG_ACCURACY = "session_avg_accuracy"
-        const val RESULT_SESSION_AVG_FORM_SCORE = "session_avg_form_score"
-        const val RESULT_SESSION_REPORT_JSON = "session_report_json"
-        const val RESULT_SESSION_REPORT_IDS = "session_report_ids"
-        const val RESULT_SESSION_SESSION_IDS = "session_session_ids"
+        const val RESULT_WORKOUT_SETS_COMPLETED = "workout_sets_completed"
+        const val RESULT_WORKOUT_SETS_PLANNED = "workout_sets_planned"
+        const val RESULT_WORKOUT_TOTAL_REPS = "workout_total_reps"
+        const val RESULT_WORKOUT_AVG_ACCURACY = "workout_avg_accuracy"
+        const val RESULT_WORKOUT_AVG_FORM_SCORE = "workout_avg_form_score"
+        const val RESULT_WORKOUT_REPORT_JSON = "workout_report_json"
+        const val RESULT_WORKOUT_REPORT_IDS = "workout_report_ids"
+        const val RESULT_WORKOUT_EXECUTION_IDS = "workout_execution_ids"
         
         // Training modes
         const val MODE_CAMERA = "camera"
@@ -158,10 +158,10 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     // Assessment mode (suppresses report page, returns report ID)
     internal var isAssessmentMode = false
 
-    // Session mode (see [TrainingSessionModeController])
-    internal var isSessionMode = false
+    // Workout run mode (see [TrainingWorkoutModeController])
+    internal var isWorkoutMode = false
     internal lateinit var preferenceDialogs: TrainingPreferenceDialogs
-    internal lateinit var sessionModeController: TrainingSessionModeController
+    internal lateinit var workoutModeController: TrainingWorkoutModeController
 
     // Alternating variant info removed - bilateral side management is now handled by TrainingEngine
 
@@ -214,7 +214,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         feedbackBinder = TrainingFeedbackBinder(this)
         setupCountdownBinder = SetupCountdownBinder(this)
         preferenceDialogs = TrainingPreferenceDialogs(this)
-        sessionModeController = TrainingSessionModeController(this, preferenceDialogs)
+        workoutModeController = TrainingWorkoutModeController(this, preferenceDialogs)
         cameraInput = CameraTrainingInputController(this)
         videoInput = VideoTrainingInputController(this)
         frameCaptureController = TrainingFrameCaptureController(this)
@@ -225,10 +225,10 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         // Handle back press with modern OnBackPressedDispatcher
         onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (isSessionMode && sessionModeController.sessionEngine != null) {
-                    val currentState = sessionModeController.sessionEngine?.state?.value
-                    if (currentState !is com.trainingvalidator.poc.training.session.SessionTrainingEngine.State.SessionComplete) {
-                        sessionModeController.showExitSessionDialog()
+                if (isWorkoutMode && workoutModeController.workoutEngine != null) {
+                    val currentState = workoutModeController.workoutEngine?.state?.value
+                    if (currentState !is com.trainingvalidator.poc.training.workout.WorkoutTrainingEngine.State.WorkoutComplete) {
+                        workoutModeController.showExitWorkoutDialog()
                         return
                     }
                 }
@@ -244,7 +244,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         observeViewModel()
         
         // Sync pending sessions before starting new training
-        syncPendingSessionsOnTrainingStart()
+        syncPendingWorkoutExecutionsOnTrainingStart()
         
         // Initialize based on mode
         if (isVideoMode) {
@@ -257,7 +257,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     /**
      * Sync pending sessions when starting a new training
      */
-    private fun syncPendingSessionsOnTrainingStart() {
+    private fun syncPendingWorkoutExecutionsOnTrainingStart() {
         val token = AuthManager.getAccessToken(this) ?: run {
             Log.d(TAG, "No auth token, skipping pending sync")
             return
@@ -265,7 +265,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val syncService = SessionSyncService.getInstance(this@TrainingActivity, ApiConfig.getEffectiveBaseUrl())
+                val syncService = WorkoutSyncService.getInstance(this@TrainingActivity, ApiConfig.getEffectiveBaseUrl())
                 syncService.setAuthToken(token)
                 val result = syncService.syncPending()
                 if (result.total > 0) {
@@ -311,8 +311,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     }
 
     private fun parseIntentExtrasAfterRepositoryReady() {
-        if (isSessionMode) {
-            sessionModeController.initializeFromIntent()
+        if (isWorkoutMode) {
+            workoutModeController.initializeFromIntent()
             viewModel.initializeFeedback(this, isVideoMode)
             feedbackBinder.rebindVisualMessageFlow()
             return
@@ -381,7 +381,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         
         // Close button
         binding.btnClose.setOnClickListener { 
-            sessionModeController.cancelSessionRestOnClose()
+            workoutModeController.cancelWorkoutRestOnClose()
             viewModel.requestStop()
             finish() 
         }
@@ -405,7 +405,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         
         // Initial state (camera mode only - video mode sets its own UI in setupVideoMode)
         if (!isVideoMode) {
-            updateUIForSessionState(SessionState.SETUP_POSE)
+            updateUIForWorkoutRunState(WorkoutRunState.SETUP_POSE)
             setupCountdownBinder.showSetupPoseUI()
         }
     }
@@ -632,7 +632,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         // Observe supervisor state (Single Source of Truth)
         lifecycleScope.launch {
             viewModel.supervisor.state.collectLatest { state ->
-                updateUIForSessionState(state)
+                updateUIForWorkoutRunState(state)
             }
         }
         
@@ -792,7 +792,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             }
 
             is TrainingUIEvent.CountdownCancelled -> {
-                updateUIForSessionState(SessionState.SETUP_POSE)
+                updateUIForWorkoutRunState(WorkoutRunState.SETUP_POSE)
                 setupCountdownBinder.showSetupPoseUI()
             }
 
@@ -817,8 +817,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             
             is TrainingUIEvent.ExerciseCompleted,
             is TrainingUIEvent.TrainingCompleted -> {
-                if (isSessionMode) {
-                    sessionModeController.tryHandleSessionSetCompleted()
+                if (isWorkoutMode) {
+                    workoutModeController.tryHandleWorkoutSetCompleted()
                 } else {
                     completeTraining()
                 }
@@ -852,20 +852,20 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     // ==================== UI Updates ====================
     
     /**
-     * Update UI based on SessionState (from SessionSupervisor)
+     * Update UI based on WorkoutRunState (from WorkoutRunSupervisor)
      */
-    private fun updateUIForSessionState(state: SessionState) {
-        if (state == SessionState.TRAINING && !viewModel.isHoldExercise()) {
+    private fun updateUIForWorkoutRunState(state: WorkoutRunState) {
+        if (state == WorkoutRunState.TRAINING && !viewModel.isHoldExercise()) {
             frameCaptureController.startRepWideReplaySampler()
         } else {
             frameCaptureController.stopRepWideReplaySampler()
         }
         when (state) {
-            SessionState.IDLE -> {
+            WorkoutRunState.IDLE -> {
                 // Initial state - waiting for exercise to load
             }
             
-            SessionState.SETUP_POSE -> {
+            WorkoutRunState.SETUP_POSE -> {
                 binding.setupPosePanel.visibility = View.GONE
                 binding.setupIndicatorBar.visibility = View.VISIBLE
                 binding.bottomStatsBar.visibility = View.GONE
@@ -878,7 +878,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 updatePlayPauseIcon(isPlaying = false)
             }
             
-            SessionState.COUNTDOWN -> {
+            WorkoutRunState.COUNTDOWN -> {
                 if (::landmarkSmoother.isInitialized) {
                     landmarkSmoother.reset()
                 }
@@ -897,7 +897,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 binding.completedPanel.visibility = View.GONE
             }
             
-            SessionState.TRAINING -> {
+            WorkoutRunState.TRAINING -> {
                 binding.setupPosePanel.visibility = View.GONE
                 binding.setupIndicatorBar.visibility = View.GONE
                 binding.countdownPanel.visibility = View.GONE
@@ -918,18 +918,18 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 }
             }
             
-            SessionState.PAUSED -> {
+            WorkoutRunState.PAUSED -> {
                 updatePlayPauseIcon(isPlaying = false)
             }
             
-            SessionState.AUTO_PAUSED -> {
+            WorkoutRunState.AUTO_PAUSED -> {
                 binding.heroCounterContainer.visibility = View.VISIBLE
                 binding.tvProgress.visibility = View.VISIBLE
                 binding.progressContainer.visibility = View.VISIBLE
                 updatePlayPauseIcon(isPlaying = false)
             }
             
-            SessionState.RESUME_SETUP -> {
+            WorkoutRunState.RESUME_SETUP -> {
                 binding.setupPosePanel.visibility = View.GONE
                 binding.setupIndicatorBar.visibility = View.VISIBLE
                 binding.bottomStatsBar.visibility = View.GONE
@@ -942,7 +942,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 updatePlayPauseIcon(isPlaying = false)
             }
             
-            SessionState.RESUME_COUNTDOWN -> {
+            WorkoutRunState.RESUME_COUNTDOWN -> {
                 binding.skeletonOverlay.clearSetupMode()
                 setupCountdownBinder.switchBottomBarToFormMode()
                 binding.setupPosePanel.visibility = View.GONE
@@ -954,7 +954,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 updatePlayPauseIcon(isPlaying = false)
             }
             
-            SessionState.COMPLETED -> {
+            WorkoutRunState.COMPLETED -> {
                 AnimationUtils.slideOutPanel(binding.heroCounterContainer, AnimationUtils.Direction.TOP)
                 binding.setupPosePanel.visibility = View.GONE
                 binding.setupIndicatorBar.visibility = View.GONE
@@ -992,22 +992,22 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             if (isPlaying) {
                 videoModeController?.pause()
                 updatePlayPauseIcon(isPlaying = false)
-                if (currentState == SessionState.TRAINING) {
+                if (currentState == WorkoutRunState.TRAINING) {
                     viewModel.requestPause()
                 }
             } else {
                 videoModeController?.play()
                 updatePlayPauseIcon(isPlaying = true)
                 when (currentState) {
-                    SessionState.PAUSED, SessionState.AUTO_PAUSED -> viewModel.requestResume()
+                    WorkoutRunState.PAUSED, WorkoutRunState.AUTO_PAUSED -> viewModel.requestResume()
                     else -> {}
                 }
             }
         } else {
             val currentState = viewModel.supervisor.state.value
             when (currentState) {
-                SessionState.TRAINING -> viewModel.requestPause()
-                SessionState.PAUSED, SessionState.AUTO_PAUSED -> viewModel.requestResume()
+                WorkoutRunState.TRAINING -> viewModel.requestPause()
+                WorkoutRunState.PAUSED, WorkoutRunState.AUTO_PAUSED -> viewModel.requestResume()
                 else -> {}
             }
         }
@@ -1039,7 +1039,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         binding.skeletonOverlay.setTrainingMode(false)
         binding.vignetteOverlay.clear()
         
-        // Hide the completed panel - we'll navigate to SessionReportActivity instead
+        // Hide the completed panel - we'll navigate to WorkoutReportActivity instead
         binding.completedPanel.visibility = View.GONE
         
         // Log capture stats
@@ -1055,7 +1055,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         val resultIntent = android.content.Intent().apply {
             val engine = viewModel.trainingEngine
             putExtra(RESULT_REPS_COMPLETED, engine?.getCurrentRep() ?: 0)
-            putExtra(RESULT_DURATION_MS, viewModel.getSessionDurationMs())
+            putExtra(RESULT_DURATION_MS, viewModel.getWorkoutDurationMs())
             putExtra(RESULT_ACCURACY, engine?.getAccuracy() ?: 0f)
             putExtra(RESULT_IS_COMPLETED, engine?.isCompleted?.value ?: false)
         }
@@ -1085,9 +1085,9 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     override fun onExerciseCompleted(
         exerciseIndex: Int,
         exerciseSlug: String,
-        sets: List<com.trainingvalidator.poc.training.session.SessionTrainingEngine.SetMetrics>
+        sets: List<com.trainingvalidator.poc.training.workout.WorkoutTrainingEngine.SetMetrics>
     ) {
-        sessionModeController.onExerciseCompletedFromEngine(exerciseIndex, exerciseSlug, sets)
+        workoutModeController.onExerciseCompletedFromEngine(exerciseIndex, exerciseSlug, sets)
     }
 
     internal fun isLandmarkSmootherReady() = ::landmarkSmoother.isInitialized
@@ -1127,7 +1127,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     override fun onDestroy() {
         super.onDestroy()
         frameCaptureController.onDestroy()
-        sessionModeController.onDestroy()
+        workoutModeController.onDestroy()
         viewModel.countdownController.release()
         videoInput.release()
         cameraInput.onDestroy()

@@ -37,7 +37,7 @@ The project has strong individual systems:
 - Pose Estimation Engine (Android)
 - Assessment / Body Scan
 - Level System (1-5)
-- Programs (Weeks → Days → Sessions → Exercises)
+- Programs (Weeks → Days → Planned Workouts → Exercises)
 - Workouts (Templates)
 - Progression Engine (Rules-based)
 - Prescription Engine (Program recommendation)
@@ -86,7 +86,7 @@ The app operates in two distinct modes, each serving a different user intent:
 | **Content** | Programs prescribed by the system based on assessment |
 | **Progression** | Automatic — system adjusts weights, reps, difficulty |
 | **User Control** | Minimal — trust the system |
-| **Data Flow** | Session → Report → Progression Engine → Updated Plan |
+| **Data Flow** | Workout → Report → Progression Engine → Updated Plan |
 
 ### Mode 2: Explore (The Free Gym)
 
@@ -101,7 +101,7 @@ The app operates in two distinct modes, each serving a different user intent:
 | **Content** | Full exercise library + workout templates |
 | **Customization** | Full control — reorder exercises, change rest periods, add/remove |
 | **Progression** | Manual + Insights — system tracks but doesn't auto-adjust |
-| **Data Flow** | Session → Report → History → Insights (no auto-progression) |
+| **Data Flow** | Workout → Report → History → Insights (no auto-progression) |
 
 ### How Both Modes Coexist
 
@@ -131,15 +131,15 @@ The app operates in two distinct modes, each serving a different user intent:
 Both modes feed data back to the system:
 
 ```
-Train Mode Session ──┐
-                     ├──→ TrainingSession + Metrics ──→ User History
-Explore Mode Session ┘
+Train Mode Workout ──┐
+                     ├──→ WorkoutExecution + Metrics ──→ User History
+Explore Mode Workout ┘
                      
 Train Mode ONLY ──→ Progression Engine (auto-adjust)
                  ──→ Program Progress (week/day tracking)
 ```
 
-Explore mode sessions are saved with full metrics but do NOT trigger auto-progression or affect program progress. They DO contribute to:
+Explore mode planned workouts are saved with full metrics but do NOT trigger auto-progression or affect program progress. They DO contribute to:
 - Exercise history and personal records
 - Overall training volume stats
 - Insights and trends in Reports
@@ -192,8 +192,8 @@ Install → Splash → Onboarding (3 screens) → Sign Up
 - CTA: "Start Your Journey" → navigates to Home
 
 #### Step 6: Home Screen — First Mission Ready
-- Train Mode section shows Week 1, Day 1, Session 1
-- Big button: "Start Today's Session"
+- Train Mode section shows Week 1, Day 1, Workout 1
+- Big button: "Start Today's Workout"
 
 ### Skip Body Scan (Explore Only)
 
@@ -223,10 +223,10 @@ Users CAN skip the Body Scan, but:
 
 ```
 Open App → Home Screen → "Today's Mission" card
-    → Tap "Start Session"
-    → ProgramSessionActivity (see exercises, sets, weights)
+    → Tap "Start Workout"
+    → ProgramWorkoutActivity (see exercises, sets, weights)
     → Train each exercise via TrainingActivity
-    → ProgramSessionReportActivity (session summary)
+    → PlannedWorkoutReportActivity (workout summary)
     → Home (progress updated, next mission shown)
 ```
 
@@ -241,7 +241,7 @@ The Home Screen shows the current position in the Active Plan:
 │  PROGRAM: Foundation Builder             │
 │  Week 2 of 4  │  Day 3 of 5             │
 │                                         │
-│  Today's Session: Lower Body Focus       │
+│  Today's Workout: Lower Body Focus       │
 │  4 exercises  │  ~25 min                 │
 │                                         │
 │  ┌─────────────────────────────────────┐ │
@@ -257,7 +257,7 @@ The Home Screen shows the current position in the Active Plan:
 ┌─────────────────────────────────────────┐
 │  REST DAY — Recovery                     │
 │  Your body grows during rest.            │
-│  Next session: Tomorrow                  │
+│  Next planned workout: Tomorrow                  │
 │                                         │
 │  Tip: Stay hydrated and stretch          │
 │  [VIEW WEEKLY SUMMARY]                  │
@@ -277,9 +277,9 @@ The Home Screen shows the current position in the Active Plan:
 └─────────────────────────────────────────┘
 ```
 
-#### 4.2 Program Session Screen
+#### 4.2 Program Workout Screen
 
-`ProgramSessionActivity` shows the session structure:
+`ProgramWorkoutActivity` shows the planned workout structure:
 
 ```
 ┌─────────────────────────────────────────┐
@@ -297,26 +297,26 @@ The Home Screen shows the current position in the Active Plan:
 └─────────────────────────────────────────┘
 ```
 
-Each exercise launches `TrainingActivity` in program session mode:
+Each exercise launches `TrainingActivity` in planned workout mode:
 - AI tracks reps, form, ROM
 - Voice feedback guides corrections
-- Session flow managed by `SessionTrainingEngine`
+- Workout run flow managed by `WorkoutTrainingEngine`
 
-#### 4.3 Post-Session Report
+#### 4.3 Post-Workout Report
 
-`ProgramSessionReportActivity` shows:
-- Session score (avg form score)
+`PlannedWorkoutReportActivity` shows:
+- Workout score (avg form score)
 - Per-exercise breakdown
 - Key insights ("Your squat ROM improved by 5° since last week")
-- Progression notifications ("Weight increased to 12.5kg for next session")
+- Progression notifications ("Weight increased to 12.5kg for next planned workout")
 
 #### 4.4 Progression (Automatic, Behind the Scenes)
 
-After `completeProgramSessionReport()`:
-1. `progression.evaluateAfterSession()` checks rules
-2. If conditions met → auto-adjust `ProgramSessionItem` for future sessions
+After `completePlannedWorkoutReport()`:
+1. `progression.evaluateAfterPlannedWorkout()` checks rules
+2. If conditions met → auto-adjust `PlannedWorkoutItem` for future planned workouts
 3. Changes logged in `ProgressionHistory`
-4. User sees notification: "Based on your performance, we've adjusted your next session"
+4. User sees notification: "Based on your performance, we've adjusted your next planned workout"
 
 #### 4.5 Week Completion
 
@@ -343,7 +343,7 @@ When all weeks done:
 NO_ASSESSMENT ──[Body Scan]──→ ASSESSED
 ASSESSED ──[Prescription]──→ PLAN_READY
 PLAN_READY ──[Start Day 1]──→ IN_PROGRESS
-IN_PROGRESS ──[Complete Sessions]──→ IN_PROGRESS
+IN_PROGRESS ──[Complete Planned Workouts]──→ IN_PROGRESS
 IN_PROGRESS ──[Complete Program]──→ PROGRAM_COMPLETE
 PROGRAM_COMPLETE ──[Reassessment]──→ ASSESSED (loop)
 ```
@@ -357,7 +357,7 @@ PROGRAM_COMPLETE ──[Reassessment]──→ ASSESSED (loop)
 Explore mode is the user's freedom zone. They can:
 - Browse the full exercise library
 - Browse workout templates
-- Build custom sessions on-the-fly
+- Build custom planned workouts on-the-fly
 - Train with full AI tracking
 - Get full reports
 
@@ -383,7 +383,7 @@ ExploreFragment → Exercises section
     → ReportPagerActivity (full 7-page report)
 ```
 
-This flow **already works**. The report is saved to `TrainingSession` and synced.
+This flow **already works**. The report is saved to `WorkoutExecution` and synced.
 
 ### 5.2 Browse Workouts
 
@@ -393,7 +393,7 @@ ExploreFragment → Workouts section
     → WorkoutDetailActivity (exercise list, total time, difficulty)
     → [CUSTOMIZE] → WorkoutCustomizeScreen (NEW)
     → TrainingActivity (workout mode, multiple exercises)
-    → WorkoutReportActivity (session summary)
+    → WorkoutReportActivity (workout summary)
 ```
 
 #### Workout Customization (NEW Feature)
@@ -403,7 +403,7 @@ Before starting a workout, the user can:
 ```
 ┌─────────────────────────────────────────┐
 │  Upper Body Blast                        │
-│  Customize Your Session                  │
+│  Customize Your Workout                  │
 │                                         │
 │  ☰ 1. Push-up        3×12  [60s rest]  │ ← drag to reorder
 │  ☰ 2. Shoulder Press  3×10  [45s rest]  │ ← tap to edit
@@ -435,19 +435,19 @@ ExploreFragment → Quick Start
     → Exercise Picker (multi-select from library)
     → Customize order, sets, rest
     → Start Training
-    → Session Report
+    → Workout report
 ```
 
 This is essentially building a temporary workout on-the-fly without saving it as a template.
 
 ### 5.4 Data Tracking in Explore Mode
 
-Every session in Explore mode:
+Every planned workout in Explore mode:
 
 | Data | Tracked? | Used For |
 |------|----------|----------|
-| `TrainingSession` | Yes | Exercise history |
-| `SessionMetrics` | Yes | Personal records, trends |
+| `WorkoutExecution` | Yes | Exercise history |
+| `WorkoutExecutionMetrics` | Yes | Personal records, trends |
 | `RepMetrics` | Yes | Form analysis, insights |
 | Program Progress | **No** | Does not affect Active Plan |
 | Progression Rules | **No** | No auto-adjustment |
@@ -457,8 +457,8 @@ Every session in Explore mode:
 
 Single exercise → `ReportPagerActivity` (full 7-page report, already works)
 
-Multi-exercise workout → `WorkoutReportActivity` (NEW, similar to `ProgramSessionReportActivity`):
-- Session summary (total time, exercises completed, avg form)
+Multi-exercise workout → `WorkoutReportActivity` (NEW, similar to `PlannedWorkoutReportActivity`):
+- Workout summary (total time, exercises completed, avg form)
 - Per-exercise card with key metrics
 - Personal records highlighted
 - Quick insights
@@ -493,8 +493,8 @@ The Home Screen is the single source of truth for the user's state.
 │                                                             │
 │  QUICK STATS ─────────────────────────────────────────────   │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐   │
-│  │ Sessions │ │ Avg Form │ │  Streak  │ │ This Week    │   │
-│  │    47    │ │   82%    │ │  5 days  │ │  3 sessions  │   │
+│  │ Planned Workouts │ │ Avg Form │ │  Streak  │ │ This Week    │   │
+│  │    47    │ │   82%    │ │  5 days  │ │  3 planned workouts  │   │
 │  └──────────┘ └──────────┘ └──────────┘ └──────────────┘   │
 │                                                             │
 │  EXPLORE SHORTCUT ────────────────────────────────────────   │
@@ -527,7 +527,7 @@ The Home Screen is the single source of truth for the user's state.
 | Tab | Screen | Purpose |
 |-----|--------|---------|
 | **Home** | HomeFragment | Command center, today's action |
-| **Train** | TrainFragment | Active program view, week calendar, sessions |
+| **Train** | TrainFragment | Active program view, week calendar, planned workouts |
 | **Explore** | ExploreFragment | Browse exercises, workouts, quick start |
 | **Reports** | HistoryFragment | Reports hub (overview, exercises, trends, records) |
 
@@ -535,9 +535,9 @@ The Home Screen is the single source of truth for the user's state.
 
 **Train Tab** is the dedicated view for the Active Plan:
 - Week calendar (which days are done, today highlighted)
-- Session list for today
+- Planned workouts for today
 - Program progress overview
-- Past session reports
+- Past planned workout reports
 
 **Explore Tab** is the discovery and free training zone:
 - Hero cards (featured workouts, challenges)
@@ -572,8 +572,8 @@ The Home Screen is the single source of truth for the user's state.
        │
        ▼
 ┌──────────────┐
-│    ADAPT     │ Progression Engine → Auto-adjust next sessions
-│  (Evolve)    │ Micro (session-level) + Macro (program-level)
+│    ADAPT     │ Progression Engine → Auto-adjust next planned workouts
+│  (Evolve)    │ Micro (workout-run-level) + Macro (program-level)
 └──────┬───────┘
        │
        ▼
@@ -592,23 +592,23 @@ The Home Screen is the single source of truth for the user's state.
         │
         │ PostTrainingReport (per exercise)
         ▼
-[SessionSyncService] ──→ [POST /api/mobile/sessions]
+[WorkoutSyncService] ──→ [POST /api/mobile/workout-executions]
         │                         │
         │                         ▼
-        │                 [training-sessions.service]
+        │                 [workout-executions.service]
         │                    │              │
-        │                    │     Saves: TrainingSession
-        │                    │             SessionMetrics
+        │                    │     Saves: WorkoutExecution
+        │                    │             WorkoutExecutionMetrics
         │                    │             RepMetrics
         │                    │
-        │              (if program session)
+        │              (if planned workout)
         │                    │
         │                    ▼
-        │          [completeProgramSessionReport]
+        │          [completePlannedWorkoutReport]
         │                    │
         │                    ├──→ Update UserProgramProgress
-        │                    ├──→ Update ProgramSessionReport
-        │                    └──→ [progression.evaluateAfterSession]
+        │                    ├──→ Update PlannedWorkoutReport
+        │                    └──→ [progression.evaluateAfterPlannedWorkout]
         │                              │
         │                              ▼
         │                    Check ProgressionRules
@@ -622,7 +622,7 @@ The Home Screen is the single source of truth for the user's state.
         │                    Create ReassessmentSchedule
         │
         ▼
-[ReportPagerActivity / ProgramSessionReportActivity]
+[ReportPagerActivity / WorkoutReportActivity]
         │
         ▼
      [Home Screen Updated]
@@ -637,21 +637,21 @@ The Home Screen is the single source of truth for the user's state.
 | System | Status | Location |
 |--------|--------|----------|
 | Pose Estimation Engine | Working | Android `TrainingEngine` |
-| Session Training (multi-exercise) | Working | Android `SessionTrainingEngine` |
+| Workout run (multi-exercise) | Working | Android `WorkoutTrainingEngine` |
 | Assessment Engine | Working | Android `AssessmentEngine` |
 | Report Generator | Working | Android `ReportGenerator` |
 | 7-Page Report | Working | Android `ReportPagerActivity` |
 | Exercise Library | Working | Backend + Android |
 | Program CRUD | Working | Backend + Admin Dashboard |
-| Program Session Training | Working | Android `ProgramSessionActivity` |
-| Program Session Reports | Working | Backend + Android |
-| Session Sync | Working | Android `SessionSyncService` |
+| Program Workout Training | Working | Android `ProgramWorkoutActivity` |
+| Planned Workout Reports | Working | Backend + Android |
+| Workout execution sync | Working | Android `WorkoutSyncService` |
 | Level System | Working | Backend `level-profile.service` |
 | Active Plan | Working | Backend `active-plan.service` |
 | Prescription Engine | Working | Backend `prescription.service` |
 | Progression Engine | Working | Backend `progression.service` |
 | Reassessment Scheduling | Working | Backend `reassessment.service` |
-| Metrics System | Working | Backend `SessionMetrics` + `RepMetrics` |
+| Metrics System | Working | Backend `WorkoutExecutionMetrics` + `RepMetrics` |
 | Reports Hub | Working | Android Reports tabs |
 | Home Screen | Partial | Android `HomeFragment` (needs refinement) |
 | Workout Templates | Partial | Backend + Android (browse only, no training start) |
@@ -665,9 +665,9 @@ The Home Screen is the single source of truth for the user's state.
 | **Home → Today's Mission** | Generic, shows mock/default | Dynamic from `getTodayPlan()` |
 | **Workout Training** | Template view only | Full training flow with customization |
 | **Quick Start** | Not implemented | Exercise picker → customize → train |
-| **Progression Notifications** | Backend only | Show in app (post-session + home) |
+| **Progression Notifications** | Backend only | Show in app (post-workout + home) |
 | **Program Complete → Reassessment** | Not triggered in UI | Auto-prompt with "Level Up Challenge" |
-| **Explore Reports** | Single exercise only | Multi-exercise session report |
+| **Explore Reports** | Single exercise only | Multi-exercise planned workout report |
 | **Train vs Explore separation** | Mixed/unclear | Clear mode distinction |
 | **Rest Day handling** | Not shown | Clear rest day card on Home |
 
@@ -713,17 +713,17 @@ Enhanced response:
   trainMode: {
     status: 'no_assessment' | 'no_plan' | 'active' | 'rest_day' | 'program_complete' | 'reassessment_due',
     activeProgram?: { name, weekNumber, totalWeeks },
-    todaySession?: { name, exerciseCount, estimatedMinutes, sessionId },
+    todayWorkout?: { name, exerciseCount, estimatedMinutes, plannedWorkoutId },
     weekProgress: { completed: number, total: number },
-    nextSession?: { dayName, dayNumber }
+    nextPlannedWorkout?: { dayName, dayNumber }
   },
   stats: {
-    totalSessions: number,
+    totalWorkoutExecutions: number,
     avgFormScore: number,
     streak: number,
-    thisWeekSessions: number
+    thisWeekExecutions: number
   },
-  recentSessions: Array<{ exerciseName, formScore, reps, date }>,
+  recentWorkoutExecutions: Array<{ exerciseName, formScore, reps, date }>,
   alerts: Array<{
     type: 'reassessment_due' | 'progression_applied' | 'level_up' | 'streak_risk',
     message: string,
@@ -732,16 +732,16 @@ Enhanced response:
 }
 ```
 
-### 9.3 Explore Session Support
+### 9.3 Explore Workout Support
 
-**New endpoint:** `POST /api/mobile/sessions/explore`
+**New endpoint:** `POST /api/mobile/planned-workouts/explore`
 
-For multi-exercise sessions done in Explore mode:
+For multi-exercise planned workouts done in Explore mode:
 ```typescript
 {
-  sessions: Array<{
+  executions: Array<{
     exerciseId: string,
-    // ... same as regular session fields
+    // ... same as regular planned workout fields
   }>,
   workoutId?: string,        // if started from a workout template
   isCustomized: boolean,     // if user modified the workout
@@ -749,17 +749,17 @@ For multi-exercise sessions done in Explore mode:
 }
 ```
 
-Saves multiple `TrainingSession` records linked by a shared `groupId` (new field).
+Saves multiple `WorkoutExecution` records linked by a shared `groupId` (new field).
 
-### 9.4 TrainingSession Enhancement
+### 9.4 WorkoutExecution Enhancement
 
-**Schema change — add grouping for multi-exercise free sessions:**
+**Schema change — add grouping for multi-exercise free workouts:**
 
 ```prisma
-model TrainingSession {
+model WorkoutExecution {
   // ... existing fields ...
   
-  groupId    String?   // Links sessions done together (explore mode)
+  groupId    String?   // Links planned workouts done together (explore mode)
   context    String    @default("free") // free | program | assessment | explore_workout
   workoutId  String?   // If done from a workout template
 }
@@ -792,7 +792,7 @@ Returns recent progression changes the user hasn't seen:
 
 **File:** `mobile-workouts.controller.ts`
 
-**New endpoint:** `GET /api/mobile/workouts/:id/training-config`
+**New endpoint:** `GET /api/mobile/workout-templates/:id/training-config`
 
 Returns workout with full exercise configs for training:
 ```typescript
@@ -847,7 +847,7 @@ Replace current layout with:
    - Dynamic states: no_assessment, no_plan, active, rest_day, program_complete, reassessment_due
 3. **Quick Stats Row** — from home API `stats`
 4. **Explore Shortcuts** — static buttons to Explore tab sections
-5. **Recent Activity** — from home API `recentSessions`
+5. **Recent Activity** — from home API `recentWorkoutExecutions`
 6. **Alerts Banner** — from home API `alerts` (progression changes, reassessment due)
 
 ### 10.3 Workout Training Flow (NEW)
@@ -855,14 +855,14 @@ Replace current layout with:
 **New/Modified Activities:**
 - `WorkoutDetailActivity` — add "Start Workout" and "Customize" buttons
 - `WorkoutCustomizeActivity` (NEW) — reorder, edit sets/reps/rest, add/remove exercises
-- Reuse `SessionTrainingEngine` for multi-exercise workout execution
-- `WorkoutReportActivity` (NEW or reuse `ProgramSessionReportActivity`)
+- Reuse `WorkoutTrainingEngine` for multi-exercise workout execution
+- `WorkoutReportActivity` (NEW or reuse `PlannedWorkoutReportActivity`)
 
 **Flow:**
 ```
 WorkoutDetailActivity
     → [Customize] → WorkoutCustomizeActivity → modified exercise list
-    → [Start] → TrainingActivity (session mode with workout exercises)
+    → [Start] → TrainingActivity (workout run mode with workout exercises)
     → WorkoutReportActivity (summary)
 ```
 
@@ -873,13 +873,13 @@ WorkoutDetailActivity
 ```
 ExploreFragment → Quick Start button
     → QuickStartActivity (exercise multi-picker + customize)
-    → TrainingActivity (session mode)
-    → Session Report
+    → TrainingActivity (workout run mode)
+    → Workout report
 ```
 
 Reuses:
 - `ExercisesFragment` component for exercise selection
-- `SessionTrainingEngine` for multi-exercise execution
+- `WorkoutTrainingEngine` for multi-exercise execution
 - `WorkoutReportActivity` for summary
 
 ### 10.5 Explore Tab Enhancement
@@ -931,7 +931,7 @@ This tab is exclusively for the Active Plan:
 │                                 │
 │  [Mon] [Tue] [Wed✓] [Thu•] [Fri] │
 │                                 │
-│  Today's Sessions:               │
+│  Today's Planned Workouts:               │
 │  ┌─────────────────────────────┐ │
 │  │ Lower Body Focus            │ │
 │  │ 4 exercises │ ~25 min       │ │
@@ -942,9 +942,9 @@ This tab is exclusively for the Active Plan:
 └─────────────────────────────────┘
 ```
 
-### 10.7 Post-Session Progression Display
+### 10.7 Post-Workout Progression Display
 
-After `ProgramSessionReportActivity`:
+After `PlannedWorkoutReportActivity`:
 - Check `GET /api/mobile/progression/recent`
 - If changes exist, show a bottom sheet:
 
@@ -972,8 +972,8 @@ After `ProgramSessionReportActivity`:
 | Task | Priority | Files |
 |------|----------|-------|
 | Fix `HomeFragment` to use real `getTodayPlan()` data | Critical | `HomeFragment`, `mobile-home.controller` |
-| Fix `btnContinue` in Home to go to actual today's session | Critical | `HomeFragment` |
-| Fix `completeProgramSessionReport` to pass `exerciseId` to progression | High | `training-sessions.service.ts` |
+| Fix `btnContinue` in Home to go to actual today's planned workout | Critical | `HomeFragment` |
+| Fix `completePlannedWorkoutReport` to pass `exerciseId` to progression | High | `workout-executions.service.ts` |
 | Remove mock data from Home screen | High | `HomeFragment` |
 | Fix `active-plan.getTodayPlan()` to handle all states | High | `active-plan.service.ts` |
 
@@ -990,7 +990,7 @@ After `ProgramSessionReportActivity`:
 | Rest day display on Home | High |
 | Program complete → Reassessment CTA | High |
 | Train tab showing Active Plan with week calendar | High |
-| Post-session progression notification display | Medium |
+| Post-workout progression notification display | Medium |
 
 ### Phase 2: Explore Mode — Free Training (2 weeks)
 
@@ -1002,10 +1002,10 @@ After `ProgramSessionReportActivity`:
 | Workout customization screen (reorder, edit, remove) | Critical |
 | Quick Start flow (pick exercises → customize → train) | High |
 | Explore tab redesign (sections, search, categories) | High |
-| Multi-exercise session report (WorkoutReportActivity) | High |
-| `TrainingSession.context` field for tracking session source | Medium |
-| `TrainingSession.groupId` for linking explore sessions | Medium |
-| Explore session API (`POST /api/mobile/sessions/explore`) | Medium |
+| Multi-exercise planned workout report (WorkoutReportActivity) | High |
+| `WorkoutExecution.context` field for tracking planned workout source | Medium |
+| `WorkoutExecution.groupId` for linking explore planned workouts | Medium |
+| Explore planned workout API (`POST /api/mobile/planned-workouts/explore`) | Medium |
 
 ### Phase 3: Progression & Intelligence (1-2 weeks)
 
@@ -1045,7 +1045,7 @@ After `ProgramSessionReportActivity`:
 |--------|--------|
 | Body Scan completion rate (new users) | > 80% |
 | Day 1 → Day 2 retention | > 60% |
-| Week 1 completion (all sessions done) | > 50% |
+| Week 1 completion (all planned workouts done) | > 50% |
 | Program completion rate | > 40% |
 | Reassessment completion (after program) | > 60% |
 
@@ -1055,8 +1055,8 @@ After `ProgramSessionReportActivity`:
 |--------|--------|
 | Train Mode: time from open to training start | < 30 seconds |
 | Explore Mode: time from browse to training start | < 60 seconds |
-| Session sync success rate | > 95% |
-| Progression rule execution rate | 100% of eligible sessions |
+| Planned Workout sync success rate | > 95% |
+| Progression rule execution rate | 100% of eligible planned workouts |
 | Home screen load time | < 2 seconds |
 
 ### Training Quality
@@ -1077,15 +1077,15 @@ Splash
   ├── Onboarding (3 screens) → SignUp/SignIn
   └── MainContainer
         ├── Home Tab (HomeFragment)
-        │     ├── [Start Session] → ProgramSessionActivity → TrainingActivity → ProgramSessionReport
+        │     ├── [Start Workout] → ProgramWorkoutActivity → TrainingActivity → PlannedWorkoutReport
         │     ├── [Body Scan] → PreScreening → AssessmentSession → AssessmentResult
         │     ├── [Reassessment] → PreScreening → AssessmentSession → AssessmentResult → New Plan
         │     └── [Explore shortcuts] → Explore Tab
         │
         ├── Train Tab (TrainFragment)
         │     ├── No plan → [Start Body Scan]
-        │     ├── Active plan → Week calendar → Day sessions
-        │     │     └── [Start] → ProgramSessionActivity → TrainingActivity → Report
+        │     ├── Active plan → Week calendar → Day planned workouts
+        │     │     └── [Start] → ProgramWorkoutActivity → TrainingActivity → Report
         │     └── [Program Overview] → PlanOverviewActivity
         │
         ├── Explore Tab (ExploreFragment)
@@ -1108,8 +1108,8 @@ Splash
 | Method | Path | Purpose |
 |--------|------|---------|
 | GET | `/api/mobile/home` | Enhanced home data with trainMode states |
-| POST | `/api/mobile/sessions/explore` | Save grouped explore sessions |
-| GET | `/api/mobile/workouts/:id/training-config` | Full workout data for training |
+| POST | `/api/mobile/planned-workouts/explore` | Save grouped explore planned workouts |
+| GET | `/api/mobile/workout-templates/:id/training-config` | Full workout data for training |
 | GET | `/api/mobile/progression/recent` | Unseen progression changes |
 | POST | `/api/mobile/progression/mark-seen` | Mark progression changes as seen |
 
@@ -1118,16 +1118,16 @@ Splash
 | Method | Path | Change |
 |--------|------|--------|
 | POST | `/api/assessment` | Auto-trigger prescription after save |
-| GET | `/api/mobile/home` | Add trainMode, alerts, recentSessions |
+| GET | `/api/mobile/home` | Add trainMode, alerts, recentWorkoutExecutions |
 | GET | `/api/mobile/plan/today` | Handle all states (rest, complete, reassessment) |
 
 ## Appendix C: Database Changes Summary
 
 ```prisma
-// TrainingSession — add context and grouping
-model TrainingSession {
+// WorkoutExecution — add context and grouping
+model WorkoutExecution {
   // ... existing fields ...
-  groupId    String?   // Links explore sessions done together
+  groupId    String?   // Links explore planned workouts done together
   context    String    @default("free") // free | program | assessment | explore_workout
   workoutId  String?   // If done from a workout template
 }

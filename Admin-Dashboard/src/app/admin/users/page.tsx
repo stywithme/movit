@@ -24,7 +24,7 @@ interface User {
   isPro: boolean;
   subscriptionExpiry: string | null;
   totalMinutes: number;
-  totalWorkouts: number;
+  totalWorkoutExecutions: number;
   createdAt: string;
 }
 
@@ -132,8 +132,8 @@ export default function UsersPage() {
     },
     {
       key: 'workouts',
-      header: 'Total Workouts',
-      cell: (user) => <span className="text-sm text-muted-foreground">{user.totalWorkouts}</span>,
+      header: 'Total Executions',
+      cell: (user) => <span className="text-sm text-muted-foreground">{user.totalWorkoutExecutions}</span>,
     },
     {
       key: 'status',

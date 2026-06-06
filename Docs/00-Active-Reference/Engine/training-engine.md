@@ -1,4 +1,4 @@
-﻿| | |
+| | |
 |---|---|
 | **Status** | `ACTIVE` |
 | **SSOT for** | TrainingEngine frame pipeline (as-built) |
@@ -6,6 +6,8 @@
 | **Verified** | 2026-05-29 |
 
 # Training engine (Android)
+
+> **تسمية:** مسار الحزمة `training/engine/session/` في الكود = منسّق إكمال العدة داخل **workout run** — وليس «ProgramSession» ولا auth/assessment session. انظر [`Workout-Domain-Naming.md`](../Contracts/Workout-Domain-Naming.md).
 
 ## Config ingest policy (current)
 
@@ -17,7 +19,7 @@
 | Concept | Where | Meaning |
 | ------ | ------ | ------ |
 | `TrackedJoint.startPose` min/max | [PoseSetupGuide](../app/src/main/java/com/trainingvalidator/poc/ui/training/PoseSetupGuide.kt) / pre-training | “Stand here before countdown” – all required primary joints must be GREEN in the start-pose box. |
-| [StartPoseGate.isInStartPosition](../app/src/main/java/com/trainingvalidator/poc/training/engine/StartPoseGate.kt) | [TrainingEngine](../app/src/main/java/com/trainingvalidator/poc/training/TrainingEngine.kt) | In-session: PRIMARY in **UP** + counted band, or **hold** counted band. **Not** the same as setup. |
+| [StartPoseGate.isInStartPosition](../app/src/main/java/com/trainingvalidator/poc/training/engine/StartPoseGate.kt) | [TrainingEngine](../app/src/main/java/com/trainingvalidator/poc/training/TrainingEngine.kt) | During workout run: PRIMARY in **UP** + counted band, or **hold** counted band. **Not** the same as setup. |
 | [StartPoseGate.isInStartPose](../app/src/main/java/com/trainingvalidator/poc/training/engine/StartPoseGate.kt) | Optional | `startPose` box; not used in the main `processFrame` path by default. |
 
 ## Role and frame flow (actual code)
@@ -26,8 +28,8 @@
 2. [FramePipelineExecutor.runMainPath](../app/src/main/java/com/trainingvalidator/poc/training/engine/pipeline/FramePipelineExecutor.kt) runs **smooth → isInStartPosition (flow) → PhaseStateMachine.update → position validate (if landmarks) → [FrameEvaluationPipeline]**.  
 3. [JointErrorCollection](../app/src/main/java/com/trainingvalidator/poc/training/engine/JointErrorCollection.kt) and position issues feed [RepCounter](../app/src/main/java/com/trainingvalidator/poc/training/engine/RepCounter.kt).  
 4. [RepCompletionCoordinator](../app/src/main/java/com/trainingvalidator/poc/training/engine/session/RepCompletionCoordinator.kt) consumes deferred rep completion **after** errors on that frame.  
-5. [HoldSessionCoordinator](../app/src/main/java/com/trainingvalidator/poc/training/engine/session/HoldSessionCoordinator.kt) + [HoldTimer](../app/src/main/java/com/trainingvalidator/poc/training/engine/HoldTimer.kt) for hold mode; on completion it finalizes recorder metrics and bilateral side bookkeeping just like the rep coordinator.  
-6. [SessionSummaryBuilder](../app/src/main/java/com/trainingvalidator/poc/training/engine/session/SessionSummaryBuilder.kt) builds the end [SessionSummary](../app/src/main/java/com/trainingvalidator/poc/training/models/TrainingSession.kt) in `stop()`.  
+5. [HoldWorkoutRunCoordinator](../app/src/main/java/com/trainingvalidator/poc/training/engine/session/HoldWorkoutRunCoordinator.kt) + [HoldTimer](../app/src/main/java/com/trainingvalidator/poc/training/engine/HoldTimer.kt) for hold mode; on completion it finalizes recorder metrics and bilateral side bookkeeping just like the rep coordinator.  
+6. [WorkoutRunSummaryBuilder](../app/src/main/java/com/trainingvalidator/poc/training/engine/session/WorkoutRunSummaryBuilder.kt) builds the end [WorkoutRunSummary](../app/src/main/java/com/trainingvalidator/poc/training/models/WorkoutExecution.kt) in `stop()`.  
 7. [FrameFeedbackEmitter](../app/src/main/java/com/trainingvalidator/poc/training/engine/feedback/FrameFeedbackEmitter.kt) throttles state messages and position feedback events.  
 
 [JointEvaluator](../app/src/main/java/com/trainingvalidator/poc/training/engine/evaluation/JointEvaluator.kt) remains the per-joint quality source; it is used inside [FrameEvaluationPipeline](../app/src/main/java/com/trainingvalidator/poc/training/engine/pipeline/FrameEvaluationPipeline.kt) and its `FrameJointEvaluationResult` (same file).
@@ -38,7 +40,7 @@
 - **FramePipelineExecutor** + **MainPathFrameResult** — main path after extract/visibility ([FramePipelineExecutor.kt](../app/src/main/java/com/trainingvalidator/poc/training/engine/pipeline/FramePipelineExecutor.kt), [FramePipelineModels.kt](../app/src/main/java/com/trainingvalidator/poc/training/engine/pipeline/FramePipelineModels.kt)).
 - **FrameEvaluationPipeline** — `JointEvaluator` → [JointStateInfo] + [FrameJointEvaluationResult.forScoring] ([FrameEvaluationPipeline.kt](../app/src/main/java/com/trainingvalidator/poc/training/engine/pipeline/FrameEvaluationPipeline.kt)).
 - **FrameFeedbackEmitter** — throttles state messages, position feedback, and repeated joint-error feedback ([FrameFeedbackEmitter.kt](../app/src/main/java/com/trainingvalidator/poc/training/engine/feedback/FrameFeedbackEmitter.kt)).
-- **SessionSafetyGuards** — hard caps on reps/session time ([SessionSafetyGuards.kt](../app/src/main/java/com/trainingvalidator/poc/training/engine/SessionSafetyGuards.kt)).
+- **WorkoutRunSafetyGuards** — hard caps on reps/workout run time ([WorkoutRunSafetyGuards.kt](../app/src/main/java/com/trainingvalidator/poc/training/engine/WorkoutRunSafetyGuards.kt)).
 - **BilateralController** — side and mirroring ([bilateral/](../app/src/main/java/com/trainingvalidator/poc/training/engine/bilateral/)).
 - **StartPoseGate** — gating and optional feedback list builders ([StartPoseGate.kt](../app/src/main/java/com/trainingvalidator/poc/training/engine/StartPoseGate.kt)).
 - **JointErrorCollection** — stateless `buildList` per call ([JointErrorCollection.kt](../app/src/main/java/com/trainingvalidator/poc/training/engine/JointErrorCollection.kt)); unit: [JointErrorCollectionTest](../app/src/test/java/com/trainingvalidator/poc/training/engine/JointErrorCollectionTest.kt).

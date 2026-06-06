@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui.train
+﻿package com.trainingvalidator.poc.ui.train
 
 import android.util.Log
 import android.view.View
@@ -8,23 +8,23 @@ import androidx.lifecycle.lifecycleScope
 import com.google.gson.Gson
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.network.ApiConfig
-import com.trainingvalidator.poc.network.SessionSyncService
+import com.trainingvalidator.poc.network.WorkoutSyncService
 import com.trainingvalidator.poc.storage.AnalyticsStorage
 import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.ui.components.GlassmorphicMessageView
-import com.trainingvalidator.poc.ui.report.SessionReportActivity
-import com.trainingvalidator.poc.training.analytics.SessionUpload
+import com.trainingvalidator.poc.ui.report.WorkoutReportActivity
+import com.trainingvalidator.poc.training.analytics.WorkoutUpload
 import com.trainingvalidator.poc.training.report.ReportGenerator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
-import com.trainingvalidator.poc.training.models.SessionSummary
+import com.trainingvalidator.poc.training.models.ExerciseWorkoutSummary
 
 /**
- * Report generation, navigation to [SessionReportActivity], offline save, and background session sync
- * (token refresh, [SessionSyncService]).
+ * Report generation, navigation to [WorkoutReportActivity], offline save, and background session sync
+ * (token refresh, [WorkoutSyncService]).
  */
 class TrainingReportCoordinator(
     private val host: TrainingActivity
@@ -42,7 +42,7 @@ class TrainingReportCoordinator(
         get() = TrainingActivity.TAG
 
     private fun showFallbackSummary() {
-        val summary: SessionSummary? = host.viewModel.trainingEngine?.stop()
+        val summary: ExerciseWorkoutSummary? = host.viewModel.trainingEngine?.stop()
 
         host.binding.skeletonOverlay.setTrainingMode(false)
 
@@ -68,47 +68,47 @@ class TrainingReportCoordinator(
     }
 
     /**
-     * Used from session-mode [TrainingActivity.onExerciseCompleted] (and internally after single-exercise report).
+     * Used from workout-run mode [TrainingActivity.onExerciseCompleted] (and internally after single-exercise report).
      */
-    suspend fun syncSessionToBackendStandalone(
-        sessionId: String,
-        sessionUpload: SessionUpload?
+    suspend fun syncWorkoutExecutionToBackend(
+        workoutId: String,
+        workoutUpload: WorkoutUpload?
     ) {
         val appContext = host.applicationContext
         try {
-            if (sessionUpload == null) {
-                Log.w(tag, "No session data to sync (MotionRecorder not active)")
+            if (workoutUpload == null) {
+                Log.w(tag, "No workout execution data to sync (MotionRecorder not active)")
                 return
             }
             Log.d(
-                tag, "Syncing session to backend: ${sessionUpload.id}, " +
-                    "${sessionUpload.totalReps} reps, " +
-                    "avgScore=${sessionUpload.sessionMetrics.avgFormScore / 10f}%"
+                tag, "Syncing workout execution to backend: ${workoutUpload.id}, " +
+                    "${workoutUpload.totalReps} reps, " +
+                    "avgScore=${workoutUpload.executionMetrics.avgFormScore / 10f}%"
             )
             if (AuthManager.shouldRefreshToken(appContext)) {
                 Log.d(tag, "Token needs refresh, attempting...")
                 refreshTokenStandalone(appContext)
             }
-            val syncService = SessionSyncService.getInstance(
+            val syncService = WorkoutSyncService.getInstance(
                 appContext,
                 ApiConfig.getEffectiveBaseUrl()
             )
             val token = AuthManager.getAccessToken(appContext)
             if (token != null) {
                 syncService.setAuthToken(token)
-                val result = syncService.uploadSession(sessionUpload)
+                val result = syncService.uploadWorkout(workoutUpload)
                 if (result.success) {
-                    Log.d(tag, "Session synced successfully!")
+                    Log.d(tag, "Workout execution synced successfully!")
                 } else {
-                    Log.w(tag, "Session sync failed (saved for later): ${result.error}")
+                    Log.w(tag, "Workout execution sync failed (saved for later): ${result.error}")
                 }
             } else {
-                Log.w(tag, "No auth token, saving session for later sync")
+                Log.w(tag, "No auth token, saving workout execution for later sync")
                 val storage = AnalyticsStorage(appContext)
-                storage.savePending(sessionUpload)
+                storage.savePending(workoutUpload)
             }
         } catch (e: Exception) {
-            Log.e(tag, "Error syncing session: ${e.message}", e)
+            Log.e(tag, "Error syncing workout execution: ${e.message}", e)
         }
     }
 
@@ -177,14 +177,14 @@ class TrainingReportCoordinator(
         )
         host.lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val sessionUpload = host.viewModel.finalizeAndGetSessionUpload()
+                val sessionUpload = host.viewModel.finalizeAndGetWorkoutUpload()
                 val report = ReportGenerator.generateFromEngine(
                     engine = engine,
                     exerciseConfig = exerciseConfig,
-                    sessionDurationMs = host.viewModel.getSessionDurationMs(),
+                    executionDurationMs = host.viewModel.getWorkoutDurationMs(),
                     frameCaptures = frameCaptures,
                     replayClips = replayClips,
-                    sessionMetrics = sessionUpload?.sessionMetrics,
+                    executionMetrics = sessionUpload?.executionMetrics,
                     weightKg = host.viewModel.getWeightKg(),
                     weightUnit = host.viewModel.getWeightUnit()
                 )
@@ -203,11 +203,11 @@ class TrainingReportCoordinator(
                     }
                     if (saved) {
                         try {
-                            val intent = SessionReportActivity.createIntent(host, report.id)
+                            val intent = WorkoutReportActivity.createIntent(host, report.id)
                             host.startActivity(intent)
                             host.finish()
                         } catch (e: Exception) {
-                            Log.e(tag, "Failed to start SessionReportActivity: ${e.message}", e)
+                            Log.e(tag, "Failed to start WorkoutReportActivity: ${e.message}", e)
                             showFallbackSummary()
                         }
                     } else {
@@ -216,7 +216,7 @@ class TrainingReportCoordinator(
                 }
                 ProcessLifecycleOwner.get().lifecycleScope.launch(Dispatchers.IO) {
                     try {
-                        syncSessionToBackendStandalone(report.id, sessionUpload)
+                        syncWorkoutExecutionToBackend(report.id, sessionUpload)
                     } catch (e: Exception) {
                         Log.w(tag, "Background sync failed, will retry later: ${e.message}")
                     }

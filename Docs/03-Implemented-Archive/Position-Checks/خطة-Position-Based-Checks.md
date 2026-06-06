@@ -1,4 +1,4 @@
-﻿> **Status:** `ARCHIVED` â€” implemented or superseded; not current product truth.
+> **Status:** `ARCHIVED` â€” implemented or superseded; not current product truth.
 > **Current SSOT:** `Docs/00-Active-Reference/Engine/Positions-Check-Concept.md`
 > **Archived:** 2026-05-29
 
@@ -1005,7 +1005,7 @@ class PositionValidator(
     }
     
     /**
-     * Clear cooldowns (call when session resets)
+     * Clear cooldowns (call when planned workout resets)
      */
     fun clearCooldowns() {
         lastErrorTimes.clear()
@@ -1455,7 +1455,7 @@ training/
 │   └── CameraPositionDetector.kt  ← جديد ⭐
 ├── models/
 │   ├── ExerciseConfig.kt          ← تعديل (PositionCheck models)
-│   └── TrainingSession.kt         ← تعديل (RepResult with positionErrors)
+│   └── WorkoutExecution.kt         ← تعديل (RepResult with positionErrors)
 ├── feedback/
 │   ├── FeedbackEvent.kt           ← تعديل (Position events)
 │   └── FeedbackManager.kt         ← تعديل (handle position events)

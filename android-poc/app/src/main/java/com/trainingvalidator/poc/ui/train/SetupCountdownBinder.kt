@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui.train
+﻿package com.trainingvalidator.poc.ui.train
 
 import android.content.Context
 import android.graphics.Color
@@ -22,7 +22,7 @@ import com.trainingvalidator.poc.training.engine.PoseSceneExpectation
 import com.trainingvalidator.poc.training.engine.VisibleRegion
 import com.trainingvalidator.poc.training.feedback.SystemMessageRegistry
 import com.trainingvalidator.poc.training.models.PoseVariant
-import com.trainingvalidator.poc.training.session.SessionState
+import com.trainingvalidator.poc.training.workout.WorkoutRunState
 import com.trainingvalidator.poc.ui.training.CameraGuidance
 import com.trainingvalidator.poc.ui.training.Direction
 import com.trainingvalidator.poc.ui.training.TrainingViewModel
@@ -83,10 +83,10 @@ class SetupCountdownBinder(
 
     fun isTextlessSetupState(): Boolean {
         return when (viewModel.supervisor.state.value) {
-            SessionState.SETUP_POSE,
-            SessionState.RESUME_SETUP,
-            SessionState.COUNTDOWN,
-            SessionState.RESUME_COUNTDOWN -> true
+            WorkoutRunState.SETUP_POSE,
+            WorkoutRunState.RESUME_SETUP,
+            WorkoutRunState.COUNTDOWN,
+            WorkoutRunState.RESUME_COUNTDOWN -> true
             else -> false
         }
     }
@@ -108,7 +108,7 @@ class SetupCountdownBinder(
 
     fun updateSetupGuidanceUI(result: SetupResult) {
         val state = viewModel.supervisor.state.value
-        if (state != SessionState.SETUP_POSE && state != SessionState.RESUME_SETUP) return
+        if (state != WorkoutRunState.SETUP_POSE && state != WorkoutRunState.RESUME_SETUP) return
         val phase = result.phase
         updateAxisIcons(result)
         val previousPhase = lastSetupPhase

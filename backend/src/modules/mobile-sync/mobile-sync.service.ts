@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Mobile Sync Service
  * ====================
  * 
@@ -9,8 +9,8 @@
 import { getPrisma } from '@/lib/prisma/client';
 import { buildExerciseConfig, exerciseFullInclude } from '@/modules/exercises/json-builder';
 import { programService } from '@/modules/programs/programs.service';
-import { workoutService } from '@/modules/workouts/workouts.service';
-import type { WorkoutExport } from '@/modules/workouts/workouts.types';
+import { workoutService } from '@/modules/workout-templates/workout-templates.service';
+import type { WorkoutExport } from '@/modules/workout-templates/workout-templates.types';
 import { listUserExercisePreferences } from '@/modules/user-exercise-preferences/user-exercise-preferences.service';
 import type {
   SyncRequestParams,
@@ -21,7 +21,7 @@ import type {
   ExerciseConfigWithMeta,
   AudioFileInfo,
   UserProgramExport,
-  SessionReportExport,
+  PlannedWorkoutReportExport,
   ExploreData,
 } from './mobile-sync.types';
 import * as fs from 'fs/promises';
@@ -93,7 +93,7 @@ export const mobileSyncService = {
         ],
         take: limit,
       }),
-      prisma.workout.findMany({
+      prisma.workoutTemplate.findMany({
         where: workoutWhere,
         include: {
           exercises: {
@@ -136,7 +136,7 @@ export const mobileSyncService = {
     ]);
 
     let deletedProgramIds: string[] = [];
-    let deletedWorkoutIds: string[] = [];
+    let deletedWorkoutTemplateIds: string[] = [];
     let deletedExerciseIds: string[] = [];
     if (updatedAfterDate) {
       const [deletedPrograms, unpublishedPrograms, deletedWorkouts, unpublishedWorkouts, deletedExercises, unpublishedExercises] =
@@ -149,11 +149,11 @@ export const mobileSyncService = {
             where: { isPublished: false, deletedAt: null, updatedAt: { gt: updatedAfterDate } },
             select: { id: true },
           }),
-          prisma.workout.findMany({
+          prisma.workoutTemplate.findMany({
             where: { deletedAt: { gt: updatedAfterDate } },
             select: { id: true },
           }),
-          prisma.workout.findMany({
+          prisma.workoutTemplate.findMany({
             where: { status: 'draft', deletedAt: null, updatedAt: { gt: updatedAfterDate } },
             select: { id: true },
           }),
@@ -168,7 +168,7 @@ export const mobileSyncService = {
         ]);
 
       deletedProgramIds = [...deletedPrograms.map((p) => p.id), ...unpublishedPrograms.map((p) => p.id)];
-      deletedWorkoutIds = [...deletedWorkouts.map((w) => w.id), ...unpublishedWorkouts.map((w) => w.id)];
+      deletedWorkoutTemplateIds = [...deletedWorkouts.map((w) => w.id), ...unpublishedWorkouts.map((w) => w.id)];
       deletedExerciseIds = [...deletedExercises.map((e) => e.id), ...unpublishedExercises.map((e) => e.id)];
     }
 
@@ -191,7 +191,7 @@ export const mobileSyncService = {
         coverImageUrl: p.coverImageUrl,
         updatedAt: p.updatedAt.toISOString(),
       })),
-      workouts: workouts.map((w) => ({
+      workoutTemplates: workouts.map((w) => ({
         id: w.id,
         slug: w.slug,
         name: toSyncLocalizedText(w.name as Record<string, unknown>),
@@ -211,7 +211,7 @@ export const mobileSyncService = {
         updatedAt: e.updatedAt.toISOString(),
       })),
       deletedProgramIds,
-      deletedWorkoutIds,
+      deletedWorkoutTemplateIds,
       deletedExerciseIds,
     };
 
@@ -224,7 +224,7 @@ export const mobileSyncService = {
         serverVersion: SERVER_VERSION,
         levelsInResponse: data.levels.length,
         programsInResponse: data.programs.length,
-        workoutsInResponse: data.workouts.length,
+        workoutTemplatesInResponse: data.workoutTemplates.length,
         exercisesInResponse: data.exercises.length,
       },
     };
@@ -354,7 +354,7 @@ export const mobileSyncService = {
       };
     }
     
-    const workouts = await prisma.workout.findMany({
+    const workouts = await prisma.workoutTemplate.findMany({
       where: workoutWhereCondition,
       include: {
         exercises: {
@@ -375,7 +375,7 @@ export const mobileSyncService = {
     });
     
     // Get total count of published workouts
-    const totalWorkouts = await prisma.workout.count({
+    const totalWorkoutTemplates = await prisma.workoutTemplate.count({
       where: {
         status: 'published',
         deletedAt: null,
@@ -383,16 +383,16 @@ export const mobileSyncService = {
     });
     
     // Get deleted workout IDs (for incremental sync)
-    let deletedWorkoutIds: string[] = [];
+    let deletedWorkoutTemplateIds: string[] = [];
     if (updatedAfterDate) {
-      const deletedWorkouts = await prisma.workout.findMany({
+      const deletedWorkouts = await prisma.workoutTemplate.findMany({
         where: {
           deletedAt: { gt: updatedAfterDate },
         },
         select: { id: true },
       });
       
-      const unpublishedWorkouts = await prisma.workout.findMany({
+      const unpublishedWorkouts = await prisma.workoutTemplate.findMany({
         where: {
           status: 'draft',
           deletedAt: null,
@@ -401,7 +401,7 @@ export const mobileSyncService = {
         select: { id: true },
       });
       
-      deletedWorkoutIds = [
+      deletedWorkoutTemplateIds = [
         ...deletedWorkouts.map(w => w.id),
         ...unpublishedWorkouts.map(w => w.id),
       ];
@@ -453,7 +453,7 @@ export const mobileSyncService = {
     );
     
     let userPrograms: UserProgramExport[] | undefined;
-    let sessionReports: SessionReportExport[] | undefined;
+    let plannedWorkoutReports: PlannedWorkoutReportExport[] | undefined;
     let userExercisePreferences: Awaited<ReturnType<typeof listUserExercisePreferences>> | undefined;
     if (userId) {
       userExercisePreferences = await listUserExercisePreferences(userId);
@@ -481,17 +481,17 @@ export const mobileSyncService = {
         trainingWeekdays,
       }));
 
-      // Fetch completed session reports for this user
-      const reportRows = await prisma.programSessionReport.findMany({
+      // Fetch completed planned workout reports for this user
+      const reportRows = await prisma.plannedWorkoutReport.findMany({
         where: {
           userId,
           status: 'completed',
         },
         orderBy: [{ weekNumber: 'asc' }, { dayNumber: 'asc' }],
       });
-      sessionReports = reportRows.map((r) => ({
+      plannedWorkoutReports = reportRows.map((r) => ({
         id: r.id,
-        sessionId: r.programSessionId,
+        plannedWorkoutId: r.plannedWorkoutId,
         programId: r.programId ?? '',
         weekNumber: r.weekNumber,
         dayNumber: r.dayNumber,
@@ -519,23 +519,23 @@ export const mobileSyncService = {
         messageLibrary,
         systemMessages,
         deletedExerciseIds,
-        workouts: workoutsExport,
-        deletedWorkoutIds,
+        workoutTemplates: workoutsExport,
+        deletedWorkoutTemplateIds,
         programs: filteredPrograms,
         deletedProgramIds,
         userPrograms,
         userExercisePreferences,
-        sessionReports,
+        plannedWorkoutReports,
         audioManifest,
       },
       meta: {
         totalExercises,
-        totalWorkouts,
+        totalWorkoutTemplates,
         totalPrograms,
         isFullSync,
         serverVersion: SERVER_VERSION,
         exercisesInResponse: exercisesWithMeta.length,
-        workoutsInResponse: workoutsExport.length,
+        workoutTemplatesInResponse: workoutsExport.length,
         programsInResponse: filteredPrograms.length,
         messageLibraryStats,
       },

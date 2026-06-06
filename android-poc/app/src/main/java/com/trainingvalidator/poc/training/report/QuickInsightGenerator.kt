@@ -6,7 +6,7 @@ import com.trainingvalidator.poc.training.models.LocalizedText
 /**
  * QuickInsightGenerator - Generates the main insight message for the report
  * 
- * Analyzes the training session and generates a single, clear message
+ * Analyzes the exercise execution and generates a single, clear message
  * that tells the user the most important thing they need to know.
  * 
  * Priority order:
@@ -47,12 +47,12 @@ object QuickInsightGenerator {
         val isHoldExercise = report.exerciseConfig?.isHoldExercise() == true
         
         return when {
-            // Very short session - probably technical issue or user stopped early
+            // Very short run - probably technical issue or user stopped early
             durationSeconds < 5 -> QuickInsight(
                 type = InsightType.FOCUS_POINT,
                 title = LocalizedText(
-                    ar = "جلسة قصيرة جداً",
-                    en = "Very Short Session"
+                    ar = "تمرين قصير جداً",
+                    en = "Very Short Workout"
                 ),
                 subtitle = LocalizedText(
                     ar = "لم يتم اكتشاف أي حركة مكتملة",
@@ -161,7 +161,7 @@ object QuickInsightGenerator {
         // Score is between 60-80% (room for improvement)
         if (report.summary.averageScore in 60f..80f) return true
         
-        // Fatigue detected in the session
+        // Fatigue detected in this execution
         val repCount = report.repTimeline.size
         val fatiguePoint = detectFatiguePoint(report)
         if (fatiguePoint != null && fatiguePoint < repCount * 0.7) return true
@@ -213,12 +213,12 @@ object QuickInsightGenerator {
         
         val actionable = when {
             report.summary.weightKg != null -> LocalizedText(
-                ar = "الجلسة القادمة: جرب زيادة الوزن",
-                en = "Next session: Try increasing the weight"
+                ar = "التمرين القادم: جرب زيادة الوزن",
+                en = "Next workout: Try increasing the weight"
             )
             score >= 95 -> LocalizedText(
-                ar = "الجلسة القادمة: أضف المزيد من العدات",
-                en = "Next session: Add more reps"
+                ar = "التمرين القادم: أضف المزيد من العدات",
+                en = "Next workout: Add more reps"
             )
             else -> LocalizedText(
                 ar = "استمر على هذا المستوى!",

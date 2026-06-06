@@ -4,7 +4,7 @@ import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.training.models.RepCountingConfig
 
 /**
- * All time-based / cooldown / guard rails for one training session.
+ * All time-based / cooldown / guard rails for one exercise run in [TrainingEngine].
  */
 data class TimingPolicy(
     val defaultMinRepIntervalMs: Long = SettingsManager.getDefaultMinRepInterval(),
@@ -23,11 +23,11 @@ data class TimingPolicy(
     val stateMessageCooldownMs: Long = SettingsManager.getStateMessageCooldown(),
     val cameraWarningEventCooldownMs: Long = 2000L,
     val maxRepsGuardMultiplier: Int = 3,
-    val minSessionDurationFloorMs: Long = 180_000L,
-    /** [TrainingEngine] rep-session cap uses `minRepIntervalMs * targetReps *` this. */
-    val repSessionMinRepTimeMultiplier: Int = 4,
+    val minExecutionDurationFloorMs: Long = 180_000L,
+    /** [TrainingEngine] rep-run cap uses `minRepIntervalMs * targetReps *` this. */
+    val repExecutionMinRepTimeMultiplier: Int = 4,
     /** [TrainingEngine] max hold duration cap uses `target *` this. */
-    val holdSessionMaxTargetMultiplier: Int = 3
+    val holdExecutionMaxTargetMultiplier: Int = 3
 ) {
     fun minRepIntervalFor(rep: RepCountingConfig?): Long =
         rep?.getMinRepInterval(defaultMinRepIntervalMs) ?: defaultMinRepIntervalMs

@@ -83,7 +83,7 @@ export class ReportsController {
     @Query('scope') scope?: string,
     @Query('weekNumber') weekNumber?: string,
     @Query('dayNumber') dayNumber?: string,
-    @Query('sessionId') sessionId?: string,
+    @Query('plannedWorkoutId') plannedWorkoutId?: string,
     @Query('exerciseSlug') exerciseSlug?: string,
     @Query('includeHistory') includeHistory?: string,
     @Query('includeChildren') includeChildren?: string,
@@ -103,7 +103,7 @@ export class ReportsController {
         return { success: false, error: 'programId is required' };
       }
 
-      const validScopes: MetricsScope[] = ['program', 'week', 'day', 'session', 'exercise'];
+      const validScopes: MetricsScope[] = ['program', 'week', 'day', 'plannedWorkout', 'exercise'];
       if (!scope || !validScopes.includes(scope as MetricsScope)) {
         res.status(400);
         return {
@@ -118,7 +118,7 @@ export class ReportsController {
         scope: scope as MetricsScope,
         weekNumber: weekNumber ? parseInt(weekNumber, 10) : undefined,
         dayNumber: dayNumber ? parseInt(dayNumber, 10) : undefined,
-        sessionId: sessionId || undefined,
+        plannedWorkoutId: plannedWorkoutId || undefined,
         exerciseSlug: exerciseSlug || undefined,
         includeHistory: includeHistory === 'true',
         includeChildren: includeChildren === 'true',

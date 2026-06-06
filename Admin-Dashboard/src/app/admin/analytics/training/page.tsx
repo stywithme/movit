@@ -12,7 +12,7 @@ import { analyticsTerms } from '@/modules/analytics/terms';
 interface ExerciseRow {
   exerciseId: string;
   name: string;
-  sessions: number;
+  executions: number;
   dangerRepRate: number;
 }
 
@@ -36,30 +36,30 @@ export default function TrainingAnalyticsPage() {
 
   const columns: DataTableColumn<ExerciseRow>[] = [
     { key: 'name', header: 'Exercise', cell: (row) => row.name },
-    { key: 'sessions', header: 'Sessions', cell: (row) => formatNumber(row.sessions) },
+    { key: 'executions', header: 'Executions', cell: (row) => formatNumber(row.executions) },
     { key: 'danger', header: 'Danger Rep Rate', cell: (row) => formatPercent(row.dangerRepRate) },
   ];
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Training & Performance" description="Session volume, quality trends, and exercise risk signals." />
+      <PageHeader title="Training & Performance" description="Workout execution volume, quality trends, and exercise risk signals." />
       <PeriodFilter onRefresh={fetchData} />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <StatCard title="Sessions" value={formatNumber(data?.volume.sessions)} help={analyticsTerms.sessions} />
+        <StatCard title="Workout Executions" value={formatNumber(data?.volume.workoutExecutions)} help={analyticsTerms.workoutExecutions} />
         <StatCard title="Total Reps" value={formatNumber(data?.volume.totalReps)} help={analyticsTerms.totalReps} />
         <StatCard title="Invalid Reps" value={formatNumber(data?.volume.invalidReps)} help={analyticsTerms.invalidReps} />
-        <StatCard title="Total Minutes" value={formatNumber(data?.volume.totalMinutes)} help="Total training time from uploaded sessions, converted to minutes." />
+        <StatCard title="Total Minutes" value={formatNumber(data?.volume.totalMinutes)} help="Total training time from uploaded workout executions, converted to minutes." />
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <ChartCard title="Sessions Trend" loading={loading} empty={!data?.trends.sessions?.length} help={analyticsTerms.sessions}>
-          <LineTrend data={data?.trends.sessions ?? []} />
+        <ChartCard title="Workout Executions Trend" loading={loading} empty={!data?.trends.workoutExecutions?.length} help={analyticsTerms.workoutExecutions}>
+          <LineTrend data={data?.trends.workoutExecutions ?? []} />
         </ChartCard>
         <ChartCard title="Form Score Trend" loading={loading} empty={!data?.trends.formScore?.length} help={analyticsTerms.formScore}>
           <LineTrend data={data?.trends.formScore ?? []} />
         </ChartCard>
-        <ChartCard title="Session Contexts" loading={loading} empty={!data?.contexts?.length} help={analyticsTerms.sessionContexts}>
+        <ChartCard title="Execution Contexts" loading={loading} empty={!data?.contexts?.length} help={analyticsTerms.executionContexts}>
           <DonutChart data={data?.contexts ?? []} />
         </ChartCard>
         <ChartCard title="Average Metrics" loading={loading} empty={!data?.averages} help={analyticsTerms.averageMetrics}>
@@ -75,7 +75,7 @@ export default function TrainingAnalyticsPage() {
         getRowKey={(row) => row.exerciseId}
         loading={loading}
         emptyTitle="No exercise usage"
-        emptyDescription="No sessions matched the selected period."
+        emptyDescription="No workout executions matched the selected period."
       />
     </div>
   );

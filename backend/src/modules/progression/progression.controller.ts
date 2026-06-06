@@ -34,7 +34,7 @@ export class ProgressionController {
 
   /**
    * Returns unseen progression changes — used by mobile to show notifications
-   * after a session is completed.
+   * after a planned workout is completed.
    */
   @Get('recent')
   async getRecent(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
@@ -54,9 +54,9 @@ export class ProgressionController {
     }
   }
 
-  @Get('session/:sessionId')
-  async getBySession(
-    @Param('sessionId') sessionId: string,
+  @Get('planned-workout/:plannedWorkoutId')
+  async getByPlannedWorkout(
+    @Param('plannedWorkoutId') plannedWorkoutId: string,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
@@ -67,12 +67,12 @@ export class ProgressionController {
         return { success: false, error: authResult.error || 'Unauthorized' };
       }
 
-      const changes = await progressionService.getBySession(authResult.userId, sessionId);
+      const changes = await progressionService.getByPlannedWorkout(authResult.userId, plannedWorkoutId);
       return { success: true, data: changes };
     } catch (error) {
-      console.error('[Progression] Session progression error:', error);
+      console.error('[Progression] Workout progression error:', error);
       res.status(500);
-      return { success: false, error: 'Failed to fetch session progression' };
+      return { success: false, error: 'Failed to fetch workout progression' };
     }
   }
 

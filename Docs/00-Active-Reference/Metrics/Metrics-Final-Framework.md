@@ -1,4 +1,4 @@
-﻿| | |
+| | |
 |---|---|
 | **Status** | `ROADMAP` |
 | **SSOT for** | Metrics improvement backlog (not as-built) |
@@ -315,6 +315,6 @@ LSI_ROM = min(ROM_left, ROM_right) / max(ROM_left, ROM_right) × 100
 - **Stability**: يفضل تباين زاوية العمود الفقري (spine) إن كان متتبعاً، ويعود لتباين الورك كبديل.
 - **Safety Score**: صيغة مرجحة: 40% Position Alignment + 30% DANGER-free ratio + 30% Trunk Stability.
 - **Control Score**: صيغة مرجحة: 30% Tempo Consistency + 25% (100-VL%) + 25% Form Consistency + 20% Fatigue penalty.
-- **Tempo**: يستخدم بيانات المراحل الحقيقية (eccentric/isometric/concentric) من SessionMetrics بدلاً من التقدير.
-- **TUT**: يستخدم مجموع مدد العدات (not session duration).
+- **Tempo**: يستخدم بيانات المراحل الحقيقية (eccentric/isometric/concentric) من WorkoutExecutionMetrics بدلاً من التقدير.
+- **TUT**: يستخدم مجموع مدد العدات (not workout duration).
 | **الإجمالي النهائي** | **16 مقياس** | بدلا من 15 — بنفس الحجم تقريبا لكن بمحتوى أدق |

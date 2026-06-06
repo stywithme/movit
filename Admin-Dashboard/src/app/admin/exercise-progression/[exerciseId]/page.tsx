@@ -47,7 +47,7 @@ interface QualityGate {
 }
 
 interface PromotionPolicy {
-  requiredStreakSessions: number;
+  requiredStreakWorkouts: number;
 }
 
 interface RegressionPolicy {
@@ -98,12 +98,12 @@ function normalizePromotionPolicy(p: unknown): PromotionPolicy {
   if (
     p &&
     typeof p === 'object' &&
-    'requiredStreakSessions' in p &&
-    typeof (p as PromotionPolicy).requiredStreakSessions === 'number'
+    'requiredStreakWorkouts' in p &&
+    typeof (p as PromotionPolicy).requiredStreakWorkouts === 'number'
   ) {
     return p as PromotionPolicy;
   }
-  return { requiredStreakSessions: 2 };
+  return { requiredStreakWorkouts: 2 };
 }
 
 function normalizeRegressionPolicy(p: unknown): RegressionPolicy {
@@ -136,7 +136,7 @@ export default function ExerciseProgressionDetailPage() {
   const [setAxis, setSetAxis] = useState<AxisConfig | null>(null);
   const [difficultyLadder, setDifficultyLadder] = useState<string[]>([]);
   const [qualityGate, setQualityGate] = useState<QualityGate>({ minFormScore: 70, minCompletionRate: 85 });
-  const [promotionPolicy, setPromotionPolicy] = useState<PromotionPolicy>({ requiredStreakSessions: 2 });
+  const [promotionPolicy, setPromotionPolicy] = useState<PromotionPolicy>({ requiredStreakWorkouts: 2 });
   const [regressionPolicy, setRegressionPolicy] = useState<RegressionPolicy>({ maxFormScore: 55 });
   const [validation, setValidation] = useState<ValidationResult | null>(null);
   const [regenerateOpen, setRegenerateOpen] = useState(false);
@@ -573,19 +573,19 @@ export default function ExerciseProgressionDetailPage() {
             <Card className="p-5 space-y-4">
               <h2 className="text-lg font-semibold text-success">Promotion Policy</h2>
               <p className="text-sm text-muted-foreground">
-                How many consecutive qualifying sessions are needed before promoting.
+                How many consecutive qualifying workouts are needed before promoting.
               </p>
               <div>
-                <Label>Required Streak Sessions</Label>
+                <Label>Required Streak Workouts</Label>
                 <Input
                   type="number"
                   min={1}
                   max={10}
-                  value={promotionPolicy.requiredStreakSessions}
-                  onChange={(e) => setPromotionPolicy({ requiredStreakSessions: Number(e.target.value) })}
+                  value={promotionPolicy.requiredStreakWorkouts}
+                  onChange={(e) => setPromotionPolicy({ requiredStreakWorkouts: Number(e.target.value) })}
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
-                  User must pass the quality gate for this many sessions in a row.
+                  User must pass the quality gate for this many workouts in a row.
                 </p>
               </div>
             </Card>

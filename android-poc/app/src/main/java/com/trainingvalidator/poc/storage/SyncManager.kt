@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.storage
+﻿package com.trainingvalidator.poc.storage
 
 import android.content.Context
 import android.util.Log
@@ -201,7 +201,7 @@ class SyncManager(
 
             if (result is SyncResult.Success || result is SyncResult.NoChanges) {
                 try {
-                    flushPendingSessionReports()
+                    flushPendingWorkoutReports()
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to flush pending reports after sync", e)
                 }
@@ -345,14 +345,14 @@ class SyncManager(
         val exercises = data.exercises ?: emptyList()
         val messageLibrary = data.messageLibrary ?: emptyList()
         val deletedExerciseIds = data.deletedExerciseIds ?: emptyList()
-        val workouts = data.workouts ?: emptyList()
-        val deletedWorkoutIds = data.deletedWorkoutIds ?: emptyList()
+        val workouts = data.workoutTemplates ?: emptyList()
+        val deletedWorkoutIds = data.deletedWorkoutTemplateIds ?: emptyList()
         val programs = data.programs ?: emptyList()
         val deletedProgramIds = data.deletedProgramIds ?: emptyList()
         val userPrograms = data.userPrograms ?: emptyList()
         val audioManifest = data.audioManifest
         
-        // ── Always process user-specific data (userPrograms, sessionReports) ──
+        // ── Always process user-specific data (userPrograms, workoutReports) ──
         // These must be handled regardless of exercise/program changes,
         // otherwise the startDate and training reports never sync.
         if (userPrograms.isNotEmpty()) {
@@ -375,17 +375,17 @@ class SyncManager(
             UserExercisePreferenceStore(context).hydrateFromSync(userExercisePreferences)
         }
 
-        // Sync session reports from backend → local store
-        val sessionReports = data.sessionReports ?: emptyList()
-        if (sessionReports.isNotEmpty()) {
-            val reportStore = ProgramSessionReportStore(context)
+        // Sync planned-workout reports from backend → local store
+        val workoutReports = data.workoutReports ?: emptyList()
+        if (workoutReports.isNotEmpty()) {
+            val reportStore = ProgramWorkoutReportStore(context)
             var reportsHydrated = 0
-            for (sr in sessionReports) {
-                val existing = reportStore.getBySession(sr.sessionId)
+            for (sr in workoutReports) {
+                val existing = reportStore.getByWorkout(sr.plannedWorkoutId)
                 if (existing == null) {
                     reportStore.save(
-                        ProgramSessionReportStore.ProgramSessionLocalReport(
-                            sessionId = sr.sessionId,
+                        ProgramWorkoutReportStore.ProgramWorkoutLocalReport(
+                            workoutId = sr.plannedWorkoutId,
                             programId = sr.programId,
                             weekNumber = sr.weekNumber,
                             dayNumber = sr.dayNumber,
@@ -403,7 +403,7 @@ class SyncManager(
                 }
             }
             if (reportsHydrated > 0) {
-                Log.d(TAG, "Hydrated $reportsHydrated session reports from backend")
+                Log.d(TAG, "Hydrated $reportsHydrated planned-workout reports from backend")
             }
         }
 
@@ -436,7 +436,7 @@ class SyncManager(
             val localWorkouts = workoutCache?.getWorkoutCount() ?: 0
             val localPrograms = programCache?.getProgramCount() ?: 0
             val serverTotalEx = meta?.totalExercises ?: localExercises
-            val serverTotalWk = meta?.totalWorkouts ?: localWorkouts
+            val serverTotalWk = meta?.totalWorkoutTemplates ?: localWorkouts
             val serverTotalPr = meta?.totalPrograms ?: localPrograms
 
             if (localExercises > serverTotalEx ||
@@ -477,7 +477,7 @@ class SyncManager(
                 )
                 workoutCache?.saveMetadata(
                     timestamp = response.timestamp,
-                    workoutCount = meta.totalWorkouts,
+                    workoutCount = meta.totalWorkoutTemplates,
                     serverVersion = meta.serverVersion
                 )
                 programCache?.saveMetadata(
@@ -539,7 +539,7 @@ class SyncManager(
             if (meta != null) {
                 workoutCache.saveMetadata(
                     timestamp = response.timestamp,
-                    workoutCount = meta.totalWorkouts,
+                    workoutCount = meta.totalWorkoutTemplates,
                     serverVersion = meta.serverVersion
                 )
             }
@@ -566,7 +566,7 @@ class SyncManager(
             }
         }
 
-        // NOTE: userPrograms and sessionReports are already processed above
+        // NOTE: userPrograms and workoutReports are already processed above
         // (before the hasChanges check) to ensure they always sync.
         
         // Save exercise metadata
@@ -882,17 +882,17 @@ class SyncManager(
     // ==================== Offline Queue Sync ====================
 
     /**
-     * Flush pending session reports that were queued while offline.
+     * Flush pending planned-workout reports that were queued while offline.
      * Call this after a successful sync or when network becomes available.
      *
      * @return Number of reports successfully synced
      */
-    suspend fun flushPendingSessionReports(): Int = withContext(Dispatchers.IO) {
-        val reportStore = ProgramSessionReportStore(context)
+    suspend fun flushPendingWorkoutReports(): Int = withContext(Dispatchers.IO) {
+        val reportStore = ProgramWorkoutReportStore(context)
         val pendingQueue = reportStore.getPendingSyncQueue()
 
         if (pendingQueue.isEmpty()) {
-            Log.d(TAG, "No pending session reports to sync")
+            Log.d(TAG, "No pending planned-workout reports to sync")
             return@withContext 0
         }
 
@@ -906,25 +906,25 @@ class SyncManager(
         for (entry in pendingQueue) {
             try {
                 val payload = entry.payload
-                val response = ApiClient.mobileSyncApi.completeSession(
-                    entry.sessionId,
+                val response = ApiClient.mobileSyncApi.completePlannedWorkout(
+                    entry.workoutId,
                     authHeader,
                     payload
                 )
                 if (response.isSuccessful) {
-                    reportStore.removePendingSync(entry.sessionId)
+                    reportStore.removePendingSync(entry.workoutId)
                     synced++
-                    Log.d(TAG, "Flushed pending report for session: ${entry.sessionId}")
+                    Log.d(TAG, "Flushed pending report for workout: ${entry.workoutId}")
                 } else {
-                    Log.w(TAG, "Failed to flush report for session ${entry.sessionId}: ${response.code()}")
+                    Log.w(TAG, "Failed to flush report for workout ${entry.workoutId}: ${response.code()}")
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to flush report for session ${entry.sessionId}: ${e.message}")
+                Log.w(TAG, "Failed to flush report for workout ${entry.workoutId}: ${e.message}")
                 // Don't remove from queue — will retry next time
             }
         }
 
-        Log.d(TAG, "Flushed $synced / ${pendingQueue.size} pending session reports")
+        Log.d(TAG, "Flushed $synced / ${pendingQueue.size} pending planned-workout reports")
         return@withContext synced
     }
 

@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.storage
+﻿package com.trainingvalidator.poc.storage
 
 import android.content.Context
 import android.util.Log
@@ -7,7 +7,7 @@ import android.util.Log
  * UserDataCleaner — Central cache invalidation on logout / user switch
  *
  * Clears every piece of user-specific cached data so that a new user
- * who logs in on the same device never sees stale data from a previous session.
+ * who logs in on the same device never sees stale data from a previous user account.
  *
  * Call [clearAll] from the logout flow BEFORE navigating to SignInActivity.
  *
@@ -16,7 +16,7 @@ import android.util.Log
  *   - ExploreRepository cache   (explore_cache)
  *   - DayCustomizationStore     (day_customization_store)
  *   - UserProgramStore          (user_program_store)
- *   - ProgramSessionReportStore (program_session_report_store)
+ *   - ProgramWorkoutReportStore (program_workout_report_store)
  *   - UserExercisePreferenceStore (user_exercise_preferences)
  *   - HomeRepository singleton  (in-memory)
  *   - ExploreRepository singleton (in-memory)
@@ -36,7 +36,7 @@ object UserDataCleaner {
     private const val PREFS_EXPLORE = "explore_cache"
     private const val PREFS_DAY_CUSTOMIZATION = "day_customization_store"
     private const val PREFS_USER_PROGRAM = "user_program_store"
-    private const val PREFS_SESSION_REPORT_LEGACY = "program_session_report_store"
+    private const val PREFS_SESSION_REPORT_LEGACY = "program_workout_report_store"
     private const val PREFS_USER_EXERCISE_PREFS = UserExercisePreferenceStore.PREFS_NAME
 
     /**

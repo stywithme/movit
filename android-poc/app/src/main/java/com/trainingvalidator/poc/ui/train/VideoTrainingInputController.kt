@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui.train
+﻿package com.trainingvalidator.poc.ui.train
 
 import android.util.Log
 import android.view.View
@@ -8,7 +8,7 @@ import android.widget.Toast
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.analysis.JointAngles
 import com.trainingvalidator.poc.analysis.SmoothedLandmark
-import com.trainingvalidator.poc.training.session.SessionState
+import com.trainingvalidator.poc.training.workout.WorkoutRunState
 import com.trainingvalidator.poc.ui.components.GlassmorphicMessageView
 import com.trainingvalidator.poc.ui.training.VideoModeController
 import com.trainingvalidator.poc.video.VideoManager
@@ -70,8 +70,8 @@ class VideoTrainingInputController(
                 when (state) {
                     VideoManager.PlaybackState.PLAYING -> {
                         host.updatePlayPauseIcon(isPlaying = true)
-                        if (host.viewModel.supervisor.state.value != SessionState.TRAINING &&
-                            host.viewModel.supervisor.state.value != SessionState.COMPLETED) {
+                        if (host.viewModel.supervisor.state.value != WorkoutRunState.TRAINING &&
+                            host.viewModel.supervisor.state.value != WorkoutRunState.COMPLETED) {
                             startVideoTraining()
                         }
                     }
@@ -139,7 +139,7 @@ class VideoTrainingInputController(
 
             override fun onNoPoseDetected(timestampMs: Long) {
                 host.binding.skeletonOverlay.clear()
-                if (host.wasPoseDetectedLastFrame && host.viewModel.supervisor.state.value == SessionState.TRAINING) {
+                if (host.wasPoseDetectedLastFrame && host.viewModel.supervisor.state.value == WorkoutRunState.TRAINING) {
                     host.binding.glassmorphicMessage.hide()
                     host.binding.vignetteOverlay.clear()
                 }
