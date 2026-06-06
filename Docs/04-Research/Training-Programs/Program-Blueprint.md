@@ -1,4 +1,4 @@
-﻿# مخطط منظومة البرامج التدريبية في POSE
+# مخطط منظومة البرامج التدريبية في POSE
 
 > الوثيقة المرجعية النهائية لبناء منظومة البرامج التدريبية في POSE.
 >
@@ -106,7 +106,7 @@ flowchart LR
 
     subgraph templateLayer [TemplateLayer]
         programTemplate["Program Template"]
-        sessionTemplate["Session Structure"]
+        plannedWorkoutTemplate["Planned Workout Structure"]
         exerciseLibrary["Exercise Library"]
     end
 
@@ -126,8 +126,8 @@ flowchart LR
     userProgram --> effectivePlan
     progressionState --> effectivePlan
     manualOverrides --> effectivePlan
-    exerciseLibrary --> sessionTemplate
-    sessionTemplate --> effectivePlan
+    exerciseLibrary --> plannedWorkoutTemplate
+    plannedWorkoutTemplate --> effectivePlan
 ```
 
 ### Client Layer
@@ -147,8 +147,8 @@ flowchart LR
 - `Program`
 - `ProgramWeek`
 - `ProgramDay`
-- `ProgramSession`
-- `ProgramSessionItem`
+- `PlannedWorkout`
+- `PlannedWorkoutItem`
 - `Exercise`
 
 ### Effective Plan Layer
@@ -232,8 +232,8 @@ flowchart TD
     goal --> selectProgram{"Selection Algorithm"}
     selectProgram --> assign["User Program"]
     assign --> effectivePlan["Effective Plan"]
-    effectivePlan --> sessions["تنفيذ الجلسات"]
-    sessions --> qualityGate{"Quality Gate"}
+    effectivePlan --> workoutRuns["تنفيذ التمارين (workout runs)"]
+    planned workouts --> qualityGate{"Quality Gate"}
     qualityGate -- "نجاح" --> progression["تحديث Progression State"]
     qualityGate -- "ضعيف" --> adjust["تعديل أو تراجع"]
     progression --> effectivePlan
@@ -251,8 +251,8 @@ flowchart TD
 Program
   -> ProgramWeek
     -> ProgramDay
-      -> ProgramSession
-        -> ProgramSessionItem
+      -> PlannedWorkout
+        -> PlannedWorkoutItem
           -> Exercise
 ```
 
@@ -284,7 +284,7 @@ Program
 - `isRestDay`
 - `dayFocus`
 
-### ProgramSession
+### PlannedWorkout
 
 الوحدة التنفيذية داخل اليوم، وتحمل:
 
@@ -293,7 +293,7 @@ Program
 - مدتها التقديرية
 - عناصر الجلسة المرتبة
 
-### ProgramSessionItem
+### PlannedWorkoutItem
 
 وحدة الوصفة داخل الجلسة، وتحمل:
 
@@ -364,8 +364,8 @@ Program
 - `coachingNotes`
 - `prerequisiteProgramId`
 - `nextProgramId`
-- `weeklySessionTarget`
-- `estimatedSessionMinutes`
+- `weeklyPlannedWorkoutsTarget`
+- `estimatedWorkoutMinutes`
 
 ### `ProgramWeek`
 
@@ -385,7 +385,7 @@ Program
 - `dayFocus`
 - `name`
 
-### `ProgramSession`
+### `PlannedWorkout`
 
 الحقول الأساسية:
 
@@ -393,7 +393,7 @@ Program
 - `sortOrder`
 - `estimatedDurationMin`
 
-### `ProgramSessionItem`
+### `PlannedWorkoutItem`
 
 الحقول الأساسية:
 
@@ -512,7 +512,7 @@ Program
 - `userProgramId`
 - `weekNumber`
 - `dayNumber`
-- `sessionItemId`
+- `plannedWorkoutItemId`
 - `overrideType`
 - `reasonCode`
 - `data`
@@ -707,7 +707,7 @@ GET /api/mobile/user-programs/:id/effective-plan?week=2&day=3
 قبل الجلسة، تُعرض للمستخدم توصية تنفيذية تُحسب لحظياً من خلال سلسلة fallback:
 
 1. **ProgressionState** (القيم الحالية بعد التدرج) — المصدر الأول
-2. **Template** (weightKg/targetReps الأصلية من ProgramSessionItem) — fallback إذا لم يوجد ProgressionState
+2. **Template** (weightKg/targetReps الأصلية من PlannedWorkoutItem) — fallback إذا لم يوجد ProgressionState
 3. **Goal Defaults** (من ملف `goal-defaults.ts`) — fallback إذا لم يوجد قيم في Template
 
 التوصية تشمل عند الحاجة:
@@ -948,9 +948,9 @@ GET /api/mobile/user-programs/:id/effective-plan?week=2&day=3
 
 الربط بين محرك التدرج الحالي والنموذج الجديد يبقى في الكود، وليس في قاعدة البيانات.
 
-### Session Role Order
+### Planned Workout Role Order
 
-ملف مرجعي مثل `session-role-order.ts` يحتوي الترتيب الافتراضي:
+ملف مرجعي مثل `workout-block-role-order.ts` يحتوي الترتيب الافتراضي:
 
 1. `WARMUP`
 2. `ACTIVATION`
@@ -981,7 +981,7 @@ GET /api/mobile/user-programs/:id/effective-plan?week=2&day=3
 - AI Program Generator
 - Periodization Engine معقد
 - Phase/Block entity
-- Session Block entity
+- Planned Workout Block entity
 - Set Prescription table
 - Exercise Tree صارم
 - Test Engine منفصل

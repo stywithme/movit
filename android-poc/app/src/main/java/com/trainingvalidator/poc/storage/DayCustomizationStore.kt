@@ -6,20 +6,20 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.Strictness
 import com.google.gson.reflect.TypeToken
-import com.trainingvalidator.poc.training.models.ProgramSession
-import com.trainingvalidator.poc.training.models.ProgramSessionItem
+import com.trainingvalidator.poc.training.models.ProgramWorkout
+import com.trainingvalidator.poc.training.models.WorkoutLineItem
 import com.trainingvalidator.poc.training.models.LocalizedText
 
 /**
- * DayCustomizationStore — Offline-first local storage for day/session customizations.
+ * DayCustomizationStore � Offline-first local storage for day/workout customizations.
  *
- * Stores user modifications to sessions (reorder, rename, delete) and session items
+ * Stores user modifications to planned workouts (reorder, rename, delete) and workout items
  * (add, remove, reorder, edit sets/reps/weight) persistently in SharedPreferences.
  *
  * Key format: "day_{programId}_{weekNumber}_{dayNumber}"
  *
- * Each key maps to a DayCustomization containing the full modified sessions list.
- * This is the source of truth for the day view — if a customization exists,
+ * Each key maps to a DayCustomization containing the full modified planned workout list.
+ * This is the source of truth for the day view � if a customization exists,
  * it overrides the original program data.
  */
 class DayCustomizationStore(context: Context) {
@@ -32,29 +32,29 @@ class DayCustomizationStore(context: Context) {
 
     /**
      * Represents a complete customization of a program day.
-     * Contains the full modified session list with all items.
+     * Contains the full modified planned workout list with all items.
      */
     data class DayCustomization(
         val programId: String = "",
         val weekNumber: Int = 0,
         val dayNumber: Int = 0,
-        val sessions: List<CustomizedSession> = emptyList(),
+        val plannedWorkouts: List<CustomizedPlannedWorkout> = emptyList(),
         val lastModifiedAt: Long = System.currentTimeMillis(),
         /** True when the user edited this day locally (vs server-only import). */
         val isUserModified: Boolean = false
     )
 
     /**
-     * A session with potential modifications.
-     * Mirrors ProgramSession but is fully mutable.
+     * A planned workout with potential modifications.
+     * Mirrors ProgramWorkout but is fully mutable.
      */
-    data class CustomizedSession(
+    data class CustomizedPlannedWorkout(
         val id: String = "",
         val name: LocalizedText = LocalizedText(),
         val sortOrder: Int = 0,
         val role: String = "MAIN",
         val estimatedDurationMin: Int? = null,
-        val items: List<ProgramSessionItem> = emptyList(),
+        val items: List<WorkoutLineItem> = emptyList(),
         val isDeleted: Boolean = false
     )
 
@@ -63,23 +63,27 @@ class DayCustomizationStore(context: Context) {
         .setStrictness(Strictness.LENIENT)
         .create()
 
-    // ═══════════════════════════════════════════════════════════
+    // ???????????????????????????????????????????????????????????
     // Read
-    // ═══════════════════════════════════════════════════════════
+    // ???????????????????????????????????????????????????????????
 
     /**
      * Get customization for a specific day, or null if no customization exists.
      */
     fun get(programId: String, weekNumber: Int, dayNumber: Int): DayCustomization? {
         val key = buildKey(programId, weekNumber, dayNumber)
-        val json = prefs.getString(key, null)
+        var json = prefs.getString(key, null)
         if (json == null) {
             Log.d(TAG, "get: NO DATA for key=$key (all keys: ${prefs.all.keys.filter { it.startsWith(KEY_PREFIX) }})")
             return null
         }
+        // Migrate legacy persisted key "sessions" ? "plannedWorkouts"
+        if (json.contains("\"sessions\"") && !json.contains("\"plannedWorkouts\"")) {
+            json = json.replace("\"sessions\"", "\"plannedWorkouts\"")
+        }
         return try {
             val result = gson.fromJson(json, DayCustomization::class.java)
-            Log.d(TAG, "get: FOUND key=$key, sessions=${result?.sessions?.size ?: 0}, json_length=${json.length}")
+            Log.d(TAG, "get: FOUND key=$key, workouts=${result?.plannedWorkouts?.size ?: 0}, json_length=${json.length}")
             result?.let { sanitizeDayCustomization(it) }
         } catch (e: Exception) {
             Log.e(TAG, "get: PARSE FAILED for key=$key, json_length=${json.length}", e)
@@ -88,50 +92,47 @@ class DayCustomizationStore(context: Context) {
     }
 
     /**
-     * Get the effective sessions for a day.
-     * Returns customized sessions if they exist, otherwise converts original sessions.
+     * Get the effective planned workouts for a day.
+     * Returns customized workouts if they exist, otherwise converts original program workouts.
      */
-    fun getEffectiveSessions(
+    fun getEffectivePlannedWorkouts(
         programId: String,
         weekNumber: Int,
         dayNumber: Int,
-        originalSessions: List<ProgramSession>
-    ): List<CustomizedSession> {
+        originalWorkouts: List<ProgramWorkout>
+    ): List<CustomizedPlannedWorkout> {
         val key = buildKey(programId, weekNumber, dayNumber)
         val customization = get(programId, weekNumber, dayNumber)
         if (customization != null) {
-            // Normalize sortOrder on read to fix any stale values from older saves.
-            // The array order IS the source of truth — sortOrder must match array index.
-            val result = customization.sessions
+            val result = customization.plannedWorkouts
                 .filter { !it.isDeleted }
-                .mapIndexed { sIdx, session ->
-                    session.copy(
-                        sortOrder = sIdx,
-                        items = session.items.mapIndexed { iIdx, item ->
+                .mapIndexed { wIdx, workout ->
+                    workout.copy(
+                        sortOrder = wIdx,
+                        items = workout.items.mapIndexed { iIdx, item ->
                             item.copy(sortOrder = iIdx)
                         }
                     )
                 }
-            Log.d(TAG, "getEffectiveSessions: CUSTOMIZED key=$key, sessions=${result.size}")
+            Log.d(TAG, "getEffectivePlannedWorkouts: CUSTOMIZED key=$key, workouts=${result.size}")
             return result
         }
-        Log.d(TAG, "getEffectiveSessions: NO CUSTOMIZATION for key=$key, using ${originalSessions.size} original sessions")
-        // Convert original sessions to customized format
-        return originalSessions.map { session ->
-            CustomizedSession(
-                id = session.id,
-                name = session.name,
-                sortOrder = session.sortOrder,
-                role = session.role.ifBlank { "MAIN" },
-                estimatedDurationMin = session.estimatedDurationMin,
-                items = session.items.sortedBy { it.sortOrder }
+        Log.d(TAG, "getEffectivePlannedWorkouts: NO CUSTOMIZATION for key=$key, using ${originalWorkouts.size} original workouts")
+        return originalWorkouts.map { workout ->
+            CustomizedPlannedWorkout(
+                id = workout.id,
+                name = workout.name,
+                sortOrder = workout.sortOrder,
+                role = workout.role.ifBlank { "MAIN" },
+                estimatedDurationMin = workout.estimatedDurationMin,
+                items = workout.items.sortedBy { it.sortOrder }
             )
         }.sortedBy { it.sortOrder }
     }
 
-    // ═══════════════════════════════════════════════════════════
+    // ???????????????????????????????????????????????????????????
     // Write
-    // ═══════════════════════════════════════════════════════════
+    // ???????????????????????????????????????????????????????????
 
     /**
      * Save the full day customization.
@@ -140,126 +141,122 @@ class DayCustomizationStore(context: Context) {
         val key = buildKey(customization.programId, customization.weekNumber, customization.dayNumber)
         val json = gson.toJson(customization)
         prefs.edit().putString(key, json).apply()
-        Log.d(TAG, "Saved customization: $key (${customization.sessions.size} sessions)")
+        Log.d(TAG, "Saved customization: $key (${customization.plannedWorkouts.size} workouts)")
     }
 
     /**
-     * Save sessions for a specific day.
-     * Convenience method that wraps sessions in a DayCustomization.
+     * Save planned workouts for a specific day.
      */
-    fun saveSessions(
+    fun savePlannedWorkouts(
         programId: String,
         weekNumber: Int,
         dayNumber: Int,
-        sessions: List<CustomizedSession>
+        plannedWorkouts: List<CustomizedPlannedWorkout>
     ) {
         val key = buildKey(programId, weekNumber, dayNumber)
-        Log.d(TAG, "saveSessions: key=$key, sessions=${sessions.size}")
-        sessions.forEach { s ->
-            Log.d(TAG, "  saving session '${s.name.en}' sortOrder=${s.sortOrder}, items=${s.items.size}")
+        Log.d(TAG, "savePlannedWorkouts: key=$key, workouts=${plannedWorkouts.size}")
+        plannedWorkouts.forEach { w ->
+            Log.d(TAG, "  saving workout '${w.name.en}' sortOrder=${w.sortOrder}, items=${w.items.size}")
         }
-        save(DayCustomization(
-            programId = programId,
-            weekNumber = weekNumber,
-            dayNumber = dayNumber,
-            sessions = sessions,
-            isUserModified = true
-        ))
+        save(
+            DayCustomization(
+                programId = programId,
+                weekNumber = weekNumber,
+                dayNumber = dayNumber,
+                plannedWorkouts = plannedWorkouts,
+                isUserModified = true
+            )
+        )
     }
 
     /**
-     * Update a specific session's items.
+     * Update a specific planned workout's items.
      */
-    fun updateSessionItems(
+    fun updatePlannedWorkoutItems(
         programId: String,
         weekNumber: Int,
         dayNumber: Int,
-        sessionId: String,
-        items: List<ProgramSessionItem>
+        workoutId: String,
+        items: List<WorkoutLineItem>
     ) {
         val current = get(programId, weekNumber, dayNumber) ?: return
-        val updatedSessions = current.sessions.map { session ->
-            if (session.id == sessionId) {
-                session.copy(items = items)
+        val updatedWorkouts = current.plannedWorkouts.map { workout ->
+            if (workout.id == workoutId) {
+                workout.copy(items = items)
             } else {
-                session
+                workout
             }
         }
-        save(current.copy(sessions = updatedSessions, lastModifiedAt = System.currentTimeMillis(), isUserModified = true))
+        save(current.copy(plannedWorkouts = updatedWorkouts, lastModifiedAt = System.currentTimeMillis(), isUserModified = true))
     }
 
     /**
-     * Rename a session.
+     * Rename a planned workout.
      */
-    fun renameSession(
+    fun renamePlannedWorkout(
         programId: String,
         weekNumber: Int,
         dayNumber: Int,
-        sessionId: String,
+        workoutId: String,
         newName: LocalizedText
     ) {
         val current = get(programId, weekNumber, dayNumber) ?: return
-        val updatedSessions = current.sessions.map { session ->
-            if (session.id == sessionId) session.copy(name = newName) else session
+        val updatedWorkouts = current.plannedWorkouts.map { workout ->
+            if (workout.id == workoutId) workout.copy(name = newName) else workout
         }
-        save(current.copy(sessions = updatedSessions, lastModifiedAt = System.currentTimeMillis(), isUserModified = true))
+        save(current.copy(plannedWorkouts = updatedWorkouts, lastModifiedAt = System.currentTimeMillis(), isUserModified = true))
     }
 
     /**
-     * Soft-delete a session (mark as deleted).
+     * Soft-delete a planned workout (mark as deleted).
      */
-    fun deleteSession(
+    fun deletePlannedWorkout(
         programId: String,
         weekNumber: Int,
         dayNumber: Int,
-        sessionId: String
+        workoutId: String
     ) {
         val current = get(programId, weekNumber, dayNumber) ?: return
-        val updatedSessions = current.sessions.map { session ->
-            if (session.id == sessionId) session.copy(isDeleted = true) else session
+        val updatedWorkouts = current.plannedWorkouts.map { workout ->
+            if (workout.id == workoutId) workout.copy(isDeleted = true) else workout
         }
-        save(current.copy(sessions = updatedSessions, lastModifiedAt = System.currentTimeMillis(), isUserModified = true))
+        save(current.copy(plannedWorkouts = updatedWorkouts, lastModifiedAt = System.currentTimeMillis(), isUserModified = true))
     }
 
     /**
-     * Reorder sessions.
+     * Reorder planned workouts.
      */
-    fun reorderSessions(
+    fun reorderPlannedWorkouts(
         programId: String,
         weekNumber: Int,
         dayNumber: Int,
-        sessionIds: List<String>
+        plannedWorkoutIds: List<String>
     ) {
         val current = get(programId, weekNumber, dayNumber) ?: return
-        val sessionMap = current.sessions.associateBy { it.id }
-        val reordered = sessionIds.mapIndexedNotNull { index, id ->
-            sessionMap[id]?.copy(sortOrder = index)
+        val workoutMap = current.plannedWorkouts.associateBy { it.id }
+        val reordered = plannedWorkoutIds.mapIndexedNotNull { index, id ->
+            workoutMap[id]?.copy(sortOrder = index)
         }
-        // Add any sessions not in the reorder list at the end
-        val remaining = current.sessions.filter { it.id !in sessionIds }
-        save(current.copy(
-            sessions = reordered + remaining,
-            lastModifiedAt = System.currentTimeMillis(),
-            isUserModified = true
-        ))
+        val remaining = current.plannedWorkouts.filter { it.id !in plannedWorkoutIds }
+        save(
+            current.copy(
+                plannedWorkouts = reordered + remaining,
+                lastModifiedAt = System.currentTimeMillis(),
+                isUserModified = true
+            )
+        )
     }
 
-    // ═══════════════════════════════════════════════════════════
+    // ???????????????????????????????????????????????????????????
     // Delete
-    // ═══════════════════════════════════════════════════════════
+    // ???????????????????????????????????????????????????????????
 
-    /**
-     * Remove customization for a specific day (revert to original).
-     */
     fun clear(programId: String, weekNumber: Int, dayNumber: Int) {
         val key = buildKey(programId, weekNumber, dayNumber)
         prefs.edit().remove(key).apply()
         Log.d(TAG, "Cleared customization: $key")
     }
 
-    /**
-     * Remove all customizations for a program.
-     */
     fun clearProgram(programId: String) {
         val editor = prefs.edit()
         prefs.all.keys
@@ -269,27 +266,14 @@ class DayCustomizationStore(context: Context) {
         Log.d(TAG, "Cleared all customizations for program: $programId")
     }
 
-    /**
-     * Check if a day has been customized.
-     */
     fun hasCustomization(programId: String, weekNumber: Int, dayNumber: Int): Boolean {
         return prefs.contains(buildKey(programId, weekNumber, dayNumber))
     }
 
-    // ═══════════════════════════════════════════════════════════
+    // ???????????????????????????????????????????????????????????
     // Hydrate from Backend (sync response)
-    // ═══════════════════════════════════════════════════════════
+    // ???????????????????????????????????????????????????????????
 
-    /**
-     * Populate local DayCustomizationStore from backend customizations
-     * (received via sync in UserProgramExport.customizations).
-     *
-     * Called after sync to ensure local store matches backend.
-     * Only imports keys that don't already exist locally (local edits take priority).
-     *
-     * Expected format from backend:
-     *   { "day_1_1": [ { id, name, sortOrder, isDeleted, items: [...] }, ... ], ... }
-     */
     @Suppress("UNCHECKED_CAST")
     fun hydrateFromBackend(
         programId: String,
@@ -305,7 +289,6 @@ class DayCustomizationStore(context: Context) {
 
         var imported = 0
         for ((dayKey, value) in customizations) {
-            // Parse key format: "day_{weekNumber}_{dayNumber}"
             val parts = dayKey.removePrefix("day_").split("_")
             if (parts.size != 2) continue
             val weekNumber = parts[0].toIntOrNull() ?: continue
@@ -315,61 +298,59 @@ class DayCustomizationStore(context: Context) {
                 val existing = get(programId, weekNumber, dayNumber) ?: continue
                 if (existing.isUserModified) {
                     if (serverMs != null && serverMs > existing.lastModifiedAt) {
-                        Log.w(TAG, "hydrateFromBackend: CONFLICT $dayKey — local user edits kept; server is newer")
+                        Log.w(TAG, "hydrateFromBackend: CONFLICT $dayKey � local user edits kept; server is newer")
                     } else {
-                        Log.d(TAG, "hydrateFromBackend: SKIP $dayKey — local user customization exists")
+                        Log.d(TAG, "hydrateFromBackend: SKIP $dayKey � local user customization exists")
                     }
                     continue
                 }
                 if (serverMs != null && serverMs <= existing.lastModifiedAt) {
-                    Log.d(TAG, "hydrateFromBackend: SKIP $dayKey — local copy same or newer than server marker")
+                    Log.d(TAG, "hydrateFromBackend: SKIP $dayKey � local copy same or newer than server marker")
                     continue
                 }
             }
 
-            // Parse sessions from backend format
             try {
-                val sessionsJson = gson.toJson(value)
-                val sessionsType = object : TypeToken<List<CustomizedSession>>() {}.type
-                val sessions: List<CustomizedSession> = gson.fromJson(sessionsJson, sessionsType)
-                val sanitizedSessions = sanitizeSessions(sessions)
+                var workoutsJson = gson.toJson(value)
+                if (workoutsJson.contains("\"sessions\"") && !workoutsJson.contains("\"plannedWorkouts\"")) {
+                    workoutsJson = workoutsJson.replace("\"sessions\"", "\"plannedWorkouts\"")
+                }
+                val workoutsType = object : TypeToken<List<CustomizedPlannedWorkout>>() {}.type
+                val plannedWorkouts: List<CustomizedPlannedWorkout> = gson.fromJson(workoutsJson, workoutsType)
+                val sanitizedWorkouts = sanitizePlannedWorkouts(plannedWorkouts)
 
                 save(
                     DayCustomization(
                         programId = programId,
                         weekNumber = weekNumber,
                         dayNumber = dayNumber,
-                        sessions = sanitizedSessions,
+                        plannedWorkouts = sanitizedWorkouts,
                         lastModifiedAt = serverMs ?: System.currentTimeMillis(),
                         isUserModified = false
                     )
                 )
                 imported++
-                Log.d(TAG, "hydrateFromBackend: IMPORTED $dayKey (${sanitizedSessions.size} sessions)")
+                Log.d(TAG, "hydrateFromBackend: IMPORTED $dayKey (${sanitizedWorkouts.size} workouts)")
             } catch (e: Exception) {
                 Log.w(TAG, "hydrateFromBackend: FAILED to parse $dayKey", e)
             }
         }
-        Log.d(TAG, "hydrateFromBackend: done — imported $imported day(s) for programId=$programId")
+        Log.d(TAG, "hydrateFromBackend: done � imported $imported day(s) for programId=$programId")
     }
 
-    // ═══════════════════════════════════════════════════════════
+    // ???????????????????????????????????????????????????????????
     // Helpers
-    // ═══════════════════════════════════════════════════════════
+    // ???????????????????????????????????????????????????????????
 
-    /**
-     * Gson can deserialize items with missing keys; [ProgramSessionItem] uses non-null lists with defaults.
-     * Kept as a single place to normalize items if we add more list fields later.
-     */
-    private fun ProgramSessionItem.sanitizeGsonLists(): ProgramSessionItem = this
+    private fun WorkoutLineItem.sanitizeGsonLists(): WorkoutLineItem = this
 
-    private fun sanitizeSessions(sessions: List<CustomizedSession>): List<CustomizedSession> =
-        sessions.map { session ->
-            session.copy(items = session.items.map { it.sanitizeGsonLists() })
+    private fun sanitizePlannedWorkouts(workouts: List<CustomizedPlannedWorkout>): List<CustomizedPlannedWorkout> =
+        workouts.map { workout ->
+            workout.copy(items = workout.items.map { it.sanitizeGsonLists() })
         }
 
     private fun sanitizeDayCustomization(d: DayCustomization): DayCustomization =
-        d.copy(sessions = sanitizeSessions(d.sessions))
+        d.copy(plannedWorkouts = sanitizePlannedWorkouts(d.plannedWorkouts))
 
     private fun buildKey(programId: String, weekNumber: Int, dayNumber: Int): String {
         return "${KEY_PREFIX}${programId}_${weekNumber}_${dayNumber}"

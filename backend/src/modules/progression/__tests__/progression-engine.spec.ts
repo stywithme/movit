@@ -29,7 +29,7 @@ describe('Archetype Defaults', () => {
     expect(ws!.repAxis!.cap).toBe(12);
     expect(ws!.loadAxis!.step).toBe(2.5);
     expect(ws!.qualityGate.minFormScore).toBe(70);
-    expect(ws!.promotionPolicy.requiredStreakSessions).toBe(2);
+    expect(ws!.promotionPolicy.requiredStreakWorkouts).toBe(2);
     expect(ws!.regressionPolicy.maxFormScore).toBe(55);
   });
 
@@ -55,7 +55,7 @@ describe('Archetype Defaults', () => {
     const mr = getArchetypeDefaults('mobility_rom');
     expect(mr).not.toBeNull();
     expect(mr!.qualityGate.minROM).toBe(70);
-    expect(mr!.promotionPolicy.requiredStreakSessions).toBe(3);
+    expect(mr!.promotionPolicy.requiredStreakWorkouts).toBe(3);
   });
 
   it('should return correct defaults for motor_control', () => {
@@ -242,7 +242,7 @@ describe('Scenario: Weighted Strength full journey', () => {
   it('Phase 1: reps should increase from 8 to 12 before load progresses', () => {
     let currentReps = repAxis.default; // 8
 
-    for (let session = 0; session < 4; session++) {
+    for (let run = 0; run < 4; run++) {
       const result = applyAxisStep(currentReps, repAxis, 'up');
       currentReps = result.newValue;
     }
@@ -327,13 +327,13 @@ describe('Scenario: Isometric Hold duration progression', () => {
   });
 });
 
-// ── Scenario: mobility_rom requires 3 sessions ──
+// ── Scenario: mobility_rom requires 3 workout executions ──
 
 describe('Scenario: Mobility ROM requires longer streak', () => {
   const defaults = getArchetypeDefaults('mobility_rom')!;
 
-  it('should require 3 consecutive qualifying sessions', () => {
-    expect(defaults.promotionPolicy.requiredStreakSessions).toBe(3);
+  it('should require 3 consecutive qualifying workout executions', () => {
+    expect(defaults.promotionPolicy.requiredStreakWorkouts).toBe(3);
   });
 
   it('should have ROM quality gate', () => {

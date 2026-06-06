@@ -34,16 +34,16 @@ class TrainingPreferenceDialogs(
     var hasShownPreTrainingDialog: Boolean = false
 
     /**
-     * Session mode: new exercise/set — allow weight dialog again.
+     * Workout mode: new exercise/set — allow weight dialog again.
      */
-    fun resetSessionWeightDialogFlag() {
+    fun resetWorkoutWeightDialogFlag() {
         hasShownWeightDialog = false
     }
 
     /**
-     * Session mode only: confirm weight before set (legacy dialog).
+     * Workout mode only: confirm weight before set (legacy dialog).
      */
-    fun maybeShowSessionWeightDialog() {
+    fun maybeShowWorkoutWeightDialog() {
         val config = host.viewModel.exerciseConfig.value ?: return
         if (!config.supportsWeight || hasShownWeightDialog) return
 
@@ -96,13 +96,13 @@ class TrainingPreferenceDialogs(
             }
 
             inputLayout.error = null
-            host.viewModel.updateSessionWeight(parsed, "kg")
+            host.viewModel.updateWorkoutWeight(parsed, "kg")
             isWeightDialogVisible = false
             dialog.dismiss()
         }
 
         btnCancel.setOnClickListener {
-            host.viewModel.updateSessionWeight(null, "kg")
+            host.viewModel.updateWorkoutWeight(null, "kg")
             isWeightDialogVisible = false
             dialog.dismiss()
         }
@@ -337,7 +337,7 @@ class TrainingPreferenceDialogs(
     /**
      * Multi-set weighted exercise: collect per-set weights (or same for all) before starting the first set.
      */
-    fun showSessionPerSetWeightDialogIfNeeded(
+    fun showWorkoutPerSetWeightDialogIfNeeded(
         totalSets: Int,
         suggestedWeight: Float?,
         minWeight: Float?,

@@ -15,9 +15,9 @@ Turn the bottom-nav Reports screen from a set of isolated charts into a coach-st
 - Entry point: `HistoryFragment` under the bottom-nav `Reports` item.
 - Android data source: `ReportRepository.getProgramMetrics(activeProgram.id, includeChildren = true)`.
 - Backend endpoint: `GET /api/mobile/reports/metrics`.
-- Current correction: the Reports hub must aggregate both `ProgramSessionReport` and `TrainingSession`.
+- Current correction: the Reports hub must aggregate both `PlannedWorkoutReport` and `WorkoutExecution`.
 - Program reports are included when the trainee is enrolled in a program.
-- Free single-exercise, quick-start, and workout/explore sessions are included even when no program is active.
+- Free single-exercise, quick-start, and workout/explore planned workouts are included even when no program is active.
 
 ## UX structure
 
@@ -34,9 +34,9 @@ Turn the bottom-nav Reports screen from a set of isolated charts into a coach-st
    - per-exercise score cards
    - strongest/weakest movement
    - recent trend and focus area
-4. Sessions
-   - session timeline
-   - drill-down into session reports
+4. Planned Workouts
+   - workout run timeline
+   - drill-down into planned workout reports
 5. Records
    - personal bests
    - milestones
@@ -49,11 +49,11 @@ Turn the bottom-nav Reports screen from a set of isolated charts into a coach-st
 - `CoachInsightCard`: short coaching insight with action.
 - `TrendChartCard`: reusable chart shell with metric selector.
 - `ExerciseProgressCard`: exercise score, trend, reps, and focus area.
-- `SessionTimelineCard`: date, duration, form score, best/weakest exercise.
+- `Planned WorkoutTimelineCard`: date, duration, form score, best/weakest exercise.
 - `StateDistributionBar`: perfect/normal/warning/danger distribution.
 - `MilestoneBadge`: shareable achievement card.
 
-Reuse report-session components where possible:
+Reuse workout-report components where possible:
 
 - `HeroSection`
 - `PerformanceCard`
@@ -80,7 +80,7 @@ Suggested response groups:
 - `summary`
 - `trends`
 - `exerciseBreakdown`
-- `sessionTimeline`
+- `workoutTimeline`
 - `records`
 - `insights`
 
@@ -93,11 +93,11 @@ Suggested response groups:
    - Move from `HistoryFragment` naming to `ReportsFragment`.
    - Keep bottom-nav behavior stable.
 3. Add dashboard data contract.
-   - Backend aggregates `ProgramSessionReport` and `TrainingSession`.
+   - Backend aggregates `PlannedWorkoutReport` and `WorkoutExecution`.
    - Android adds typed models and repository methods.
 4. Build the new dashboard feed.
    - Start with Overview and Exercises.
    - Add drill-down cards after the data contract is stable.
-5. Add session/exercise detail navigation.
-   - Open existing `SessionReportActivity` where possible.
+5. Add workout/exercise detail navigation.
+   - Open existing `WorkoutReportActivity` where possible.
    - Add exercise-level report screen for longitudinal analysis.

@@ -51,7 +51,7 @@
 │  ▓▓▓▓▓▓░░░░░░░░  Day 3 of 7        │
 │                                      │
 │  ┌────────────────────────────────┐  │
-│  │     ▶  Start Today's Session  │  │
+│  │     ▶  Start Today's Workout  │  │
 │  └────────────────────────────────┘  │
 │                                      │
 └──────────────────────────────────────┘
@@ -328,7 +328,7 @@ Week 2 of 4 · You're doing great!
 ┌──────────────────────────────────────┐
 │  ─── Day 3 — Upper Body ──────      │
 │                                      │
-│  Morning Session          ✅ Done    │
+│  Morning Planned Workout          ✅ Done    │
 │  3 exercises · 12 min               │
 │  "You nailed it!"                    │
 │  [View Summary]                      │
@@ -337,7 +337,7 @@ Week 2 of 4 · You're doing great!
 │                                      │
 │  Evening Stretch        ○ Not done   │
 │  2 exercises · 5 min                │
-│  [Start Session]                     │
+│  [Start Workout]                     │
 │                                      │
 └──────────────────────────────────────┘
 ```
@@ -349,7 +349,7 @@ Week 2 of 4 · You're doing great!
 
 ---
 
-## 4. Session Detail (ProgramSessionActivity)
+## 4. Planned Workout Detail (ProgramWorkoutActivity)
 
 ### قبل بدء الجلسة
 
@@ -357,7 +357,7 @@ Week 2 of 4 · You're doing great!
 
 ```
 ┌──────────────────────────────────────┐
-│  ← Morning Session                   │
+│  ← Morning Planned Workout                   │
 │     Week 2 · Day 3                   │
 │                                      │
 │  ┌────────────────────────────────┐  │
@@ -388,7 +388,7 @@ Week 2 of 4 · You're doing great!
 - **"Your AI coach will guide you"**: طمأنة أن التطبيق سيقوده خطوة بخطوة
 - **"rounds" بدل "sets × reps"**: لغة أبسط
 - **"Customize" كرابط ثانوي**: معظم المبتدئين لن يحتاجوا التعديل. ليس زر رئيسي
-- **"Let's Go!"** بدل "Start Session": أكثر حماسة وأقل رسمية
+- **"Let's Go!"** بدل "Start Workout": أكثر حماسة وأقل رسمية
 
 ### وضع التعديل (Customize Mode)
 
@@ -504,11 +504,11 @@ Week 2 of 4 · You're doing great!
 - **"Getting tired (totally normal!)"** — بدل "88% accuracy" يعني أنه تعب (وهذا طبيعي)
 - **نصيحة عملية واحدة**: بدل "Most common error: Elbow angle" التقنية — نصيحة بسيطة يقدر ينفذها
 
-### 6B. Session Summary (شاشة كاملة) — بعد انتهاء الجلسة
+### 6B. Planned Workout Summary (شاشة كاملة) — بعد انتهاء الجلسة
 
 ```
 ┌──────────────────────────────────────┐
-│       🎉 Session Complete!           │
+│       🎉 Workout Complete!           │
 │                                      │
 │  "You showed up and gave it your     │
 │   all. That's what champions do."    │
@@ -528,7 +528,7 @@ Week 2 of 4 · You're doing great!
 │  Plank        ⭐ Solid               │
 │  ▓▓▓▓▓▓▓░░░  2/2 rounds             │
 │                                      │
-│  ── Your next session ──            │
+│  ── Your next planned workout ──            │
 │  Tomorrow: Lower Body · 5 exercises  │
 │                                      │
 │  [    Back to Program    ]           │
@@ -591,7 +591,7 @@ Week 2 of 4 · You're doing great!
 ### 7A. Micro-celebrations (كما هي — ممتازة في الخطة الأصلية)
 - عند إكمال Round: ✅ مع اهتزاز خفيف
 - عند إكمال Exercise: "Exercise Done!" مع صوت خفيف
-- عند إكمال Session: 🎉 مع confetti animation
+- عند إكمال Planned Workout: 🎉 مع confetti animation
 - عند إكمال Day: شارة اليوم تتحول لأخضر مع animation
 - عند إكمال Week: 🏆 بطاقة خاصة
 
@@ -687,14 +687,14 @@ Week 2 of 4 · You're doing great!
 Programs Tab
 │
 ├── [Active Program Dashboard]
-│   ├── Coach Card → CTA → TrainingActivity (session mode)
+│   ├── Coach Card → CTA → TrainingActivity (workout run mode)
 │   │
 │   ├── Week Strip → Day Detail Bottom Sheet
-│   │   └── Session → ProgramSessionActivity
+│   │   └── Planned Workout → ProgramWorkoutActivity
 │   │       ├── Customize (basic) → rounds +/-
 │   │       ├── Customize (advanced) → Add/Replace/Drag/Delete
-│   │       └── Let's Go! → TrainingActivity (session mode)
-│   │           └── Session Complete → Session Summary
+│   │       └── Let's Go! → TrainingActivity (workout run mode)
+│   │           └── Workout Complete → Planned Workout Summary
 │   │               ├── Back to Programs Tab
 │   │               └── Share Achievement
 │   │
@@ -705,7 +705,7 @@ Programs Tab
 │   │
 │   └── Program Card (expand) → View Full Program → Program Detail
 │       ├── Week → Day Detail
-│       │   └── Session → ProgramSessionActivity
+│       │   └── Planned Workout → ProgramWorkoutActivity
 │       └── Weekly Summary
 │
 ├── [No Active Program]
@@ -734,9 +734,9 @@ Programs Tab
 | Today's Plan Timeline | غير موجود | خط زمني بالتمارين مع حالات |
 | Motivation Strip | غير موجود | Streak + رسالة تحفيزية ديناميكية |
 | Day Detail | شاشة كاملة منفصلة | Bottom Sheet سريع |
-| ProgramSessionActivity | Edit mode أساسي | مستويان: Basic (rounds +/-) + Advanced (full edit) |
+| ProgramWorkoutActivity | Edit mode أساسي | مستويان: Basic (rounds +/-) + Advanced (full edit) |
 | Exercise Summary | غير موجود | Bottom Sheet بسيط وإيجابي |
-| Session Summary | أساسي | محسَّن: عاطفي أولاً + تقييم بالكلمات |
+| Planned Workout Summary | أساسي | محسَّن: عاطفي أولاً + تقييم بالكلمات |
 | Weekly Summary | أساسي | محسَّن: سردي + مقارنة بجملة |
 | Replace Exercise Sheet | غير موجود | مصنف بالصعوبة + توصية للمبتدئين |
 | No Active Program | شاشة فارغة | Onboarding لطيف مع زر واحد |
@@ -770,7 +770,7 @@ Programs Tab
 > **الهدف**: بعد كل جلسة، يشعر المستخدم بالإنجاز
 
 10. Exercise Summary Bottom Sheet (عاطفي)
-11. Session Summary (محسَّن — Emotion First)
+11. Planned Workout Summary (محسَّن — Emotion First)
 12. Weekly Summary مع المقارنة السردية
 
 ### المرحلة 4 — التحفيز ومعالجة الصعوبات

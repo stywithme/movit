@@ -1,4 +1,4 @@
-import type { LoadCapability, MovementPattern, Prisma, PrismaClient } from '@prisma/client';
+﻿import type { LoadCapability, MovementPattern, Prisma, PrismaClient } from '@prisma/client';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import {
@@ -39,7 +39,7 @@ export async function seedExercisesAndWorkouts(
 
   console.log(`📁 Seed assets dir: ${assetsDir}`);
   const exercisesFromDbDir = path.join(assetsDir, 'exercises-from-db');
-  const workoutsDir = path.join(assetsDir, 'workouts');
+  const workoutsDir = path.join(assetsDir, 'workout_templates');
 
   const attributeValues = await prisma.attributeValue.findMany();
   const attributeValueByCode = new Map(attributeValues.map((value) => [value.code, value]));
@@ -367,7 +367,7 @@ export async function seedExercisesAndWorkouts(
 
     const slug = path.basename(file, '.json');
 
-    const workoutRecord = await prisma.workout.upsert({
+    const workoutRecord = await prisma.workoutTemplate.upsert({
       where: { slug },
       update: {
         name: workoutJson.name,
@@ -384,8 +384,8 @@ export async function seedExercisesAndWorkouts(
       },
     });
 
-    await prisma.workoutExercise.deleteMany({
-      where: { workoutId: workoutRecord.id },
+    await prisma.workoutTemplateExercise.deleteMany({
+      where: { workoutTemplateId: workoutRecord.id },
     });
 
     for (let index = 0; index < workoutJson.exercises.length; index++) {
@@ -404,9 +404,9 @@ export async function seedExercisesAndWorkouts(
         ? 0
         : workoutJson.restBetweenExercisesMs ?? 60000;
 
-      await prisma.workoutExercise.create({
+      await prisma.workoutTemplateExercise.create({
         data: {
-          workoutId: workoutRecord.id,
+          workoutTemplateId: workoutRecord.id,
           exerciseId: exerciseRecord.id,
           variantIndex: exerciseEntry.variantIndex ?? 0,
           difficulty: exerciseEntry.difficulty ?? 'beginner',

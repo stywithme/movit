@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui.train
+﻿package com.trainingvalidator.poc.ui.train
 
 import android.os.Handler
 import android.os.Looper
@@ -7,7 +7,7 @@ import com.trainingvalidator.poc.storage.ReportStorage
 import com.trainingvalidator.poc.training.engine.Phase
 import com.trainingvalidator.poc.training.report.BestWorstReplayPipeline
 import com.trainingvalidator.poc.training.report.FrameCaptureManager
-import com.trainingvalidator.poc.training.session.SessionState
+import com.trainingvalidator.poc.training.workout.WorkoutRunState
 
 /**
  * [FrameCaptureManager] and [ReportStorage] init, rep-wide replay sampling, peak / error / danger
@@ -28,7 +28,7 @@ class TrainingFrameCaptureController(
     private val repWideReplayRunnable = object : Runnable {
         override fun run() {
             if (!repWideReplayScheduled) return
-            if (host.viewModel.supervisor.state.value != SessionState.TRAINING || host.viewModel.isHoldExercise()) {
+            if (host.viewModel.supervisor.state.value != WorkoutRunState.TRAINING || host.viewModel.isHoldExercise()) {
                 repWideReplayScheduled = false
                 return
             }
@@ -49,13 +49,13 @@ class TrainingFrameCaptureController(
         lastCapturedPhase = null
         val id = java.util.UUID.randomUUID().toString()
         host.frameCaptureManager = FrameCaptureManager(host, id)
-        host.frameCaptureManager?.cleanupOldSessions(5)
+        host.frameCaptureManager?.cleanupOldWorkouts(5)
         host.reportStorage = ReportStorage(host)
     }
 
     fun resetForNextExercise() {
         val newId = java.util.UUID.randomUUID().toString()
-        Log.d(TrainingActivity.TAG, "Resetting FrameCaptureManager for next exercise: sessionId=$newId")
+        Log.d(TrainingActivity.TAG, "Resetting FrameCaptureManager for next exercise: workoutId=$newId")
         lastCapturedPhase = null
         host.frameCaptureManager = FrameCaptureManager(host, newId)
     }
@@ -91,7 +91,7 @@ class TrainingFrameCaptureController(
     }
 
     fun capturePeakFrame(phase: Phase) {
-        if (host.viewModel.supervisor.state.value != SessionState.TRAINING) {
+        if (host.viewModel.supervisor.state.value != WorkoutRunState.TRAINING) {
             return
         }
         getBitmapForCapture()?.let { bmp ->
@@ -108,7 +108,7 @@ class TrainingFrameCaptureController(
     }
 
     fun captureErrorFrame(repNumber: Int, phase: Phase, errorKey: String) {
-        if (host.viewModel.supervisor.state.value != SessionState.TRAINING) {
+        if (host.viewModel.supervisor.state.value != WorkoutRunState.TRAINING) {
             return
         }
         getBitmapForCapture()?.let { bmp ->
@@ -127,7 +127,7 @@ class TrainingFrameCaptureController(
     }
 
     fun captureDangerFrame(repNumber: Int, phase: Phase, jointCode: String, actualAngle: Double) {
-        if (host.viewModel.supervisor.state.value != SessionState.TRAINING) {
+        if (host.viewModel.supervisor.state.value != WorkoutRunState.TRAINING) {
             return
         }
         getBitmapForCapture()?.let { bmp ->

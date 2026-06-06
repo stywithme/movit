@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui.home
+﻿package com.trainingvalidator.poc.ui.home
 
 import android.content.Intent
 import android.os.Bundle
@@ -21,7 +21,7 @@ import com.trainingvalidator.poc.ui.level.LevelProfileActivity
 import com.trainingvalidator.poc.ui.main.MainContainerActivity
 import com.trainingvalidator.poc.ui.programs.PlanOverviewActivity
 import com.trainingvalidator.poc.ui.programs.ProgramDetailActivity
-import com.trainingvalidator.poc.ui.programs.ProgramSessionActivity
+import com.trainingvalidator.poc.ui.programs.ProgramWorkoutActivity
 import com.trainingvalidator.poc.ui.utils.bindUserAvatar
 import com.trainingvalidator.poc.ui.utils.currentLanguage
 import java.util.Calendar
@@ -36,7 +36,7 @@ import kotlinx.coroutines.launch
  * States handled:
  *   no_assessment   → Prominent Body Scan CTA, Explore available
  *   no_plan         → Assessment done, generating plan message
- *   active          → Today's session card with START button
+ *   active          → Today's workout card with START button
  *   rest_day        → Rest day card with recovery tip
  *   program_complete→ Level Up Challenge — reassessment prompt
  *   reassessment_due→ Reassessment banner
@@ -102,7 +102,7 @@ class HomeFragment : Fragment() {
         if (_binding != null) {
             setupGreeting()
             // Always sync from server on resume to reflect latest state
-            // (e.g. after Body Scan, after a training session, after plan enrollment)
+            // (e.g. after Body Scan, after a workout, after plan enrollment)
             viewLifecycleOwner.lifecycleScope.launch {
                 try {
                     homeRepository.syncFromServer()?.let {
@@ -217,11 +217,11 @@ class HomeFragment : Fragment() {
         val stats = data.stats
         val legacyStats = data.userStats
 
-        val sessions = stats?.thisWeekSessions ?: legacyStats?.weeklyWorkouts ?: 0
+        val weeklyWorkouts = stats?.thisWeekExecutions ?: legacyStats?.weeklyPlannedWorkouts ?: 0
         val formScore = stats?.avgFormScore ?: legacyStats?.avgFormScore?.toInt() ?: 0
         val streak = stats?.streak ?: legacyStats?.streak ?: 0
 
-        binding.tvWeeklyWorkouts.text = "$sessions"
+        binding.tvWeeklyWorkouts.text = "$weeklyWorkouts"
         binding.tvFormScore.text = if (formScore > 0) "$formScore%" else "--"
         binding.tvStreak.text = if (streak > 0) "$streak\uD83D\uDD25" else "0"
     }
@@ -260,7 +260,7 @@ class HomeFragment : Fragment() {
         binding.btnStartTodayPlan.setOnClickListener {
             startActivity(PreScreeningActivity.createIntent(requireContext()))
         }
-        binding.tvSessionProgress.visibility = View.GONE
+        binding.tvWorkoutProgress.visibility = View.GONE
     }
 
     private fun renderNoPlanState() {
@@ -274,7 +274,7 @@ class HomeFragment : Fragment() {
 
     private fun renderActiveState(trainMode: TrainModeData, language: String) {
         val program = trainMode.activeProgram
-        val session = trainMode.todaySession
+        val todayWorkout = trainMode.todayWorkout
 
         // Active program card
         if (program != null) {
@@ -296,9 +296,8 @@ class HomeFragment : Fragment() {
             binding.cardActiveProgram.visibility = View.GONE
         }
 
-        // Today's session card
-        if (session != null) {
-            val sessionName = session.name[language] ?: session.name["en"] ?: ""
+        if (todayWorkout != null) {
+            val workoutName = todayWorkout.name[language] ?: todayWorkout.name["en"] ?: ""
             binding.cardTodayPlan.visibility = View.VISIBLE
             binding.tvTodayPlanLabel.text = getString(R.string.today_plan)
             binding.tvTodayPlanTitle.text = getString(
@@ -306,32 +305,31 @@ class HomeFragment : Fragment() {
                 program?.weekNumber ?: 1,
                 program?.dayNumber ?: 1
             )
-            binding.tvTodayPlanSubtitle.text = if (session.estimatedMinutes != null) {
+            binding.tvTodayPlanSubtitle.text = if (todayWorkout.estimatedMinutes != null) {
                 getString(
-                    R.string.today_plan_session_with_time_format,
-                    sessionName,
-                    session.exerciseCount,
-                    session.estimatedMinutes
+                    R.string.today_plan_workout_with_time_format,
+                    workoutName,
+                    todayWorkout.exerciseCount,
+                    todayWorkout.estimatedMinutes
                 )
             } else {
-                getString(R.string.today_plan_session_format, sessionName, session.exerciseCount)
+                getString(R.string.today_plan_workout_format, workoutName, todayWorkout.exerciseCount)
             }
             binding.btnStartTodayPlan.visibility = View.VISIBLE
-            binding.btnStartTodayPlan.text = getString(R.string.start_session)
+            binding.btnStartTodayPlan.text = getString(R.string.start_workout)
             binding.btnStartTodayPlan.setOnClickListener {
-                navigateToSession(session.sessionId, program, trainMode)
+                navigateToPlannedWorkout(todayWorkout.plannedWorkoutId, program, trainMode)
             }
 
-            // Show session progress if multiple sessions
-            if (session.allSessionsCount > 1) {
-                binding.tvSessionProgress.visibility = View.VISIBLE
-                binding.tvSessionProgress.text = getString(
-                    R.string.session_progress_format,
-                    session.completedSessionsCount,
-                    session.allSessionsCount
+            if (todayWorkout.allWorkoutsCount > 1) {
+                binding.tvWorkoutProgress.visibility = View.VISIBLE
+                binding.tvWorkoutProgress.text = getString(
+                    R.string.workout_progress_format,
+                    todayWorkout.completedWorkoutsCount,
+                    todayWorkout.allWorkoutsCount
                 )
             } else {
-                binding.tvSessionProgress.visibility = View.GONE
+                binding.tvWorkoutProgress.visibility = View.GONE
             }
             bindCatchUpUi(trainMode, program)
         } else {
@@ -371,7 +369,7 @@ class HomeFragment : Fragment() {
                 R.string.rest_day_subtitle
         )
         binding.btnStartTodayPlan.visibility = View.GONE
-        binding.tvSessionProgress.visibility = View.GONE
+        binding.tvWorkoutProgress.visibility = View.GONE
         bindCatchUpUi(trainMode, program)
     }
 
@@ -395,7 +393,7 @@ class HomeFragment : Fragment() {
         binding.btnStartTodayPlan.setOnClickListener {
             startActivity(PreScreeningActivity.createIntent(requireContext(), AssessmentType.PROGRESSION))
         }
-        binding.tvSessionProgress.visibility = View.GONE
+        binding.tvWorkoutProgress.visibility = View.GONE
     }
 
     private fun renderReassessmentDueState() {
@@ -409,7 +407,7 @@ class HomeFragment : Fragment() {
         binding.btnStartTodayPlan.setOnClickListener {
             startActivity(PreScreeningActivity.createIntent(requireContext(), AssessmentType.PROGRESSION))
         }
-        binding.tvSessionProgress.visibility = View.GONE
+        binding.tvWorkoutProgress.visibility = View.GONE
     }
 
     // ── Legacy mode (before API upgrade) ─────────────────────────────────────
@@ -439,10 +437,10 @@ class HomeFragment : Fragment() {
         }
 
         val currentProgram = data.todayPlan?.currentProgram
-        if (currentProgram != null && !currentProgram.isRestDay && currentProgram.sessions.isNotEmpty()) {
-            val firstSession = currentProgram.sessions.firstOrNull { !it.isCompleted }
-            if (firstSession != null && programInfo != null) {
-                val sessionName = firstSession.name[language] ?: firstSession.name["en"] ?: ""
+        if (currentProgram != null && !currentProgram.isRestDay && currentProgram.plannedWorkouts.isNotEmpty()) {
+            val firstPlannedWorkout = currentProgram.plannedWorkouts.firstOrNull { !it.isCompleted }
+            if (firstPlannedWorkout != null && programInfo != null) {
+                val workoutName = firstPlannedWorkout.name[language] ?: firstPlannedWorkout.name["en"] ?: ""
                 binding.cardTodayPlan.visibility = View.VISIBLE
                 binding.tvTodayPlanTitle.text = getString(
                     R.string.today_plan_title_format,
@@ -450,16 +448,16 @@ class HomeFragment : Fragment() {
                     currentProgram.dayNumber
                 )
                 binding.tvTodayPlanSubtitle.text =
-                    getString(R.string.today_plan_session_format, sessionName, firstSession.itemCount)
+                    getString(R.string.today_plan_workout_format, workoutName, firstPlannedWorkout.itemCount)
                 binding.btnStartTodayPlan.visibility = View.VISIBLE
                 binding.btnStartTodayPlan.setOnClickListener {
                     startActivity(
-                        Intent(requireContext(), ProgramSessionActivity::class.java).apply {
-                            putExtra(ProgramSessionActivity.EXTRA_PROGRAM_SLUG, programInfo.slug)
-                            putExtra(ProgramSessionActivity.EXTRA_PROGRAM_ID, programInfo.id)
-                            putExtra(ProgramSessionActivity.EXTRA_WEEK_NUMBER, currentProgram.weekNumber)
-                            putExtra(ProgramSessionActivity.EXTRA_DAY_NUMBER, currentProgram.dayNumber)
-                            putExtra(ProgramSessionActivity.EXTRA_TARGET_SESSION_ID, firstSession.id)
+                        Intent(requireContext(), ProgramWorkoutActivity::class.java).apply {
+                            putExtra(ProgramWorkoutActivity.EXTRA_PROGRAM_SLUG, programInfo.slug)
+                            putExtra(ProgramWorkoutActivity.EXTRA_PROGRAM_ID, programInfo.id)
+                            putExtra(ProgramWorkoutActivity.EXTRA_WEEK_NUMBER, currentProgram.weekNumber)
+                            putExtra(ProgramWorkoutActivity.EXTRA_DAY_NUMBER, currentProgram.dayNumber)
+                            putExtra(ProgramWorkoutActivity.EXTRA_TARGET_WORKOUT_ID, firstPlannedWorkout.id)
                         }
                     )
                 }
@@ -503,8 +501,8 @@ class HomeFragment : Fragment() {
 
     // ── Navigation ────────────────────────────────────────────────────────────
 
-    private fun navigateToSession(
-        sessionId: String,
+    private fun navigateToPlannedWorkout(
+        workoutId: String,
         program: com.trainingvalidator.poc.network.TrainActiveProgramData?,
         trainMode: TrainModeData
     ) {
@@ -518,12 +516,12 @@ class HomeFragment : Fragment() {
 
         if (programInfo != null) {
             startActivity(
-                Intent(requireContext(), ProgramSessionActivity::class.java).apply {
-                    putExtra(ProgramSessionActivity.EXTRA_PROGRAM_SLUG, programInfo.slug)
-                    putExtra(ProgramSessionActivity.EXTRA_PROGRAM_ID, programInfo.id)
-                    putExtra(ProgramSessionActivity.EXTRA_WEEK_NUMBER, weekNumber)
-                    putExtra(ProgramSessionActivity.EXTRA_DAY_NUMBER, dayNumber)
-                    putExtra(ProgramSessionActivity.EXTRA_TARGET_SESSION_ID, sessionId)
+                Intent(requireContext(), ProgramWorkoutActivity::class.java).apply {
+                    putExtra(ProgramWorkoutActivity.EXTRA_PROGRAM_SLUG, programInfo.slug)
+                    putExtra(ProgramWorkoutActivity.EXTRA_PROGRAM_ID, programInfo.id)
+                    putExtra(ProgramWorkoutActivity.EXTRA_WEEK_NUMBER, weekNumber)
+                    putExtra(ProgramWorkoutActivity.EXTRA_DAY_NUMBER, dayNumber)
+                    putExtra(ProgramWorkoutActivity.EXTRA_TARGET_WORKOUT_ID, workoutId)
                 }
             )
         } else {
@@ -582,7 +580,7 @@ class HomeFragment : Fragment() {
             binding.btnCatchUpOpen.visibility = View.VISIBLE
             binding.btnCatchUpOpen.setOnClickListener {
                 val slot = catch.missedSlots.first()
-                navigateToProgramDay(program, slot.weekNumber, slot.dayNumber, sessionId = null)
+                navigateToProgramDay(program, slot.weekNumber, slot.dayNumber, workoutId = null)
             }
         } else {
             binding.tvCatchUpHint.visibility = View.GONE
@@ -594,20 +592,20 @@ class HomeFragment : Fragment() {
         @Suppress("UNUSED_PARAMETER") program: com.trainingvalidator.poc.network.TrainActiveProgramData,
         weekNumber: Int,
         dayNumber: Int,
-        sessionId: String?
+        workoutId: String?
     ) {
         val cachedData = homeRepository.getCachedData()
         val activePlanProgram = cachedData?.activePlan?.programs?.firstOrNull { it.status == "active" }
         val programInfo = activePlanProgram?.program
         if (programInfo != null) {
             startActivity(
-                Intent(requireContext(), ProgramSessionActivity::class.java).apply {
-                    putExtra(ProgramSessionActivity.EXTRA_PROGRAM_SLUG, programInfo.slug)
-                    putExtra(ProgramSessionActivity.EXTRA_PROGRAM_ID, programInfo.id)
-                    putExtra(ProgramSessionActivity.EXTRA_WEEK_NUMBER, weekNumber)
-                    putExtra(ProgramSessionActivity.EXTRA_DAY_NUMBER, dayNumber)
-                    if (sessionId != null) {
-                        putExtra(ProgramSessionActivity.EXTRA_TARGET_SESSION_ID, sessionId)
+                Intent(requireContext(), ProgramWorkoutActivity::class.java).apply {
+                    putExtra(ProgramWorkoutActivity.EXTRA_PROGRAM_SLUG, programInfo.slug)
+                    putExtra(ProgramWorkoutActivity.EXTRA_PROGRAM_ID, programInfo.id)
+                    putExtra(ProgramWorkoutActivity.EXTRA_WEEK_NUMBER, weekNumber)
+                    putExtra(ProgramWorkoutActivity.EXTRA_DAY_NUMBER, dayNumber)
+                    if (workoutId != null) {
+                        putExtra(ProgramWorkoutActivity.EXTRA_TARGET_WORKOUT_ID, workoutId)
                     }
                 }
             )

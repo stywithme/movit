@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -10,10 +10,10 @@ import { AttributesModule } from './modules/attributes/attributes.module';
 import { PosePositionsModule } from './modules/pose-positions/pose-positions.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ExercisesModule } from './modules/exercises/exercises.module';
-import { WorkoutsModule } from './modules/workouts/workouts.module';
+import { WorkoutTemplatesModule } from './modules/workout-templates/workout-templates.module';
 import { ProgramsModule } from './modules/programs/programs.module';
 import { MessagesModule } from './modules/messages/messages.module';
-import { TrainingSessionsModule } from './modules/training-sessions/training-sessions.module';
+import { WorkoutExecutionsModule } from './modules/workout-executions/workout-executions.module';
 import { MobileSyncModule } from './modules/mobile-sync/mobile-sync.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { AiModule } from './modules/ai/ai.module';
@@ -60,10 +60,10 @@ import { TrainingProfileModule } from './modules/training-profile/training-profi
     PosePositionsModule,
     AuthModule,
     ExercisesModule,
-    WorkoutsModule,
+    WorkoutTemplatesModule,
     ProgramsModule,
     MessagesModule,
-    TrainingSessionsModule,
+    WorkoutExecutionsModule,
     MobileSyncModule,
     UploadsModule,
     AiModule,

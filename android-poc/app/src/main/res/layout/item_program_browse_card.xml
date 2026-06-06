@@ -117,7 +117,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@color/text_hint"
-                    tools:text="4 weeks · 12 sessions · ~20 min/day" />
+                    tools:text="4 weeks · 12 workouts · ~20 min/day" />
             </LinearLayout>
 
             <!-- Action Buttons -->

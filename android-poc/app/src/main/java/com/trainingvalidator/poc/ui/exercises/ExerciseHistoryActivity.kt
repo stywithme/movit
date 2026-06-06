@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui.exercises
+﻿package com.trainingvalidator.poc.ui.exercises
 
 import android.os.Bundle
 import android.util.Log
@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * ExerciseHistoryActivity — Detailed exercise history with performance charts.
+ * ExerciseHistoryActivity â€” Detailed exercise history with performance charts.
  * Uses the unified reports endpoint with scope=exercise.
  */
 class ExerciseHistoryActivity : AppCompatActivity() {
@@ -82,7 +82,7 @@ class ExerciseHistoryActivity : AppCompatActivity() {
                     if (comparison != null && comparison.formScoreDelta != null) {
                         val delta = comparison.formScoreDelta
                         binding.tvImprovementInsight.text =
-                            getString(R.string.session_report_improved_format, delta)
+                            getString(R.string.workout_report_improved_format, delta)
                         binding.tvImprovementInsight.setTextColor(
                             getColor(if (delta >= 0) R.color.success else R.color.error)
                         )

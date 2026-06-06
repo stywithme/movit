@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Programs Validation
  * ====================
  * Validation helpers for program data.
@@ -7,17 +7,17 @@
 import type {
   CreateProgramInput,
   ProgramDayInput,
-  ProgramSessionInput,
-  ProgramSessionItemInput,
+  PlannedWorkoutInput,
+  PlannedWorkoutItemInput,
   ProgramWeekInput,
   UpdateProgramInput,
 } from './programs.types';
 
 const VALID_PROGRAM_ATTRIBUTE_MODES = ['REQUIRED', 'OPTIONAL', 'EXCLUDED'] as const;
 
-function validateSessionItem(item: ProgramSessionItemInput, index: number): string[] {
+function validatePlannedWorkoutItem(item: PlannedWorkoutItemInput, index: number): string[] {
   const errors: string[] = [];
-  const prefix = `Session item ${index + 1}`;
+  const prefix = `Planned workout item ${index + 1}`;
 
   if (!item.type || !['exercise', 'rest'].includes(item.type)) {
     errors.push(`${prefix}: type must be "exercise" or "rest"`);
@@ -61,17 +61,17 @@ function validateSessionItem(item: ProgramSessionItemInput, index: number): stri
   return errors;
 }
 
-function validateSession(session: ProgramSessionInput, index: number): string[] {
+function validatePlannedWorkout(plannedWorkout: PlannedWorkoutInput, index: number): string[] {
   const errors: string[] = [];
-  const prefix = `Session ${index + 1}`;
+  const prefix = `Planned workout ${index + 1}`;
 
-  if (!session.name?.en || !session.name?.ar) {
+  if (!plannedWorkout.name?.en || !plannedWorkout.name?.ar) {
     errors.push(`${prefix}: both Arabic and English names are required`);
   }
 
-  if (session.items && session.items.length > 0) {
-    session.items.forEach((item, itemIndex) => {
-      errors.push(...validateSessionItem(item, itemIndex));
+  if (plannedWorkout.items && plannedWorkout.items.length > 0) {
+    plannedWorkout.items.forEach((item, itemIndex) => {
+      errors.push(...validatePlannedWorkoutItem(item, itemIndex));
     });
   }
 
@@ -86,9 +86,9 @@ function validateDay(day: ProgramDayInput, index: number): string[] {
     errors.push(`${prefix}: dayNumber must be between 1 and 14`);
   }
 
-  if (day.sessions && day.sessions.length > 0) {
-    day.sessions.forEach((session, sessionIndex) => {
-      errors.push(...validateSession(session, sessionIndex));
+  if (day.plannedWorkouts && day.plannedWorkouts.length > 0) {
+    day.plannedWorkouts.forEach((plannedWorkout, workoutIndex) => {
+      errors.push(...validatePlannedWorkout(plannedWorkout, workoutIndex));
     });
   }
 
@@ -187,10 +187,10 @@ export function validateDayInput(input: ProgramDayInput): string[] {
   return validateDay(input, 0);
 }
 
-export function validateSessionInput(input: ProgramSessionInput): string[] {
-  return validateSession(input, 0);
+export function validatePlannedWorkoutInput(input: PlannedWorkoutInput): string[] {
+  return validatePlannedWorkout(input, 0);
 }
 
-export function validateSessionItemInput(input: ProgramSessionItemInput): string[] {
-  return validateSessionItem(input, 0);
+export function validatePlannedWorkoutItemInput(input: PlannedWorkoutItemInput): string[] {
+  return validatePlannedWorkoutItem(input, 0);
 }

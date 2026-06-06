@@ -22,10 +22,10 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_xs"
         android:textColor="@color/text_secondary"
-        tools:text="2 sessions" />
+        tools:text="2 workouts" />
 
     <LinearLayout
-        android:id="@+id/layoutDaySessions"
+        android:id="@+id/layoutDayWorkouts"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_md"

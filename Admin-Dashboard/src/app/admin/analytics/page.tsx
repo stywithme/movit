@@ -37,7 +37,7 @@ export default function AnalyticsOverviewPage() {
         <StatCard title="Total Users" value={formatNumber(metricValue(data?.kpis.totalUsers))} icon={<Users className="size-5" />} help={analyticsTerms.totalUsers} />
         <StatCard title="New Users" value={formatNumber(metricValue(data?.kpis.newUsers))} delta={metricDelta(data?.kpis.newUsers)} help={analyticsTerms.newUsers} />
         <StatCard title="Assessments" value={formatNumber(metricValue(data?.kpis.assessments))} delta={metricDelta(data?.kpis.assessments)} icon={<ClipboardCheck className="size-5" />} help={analyticsTerms.assessment} />
-        <StatCard title="Sessions" value={formatNumber(metricValue(data?.kpis.sessions))} delta={metricDelta(data?.kpis.sessions)} icon={<Activity className="size-5" />} help={analyticsTerms.sessions} />
+        <StatCard title="Workout Executions" value={formatNumber(metricValue(data?.kpis.workoutExecutions))} delta={metricDelta(data?.kpis.workoutExecutions)} icon={<Activity className="size-5" />} help={analyticsTerms.workoutExecutions} />
         <StatCard title="Revenue" value={formatCurrency(metricValue(data?.kpis.revenue))} delta={metricDelta(data?.kpis.revenue)} icon={<DollarSign className="size-5" />} help={analyticsTerms.revenue} />
         <StatCard title="Pro Users" value={formatNumber(metricValue(data?.kpis.proUsers))} help={analyticsTerms.proUsers} />
         <StatCard title="Active Users" value={formatNumber(metricValue(data?.kpis.activeUsers))} help={analyticsTerms.activeUsers} />
@@ -48,8 +48,8 @@ export default function AnalyticsOverviewPage() {
         <ChartCard title="Activation Funnel" description={`North Star: ${formatPercent(data?.northStar.rate)} achieved`} loading={loading} empty={!data?.activationFunnel?.length} help={analyticsTerms.activation}>
           <FunnelChart data={data?.activationFunnel ?? []} />
         </ChartCard>
-        <ChartCard title="Sessions Trend" loading={loading} empty={!data?.trends.sessions?.length} help={analyticsTerms.sessions}>
-          <LineTrend data={data?.trends.sessions ?? []} />
+        <ChartCard title="Workout Executions Trend" loading={loading} empty={!data?.trends.workoutExecutions?.length} help={analyticsTerms.workoutExecutions}>
+          <LineTrend data={data?.trends.workoutExecutions ?? []} />
         </ChartCard>
         <ChartCard title="Revenue Trend" loading={loading} empty={!data?.trends.revenue?.length} help={analyticsTerms.revenue}>
           <AreaTrend data={data?.trends.revenue ?? []} />

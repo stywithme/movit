@@ -48,7 +48,7 @@
                     android:layout_marginTop="4dp"
                     android:textColor="@color/text_secondary"
                     android:textSize="13sp"
-                    tools:text="5 Sessions • 2 Rest" />
+                    tools:text="5 workouts • 2 Rest" />
             </LinearLayout>
             
             <!-- A small chevron button -->
@@ -78,7 +78,7 @@
             android:layout_marginTop="8dp"
             android:textColor="@color/text_tertiary"
             android:textSize="11sp"
-            tools:text="Progress: 2/5 sessions" />
+            tools:text="Progress: 2/5 workouts" />
 
         <!-- Timeline of Days (Vertical List) -->
         <LinearLayout

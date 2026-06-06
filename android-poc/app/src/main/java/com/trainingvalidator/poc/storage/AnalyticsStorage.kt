@@ -1,23 +1,23 @@
-package com.trainingvalidator.poc.storage
+﻿package com.trainingvalidator.poc.storage
 
 import android.content.Context
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
-import com.trainingvalidator.poc.training.analytics.SessionUpload
+import com.trainingvalidator.poc.training.analytics.WorkoutUpload
 import java.io.*
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
 /**
- * AnalyticsStorage - Persistent storage for session analytics (offline sync)
+ * AnalyticsStorage - Persistent storage for workout execution analytics (offline sync)
  * 
  * OPTIMIZED VERSION: No raw frame data
  * 
  * Purpose:
- * - Temporarily store SessionUpload (metrics only) until synced to server
- * - Provide offline capability - sessions can be uploaded when online
- * - Lightweight: ~500 bytes per session (vs ~15KB with raw frames)
+ * - Temporarily store WorkoutUpload (metrics only) until synced to server
+ * - Provide offline capability - executions can be uploaded when online
+ * - Lightweight: ~500 bytes per execution (vs ~15KB with raw frames)
  * 
  * Storage Strategy:
  * - Pending sync → Compressed JSON files (.json.gz)
@@ -25,8 +25,8 @@ import java.util.zip.GZIPOutputStream
  * 
  * File Structure:
  * /files/analytics/pending/
- *   ├── session_abc123.json.gz  (waiting for sync)
- *   ├── session_def456.json.gz
+ *   ├── workout_abc123.json.gz  (waiting for sync)
+ *   ├── workout_def456.json.gz
  *   └── ...
  */
 class AnalyticsStorage(private val context: Context) {
@@ -36,7 +36,8 @@ class AnalyticsStorage(private val context: Context) {
         private const val STORAGE_DIR = "analytics"
         private const val PENDING_DIR = "pending"
         private const val SYNCED_DIR = "synced"  // Kept briefly for debugging
-        private const val FILE_PREFIX = "session_"
+        private const val FILE_PREFIX = "workout_"
+        private const val LEGACY_FILE_PREFIX = "session_"
         private const val FILE_EXTENSION = ".json.gz"
         
         // Cleanup settings
@@ -54,18 +55,41 @@ class AnalyticsStorage(private val context: Context) {
     init {
         pendingDir.mkdirs()
         syncedDir.mkdirs()
+        migrateLegacyPendingFiles()
         Log.d(TAG, "Analytics storage initialized: ${pendingDir.absolutePath}")
+    }
+
+    /** One-time migration: session_*.json.gz → workout_*.json.gz */
+    private fun migrateLegacyPendingFiles() {
+        val legacy = pendingDir.listFiles { f ->
+            f.isFile && f.name.startsWith(LEGACY_FILE_PREFIX) && f.name.endsWith(FILE_EXTENSION)
+        } ?: return
+        legacy.forEach { file ->
+            val target = File(pendingDir, file.name.replaceFirst(LEGACY_FILE_PREFIX, FILE_PREFIX))
+            if (!target.exists()) {
+                file.renameTo(target)
+                Log.d(TAG, "Migrated pending analytics file: ${file.name} → ${target.name}")
+            } else {
+                file.delete()
+            }
+        }
+        syncedDir.listFiles { f ->
+            f.isFile && f.name.startsWith(LEGACY_FILE_PREFIX) && f.name.endsWith(FILE_EXTENSION)
+        }?.forEach { file ->
+            val target = File(syncedDir, file.name.replaceFirst(LEGACY_FILE_PREFIX, FILE_PREFIX))
+            if (!target.exists()) file.renameTo(target) else file.delete()
+        }
     }
     
     // ==================== Save Operations ====================
     
     /**
-     * Save a session upload for later sync
+     * Save a workout execution upload for later sync
      * 
-     * @param upload SessionUpload to save
+     * @param upload WorkoutUpload to save
      * @return true if saved successfully
      */
-    fun savePending(upload: SessionUpload): Boolean {
+    fun savePending(upload: WorkoutUpload): Boolean {
         return try {
             val file = File(pendingDir, "$FILE_PREFIX${upload.id}$FILE_EXTENSION")
             val json = gson.toJson(upload)
@@ -76,7 +100,7 @@ class AnalyticsStorage(private val context: Context) {
             }
             
             val sizeBytes = file.length()
-            Log.d(TAG, "Saved pending session ${upload.id}: $sizeBytes bytes, " +
+            Log.d(TAG, "Saved pending workout execution ${upload.id}: $sizeBytes bytes, " +
                        "${upload.totalReps} reps, NO raw frames")
             
             // Trigger cleanup if needed
@@ -84,36 +108,36 @@ class AnalyticsStorage(private val context: Context) {
             
             true
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to save pending session: ${e.message}", e)
+            Log.e(TAG, "Failed to save pending workout execution: ${e.message}", e)
             false
         }
     }
     
     /**
-     * Mark a session as synced (move to synced folder or delete)
+     * Mark a workout execution as synced (move to synced folder or delete)
      */
-    fun markSynced(sessionId: String, keepCopy: Boolean = false): Boolean {
-        val pendingFile = File(pendingDir, "$FILE_PREFIX$sessionId$FILE_EXTENSION")
+    fun markSynced(workoutId: String, keepCopy: Boolean = false): Boolean {
+        val pendingFile = File(pendingDir, "$FILE_PREFIX$workoutId$FILE_EXTENSION")
         
         if (!pendingFile.exists()) {
-            Log.w(TAG, "Pending session not found: $sessionId")
+            Log.w(TAG, "Pending workout execution not found: $workoutId")
             return false
         }
         
         return try {
             if (keepCopy) {
                 // Move to synced folder
-                val syncedFile = File(syncedDir, "$FILE_PREFIX$sessionId$FILE_EXTENSION")
+                val syncedFile = File(syncedDir, "$FILE_PREFIX$workoutId$FILE_EXTENSION")
                 pendingFile.renameTo(syncedFile)
-                Log.d(TAG, "Session $sessionId marked synced (kept)")
+                Log.d(TAG, "Workout execution $workoutId marked synced (kept)")
             } else {
                 // Just delete
                 pendingFile.delete()
-                Log.d(TAG, "Session $sessionId synced and deleted")
+                Log.d(TAG, "Workout execution $workoutId synced and deleted")
             }
             true
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to mark session synced: ${e.message}", e)
+            Log.e(TAG, "Failed to mark workout execution synced: ${e.message}", e)
             false
         }
     }
@@ -121,24 +145,24 @@ class AnalyticsStorage(private val context: Context) {
     // ==================== Load Operations ====================
     
     /**
-     * Load a pending session
+     * Load a pending workout execution
      */
-    fun loadPending(sessionId: String): SessionUpload? {
-        val file = File(pendingDir, "$FILE_PREFIX$sessionId$FILE_EXTENSION")
+    fun loadPending(workoutId: String): WorkoutUpload? {
+        val file = File(pendingDir, "$FILE_PREFIX$workoutId$FILE_EXTENSION")
         return loadFromFile(file)
     }
     
     /**
-     * Get all pending sessions (for sync)
+     * Get all pending workout executions (for sync)
      */
-    fun getAllPending(): List<SessionUpload> {
+    fun getAllPending(): List<WorkoutUpload> {
         return pendingDir.listFiles { file -> 
             file.name.endsWith(FILE_EXTENSION) 
         }?.mapNotNull { loadFromFile(it) } ?: emptyList()
     }
     
     /**
-     * Get pending session IDs
+     * Get pending workout execution IDs
      */
     fun getPendingIds(): List<String> {
         return pendingDir.listFiles { file -> 
@@ -149,7 +173,7 @@ class AnalyticsStorage(private val context: Context) {
     }
     
     /**
-     * Get count of pending sessions
+     * Get count of pending workout executions
      */
     fun getPendingCount(): Int {
         return pendingDir.listFiles { file -> 
@@ -157,16 +181,16 @@ class AnalyticsStorage(private val context: Context) {
         }?.size ?: 0
     }
     
-    private fun loadFromFile(file: File): SessionUpload? {
+    private fun loadFromFile(file: File): WorkoutUpload? {
         if (!file.exists()) return null
         
         return try {
             val json = GZIPInputStream(FileInputStream(file)).bufferedReader().use { 
                 it.readText() 
             }
-            gson.fromJson(json, SessionUpload::class.java)
+            gson.fromJson(json, WorkoutUpload::class.java)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to load session from ${file.name}: ${e.message}")
+            Log.e(TAG, "Failed to load workout execution from ${file.name}: ${e.message}")
             null
         }
     }
@@ -174,23 +198,23 @@ class AnalyticsStorage(private val context: Context) {
     // ==================== Delete Operations ====================
     
     /**
-     * Delete a pending session
+     * Delete a pending workout execution
      */
-    fun deletePending(sessionId: String): Boolean {
-        val file = File(pendingDir, "$FILE_PREFIX$sessionId$FILE_EXTENSION")
+    fun deletePending(workoutId: String): Boolean {
+        val file = File(pendingDir, "$FILE_PREFIX$workoutId$FILE_EXTENSION")
         return if (file.exists()) {
             file.delete()
         } else false
     }
     
     /**
-     * Clear all pending sessions (careful!)
+     * Clear all pending workout executions (careful!)
      */
     fun clearAllPending(): Int {
         val files = pendingDir.listFiles() ?: return 0
         var count = 0
         files.forEach { if (it.delete()) count++ }
-        Log.w(TAG, "Cleared all pending sessions: $count files")
+        Log.w(TAG, "Cleared all pending workout executions: $count files")
         return count
     }
     
@@ -200,7 +224,7 @@ class AnalyticsStorage(private val context: Context) {
         try {
             val files = pendingDir.listFiles() ?: return
             
-            // Keep only last N pending sessions
+            // Keep only last N pending workout executions
             if (files.size > DEFAULT_MAX_PENDING) {
                 val sorted = files.sortedBy { it.lastModified() }
                 val toDelete = sorted.take(files.size - DEFAULT_MAX_PENDING)

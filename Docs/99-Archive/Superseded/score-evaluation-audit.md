@@ -1,4 +1,4 @@
-﻿> **Status:** `ARCHIVED` â€” superseded, cancelled, or historical review only.
+> **Status:** `ARCHIVED` â€” superseded, cancelled, or historical review only.
 > **Current SSOT:** `Docs/00-Active-Reference/README.md`
 > **Archived:** 2026-05-29
 
@@ -16,7 +16,7 @@ There are multiple score families in active use:
 
 1. `RepResult.score` / `RepTimelineEntry.score`
    The per-rep form quality score.
-2. `SessionSummary.averageScore` / `PerformanceSummary.averageScore`
+2. `WorkoutRunSummary.averageScore` / `PerformanceSummary.averageScore`
    The arithmetic mean of completed rep scores.
 3. `OverallQualityScore.score`
    A composite report-time score combining form, safety, and control.
@@ -31,9 +31,9 @@ Because these families are mixed across screens, the user concern is valid:
 
 - The first report screen can show a different score concept than the chart.
 - The chart and `best/worst` are aligned with rep scores.
-- The overview session badge can show a different composite score.
+- The overview planned workout badge can show a different composite score.
 - Quick insights may be generated from a different score than the one shown.
-- Program session summary uses accuracy in places where the wording suggests quality/form.
+- Program planned workout summary uses accuracy in places where the wording suggests quality/form.
 
 ## Score Families
 
@@ -41,7 +41,7 @@ Because these families are mixed across screens, the user concern is valid:
 
 Primary fields:
 
-- `training/models/TrainingSession.kt` -> `RepResult.score`
+- `training/models/WorkoutExecution.kt` -> `RepResult.score`
 - `training/report/PostTrainingReport.kt` -> `RepTimelineEntry.score`
 - `training/report/PostTrainingReport.kt` -> `BestRepHighlight.score`
 - `training/report/PostTrainingReport.kt` -> `WorstRepHighlight.score`
@@ -60,7 +60,7 @@ Source:
 
 Primary fields:
 
-- `training/models/TrainingSession.kt` -> `SessionSummary.averageScore`
+- `training/models/WorkoutExecution.kt` -> `WorkoutRunSummary.averageScore`
 - `training/report/PostTrainingReport.kt` -> `PerformanceSummary.averageScore`
 
 Meaning:
@@ -71,12 +71,12 @@ Meaning:
 Source:
 
 - `training/engine/RepCounter.kt` -> `getAverageScore()`
-- `training/TrainingEngine.kt` -> `SessionSummary.averageScore = repCounter.getAverageScore()`
+- `training/TrainingEngine.kt` -> `WorkoutRunSummary.averageScore = repCounter.getAverageScore()`
 - `training/report/ReportGenerator.kt` copies it into `PerformanceSummary.averageScore`
 
 Relationship:
 
-- `SessionSummary.averageScore == PerformanceSummary.averageScore`
+- `WorkoutRunSummary.averageScore == PerformanceSummary.averageScore`
 - They represent the same value in two model layers.
 
 ### 3. Composite report score
@@ -120,7 +120,7 @@ They are not the same thing.
 
 Meaning:
 
-- Session label derived from `averageScore` plus clean/count ratio.
+- Planned Workout label derived from `averageScore` plus clean/count ratio.
 
 Source:
 
@@ -155,9 +155,9 @@ Thresholds:
 Primary fields:
 
 - `training/engine/RepCounter.kt` -> `getAccuracy()`
-- `training/models/TrainingSession.kt` -> `SessionSummary.cleanRatio`
+- `training/models/WorkoutExecution.kt` -> `WorkoutRunSummary.cleanRatio`
 - `training/report/PostTrainingReport.kt` -> `PerformanceSummary.cleanRatio`
-- `training/session/SessionTrainingEngine.kt` -> `SetMetrics.accuracy`, `ExerciseReport.averageAccuracy`, `SessionReport.averageAccuracy`
+- `training/session/WorkoutTrainingEngine.kt` -> `SetMetrics.accuracy`, `ExerciseReport.averageAccuracy`, `WorkoutReport.averageAccuracy`
 
 Meaning:
 
@@ -208,19 +208,19 @@ Key consequence:
 - `RepResult.score` is not just the raw state score.
 - It is the final post-penalty rep quality score.
 
-### C. Session summary generation
+### C. Workout summary generation
 
 #### `training/TrainingEngine.kt`
 
 When training stops:
 
-- Builds `SessionSummary`
+- Builds `WorkoutRunSummary`
 - Sets:
   - `averageScore = repCounter.getAverageScore()`
   - `cleanRatio`
   - `repDetails = repCounter.repResults`
 
-This is the first session-level rollup of rep scoring.
+This is the first workout-run-level rollup of rep scoring.
 
 ### D. Report summary generation
 
@@ -317,28 +317,28 @@ Persisted score-bearing fields include:
 - `overallQuality.score`
 - `overallQuality.rating`
 
-### Engine/session model storage layers
+### Engine/workout run model storage layers
 
-#### `training/models/TrainingSession.kt`
+#### `training/models/WorkoutExecution.kt`
 
 Transient runtime models:
 
-- `SessionSummary`
+- `WorkoutRunSummary`
 - `RepResult`
 
-#### `training/session/SessionTrainingEngine.kt`
+#### `training/session/WorkoutTrainingEngine.kt`
 
-Session-mode aggregates:
+Planned Workout-mode aggregates:
 
 - `RepDetail.score`
 - `SetMetrics.formScore`
 - `ExerciseReport.averageFormScore`
-- `SessionReport.averageFormScore`
+- `WorkoutReport.averageFormScore`
 - Also parallel `accuracy` fields
 
 Important:
 
-- Session mode has its own aggregation layer separate from `PostTrainingReport`.
+- Planned Workout mode has its own aggregation layer separate from `PostTrainingReport`.
 
 ### Analytics storage layer
 
@@ -434,7 +434,7 @@ File:
 
 - `ui/report/PerformanceOverviewFragment.kt`
 
-### Session score badge
+### Workout score badge
 
 Displayed score:
 
@@ -561,21 +561,21 @@ Conclusion:
 
 ## Other UI and Product Surfaces
 
-## Program session report
+## Program planned workout report
 
 File:
 
-- `ui/programs/ProgramSessionReportActivity.kt`
+- `ui/programs/PlannedWorkoutReportActivity.kt`
 
 Important finding:
 
-- The top session summary uses `avgAccuracy`
+- The top planned workout summary uses `avgAccuracy`
 - The strongest/weakest exercise insight uses `averageFormScore`
 
 Examples:
 
 - hero badge/rating/message -> `avgAccuracy`
-- session share text -> `avgAccuracy`
+- planned workout share text -> `avgAccuracy`
 - exercise row quality label -> `averageAccuracy`
 - strongest/weakest exercise -> `averageFormScore`
 
@@ -671,7 +671,7 @@ Impact:
   - best/worst rep scores
   - `summary.averageScore`
 
-## Finding 2: Overview session score can diverge from Hero
+## Finding 2: Overview planned workout score can diverge from Hero
 
 Affected file:
 
@@ -700,7 +700,7 @@ Reason:
 
 Impact:
 
-- The text message can describe the session using one score while the UI shows another
+- The text message can describe the planned workout using one score while the UI shows another
 
 ## Finding 4: Two different rating systems are active
 
@@ -730,13 +730,13 @@ Reason:
 
 Impact:
 
-- "Overall session quality" and "Safety score" can drift in ways that are not intuitive
+- "Overall planned workout quality" and "Safety score" can drift in ways that are not intuitive
 
-## Finding 6: Program session report mixes accuracy and form quality
+## Finding 6: Program planned workout report mixes accuracy and form quality
 
 Affected file:
 
-- `ui/programs/ProgramSessionReportActivity.kt`
+- `ui/programs/PlannedWorkoutReportActivity.kt`
 
 Reason:
 
@@ -791,10 +791,10 @@ There is a partial single-source-of-truth structure, but only at some levels.
 
 ### What is not unified
 
-- Session headline score
-- Session rating label
+- Planned Workout headline score
+- Planned Workout rating label
 - Safety scoring logic
-- Program session summary semantics
+- Program planned workout summary semantics
 - Assessment/body score semantics
 
 ## Recommended Unification Directions
@@ -812,14 +812,14 @@ Then the canonical value should be:
 And the following should be aligned to it:
 
 - `ui/report/MetricDisplayBuilder.kt`
-- `ui/report/PerformanceOverviewFragment.kt` session summary badge
+- `ui/report/PerformanceOverviewFragment.kt` planned workout summary badge
 - `training/report/QuickInsightGenerator.kt`
 - `ui/report/TipsExportFragment.kt`
 - `ui/report/ReportPagerActivity.kt` share text
 
 `overallQuality` can still exist, but must be presented under a different label such as:
 
-- `Session Quality Index`
+- `Planned Workout Quality Index`
 - `Composite Quality`
 - `Form/Safety/Control Composite`
 
@@ -835,12 +835,12 @@ Then:
 - Chart and best/worst should continue using rep scores
 - UI labels must explicitly distinguish:
   - `Average Rep Score`
-  - `Composite Session Quality`
+  - `Composite Planned Workout Quality`
 - Quick insight must be changed to use the same family as the headline, or explicitly state that it is talking about average rep score
 
 ## Option C: Fix session-mode summary separately
 
-`ProgramSessionReportActivity` should choose one:
+`PlannedWorkoutReportActivity` should choose one:
 
 - quality = `averageFormScore`
 - validity/completion = `averageAccuracy`

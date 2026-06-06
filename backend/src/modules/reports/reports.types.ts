@@ -1,23 +1,23 @@
 /**
- * Reports Types — Unified Metrics System
+ * Reports Types ? Unified Metrics System
  * =======================================
  *
  * One endpoint. All report levels. Rep is the atom.
- * Everything aggregates upward: Rep → Set → Exercise → Session → Day → Week → Program.
+ * Everything aggregates upward: Rep → Set → Exercise → PlannedWorkout → Day → Week → Program.
  */
 
 // ============================================
 // REQUEST TYPES
 // ============================================
 
-export type MetricsScope = 'program' | 'week' | 'day' | 'session' | 'exercise';
+export type MetricsScope = 'program' | 'week' | 'day' | 'plannedWorkout' | 'exercise';
 
 export interface MetricsQuery {
   programId: string;
   scope: MetricsScope;
   weekNumber?: number;
   dayNumber?: number;
-  sessionId?: string;
+  plannedWorkoutId?: string;
   exerciseSlug?: string;
   includeHistory?: boolean;
   includeChildren?: boolean;
@@ -41,7 +41,7 @@ export interface ReportDashboardQuery {
 export interface StoredRepDetail {
   repNumber: number;
   score: number;        // 0-100 form quality
-  worstState: number;   // 0=PERFECT … 4=DANGER
+  worstState: number;   // 0=PERFECT ? 4=DANGER
   isCounted: boolean;
   isInvalidated?: boolean;
   durationMs: number;
@@ -122,7 +122,7 @@ export interface StoredExerciseReport {
   positionTipReps?: number;
 }
 
-export interface StoredSessionReport {
+export interface StoredPlannedWorkoutReport {
   totalExercises: number;
   totalSetsCompleted: number;
   totalSetsPlanned: number;
@@ -157,7 +157,7 @@ export type ProgramGrade = 'A+' | 'A' | 'B+' | 'B' | 'C+' | 'C' | 'D';
 /** Trend direction indicator */
 export type TrendDirection = 'improving' | 'stable' | 'declining';
 
-// ── Rep-level metrics ──
+// -- Rep-level metrics --
 
 export interface RepMetricsOutput {
   repNumber: number;
@@ -172,7 +172,7 @@ export interface RepMetricsOutput {
   positionTipCount: number;
 }
 
-// ── Set-level metrics ──
+// -- Set-level metrics --
 
 export interface SetMetricsOutput {
   setNumber: number;
@@ -200,15 +200,15 @@ export interface SetMetricsOutput {
   positionTipReps?: number;
 }
 
-// ── Exercise-level metrics ──
+// -- Exercise-level metrics --
 
 export interface ExerciseMetricsOutput {
   exerciseSlug: string;
   exerciseName: string;
   averageFormScore: number;
   averageCompletionRate: number;
-  totalVolume: number;          // weight × reps (sum across sets)
-  sessionsCount?: number;       // number of sessions this exercise was performed in (for aggregated views)
+  totalVolume: number;          // weight ? reps (sum across sets)
+  workoutsCount?: number;       // number of planned workouts this exercise was performed in (aggregated views)
   setsCompleted: number;
   setsPlanned: number;
   totalReps: number;
@@ -229,10 +229,10 @@ export interface ExerciseMetricsOutput {
   positionTipReps?: number;
 }
 
-// ── Session-level metrics ──
+// -- Planned workout-level metrics --
 
-export interface SessionMetricsOutput {
-  sessionId: string;
+export interface ExecutionMetricsOutput {
+  plannedWorkoutId: string;
   weekNumber: number;
   dayNumber: number;
   completedAt: string | null;
@@ -243,7 +243,7 @@ export interface SessionMetricsOutput {
   totalReps: number;
   averageAccuracy: number;
   averageFormScore: number;
-  sessionRating: FormRating;
+  workoutRating: FormRating;
   strongestExercise: string | null;
   weakestExercise: string | null;
   exercises?: ExerciseMetricsOutput[];
@@ -260,19 +260,19 @@ export interface SessionMetricsOutput {
   positionTipReps?: number;
 }
 
-// ── Day-level metrics ──
+// -- Day-level metrics --
 
 export interface DayMetricsOutput {
   weekNumber: number;
   dayNumber: number;
   isRestDay: boolean;
-  sessionsCompleted: number;
-  sessionsPlanned: number;
+  workoutsCompleted: number;
+  workoutsPlanned: number;
   totalTrainingTime: number;
   averageFormScore: number;
   dayRating: FormRating;
   isComplete: boolean;
-  sessions?: SessionMetricsOutput[];
+  plannedWorkouts?: ExecutionMetricsOutput[];
   countedReps?: number;
   invalidatedReps?: number;
   uncountedReps?: number;
@@ -286,7 +286,7 @@ export interface DayMetricsOutput {
   positionTipReps?: number;
 }
 
-// ── Week-level metrics ──
+// -- Week-level metrics --
 
 export interface WeekMetricsOutput {
   weekNumber: number;
@@ -317,7 +317,7 @@ export interface WeekMetricsOutput {
   positionTipReps?: number;
 }
 
-// ── Program-level metrics ──
+// -- Program-level metrics --
 
 export interface ProgramMetricsOutput {
   programId: string;
@@ -348,7 +348,7 @@ export interface ProgramMetricsOutput {
   positionTipReps?: number;
 }
 
-// ── Comparison data ──
+// -- Comparison data --
 
 export interface ComparisonData {
   previousFormScore: number | null;
@@ -360,7 +360,7 @@ export interface ComparisonData {
   trendDirection: TrendDirection;
 }
 
-// ── Insights ──
+// -- Insights --
 
 export interface Insight {
   type: 'positive' | 'warning' | 'info' | 'milestone';
@@ -368,7 +368,7 @@ export interface Insight {
   message: string;
 }
 
-// ── Unified response ──
+// -- Unified response --
 
 export interface MetricsResponse {
   success: boolean;
@@ -377,7 +377,7 @@ export interface MetricsResponse {
     | ProgramMetricsOutput
     | WeekMetricsOutput
     | DayMetricsOutput
-    | SessionMetricsOutput
+    | ExecutionMetricsOutput
     | ExerciseMetricsOutput;
   comparison?: ComparisonData;
   insights?: Insight[];
@@ -412,13 +412,13 @@ export interface ReportDashboardResponse {
     exerciseSlug: string;
     exerciseName: string;
     averageFormScore: number;
-    sessionsCount: number;
+    workoutsCount: number;
     totalReps: number;
     totalVolume: number;
     focusArea: 'maintain' | 'improve-form' | 'build-consistency';
   }>;
-  sessionTimeline?: Array<{
-    sessionId: string;
+  workoutTimeline?: Array<{
+    plannedWorkoutId: string;
     weekNumber: number;
     dayNumber: number;
     completedAt: string | null;
@@ -432,7 +432,7 @@ export interface ReportDashboardResponse {
     bestFormScore: number;
     bestWeekNumber: number | null;
     longestStreak: number;
-    mostRepsInSession: number;
+    mostRepsInWorkout: number;
   };
   insights?: Insight[];
   error?: string;

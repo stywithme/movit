@@ -13,7 +13,7 @@ class FeedbackPolicy(
     private val lastStateMessageTimes = mutableMapOf<String, Long>()
     private val lastEmittedStates = mutableMapOf<String, JointState>()
 
-    fun resetSession() {
+    fun resetExecution() {
         lastStateMessageTimes.clear()
         lastEmittedStates.clear()
     }

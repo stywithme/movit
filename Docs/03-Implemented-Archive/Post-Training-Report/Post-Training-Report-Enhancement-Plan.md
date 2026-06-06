@@ -1,4 +1,4 @@
-﻿> **Status:** `ARCHIVED` â€” implemented or superseded; not current product truth.
+> **Status:** `ARCHIVED` â€” implemented or superseded; not current product truth.
 > **Current SSOT:** `Docs/00-Active-Reference/Product-Master/Post-Training-Report-Review.md`
 > **Archived:** 2026-05-29
 
@@ -13,7 +13,7 @@
 Professional user experience that shows:
 1. **What was done well** → Motivation and encouragement
 2. **What was done wrong** → Clear explanation with solution
-3. **Improvement path** → Practical tips for next session
+3. **Improvement path** → Practical tips for next planned workout
 
 ### 🎨 Design Principles
 | Principle | Description |
@@ -361,7 +361,7 @@ data class RepTimelineEntry(
 
 ### 3.6 Tips Section
 
-**Actionable tips for next session**
+**Actionable tips for next planned workout**
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -450,7 +450,7 @@ class FrameCaptureManager {
 |----------|----------------|---------|
 | 80%+ PERFECT reps | `feedbackMessages.motivational` | "ممتاز! استمر!" |
 | No DANGER states | `feedbackMessages.motivational` | "أداء رائع!" |
-| First session | Static message | "بداية رائعة!" |
+| First planned workout | Static message | "بداية رائعة!" |
 | Improved from last | Computed | "تحسنت عن المرة السابقة!" |
 
 ### Message Selection Logic
@@ -509,7 +509,7 @@ object MotivationalMessageSelector {
 1. **DANGER Fix** (if any) - From `stateMessages.danger` tip
 2. **Most Common WARNING** - From `stateMessages.warning` tip  
 3. **Exercise Tips** - From `feedbackMessages.tips`
-4. **Next Focus** - One tip for next session
+4. **Next Focus** - One tip for next planned workout
 
 ### Tips Generator
 
@@ -561,7 +561,7 @@ object TipsGenerator {
                 priority = 3 + index,
                 icon = if (index == 0) "2️⃣" else "🎯",
                 titleAr = if (index == 0) "نصيحة إضافية" else "تركيز الجلسة القادمة",
-                titleEn = if (index == 0) "Additional Tip" else "Next Session Focus",
+                titleEn = if (index == 0) "Additional Tip" else "Next Planned Workout Focus",
                 description = tip,
                 relatedReps = emptyList(),
                 severity = TipSeverity.HELPFUL,
@@ -785,7 +785,7 @@ class ErrorComparisonCard @JvmOverloads constructor(
 
 ### User completes Squat with 12 reps
 
-**Session Data:**
+**Planned Workout Data:**
 - 6 PERFECT, 2 NORMAL, 2 PAD, 1 WARNING, 1 DANGER
 - Average Score: 72%
 - DANGER on rep #8 (knee at 25°)

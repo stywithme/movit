@@ -13,7 +13,7 @@ import com.trainingvalidator.poc.camera.CameraManager
 import com.trainingvalidator.poc.pose.ModelType
 import com.trainingvalidator.poc.pose.PoseLandmarkerHelper
 import com.trainingvalidator.poc.pose.PoseResult
-import com.trainingvalidator.poc.training.session.SessionState
+import com.trainingvalidator.poc.training.workout.WorkoutRunState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -125,11 +125,11 @@ class CameraTrainingInputController(
         host.binding.skeletonOverlay.updateFrontCameraState(host.useFrontCamera)
     }
 
-    private fun isSessionPanelOverlayVisible(): Boolean {
+    private fun isWorkoutPanelOverlayVisible(): Boolean {
         val b = host.binding
-        return b.sessionPreExercisePanel.visibility == View.VISIBLE ||
-            b.sessionRestPanel.visibility == View.VISIBLE ||
-            b.sessionCompletePanel.visibility == View.VISIBLE
+        return b.WorkoutPreExercisePanel.visibility == View.VISIBLE ||
+            b.WorkoutRestPanel.visibility == View.VISIBLE ||
+            b.WorkoutCompletePanel.visibility == View.VISIBLE
     }
 
     /**
@@ -137,7 +137,7 @@ class CameraTrainingInputController(
      */
     fun onPoseDetected(result: PoseResult) {
         if (host.preferenceDialogs.isWeightDialogVisible) return
-        if (host.isSessionMode && isSessionPanelOverlayVisible()) return
+        if (host.isWorkoutMode && isWorkoutPanelOverlayVisible()) return
         if (isProcessingPoseFrame) return
         isProcessingPoseFrame = true
 
@@ -205,18 +205,18 @@ class CameraTrainingInputController(
      */
     fun onNoPoseDetected() {
         if (host.preferenceDialogs.isWeightDialogVisible) return
-        if (host.isSessionMode && isSessionPanelOverlayVisible()) return
+        if (host.isWorkoutMode && isWorkoutPanelOverlayVisible()) return
 
         host.lifecycleScope.launch(Dispatchers.Main) {
             updateFps()
             host.binding.skeletonOverlay.clear()
-            if (host.wasPoseDetectedLastFrame && host.viewModel.supervisor.state.value == SessionState.TRAINING) {
+            if (host.wasPoseDetectedLastFrame && host.viewModel.supervisor.state.value == WorkoutRunState.TRAINING) {
                 host.binding.glassmorphicMessage.hide()
                 host.binding.vignetteOverlay.clear()
             }
             host.wasPoseDetectedLastFrame = false
             host.viewModel.onNoPoseDetected(SystemClock.uptimeMillis())
-            if (host.viewModel.supervisor.state.value == SessionState.SETUP_POSE) {
+            if (host.viewModel.supervisor.state.value == WorkoutRunState.SETUP_POSE) {
                 host.viewModel.poseSetupGuide.reset()
             }
         }

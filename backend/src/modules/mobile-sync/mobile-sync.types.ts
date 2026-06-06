@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Mobile Sync Types
  * =================
  * 
@@ -8,7 +8,7 @@
 
 import type { ExerciseConfig, LocalizedText } from '@/lib/types/android-schema';
 import type { ProgramExport } from '@/modules/programs/programs.types';
-import type { WorkoutExport } from '@/modules/workouts/workouts.types';
+import type { WorkoutExport } from '@/modules/workout-templates/workout-templates.types';
 
 // ============================================
 // REQUEST TYPES
@@ -51,10 +51,10 @@ export interface MobileExploreResponse {
 export interface ExploreData {
   levels: ExploreLevelItem[];
   programs: ExploreProgramItem[];
-  workouts: ExploreWorkoutItem[];
+  workoutTemplates: ExploreWorkoutItem[];
   exercises: ExploreExerciseItem[];
   deletedProgramIds: string[];
-  deletedWorkoutIds: string[];
+  deletedWorkoutTemplateIds: string[];
   deletedExerciseIds: string[];
 }
 
@@ -104,7 +104,7 @@ export interface ExploreMeta {
   serverVersion: string;
   levelsInResponse: number;
   programsInResponse: number;
-  workoutsInResponse: number;
+  workoutTemplatesInResponse: number;
   exercisesInResponse: number;
 }
 
@@ -141,19 +141,19 @@ export interface SyncData {
   deletedExerciseIds: string[];
   
   /**
-   * List of workouts (Super Sets / Circuits)
+   * Published workout templates (catalog) for mobile training engine
    */
-  workouts: WorkoutExport[];
+  workoutTemplates: WorkoutExport[];
 
   /**
-   * List of programs (Weeks / Days / Sessions)
+   * List of programs (weeks / days / planned workouts)
    */
   programs: ProgramExport[];
   
   /**
-   * IDs of workouts that were deleted since last sync
+   * IDs of workout templates deleted or unpublished since last sync
    */
-  deletedWorkoutIds: string[];
+  deletedWorkoutTemplateIds: string[];
 
   /**
    * IDs of programs that were deleted since last sync
@@ -171,10 +171,10 @@ export interface SyncData {
   userExercisePreferences?: UserExercisePreferenceExport[];
 
   /**
-   * Completed session reports for the user (backend → mobile sync).
+   * Completed planned workout reports for the user (backend → mobile sync).
    * Ensures reports survive app reinstall and are consistent across devices.
    */
-  sessionReports?: SessionReportExport[];
+  plannedWorkoutReports?: PlannedWorkoutReportExport[];
   
   /**
    * Audio files manifest for download
@@ -205,9 +205,9 @@ export interface UserExercisePreferenceExport {
   updatedAt: string;
 }
 
-export interface SessionReportExport {
+export interface PlannedWorkoutReportExport {
   id: string;
-  sessionId: string;       // programSessionId
+  plannedWorkoutId: string;
   programId: string;
   weekNumber: number;
   dayNumber: number;
@@ -249,9 +249,9 @@ export interface SyncMeta {
   totalExercises: number;
   
   /**
-   * Total number of published workouts
+   * Total number of published workout templates
    */
-  totalWorkouts: number;
+  totalWorkoutTemplates: number;
 
   /**
    * Total number of published programs
@@ -274,9 +274,9 @@ export interface SyncMeta {
   exercisesInResponse: number;
   
   /**
-   * Number of workouts in this response
+   * Number of workout templates in this response
    */
-  workoutsInResponse: number;
+  workoutTemplatesInResponse: number;
 
   /**
    * Number of programs in this response

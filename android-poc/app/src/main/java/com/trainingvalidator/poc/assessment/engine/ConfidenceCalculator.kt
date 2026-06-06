@@ -9,7 +9,7 @@ import kotlin.math.sqrt
  * ConfidenceCalculator - Determines measurement reliability.
  * 
  * Based on:
- * 1. Session quality (visibility pauses, camera warnings)
+ * 1. Capture quality (visibility pauses, camera warnings)
  * 2. Rep score consistency (standard deviation across reps)
  * 3. Number of valid reps (more reps = more confidence)
  * 
@@ -29,12 +29,12 @@ object ConfidenceCalculator {
      * Calculate confidence for a completed exercise report.
      */
     fun calculate(report: PostTrainingReport): ConfidenceLevel {
-        val quality = report.sessionQuality
+        val quality = report.executionQuality
         val timeline = report.repTimeline
         
         if (timeline.isEmpty()) return ConfidenceLevel.LOW
         
-        // Factor 1: Session quality (visibility)
+        // Factor 1: Capture quality (visibility)
         val visibilityScore = when {
             quality.visibilityPauseCount <= HIGH_VISIBILITY_THRESHOLD 
                 && quality.cameraWarningCount <= 1 -> 3

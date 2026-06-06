@@ -2,8 +2,8 @@
  * Insights Engine — Rule-based insights from metrics comparison.
  * ===============================================================
  *
- * Generates human-readable insights from session/exercise/week data.
- * These insights appear in the Session Report and Reports Hub.
+ * Generates human-readable insights from workout/exercise/week data.
+ * These insights appear in the Workout Report and Reports Hub.
  */
 
 export interface Insight {
@@ -13,8 +13,8 @@ export interface Insight {
 }
 
 export interface InsightContext {
-  sessionFormScore?: number;
-  previousSessionFormScore?: number;
+  workoutFormScore?: number;
+  previousWorkoutFormScore?: number;
   exercises?: Array<{
     name: string;
     formScore: number;
@@ -37,22 +37,21 @@ export interface InsightContext {
 export function generateInsights(ctx: InsightContext): Insight[] {
   const insights: Insight[] = [];
 
-  // ── Session-level insights ──
+  // ── Planned-workout-level insights ──
 
-  // Form score comparison with previous session
-  if (ctx.sessionFormScore !== undefined && ctx.previousSessionFormScore !== undefined) {
-    const delta = ctx.sessionFormScore - ctx.previousSessionFormScore;
+  if (ctx.workoutFormScore !== undefined && ctx.previousWorkoutFormScore !== undefined) {
+    const delta = ctx.workoutFormScore - ctx.previousWorkoutFormScore;
     if (delta > 5) {
       insights.push({
         type: 'positive',
         icon: '📈',
-        message: `Your form improved ${Math.round(delta)}% since last session!`,
+        message: `Your form improved ${Math.round(delta)}% since your last workout!`,
       });
     } else if (delta < -10) {
       insights.push({
         type: 'warning',
         icon: '⚠️',
-        message: `Form dropped ${Math.abs(Math.round(delta))}% compared to last session. Consider lighter weights or more rest.`,
+        message: `Form dropped ${Math.abs(Math.round(delta))}% compared to your last workout. Consider lighter weights or more rest.`,
       });
     }
   }
@@ -91,7 +90,7 @@ export function generateInsights(ctx: InsightContext): Insight[] {
           icon: '🔋',
           message: `Form dropped ${Math.round(ex.dropOffRate)}% during ${ex.name} — consider reducing sets or weight.`,
         });
-        break; // Only one fatigue warning per session
+        break; // Only one fatigue warning per planned workout report
       }
     }
 
@@ -170,7 +169,7 @@ export function generateInsights(ctx: InsightContext): Insight[] {
       insights.push({
         type: 'info',
         icon: '📅',
-        message: `You've trained ${ctx.weekDaysTrained} of ${ctx.weekDaysTotal} days this week. Every session counts!`,
+        message: `You've trained ${ctx.weekDaysTrained} of ${ctx.weekDaysTotal} days this week. Every workout counts!`,
       });
     }
   }

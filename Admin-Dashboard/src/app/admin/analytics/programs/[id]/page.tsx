@@ -58,7 +58,7 @@ export default function ProgramDetailAnalyticsPage() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
         <StatCard title="Enrollments" value={formatNumber(data?.summary.enrollments)} />
         <StatCard title="Active Users" value={formatNumber(data?.summary.activeUsers)} />
-        <StatCard title="Completed Sessions" value={formatNumber(data?.summary.completedSessions)} />
+        <StatCard title="Completed Planned Workouts" value={formatNumber(data?.summary.completedPlannedWorkouts)} />
         <StatCard title="Reports" value={formatNumber(data?.summary.reports)} />
         <StatCard title="Avg Form Score" value={(data?.summary.avgFormScore ?? 0).toFixed(1)} />
       </div>

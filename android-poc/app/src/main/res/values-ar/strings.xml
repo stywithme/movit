@@ -79,15 +79,15 @@
     <string name="programs_motivation_halfway">في المنتصف. أنت تقوم بعمل رائع.</string>
     <string name="programs_motivation_format_progress">🔥 %1$d أيام · %2$d%% · %3$s</string>
     <string name="programs_overview_meta_format">%1$s · %2$d%% مكتمل</string>
-    <string name="programs_sessions_count_format">%1$d جلسات</string>
-    <string name="programs_session_done">تم</string>
-    <string name="programs_session_not_started">لم يبدأ</string>
+    <string name="programs_planned_workouts_count_format">%1$d تمارين</string>
+    <string name="programs_planned_workout_done">تم</string>
+    <string name="programs_planned_workout_not_started">لم يبدأ</string>
     <string name="programs_view_summary">عرض الملخص</string>
-    <string name="programs_start_session">ابدأ الجلسة</string>
+    <string name="programs_start_workout">ابدأ التمرين</string>
     <string name="programs_rest_day_hint">يوم راحة. خذ وقتك وتعافَ.</string>
     <string name="return_title">أهلاً بعودتك</string>
     <string name="return_subtitle">يمكنك المتابعة من حيث توقفت أو بدء الأسبوع من جديد.</string>
-    <string name="return_continue">المتابعة من آخر جلسة</string>
+    <string name="return_continue">المتابعة من آخر تمرين</string>
     <string name="return_restart_week">بدء الأسبوع من جديد</string>
     <string name="return_greeting_format">%1$s أهلاً بعودتك!</string>
     <string name="programs_customize">تخصيص</string>
@@ -114,12 +114,12 @@
     <string name="week_duration_format">الوقت: %1$s</string>
     <string name="duration_hours_minutes_format">%1$d س %2$d د</string>
     <string name="today_plan_title_format">الأسبوع %1$d · اليوم %2$d</string>
-    <string name="today_plan_session_format">%1$s • %2$d تمرين</string>
-    <string name="today_plan_session_with_time_format">%1$s • %2$d تمرين • %3$d دقيقة</string>
+    <string name="today_plan_workout_format">%1$s • %2$d تمرين</string>
+    <string name="today_plan_workout_with_time_format">%1$s • %2$d تمرين • %3$d دقيقة</string>
     <string name="view_program">عرض البرنامج</string>
     <string name="program_stats_format">%1$d أسابيع · %2$d جلسات منجزة</string>
     <string name="program_week_progress_format">الأسبوع %1$d من %2$d · %3$d/%4$d أيام</string>
-    <string name="session_progress_format">الجلسة %1$d من %2$d</string>
+    <string name="workout_progress_format">التمرين %1$d من %2$d</string>
 
     <!-- Home Train Mode States -->
     <string name="home_your_plan_label">خطة التدريب</string>
@@ -140,7 +140,7 @@
 
     <!-- Workout Session -->
     <string name="start_workout">ابدأ التمرين</string>
-    <string name="workout_session_progress_format">تمرين %1$d من %2$d</string>
+    <string name="workout_exercise_progress_format">تمرين %1$d من %2$d</string>
     <string name="great_job">أحسنت!</string>
     <string name="error_workout_not_found">لم يتم العثور على التمرين</string>
     <string name="exit_workout_title">خروج من التمرين؟</string>
@@ -161,47 +161,10 @@
     <string name="progression_sheet_title">تم تعديل التدريب</string>
     <string name="progression_sheet_subtitle">بناءً على أدائك، قمنا بتحديث جلستك القادمة:</string>
     <string name="progression_sheet_got_it">فهمت!</string>
-    <string name="progression_sheet_view_details">عرض التفاصيل</string>
     <string name="progression_field_weight">الوزن</string>
     <string name="progression_field_reps">التكرارات</string>
     <string name="progression_field_sets">المجموعات</string>
-    <string name="progression_field_reassessment">إعادة تقييم</string>
-
-    <!-- Progression Report Page -->
-    <string name="progression_page_title">تقدّمك</string>
-    <string name="progression_level_up">ارتقيت!</string>
-    <string name="progression_great_performance">أداء ممتاز — تم رفع مستوى تدريبك!</string>
-    <string name="progression_deload_title">تعديل التدريب</string>
-    <string name="progression_deload_message">تم تخفيف الحمل لمساعدتك على بناء أساس أقوى.</string>
-    <string name="progression_what_changed">ما الذي تغيّر</string>
-    <string name="progression_why">لماذا حدث هذا</string>
-    <string name="progression_why_form_score">متوسط جودة الأداء %1$d%% في آخر %2$d جلسات</string>
-    <string name="progression_why_completion">نسبة الإكمال كانت %1$d%%</string>
-    <string name="progression_why_rom">متوسط نطاق الحركة %1$d%%</string>
-    <string name="progression_what_next">ما القادم</string>
-    <string name="progression_next_weight_tip">حافظ على جودة أداء 75%%+ لجلستين إضافيتين لزيادة الوزن مجدداً</string>
-    <string name="progression_next_reps_tip">حافظ على جودة 80%%+ لأسبوع كامل مع نطاق حركة 95%%+ لزيادة التكرارات</string>
-    <string name="progression_next_deload_tip">ركّز على الحفاظ على الشكل الصحيح — سيتم زيادة الحمل عند تحسن أدائك</string>
-    <string name="progression_no_changes_title">استمر!</string>
-    <string name="progression_no_changes_message">لم يتم إجراء تعديلات بعد — استمر بالتدريب بانتظام وسيأتي التقدّم!</string>
-    <string name="progression_no_changes_goal">هدفك القادم: حافظ على جودة أداء أعلى من 75%% لجلستين</string>
-    <string name="progression_loading">جاري التحقق من التقدّم…</string>
-    <string name="progression_change_increase">تم زيادة %1$s من %2$s إلى %3$s</string>
-    <string name="progression_change_decrease">تم تعديل %1$s من %2$s إلى %3$s</string>
-    <string name="progression_for_exercise">لتمرين %1$s</string>
-
-    <!-- Progression in Plan Overview -->
-    <string name="progression_summary_title">ملخص التقدّم</string>
-    <string name="progression_summary_increases">%1$d زيادة</string>
-    <string name="progression_summary_adjustments">%1$d تعديل</string>
-    <string name="progression_summary_this_month">هذا الشهر</string>
-    <string name="progression_grouped_by_exercise">حسب التمرين</string>
-
-    <!-- Progression Home Card -->
-    <string name="progression_home_title">تم تحديث التدريب</string>
-    <string name="progression_home_subtitle">تم تعديل خطة تدريبك بناءً على أدائك</string>
-    <string name="progression_home_view">عرض التغييرات</string>
-    <string name="progression_home_next_reps_tip">هدف الجلسة القادمة: %1$d تكرار (السابق: %2$d)</string>
+    <string name="progression_next_reps_tip">هدف الجلسة القادمة: %1$d تكرار (السابق: %2$d)</string>
 
     <!-- Quick Start -->
     <string name="quick_start_title">ابدأ الآن</string>
@@ -221,6 +184,7 @@
     <string name="cd_pro">احترافي</string>
     <string name="cd_exercise">تمرين</string>
     <string name="cd_camera">الكاميرا</string>
+    <string name="cd_video">الفيديو</string>
     <string name="cd_no_exercises">لا توجد تمارين</string>
     <string name="cd_no_history">لا يوجد سجل</string>
     <string name="cd_view_details">عرض التفاصيل</string>
@@ -233,11 +197,14 @@
     <string name="change_avatar_coming_soon">تغيير الصورة - قريبًا</string>
     <string name="google_sign_in_coming_soon">تسجيل Google - قريبًا</string>
     <string name="google_sign_up_coming_soon">إنشاء حساب Google - قريبًا</string>
+    <string name="no_video_selected">لم يتم اختيار فيديو</string>
     <string name="no_exercise_specified">لم يتم تحديد تمرين</string>
     <string name="failed_to_load_exercise">فشل تحميل التمرين</string>
     <string name="failed_to_load_exercise_format">فشل تحميل التمرين: %1$s</string>
     <string name="failed_to_load_workout_format">فشل تحميل البرنامج: %1$s</string>
     <string name="no_workout_specified">لم يتم تحديد برنامج</string>
+    <string name="video_permission_required">مطلوب إذن للوصول إلى الفيديوهات</string>
+    <string name="video_permission_rationale">نحتاج إذن الوصول إلى الفيديو لتحليل مقاطع التمرين</string>
     <string name="counting_method_up_down">أعلى وأسفل (مثل القرفصاء)</string>
     <string name="counting_method_hold">ثبات (مثل البلانك)</string>
     
@@ -305,8 +272,8 @@
 
     <!-- Weeks / Days / Sessions -->
     <string name="weeks_count_format">%1$d أسابيع</string>
-    <string name="sessions_count_format">%1$d جلسات</string>
-    <string name="sessions_progress_format">التقدم: %1$d/%2$d جلسات</string>
+    <string name="planned_workouts_count_format">%1$d تمارين</string>
+    <string name="planned_workouts_progress_format">التقدم: %1$d/%2$d جلسات</string>
     <string name="days_count_format">%1$d أيام</string>
     <string name="week_title_only">الأسبوع %1$d</string>
     <string name="week_title_with_name">الأسبوع %1$d • %2$s</string>
@@ -321,31 +288,31 @@
     <string name="day_title_only">اليوم %1$d</string>
     <string name="day_title_with_name">اليوم %1$d • %2$s</string>
     <string name="rest_day">يوم راحة</string>
-    <string name="session_items_count_format">%1$d عناصر</string>
-    <string name="start_session">ابدأ</string>
-    <string name="continue_session">تابع</string>
-    <string name="restart_session">أعد البدء</string>
-    <string name="session_status_completed">مكتمل</string>
-    <string name="session_status_not_started">لم يبدأ</string>
+    <string name="workout_items_count_format">%1$d عناصر</string>
+    <string name="start_workout_short">ابدأ</string>
+    <string name="continue_workout">تابع</string>
+    <string name="restart_workout">أعد البدء</string>
+    <string name="workout_status_completed">مكتمل</string>
+    <string name="workout_status_not_started">لم يبدأ</string>
     <string name="rest_time">وقت الراحة</string>
-    <string name="session_complete">اكتملت الجلسة</string>
-    <string name="session_report_items_format">أكمل %1$d عناصر</string>
-    <string name="session_report_sets_format">المجموعات %1$d/%2$d</string>
-    <string name="session_report_duration_format">المدة %1$02d:%2$02d</string>
-    <string name="session_report_accuracy_format">الدقة %1$d%%</string>
-    <string name="session_report_exercises_title">تفصيل التمارين</string>
-    <string name="session_report_weights_format">الأوزان: %1$s</string>
-    <string name="session_report_weights_empty">الأوزان: --</string>
-    <string name="session_report_quality_format">الجودة: %1$s</string>
-    <string name="session_message_excellent">جلسة رائعة. كان أداؤك وتركيزك قويَّين.</string>
-    <string name="session_message_good">عمل ممتاز. حققت تقدماً حقيقياً اليوم.</string>
-    <string name="session_message_keep_going">جهد جيد. واصل وستبني الزخم.</string>
-    <string name="session_message_get_started">جاهز للبدء؟ خطوة صغيرة اليوم تكفي.</string>
+    <string name="workout_complete_label">اكتمل التمرين</string>
+    <string name="workout_report_items_format">أكمل %1$d عناصر</string>
+    <string name="workout_report_sets_format">المجموعات %1$d/%2$d</string>
+    <string name="workout_report_duration_format">المدة %1$02d:%2$02d</string>
+    <string name="workout_report_accuracy_format">الدقة %1$d%%</string>
+    <string name="workout_report_exercises_title">تفصيل التمارين</string>
+    <string name="workout_report_weights_format">الأوزان: %1$s</string>
+    <string name="workout_report_weights_empty">الأوزان: --</string>
+    <string name="workout_report_quality_format">الجودة: %1$s</string>
+    <string name="workout_message_excellent">تمرين رائع. كان أداؤك وتركيزك قويَّين.</string>
+    <string name="workout_message_good">عمل ممتاز. حققت تقدماً حقيقياً اليوم.</string>
+    <string name="workout_message_keep_going">جهد جيد. واصل وستبني الزخم.</string>
+    <string name="workout_message_get_started">جاهز للبدء؟ خطوة صغيرة اليوم تكفي.</string>
     <string name="quality_excellent">ممتاز</string>
     <string name="quality_good">جيد</string>
     <string name="quality_ok">مقبول</string>
     <string name="quality_keep_practicing">واصل التدريب</string>
-    <string name="session_share_text_format">أكملت %1$d/%2$d مجموعات في %3$02d:%4$02d بجودة %5$d%%.</string>
+    <string name="workout_share_text_format">أكملت %1$d/%2$d مجموعات في %3$02d:%4$02d بجودة %5$d%%.</string>
     <string name="exercise_summary_message_excellent">أداء استثنائي. أبدعت.</string>
     <string name="exercise_summary_message_good">عمل رائع. ظل أداؤك متيناً.</string>
     <string name="exercise_summary_message_ok">جهد جيد. واصل بناء السيطرة.</string>
@@ -354,23 +321,23 @@
     <string name="exercise_summary_tip_focus">نصيحة: ركز على السيطرة في التكرارات الأخيرة.</string>
     <string name="exercise_summary_tip_slow">نصيحة: تمهَّل وأولِ الأداء الأولوية.</string>
     <string name="exercise_summary_stats_format">الجودة %1$d%% · المجموعات %2$d/%3$d · التكرارات %4$d</string>
-    <string name="session_exit_title">الخروج من الجلسة؟</string>
-    <string name="session_exit_message">يمكنك المتابعة لاحقاً، لكن الجلسة ستكون غير مكتملة.</string>
-    <string name="session_exit_keep">تابع التدريب</string>
-    <string name="session_exit_exit">خروج</string>
+    <string name="workout_exit_title">الخروج من التمرين؟</string>
+    <string name="workout_exit_message">يمكنك المتابعة لاحقاً، لكن الجلسة ستكون غير مكتملة.</string>
+    <string name="workout_exit_keep">تابع التدريب</string>
+    <string name="workout_exit_exit">خروج</string>
 
     <!-- Session Training Mode -->
-    <string name="session_start_set">ابدأ المجموعة</string>
-    <string name="session_exercise_label">تمرين %1$d/%2$d</string>
-    <string name="session_set_reps_format">المجموعة %1$d من %2$d · %3$d تكرارات</string>
-    <string name="session_set_duration_format">المجموعة %1$d من %2$d · ثبات %3$d ث</string>
-    <string name="session_set_only_format">المجموعة %1$d من %2$d</string>
-    <string name="session_weight_format">الوزن: %1$.1f كجم</string>
-    <string name="session_rest_between_sets">راحة بين المجموعات</string>
-    <string name="session_rest_between_exercises">راحة بين التمارين</string>
-    <string name="session_celebrate_set">اكتملت المجموعة!</string>
-    <string name="session_celebrate_exercise">اكتمل التمرين!</string>
-    <string name="session_celebrate_session">اكتملت الجلسة!</string>
+    <string name="workout_start_set">ابدأ المجموعة</string>
+    <string name="workout_exercise_label">تمرين %1$d/%2$d</string>
+    <string name="workout_set_reps_format">المجموعة %1$d من %2$d · %3$d تكرارات</string>
+    <string name="workout_set_duration_format">المجموعة %1$d من %2$d · ثبات %3$d ث</string>
+    <string name="workout_set_only_format">المجموعة %1$d من %2$d</string>
+    <string name="workout_weight_format">الوزن: %1$.1f كجم</string>
+    <string name="workout_rest_between_sets">راحة بين المجموعات</string>
+    <string name="workout_rest_between_exercises">راحة بين التمارين</string>
+    <string name="workout_celebrate_set">اكتملت المجموعة!</string>
+    <string name="workout_celebrate_exercise">اكتمل التمرين!</string>
+    <string name="workout_celebrate_workout">اكتمل التمرين!</string>
     <string name="rest_tip_breathe">شهيق بطيء، زفير بطيء.</string>
     <string name="rest_tip_quality">الجودة أهم من السرعة. أنت تقوم بعمل رائع.</string>
     <string name="rest_tip_focus">ركز على السيطرة في الجولة القادمة.</string>
@@ -379,28 +346,28 @@
     <string name="rest_tip_consistency">الاستمرارية تبني تقدماً حقيقياً.</string>
     <string name="rest_seconds_hint">ثواني الراحة</string>
     <string name="alternating_label_format">تناوب: %1$s</string>
-    <string name="session_set_indicator_format">المجموعة %1$d من %2$d</string>
-    <string name="session_rest_next_set_format">التالي: %1$s · المجموعة %2$d/%3$d</string>
-    <string name="session_complete_sets_format">المجموعات: %1$d/%2$d</string>
-    <string name="session_complete_reps_format">إجمالي التكرارات: %1$d</string>
-    <string name="session_complete_duration_format">المدة: %1$02d:%2$02d</string>
-    <string name="session_complete_accuracy_format">متوسط الدقة: %1$d%%</string>
-    <string name="session_invalid_payload">بيانات الجلسة غير صحيحة. يرجى المزامنة والمحاولة مرة أخرى.</string>
-    <string name="session_exercise_load_failed">فشل تحميل التمرين. يرجى الرجوع وتعديل الجلسة.</string>
-    <string name="session_preview_content_description">صورة معاينة التمرين</string>
-    <string name="session_start_set_numbered">ابدأ المجموعة %1$d</string>
-    <string name="session_start_first_exercise">ابدأ التمرين</string>
-    <string name="session_target_reps_format">%1$d مجموعات · %2$d تكرار</string>
-    <string name="session_target_hold_format">%1$d مجموعات · ثبات %2$d ث</string>
-    <string name="session_target_sets_only_format">%1$d مجموعات</string>
-    <string name="session_complete_subtitle">تم حفظ نتائجك. افتح التقرير للتفاصيل الكاملة.</string>
-    <string name="session_view_report">عرض التقرير</string>
-    <string name="session_set_settings">إعدادات المجموعة</string>
-    <string name="session_reps_label">العدات</string>
-    <string name="session_duration_label">مدة الثبات</string>
-    <string name="session_weight_label">الوزن</string>
-    <string name="session_seconds_unit">ث</string>
-    <string name="session_kg_unit">كجم</string>
+    <string name="workout_set_indicator_format">المجموعة %1$d من %2$d</string>
+    <string name="workout_rest_next_set_format">التالي: %1$s · المجموعة %2$d/%3$d</string>
+    <string name="workout_complete_sets_format">المجموعات: %1$d/%2$d</string>
+    <string name="workout_complete_reps_format">إجمالي التكرارات: %1$d</string>
+    <string name="workout_complete_duration_format">المدة: %1$02d:%2$02d</string>
+    <string name="workout_complete_accuracy_format">متوسط الدقة: %1$d%%</string>
+    <string name="workout_invalid_payload">بيانات التمرين غير صحيحة. يرجى المزامنة والمحاولة مرة أخرى.</string>
+    <string name="workout_exercise_load_failed">فشل تحميل التمرين. يرجى الرجوع وتعديل التمرين.</string>
+    <string name="workout_preview_content_description">صورة معاينة التمرين</string>
+    <string name="workout_start_set_numbered">ابدأ المجموعة %1$d</string>
+    <string name="workout_start_first_exercise">ابدأ التمرين</string>
+    <string name="workout_target_reps_format">%1$d مجموعات · %2$d تكرار</string>
+    <string name="workout_target_hold_format">%1$d مجموعات · ثبات %2$d ث</string>
+    <string name="workout_target_sets_only_format">%1$d مجموعات</string>
+    <string name="workout_complete_subtitle">تم حفظ نتائجك. افتح التقرير للتفاصيل الكاملة.</string>
+    <string name="workout_view_report">عرض التقرير</string>
+    <string name="workout_set_settings">إعدادات المجموعة</string>
+    <string name="workout_reps_label">العدات</string>
+    <string name="workout_duration_label">مدة الثبات</string>
+    <string name="workout_weight_label">الوزن</string>
+    <string name="workout_seconds_unit">ث</string>
+    <string name="workout_kg_unit">كجم</string>
 
     <!-- History -->
     <string name="no_workouts_yet">لا توجد تمارين بعد</string>
@@ -500,7 +467,8 @@
     <string name="subscription_feature_ai">تحليل الأداء بالذكاء الاصطناعي</string>
     <string name="subscription_feature_reports">تقارير واتجاهات متقدمة</string>
     <string name="subscription_feature_programs">برامج تدريب مخصصة</string>
-    <string name="subscription_feature_doctor_sessions">%1$d جلسات دكتور مشمولة</string>
+    <string name="subscription_feature_video">أدوات مراجعة وتصدير الفيديو</string>
+    <string name="subscription_feature_doctor_sessions">%1$d تمارين دكتور مشمولة</string>
     <string name="subscription_feature_workouts">%1$d تمارين مشمولة</string>
     <string name="subscription_feature_exercises">%1$d حركات مشمولة</string>
     <string name="subscription_period_month">/شهر</string>
@@ -531,7 +499,7 @@
     <string name="training_profile_save_failed">تعذر حفظ الملف التدريبي</string>
     <string name="training_goal">الهدف التدريبي</string>
     <string name="available_days_per_week">الأيام المتاحة أسبوعيًا</string>
-    <string name="max_session_minutes">أقصى مدة للجلسة</string>
+    <string name="max_workout_minutes">أقصى مدة للتمرين</string>
     <string name="available_equipment">المعدات المتاحة</string>
     <string name="display_mode">وضع العرض</string>
     <string name="display_mode_beginner">مبتدئ</string>
@@ -542,10 +510,6 @@
     <string name="voice_feedback">التعليق الصوتي</string>
     <string name="voice_feedback_desc">تصحيح الأداء في الوقت الفعلي</string>
     <string name="notifications">الإشعارات</string>
-    <string name="theme_mode">Mode</string>
-    <string name="theme_mode_system">حسب النظام</string>
-    <string name="theme_mode_light">فاتح</string>
-    <string name="theme_mode_dark">داكن</string>
     <string name="language">اللغة</string>
     <string name="language_english">English</string>
     <string name="language_arabic">العربية</string>
@@ -572,11 +536,8 @@
     
     <!-- Workout -->
     <string name="start">ابدأ</string>
-    <string name="start_exercise">ابدأ التمرين</string>
-    <string name="exercise_detail_title">تفاصيل التمرين</string>
-    <string name="difficulty_level">مستوى الصعوبة</string>
-    <string name="tracked_joints">المفاصل المتتبعة</string>
-    <string name="unified_evaluation_message">تقييم موحد، بدون اختيار مستوى صعوبة</string>
+    <string name="start_camera">تشغيل الكاميرا</string>
+    <string name="analyze_video">تحليل فيديو</string>
     <string name="body_scan_title">فحص الجسم</string>
     <string name="body_scan_subtitle">قيّم مرونتك وتوازنك وتماثلك</string>
     <string name="form_checklist">قائمة التحقق</string>
@@ -723,6 +684,7 @@
     <string name="feature_unlimited_ai">تصحيح AI غير محدود</string>
     <string name="feature_personalized">برامج تدريب مخصصة</string>
     <string name="feature_analytics">تحليلات تقدم مفصلة</string>
+    <string name="feature_video_export">تصدير فيديو وحركة بطيئة</string>
     
     <!-- Training Screen -->
     <string name="setup_position">إعداد الوضعية</string>
@@ -774,11 +736,11 @@
     <string name="pg_calendar_day_missing">!</string>
     <string name="pg_today_format">اليوم — اليوم %1$d</string>
     <string name="pg_today_rest">اليوم — يوم راحة</string>
-    <string name="pg_session_exercises_format">%1$d تمارين · ~%2$d د</string>
+    <string name="pg_planned_workout_exercises_format">%1$d تمارين · ~%2$d د</string>
     <string name="pg_more_items_format">+%1$d عناصر أخرى</string>
-    <string name="pg_start_session">▶  ابدأ الجلسة</string>
-    <string name="pg_continue_session">▶  تابع الجلسة</string>
-    <string name="pg_session_completed">✅ مكتمل</string>
+    <string name="pg_start_planned_workout">▶  ابدأ التمرين</string>
+    <string name="pg_continue_planned_workout">▶  تابع التمرين</string>
+    <string name="pg_planned_workout_completed">✅ مكتمل</string>
     <string name="pg_item_sets_reps_format">%1$d مجموعات · %2$d تكرارات</string>
     <string name="pg_item_sets_hold_format">%1$d مجموعات · ثبات %2$d ث</string>
     <string name="pg_item_rest_format">راحة %1$d ث</string>
@@ -866,23 +828,23 @@
     <string name="day_detail_avg_form">متوسط الأداء</string>
 
     <!-- Session Report Enhancement -->
-    <string name="session_report_excellent">جلسة ممتازة!</string>
-    <string name="session_report_good">عمل رائع!</string>
-    <string name="session_report_solid">جهد متين!</string>
-    <string name="session_report_keep_going">كل جلسة تحسب!</string>
-    <string name="session_report_vs_previous">مقارنة بالسابق</string>
-    <string name="session_report_strongest">الأقوى: %s</string>
-    <string name="session_report_weakest">يحتاج تحسين: %s</string>
-    <string name="session_report_improved_format">تحسّن %+.1f%% منذ آخر جلسة</string>
+    <string name="workout_report_excellent">تمرين ممتاز!</string>
+    <string name="workout_report_good">عمل رائع!</string>
+    <string name="workout_report_solid">جهد متين!</string>
+    <string name="workout_report_keep_going">كل تمرين يحسب!</string>
+    <string name="workout_report_vs_previous">مقارنة بالسابق</string>
+    <string name="workout_report_strongest">الأقوى: %s</string>
+    <string name="workout_report_weakest">يحتاج تحسين: %s</string>
+    <string name="workout_report_improved_format">تحسّن %+.1f%% منذ آخر تمرين</string>
 
     <!-- Day Session Page -->
     <string name="ds_day_title_format">اليوم %1$d — %2$s</string>
     <string name="ds_day_subtitle_format">الأسبوع %1$d · %2$d جلسات</string>
-    <string name="ds_start_session">ابدأ الجلسة</string>
-    <string name="ds_continue_session">تابع</string>
-    <string name="ds_session_completed">مكتمل</string>
-    <string name="ds_session_up_next">التالي</string>
-    <string name="ds_session_locked">مقفل</string>
+    <string name="ds_start_planned_workout">ابدأ التمرين</string>
+    <string name="ds_continue_planned_workout">تابع</string>
+    <string name="ds_workout_completed">مكتمل</string>
+    <string name="ds_workout_up_next">التالي</string>
+    <string name="ds_workout_locked">مقفل</string>
     <string name="ds_exercises_meta_format">%1$d تمارين · ~%2$d د</string>
     <string name="ds_items_meta_format">%1$d عناصر · ~%2$d د</string>
     <string name="ds_sets_reps_format">%1$d مجموعات · %2$d تكرارات</string>
@@ -896,11 +858,11 @@
     <string name="ds_done">تم</string>
     <string name="ds_reset_all">إعادة للأصل</string>
     <string name="ds_edit_mode">تعديل</string>
-    <string name="ds_rename_session_title">إعادة تسمية الجلسة</string>
+    <string name="ds_rename_workout_title">إعادة تسمية التمرين</string>
     <string name="ds_rename_en_hint">الاسم (بالإنجليزية)</string>
     <string name="ds_rename_ar_hint">الاسم (بالعربية)</string>
-    <string name="ds_delete_session_title">حذف الجلسة؟</string>
-    <string name="ds_delete_session_message">ستُحذف هذه الجلسة من خطة اليوم. يمكنك إعادة الضبط في أي وقت.</string>
+    <string name="ds_delete_workout_title">حذف التمرين؟</string>
+    <string name="ds_delete_workout_message">سيُحذف هذا التمرين من خطة اليوم. يمكنك إعادة الضبط في أي وقت.</string>
     <string name="ds_delete_item_title">إزالة العنصر؟</string>
     <string name="ds_delete_item_message">سيُزال هذا العنصر من الجلسة.</string>
     <string name="ds_edit_exercise_title">تعديل التمرين</string>
@@ -913,11 +875,11 @@
     <string name="ds_rest_duration_label">مدة الراحة (ث)</string>
     <string name="ds_save">حفظ</string>
     <string name="ds_modified_hint">✏️ معدّل</string>
-    <string name="ds_no_sessions_message">لا توجد جلسات لليوم</string>
+    <string name="ds_no_planned_workouts_message">لا توجد تمارين لليوم</string>
 
     <!-- Week Screen -->
     <string name="error_week_not_found">الأسبوع غير موجود</string>
-    <string name="week_sessions_rest_format">%1$d جلسات • %2$d أيام راحة</string>
+    <string name="week_workouts_rest_format">%1$d تمارين • %2$d أيام راحة</string>
 
     <!-- Common Emoji / Icon text -->
     <string name="emoji_clipboard">📋</string>
@@ -957,19 +919,19 @@
     <string name="program_level_unknown">المستويات —</string>
     <string name="program_filter_goal_any">كل الأهداف</string>
     <string name="program_badge_featured">مميز</string>
-    <string name="program_card_sessions_weekly_format">%1$d جلسة · ~%2$d / أسبوع</string>
+    <string name="program_card_workouts_weekly_format">%1$d تمرين · ~%2$d / أسبوع</string>
     <string name="program_detail_why_title">لماذا هذا البرنامج</string>
     <string name="program_detail_week1_title">نظرة على الأسبوع الأول</string>
     <string name="program_detail_policies">أيام الراحة مدمجة. إذا فاتك يوم تدريب، تابع في اليوم التالي المجدول—تتبع التقدم يتبع التقويم.</string>
     <string name="program_detail_meta_goal">الهدف: %1$s</string>
     <string name="program_detail_meta_domain">التركيز: %1$s</string>
-    <string name="program_detail_meta_weekly_sessions">~%1$d جلسة / أسبوع (هدف)</string>
-    <string name="program_detail_meta_session_length">~%1$d دقيقة / جلسة (تقريبي)</string>
+    <string name="program_detail_meta_weekly_workouts">~%1$d تمرين / أسبوع (هدف)</string>
+    <string name="program_detail_meta_workout_length">~%1$d دقيقة / تمرين (تقريبي)</string>
     <string name="program_detail_meta_equipment">المعدات: %1$s</string>
     <string name="program_week1_pill_rest">راحة</string>
     <string name="program_week1_pill_light">استشفاء</string>
-    <string name="session_customization_synced">تم حفظ التغييرات في خطتك</string>
-    <string name="session_customization_pending">حُفظت على الجهاز — ستُزامن عند عودة الاتصال</string>
+    <string name="workout_customization_synced">تم حفظ التغييرات في خطتك</string>
+    <string name="workout_customization_pending">حُفظت على الجهاز — ستُزامن عند عودة الاتصال</string>
     <string name="workout_list_title">التمارين المجمعة</string>
     <string name="workout_list_subtitle">اختر تمريناً للبدء</string>
     <string name="exercise_list_subtitle">استكشف مكتبة التمارين الكاملة</string>
@@ -991,10 +953,11 @@
 
     <!-- ProgramSessionActivity messages -->
     <string name="error_day_not_found">اليوم غير موجود</string>
-    <string name="error_no_exercises">لا توجد تمارين في هذه الجلسة</string>
-    <string name="error_expand_session_first">افتح جلسة أولاً</string>
+    <string name="error_no_exercises">لا توجد تمارين في هذا التمرين</string>
+    <string name="error_expand_workout_first">افتح تمريناً أولاً</string>
 
     <!-- TrainingActivity messages -->
+    <string name="error_video_playback">خطأ في تشغيل الفيديو</string>
     <string name="results_saved">تم حفظ النتائج!</string>
     <string name="btn_saved">تم الحفظ ✓</string>
     <string name="error_save_failed">فشل حفظ النتائج</string>
@@ -1051,7 +1014,7 @@
     <string name="cd_stat_minutes">دقائق</string>
 
     <!-- Layout strings – Item program session item -->
-    <string name="session_item_exercise_label">تمرين</string>
+    <string name="workout_item_exercise_label">تمرين</string>
 
     <!-- Level / Plan -->
     <string name="loading_level">جاري تحميل مستواك…</string>
@@ -1068,60 +1031,6 @@
     <string name="coach_strict">صارم</string>
     <string name="camera_cue_mode">قنوات رسائل التدريب</string>
     <string name="camera_cue_mode_desc">تدريب الكاميرا يستخدم رسائل صوتية فقط. مراجعة الفيديو تستخدم رسائل نصية فقط.</string>
-
-    <!-- Assessment / Body Scan -->
-    <string name="screening_title">فحص ما قبل الاختبار</string>
-    <string name="screening_subtitle">للتأكد من سلامتك، يرجى الإجابة على الأسئلة التالية.</string>
-    <string name="screening_disclaimer">⚕️ تنبيه: هذا ليس فحص طبي. هو أداة wellness لتقييم الحركة فقط.</string>
-    <string name="screening_start">ابدأ الاختبار</string>
-    <string name="screening_continue_warning">متابعة مع تحذير</string>
-    <string name="screening_warning_title">تحذير</string>
-    <string name="screening_warning_message">بناءً على إجاباتك، ننصحك باستشارة طبيبك قبل البدء في أي نشاط بدني. هل تريد المتابعة على مسؤوليتك؟</string>
-    <string name="screening_continue">متابعة</string>
-    <string name="go_back">رجوع</string>
-    <string name="assessment_movement_count">الحركة %1$d من %2$d</string>
-    <string name="assessment_ready">جاهز</string>
-    <string name="assessment_skip_pain">أشعر بألم في هذه الحركة — تخطي</string>
-    <string name="assessment_analyzing">جاري تحليل حركتك…</string>
-    <string name="assessment_no_exercises">لم يتم إكمال أي تمرين</string>
-    <string name="assessment_pain_message">أبلغت عن ألم في %1$d حركة/حركات.\nيرجى استشارة متخصص قبل إجراء الاختبار.</string>
-    <string name="assessment_retry">يرجى المحاولة مرة أخرى.</string>
-    <string name="assessment_domains_title">أبعاد التقييم</string>
-    <string name="assessment_body_map_title">خريطة الجسم</string>
-    <string name="assessment_observations_title">ملاحظات حركية</string>
-    <string name="assessment_safety_title">قيود السلامة</string>
-    <string name="assessment_recommendations_title">التوصيات</string>
-    <string name="assessment_disclaimer">⚕️ هذا تقييم حركي وليس تشخيص طبي. استشر متخصص لأي ألم أو مشاكل صحية.</string>
-    <string name="assessment_find_program">ابدأ برنامجك</string>
-    <string name="assessment_share">شارك نتيجتك</string>
-    <string name="assessment_go_home">الصفحة الرئيسية</string>
-    <string name="assessment_body_score">نتيجة الجسم</string>
-    <string name="assessment_motivational_note">مؤشر تحفيزي — القرارات التدريبية تُبنى على الأبعاد أدناه</string>
-    <string name="assessment_no_region_data">لا توجد بيانات منطقة متاحة</string>
-    <string name="assessment_possible_causes">الأسباب المحتملة:</string>
-    <string name="assessment_blocked">محظور: %1$s</string>
-    <string name="assessment_alternatives">بدائل: %1$s</string>
-    <string name="assessment_recommended_for_you">البرنامج المقترح لك</string>
-    <string name="assessment_start_program">ابدأ هذا البرنامج</string>
-    <string name="assessment_program_info">%1$d أسابيع • %2$s • %3$s</string>
-    <string name="domain_mobility">المرونة</string>
-    <string name="domain_control">التحكم</string>
-    <string name="domain_symmetry">التماثل</string>
-    <string name="domain_safety">السلامة</string>
-    <string name="share_not_available">ميزة المشاركة قريباً</string>
-
-    <string name="recent_activity">النشاط الأخير</string>
-    <string name="home_loading">جاري تحميل بياناتك…</string>
-    <string name="recent_session_item">%1$s · %2$s</string>
-    <string name="no_recent_sessions">لا توجد جلسات حديثة</string>
-    <string name="recent_session_score">النتيجة: %1$d%%</string>
-    <string name="time_just_now">الآن</string>
-    <string name="time_minutes_ago">منذ %1$d د</string>
-    <string name="time_hours_ago">منذ %1$d س</string>
-    <string name="time_days_ago">منذ %1$d أيام</string>
-    <string name="time_weeks_ago">منذ %1$d أسابيع</string>
-    <string name="time_months_ago">منذ %1$d أشهر</string>
-    <string name="time_years_ago">منذ %1$d سنوات</string>
 
     <!-- ═══════════════════════════════════════════════════ -->
     <!-- PROFILE ONBOARDING -->
@@ -1225,4 +1134,49 @@
     <string name="onb_equipment_all">تجهيزات كاملة</string>
     <string name="onb_health_disclaimer">أقر بأنني بصحة جيدة ولا أعاني من أي حالة طبية تمنعني من ممارسة التمارين، وأتحمّل مسؤولية التمرين ضمن حدودي.</string>
 
+
+    <!-- P1 workout naming (auto-synced) -->
+    <string name="catch_up_day_dialog_title">التعويض</string>
+    <string name="catch_up_open_missed">افتح أول يوم فائت</string>
+    <string name="enroll_replace_cancel">إلغاء</string>
+    <string name="enroll_replace_continue">متابعة</string>
+    <string name="enroll_replace_current_program_fallback">برنامجك الحالي</string>
+    <string name="enroll_replace_message">أنت حالياً في %1$s (%2$d%% مكتمل). التبديل سيؤرشف تقدمك الحالي. متابعة؟</string>
+    <string name="enroll_replace_title">تبديل البرنامج؟</string>
+    <string name="error_enroll_check_failed">تعذر التحقق من التسجيل. حاول مرة أخرى.</string>
+    <string name="exercise_target_duration_custom">مخصص</string>
+    <string name="exercise_target_duration_default">افتراضي القالب</string>
+    <string name="exercise_target_reps_custom">مخصص</string>
+    <string name="exercise_target_reps_default">افتراضي القالب</string>
+    <string name="exercise_unavailable_substitute">التمرين غير متاح — اضغط للاستبدال</string>
+    <string name="plan_pause_calendar">إيقاف الخطة</string>
+    <string name="plan_paused_hint">الخطة متوقفة — التقويم مجمد حتى تستأنف.</string>
+    <string name="plan_resume_calendar">استئناف الخطة</string>
+    <string name="pre_training_desc">اضبط العدات والراحة قبل البدء.</string>
+    <string name="pre_training_duration_hint">مدة الثبات (ثوانٍ)</string>
+    <string name="pre_training_reps_hint">العدات المستهدفة</string>
+    <string name="pre_training_reset_defaults">إعادة الضبط</string>
+    <string name="pre_training_title">قبل التمرين</string>
+    <string name="program_preview_error">تعذر تحميل المعاينة</string>
+    <string name="program_preview_expand">معاينة الأسبوع الأول (الخادم)</string>
+    <string name="program_preview_loading">جاري تحميل المعاينة…</string>
+    <string name="progress_metrics_title">اتجاه حمل البرنامج</string>
+    <string name="progress_metrics_week_format">أ%1$d: حجم %2$.0f · شكل %3$.0f · RPE %4$s</string>
+    <string name="replace_alternatives">بدائل</string>
+    <string name="rpe_label">معدل الجهد RPE (1–10)</string>
+    <string name="rpe_skip">تخطي</string>
+    <string name="section_cooldown">تهدئة</string>
+    <string name="section_main">رئيسي</string>
+    <string name="section_other">أخرى</string>
+    <string name="section_warmup">إحماء</string>
+    <string name="skip_warmup">تخطي الإحماء</string>
+    <string name="skip_warmup_none">لا يوجد ما يُتخطى — العمل الرئيسي يأتي أولاً.</string>
+    <string name="weight_invalid">أدخل وزناً صالحاً</string>
+    <string name="weight_per_set_dialog_title">أوزان هذا التمرين</string>
+    <string name="weight_same_for_all_sets">نفس الوزن لكل المجموعات</string>
+    <string name="weight_set_number_hint">المجموعة %1$d (كجم)</string>
+    <string name="workout_duration_badge">~%1$d دقيقة</string>
+    <string name="workout_report_exercise_indicator">تمرين %1$d من %2$d</string>
+    <string name="workout_report_summary">ملخص التمرين</string>
+    <string name="workout_report_swipe_hint">اسحب لعرض تفاصيل كل تمرين</string>
 </resources>

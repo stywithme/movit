@@ -381,10 +381,10 @@ BOTTOM STATS BAR أثناء SETUP_POSE:
 #### المشكلة الحالية
 
 ```kotlin
-// handleCountdown في SessionSupervisor:
+// handleCountdown في WorkoutRunSupervisor:
 is SupervisorSignal.PoseInvalid -> {
     // فريم واحد → إلغاء فوري!
-    transitionTo(SessionState.SETUP_POSE)
+    transitionTo(WorkoutRunState.SETUP_POSE)
     emit(SupervisorAction.CancelCountdown)
 }
 ```
@@ -675,7 +675,7 @@ enum class Direction { RAISE, LOWER }
 
 | الملف | التعديل |
 |-------|---------|
-| **`SessionSupervisor.kt`** | `handleCountdown()` - نظام 3 مستويات بدل إلغاء فوري |
+| **`WorkoutRunSupervisor.kt`** | `handleCountdown()` - نظام 3 مستويات بدل إلغاء فوري |
 | **`SupervisorAction.kt`** | إضافة `ValidatePoseSetup(angles, landmarks)` بدل `ValidatePose(angles)` |
 | **`SupervisorSignal.kt`** | `PoseFrame` يبقى كما هو (يحمل landmarks بالفعل) |
 | **`TrainingViewModel.kt`** | استخدام `PoseSetupGuide` بدل `PoseValidator` |
@@ -757,7 +757,7 @@ TrainingActivity:
 
 ### المرحلة 5: العد التنازلي
 14. إصلاح `CountdownController` ← دقة + `freeze()/unfreeze()`
-15. تعديل `SessionSupervisor.handleCountdown()` ← 3 مستويات تسامح
+15. تعديل `WorkoutRunSupervisor.handleCountdown()` ← 3 مستويات تسامح
 16. إصلاح تأخير `onCountdownFinished()` ← فوري
 
 ### المرحلة 6: التكامل والاختبار

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req, Res } from '@nestjs/common';
+﻿import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { verifyMobileToken } from '@/modules/auth/auth.service';
 import { getPrisma } from '@/lib/prisma/client';
@@ -140,7 +140,7 @@ export class MobileUserProgramsController {
     body: {
       weekNumber: number;
       dayNumber: number;
-      sessionItemId: string;
+      plannedWorkoutItemId: string;
       overrideType: string;
       reasonCode?: string;
       data?: Record<string, unknown>;
@@ -164,18 +164,18 @@ export class MobileUserProgramsController {
       if (
         body.weekNumber === undefined ||
         body.dayNumber === undefined ||
-        !body.sessionItemId ||
+        !body.plannedWorkoutItemId ||
         !body.overrideType
       ) {
         res.status(400);
-        return { success: false, error: 'weekNumber, dayNumber, sessionItemId, overrideType are required' };
+        return { success: false, error: 'weekNumber, dayNumber, plannedWorkoutItemId, overrideType are required' };
       }
       const row = await prisma.userProgramOverride.create({
         data: {
           userProgramId: id,
           weekNumber: body.weekNumber,
           dayNumber: body.dayNumber,
-          sessionItemId: body.sessionItemId,
+          plannedWorkoutItemId: body.plannedWorkoutItemId,
           overrideType: body.overrideType as never,
           reasonCode: (body.reasonCode as never) ?? undefined,
           data: (body.data as Prisma.InputJsonValue) ?? undefined,

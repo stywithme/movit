@@ -11,7 +11,7 @@
 
 ### احتساب الأسابيع المكتملة
 
-- `countCompletedCalendarWeeks`: عدّ الأسابيع من 1 إلى `durationWeeks` حيث كل أيام التدريب (غير الراحة وذات جلسات) لها إدخال تقدم `status === 'completed'` و`sessionId === '__day__'`.
+- `countCompletedCalendarWeeks`: عدّ الأسابيع من 1 إلى `durationWeeks` حيث كل أيام التدريب (غير الراحة وذات تمارين مخططة) لها إدخال تقدم `status === 'completed'` و`plannedWorkoutId === '__day__'`.
 
 ### مراجعة خروج البرنامج (`exitRecommendations`)
 

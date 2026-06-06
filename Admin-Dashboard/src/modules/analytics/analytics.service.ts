@@ -24,8 +24,8 @@ export interface OverviewAnalytics {
   kpis: Record<string, MetricDelta>;
   northStar: { completed: number; eligibleUsers: number; rate: number; label: string };
   activationFunnel: FunnelStep[];
-  trends: { sessions: ChartPoint[]; revenue: ChartPoint[] };
-  distributions: { levels: Array<{ name: string; value: number; color?: string }>; sessionContexts: ChartPoint[] };
+  trends: { workoutExecutions: ChartPoint[]; revenue: ChartPoint[] };
+  distributions: { levels: Array<{ name: string; value: number; color?: string }>; executionContexts: ChartPoint[] };
   safety: { dangerRepRate: number; abandonedReports: number };
   alerts: { pendingReassessments: number; failedCheckouts: number; abandonedReports: number };
 }
@@ -47,14 +47,14 @@ export interface UsersGrowthAnalytics {
 
 export interface ActivationAnalytics {
   funnel: FunnelStep[];
-  timeToFirstSession: { avgHours: number; usersWithFirstSession: number; buckets: ChartPoint[] };
+  timeToFirstWorkout: { avgHours: number; usersWithFirstWorkout: number; buckets: ChartPoint[] };
   northStar: OverviewAnalytics['northStar'];
 }
 
 export interface RetentionAnalytics {
   activeUsers: number;
   stickiness: { dau: number; wau: number; mau: number };
-  sessionsPerActiveUser: number;
+  workoutExecutionsPerActiveUser: number;
   cohorts: Array<Record<string, string | number>>;
   churnSignals: Record<string, number>;
 }
@@ -62,9 +62,9 @@ export interface RetentionAnalytics {
 export interface TrainingAnalytics {
   volume: Record<string, number>;
   contexts: ChartPoint[];
-  trends: { sessions: ChartPoint[]; formScore: ChartPoint[] };
+  trends: { workoutExecutions: ChartPoint[]; formScore: ChartPoint[] };
   averages: Record<string, number>;
-  exercises: Array<{ exerciseId: string; name: string; sessions: number; dangerRepRate: number }>;
+  exercises: Array<{ exerciseId: string; name: string; executions: number; dangerRepRate: number }>;
 }
 
 export interface ProgressionAnalytics {
@@ -104,11 +104,11 @@ export interface SafetyAnalytics {
 
 export interface ContentAnalytics {
   exercises: { total: number; byStatus: ChartPoint[]; byCategory: ChartPoint[]; familyCoverage: ChartPoint[] };
-  workouts: { total: number; byStatus: ChartPoint[]; byDifficulty: ChartPoint[] };
+  workoutTemplates: { total: number; byStatus: ChartPoint[]; byDifficulty: ChartPoint[] };
   programs: { total: number; published: number; byType: ChartPoint[] };
   messages: { total: number; active: number; byCategory: ChartPoint[] };
   cameraPositions: { total: number; active: number };
-  mostUsedExercises: Array<{ exerciseId: string; name: string; sessions: number }>;
+  mostUsedExercises: Array<{ exerciseId: string; name: string; executions: number }>;
 }
 
 export type AnalyticsParams = Record<string, string | number | boolean | null | undefined>;
@@ -135,5 +135,5 @@ export const analyticsService = {
   levelTransitions: (params?: AnalyticsParams) => getData<any>('/admin/analytics/level-transitions', params),
   assessments: (params?: AnalyticsParams) => getData<any>('/admin/analytics/assessments', params),
   userReport: (id: string) => getData<any>(`/admin/analytics/users/${id}/report`),
-  sessionReport: (id: string) => getData<any>(`/admin/analytics/sessions/${id}/report`),
+  workoutExecutionReport: (id: string) => getData<any>(`/admin/analytics/workout-executions/${id}/report`),
 };

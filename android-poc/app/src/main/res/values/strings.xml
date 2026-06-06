@@ -77,15 +77,15 @@
     <string name="programs_motivation_halfway">Halfway there. You are doing great.</string>
     <string name="programs_motivation_format_progress">🔥 %1$d days · %2$d%% · %3$s</string>
     <string name="programs_overview_meta_format">%1$s · %2$d%% complete</string>
-    <string name="programs_sessions_count_format">%1$d sessions</string>
-    <string name="programs_session_done">Done</string>
-    <string name="programs_session_not_started">Not started</string>
+    <string name="programs_planned_workouts_count_format">%1$d workouts</string>
+    <string name="programs_planned_workout_done">Done</string>
+    <string name="programs_planned_workout_not_started">Not started</string>
     <string name="programs_view_summary">View Summary</string>
-    <string name="programs_start_session">Start Session</string>
+    <string name="programs_start_workout">Start Workout</string>
     <string name="programs_rest_day_hint">Rest day. Take it easy and recover.</string>
     <string name="return_title">Welcome back</string>
     <string name="return_subtitle">We can continue from where you left off or start the week fresh.</string>
-    <string name="return_continue">Continue from last session</string>
+    <string name="return_continue">Continue from last workout</string>
     <string name="return_restart_week">Start week fresh</string>
     <string name="return_greeting_format">%1$s Welcome back!</string>
     <string name="programs_customize">Customize</string>
@@ -112,12 +112,12 @@
     <string name="week_duration_format">Time: %1$s</string>
     <string name="duration_hours_minutes_format">%1$dh %2$dm</string>
     <string name="today_plan_title_format">Week %1$d · Day %2$d</string>
-    <string name="today_plan_session_format">%1$s • %2$d exercises</string>
-    <string name="today_plan_session_with_time_format">%1$s • %2$d exercises • %3$d min</string>
+    <string name="today_plan_workout_format">%1$s • %2$d exercises</string>
+    <string name="today_plan_workout_with_time_format">%1$s • %2$d exercises • %3$d min</string>
     <string name="view_program">View Program</string>
-    <string name="program_stats_format">%1$d weeks · %2$d sessions done</string>
+    <string name="program_stats_format">%1$d weeks · %2$d workouts done</string>
     <string name="program_week_progress_format">Week %1$d of %2$d · %3$d/%4$d days done</string>
-    <string name="session_progress_format">Session %1$d of %2$d</string>
+    <string name="workout_progress_format">Workout %1$d of %2$d</string>
 
     <!-- Home Train Mode States -->
     <string name="home_your_plan_label">Your Training Plan</string>
@@ -136,9 +136,9 @@
     <string name="reassessment_due_subtitle">Complete a Body Scan to update your level and get a new personalized plan.</string>
     <string name="start_reassessment">Start Body Scan</string>
 
-    <!-- Workout Session -->
+    <!-- Workout run -->
     <string name="start_workout">Start Workout</string>
-    <string name="workout_session_progress_format">Exercise %1$d of %2$d</string>
+    <string name="workout_exercise_progress_format">Exercise %1$d of %2$d</string>
     <string name="great_job">Great job!</string>
     <string name="error_workout_not_found">Workout not found</string>
     <string name="exit_workout_title">Exit Workout?</string>
@@ -156,49 +156,12 @@
 
     <!-- Progression Notification -->
     <string name="progression_sheet_title">Training Adjusted</string>
-    <string name="progression_sheet_subtitle">Based on your performance, we\'ve updated your next session:</string>
+    <string name="progression_sheet_subtitle">Based on your performance, we\'ve updated your next workout:</string>
     <string name="progression_sheet_got_it">Got it!</string>
-    <string name="progression_sheet_view_details">View Details</string>
     <string name="progression_field_weight">Weight</string>
     <string name="progression_field_reps">Reps</string>
     <string name="progression_field_sets">Sets</string>
-    <string name="progression_field_reassessment">Reassessment</string>
-
-    <!-- Progression Report Page -->
-    <string name="progression_page_title">Your Progress</string>
-    <string name="progression_level_up">Level Up!</string>
-    <string name="progression_great_performance">Great performance — your training has been upgraded!</string>
-    <string name="progression_deload_title">Training Adjusted</string>
-    <string name="progression_deload_message">We\'ve adjusted your load to help you build a stronger foundation.</string>
-    <string name="progression_what_changed">What Changed</string>
-    <string name="progression_why">Why This Happened</string>
-    <string name="progression_why_form_score">Your form score averaged %1$d%% over the last %2$d sessions</string>
-    <string name="progression_why_completion">Your completion rate was %1$d%%</string>
-    <string name="progression_why_rom">Your range of motion averaged %1$d%%</string>
-    <string name="progression_what_next">What\'s Next</string>
-    <string name="progression_next_weight_tip">Maintain a form score of 75%%+ for 2 more sessions to increase weight again</string>
-    <string name="progression_next_reps_tip">Keep form at 80%%+ for a full week with 95%%+ ROM to increase reps</string>
-    <string name="progression_next_deload_tip">Focus on maintaining proper form — your load will increase once your score improves</string>
-    <string name="progression_no_changes_title">Keep Going!</string>
-    <string name="progression_no_changes_message">No adjustments yet — keep training consistently and your progress will come!</string>
-    <string name="progression_no_changes_goal">Your next goal: maintain form score above 75%% for 2 sessions</string>
-    <string name="progression_loading">Checking progress…</string>
-    <string name="progression_change_increase">%1$s increased from %2$s to %3$s</string>
-    <string name="progression_change_decrease">%1$s adjusted from %2$s to %3$s</string>
-    <string name="progression_for_exercise">for %1$s</string>
-
-    <!-- Progression in Plan Overview -->
-    <string name="progression_summary_title">Progress Summary</string>
-    <string name="progression_summary_increases">%1$d increase(s)</string>
-    <string name="progression_summary_adjustments">%1$d adjustment(s)</string>
-    <string name="progression_summary_this_month">this month</string>
-    <string name="progression_grouped_by_exercise">By Exercise</string>
-
-    <!-- Progression Home Card -->
-    <string name="progression_home_title">Training Updated</string>
-    <string name="progression_home_subtitle">Your training plan was adjusted based on your performance</string>
-    <string name="progression_home_view">View Changes</string>
-    <string name="progression_home_next_reps_tip">Next session target: %1$d reps (previous: %2$d)</string>
+    <string name="progression_next_reps_tip">Next workout target: %1$d reps (previous: %2$d)</string>
 
     <!-- Quick Start -->
     <string name="quick_start_title">Quick Start</string>
@@ -219,6 +182,7 @@
     <string name="cd_pro">Pro</string>
     <string name="cd_exercise">Exercise</string>
     <string name="cd_camera">Camera</string>
+    <string name="cd_video">Video</string>
     <string name="cd_no_exercises">No exercises</string>
     <string name="cd_no_history">No history</string>
     <string name="cd_view_details">View details</string>
@@ -231,11 +195,14 @@
     <string name="change_avatar_coming_soon">Change Avatar - Coming Soon</string>
     <string name="google_sign_in_coming_soon">Google Sign In - Coming Soon</string>
     <string name="google_sign_up_coming_soon">Google Sign Up - Coming Soon</string>
+    <string name="no_video_selected">No video selected</string>
     <string name="no_exercise_specified">No exercise specified</string>
     <string name="failed_to_load_exercise">Failed to load exercise</string>
     <string name="failed_to_load_exercise_format">Failed to load exercise: %1$s</string>
     <string name="failed_to_load_workout_format">Failed to load workout: %1$s</string>
     <string name="no_workout_specified">No workout specified</string>
+    <string name="video_permission_required">Permission required to access videos</string>
+    <string name="video_permission_rationale">Video access permission is needed to analyze exercise videos</string>
     <string name="counting_method_up_down">Up &amp; Down (like Squat)</string>
     <string name="counting_method_hold">Hold (like Plank)</string>
     
@@ -365,6 +332,7 @@
     <string name="subscription_feature_ai">AI form analysis</string>
     <string name="subscription_feature_reports">Advanced reports and trends</string>
     <string name="subscription_feature_programs">Personalized programs</string>
+    <string name="subscription_feature_video">Video review and export tools</string>
     <string name="subscription_feature_doctor_sessions">%1$d doctor sessions included</string>
     <string name="subscription_feature_workouts">%1$d workouts included</string>
     <string name="subscription_feature_exercises">%1$d exercises included</string>
@@ -396,7 +364,7 @@
     <string name="training_profile_save_failed">Failed to save training profile</string>
     <string name="training_goal">Training Goal</string>
     <string name="available_days_per_week">Available Days Per Week</string>
-    <string name="max_session_minutes">Max Session Minutes</string>
+    <string name="max_workout_minutes">Max Workout Minutes</string>
     <string name="available_equipment">Available Equipment</string>
     <string name="display_mode">Display Mode</string>
     <string name="display_mode_beginner">Beginner</string>
@@ -407,10 +375,6 @@
     <string name="voice_feedback">Voice Feedback</string>
     <string name="voice_feedback_desc">Real-time form correction</string>
     <string name="notifications">Notifications</string>
-    <string name="theme_mode">Mode</string>
-    <string name="theme_mode_system">System</string>
-    <string name="theme_mode_light">Light</string>
-    <string name="theme_mode_dark">Dark</string>
     <string name="language">Language</string>
     <string name="language_english">English</string>
     <string name="language_arabic">العربية</string>
@@ -437,11 +401,8 @@
     
     <!-- Workout -->
     <string name="start">Start</string>
-    <string name="start_exercise">Start Exercise</string>
-    <string name="exercise_detail_title">Exercise Details</string>
-    <string name="difficulty_level">Difficulty Level</string>
-    <string name="tracked_joints">Tracked Joints</string>
-    <string name="unified_evaluation_message">Unified evaluation, no difficulty selection</string>
+    <string name="start_camera">Start Camera</string>
+    <string name="analyze_video">Analyze Video</string>
     <string name="body_scan_title">Body Scan</string>
     <string name="body_scan_subtitle">Assess your mobility, balance &amp; symmetry</string>
     <string name="form_checklist">Form Checklist</string>
@@ -611,6 +572,7 @@
     <string name="feature_unlimited_ai">Unlimited AI Form Correction</string>
     <string name="feature_personalized">Personalized Training Programs</string>
     <string name="feature_analytics">Detailed Progress Analytics</string>
+    <string name="feature_video_export">Video Export &amp; Slow Motion</string>
     
     <!-- Training Screen -->
     <string name="setup_position">Setup Position</string>
@@ -628,7 +590,7 @@
     <string name="coach_standard">Standard</string>
     <string name="coach_strict">Strict</string>
     <string name="camera_cue_mode">Feedback Channels</string>
-    <string name="camera_cue_mode_desc">Camera training uses spoken feedback during live coaching.</string>
+    <string name="camera_cue_mode_desc">Camera training uses spoken feedback only. Video review uses text feedback only.</string>
     <string name="detection_model">Detection Model</string>
     <string name="detection_model_desc">Heavy model is more accurate but slower</string>
     <string name="model_full">Full (Fast)</string>
@@ -671,14 +633,14 @@
     <string name="exercise_target_duration_custom">Target: %1$d seconds (custom)</string>
     <string name="train_again">Train Again</string>
     <string name="weeks_count_format">%1$d weeks</string>
-    <string name="sessions_count_format">%1$d sessions</string>
-    <string name="sessions_progress_format">Progress: %1$d/%2$d sessions</string>
+    <string name="planned_workouts_count_format">%1$d workouts</string>
+    <string name="planned_workouts_progress_format">Progress: %1$d/%2$d workouts</string>
     <string name="days_count_format">%1$d days</string>
     <string name="week_title_only">Week %1$d</string>
     <string name="week_title_with_name">Week %1$d • %2$s</string>
     <string name="week_default_desc">Training week overview</string>
     <string name="week_stats_format">%1$d days • %2$d rest • %3$d sessions</string>
-    <string name="week_progress_format">Progress: %1$d/%2$d sessions</string>
+    <string name="week_progress_format">Progress: %1$d/%2$d workouts</string>
     <string name="week_progress_completed">Progress: Completed</string>
     <string name="weekly_report">Weekly Report</string>
     <string name="weekly_report_subtitle">Weekly progress summary</string>
@@ -687,31 +649,31 @@
     <string name="day_title_only">Day %1$d</string>
     <string name="day_title_with_name">Day %1$d • %2$s</string>
     <string name="rest_day">Rest day</string>
-    <string name="session_items_count_format">%1$d items</string>
-    <string name="start_session">Start</string>
-    <string name="continue_session">Continue</string>
-    <string name="restart_session">Restart</string>
-    <string name="session_status_completed">Completed</string>
-    <string name="session_status_not_started">Not started</string>
+    <string name="workout_items_count_format">%1$d items</string>
+    <string name="start_workout_short">Start</string>
+    <string name="continue_workout">Continue</string>
+    <string name="restart_workout">Restart</string>
+    <string name="workout_status_completed">Completed</string>
+    <string name="workout_status_not_started">Not started</string>
     <string name="rest_time">Rest time</string>
-    <string name="session_complete">Session complete</string>
-    <string name="session_report_items_format">Completed %1$d items</string>
-    <string name="session_report_sets_format">Sets %1$d/%2$d</string>
-    <string name="session_report_duration_format">Duration %1$02d:%2$02d</string>
-    <string name="session_report_accuracy_format">Accuracy %1$d%%</string>
-    <string name="session_report_exercises_title">Exercise Breakdown</string>
-    <string name="session_report_weights_format">Weights: %1$s</string>
-    <string name="session_report_weights_empty">Weights: --</string>
-    <string name="session_report_quality_format">Quality: %1$s</string>
-    <string name="session_message_excellent">Amazing session. Your form and focus were strong.</string>
-    <string name="session_message_good">Great job. You made real progress today.</string>
-    <string name="session_message_keep_going">Good effort. Keep going and you will build momentum.</string>
-    <string name="session_message_get_started">Ready to begin? One small step today is enough.</string>
+    <string name="workout_complete_label">Workout complete</string>
+    <string name="workout_report_items_format">Completed %1$d items</string>
+    <string name="workout_report_sets_format">Sets %1$d/%2$d</string>
+    <string name="workout_report_duration_format">Duration %1$02d:%2$02d</string>
+    <string name="workout_report_accuracy_format">Accuracy %1$d%%</string>
+    <string name="workout_report_exercises_title">Exercise Breakdown</string>
+    <string name="workout_report_weights_format">Weights: %1$s</string>
+    <string name="workout_report_weights_empty">Weights: --</string>
+    <string name="workout_report_quality_format">Quality: %1$s</string>
+    <string name="workout_message_excellent">Amazing session. Your form and focus were strong.</string>
+    <string name="workout_message_good">Great job. You made real progress today.</string>
+    <string name="workout_message_keep_going">Good effort. Keep going and you will build momentum.</string>
+    <string name="workout_message_get_started">Ready to begin? One small step today is enough.</string>
     <string name="quality_excellent">Excellent</string>
     <string name="quality_good">Good</string>
     <string name="quality_ok">Okay</string>
     <string name="quality_keep_practicing">Keep practicing</string>
-    <string name="session_share_text_format">I completed %1$d/%2$d sets in %3$02d:%4$02d with %5$d%% quality.</string>
+    <string name="workout_share_text_format">I completed %1$d/%2$d sets in %3$02d:%4$02d with %5$d%% quality.</string>
     <string name="exercise_summary_message_excellent">Outstanding form. You nailed it.</string>
     <string name="exercise_summary_message_good">Great job. Your form stayed solid.</string>
     <string name="exercise_summary_message_ok">Good effort. Keep building control.</string>
@@ -720,27 +682,27 @@
     <string name="exercise_summary_tip_focus">Tip: Focus on control through the last reps.</string>
     <string name="exercise_summary_tip_slow">Tip: Slow down and prioritize form.</string>
     <string name="exercise_summary_stats_format">Quality %1$d%% · Sets %2$d/%3$d · Reps %4$d</string>
-    <string name="session_exit_title">Exit Session?</string>
-    <string name="session_exit_message">You can continue later, but this session will be incomplete.</string>
-    <string name="session_exit_keep">Keep Training</string>
-    <string name="session_exit_exit">Exit</string>
+    <string name="workout_exit_title">Exit Session?</string>
+    <string name="workout_exit_message">You can continue later, but this session will be incomplete.</string>
+    <string name="workout_exit_keep">Keep Training</string>
+    <string name="workout_exit_exit">Exit</string>
     <string name="your_performance">Your Performance</string>
     <string name="reps_journey">Reps Journey</string>
     <string name="tips_for_you">Tips for You</string>
     <string name="show_details">Show Details</string>
 
-    <!-- Session Training Mode -->
-    <string name="session_start_set">Start Set</string>
-    <string name="session_exercise_label">EXERCISE %1$d/%2$d</string>
-    <string name="session_set_reps_format">Set %1$d of %2$d · %3$d reps</string>
-    <string name="session_set_duration_format">Set %1$d of %2$d · %3$ds hold</string>
-    <string name="session_set_only_format">Set %1$d of %2$d</string>
-    <string name="session_weight_format">Weight: %1$.1f kg</string>
-    <string name="session_rest_between_sets">REST BETWEEN SETS</string>
-    <string name="session_rest_between_exercises">REST BETWEEN EXERCISES</string>
-    <string name="session_celebrate_set">Set complete!</string>
-    <string name="session_celebrate_exercise">Exercise complete!</string>
-    <string name="session_celebrate_session">Session complete!</string>
+    <!-- Workout Training Mode -->
+    <string name="workout_start_set">Start Set</string>
+    <string name="workout_exercise_label">EXERCISE %1$d/%2$d</string>
+    <string name="workout_set_reps_format">Set %1$d of %2$d · %3$d reps</string>
+    <string name="workout_set_duration_format">Set %1$d of %2$d · %3$ds hold</string>
+    <string name="workout_set_only_format">Set %1$d of %2$d</string>
+    <string name="workout_weight_format">Weight: %1$.1f kg</string>
+    <string name="workout_rest_between_sets">REST BETWEEN SETS</string>
+    <string name="workout_rest_between_exercises">REST BETWEEN EXERCISES</string>
+    <string name="workout_celebrate_set">Set complete!</string>
+    <string name="workout_celebrate_exercise">Exercise complete!</string>
+    <string name="workout_celebrate_workout">Workout complete!</string>
     <string name="rest_tip_breathe">Slow breath in, slow breath out.</string>
     <string name="rest_tip_quality">Quality beats speed. You are doing great.</string>
     <string name="rest_tip_focus">Focus on control for the next round.</string>
@@ -751,28 +713,28 @@
     <string name="pause">Pause</string>
     <string name="resume">Resume</string>
     <string name="alternating_label_format">Alternating: %1$s</string>
-    <string name="session_set_indicator_format">Set %1$d of %2$d</string>
-    <string name="session_rest_next_set_format">Next: %1$s · Set %2$d/%3$d</string>
-    <string name="session_complete_sets_format">Sets: %1$d/%2$d</string>
-    <string name="session_complete_reps_format">Total Reps: %1$d</string>
-    <string name="session_complete_duration_format">Duration: %1$02d:%2$02d</string>
-    <string name="session_complete_accuracy_format">Average Accuracy: %1$d%%</string>
-    <string name="session_invalid_payload">Session data is invalid. Please sync and try again.</string>
-    <string name="session_exercise_load_failed">Failed to load exercise. Please return and adjust the session.</string>
-    <string name="session_preview_content_description">Exercise preview image</string>
-    <string name="session_start_set_numbered">Start set %1$d</string>
-    <string name="session_start_first_exercise">Start exercise</string>
-    <string name="session_target_reps_format">%1$d sets · %2$d reps</string>
-    <string name="session_target_hold_format">%1$d sets · %2$ds hold</string>
-    <string name="session_target_sets_only_format">%1$d sets</string>
-    <string name="session_complete_subtitle">Your results are saved. Open the report for the full breakdown.</string>
-    <string name="session_view_report">View report</string>
-    <string name="session_set_settings">SET SETTINGS</string>
-    <string name="session_reps_label">Reps</string>
-    <string name="session_duration_label">Hold time</string>
-    <string name="session_weight_label">Weight</string>
-    <string name="session_seconds_unit">s</string>
-    <string name="session_kg_unit">kg</string>
+    <string name="workout_set_indicator_format">Set %1$d of %2$d</string>
+    <string name="workout_rest_next_set_format">Next: %1$s · Set %2$d/%3$d</string>
+    <string name="workout_complete_sets_format">Sets: %1$d/%2$d</string>
+    <string name="workout_complete_reps_format">Total Reps: %1$d</string>
+    <string name="workout_complete_duration_format">Duration: %1$02d:%2$02d</string>
+    <string name="workout_complete_accuracy_format">Average Accuracy: %1$d%%</string>
+    <string name="workout_invalid_payload">Session data is invalid. Please sync and try again.</string>
+    <string name="workout_exercise_load_failed">Failed to load exercise. Please return and adjust the session.</string>
+    <string name="workout_preview_content_description">Exercise preview image</string>
+    <string name="workout_start_set_numbered">Start set %1$d</string>
+    <string name="workout_start_first_exercise">Start exercise</string>
+    <string name="workout_target_reps_format">%1$d sets · %2$d reps</string>
+    <string name="workout_target_hold_format">%1$d sets · %2$ds hold</string>
+    <string name="workout_target_sets_only_format">%1$d sets</string>
+    <string name="workout_complete_subtitle">Your results are saved. Open the report for the full breakdown.</string>
+    <string name="workout_view_report">View report</string>
+    <string name="workout_set_settings">SET SETTINGS</string>
+    <string name="workout_reps_label">Reps</string>
+    <string name="workout_duration_label">Hold time</string>
+    <string name="workout_weight_label">Weight</string>
+    <string name="workout_seconds_unit">s</string>
+    <string name="workout_kg_unit">kg</string>
 
     <!-- ═══════════════════════════════════════════════════ -->
     <!-- Program Page (Redesigned)                          -->
@@ -782,7 +744,7 @@
     <string name="pg_browse_subtitle">Choose a training program to start your journey</string>
     <string name="pg_view_details">View Details</string>
     <string name="pg_subscribe">Subscribe</string>
-    <string name="pg_stats_format">%1$d weeks · %2$d sessions</string>
+    <string name="pg_stats_format">%1$d weeks · %2$d workouts</string>
 
     <!-- Identity Card -->
     <string name="pg_position_format">Week %1$d of %2$d · Day %3$d</string>
@@ -796,20 +758,20 @@
     <!-- Today Section -->
     <string name="pg_today_format">TODAY — Day %1$d</string>
     <string name="pg_today_rest">TODAY — Rest Day</string>
-    <string name="pg_session_exercises_format">%1$d exercises · ~%2$d min</string>
+    <string name="pg_planned_workout_exercises_format">%1$d exercises · ~%2$d min</string>
     <string name="pg_more_items_format">+%1$d more items</string>
-    <string name="pg_start_session">▶  Start Session</string>
-    <string name="pg_continue_session">▶  Continue Session</string>
-    <string name="pg_session_completed">✅ Completed</string>
+    <string name="pg_start_planned_workout">▶  Start Workout</string>
+    <string name="pg_continue_planned_workout">▶  Continue Workout</string>
+    <string name="pg_planned_workout_completed">✅ Completed</string>
 
-    <!-- Session Item Display -->
+    <!-- Workout Item Display -->
     <string name="pg_item_sets_reps_format">%1$d sets · %2$d reps</string>
     <string name="pg_item_sets_hold_format">%1$d sets · %2$ds hold</string>
     <string name="pg_item_rest_format">Rest %1$ds</string>
 
     <!-- Day Complete -->
     <string name="pg_day_complete_title">🎉 Day Complete!</string>
-    <string name="pg_day_complete_format">%1$d/%2$d sessions completed · Total: %3$d min</string>
+    <string name="pg_day_complete_format">%1$d/%2$d workouts completed · Total: %3$d min</string>
     <string name="pg_view_day_summary">View Day Summary</string>
 
     <!-- Rest Day -->
@@ -841,7 +803,7 @@
     <!-- Main tab headers: one-line subtitle under the screen title (same pattern on Explore / Train / Reports) -->
     <string name="main_tab_header_explore_subtitle">Workouts and exercises in one place.</string>
     <string name="main_tab_header_reports_subtitle">See your form, trends, and milestones.</string>
-    <string name="main_tab_header_train_subtitle">Your active program and weekly sessions.</string>
+    <string name="main_tab_header_train_subtitle">Your active program and weekly workouts.</string>
     <string name="reports_tab_overview">Overview</string>
     <string name="reports_tab_exercises">Exercises</string>
     <string name="reports_tab_trends">Trends</string>
@@ -890,18 +852,15 @@
     <string name="day_detail_total_time">Total Time</string>
     <string name="day_detail_avg_form">Avg Form</string>
 
-    <!-- Session Report Enhancement -->
-    <string name="session_report_excellent">Excellent session!</string>
-    <string name="session_report_good">Good work!</string>
-    <string name="session_report_solid">Solid effort!</string>
-    <string name="session_report_keep_going">Every session counts!</string>
-    <string name="session_report_vs_previous">vs. Previous</string>
-    <string name="session_report_strongest">Strongest: %s</string>
-    <string name="session_report_weakest">Needs work: %s</string>
-    <string name="session_report_improved_format">Improved %+.1f%% since last session</string>
-    <string name="session_report_swipe_hint">Swipe up for detailed exercise reports</string>
-    <string name="session_report_exercise_indicator">Exercise %1$d of %2$d</string>
-    <string name="session_report_session_summary">Session Summary</string>
+    <!-- Workout Report Enhancement -->
+    <string name="workout_report_excellent">Excellent session!</string>
+    <string name="workout_report_good">Good work!</string>
+    <string name="workout_report_solid">Solid effort!</string>
+    <string name="workout_report_keep_going">Every session counts!</string>
+    <string name="workout_report_vs_previous">vs. Previous</string>
+    <string name="workout_report_strongest">Strongest: %s</string>
+    <string name="workout_report_weakest">Needs work: %s</string>
+    <string name="workout_report_improved_format">Improved %+.1f%% since last workout</string>
 
     <!-- Program Complete -->
     <string name="pg_complete_title">🏆 You Did It!</string>
@@ -914,17 +873,17 @@
     <string name="pg_cta_next_program">Continue to next program</string>
 
     <!-- ═══════════════════════════════════════════════════ -->
-    <!-- Day Session Page                                   -->
+    <!-- Day Workout Page                                   -->
     <!-- ═══════════════════════════════════════════════════ -->
     <string name="ds_day_title_format">Day %1$d — %2$s</string>
-    <string name="ds_day_subtitle_format">Week %1$d · %2$d sessions</string>
-    <string name="ds_start_session">Start Session</string>
-    <string name="ds_continue_session">Continue</string>
-    <string name="ds_session_completed">Completed</string>
-    <string name="ds_session_up_next">Up Next</string>
-    <string name="ds_session_locked">Locked</string>
+    <string name="ds_day_subtitle_format">Week %1$d · %2$d workouts</string>
+    <string name="ds_start_planned_workout">Start Workout</string>
+    <string name="ds_continue_planned_workout">Continue</string>
+    <string name="ds_workout_completed">Completed</string>
+    <string name="ds_workout_up_next">Up Next</string>
+    <string name="ds_workout_locked">Locked</string>
 
-    <!-- Session card -->
+    <!-- Workout card -->
     <string name="ds_exercises_meta_format">%1$d exercises · ~%2$d min</string>
     <string name="ds_items_meta_format">%1$d items · ~%2$d min</string>
 
@@ -944,13 +903,13 @@
     <string name="ds_edit_mode">Edit</string>
 
     <!-- Rename dialog -->
-    <string name="ds_rename_session_title">Rename Session</string>
+    <string name="ds_rename_workout_title">Rename Workout</string>
     <string name="ds_rename_en_hint">Name (English)</string>
     <string name="ds_rename_ar_hint">Name (Arabic)</string>
 
     <!-- Delete confirmation -->
-    <string name="ds_delete_session_title">Delete Session?</string>
-    <string name="ds_delete_session_message">This session will be removed from today\'s plan. You can reset to original anytime.</string>
+    <string name="ds_delete_workout_title">Delete Workout?</string>
+    <string name="ds_delete_workout_message">This planned workout will be removed from today\'s plan. You can reset to original anytime.</string>
     <string name="ds_delete_item_title">Remove Item?</string>
     <string name="ds_delete_item_message">This item will be removed from the session.</string>
 
@@ -967,11 +926,11 @@
 
     <!-- Status -->
     <string name="ds_modified_hint">✏️ Modified</string>
-    <string name="ds_no_sessions_message">No sessions for today</string>
+    <string name="ds_no_planned_workouts_message">No planned workouts for today</string>
 
     <!-- Week Screen -->
     <string name="error_week_not_found">Week not found</string>
-    <string name="week_sessions_rest_format">%1$d Sessions • %2$d Rest Days</string>
+    <string name="week_workouts_rest_format">%1$d Sessions • %2$d Rest Days</string>
 
     <!-- Common Emoji / Icon text -->
     <string name="emoji_clipboard">📋</string>
@@ -1011,19 +970,19 @@
     <string name="program_level_unknown">Levels —</string>
     <string name="program_filter_goal_any">All goals</string>
     <string name="program_badge_featured">Featured</string>
-    <string name="program_card_sessions_weekly_format">%1$d sessions · ~%2$d / week</string>
+    <string name="program_card_workouts_weekly_format">%1$d workouts · ~%2$d / week</string>
     <string name="program_detail_why_title">Why this program</string>
     <string name="program_detail_week1_title">First week at a glance</string>
     <string name="program_detail_policies">Rest days are built in. If you miss a training day, continue on the next scheduled day—your progress follows the calendar.</string>
     <string name="program_detail_meta_goal">Goal: %1$s</string>
     <string name="program_detail_meta_domain">Focus: %1$s</string>
-    <string name="program_detail_meta_weekly_sessions">~%1$d sessions / week (target)</string>
-    <string name="program_detail_meta_session_length">~%1$d min / session (typical)</string>
+    <string name="program_detail_meta_weekly_workouts">~%1$d workouts / week (target)</string>
+    <string name="program_detail_meta_workout_length">~%1$d min / workout (typical)</string>
     <string name="program_detail_meta_equipment">Equipment: %1$s</string>
     <string name="program_week1_pill_rest">Rest</string>
     <string name="program_week1_pill_light">Recovery</string>
-    <string name="session_customization_synced">Changes saved to your plan</string>
-    <string name="session_customization_pending">Saved on this device — will sync when you\'re back online</string>
+    <string name="workout_customization_synced">Changes saved to your plan</string>
+    <string name="workout_customization_pending">Saved on this device — will sync when you\'re back online</string>
     <string name="workout_list_title">Workouts</string>
     <string name="workout_list_subtitle">Choose a workout to get started</string>
     <string name="exercise_list_subtitle">Explore our full exercise library</string>
@@ -1059,7 +1018,6 @@
     <string name="section_main">Main</string>
     <string name="section_cooldown">Cool-down</string>
     <string name="section_other">Other</string>
-    <string name="session_duration_badge">~%1$d min</string>
     <string name="program_preview_expand">Preview first week (server)</string>
     <string name="program_preview_loading">Loading preview…</string>
     <string name="program_preview_error">Could not load preview</string>
@@ -1076,10 +1034,11 @@
 
     <!-- ProgramSessionActivity messages -->
     <string name="error_day_not_found">Day not found</string>
-    <string name="error_no_exercises">No exercises in this session</string>
-    <string name="error_expand_session_first">Expand a session first</string>
+    <string name="error_no_exercises">No exercises in this workout</string>
+    <string name="error_expand_workout_first">Expand a workout first</string>
 
     <!-- TrainingActivity messages -->
+    <string name="error_video_playback">Error playing video</string>
     <string name="results_saved">Results saved!</string>
     <string name="btn_saved">Saved ✓</string>
     <string name="error_save_failed">Failed to save results</string>
@@ -1135,8 +1094,8 @@
     <string name="cd_stat_workouts">Workouts</string>
     <string name="cd_stat_minutes">Minutes</string>
 
-    <!-- Layout strings – Item program session item -->
-    <string name="session_item_exercise_label">EXERCISE</string>
+    <!-- Layout strings – Item program planned workout item -->
+    <string name="workout_item_exercise_label">EXERCISE</string>
 
     <!-- Level / Plan -->
     <string name="loading_level">Loading your level…</string>
@@ -1146,60 +1105,6 @@
     <string name="plan_overview_title">My Training Plan</string>
     <string name="plan_upcoming_reassessment">Upcoming Reassessment</string>
     <string name="plan_recent_adjustments">Recent Adjustments</string>
-
-    <!-- Assessment / Body Scan -->
-    <string name="screening_title">Pre-Assessment Screening</string>
-    <string name="screening_subtitle">To ensure your safety, please answer the following questions.</string>
-    <string name="screening_disclaimer">⚕️ Note: This is not a medical exam. It\'s a wellness tool for movement assessment only.</string>
-    <string name="screening_start">Start Assessment</string>
-    <string name="screening_continue_warning">Continue with Warning</string>
-    <string name="screening_warning_title">Warning</string>
-    <string name="screening_warning_message">Based on your answers, we recommend consulting your doctor before starting physical activity. Do you wish to continue at your own responsibility?</string>
-    <string name="screening_continue">Continue</string>
-    <string name="go_back">Go Back</string>
-    <string name="assessment_movement_count">Movement %1$d of %2$d</string>
-    <string name="assessment_ready">Ready</string>
-    <string name="assessment_skip_pain">I feel pain in this movement — Skip</string>
-    <string name="assessment_analyzing">Analyzing your movement…</string>
-    <string name="assessment_no_exercises">No exercises were completed</string>
-    <string name="assessment_pain_message">You reported pain in %1$d movement(s).\nPlease consult a specialist before taking the assessment.</string>
-    <string name="assessment_retry">Please try the assessment again.</string>
-    <string name="assessment_domains_title">Assessment Domains</string>
-    <string name="assessment_body_map_title">Body Map</string>
-    <string name="assessment_observations_title">Movement Observations</string>
-    <string name="assessment_safety_title">Safety Restrictions</string>
-    <string name="assessment_recommendations_title">Recommendations</string>
-    <string name="assessment_disclaimer">⚕️ This is a movement assessment, not a medical diagnosis. Consult a specialist for any pain or health concerns.</string>
-    <string name="assessment_find_program">Find Your Program</string>
-    <string name="assessment_share">Share Results</string>
-    <string name="assessment_go_home">Go to Home</string>
-    <string name="assessment_body_score">Body Score</string>
-    <string name="assessment_motivational_note">Motivational indicator — training decisions use domain scores below</string>
-    <string name="assessment_no_region_data">No region data available</string>
-    <string name="assessment_possible_causes">Possible causes:</string>
-    <string name="assessment_blocked">Blocked: %1$s</string>
-    <string name="assessment_alternatives">Alternatives: %1$s</string>
-    <string name="assessment_recommended_for_you">Recommended for You</string>
-    <string name="assessment_start_program">Start This Program</string>
-    <string name="assessment_program_info">%1$d weeks • %2$s • %3$s</string>
-    <string name="domain_mobility">Mobility</string>
-    <string name="domain_control">Control</string>
-    <string name="domain_symmetry">Symmetry</string>
-    <string name="domain_safety">Safety</string>
-    <string name="share_not_available">Share feature coming soon</string>
-
-    <string name="recent_activity">Recent Activity</string>
-    <string name="home_loading">Loading your data…</string>
-    <string name="recent_session_item">%1$s · %2$s</string>
-    <string name="no_recent_sessions">No recent sessions yet</string>
-    <string name="recent_session_score">Score: %1$d%%</string>
-    <string name="time_just_now">Just now</string>
-    <string name="time_minutes_ago">%1$d min ago</string>
-    <string name="time_hours_ago">%1$d hr ago</string>
-    <string name="time_days_ago">%1$d days ago</string>
-    <string name="time_weeks_ago">%1$d weeks ago</string>
-    <string name="time_months_ago">%1$d months ago</string>
-    <string name="time_years_ago">%1$d years ago</string>
 
     <!-- ═══════════════════════════════════════════════════ -->
     <!-- PROFILE ONBOARDING -->
@@ -1241,7 +1146,7 @@
     <string name="onb_exp_intermediate_desc">You train regularly and know the basics.</string>
     <string name="onb_exp_advanced_title">Advanced</string>
     <string name="onb_exp_advanced_desc">Experienced with structured programming.</string>
-    <string name="onb_days_label">Sessions per week</string>
+    <string name="onb_days_label">Workouts per week</string>
     <plurals name="onb_days_value">
         <item quantity="one">%1$d day / week</item>
         <item quantity="other">%1$d days / week</item>
@@ -1299,4 +1204,10 @@
     <string name="onb_equipment_all">Full gym</string>
     <string name="onb_health_disclaimer">I confirm I\'m in good health with no medical condition that prevents me from exercising, and I take responsibility for training within my limits.</string>
 
+
+    <!-- P1 workout naming (auto-synced) -->
+    <string name="workout_duration_badge">~%1$d min</string>
+    <string name="workout_report_summary">Workout summary</string>
+    <string name="workout_report_exercise_indicator">Exercise %1$d of %2$d</string>
+    <string name="workout_report_swipe_hint">Swipe for per-exercise details</string>
 </resources>

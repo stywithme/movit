@@ -1,7 +1,7 @@
 interface ProgressEntryLike {
   weekNumber: number;
   dayNumber: number;
-  sessionId: string;
+  plannedWorkoutId: string;
   status: string;
 }
 
@@ -9,7 +9,7 @@ export interface DayLike {
   dayNumber: number;
   isRestDay?: boolean;
   dayType?: string | null;
-  sessions?: Array<{ id: string; sortOrder?: number }>;
+  plannedWorkouts?: Array<{ id: string; sortOrder?: number }>;
 }
 
 interface WeekLike<TDay extends DayLike = DayLike> {
@@ -42,12 +42,12 @@ export interface ResolvedProgramPosition<TWeek, TDay> {
 export interface ResolveCurrentProgramDayOptions {
   now?: Date;
   /**
-   * Last completed program session time (for auto catch-up gaps).
-   * When null/undefined, catch-up snap is not applied (treated as 0 days since last session).
+   * Last completed planned workout time (for auto catch-up gaps).
+   * When null/undefined, catch-up snap is not applied (treated as 0 days since last workout).
    */
-  lastSessionCompletedAt?: Date | string | null;
+  lastWorkoutCompletedAt?: Date | string | null;
   /**
-   * 0=Sun … 6=Sat. Empty or undefined = train any day (backward compatible).
+   * 0=Sun ? 6=Sat. Empty or undefined = train any day (backward compatible).
    */
   trainingWeekdays?: number[] | null;
   /** Program length in weeks (for completion boundary). */
@@ -86,9 +86,9 @@ export function isProgramTrainingDaySlot(day: {
   return true;
 }
 
-function sortSessions<T extends { sortOrder?: number }>(sessions: T[] | undefined): T[] {
-  if (!sessions?.length) return [];
-  return [...sessions].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+function sortPlannedWorkouts<T extends { sortOrder?: number }>(plannedWorkouts: T[] | undefined): T[] {
+  if (!plannedWorkouts?.length) return [];
+  return [...plannedWorkouts].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 }
 
 function flattenTrainingDays<TDay extends DayLike, TWeek extends WeekLike<TDay>>(
@@ -125,39 +125,39 @@ function firstTrainingDayIndexInWeek<TWeek, TDay>(
   return idx >= 0 ? idx : 0;
 }
 
-/** Calendar days since last completed session (UTC); 0 if no anchor. */
-export function calendarDaysSinceLastSession(
-  lastSessionCompletedAt: Date | string | null | undefined,
+/** Calendar days since last completed planned workout (UTC); 0 if no anchor. */
+export function calendarDaysSinceLastWorkout(
+  lastWorkoutCompletedAt: Date | string | null | undefined,
   now: Date,
 ): number {
-  const d = toValidDate(lastSessionCompletedAt);
+  const d = toValidDate(lastWorkoutCompletedAt);
   if (!d) return 0;
   return getProgramCalendarDayIndex(d, now);
 }
 
 function isUserTrainingWeekday(now: Date, trainingWeekdays: number[] | null | undefined): boolean {
   if (!trainingWeekdays || trainingWeekdays.length === 0) return true;
-  const dow = now.getUTCDay(); // 0=Sun … 6=Sat — matches schema comment
+  const dow = now.getUTCDay(); // 0=Sun ? 6=Sat ? matches schema comment
   return trainingWeekdays.includes(dow);
 }
 
-function sessionCompleted(
+function plannedWorkoutCompleted(
   progressEntries: ProgressEntryLike[],
   weekNumber: number,
   dayNumber: number,
-  sessionId: string,
+  plannedWorkoutId: string,
 ): boolean {
   return progressEntries.some(
     (e) =>
       e.weekNumber === weekNumber &&
       e.dayNumber === dayNumber &&
-      e.sessionId === sessionId &&
+      e.plannedWorkoutId === plannedWorkoutId &&
       e.status === 'completed',
   );
 }
 
 /**
- * First training-day index in template order where not all sessions are completed.
+ * First training-day index in template order where not all planned workouts are completed.
  * If all complete, returns orderedDays.length (past end).
  */
 function findNaturalTrainingDayIndex<TDay extends DayLike, TWeek extends WeekLike<TDay>>(
@@ -166,22 +166,22 @@ function findNaturalTrainingDayIndex<TDay extends DayLike, TWeek extends WeekLik
 ): number {
   for (let i = 0; i < orderedDays.length; i++) {
     const ref = orderedDays[i]!;
-    const sessions = sortSessions(ref.day.sessions);
-    if (sessions.length === 0) {
+    const dayPlannedWorkouts = sortPlannedWorkouts(ref.day.plannedWorkouts);
+    if (dayPlannedWorkouts.length === 0) {
       const dayDone = progressEntries.some(
         (e) =>
           e.weekNumber === ref.weekNumber &&
           e.dayNumber === ref.dayNumber &&
-          e.sessionId === '__day__' &&
+          e.plannedWorkoutId === '__day__' &&
           e.status === 'completed',
       );
       if (!dayDone) return i;
       continue;
     }
-    const allSessionsDone = sessions.every((s) =>
-      sessionCompleted(progressEntries, ref.weekNumber, ref.dayNumber, s.id),
+    const allPlannedWorkoutsDone = dayPlannedWorkouts.every((pw) =>
+      plannedWorkoutCompleted(progressEntries, ref.weekNumber, ref.dayNumber, pw.id),
     );
-    if (!allSessionsDone) return i;
+    if (!allPlannedWorkoutsDone) return i;
   }
   return orderedDays.length;
 }
@@ -194,7 +194,7 @@ function applyCatchUpSnapIndex(
   if (daysSinceLastSession <= 2) return naturalIndex;
   if (naturalIndex >= orderedDays.length) return naturalIndex;
   if (daysSinceLastSession >= 30) return 0;
-  // 3–29 days: start of current program week (week of natural position)
+  // 3?29 days: start of current program week (week of natural position)
   const wn = orderedDays[naturalIndex]!.weekNumber;
   return firstTrainingDayIndexInWeek(orderedDays as any, wn);
 }
@@ -203,7 +203,7 @@ export interface TrainingPositionMeta<TWeek, TDay> {
   position: ResolvedProgramPosition<TWeek, TDay>;
   naturalIndex: number;
   snappedIndex: number;
-  calendarDaysSinceLastSession: number;
+  calendarDaysSinceLastWorkout: number;
   orderedTrainingDays: Array<OrderedDayRef<TWeek, TDay>>;
 }
 
@@ -220,7 +220,7 @@ export function resolveTrainingPositionMeta<
 ): TrainingPositionMeta<TWeek, TDay> {
   const orderedDays = flattenTrainingDays(weeks);
   const now = options.now ?? new Date();
-  const daysSince = calendarDaysSinceLastSession(options.lastSessionCompletedAt ?? null, now);
+  const daysSince = calendarDaysSinceLastWorkout(options.lastWorkoutCompletedAt ?? null, now);
 
   if (orderedDays.length === 0) {
   return {
@@ -237,14 +237,14 @@ export function resolveTrainingPositionMeta<
     } as ResolvedProgramPosition<TWeek, TDay>,
     naturalIndex: 0,
     snappedIndex: 0,
-    calendarDaysSinceLastSession: daysSince,
+    calendarDaysSinceLastWorkout: daysSince,
     orderedTrainingDays: orderedDays as Array<OrderedDayRef<TWeek, TDay>>,
   };
   }
 
   const lastRef = orderedDays.at(-1)!;
   const completedDays = progressEntries
-    .filter((entry) => entry.status === 'completed' && entry.sessionId === '__day__')
+    .filter((entry) => entry.status === 'completed' && entry.plannedWorkoutId === '__day__')
     .filter((entry) => !!findDayRef(orderedDays, entry.weekNumber, entry.dayNumber))
     .sort(
       (a, b) =>
@@ -284,13 +284,13 @@ export function resolveTrainingPositionMeta<
     position,
     naturalIndex,
     snappedIndex,
-    calendarDaysSinceLastSession: daysSince,
+    calendarDaysSinceLastWorkout: daysSince,
     orderedTrainingDays: orderedDays as Array<OrderedDayRef<TWeek, TDay>>,
   };
 }
 
 /**
- * Completion-based program position + auto catch-up (calendar gap since last session).
+ * Completion-based program position + auto catch-up (calendar gap since last planned workout).
  * Training template days may include legacy rest rows; only non-rest slots participate.
  */
 export function resolveCurrentProgramDay<

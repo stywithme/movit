@@ -37,7 +37,7 @@
 | MotionRecorder (تسجيل كل frame) | موجودة بالكامل | تسجيل البيانات الخام |
 | MetricsCalculator (ROM, Stability, Symmetry...) | موجودة بالكامل | حساب المقاييس |
 | ReportGenerator (تقرير لكل تمرين) | موجودة بالكامل | إنتاج تقارير الأداء |
-| WorkoutConfig (سلسلة تمارين) | موجودة بالكامل | إدارة جلسة متعددة التمارين |
+| WorkoutConfig (سلسلة تمارين) | موجودة بالكامل | إدارة workout run متعدد التمارين |
 | **AssessmentEngine** (تفسير النتائج) | **جديدة** | تحويل التقارير لـ Body Profile |
 | **Reference Norms** (معايير مرجعية) | **جديدة** | مقارنة المتدرب بالمعايير |
 | **Body Profile** (ملف القدرات) | **جديد** | حفظ وتتبع قدرات المتدرب |
@@ -784,7 +784,7 @@ PAR-Q+ Screening
 WorkoutConfig (type: "assessment", feedbackMode: "encouragement_only")
         │
         ▼
-SessionTrainingEngine (يدير الحركات بالتتابع)
+WorkoutTrainingEngine (يدير الحركات بالتتابع)
         │
         ├── حركة 1 → TrainingEngine → ReportGenerator → PostTrainingReport #1
         ├── حركة 2 → TrainingEngine → ReportGenerator → PostTrainingReport #2

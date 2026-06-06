@@ -1,7 +1,7 @@
 /**
  * Programs Types
  * ===============
- * Types for Program / Week / Day / Session structure.
+ * Types for Program / Week / Day / PlannedWorkout structure.
  */
 
 import type { LocalizedText } from '@/lib/types/localized';
@@ -16,11 +16,11 @@ export interface ProgramAttributeInput {
   mode?: ProgramAttributeMode;
 }
 
-export type ProgramSessionItemType = 'exercise' | 'rest';
+export type PlannedWorkoutItemType = 'exercise' | 'rest';
 
-export interface ProgramSessionItemInput {
+export interface PlannedWorkoutItemInput {
   id?: string;
-  type: ProgramSessionItemType;
+  type: PlannedWorkoutItemType;
   exerciseId?: string;
   sets?: number;
   targetReps?: number;
@@ -30,17 +30,17 @@ export interface ProgramSessionItemInput {
   weightPerSet?: number[];
   notes?: LocalizedText;
   restDurationMs?: number;
-  sourceWorkoutId?: string;
+  sourceWorkoutTemplateId?: string;
   sortOrder?: number;
 }
 
-export interface ProgramSessionInput {
+export interface PlannedWorkoutInput {
   id?: string;
   name: LocalizedText;
   sortOrder?: number;
   estimatedDurationMin?: number | null;
   role?: 'WARMUP' | 'ACTIVATION' | 'MAIN' | 'ACCESSORY' | 'CORRECTIVE' | 'COOLDOWN' | 'TEST';
-  items?: ProgramSessionItemInput[];
+  items?: PlannedWorkoutItemInput[];
 }
 
 export interface ProgramDayInput {
@@ -49,7 +49,7 @@ export interface ProgramDayInput {
   isRestDay?: boolean;
   name?: LocalizedText;
   dayFocus?: string;
-  sessions?: ProgramSessionInput[];
+  plannedWorkouts?: PlannedWorkoutInput[];
 }
 
 export interface ProgramWeekInput {
@@ -68,7 +68,7 @@ export interface DayPatternInput {
   isRestDay?: boolean;
   name?: LocalizedText;
   dayFocus?: string;
-  sessions?: ProgramSessionInput[];
+  plannedWorkouts?: PlannedWorkoutInput[];
 }
 
 /** Phase input for phase-based program editor. */
@@ -97,14 +97,14 @@ export interface CreateProgramInput {
   ownerId?: string | null;
   forkedFromId?: string | null;
   coachingNotes?: Record<string, unknown>;
-  weeklySessionTarget?: number | null;
-  estimatedSessionMinutes?: number | null;
+  weeklyWorkoutTarget?: number | null;
+  estimatedWorkoutMinutes?: number | null;
   levelRangeMin?: number;
   levelRangeMax?: number;
   prescriptionPriority?: number;
   prerequisiteProgramId?: string;
   nextProgramId?: string;
-  /** Program matching dimensions (domain, goal, equipment, ‚Ä¶). */
+  /** Program matching dimensions (domain, goal, equipment, ù). */
   programAttributes?: ProgramAttributeInput[];
   /** Phase-based structure (preferred for new editor). Backend expands to weeks at save. */
   phases?: ProgramPhaseInput[];
@@ -129,30 +129,30 @@ export interface TodayPlanResponse {
   dayNumber: number;
   date: string;
   isProgramComplete: boolean;
-  progress: Record<string, string>; // "weekNum_dayNum_sessionId" ‚Üí status
-  sessions: ProgramExportSession[];
+  progress: Record<string, string>; // "weekNum_dayNum_plannedWorkoutId" ? status
+  plannedWorkouts: ProgramExportPlannedWorkout[];
   /** False when today (UTC) is not one of the user's training weekdays. */
   isTrainingDay?: boolean;
-  /** 0=Sun ‚Ä¶ 6=Sat ‚Äî copy of profile.trainingWeekdays for mobile. */
+  /** 0=Sun ù 6=Sat ù copy of profile.trainingWeekdays for mobile. */
   trainingWeekdays: number[];
   catchUpSuggestion?: {
     resetType: 'none' | 'week_restart' | 'program_restart';
     resetToWeek: number;
     resetToDay: number;
-    calendarDaysSinceLastSession: number;
+    calendarDaysSinceLastWorkout: number;
     messageAr: string;
     messageEn: string;
   } | null;
 }
 
 export interface ProgramExportItem {
-  type: ProgramSessionItemType;
+  type: PlannedWorkoutItemType;
   /** Stable server id for overrides / progression targeting */
   serverItemId?: string;
   exerciseSlug?: string;
   /** True when the linked exercise was removed from the catalog */
   deletedExercise?: boolean;
-  /** From Exercise (catalog), not from session item */
+  /** From Exercise (catalog), not from planned workout item */
   intent?: string | null;
   coachingNotes?: unknown;
   sets?: number;
@@ -166,7 +166,7 @@ export interface ProgramExportItem {
   sortOrder: number;
 }
 
-export interface ProgramExportSession {
+export interface ProgramExportPlannedWorkout {
   id: string;
   name: LocalizedText;
   sortOrder: number;
@@ -179,7 +179,7 @@ export interface ProgramExportDay {
   dayNumber: number;
   isRestDay: boolean;
   name?: LocalizedText;
-  sessions: ProgramExportSession[];
+  plannedWorkouts: ProgramExportPlannedWorkout[];
 }
 
 export interface ProgramExportWeek {
@@ -199,8 +199,8 @@ export interface ProgramExport {
   levelRangeMin: number;
   levelRangeMax: number;
   tags?: string[];
-  weeklySessionTarget?: number | null;
-  estimatedSessionMinutes?: number | null;
+  weeklyWorkoutTarget?: number | null;
+  estimatedWorkoutMinutes?: number | null;
   isFeatured?: boolean;
   weeks: ProgramExportWeek[];
   updatedAt: string;

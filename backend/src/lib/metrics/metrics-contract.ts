@@ -4,12 +4,12 @@
  *
  * Problem: The same metric name (avgFormScore) means different things
  * depending on which table it comes from:
- *   - SessionMetrics / RepMetrics: Int × 10 (850 = 85.0%)
+ *   - WorkoutExecutionMetrics / RepMetrics: Int × 10 (850 = 85.0%)
  *   - ProgramSessionReport:       Float 0-100 (85.0 = 85.0%)
  *
  * Contract:
- *   STORAGE (DB):  Int × 10 for kinematic metrics (SessionMetrics, RepMetrics)
- *                  Float 0-100 for session reports (ProgramSessionReport)
+ *   STORAGE (DB):  Int × 10 for kinematic metrics (WorkoutExecutionMetrics, RepMetrics)
+ *                  Float 0-100 for planned workout reports (PlannedWorkoutReport)
  *   API (output):  Always Float 0-100 (percentages) or natural units
  *
  * The Progression Engine (Phase 4) always works with Float 0-100.
@@ -24,7 +24,7 @@ import { getPrisma } from '@/lib/prisma/client';
 
 /**
  * Convert Int×10 storage value to API Float 0-100.
- * Used when reading from SessionMetrics / RepMetrics.
+ * Used when reading from WorkoutExecutionMetrics / RepMetrics.
  *
  * @example intX10ToFloat(850) → 85.0
  */
@@ -35,7 +35,7 @@ export function intX10ToFloat(value: number | null | undefined): number {
 
 /**
  * Convert API Float 0-100 to Int×10 storage value.
- * Used when writing to SessionMetrics / RepMetrics.
+ * Used when writing to WorkoutExecutionMetrics / RepMetrics.
  *
  * @example floatToIntX10(85.0) → 850
  */

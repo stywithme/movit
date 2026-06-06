@@ -435,7 +435,7 @@ class ProfileActivity : AppCompatActivity() {
         val goalInput = dialogView.findViewById<AutoCompleteTextView>(R.id.inputTrainingGoal)
         val modeInput = dialogView.findViewById<AutoCompleteTextView>(R.id.inputTrainingDisplayMode)
         val daysInput = dialogView.findViewById<EditText>(R.id.inputAvailableDays)
-        val minutesInput = dialogView.findViewById<EditText>(R.id.inputMaxSessionMinutes)
+        val minutesInput = dialogView.findViewById<EditText>(R.id.inputMaxWorkoutMinutes)
 
         val goalCodes = listOf("", "STRENGTH", "HYPERTROPHY", "POWER", "GENERAL_HEALTH")
         val goalLabels = goalCodes.map { code ->

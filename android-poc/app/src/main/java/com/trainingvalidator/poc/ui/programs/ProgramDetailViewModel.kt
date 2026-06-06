@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui.programs
+﻿package com.trainingvalidator.poc.ui.programs
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -9,7 +9,7 @@ import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.storage.ExerciseRepository
 import com.trainingvalidator.poc.storage.HomeRepository
 import com.trainingvalidator.poc.storage.ProgramRepository
-import com.trainingvalidator.poc.storage.ProgramSessionReportStore
+import com.trainingvalidator.poc.storage.ProgramWorkoutReportStore
 import com.trainingvalidator.poc.training.models.ProgramConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,7 +41,7 @@ class ProgramDetailViewModel(app: Application) : AndroidViewModel(app) {
 
     private val programRepository by lazy { ProgramRepository.getInstance(app) }
     private val homeRepository by lazy { HomeRepository.getInstance(app) }
-    val reportStore by lazy { ProgramSessionReportStore(app) }
+    val reportStore by lazy { ProgramWorkoutReportStore(app) }
 
     private val _uiState = MutableStateFlow<ProgramDetailUiState>(ProgramDetailUiState.Loading)
     val uiState: StateFlow<ProgramDetailUiState> = _uiState.asStateFlow()

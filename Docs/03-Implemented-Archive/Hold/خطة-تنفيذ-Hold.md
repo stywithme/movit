@@ -1,4 +1,4 @@
-﻿> **Status:** `ARCHIVED` â€” implemented or superseded; not current product truth.
+> **Status:** `ARCHIVED` â€” implemented or superseded; not current product truth.
 > **Current SSOT:** `Docs/00-Active-Reference/Engine/training-engine.md, Positions-Check-Concept.md`
 > **Archived:** 2026-05-29
 
@@ -448,7 +448,7 @@ private fun handleHoldEvent(event: FeedbackEvent) {
 ## البيانات المطلوب تتبعها (Analytics)
 
 ```kotlin
-data class HoldSessionResult(
+data class HoldPlanned WorkoutResult(
     val targetDurationMs: Long,
     val actualDurationMs: Long,
     val isCompleted: Boolean,

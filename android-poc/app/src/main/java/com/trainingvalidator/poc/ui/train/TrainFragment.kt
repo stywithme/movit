@@ -6,43 +6,40 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
 import com.trainingvalidator.poc.ui.utils.bindUserAvatar
 import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.ui.utils.formatProgramLevelRange
 import com.trainingvalidator.poc.R
-import com.trainingvalidator.poc.databinding.BottomSheetDayDetailBinding
 import com.trainingvalidator.poc.databinding.FragmentTrainBinding
-import com.trainingvalidator.poc.databinding.ItemDaySessionRowBinding
-import com.trainingvalidator.poc.databinding.ItemProgramBrowseCardBinding
-import com.trainingvalidator.poc.databinding.ItemTodayPlanRowBinding
-import com.trainingvalidator.poc.databinding.ItemTodaySessionCardBinding
-import com.trainingvalidator.poc.databinding.ItemWeekDayCircleBinding
-import com.trainingvalidator.poc.ui.programs.estimateSessionDuration
 import com.trainingvalidator.poc.network.UserProgramExport
 import com.trainingvalidator.poc.storage.DayCustomizationStore
 import com.trainingvalidator.poc.storage.ExerciseRepository
 import com.trainingvalidator.poc.storage.ProgramDayCalculator
 import com.trainingvalidator.poc.storage.ProgramRepository
-import com.trainingvalidator.poc.storage.ProgramSessionReportStore
-import com.trainingvalidator.poc.training.session.ReportAggregator
+import com.trainingvalidator.poc.storage.ProgramWorkoutReportStore
+import com.trainingvalidator.poc.training.workout.ReportAggregator
 import com.trainingvalidator.poc.training.models.ProgramConfig
 import com.trainingvalidator.poc.training.models.ProgramDay
-import com.trainingvalidator.poc.training.models.ProgramSession
+import com.trainingvalidator.poc.training.models.ProgramWorkout
 import com.trainingvalidator.poc.training.models.ProgramWeek
 import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.ui.main.MainContainerActivity
 import com.trainingvalidator.poc.ui.profile.ProfileActivity
 import com.trainingvalidator.poc.ui.programs.ProgramDetailActivity
 import com.trainingvalidator.poc.ui.programs.ProgramListActivity
-import com.trainingvalidator.poc.ui.programs.ProgramSessionActivity
-import com.trainingvalidator.poc.ui.report.SessionReportActivity
+import com.trainingvalidator.poc.ui.programs.ProgramWorkoutActivity
+import com.trainingvalidator.poc.ui.report.WorkoutReportActivity
 import com.trainingvalidator.poc.ui.programs.WeeklyReportActivity
 import android.graphics.Color
 import android.util.Log
@@ -63,11 +60,11 @@ import com.trainingvalidator.poc.network.ApiClient
 import com.trainingvalidator.poc.storage.HomeRepository
 
 /**
- * TrainFragment ? Redesigned program page.
+ * TrainFragment — Redesigned program page.
  *
  * State 1: No active program ? show browse list of all programs
  * State 2: Active program ? show dashboard with identity card, week calendar,
- *          today sessions, and report summary.
+ *          today planned workouts, and report summary.
  */
 class TrainFragment : Fragment() {
 
@@ -76,11 +73,11 @@ class TrainFragment : Fragment() {
 
     private lateinit var programRepo: ProgramRepository
     private lateinit var exerciseRepo: ExerciseRepository
-    private lateinit var reportStore: ProgramSessionReportStore
+    private lateinit var reportStore: ProgramWorkoutReportStore
     private lateinit var customizationStore: DayCustomizationStore
     private lateinit var reportRepo: ReportRepository
 
-    private var expandedSessionIndex = 0
+    private var expandedPlannedWorkoutIndex = 0
     private var isFirstLoad = true
     private var cachedProgramMetrics: MetricsResponse? = null
 
@@ -122,7 +119,7 @@ class TrainFragment : Fragment() {
             try {
                 programRepo = ProgramRepository.getInstance(requireContext())
                 exerciseRepo = ExerciseRepository.getInstance(requireContext())
-                reportStore = ProgramSessionReportStore(requireContext())
+                reportStore = ProgramWorkoutReportStore(requireContext())
                 customizationStore = DayCustomizationStore(requireContext())
                 reportRepo = ReportRepository.getInstance(requireContext())
 
@@ -183,7 +180,7 @@ class TrainFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             programRepo = ProgramRepository.getInstance(requireContext())
             exerciseRepo = ExerciseRepository.getInstance(requireContext())
-            reportStore = ProgramSessionReportStore(requireContext())
+            reportStore = ProgramWorkoutReportStore(requireContext())
             customizationStore = DayCustomizationStore(requireContext())
             reportRepo = ReportRepository.getInstance(requireContext())
 
@@ -352,10 +349,10 @@ class TrainFragment : Fragment() {
             day.dayNumber
         )
 
-        val totalSessions = program.weeks.sumOf { w -> w.days.sumOf { d -> d.sessions.size } }
+        val totalPlannedWorkouts = program.weeks.sumOf { w -> w.days.sumOf { d -> d.workouts.size } }
             .coerceAtLeast(1)
-        val completedSessions = reportStore.getAll().count { it.programId == program.id }
-        val progressPercent = (completedSessions * 100) / totalSessions
+        val completedPlannedWorkouts = reportStore.getAll().count { it.programId == program.id }
+        val progressPercent = (completedPlannedWorkouts * 100) / totalPlannedWorkouts
 
         binding.progressProgram.progress = progressPercent
         binding.tvProgressPercent.text = "$progressPercent%"
@@ -394,11 +391,11 @@ class TrainFragment : Fragment() {
             val day = dayMap[dayNumber]
             val isImplicitRestDay = day != null && day.isRestDay
 
-            val dayBinding = ItemWeekDayCircleBinding.inflate(inflater, binding.layoutWeekCalendar, false)
-            val card = dayBinding.cardDay
-            val tvNumber = dayBinding.tvDayNumber
-            val ivCheck = dayBinding.ivDayCheck
-            val tvLabel = dayBinding.tvDayLabel
+            val dayView = inflater.inflate(R.layout.item_week_day_circle, binding.layoutWeekCalendar, false)
+            val card = dayView.findViewById<MaterialCardView>(R.id.cardDay)
+            val tvNumber = dayView.findViewById<TextView>(R.id.tvDayNumber)
+            val ivCheck = dayView.findViewById<ImageView>(R.id.ivDayCheck)
+            val tvLabel = dayView.findViewById<TextView>(R.id.tvDayLabel)
 
             val realDate = userProgram
                 ?.let { ProgramDayCalculator.getDateForProgramDay(it, week.weekNumber, dayNumber) }
@@ -408,14 +405,14 @@ class TrainFragment : Fragment() {
             val isToday = isSameDay(realDate, today)
             val isPast = realDate.before(today) && !isToday
 
-            val hasSessions = day != null && !day.isRestDay && day.sessions.isNotEmpty()
-            val dayReports = if (hasSessions) {
+            val hasPlannedWorkouts = day != null && !day.isRestDay && day.workouts.isNotEmpty()
+            val dayReports = if (hasPlannedWorkouts) {
                 reportStore.getByDay(program.id, week.weekNumber, dayNumber)
             } else {
                 emptyList()
             }
-            val isCompleted = hasSessions && dayReports.size >= day.sessions.size
-            val isMissed = isPast && !isCompleted && hasSessions
+            val isCompleted = hasPlannedWorkouts && dayReports.size >= day.workouts.size
+            val isMissed = isPast && !isCompleted && hasPlannedWorkouts
 
             tvLabel.text = getWeekdayShortLabel(realDate)
 
@@ -478,13 +475,13 @@ class TrainFragment : Fragment() {
                 }
             }
 
-            dayBinding.root.setOnClickListener {
+            dayView.setOnClickListener {
                 if (day != null) {
                     showDayDetailSheet(program, week, day)
                 }
             }
 
-            binding.layoutWeekCalendar.addView(dayBinding.root)
+            binding.layoutWeekCalendar.addView(dayView)
         }
     }
 
@@ -525,7 +522,7 @@ class TrainFragment : Fragment() {
     }
 
     // -----------------------------------------------------
-    // Section 3: Today Sessions
+    // Section 3: Today Planned Workouts
     // -----------------------------------------------------
 
     private fun renderTodaySection(
@@ -540,7 +537,7 @@ class TrainFragment : Fragment() {
             binding.tvTodayHeader.text = getString(R.string.pg_today_format, day.dayNumber)
         }
 
-        binding.layoutTodaySessions.removeAllViews()
+        binding.layoutTodayWorkouts.removeAllViews()
         binding.cardDayComplete.visibility = View.GONE
         binding.cardRestDay.visibility = View.GONE
 
@@ -550,7 +547,7 @@ class TrainFragment : Fragment() {
             if (tomorrowDay != null) {
                 val tomorrowName = tomorrowDay.name?.get(language)?.ifBlank { tomorrowDay.name.en }
                     ?: getString(R.string.programs_day_title_format, tomorrowDay.dayNumber)
-                val exerciseCount = tomorrowDay.sessions.sumOf { s -> s.items.count { it.type == "exercise" } }
+                val exerciseCount = tomorrowDay.workouts.sumOf { w -> w.items.count { it.type == "exercise" } }
                 binding.tvRestDayTomorrow.text = getString(
                     R.string.pg_rest_tomorrow_format, tomorrowName, exerciseCount
                 )
@@ -561,18 +558,18 @@ class TrainFragment : Fragment() {
             return
         }
 
-        val effectiveSessions = customizationStore.getEffectiveSessions(
+        val effectivePlannedWorkouts = customizationStore.getEffectivePlannedWorkouts(
             programId = program.id,
             weekNumber = week.weekNumber,
             dayNumber = day.dayNumber,
-            originalSessions = day.sessions
+            originalWorkouts = day.workouts
         )
-        val sessions = effectiveSessions.map { cs ->
-            ProgramSession(
+        val plannedWorkouts = effectivePlannedWorkouts.map { cs ->
+            ProgramWorkout(
                 id = cs.id,
                 name = cs.name,
                 sortOrder = cs.sortOrder,
-                items = cs.items
+                itemsField = cs.items
             )
         }.sortedBy { it.sortOrder }
 
@@ -584,57 +581,59 @@ class TrainFragment : Fragment() {
             customizationStore = customizationStore
         )
 
-        if (allCompleted && sessions.isNotEmpty()) {
+        if (allCompleted && plannedWorkouts.isNotEmpty()) {
             binding.cardDayComplete.visibility = View.VISIBLE
             val totalMinutes = reportStore.getByDay(program.id, week.weekNumber, day.dayNumber)
                 .sumOf { it.totalDurationMs } / 60000
             binding.tvDayCompleteSubtitle.text = getString(
                 R.string.pg_day_complete_format,
-                sessions.size, sessions.size, totalMinutes.toInt()
+                plannedWorkouts.size, plannedWorkouts.size, totalMinutes.toInt()
             )
             binding.btnViewDaySummary.setOnClickListener {
                 openWeeklyReport(program)
             }
         }
 
-        val firstIncompleteIndex = sessions.indexOfFirst { reportStore.getBySession(it.id) == null }
-        expandedSessionIndex = if (firstIncompleteIndex >= 0) firstIncompleteIndex else 0
+        val firstIncompleteIndex = plannedWorkouts.indexOfFirst { reportStore.getByWorkout(it.id) == null }
+        expandedPlannedWorkoutIndex = if (firstIncompleteIndex >= 0) firstIncompleteIndex else 0
 
         val inflater = LayoutInflater.from(requireContext())
 
-        sessions.forEachIndexed { index, session ->
-            val sessionBinding = ItemTodaySessionCardBinding.inflate(
-                inflater, binding.layoutTodaySessions, false
+        plannedWorkouts.forEachIndexed { index, plannedWorkout ->
+            val workoutCardView = inflater.inflate(
+                R.layout.item_today_workout_card, binding.layoutTodayWorkouts, false
             )
-            val layoutHeader = sessionBinding.layoutSessionHeader
-            val viewStatusDot = sessionBinding.viewStatusDot
-            val tvSessionName = sessionBinding.tvSessionName
-            val tvSessionMeta = sessionBinding.tvSessionMeta
-            val tvSessionStatus = sessionBinding.tvSessionStatus
-            val ivExpandIcon = sessionBinding.ivExpandIcon
-            val layoutContent = sessionBinding.layoutSessionContent
-            val layoutItems = sessionBinding.layoutSessionItems
-            val tvMoreItems = sessionBinding.tvMoreItems
-            val btnAction = sessionBinding.btnSessionAction
 
-            val sessionName = session.name.get(language).ifBlank { session.name.en }
-            tvSessionName.text = sessionName
+            val cardWorkout = workoutCardView.findViewById<MaterialCardView>(R.id.cardWorkout)
+            val layoutHeader = workoutCardView.findViewById<LinearLayout>(R.id.layoutWorkoutHeader)
+            val viewStatusDot = workoutCardView.findViewById<View>(R.id.viewStatusDot)
+            val tvPlannedWorkoutName = workoutCardView.findViewById<TextView>(R.id.tvWorkoutName)
+            val tvWorkoutMeta = workoutCardView.findViewById<TextView>(R.id.tvWorkoutMeta)
+            val tvWorkoutStatus = workoutCardView.findViewById<TextView>(R.id.tvWorkoutStatus)
+            val ivExpandIcon = workoutCardView.findViewById<ImageView>(R.id.ivExpandIcon)
+            val layoutContent = workoutCardView.findViewById<LinearLayout>(R.id.layoutWorkoutContent)
+            val layoutItems = workoutCardView.findViewById<LinearLayout>(R.id.layoutWorkoutItems)
+            val tvMoreItems = workoutCardView.findViewById<TextView>(R.id.tvMoreItems)
+            val btnAction = workoutCardView.findViewById<MaterialButton>(R.id.btnWorkoutAction)
 
-            val exerciseCount = session.items.count { it.type == "exercise" }
-            val estimatedMin = estimateSessionDuration(session)
-            tvSessionMeta.text = getString(R.string.pg_session_exercises_format, exerciseCount, estimatedMin)
+            val plannedWorkoutName = plannedWorkout.name.get(language).ifBlank { plannedWorkout.name.en }
+            tvPlannedWorkoutName.text = plannedWorkoutName
 
-            val report = reportStore.getBySession(session.id)
+            val exerciseCount = plannedWorkout.items.count { it.type == "exercise" }
+            val estimatedMin = estimatePlannedWorkoutDuration(plannedWorkout)
+            tvWorkoutMeta.text = getString(R.string.pg_planned_workout_exercises_format, exerciseCount, estimatedMin)
+
+            val report = reportStore.getByWorkout(plannedWorkout.id)
             val isCompleted = report != null
 
             if (isCompleted) {
                 (viewStatusDot.background as? GradientDrawable)?.setColor(
                     requireContext().getColor(R.color.success)
                 )
-                tvSessionStatus.visibility = View.VISIBLE
-                tvSessionStatus.text = getString(R.string.pg_session_completed)
-                tvSessionStatus.setTextColor(requireContext().getColor(R.color.success))
-                btnAction.text = getString(R.string.pg_session_completed)
+                tvWorkoutStatus.visibility = View.VISIBLE
+                tvWorkoutStatus.text = getString(R.string.pg_planned_workout_completed)
+                tvWorkoutStatus.setTextColor(requireContext().getColor(R.color.success))
+                btnAction.text = getString(R.string.pg_planned_workout_completed)
                 btnAction.setIconResource(R.drawable.ic_check)
                 btnAction.isEnabled = true
                 btnAction.backgroundTintList = requireContext().getColorStateList(R.color.surface_variant)
@@ -644,14 +643,14 @@ class TrainFragment : Fragment() {
                 (viewStatusDot.background as? GradientDrawable)?.setColor(
                     requireContext().getColor(R.color.primary)
                 )
-                tvSessionStatus.visibility = View.GONE
-                btnAction.text = getString(R.string.pg_start_session)
+                tvWorkoutStatus.visibility = View.GONE
+                btnAction.text = getString(R.string.pg_start_planned_workout)
                 btnAction.icon = null
             }
 
-            renderSessionPreviewItems(layoutItems, session, language)
+            renderPlannedWorkoutPreviewItems(layoutItems, plannedWorkout, language)
 
-            val totalItems = session.items.size
+            val totalItems = plannedWorkout.items.size
             val shownItems = minOf(totalItems, MAX_PREVIEW_ITEMS)
             if (totalItems > shownItems) {
                 tvMoreItems.visibility = View.VISIBLE
@@ -660,7 +659,7 @@ class TrainFragment : Fragment() {
                 tvMoreItems.visibility = View.GONE
             }
 
-            val isExpanded = index == expandedSessionIndex
+            val isExpanded = index == expandedPlannedWorkoutIndex
             layoutContent.visibility = if (isExpanded) View.VISIBLE else View.GONE
             ivExpandIcon.rotation = if (isExpanded) 180f else 0f
 
@@ -674,32 +673,32 @@ class TrainFragment : Fragment() {
             btnAction.setOnClickListener {
                 val r = report
                 if (r != null) {
-                    openSessionReport(r, session.items.size)
+                    openWorkoutReport(r, plannedWorkout.items.size)
                 } else {
-                    openSession(program, session, week.weekNumber, day.dayNumber)
+                    openPlannedWorkout(program, plannedWorkout, week.weekNumber, day.dayNumber)
                 }
             }
 
-            binding.layoutTodaySessions.addView(sessionBinding.root)
+            binding.layoutTodayWorkouts.addView(workoutCardView)
         }
     }
 
-    private fun renderSessionPreviewItems(
+    private fun renderPlannedWorkoutPreviewItems(
         container: LinearLayout,
-        session: ProgramSession,
+        plannedWorkout: ProgramWorkout,
         language: String
     ) {
         container.removeAllViews()
-        val items = session.items.sortedBy { it.sortOrder }
+        val items = plannedWorkout.items.sortedBy { it.sortOrder }
         val previewItems = items.take(MAX_PREVIEW_ITEMS)
         val inflater = LayoutInflater.from(requireContext())
 
         previewItems.forEach { item ->
-            val rowBinding = ItemTodayPlanRowBinding.inflate(inflater, container, false)
-            val tvBullet = rowBinding.tvPlanBullet
-            val tvTitle = rowBinding.tvPlanTitle
-            val tvSubtitle = rowBinding.tvPlanSubtitle
-            val tvStatus = rowBinding.tvPlanStatus
+            val row = inflater.inflate(R.layout.item_today_plan_row, container, false)
+            val tvBullet = row.findViewById<TextView>(R.id.tvPlanBullet)
+            val tvTitle = row.findViewById<TextView>(R.id.tvPlanTitle)
+            val tvSubtitle = row.findViewById<TextView>(R.id.tvPlanSubtitle)
+            val tvStatus = row.findViewById<TextView>(R.id.tvPlanStatus)
             tvStatus.visibility = View.GONE
 
             if (item.type == "rest") {
@@ -727,7 +726,7 @@ class TrainFragment : Fragment() {
                 }
             }
 
-            container.addView(rowBinding.root)
+            container.addView(row)
         }
     }
 
@@ -798,7 +797,7 @@ class TrainFragment : Fragment() {
 
     private fun showProgramComplete(program: ProgramConfig) {
         binding.cardProgramComplete.visibility = View.VISIBLE
-        binding.layoutTodaySessions.removeAllViews()
+        binding.layoutTodayWorkouts.removeAllViews()
         binding.cardDayComplete.visibility = View.GONE
         binding.cardRestDay.visibility = View.GONE
 
@@ -875,67 +874,67 @@ class TrainFragment : Fragment() {
 
     private fun showDayDetailSheet(program: ProgramConfig, week: ProgramWeek, day: ProgramDay) {
         val dialog = BottomSheetDialog(requireContext())
-        val sheetBinding = BottomSheetDayDetailBinding.inflate(layoutInflater)
-        dialog.setContentView(sheetBinding.root)
+        val sheet = layoutInflater.inflate(R.layout.bottom_sheet_day_detail, null)
+        dialog.setContentView(sheet)
 
-        val tvTitle = sheetBinding.tvDayDetailTitle
-        val tvSubtitle = sheetBinding.tvDayDetailSubtitle
-        val layoutSessions = sheetBinding.layoutDaySessions
-        val tvRestHint = sheetBinding.tvDayRestHint
+        val tvTitle = sheet.findViewById<TextView>(R.id.tvDayDetailTitle)
+        val tvSubtitle = sheet.findViewById<TextView>(R.id.tvDayDetailSubtitle)
+        val layoutWorkouts = sheet.findViewById<LinearLayout>(R.id.layoutDayWorkouts)
+        val tvRestHint = sheet.findViewById<TextView>(R.id.tvDayRestHint)
 
         val language = requireContext().currentLanguage
         val dayTitle = day.name?.get(language)?.ifBlank { day.name.en }
             ?: getString(R.string.programs_day_title_only, day.dayNumber)
         tvTitle.text = getString(R.string.programs_day_detail_title_format, dayTitle)
 
-        val effectiveSessionsSheet = customizationStore.getEffectiveSessions(
+        val effectivePlannedWorkoutsSheet = customizationStore.getEffectivePlannedWorkouts(
             programId = program.id,
             weekNumber = week.weekNumber,
             dayNumber = day.dayNumber,
-            originalSessions = day.sessions
+            originalWorkouts = day.workouts
         )
-        val sessions = effectiveSessionsSheet.map { cs ->
-            ProgramSession(id = cs.id, name = cs.name, sortOrder = cs.sortOrder, items = cs.items)
+        val plannedWorkouts = effectivePlannedWorkoutsSheet.map { cs ->
+            ProgramWorkout(id = cs.id, name = cs.name, sortOrder = cs.sortOrder, itemsField = cs.items)
         }.sortedBy { it.sortOrder }
-        tvSubtitle.text = getString(R.string.programs_sessions_count_format, sessions.size)
-        layoutSessions.removeAllViews()
+        tvSubtitle.text = getString(R.string.programs_planned_workouts_count_format, plannedWorkouts.size)
+        layoutWorkouts.removeAllViews()
         tvRestHint.visibility = if (day.isRestDay) View.VISIBLE else View.GONE
         if (day.isRestDay) tvRestHint.text = getString(R.string.programs_rest_day_hint)
 
         val inflater = LayoutInflater.from(requireContext())
-        sessions.forEach { session ->
-            val rowBinding = ItemDaySessionRowBinding.inflate(inflater, layoutSessions, false)
-            val tvSessionTitle = rowBinding.tvSessionTitle
-            val tvSessionMeta = rowBinding.tvSessionMeta
-            val tvSessionStatus = rowBinding.tvSessionStatus
-            val btnAction = rowBinding.btnSessionAction
+        plannedWorkouts.forEach { plannedWorkout ->
+            val row = inflater.inflate(R.layout.item_day_workout_row, layoutWorkouts, false)
+            val tvWorkoutTitle = row.findViewById<TextView>(R.id.tvWorkoutTitle)
+            val tvWorkoutMeta = row.findViewById<TextView>(R.id.tvWorkoutMeta)
+            val tvWorkoutStatus = row.findViewById<TextView>(R.id.tvWorkoutStatus)
+            val btnAction = row.findViewById<MaterialButton>(R.id.btnWorkoutAction)
 
-            val sessionName = session.name.get(language).ifBlank { session.name.en }
-            val exerciseCount = session.items.count { it.type == "exercise" }
-            tvSessionTitle.text = sessionName
-            tvSessionMeta.text = getString(R.string.programs_exercises_count_format, exerciseCount)
+            val plannedWorkoutName = plannedWorkout.name.get(language).ifBlank { plannedWorkout.name.en }
+            val exerciseCount = plannedWorkout.items.count { it.type == "exercise" }
+            tvWorkoutTitle.text = plannedWorkoutName
+            tvWorkoutMeta.text = getString(R.string.programs_exercises_count_format, exerciseCount)
 
-            val report = reportStore.getBySession(session.id)
+            val report = reportStore.getByWorkout(plannedWorkout.id)
             val isCompleted = report != null
-            tvSessionStatus.text = if (isCompleted) getString(R.string.programs_session_done)
-            else getString(R.string.programs_session_not_started)
-            tvSessionStatus.setTextColor(
+            tvWorkoutStatus.text = if (isCompleted) getString(R.string.programs_planned_workout_done)
+            else getString(R.string.programs_planned_workout_not_started)
+            tvWorkoutStatus.setTextColor(
                 requireContext().getColor(if (isCompleted) R.color.success else R.color.text_secondary)
             )
 
             btnAction.text = if (isCompleted) getString(R.string.programs_view_summary)
-            else getString(R.string.programs_start_session)
+            else getString(R.string.programs_start_workout)
             btnAction.setOnClickListener {
                 dialog.dismiss()
                 val r = report
                 if (r != null) {
-                    openSessionReport(r, session.items.size)
+                    openWorkoutReport(r, plannedWorkout.items.size)
                 } else {
-                    openSession(program, session, week.weekNumber, day.dayNumber)
+                    openPlannedWorkout(program, plannedWorkout, week.weekNumber, day.dayNumber)
                 }
             }
 
-            layoutSessions.addView(rowBinding.root)
+            layoutWorkouts.addView(row)
         }
 
         dialog.show()
@@ -945,36 +944,36 @@ class TrainFragment : Fragment() {
     // Navigation
     // -----------------------------------------------------------
 
-    private fun openSession(
-        program: ProgramConfig, session: ProgramSession,
+    private fun openPlannedWorkout(
+        program: ProgramConfig, plannedWorkout: ProgramWorkout,
         weekNumber: Int? = null, dayNumber: Int? = null
     ) {
         val resolvedWeek = weekNumber ?: program.weeks.firstOrNull { w ->
-            w.days.any { d -> d.sessions.any { it.id == session.id } }
+            w.days.any { d -> d.workouts.any { it.id == plannedWorkout.id } }
         }?.weekNumber
         val resolvedDay = dayNumber ?: program.weeks.flatMap { it.days }
-            .firstOrNull { d -> d.sessions.any { it.id == session.id } }?.dayNumber
+            .firstOrNull { d -> d.workouts.any { it.id == plannedWorkout.id } }?.dayNumber
 
-        startActivity(Intent(requireContext(), ProgramSessionActivity::class.java).apply {
-            putExtra(ProgramSessionActivity.EXTRA_PROGRAM_SLUG, program.slug)
-            putExtra(ProgramSessionActivity.EXTRA_PROGRAM_ID, program.id)
-            resolvedWeek?.let { putExtra(ProgramSessionActivity.EXTRA_WEEK_NUMBER, it) }
-            resolvedDay?.let { putExtra(ProgramSessionActivity.EXTRA_DAY_NUMBER, it) }
-            putExtra(ProgramSessionActivity.EXTRA_TARGET_SESSION_ID, session.id)
+        startActivity(Intent(requireContext(), ProgramWorkoutActivity::class.java).apply {
+            putExtra(ProgramWorkoutActivity.EXTRA_PROGRAM_SLUG, program.slug)
+            putExtra(ProgramWorkoutActivity.EXTRA_PROGRAM_ID, program.id)
+            resolvedWeek?.let { putExtra(ProgramWorkoutActivity.EXTRA_WEEK_NUMBER, it) }
+            resolvedDay?.let { putExtra(ProgramWorkoutActivity.EXTRA_DAY_NUMBER, it) }
+            putExtra(ProgramWorkoutActivity.EXTRA_TARGET_WORKOUT_ID, plannedWorkout.id)
         })
     }
 
-    private fun openSessionReport(
-        report: ProgramSessionReportStore.ProgramSessionLocalReport, totalItems: Int
+    private fun openWorkoutReport(
+        report: ProgramWorkoutReportStore.ProgramWorkoutLocalReport, totalItems: Int
     ) {
         val reportIds = report.report?.reportIds ?: emptyList()
-        val sessionJson = report.report?.let { com.google.gson.Gson().toJson(it) }
+        val workoutReportJson = report.report?.let { com.google.gson.Gson().toJson(it) }
 
         startActivity(
-            com.trainingvalidator.poc.ui.report.SessionReportActivity.createSessionIntent(
+            com.trainingvalidator.poc.ui.report.WorkoutReportActivity.createWorkoutIntent(
                 context = requireContext(),
                 reportIds = reportIds,
-                sessionReportJson = sessionJson
+                workoutReportJson = workoutReportJson
             )
         )
     }
@@ -1122,40 +1121,61 @@ class TrainFragment : Fragment() {
         )
     }
 
+    private fun estimatePlannedWorkoutDuration(plannedWorkout: ProgramWorkout): Int {
+        var totalSeconds = 0
+        plannedWorkout.items.forEach { item ->
+            if (item.type == "rest") {
+                totalSeconds += ((item.restDurationMs ?: 0L) / 1000).toInt()
+            } else {
+                val sets = item.sets ?: 1
+                val repsTime = (item.targetReps ?: 0) * 4
+                val holdTime = item.targetDuration ?: 0
+                val exerciseTime = sets * (repsTime + holdTime)
+                val restBetweenSets = sets.coerceAtLeast(1) - 1
+                totalSeconds += exerciseTime + restBetweenSets * ((item.restBetweenSetsMs ?: 30000L) / 1000).toInt()
+            }
+        }
+        return (totalSeconds / 60).coerceAtLeast(1)
+    }
+
     private inner class ProgramBrowseAdapter(
         private val programs: List<ProgramConfig>
     ) : RecyclerView.Adapter<ProgramBrowseAdapter.ViewHolder>() {
 
-        inner class ViewHolder(
-            val itemBinding: ItemProgramBrowseCardBinding
-        ) : RecyclerView.ViewHolder(itemBinding.root)
+        inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+            val tvName: TextView = view.findViewById(R.id.tvProgramName)
+            val tvDescription: TextView = view.findViewById(R.id.tvDescription)
+            val tvDuration: TextView = view.findViewById(R.id.tvDuration)
+            val tvDifficulty: TextView = view.findViewById(R.id.tvDifficulty)
+            val tvStats: TextView = view.findViewById(R.id.tvStats)
+            val btnViewDetails: MaterialButton = view.findViewById(R.id.btnViewDetails)
+            val btnSubscribe: MaterialButton = view.findViewById(R.id.btnSubscribe)
+        }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            val itemBinding = ItemProgramBrowseCardBinding.inflate(
-                LayoutInflater.from(parent.context), parent, false
-            )
-            return ViewHolder(itemBinding)
+            val view = LayoutInflater.from(parent.context)
+                .inflate(R.layout.item_program_browse_card, parent, false)
+            return ViewHolder(view)
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val program = programs[position]
             val language = requireContext().currentLanguage
-            val b = holder.itemBinding
 
-            b.tvProgramName.text = program.name.get(language).ifBlank { program.name.en }
-            b.tvDescription.text = program.description?.get(language)?.ifBlank {
+            holder.tvName.text = program.name.get(language).ifBlank { program.name.en }
+            holder.tvDescription.text = program.description?.get(language)?.ifBlank {
                 program.description.en
             } ?: ""
-            b.tvDuration.text = getString(R.string.weeks_count_format, program.durationWeeks)
+            holder.tvDuration.text = getString(R.string.weeks_count_format, program.durationWeeks)
 
-            b.tvDifficulty.text =
+            holder.tvDifficulty.text =
                 requireContext().formatProgramLevelRange(program.levelRangeMin, program.levelRangeMax)
 
-            val totalSessions = program.weeks.sumOf { w -> w.days.sumOf { d -> d.sessions.size } }
-            b.tvStats.text = getString(R.string.pg_stats_format, program.durationWeeks, totalSessions)
+            val totalPlannedWorkouts = program.weeks.sumOf { w -> w.days.sumOf { d -> d.workouts.size } }
+            holder.tvStats.text = getString(R.string.pg_stats_format, program.durationWeeks, totalPlannedWorkouts)
 
-            b.btnViewDetails.setOnClickListener { openProgramDetail(program) }
-            b.btnSubscribe.setOnClickListener {
+            holder.btnViewDetails.setOnClickListener { openProgramDetail(program) }
+            holder.btnSubscribe.setOnClickListener {
                 openProgramDetail(program)
             }
         }

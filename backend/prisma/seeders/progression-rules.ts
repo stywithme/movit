@@ -1,4 +1,4 @@
-import type { PrismaClient, ExerciseArchetype } from '@prisma/client';
+﻿import type { PrismaClient, ExerciseArchetype } from '@prisma/client';
 import { ARCHETYPE_DEFAULTS, buildDefaultProfile } from '../../src/modules/progression/archetype-defaults';
 
 /**
@@ -11,17 +11,17 @@ export async function seedProgressionRules(prisma: PrismaClient) {
     {
       name: 'Weight Increase (Positive)',
       scope: 'global',
-      trigger: 'session_completed',
+      trigger: 'planned_workout_completed',
       conditions: [
-        { metric: 'avgFormScore', operator: '>=', value: 75, window: 'last_2_sessions' },
-        { metric: 'completionRate', operator: '>=', value: 90, window: 'last_2_sessions' },
+        { metric: 'avgFormScore', operator: '>=', value: 75, window: 'last_2_workout_executions' },
+        { metric: 'completionRate', operator: '>=', value: 90, window: 'last_2_workout_executions' },
       ],
       action: {
         type: 'increase_weight',
         amount: 2.5,
         notification: {
-          ar: 'أداء ممتاز! تم زيادة الوزن 2.5 كجم للجلسة القادمة.',
-          en: 'Great performance! Weight increased by 2.5kg for next session.',
+          ar: 'أداء ممتاز! تم زيادة الوزن 2.5 كجم للتمرين القادم.',
+          en: 'Great performance! Weight increased by 2.5kg for the next workout.',
         },
       },
       priority: 10,
@@ -30,7 +30,7 @@ export async function seedProgressionRules(prisma: PrismaClient) {
     {
       name: 'Rep Increase (Weekly)',
       scope: 'global',
-      trigger: 'session_completed',
+      trigger: 'planned_workout_completed',
       conditions: [
         { metric: 'avgFormScore', operator: '>=', value: 80, window: 'last_week' },
         { metric: 'avgROM', operator: '>=', value: 85, window: 'last_week' },
@@ -49,9 +49,9 @@ export async function seedProgressionRules(prisma: PrismaClient) {
     {
       name: 'Deload Safety',
       scope: 'global',
-      trigger: 'session_completed',
+      trigger: 'planned_workout_completed',
       conditions: [
-        { metric: 'avgFormScore', operator: '<', value: 60, window: 'last_2_sessions' },
+        { metric: 'avgFormScore', operator: '<', value: 60, window: 'last_2_workout_executions' },
       ],
       action: {
         type: 'decrease_weight',
@@ -165,8 +165,7 @@ export async function backfillProgressionState(prisma: PrismaClient) {
           weeks: {
             include: {
               days: {
-                include: {
-                  sessions: {
+                include: { plannedWorkouts: {
                     include: {
                       items: {
                         where: { exerciseId: { not: null } },
@@ -196,8 +195,8 @@ export async function backfillProgressionState(prisma: PrismaClient) {
 
     for (const week of up.program?.weeks ?? []) {
       for (const day of week.days) {
-        for (const session of day.sessions) {
-          for (const item of session.items) {
+        for (const plannedWorkout of day.plannedWorkouts) {
+          for (const item of plannedWorkout.items) {
             if (item.exerciseId && !exerciseItems.has(item.exerciseId)) {
               exerciseItems.set(item.exerciseId, item);
             }

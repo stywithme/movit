@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Mobile audio manifest — shared by full sync and per-entity prefetch endpoints.
  */
 
@@ -249,7 +249,7 @@ export async function buildAudioManifestForWorkoutSlug(
   baseUrl: string
 ): Promise<AudioManifest | null> {
   const prisma = await getPrisma();
-  const workout = await prisma.workout.findFirst({
+  const workout = await prisma.workoutTemplate.findFirst({
     where: { slug: slug.trim(), status: 'published', deletedAt: null },
     include: {
       exercises: {

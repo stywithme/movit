@@ -35,15 +35,15 @@ export default function ActivationAnalyticsPage() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <StatCard title="North Star Rate" value={formatPercent(data?.northStar.rate)} help={analyticsTerms.northStar} />
         <StatCard title="North Star Users" value={formatNumber(data?.northStar.completed)} help={analyticsTerms.northStar} />
-        <StatCard title="Avg Time to First Session" value={`${(data?.timeToFirstSession.avgHours ?? 0).toFixed(1)}h`} help="Average time between signup and the user's first recorded training session." />
+        <StatCard title="Avg Time to First Workout" value={`${(data?.timeToFirstWorkout.avgHours ?? 0).toFixed(1)}h`} help="Average time between signup and the user's first recorded workout execution." />
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <ChartCard title="Activation Steps" loading={loading} empty={!data?.funnel?.length} help={analyticsTerms.activation}>
           <FunnelChart data={data?.funnel ?? []} />
         </ChartCard>
-        <ChartCard title="Time to First Session" loading={loading} empty={!data?.timeToFirstSession.buckets?.length} help="Buckets users by how quickly they reach their first session after signup.">
-          <BarsChart data={data?.timeToFirstSession.buckets ?? []} />
+        <ChartCard title="Time to First Workout" loading={loading} empty={!data?.timeToFirstWorkout.buckets?.length} help="Buckets users by how quickly they reach their first workout execution after signup.">
+          <BarsChart data={data?.timeToFirstWorkout.buckets ?? []} />
         </ChartCard>
       </div>
     </div>

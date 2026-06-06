@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.training.report
+﻿package com.trainingvalidator.poc.training.report
 
 import android.util.Log
 import com.trainingvalidator.poc.training.TrainingEngine
@@ -9,7 +9,7 @@ import com.trainingvalidator.poc.training.models.*
 import java.util.UUID
 
 /**
- * ReportGenerator - Generates PostTrainingReport from training session data
+ * ReportGenerator - Generates PostTrainingReport from a single workout execution
  *
  * STATE-BASED REPORT GENERATION:
  * - Uses JointState (PERFECT/NORMAL/PAD/WARNING/DANGER) for assessment
@@ -35,8 +35,8 @@ object ReportGenerator {
      * Generate a complete post-training report
      */
     fun generate(
-        sessionId: String,
-        summary: SessionSummary,
+        workoutId: String,
+        summary: ExerciseWorkoutSummary,
         exerciseConfig: ExerciseConfig,
         durationMs: Long,
         visibilityStats: VisibilityStats? = null,
@@ -44,19 +44,19 @@ object ReportGenerator {
         frameCaptures: List<FrameCapture> = emptyList(),
         replayClips: List<RepReplayClip> = emptyList(),
         holdData: HoldData? = null,
-        sessionMetrics: SessionMetrics? = null,
-        /** Which pose variant this session used (for [ExerciseConfigSnapshot.hasAnySideJoints] etc.). */
+        executionMetrics: WorkoutExecutionMetrics? = null,
+        /** Which pose variant this execution used (for [ExerciseConfigSnapshot.hasAnySideJoints] etc.). */
         poseVariantIndex: Int = 0
     ): PostTrainingReport {
         Log.d(TAG, "Generating state-based report for ${summary.exerciseName}, ${summary.totalReps} reps")
 
         // Handle 0 reps case - log for debugging
         if (summary.totalReps == 0) {
-            Log.w(TAG, "Session completed with 0 reps - user may not have completed full range of motion")
+            Log.w(TAG, "Workout execution completed with 0 reps - user may not have completed full range of motion")
         }
 
         // 1. Generate performance summary with state breakdown
-        val performanceSummary = generateStateSummary(summary, durationMs, exerciseConfig, sessionMetrics)
+        val performanceSummary = generateStateSummary(summary, durationMs, exerciseConfig, executionMetrics)
 
         // 2. Generate DANGER alerts (CRITICAL - shown prominently)
         val dangerAlerts = generateDangerAlerts(summary.repDetails, exerciseConfig, frameCaptures)
@@ -110,8 +110,8 @@ object ReportGenerator {
         // 9. Calculate consistency metrics
         val consistency = calculateConsistency(summary.repDetails)
 
-        // 10. Generate session quality
-        val sessionQuality = generateSessionQuality(visibilityStats, cameraWarningCount)
+        // 10. Generate execution quality
+        val executionQuality = generateExecutionQuality(visibilityStats, cameraWarningCount)
 
         // 11. Generate tips from exercise JSON (pass totalReps for 0-reps handling)
         val tips = generateExerciseBasedTips(errorAnalysis, exerciseConfig, dangerAlerts, summary.totalReps)
@@ -158,7 +158,7 @@ object ReportGenerator {
 
         return PostTrainingReport(
             id = UUID.randomUUID().toString(),
-            sessionId = sessionId,
+            workoutId = workoutId,
             exerciseId = exerciseConfig.fileName,
             exerciseName = exerciseConfig.name,
             summary = performanceSummary,
@@ -169,7 +169,7 @@ object ReportGenerator {
             errorAnalysis = errorAnalysis,
             repTimeline = timeline,
             consistency = consistency,
-            sessionQuality = sessionQuality,
+            executionQuality = executionQuality,
             improvementTips = tips,
             frameCaptures = frameCaptures,
             holdSummary = holdSummary,
@@ -181,7 +181,7 @@ object ReportGenerator {
 
     /**
      * Generate from TrainingEngine directly.
-     * @param allSets When provided (multi-set session), the timeline is built from
+     * @param allSets When provided (multi-set execution), the timeline is built from
      *               all sets' rep details with proper setNumber tagging, and
      *               SetSummary entries are generated. When null, falls back to
      *               engine.stop() single-set behavior.
@@ -189,13 +189,13 @@ object ReportGenerator {
     fun generateFromEngine(
         engine: TrainingEngine,
         exerciseConfig: ExerciseConfig,
-        sessionDurationMs: Long,
+        executionDurationMs: Long,
         frameCaptures: List<FrameCapture> = emptyList(),
         replayClips: List<RepReplayClip> = emptyList(),
-        sessionMetrics: SessionMetrics? = null,
+        executionMetrics: WorkoutExecutionMetrics? = null,
         weightKg: Float? = null,
         weightUnit: String = "kg",
-        allSets: List<com.trainingvalidator.poc.training.session.SessionTrainingEngine.SetMetrics>? = null,
+        allSets: List<com.trainingvalidator.poc.training.workout.WorkoutTrainingEngine.SetMetrics>? = null,
         /** Override variant for snapshot; default = engine's active variant. */
         poseVariantIndex: Int? = null
     ): PostTrainingReport {
@@ -220,16 +220,16 @@ object ReportGenerator {
         } else null
 
         val report = generate(
-            sessionId = UUID.randomUUID().toString(),
+            workoutId = UUID.randomUUID().toString(),
             summary = summary,
             exerciseConfig = exerciseConfig,
-            durationMs = sessionDurationMs,
+            durationMs = executionDurationMs,
             visibilityStats = visibilityStats,
             cameraWarningCount = cameraWarnings,
             frameCaptures = frameCaptures,
             replayClips = replayClips,
             holdData = holdData,
-            sessionMetrics = sessionMetrics,
+            executionMetrics = executionMetrics,
             poseVariantIndex = poseVariantIndex ?: engine.poseVariantIndex
         )
 
@@ -242,13 +242,13 @@ object ReportGenerator {
      * Enrich a generated report with multi-set data.
      * 
      * Because TrainingEngine is reset between sets, [report.repTimeline] only contains
-     * the last set's reps. We rebuild the full timeline from the session engine's
+     * the last set's reps. We rebuild the full timeline from the workout engine's
      * [SetMetrics.repDetails] (which stores per-rep data for every set) and
      * assign global repNumbers + setNumber tags.
      */
     private fun enrichWithSetData(
         report: PostTrainingReport,
-        allSets: List<com.trainingvalidator.poc.training.session.SessionTrainingEngine.SetMetrics>
+        allSets: List<com.trainingvalidator.poc.training.workout.WorkoutTrainingEngine.SetMetrics>
     ): PostTrainingReport {
         // Rebuild the full timeline from all sets' rep details
         val fullTimeline = mutableListOf<RepTimelineEntry>()
@@ -365,10 +365,10 @@ object ReportGenerator {
     // ==================== State-Based Summary ====================
 
     private fun generateStateSummary(
-        summary: SessionSummary,
+        summary: ExerciseWorkoutSummary,
         durationMs: Long,
         exerciseConfig: ExerciseConfig,
-        sessionMetrics: SessionMetrics?
+        executionMetrics: WorkoutExecutionMetrics?
     ): PerformanceSummary {
         // Build state breakdown
         val stateBreakdown = StateBreakdown.fromMap(summary.stateBreakdown)
@@ -413,25 +413,25 @@ object ReportGenerator {
 
         // Average ROM - prefer real ROM from MotionRecorder metrics when available
         val avgROM = if (shouldComputeRom) {
-            val romFromSession = calculateAverageRomFromSession(sessionMetrics, exerciseConfig)
-            romFromSession ?: if (scores.isNotEmpty()) scores.average().toFloat() else null
+            val romFromExecution = calculateAverageRomFromExecution(executionMetrics, exerciseConfig)
+            romFromExecution ?: if (scores.isNotEmpty()) scores.average().toFloat() else null
         } else null
 
         // ═══════════════════════════════════════════════════════════════
-        // KINEMATIC & V2 METRICS — Extract from SessionMetrics
+        // KINEMATIC & V2 METRICS — Extract from WorkoutExecutionMetrics
         // ═══════════════════════════════════════════════════════════════
 
         // Symmetry (0-1000 scale → 0-100%)
-        val avgSymmetry = sessionMetrics?.avgSymmetry?.let { it / 10f }
+        val avgSymmetry = executionMetrics?.avgSymmetry?.let { it / 10f }
 
         // Trunk Stability (0-1000 scale → 0-100%)
-        val avgStability = sessionMetrics?.avgStability?.let { it / 10f }
+        val avgStability = executionMetrics?.avgStability?.let { it / 10f }
 
-        val avgTempo = sessionMetrics?.avgTempo
-        val avgVelocity = sessionMetrics?.avgVelocity
-        val velocityLoss = sessionMetrics?.velocityLoss?.let { it / 10f } // Convert ×10 to %
-        val tempoConsistency = sessionMetrics?.tempoConsistency?.let { it / 10f } // Convert ×10 to %
-        val totalTUT = sessionMetrics?.totalTUT
+        val avgTempo = executionMetrics?.avgTempo
+        val avgVelocity = executionMetrics?.avgVelocity
+        val velocityLoss = executionMetrics?.velocityLoss?.let { it / 10f } // Convert ×10 to %
+        val tempoConsistency = executionMetrics?.tempoConsistency?.let { it / 10f } // Convert ×10 to %
+        val totalTUT = executionMetrics?.totalTUT
 
         // Position Check stats — aggregate from repDetails
         val positionErrorReps = summary.repDetails.count { it.positionErrors.isNotEmpty() }
@@ -439,7 +439,7 @@ object ReportGenerator {
         val positionTipReps = summary.repDetails.count { it.positionTipCount > 0 }
 
         // ═══════════════════════════════════════════════════════════════
-        // WEIGHT & LOAD (from SessionSummary)
+        // WEIGHT & LOAD (from ExerciseWorkoutSummary)
         // ═══════════════════════════════════════════════════════════════
         val weightKg = summary.weightKg
         val weightUnit = summary.weightUnit
@@ -482,13 +482,13 @@ object ReportGenerator {
     }
 
     /**
-     * Convert session ROM (degrees × 10) to percentage of target ROM.
+     * Convert execution ROM (degrees × 10) to percentage of target ROM.
      */
-    private fun calculateAverageRomFromSession(
-        sessionMetrics: SessionMetrics?,
+    private fun calculateAverageRomFromExecution(
+        executionMetrics: WorkoutExecutionMetrics?,
         exerciseConfig: ExerciseConfig
     ): Float? {
-        val avgRomDegrees = sessionMetrics?.avgRom?.toInt()?.let { it / 10f } ?: return null
+        val avgRomDegrees = executionMetrics?.avgRom?.toInt()?.let { it / 10f } ?: return null
         val targetRomDegrees = getTargetRomDegrees(exerciseConfig) ?: return null
         if (targetRomDegrees <= 0f) return null
         return ((avgRomDegrees / targetRomDegrees) * 100f).coerceIn(0f, 100f)
@@ -1125,7 +1125,7 @@ object ReportGenerator {
                 icon = if (index == 0) "2️⃣" else "🎯",
                 title = LocalizedText(
                     ar = if (index == 0) "نصيحة إضافية" else "تركيز الجلسة القادمة",
-                    en = if (index == 0) "Additional Tip" else "Next Session Focus"
+                    en = if (index == 0) "Additional Tip" else "Next Workout Focus"
                 ),
                 description = tip,
                 priority = 3 + index,
@@ -1165,17 +1165,17 @@ object ReportGenerator {
         return ConsistencyMetrics.calculate(durations)
     }
 
-    private fun generateSessionQuality(
+    private fun generateExecutionQuality(
         visibilityStats: VisibilityStats?,
         cameraWarningCount: Int
-    ): SessionQuality {
+    ): ExecutionQuality {
         val pauseCount = visibilityStats?.totalPauseCount ?: 0
         val warningCount = visibilityStats?.totalWarningCount ?: 0
 
-        val quality = SessionQuality.calculateQuality(pauseCount, cameraWarningCount)
-        val suggestions = SessionQuality.generateSuggestions(pauseCount, cameraWarningCount)
+        val quality = ExecutionQuality.calculateQuality(pauseCount, cameraWarningCount)
+        val suggestions = ExecutionQuality.generateSuggestions(pauseCount, cameraWarningCount)
 
-        return SessionQuality(
+        return ExecutionQuality(
             visibilityPauseCount = pauseCount,
             totalInvisibleMs = 0L,
             cameraWarningCount = cameraWarningCount + warningCount,
@@ -1381,7 +1381,7 @@ object ReportGenerator {
      * @param fatigueIndex Pre-calculated fatigue index for Control score (Single Source of Truth)
      */
     private fun calculateOverallQuality(
-        summary: SessionSummary,
+        summary: ExerciseWorkoutSummary,
         errorAnalysis: List<ErrorAnalysisItem>,
         timeline: List<RepTimelineEntry>,
         dangerAlerts: List<DangerAlert>,
@@ -1427,7 +1427,7 @@ object ReportGenerator {
      * (50% rep state score, 25% ROM%, 25% form consistency) when metrics exist.
      */
     private fun calculateFormScoreForOverall(
-        summary: SessionSummary,
+        summary: ExerciseWorkoutSummary,
         timeline: List<RepTimelineEntry>,
         isHoldExercise: Boolean,
         avgROM: Float?,

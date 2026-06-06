@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.training.report
+﻿package com.trainingvalidator.poc.training.report
 
 import com.trainingvalidator.poc.training.engine.ScoreCalculator
 import com.trainingvalidator.poc.training.models.JointState
@@ -27,8 +27,8 @@ import com.trainingvalidator.poc.training.models.MetricCode
  * - Stability uses trunk stability (spine angle variance from MetricsCalculator)
  * - Safety Score combines Position alignment + DANGER events + Trunk stability
  * - Control Score incorporates VelocityLoss%, TempoConsistency, FormConsistency
- * - Tempo uses real phase data from SessionMetrics (not estimated from duration)
- * - TUT uses sum of rep durations (not session duration)
+ * - Tempo uses real phase data from WorkoutExecutionMetrics (not estimated from duration)
+ * - TUT uses sum of rep durations (not wall-clock run duration)
  */
 object PerformanceMetricsBuilder {
 
@@ -172,7 +172,7 @@ object PerformanceMetricsBuilder {
      * Safety Score formula (weighted):
      * - 40% Position Check Alignment (reps without ERROR/WARNING position violations)
      * - 30% DANGER-free ratio (reps without DANGER joint state)
-     * - 30% Trunk Stability (from SessionMetrics — spine angle variance)
+     * - 30% Trunk Stability (from WorkoutExecutionMetrics — spine angle variance)
      */
     private fun buildSafetyMetrics(report: PostTrainingReport, config: ExerciseConfigSnapshot?): SafetyMetrics {
         val summary = report.summary
@@ -186,7 +186,7 @@ object PerformanceMetricsBuilder {
             calculateAlignmentMetric(report)
         } else null
         
-        // Trunk Stability — uses pre-calculated avgStability from SessionMetrics
+        // Trunk Stability — uses pre-calculated avgStability from WorkoutExecutionMetrics
         val stabilityMetric = if (shouldShow(config, MetricCode.STABILITY)) {
             calculateStabilityMetric(report)
         } else null
@@ -215,12 +215,12 @@ object PerformanceMetricsBuilder {
         val summary = report.summary
         val isHold = config?.isHoldExercise() == true
         
-        // Tempo — uses real phase data from SessionMetrics
+        // Tempo — uses real phase data from WorkoutExecutionMetrics
         val tempoDisplay = if (!isHold && shouldShow(config, MetricCode.TEMPO)) {
             calculateTempoDisplay(report)
         } else null
         
-        // TUT — uses sum of rep durations (not session duration)
+        // TUT — uses sum of rep durations (not wall-clock run duration)
         val totalTUT = if (!isHold && shouldShow(config, MetricCode.TUT)) {
             summary.totalTUT?.let { it / 1000 }
                 ?: (summary.durationMs / 1000).toInt()  // Fallback for backward compatibility
@@ -360,7 +360,7 @@ object PerformanceMetricsBuilder {
         // Factor 2: DANGER-free ratio (30%)
         val dangerFreePct = ((totalReps - dangerCount).toFloat() / totalReps) * 100f
         
-        // Factor 3: Trunk Stability (30%) — from SessionMetrics
+        // Factor 3: Trunk Stability (30%) — from WorkoutExecutionMetrics
         val trunkStabilityPct = summary.avgStability ?: 90f  // Default 90% if not available
         
         val safetyScore = (
@@ -446,7 +446,7 @@ object PerformanceMetricsBuilder {
     /**
      * Calculate Trunk Stability metric.
      * 
-     * V2: Uses pre-calculated avgStability from SessionMetrics which is based on:
+     * V2: Uses pre-calculated avgStability from WorkoutExecutionMetrics which is based on:
      * - Spine angle variance (if spine is tracked) — preferred
      * - Hip midpoint variance (fallback)
      */
@@ -468,13 +468,13 @@ object PerformanceMetricsBuilder {
     // ═══════════════════════════════════════════════════════════════
     
     /**
-     * Calculate Tempo from real phase data in SessionMetrics.
+     * Calculate Tempo from real phase data in WorkoutExecutionMetrics.
      * 
      * V2: Uses actual eccentric/isometric/concentric timing from MetricsCalculator
      * instead of estimating from total duration.
      */
     private fun calculateTempoDisplay(report: PostTrainingReport): TempoDisplay? {
-        // Prefer real tempo data from SessionMetrics
+        // Prefer real tempo data from WorkoutExecutionMetrics
         val avgTempo = report.summary.avgTempo
         if (avgTempo != null && avgTempo.sum() > 0) {
             return TempoDisplay(
@@ -498,7 +498,7 @@ object PerformanceMetricsBuilder {
     /**
      * Format Velocity Loss % metric.
      * 
-     * VL% indicates neuromuscular fatigue within the session.
+     * VL% indicates neuromuscular fatigue within the exercise run.
      * Lower is better (0% = no velocity loss = no mechanical fatigue).
      * 
      * Display: Inverted (100 - VL%) so higher = better for the user.

@@ -7,7 +7,7 @@ export interface CatchUpSuggestion {
   resetType: CatchUpResetType;
   resetToWeek: number;
   resetToDay: number;
-  calendarDaysSinceLastSession: number;
+  calendarDaysSinceLastWorkout: number;
   messageAr: string;
   messageEn: string;
 }
@@ -18,15 +18,15 @@ export interface CatchUpSuggestion {
 export function buildCatchUpSuggestionFromMeta<TWeek, TDay>(
   meta: TrainingPositionMeta<TWeek, TDay>,
 ): CatchUpSuggestion | null {
-  const { naturalIndex, snappedIndex, calendarDaysSinceLastSession, position, orderedTrainingDays } =
+  const { naturalIndex, snappedIndex, calendarDaysSinceLastWorkout, position, orderedTrainingDays } =
     meta;
   if (orderedTrainingDays.length === 0) return null;
   if (position.isProgramComplete) return null;
-  if (calendarDaysSinceLastSession <= 2) return null;
+  if (calendarDaysSinceLastWorkout <= 2) return null;
   if (naturalIndex === snappedIndex) return null;
 
   const resetType: CatchUpResetType =
-    calendarDaysSinceLastSession >= 30 ? 'program_restart' : 'week_restart';
+    calendarDaysSinceLastWorkout >= 30 ? 'program_restart' : 'week_restart';
 
   const w = position.targetWeekNumber;
   const d = position.targetDayNumber;
@@ -36,9 +36,9 @@ export function buildCatchUpSuggestionFromMeta<TWeek, TDay>(
       resetType,
       resetToWeek: w,
       resetToDay: d,
-      calendarDaysSinceLastSession,
-      messageAr: `تم ضبط موضعك تلقائيًا لبداية البرنامج (أسبوع ${w}، يوم ${d}) بعد غياب ${calendarDaysSinceLastSession} يومًا تقويميًا.`,
-      messageEn: `Your position was reset to the start of the program (week ${w}, day ${d}) after ${calendarDaysSinceLastSession} calendar days away.`,
+      calendarDaysSinceLastWorkout,
+      messageAr: `?? ??? ????? ???????? ?????? ???????? (????? ${w}? ??? ${d}) ??? ???? ${calendarDaysSinceLastWorkout} ????? ????????.`,
+      messageEn: `Your position was reset to the start of the program (week ${w}, day ${d}) after ${calendarDaysSinceLastWorkout} calendar days away.`,
     };
   }
 
@@ -46,18 +46,18 @@ export function buildCatchUpSuggestionFromMeta<TWeek, TDay>(
     resetType,
     resetToWeek: w,
     resetToDay: d,
-    calendarDaysSinceLastSession,
-    messageAr: `تم ضبط موضعك تلقائيًا لبداية الأسبوع الحالي في البرنامج (أسبوع ${w}، يوم ${d}) بعد غياب ${calendarDaysSinceLastSession} يومًا تقويميًا.`,
-    messageEn: `Your position was reset to the start of the current program week (week ${w}, day ${d}) after ${calendarDaysSinceLastSession} calendar days away.`,
+    calendarDaysSinceLastWorkout,
+    messageAr: `?? ??? ????? ???????? ?????? ??????? ?????? ?? ???????? (????? ${w}? ??? ${d}) ??? ???? ${calendarDaysSinceLastWorkout} ????? ????????.`,
+    messageEn: `Your position was reset to the start of the current program week (week ${w}, day ${d}) after ${calendarDaysSinceLastWorkout} calendar days away.`,
   };
 }
 
-export async function getLastProgramSessionCompletedAt(
+export async function getLastPlannedWorkoutCompletedAt(
   userId: string,
   programId: string,
 ): Promise<Date | null> {
   const prisma = await getPrisma();
-  const row = await prisma.programSessionReport.findFirst({
+  const row = await prisma.plannedWorkoutReport.findFirst({
     where: { userId, programId, status: 'completed' },
     orderBy: { completedAt: 'desc' },
     select: { completedAt: true },

@@ -24,7 +24,7 @@ interface ProgramSummary {
   name: LocalizedText;
 }
 
-/** Session-level roles (matches backend SessionRole). */
+/** Planned-workout roles (matches backend PlannedWorkout role). */
 const SESSION_ROLE_OPTIONS = [
   { value: 'WARMUP', label: 'WARMUP' },
   { value: 'ACTIVATION', label: 'ACTIVATION' },
@@ -47,12 +47,12 @@ interface ExerciseSummary {
   }>;
 }
 
-interface WorkoutSummary {
+interface WorkoutTemplateSummary {
   id: string;
   name: LocalizedText;
 }
 
-interface WorkoutDetails {
+interface WorkoutTemplateDetails {
   id: string;
   name: LocalizedText;
   exercises: Array<{
@@ -69,7 +69,7 @@ interface WorkoutDetails {
   }>;
 }
 
-interface SessionItemForm {
+interface PlannedWorkoutItemForm {
   type: 'exercise' | 'rest';
   exerciseId?: string;
   sets: number;
@@ -82,13 +82,13 @@ interface SessionItemForm {
   restDurationMs?: number;
 }
 
-interface SessionForm {
+interface PlannedWorkoutForm {
   name: LocalizedText;
   sortOrder: number;
-  /** Maps to ProgramSession.role */
+  /** Maps to PlannedWorkout.role */
   role?: string;
   estimatedDurationMin?: number | null;
-  items: SessionItemForm[];
+  items: PlannedWorkoutItemForm[];
 }
 
 interface DayForm {
@@ -96,7 +96,7 @@ interface DayForm {
   isRestDay: boolean;
   name: LocalizedText;
   dayFocus?: string;
-  sessions: SessionForm[];
+  plannedWorkouts: PlannedWorkoutForm[];
 }
 
 interface WeekForm {
@@ -115,7 +115,7 @@ interface PhaseForm {
   endWeek: number;
 }
 
-const createEmptyItem = (type: 'exercise' | 'rest', exerciseId?: string): SessionItemForm => ({
+const createEmptyItem = (type: 'exercise' | 'rest', exerciseId?: string): PlannedWorkoutItemForm => ({
   type,
   exerciseId,
   sets: 3,
@@ -128,7 +128,7 @@ const createEmptyItem = (type: 'exercise' | 'rest', exerciseId?: string): Sessio
   restDurationMs: type === 'rest' ? 60000 : undefined,
 });
 
-const createEmptySession = (sortOrder: number): SessionForm => ({
+const createEmptyPlannedWorkout = (sortOrder: number): PlannedWorkoutForm => ({
   name: { ar: 'صباحا', en: 'Morning' },
   sortOrder,
   role: 'MAIN',
@@ -141,7 +141,7 @@ const createEmptyDay = (dayNumber: number): DayForm => ({
   isRestDay: false,
   name: { ar: '', en: '' },
   dayFocus: '',
-  sessions: [createEmptySession(0)],
+  plannedWorkouts: [createEmptyPlannedWorkout(0)],
 });
 
 const createEmptyWeek = (weekNumber: number): WeekForm => ({
@@ -160,18 +160,18 @@ const createEmptyPhase = (start: number, end: number): PhaseForm => ({
   endWeek: end,
 });
 
-function cloneItem(item: SessionItemForm): SessionItemForm {
+function cloneItem(item: PlannedWorkoutItemForm): PlannedWorkoutItemForm {
   return {
     ...item,
     notes: { ...item.notes },
   };
 }
 
-function cloneSession(session: SessionForm): SessionForm {
+function clonePlannedWorkout(plannedWorkout: PlannedWorkoutForm): PlannedWorkoutForm {
   return {
-    ...session,
-    name: { ...session.name },
-    items: session.items.map(cloneItem),
+    ...plannedWorkout,
+    name: { ...plannedWorkout.name },
+    items: plannedWorkout.items.map(cloneItem),
   };
 }
 
@@ -179,7 +179,7 @@ function cloneDay(day: DayForm): DayForm {
   return {
     ...day,
     name: { ...day.name },
-    sessions: day.sessions.map(cloneSession),
+    plannedWorkouts: day.plannedWorkouts.map(clonePlannedWorkout),
   };
 }
 
@@ -199,10 +199,10 @@ function clonePhase(phase: PhaseForm): PhaseForm {
   };
 }
 
-function normalizeSession(session: SessionForm, sessionIndex: number): SessionForm {
+function normalizePlannedWorkout(plannedWorkout: PlannedWorkoutForm, plannedWorkoutIndex: number): PlannedWorkoutForm {
   return {
-    ...session,
-    sortOrder: sessionIndex,
+    ...plannedWorkout,
+    sortOrder: plannedWorkoutIndex,
   };
 }
 
@@ -211,7 +211,7 @@ function normalizeDay(day: DayForm, dayIndex: number): DayForm {
     ...day,
     dayNumber: dayIndex + 1,
     isRestDay: false,
-    sessions: day.sessions.map(normalizeSession),
+    plannedWorkouts: day.plannedWorkouts.map(normalizePlannedWorkout),
   };
 }
 
@@ -229,7 +229,7 @@ export default function NewProgramPage() {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [loadingExercises, setLoadingExercises] = useState(true);
-  const [loadingWorkouts, setLoadingWorkouts] = useState(true);
+  const [loadingWorkoutTemplates, setLoadingWorkoutTemplates] = useState(true);
 
   const [name, setName] = useState({ ar: '', en: '' });
   const [description, setDescription] = useState({ ar: '', en: '' });
@@ -246,8 +246,8 @@ export default function NewProgramPage() {
   const [programAttributeRows, setProgramAttributeRows] = useState<ProgramAttributeFormRow[]>([]);
   const [autoAssignable, setAutoAssignable] = useState(false);
   const [coachingNotesProgram, setCoachingNotesProgram] = useState('');
-  const [weeklySessionTarget, setWeeklySessionTarget] = useState<number | ''>('');
-  const [estimatedSessionMinutes, setEstimatedSessionMinutes] = useState<number | ''>('');
+  const [weeklyWorkoutTarget, setWeeklyWorkoutTarget] = useState<number | ''>('');
+  const [estimatedWorkoutMinutes, setEstimatedWorkoutMinutes] = useState<number | ''>('');
   /** Single training level (stored as levelRangeMin === levelRangeMax on the API). */
   const [trainingLevel, setTrainingLevel] = useState(1);
   const [prescriptionPriority, setPrescriptionPriority] = useState(50);
@@ -260,7 +260,7 @@ export default function NewProgramPage() {
   const [weekDayTab, setWeekDayTab] = useState<Record<number, number>>({});
 
   const [exercises, setExercises] = useState<ExerciseSummary[]>([]);
-  const [workouts, setWorkouts] = useState<WorkoutSummary[]>([]);
+  const [workoutTemplates, setWorkoutTemplates] = useState<WorkoutTemplateSummary[]>([]);
   const [publishedPrograms, setPublishedPrograms] = useState<ProgramSummary[]>([]);
 
   useEffect(() => {
@@ -281,20 +281,20 @@ export default function NewProgramPage() {
   }, []);
 
   useEffect(() => {
-    const fetchWorkouts = async () => {
+    const fetchWorkoutTemplates = async () => {
       try {
-        const res = await fetch('/api/workouts?status=published&limit=200');
+        const res = await fetch('/api/workout-templates?status=published&limit=200');
         const data = await res.json();
         if (data.success) {
-          setWorkouts(data.data);
+          setWorkoutTemplates(data.data);
         }
       } catch (error) {
-        console.error('Error fetching workouts:', error);
+        console.error('Error fetching workout templates:', error);
       } finally {
-        setLoadingWorkouts(false);
+        setLoadingWorkoutTemplates(false);
       }
     };
-    fetchWorkouts();
+    fetchWorkoutTemplates();
   }, []);
 
   useEffect(() => {
@@ -334,11 +334,11 @@ export default function NewProgramPage() {
 
   const workoutOptions = useMemo(
     () =>
-      workouts.map((workout) => ({
+      workoutTemplates.map((workout) => ({
         value: workout.id,
         label: `${workout.name.en} / ${workout.name.ar}`,
       })),
-    [workouts]
+    [workoutTemplates]
   );
 
   const exerciseLabelById = useMemo(
@@ -407,8 +407,8 @@ export default function NewProgramPage() {
 
   const builderSummary = useMemo(() => {
     const days = weeks.reduce((acc, week) => acc + week.days.length, 0);
-    const sessions = weeks.reduce(
-      (acc, week) => acc + week.days.reduce((dayAcc, day) => dayAcc + day.sessions.length, 0),
+    const plannedWorkoutCount = weeks.reduce(
+      (acc, week) => acc + week.days.reduce((dayAcc, day) => dayAcc + day.plannedWorkouts.length, 0),
       0
     );
     const items = weeks.reduce(
@@ -416,22 +416,22 @@ export default function NewProgramPage() {
         acc +
         week.days.reduce(
           (dayAcc, day) =>
-            dayAcc + day.sessions.reduce((sessionAcc, session) => sessionAcc + session.items.length, 0),
+            dayAcc + day.plannedWorkouts.reduce((plannedWorkoutAcc, plannedWorkout) => plannedWorkoutAcc + plannedWorkout.items.length, 0),
           0
         ),
       0
     );
 
-    return { weeks: weeks.length, days, sessions, items };
+    return { weeks: weeks.length, days, plannedWorkouts: plannedWorkoutCount, items };
   }, [weeks]);
 
   // --- Phase helpers (minimal Phase Builder) ---
   const getPhaseStats = (phase: PhaseForm) => {
     const phaseWeeks = weeks.slice(Math.max(0, phase.startWeek - 1), phase.endWeek);
-    if (!phaseWeeks.length) return { weeks: 0, days: 0, sessions: 0, items: 0 };
+    if (!phaseWeeks.length) return { weeks: 0, days: 0, plannedWorkouts: 0, items: 0 };
     const days = phaseWeeks.reduce((acc, w) => acc + w.days.length, 0);
-    const sessions = phaseWeeks.reduce(
-      (acc, w) => acc + w.days.reduce((dAcc, d) => dAcc + d.sessions.length, 0),
+    const plannedWorkoutCount = phaseWeeks.reduce(
+      (acc, w) => acc + w.days.reduce((dAcc, d) => dAcc + d.plannedWorkouts.length, 0),
       0
     );
     const items = phaseWeeks.reduce(
@@ -439,12 +439,12 @@ export default function NewProgramPage() {
         acc +
         w.days.reduce(
           (dAcc, d) =>
-            dAcc + d.sessions.reduce((sAcc, s) => sAcc + s.items.length, 0),
+            dAcc + d.plannedWorkouts.reduce((sAcc, s) => sAcc + s.items.length, 0),
           0
         ),
       0
     );
-    return { weeks: phaseWeeks.length, days, sessions, items };
+    return { weeks: phaseWeeks.length, days, plannedWorkouts: plannedWorkoutCount, items };
   };
 
   const phasesOverlap = (list: PhaseForm[]): boolean => {
@@ -581,26 +581,26 @@ export default function NewProgramPage() {
   }, [durationWeeks, weeks, phases]);
 
   const getWeekSummary = (week: WeekForm) => {
-    const sessions = week.days.reduce((acc, day) => acc + day.sessions.length, 0);
+    const plannedWorkoutCount = week.days.reduce((acc, day) => acc + day.plannedWorkouts.length, 0);
     const items = week.days.reduce(
-      (acc, day) => acc + day.sessions.reduce((sessionAcc, session) => sessionAcc + session.items.length, 0),
+      (acc, day) => acc + day.plannedWorkouts.reduce((plannedWorkoutAcc, plannedWorkout) => plannedWorkoutAcc + plannedWorkout.items.length, 0),
       0
     );
-    return `${week.days.length} day(s) • ${sessions} session(s) • ${items} item(s)`;
+    return `${week.days.length} day(s) • ${plannedWorkoutCount} planned workout(s) • ${items} item(s)`;
   };
 
   const getDaySummary = (day: DayForm) => {
-    const items = day.sessions.reduce((acc, session) => acc + session.items.length, 0);
-    return `Training day • ${day.sessions.length} session(s) • ${items} item(s)`;
+    const items = day.plannedWorkouts.reduce((acc, plannedWorkout) => acc + plannedWorkout.items.length, 0);
+    return `Training day • ${day.plannedWorkouts.length} planned workout(s) • ${items} item(s)`;
   };
 
-  const getSessionSummary = (session: SessionForm) => {
-    const exerciseCount = session.items.filter((item) => item.type === 'exercise').length;
-    const restCount = session.items.length - exerciseCount;
-    return `${session.items.length} item(s) • ${exerciseCount} exercise(s)${restCount ? ` • ${restCount} rest` : ''}`;
+  const getPlannedWorkoutSummary = (plannedWorkout: PlannedWorkoutForm) => {
+    const exerciseCount = plannedWorkout.items.filter((item) => item.type === 'exercise').length;
+    const restCount = plannedWorkout.items.length - exerciseCount;
+    return `${plannedWorkout.items.length} item(s) • ${exerciseCount} exercise(s)${restCount ? ` • ${restCount} rest` : ''}`;
   };
 
-  const getItemSummary = (item: SessionItemForm) => {
+  const getItemSummary = (item: PlannedWorkoutItemForm) => {
     if (item.type === 'rest') {
       return `${item.restDurationMs ?? 0} ms rest`;
     }
@@ -699,21 +699,21 @@ export default function NewProgramPage() {
     );
   };
 
-  const updateSession = (
+  const updatePlannedWorkout = (
     weekIndex: number,
     dayIndex: number,
-    sessionIndex: number,
-    updates: Partial<SessionForm>
+    plannedWorkoutIndex: number,
+    updates: Partial<PlannedWorkoutForm>
   ) => {
     setWeeks((prev) =>
       prev.map((week, wIndex) => {
         if (wIndex !== weekIndex) return week;
         const days = week.days.map((day, dIndex) => {
           if (dIndex !== dayIndex) return day;
-          const sessions = day.sessions.map((session, sIndex) =>
-            sIndex === sessionIndex ? { ...session, ...updates } : session
+          const nextPlannedWorkouts = day.plannedWorkouts.map((plannedWorkout, sIndex) =>
+            sIndex === plannedWorkoutIndex ? { ...plannedWorkout, ...updates } : plannedWorkout
           );
-          return { ...day, sessions };
+          return { ...day, plannedWorkouts: nextPlannedWorkouts };
         });
         return { ...week, days };
       })
@@ -723,23 +723,23 @@ export default function NewProgramPage() {
   const updateItem = (
     weekIndex: number,
     dayIndex: number,
-    sessionIndex: number,
+    plannedWorkoutIndex: number,
     itemIndex: number,
-    updates: Partial<SessionItemForm>
+    updates: Partial<PlannedWorkoutItemForm>
   ) => {
     setWeeks((prev) =>
       prev.map((week, wIndex) => {
         if (wIndex !== weekIndex) return week;
         const days = week.days.map((day, dIndex) => {
           if (dIndex !== dayIndex) return day;
-          const sessions = day.sessions.map((session, sIndex) => {
-            if (sIndex !== sessionIndex) return session;
-            const items = session.items.map((item, iIndex) =>
+          const nextPlannedWorkouts = day.plannedWorkouts.map((plannedWorkout, sIndex) => {
+            if (sIndex !== plannedWorkoutIndex) return plannedWorkout;
+            const items = plannedWorkout.items.map((item, iIndex) =>
               iIndex === itemIndex ? { ...item, ...updates } : item
             );
-            return { ...session, items };
+            return { ...plannedWorkout, items };
           });
-          return { ...day, sessions };
+          return { ...day, plannedWorkouts: nextPlannedWorkouts };
         });
         return { ...week, days };
       })
@@ -796,7 +796,7 @@ export default function NewProgramPage() {
     );
   };
 
-  const addSession = (weekIndex: number, dayIndex: number) => {
+  const addPlannedWorkout = (weekIndex: number, dayIndex: number) => {
     setWeeks((prev) =>
       prev.map((week, wIndex) => {
         if (wIndex !== weekIndex) return week;
@@ -804,7 +804,7 @@ export default function NewProgramPage() {
           if (dIndex !== dayIndex) return day;
           return {
             ...day,
-            sessions: [...day.sessions, createEmptySession(day.sessions.length)].map(normalizeSession),
+            plannedWorkouts: [...day.plannedWorkouts, createEmptyPlannedWorkout(day.plannedWorkouts.length)].map(normalizePlannedWorkout),
           };
         });
         return { ...week, days };
@@ -812,80 +812,80 @@ export default function NewProgramPage() {
     );
   };
 
-  const removeSession = (weekIndex: number, dayIndex: number, sessionIndex: number) => {
+  const removePlannedWorkout = (weekIndex: number, dayIndex: number, plannedWorkoutIndex: number) => {
     setWeeks((prev) =>
       prev.map((week, wIndex) => {
         if (wIndex !== weekIndex) return week;
         const days = week.days.map((day, dIndex) => {
           if (dIndex !== dayIndex) return day;
-          return { ...day, sessions: day.sessions.filter((_, sIndex) => sIndex !== sessionIndex).map(normalizeSession) };
+          return { ...day, plannedWorkouts: day.plannedWorkouts.filter((_, sIndex) => sIndex !== plannedWorkoutIndex).map(normalizePlannedWorkout) };
         });
         return { ...week, days };
       })
     );
   };
 
-  const duplicateSession = (weekIndex: number, dayIndex: number, sessionIndex: number) => {
+  const duplicatePlannedWorkout = (weekIndex: number, dayIndex: number, plannedWorkoutIndex: number) => {
     setWeeks((prev) =>
       prev.map((week, wIndex) => {
         if (wIndex !== weekIndex) return week;
         const days = week.days.map((day, dIndex) => {
           if (dIndex !== dayIndex) return day;
-          const nextSessions = [...day.sessions];
-          nextSessions.splice(sessionIndex + 1, 0, cloneSession(day.sessions[sessionIndex]));
-          return { ...day, sessions: nextSessions.map(normalizeSession) };
+          const nextPlannedWorkouts = [...day.plannedWorkouts];
+          nextPlannedWorkouts.splice(plannedWorkoutIndex + 1, 0, clonePlannedWorkout(day.plannedWorkouts[plannedWorkoutIndex]));
+          return { ...day, plannedWorkouts: nextPlannedWorkouts.map(normalizePlannedWorkout) };
         });
         return { ...week, days };
       })
     );
   };
 
-  const addItem = (weekIndex: number, dayIndex: number, sessionIndex: number, type: 'exercise' | 'rest') => {
+  const addItem = (weekIndex: number, dayIndex: number, plannedWorkoutIndex: number, type: 'exercise' | 'rest') => {
     const firstExerciseId = exercises[0]?.id;
     setWeeks((prev) =>
       prev.map((week, wIndex) => {
         if (wIndex !== weekIndex) return week;
         const days = week.days.map((day, dIndex) => {
           if (dIndex !== dayIndex) return day;
-          const sessions = day.sessions.map((session, sIndex) => {
-            if (sIndex !== sessionIndex) return session;
+          const nextPlannedWorkouts = day.plannedWorkouts.map((plannedWorkout, sIndex) => {
+            if (sIndex !== plannedWorkoutIndex) return plannedWorkout;
             return {
-              ...session,
-              items: [...session.items, createEmptyItem(type, type === 'exercise' ? firstExerciseId : undefined)],
+              ...plannedWorkout,
+              items: [...plannedWorkout.items, createEmptyItem(type, type === 'exercise' ? firstExerciseId : undefined)],
             };
           });
-          return { ...day, sessions };
+          return { ...day, plannedWorkouts: nextPlannedWorkouts };
         });
         return { ...week, days };
       })
     );
   };
 
-  const removeItem = (weekIndex: number, dayIndex: number, sessionIndex: number, itemIndex: number) => {
+  const removeItem = (weekIndex: number, dayIndex: number, plannedWorkoutIndex: number, itemIndex: number) => {
     setWeeks((prev) =>
       prev.map((week, wIndex) => {
         if (wIndex !== weekIndex) return week;
         const days = week.days.map((day, dIndex) => {
           if (dIndex !== dayIndex) return day;
-          const sessions = day.sessions.map((session, sIndex) => {
-            if (sIndex !== sessionIndex) return session;
-            return { ...session, items: session.items.filter((_, iIndex) => iIndex !== itemIndex) };
+          const nextPlannedWorkouts = day.plannedWorkouts.map((plannedWorkout, sIndex) => {
+            if (sIndex !== plannedWorkoutIndex) return plannedWorkout;
+            return { ...plannedWorkout, items: plannedWorkout.items.filter((_, iIndex) => iIndex !== itemIndex) };
           });
-          return { ...day, sessions };
+          return { ...day, plannedWorkouts: nextPlannedWorkouts };
         });
         return { ...week, days };
       })
     );
   };
 
-  const importWorkout = async (weekIndex: number, dayIndex: number, sessionIndex: number, workoutId: string) => {
+  const importWorkoutTemplate = async (weekIndex: number, dayIndex: number, plannedWorkoutIndex: number, workoutId: string) => {
     try {
-      const res = await fetch(`/api/workouts/${workoutId}`);
+      const res = await fetch(`/api/workout-templates/${workoutId}`);
       const data = await res.json();
       if (!data.success || !data.data) return;
-      const workout: WorkoutDetails = data.data;
+      const workout: WorkoutTemplateDetails = data.data;
 
-      const items: SessionItemForm[] = [];
+      const items: PlannedWorkoutItemForm[] = [];
       workout.exercises.forEach((exercise) => {
         items.push({
           type: 'exercise',
@@ -917,14 +917,14 @@ export default function NewProgramPage() {
           if (wIndex !== weekIndex) return week;
           const days = week.days.map((day, dIndex) => {
             if (dIndex !== dayIndex) return day;
-            const sessions = day.sessions.map((session, sIndex) => {
-              if (sIndex !== sessionIndex) return session;
+            const nextPlannedWorkouts = day.plannedWorkouts.map((plannedWorkout, sIndex) => {
+              if (sIndex !== plannedWorkoutIndex) return plannedWorkout;
               return {
-                ...session,
-                items: [...session.items, ...items],
+                ...plannedWorkout,
+                items: [...plannedWorkout.items, ...items],
               };
             });
-            return { ...day, sessions };
+            return { ...day, plannedWorkouts: nextPlannedWorkouts };
           });
           return { ...week, days };
         })
@@ -961,8 +961,8 @@ export default function NewProgramPage() {
     autoAssignable,
     version,
     coachingNotes: parseJsonField(coachingNotesProgram),
-    weeklySessionTarget: weeklySessionTarget === '' ? undefined : weeklySessionTarget,
-    estimatedSessionMinutes: estimatedSessionMinutes === '' ? undefined : estimatedSessionMinutes,
+    weeklyWorkoutTarget: weeklyWorkoutTarget === '' ? undefined : weeklyWorkoutTarget,
+    estimatedWorkoutMinutes: estimatedWorkoutMinutes === '' ? undefined : estimatedWorkoutMinutes,
     levelRangeMin: trainingLevel,
     levelRangeMax: trainingLevel,
     prescriptionPriority,
@@ -981,15 +981,15 @@ export default function NewProgramPage() {
         isRestDay: false,
         name: day.name.en || day.name.ar ? day.name : undefined,
         dayFocus: day.dayFocus?.trim() ? day.dayFocus : undefined,
-        sessions: day.sessions.map((session, sessionIndex) => ({
-          name: session.name,
-          sortOrder: session.sortOrder ?? sessionIndex,
-          role: session.role || 'MAIN',
+        plannedWorkouts: day.plannedWorkouts.map((plannedWorkout, plannedWorkoutIndex) => ({
+          name: plannedWorkout.name,
+          sortOrder: plannedWorkout.sortOrder ?? plannedWorkoutIndex,
+          role: plannedWorkout.role || 'MAIN',
           estimatedDurationMin:
-            session.estimatedDurationMin === undefined || session.estimatedDurationMin === null
+            plannedWorkout.estimatedDurationMin === undefined || plannedWorkout.estimatedDurationMin === null
               ? undefined
-              : session.estimatedDurationMin,
-          items: session.items.map((item, itemIndex) => ({
+              : plannedWorkout.estimatedDurationMin,
+          items: plannedWorkout.items.map((item, itemIndex) => ({
             type: item.type,
             exerciseId: item.type === 'exercise' ? item.exerciseId : undefined,
             sets: item.type === 'exercise' ? item.sets : undefined,
@@ -1083,7 +1083,7 @@ export default function NewProgramPage() {
             tabs={PROGRAM_EDITOR_TABS}
             right={
               <span>
-                {builderSummary.weeks}w · {builderSummary.days}d · {builderSummary.sessions} sess · {builderSummary.items}{' '}
+                {builderSummary.weeks}w · {builderSummary.days}d · {builderSummary.plannedWorkouts} pw · {builderSummary.items}{' '}
                 items
               </span>
             }
@@ -1289,24 +1289,24 @@ export default function NewProgramPage() {
 
           <div className="grid grid-cols-2 gap-4 mt-4">
             <div>
-              <Label>Weekly session target</Label>
+              <Label>Weekly Workout Target</Label>
               <Input
                 type="number"
                 min={1}
-                value={weeklySessionTarget}
+                value={weeklyWorkoutTarget}
                 onChange={(e) =>
-                  setWeeklySessionTarget(e.target.value === '' ? '' : Number.parseInt(e.target.value, 10) || '')
+                  setWeeklyWorkoutTarget(e.target.value === '' ? '' : Number.parseInt(e.target.value, 10) || '')
                 }
               />
             </div>
             <div>
-              <Label>Estimated session minutes</Label>
+              <Label>Estimated Workout Minutes</Label>
               <Input
                 type="number"
                 min={1}
-                value={estimatedSessionMinutes}
+                value={estimatedWorkoutMinutes}
                 onChange={(e) =>
-                  setEstimatedSessionMinutes(e.target.value === '' ? '' : Number.parseInt(e.target.value, 10) || '')
+                  setEstimatedWorkoutMinutes(e.target.value === '' ? '' : Number.parseInt(e.target.value, 10) || '')
                 }
               />
             </div>
@@ -1446,7 +1446,7 @@ export default function NewProgramPage() {
                     <div className="rounded bg-gray-50 px-3 py-2 text-xs text-gray-600 flex gap-4">
                       <span>{stats.weeks} weeks</span>
                       <span>{stats.days} training days</span>
-                      <span>{stats.sessions} sessions</span>
+                      <span>{stats.plannedWorkouts} planned workouts</span>
                       <span>{stats.items} items</span>
                     </div>
                   </Card>
@@ -1459,7 +1459,7 @@ export default function NewProgramPage() {
           <div className="flex items-center justify-between pt-4 border-t">
             <div>
               <h2 className="text-lg font-semibold">Program Builder</h2>
-              <p className="text-sm text-gray-500">Build weeks, days, sessions, and items. Weeks inherit phase grouping above.</p>
+              <p className="text-sm text-gray-500">Build weeks, days, planned workouts, and items. Weeks inherit phase grouping above.</p>
             </div>
             <Button type="button" variant="outline" onClick={addWeek}>
               Add Week
@@ -1623,7 +1623,7 @@ export default function NewProgramPage() {
                   defaultOpen={weekIndex === 0 && dayIndex === 0}
                   meta={[
                     { label: 'Training', variant: 'primary' },
-                    { label: `${day.sessions.length} session(s)` },
+                    { label: `${day.plannedWorkouts.length} planned workout(s)` },
                   ]}
                   actions={null}
                   className="border-gray-100"
@@ -1668,37 +1668,37 @@ export default function NewProgramPage() {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <h6 className="text-sm font-semibold text-gray-600">Sessions</h6>
-                    <Button type="button" variant="outline" onClick={() => addSession(weekIndex, dayIndex)}>
-                      Add Session
+                    <h6 className="text-sm font-semibold text-gray-600">Planned Workouts</h6>
+                    <Button type="button" variant="outline" onClick={() => addPlannedWorkout(weekIndex, dayIndex)}>
+                      Add Planned Workout
                     </Button>
                   </div>
 
-                  {day.sessions.map((session, sessionIndex) => (
+                  {day.plannedWorkouts.map((plannedWorkout, plannedWorkoutIndex) => (
                     <CollapsibleBuilderSection
-                      key={`session-${sessionIndex}`}
-                      title={`Session ${sessionIndex + 1}`}
-                      subtitle={getSessionSummary(session)}
-                      defaultOpen={weekIndex === 0 && dayIndex === 0 && sessionIndex === 0}
+                      key={`planned-workout-${plannedWorkoutIndex}`}
+                      title={`Planned Workout ${plannedWorkoutIndex + 1}`}
+                      subtitle={getPlannedWorkoutSummary(plannedWorkout)}
+                      defaultOpen={weekIndex === 0 && dayIndex === 0 && plannedWorkoutIndex === 0}
                       meta={[
-                        { label: `${session.items.length} item(s)` },
+                        { label: `${plannedWorkout.items.length} item(s)` },
                       ]}
                       actions={
                         <div className="flex items-center gap-2">
                           <Button
                             type="button"
                             variant="outline"
-                            onClick={() => removeSession(weekIndex, dayIndex, sessionIndex)}
-                            disabled={day.sessions.length === 1}
+                            onClick={() => removePlannedWorkout(weekIndex, dayIndex, plannedWorkoutIndex)}
+                            disabled={day.plannedWorkouts.length === 1}
                           >
-                            Remove Session
+                            Remove Planned Workout
                           </Button>
                           <Button
                             type="button"
                             variant="secondary"
-                            onClick={() => duplicateSession(weekIndex, dayIndex, sessionIndex)}
+                            onClick={() => duplicatePlannedWorkout(weekIndex, dayIndex, plannedWorkoutIndex)}
                           >
-                            Duplicate Session
+                            Duplicate Planned Workout
                           </Button>
                         </div>
                       }
@@ -1707,24 +1707,24 @@ export default function NewProgramPage() {
                       <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label>Session Name (EN)</Label>
+                          <Label>Planned Workout Name (EN)</Label>
                           <Input
-                            value={session.name.en}
+                            value={plannedWorkout.name.en}
                             onChange={(e) =>
-                              updateSession(weekIndex, dayIndex, sessionIndex, {
-                                name: { ...session.name, en: e.target.value },
+                              updatePlannedWorkout(weekIndex, dayIndex, plannedWorkoutIndex, {
+                                name: { ...plannedWorkout.name, en: e.target.value },
                               })
                             }
                           />
                         </div>
                         <div>
-                          <Label>Session Name (AR)</Label>
+                          <Label>Planned Workout Name (AR)</Label>
                           <Input
                             dir="rtl"
-                            value={session.name.ar}
+                            value={plannedWorkout.name.ar}
                             onChange={(e) =>
-                              updateSession(weekIndex, dayIndex, sessionIndex, {
-                                name: { ...session.name, ar: e.target.value },
+                              updatePlannedWorkout(weekIndex, dayIndex, plannedWorkoutIndex, {
+                                name: { ...plannedWorkout.name, ar: e.target.value },
                               })
                             }
                           />
@@ -1733,11 +1733,11 @@ export default function NewProgramPage() {
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label>Session role</Label>
+                          <Label>Planned workout role</Label>
                           <Select
-                            value={session.role ?? 'MAIN'}
+                            value={plannedWorkout.role ?? 'MAIN'}
                             onChange={(e) =>
-                              updateSession(weekIndex, dayIndex, sessionIndex, {
+                              updatePlannedWorkout(weekIndex, dayIndex, plannedWorkoutIndex, {
                                 role: e.target.value,
                               })
                             }
@@ -1749,9 +1749,9 @@ export default function NewProgramPage() {
                           <Input
                             type="number"
                             min={1}
-                            value={session.estimatedDurationMin ?? ''}
+                            value={plannedWorkout.estimatedDurationMin ?? ''}
                             onChange={(e) =>
-                              updateSession(weekIndex, dayIndex, sessionIndex, {
+                              updatePlannedWorkout(weekIndex, dayIndex, plannedWorkoutIndex, {
                                 estimatedDurationMin:
                                   e.target.value === ''
                                     ? undefined
@@ -1764,7 +1764,7 @@ export default function NewProgramPage() {
 
                       <div className="flex items-center justify-between">
                         <div>
-                          <h6 className="text-sm font-semibold text-gray-600">Session Items</h6>
+                          <h6 className="text-sm font-semibold text-gray-600">Planned Workout Items</h6>
                           <p className="text-xs text-gray-500">Add exercises and rest periods</p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1772,17 +1772,17 @@ export default function NewProgramPage() {
                             value=""
                             onChange={(value) => {
                               if (value) {
-                                importWorkout(weekIndex, dayIndex, sessionIndex, value);
+                                importWorkoutTemplate(weekIndex, dayIndex, plannedWorkoutIndex, value);
                               }
                             }}
                             options={workoutOptions}
-                            placeholder={loadingWorkouts ? 'Loading workouts...' : 'Import workout'}
-                            searchPlaceholder="Search workouts..."
+                            placeholder={loadingWorkoutTemplates ? 'Loading workout templates...' : 'Import workout template'}
+                            searchPlaceholder="Search workout templates..."
                           />
                           <Button
                             type="button"
                             variant="outline"
-                            onClick={() => addItem(weekIndex, dayIndex, sessionIndex, 'exercise')}
+                            onClick={() => addItem(weekIndex, dayIndex, plannedWorkoutIndex, 'exercise')}
                             disabled={loadingExercises || exercises.length === 0}
                           >
                             Add Exercise
@@ -1790,19 +1790,19 @@ export default function NewProgramPage() {
                           <Button
                             type="button"
                             variant="outline"
-                            onClick={() => addItem(weekIndex, dayIndex, sessionIndex, 'rest')}
+                            onClick={() => addItem(weekIndex, dayIndex, plannedWorkoutIndex, 'rest')}
                           >
                             Add Rest
                           </Button>
                         </div>
                       </div>
 
-                      {session.items.map((item, itemIndex) => (
+                      {plannedWorkout.items.map((item, itemIndex) => (
                         <CollapsibleBuilderSection
                           key={`item-${itemIndex}`}
                           title={`${item.type === 'exercise' ? 'Exercise' : 'Rest'} ${itemIndex + 1}`}
                           subtitle={getItemSummary(item)}
-                          defaultOpen={session.items.length <= 2}
+                          defaultOpen={plannedWorkout.items.length <= 2}
                           meta={[
                             {
                               label: item.type === 'exercise' ? 'Exercise' : 'Rest',
@@ -1813,7 +1813,7 @@ export default function NewProgramPage() {
                             <Button
                               type="button"
                               variant="outline"
-                              onClick={() => removeItem(weekIndex, dayIndex, sessionIndex, itemIndex)}
+                              onClick={() => removeItem(weekIndex, dayIndex, plannedWorkoutIndex, itemIndex)}
                             >
                               Remove
                             </Button>
@@ -1827,7 +1827,7 @@ export default function NewProgramPage() {
                               <Select
                                 value={item.type}
                                 onChange={(e) =>
-                                  updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
+                                  updateItem(weekIndex, dayIndex, plannedWorkoutIndex, itemIndex, {
                                     type: e.target.value as 'exercise' | 'rest',
                                   })
                                 }
@@ -1843,7 +1843,7 @@ export default function NewProgramPage() {
                                 <SearchableSelect
                                   value={item.exerciseId || ''}
                                   onChange={(value) =>
-                                    updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
+                                    updateItem(weekIndex, dayIndex, plannedWorkoutIndex, itemIndex, {
                                       exerciseId: value,
                                     })
                                   }
@@ -1875,7 +1875,7 @@ export default function NewProgramPage() {
                                   min={0}
                                   value={item.restDurationMs || 0}
                                   onChange={(e) =>
-                                    updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
+                                    updateItem(weekIndex, dayIndex, plannedWorkoutIndex, itemIndex, {
                                       restDurationMs: Number.parseInt(e.target.value, 10) || 0,
                                     })
                                   }
@@ -1894,7 +1894,7 @@ export default function NewProgramPage() {
                                     min={1}
                                     value={item.sets}
                                     onChange={(e) =>
-                                      updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
+                                      updateItem(weekIndex, dayIndex, plannedWorkoutIndex, itemIndex, {
                                         sets: Number.parseInt(e.target.value, 10) || 1,
                                       })
                                     }
@@ -1907,7 +1907,7 @@ export default function NewProgramPage() {
                                     min={1}
                                     value={item.targetReps || ''}
                                     onChange={(e) =>
-                                      updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
+                                      updateItem(weekIndex, dayIndex, plannedWorkoutIndex, itemIndex, {
                                         targetReps: Number.parseInt(e.target.value, 10) || undefined,
                                       })
                                     }
@@ -1920,7 +1920,7 @@ export default function NewProgramPage() {
                                     min={1}
                                     value={item.targetDuration || ''}
                                     onChange={(e) =>
-                                      updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
+                                      updateItem(weekIndex, dayIndex, plannedWorkoutIndex, itemIndex, {
                                         targetDuration: Number.parseInt(e.target.value, 10) || undefined,
                                       })
                                     }
@@ -1933,7 +1933,7 @@ export default function NewProgramPage() {
                                     min={0}
                                     value={item.restBetweenSetsMs}
                                     onChange={(e) =>
-                                      updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
+                                      updateItem(weekIndex, dayIndex, plannedWorkoutIndex, itemIndex, {
                                         restBetweenSetsMs: Number.parseInt(e.target.value, 10) || 0,
                                       })
                                     }
@@ -1949,7 +1949,7 @@ export default function NewProgramPage() {
                                     min={0}
                                     value={item.weightKg || ''}
                                     onChange={(e) =>
-                                      updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
+                                      updateItem(weekIndex, dayIndex, plannedWorkoutIndex, itemIndex, {
                                         weightKg: Number.parseFloat(e.target.value) || undefined,
                                       })
                                     }
@@ -1960,7 +1960,7 @@ export default function NewProgramPage() {
                                   <Input
                                     value={item.weightPerSetText}
                                     onChange={(e) =>
-                                      updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
+                                      updateItem(weekIndex, dayIndex, plannedWorkoutIndex, itemIndex, {
                                         weightPerSetText: e.target.value,
                                       })
                                     }
@@ -1975,7 +1975,7 @@ export default function NewProgramPage() {
                                   <Input
                                     value={item.notes.en}
                                     onChange={(e) =>
-                                      updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
+                                      updateItem(weekIndex, dayIndex, plannedWorkoutIndex, itemIndex, {
                                         notes: { ...item.notes, en: e.target.value },
                                       })
                                     }
@@ -1987,7 +1987,7 @@ export default function NewProgramPage() {
                                     dir="rtl"
                                     value={item.notes.ar}
                                     onChange={(e) =>
-                                      updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
+                                      updateItem(weekIndex, dayIndex, plannedWorkoutIndex, itemIndex, {
                                         notes: { ...item.notes, ar: e.target.value },
                                       })
                                     }

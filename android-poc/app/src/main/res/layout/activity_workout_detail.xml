@@ -352,7 +352,7 @@
                         android:padding="@dimen/spacing_md"
                         android:textColor="@color/text_secondary"
                         android:textSize="14sp"
-                        tools:text="High intensity circuit to build strength and endurance while keeping the pace practical for daily sessions." />
+                        tools:text="High intensity circuit to build strength and endurance while keeping the pace practical for daily workouts." />
                 </androidx.cardview.widget.CardView>
             </LinearLayout>
 

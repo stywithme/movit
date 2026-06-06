@@ -421,7 +421,7 @@ class BestWorstComparisonFragment : Fragment() {
     private fun defaultBestMessage(quality: RepQuality): String {
         return when (quality) {
             RepQuality.CLEAN ->
-                if (isArabic) "أفضل عدة مكتملة في الجلسة" else "Best completed rep in the session"
+                if (isArabic) "أفضل عدة مكتملة في التمرين" else "Best completed rep in the workout"
             RepQuality.NEEDS_CORRECTION ->
                 if (isArabic) "أفضل محاولة مكتملة لكنها تحتاج تصحيح"
                 else "Best completed attempt, but it still needs correction"

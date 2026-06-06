@@ -2,17 +2,17 @@
 
 ## الهدف
 
-تذكرة تنفيذية لفريق البرمجة: إضافة طبقة **أحداث سلوكية (product analytics)** لقياس الـ funnel والـ retention (ملف 14)، منفصلة عن رفع مقاييس الجلسة الموجود.
+تذكرة تنفيذية لفريق البرمجة: إضافة طبقة **أحداث سلوكية (product analytics)** لقياس الـ funnel والـ retention (ملف 14)، منفصلة عن رفع مقاييس التمرين (`WorkoutExecution`) الموجود.
 
 ## الوضع الحالي (حقائق من الكود)
 
-- **يوجد**: رفع *مقاييس الجلسة* (`SessionUpload` عبر `AnalyticsStorage` + `SessionSyncService` / `MobileSyncApi`)، تقارير محلية (`ProgramSessionReportStore`)، وإحصائيات home (`HomeStatsData`: streak، avgFormScore، thisWeekSessions، totalMinutes).
+- **يوجد**: رفع *مقاييس التمرين* (`WorkoutExecutionUpload` عبر `AnalyticsStorage` + `WorkoutSyncService` / `MobileSyncApi`)، تقارير محلية (`ProgramWorkoutReportStore` / `PlannedWorkoutReport`)، وإحصائيات home (`HomeStatsData`: streak، avgFormScore، thisWeekExecutions، totalMinutes).
 - **لا يوجد**: أي SDK تحليلات سلوكية (مفيش Firebase Analytics / Amplitude / Mixpanel)، ولا تتبّع funnel (onboarding/assessment/activation/retention).
 - **الخلاصة**: عندنا "ماذا حدث داخل التمرين"، لكن ينقصنا "أين يتسرّب المستخدم في الرحلة".
 
 ## المطلوب
 
-طبقة أحداث خفيفة، تحترم الخصوصية (لا فيديو، لا PII غير ضروري)، offline-first على نمط `ProgramSessionReportStore.PendingSyncEntry` (queue + retry)، ترسل لـ endpoint جديد (مثلاً `POST /api/mobile/events`).
+طبقة أحداث خفيفة، تحترم الخصوصية (لا فيديو، لا PII غير ضروري)، offline-first على نمط `PlannedWorkoutReportStore.PendingSyncEntry` (queue + retry)، ترسل لـ endpoint جديد (مثلاً `POST /api/mobile/events`).
 
 ### الأحداث ومكان إطلاقها
 
@@ -24,21 +24,21 @@
 | assessment_started / _completed | `AssessmentSessionActivity` ← `AssessmentResultActivity` |
 | level_assigned | `LevelProfileActivity` (ظهور المستوى) |
 | plan_started | `PlanOverviewActivity` / أول `ProgramDayActivity` |
-| today_session_viewed | `HomeFragment` / `TrainFragment` (status=active) |
-| session_started | `SessionState` IDLE→SETUP_POSE |
-| session_first_rep | أول `RepCompletionSignal` (لحظة الـ Aha — مهم) |
-| session_completed | `SessionState`→COMPLETED (+ isCorrectSession، formScore، reps، durationMs) |
-| session_abandoned | خروج قبل COMPLETED (+ at_state) |
+| today_workout_viewed | `HomeFragment` / `TrainFragment` (status=active) |
+| workout_run_started | `WorkoutRunState` IDLE→SETUP_POSE |
+| workout_first_rep | أول `RepCompletionSignal` (لحظة الـ Aha — مهم) |
+| workout_completed | `WorkoutRunState`→COMPLETED (+ isCountedWorkout، formScore، reps، durationMs) |
+| workout_abandoned | خروج قبل COMPLETED (+ at_state) |
 | camera_setup_duration | من SETUP_POSE حتى COUNTDOWN |
 | correction_shown | عند عرض تصحيح (`MobileMessageResolver` / feedback) |
-| report_viewed | `SessionReportActivity.onCreate` |
+| report_viewed | `WorkoutReportActivity.onCreate` |
 | weekly_report_viewed | `WeeklyReportActivity.onCreate` |
 | streak_updated | عند تحديث streak (HomeStats) |
 | reassessment_completed | `AssessmentResultActivity` (إعادة تقييم) — إشارة تطور |
 
-`day2_return` و `3 sessions / 7 days` يُحسبان سيرفر-سايد من `app_opened` + `session_completed` والتواريخ.
+`day2_return` و `3 planned workouts / 7 days` يُحسبان سيرفر-سايد من `app_opened` + `workout_completed` والتواريخ.
 
-التطور والاستمرار (المقياس الحقيقي، ملف 16) يُحسبان سيرفر-سايد: خط أساس (التقييم أو الأسبوع 1) + delta من `session_completed` + `reassessment_completed`، عبر نافذة 14 يوم.
+التطور والاستمرار (المقياس الحقيقي، ملف 16) يُحسبان سيرفر-سايد: خط أساس (التقييم أو الأسبوع 1) + delta من `workout_completed` + `reassessment_completed`، عبر نافذة 14 يوم.
 
 ### الحقول لكل حدث
 
@@ -49,8 +49,8 @@
 
 - `AnalyticsTracker` مركزي بواجهة `track(event, props)`.
 - offline-first: queue + retry (النمط موجود).
-- `session_completed` يحمل `isCorrectSession` (ملف 16).
-- شيت أو لوحة تقرأ الـ funnel من install حتى 3 جلسات/7 أيام (North Star).
+- `workout_completed` يحمل `isCountedWorkout` (ملف 16).
+- شيت أو لوحة تقرأ الـ funnel من install حتى 3 تمارين/7 أيام (North Star).
 
 ### مبدأ
 

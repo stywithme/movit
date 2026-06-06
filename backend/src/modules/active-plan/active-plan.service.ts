@@ -1,5 +1,5 @@
 /**
- * ActivePlan Service — Manages user's training schedule with ordered programs.
+ * ActivePlan Service � Manages user's training schedule with ordered programs.
  *
  * Replaces the simple UserProgram.isActive boolean with a structured plan
  * that supports program sequencing, transitions, and auto-scheduling.
@@ -10,7 +10,7 @@ import { typeStringFromProgramDomain } from '@/lib/program-domain';
 import {
   countEffectiveExerciseItems,
   effectivePlanService,
-  type EffectivePlanSession,
+  type EffectivePlannedWorkout,
 } from '@/modules/effective-plan/effective-plan.service';
 import {
   buildAssignmentReason,
@@ -27,7 +27,7 @@ import { programCompletionService } from '@/modules/programs/program-completion.
 import type { ProgramCompletionDecision } from '@/modules/programs/program-completion.service';
 import {
   buildCatchUpSuggestionFromMeta,
-  getLastProgramSessionCompletedAt,
+  getLastPlannedWorkoutCompletedAt,
   type CatchUpSuggestion,
 } from '@/modules/programs/program-catchup';
 
@@ -36,7 +36,7 @@ interface EnrollProgramOptions {
   name?: Record<string, string> | null;
 }
 
-// ── Types ──
+// -- Types --
 
 export interface ActivePlanData {
   id: string;
@@ -80,7 +80,7 @@ export interface TodayPlanData {
     dayNumber: number;
     dayType: string;
     isRestDay: boolean;
-    sessions: {
+    plannedWorkouts: {
       id: string;
       name: Record<string, string>;
       role: string;
@@ -93,7 +93,7 @@ export interface TodayPlanData {
     scheduledDate: string;
     reason: string;
   } | null;
-  /** User's scheduled training day (UTC weekday); false on off days — show rest UX. */
+  /** User's scheduled training day (UTC weekday); false on off days � show rest UX. */
   isTrainingDay?: boolean;
   /** When catch-up snap changed position vs natural completion-based slot. */
   catchUpSuggestion?: CatchUpSuggestion | null;
@@ -110,7 +110,7 @@ export interface EnrollmentCheckData {
   } | null;
 }
 
-// ── Service ──
+// -- Service --
 
 export const activePlanService = {
   /**
@@ -142,7 +142,7 @@ export const activePlanService = {
                             dayNumber: true,
                             isRestDay: true,
                             dayType: true,
-                            sessions: { select: { id: true, sortOrder: true } },
+                            plannedWorkouts: { select: { id: true, sortOrder: true } },
                           },
                         },
                       },
@@ -183,7 +183,7 @@ export const activePlanService = {
                               dayNumber: true,
                               isRestDay: true,
                               dayType: true,
-                              sessions: { select: { id: true, sortOrder: true } },
+                              plannedWorkouts: { select: { id: true, sortOrder: true } },
                             },
                           },
                         },
@@ -218,7 +218,7 @@ export const activePlanService = {
     const lastSessionByProgram = new Map<string, Date | null>();
     await Promise.all(
       programIds.map(async (pid) => {
-        lastSessionByProgram.set(pid, await getLastProgramSessionCompletedAt(userId, pid));
+        lastSessionByProgram.set(pid, await getLastPlannedWorkoutCompletedAt(userId, pid));
       }),
     );
 
@@ -233,7 +233,7 @@ export const activePlanService = {
         const lastAt = prog?.id ? (lastSessionByProgram.get(prog.id) ?? null) : null;
         const position = prog
           ? resolveCurrentProgramDay(prog.weeks, progressEntries, {
-              lastSessionCompletedAt: lastAt,
+              lastWorkoutCompletedAt: lastAt,
               trainingWeekdays,
               durationWeeks: prog.durationWeeks,
             })
@@ -380,8 +380,7 @@ export const activePlanService = {
                       weeks: {
                         include: {
                           days: {
-                            include: {
-                              sessions: {
+                            include: { plannedWorkouts: {
                                 include: {
                                   items: true,
                                   reports: {
@@ -452,9 +451,9 @@ export const activePlanService = {
     }
 
     const progressEntries = activeSlot.userProgram.progress || [];
-    const lastAt = await getLastProgramSessionCompletedAt(userId, program.id);
+    const lastAt = await getLastPlannedWorkoutCompletedAt(userId, program.id);
     const meta = resolveTrainingPositionMeta(program.weeks, progressEntries, {
-      lastSessionCompletedAt: lastAt,
+      lastWorkoutCompletedAt: lastAt,
       trainingWeekdays,
       durationWeeks: program.durationWeeks,
     });
@@ -475,7 +474,7 @@ export const activePlanService = {
           dayNumber: targetDay,
           dayType: 'completed',
           isRestDay: false,
-          sessions: [],
+          plannedWorkouts: [],
         },
         nextReassessment: nextReassessment
           ? {
@@ -497,7 +496,7 @@ export const activePlanService = {
           dayNumber: targetDay,
           dayType: 'completed',
           isRestDay: false,
-          sessions: [],
+          plannedWorkouts: [],
         },
         nextReassessment: nextReassessment
           ? {
@@ -516,7 +515,7 @@ export const activePlanService = {
     const isUserOffDay = !position.isTrainingDay;
     const showSessions = !isTemplateRest && !isUserOffDay;
 
-    let effSessionById = new Map<string, EffectivePlanSession>();
+    let effPlannedWorkoutById = new Map<string, EffectivePlannedWorkout>();
     if (showSessions) {
       try {
         const eff = await effectivePlanService.getEffectivePlan(
@@ -525,15 +524,15 @@ export const activePlanService = {
           targetWeek,
           targetDay,
         );
-        effSessionById = new Map((eff?.sessions ?? []).map((s) => [s.id, s]));
+        effPlannedWorkoutById = new Map((eff?.plannedWorkouts ?? []).map((s) => [s.id, s]));
       } catch (error) {
         console.warn('[ActivePlan] effective plan for today:', error);
       }
     }
 
-    const sessionsPayload = showSessions
-      ? day.sessions.map((s) => {
-          const effS = effSessionById.get(s.id);
+    const plannedWorkoutsPayload = showSessions
+      ? day.plannedWorkouts.map((s) => {
+          const effS = effPlannedWorkoutById.get(s.id);
           const itemCount = effS
             ? countEffectiveExerciseItems(effS)
             : s.items.filter((it) => it.type === 'exercise').length;
@@ -556,7 +555,7 @@ export const activePlanService = {
         dayNumber: targetDay,
         dayType: isUserOffDay ? 'off_schedule' : day.dayType,
         isRestDay: isTemplateRest || isUserOffDay,
-        sessions: sessionsPayload,
+        plannedWorkouts: plannedWorkoutsPayload,
       },
       nextReassessment: nextReassessment
         ? {
@@ -581,7 +580,7 @@ export const activePlanService = {
               include: {
                 days: {
                   orderBy: { dayNumber: 'asc' },
-                  include: { sessions: { select: { id: true } } },
+                  include: { plannedWorkouts: { select: { id: true } } },
                 },
               },
             },
@@ -605,10 +604,10 @@ export const activePlanService = {
         ? profile.trainingWeekdays
         : null;
     const lastAt = active.programId
-      ? await getLastProgramSessionCompletedAt(userId, active.programId)
+      ? await getLastPlannedWorkoutCompletedAt(userId, active.programId)
       : null;
     const position = resolveCurrentProgramDay(active.program.weeks, active.progress ?? [], {
-      lastSessionCompletedAt: lastAt,
+      lastWorkoutCompletedAt: lastAt,
       trainingWeekdays,
       durationWeeks: active.program.durationWeeks,
     });
@@ -708,7 +707,7 @@ export const activePlanService = {
         });
       }
     } else {
-      // journey_summary (manual path) or null — activate next queued slot if any
+      // journey_summary (manual path) or null � activate next queued slot if any
       if (nextSlot) {
         await prisma.activePlanProgram.update({
           where: { id: nextSlot.id },

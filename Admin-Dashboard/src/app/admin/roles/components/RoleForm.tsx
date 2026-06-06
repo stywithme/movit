@@ -23,7 +23,7 @@ interface AdminBasic {
 const SUBJECT_GROUP_MAP: Record<string, { name: string; group: string }> = {
     // Content
     Exercise: { name: 'Exercises', group: 'Content' },
-    Workout: { name: 'Workouts', group: 'Content' },
+    WorkoutTemplate: { name: 'Workout Templates', group: 'Content' },
     Program: { name: 'Programs', group: 'Content' },
     ProgramMap: { name: 'Programs & map', group: 'Content' },
     Attribute: { name: 'Attributes', group: 'Content' },

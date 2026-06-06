@@ -392,7 +392,7 @@ class VisibilityMonitor(
     }
     
     /**
-     * Reset statistics (e.g., at start of new session)
+     * Reset statistics (e.g., at start of a new exercise run)
      */
     fun resetStats() {
         totalPauseCount = 0

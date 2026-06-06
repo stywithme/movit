@@ -2,7 +2,7 @@
  * Mobile Home Controller
  * ======================
  *
- * GET /mobile/home — Unified home screen data
+ * GET /mobile/home � Unified home screen data
  *
  * Returns a single, fully-structured response that the Home screen
  * consumes directly. The `trainMode` field drives all UI state decisions.
@@ -11,7 +11,7 @@
  *   - no_assessment   : User has never done a Body Scan
  *   - no_plan         : Assessment done but no active program
  *   - rest_day        : Active plan, but today is a rest or active-recovery day
- *   - active          : Active plan with sessions to complete today
+ *   - active          : Active plan with planned workouts to complete today
  *   - program_complete: All weeks done, awaiting reassessment
  *   - reassessment_due: A ReassessmentSchedule is pending
  */
@@ -27,11 +27,11 @@ import {
 import { resolveTrainingPositionMeta, countTrainingDaySlots, isProgramTrainingDaySlot } from '@/modules/active-plan/plan-position';
 import {
   buildCatchUpSuggestionFromMeta,
-  getLastProgramSessionCompletedAt,
+  getLastPlannedWorkoutCompletedAt,
   type CatchUpSuggestion,
 } from '@/modules/programs/program-catchup';
 
-// ── Types ──────────────────────────────────────────────────────────────────
+// -- Types ------------------------------------------------------------------
 
 type TrainModeStatus =
   | 'no_assessment'
@@ -51,15 +51,15 @@ interface TrainModeData {
     totalWeeks: number;
     weekProgress: { completed: number; total: number };
   } | null;
-  todaySession: {
-    sessionId: string;
+  todayWorkout: {
+    plannedWorkoutId: string;
     name: Record<string, string>;
     exerciseCount: number;
     estimatedMinutes: number | null;
     role: string | null;
     isCompleted: boolean;
-    allSessionsCount: number;
-    completedSessionsCount: number;
+    allWorkoutsCount: number;
+    completedWorkoutsCount: number;
   } | null;
   dayType: string | null;
   nextReassessment: { scheduledDate: string; reason: string } | null;
@@ -87,13 +87,13 @@ interface HomeResponse {
   };
   trainMode: TrainModeData;
   stats: {
-    totalSessions: number;
+    totalWorkoutExecutions: number;
     avgFormScore: number;
     streak: number;
-    thisWeekSessions: number;
+    thisWeekExecutions: number;
     totalMinutes: number;
   };
-  recentSessions: {
+  recentWorkouts: {
     exerciseId: string;
     exerciseName: Record<string, string>;
     formScore: number;
@@ -104,7 +104,7 @@ interface HomeResponse {
   alerts: AlertData[];
 }
 
-// ── Controller ─────────────────────────────────────────────────────────────
+// -- Controller -------------------------------------------------------------
 
 @Controller('mobile/home')
 export class MobileHomeController {
@@ -133,7 +133,7 @@ export class MobileHomeController {
   }
 }
 
-// ── Core Builder ───────────────────────────────────────────────────────────
+// -- Core Builder -----------------------------------------------------------
 
 async function buildHomeData(userId: string): Promise<HomeResponse> {
   const prisma = await getPrisma();
@@ -143,7 +143,7 @@ async function buildHomeData(userId: string): Promise<HomeResponse> {
     await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
-        select: { name: true, avatarUrl: true, totalWorkouts: true, totalMinutes: true },
+        select: { name: true, avatarUrl: true, totalWorkoutExecutions: true, totalMinutes: true },
       }),
       prisma.userLevelProfile.findFirst({
         where: { userId },
@@ -168,13 +168,12 @@ async function buildHomeData(userId: string): Promise<HomeResponse> {
                       weeks: {
                         include: {
                           days: {
-                            include: {
-                              sessions: {
+                            include: { plannedWorkouts: {
                                 include: {
                                   items: { where: { type: 'exercise' }, select: { id: true } },
                                   reports: {
                                     where: { userId, status: 'completed' },
-                                    select: { id: true, programSessionId: true },
+                                    select: { id: true, plannedWorkoutId: true },
                                   },
                                 },
                               },
@@ -196,13 +195,13 @@ async function buildHomeData(userId: string): Promise<HomeResponse> {
         orderBy: { scheduledDate: 'asc' },
       }),
       prisma.progressionHistory.count({ where: { userId, seen: false } }),
-      prisma.trainingSession.findMany({
+      prisma.workoutExecution.findMany({
         where: { userId },
         orderBy: { timestamp: 'desc' },
         take: 5,
         include: {
           exercise: { select: { name: true } },
-          sessionMetrics: { select: { avgFormScore: true } },
+          executionMetrics: { select: { avgFormScore: true } },
         },
       }),
       prisma.trainingProfile.findUnique({
@@ -211,17 +210,17 @@ async function buildHomeData(userId: string): Promise<HomeResponse> {
       }),
     ]);
 
-  // ── User header ──────────────────────────────────────────────────────────
+  // -- User header ----------------------------------------------------------
 
   const levelData = levelProfile
     ? await buildLevelProgress(prisma, levelProfile.overallLevel, levelProfile.bodyScore)
     : null;
 
-  // ── Stats ────────────────────────────────────────────────────────────────
+  // -- Stats ----------------------------------------------------------------
 
   const stats = await buildStats(prisma, userId);
 
-  // ── Train mode ───────────────────────────────────────────────────────────
+  // -- Train mode -----------------------------------------------------------
 
   const trainMode = await buildTrainMode(
     userId,
@@ -231,18 +230,18 @@ async function buildHomeData(userId: string): Promise<HomeResponse> {
     trainingProfile,
   );
 
-  // ── Recent sessions ──────────────────────────────────────────────────────
+  // -- Recent workout executions --------------------------------------------
 
-  const recentSessions = recentSessionsRaw.map((s) => ({
+  const recentWorkoutExecutions = recentSessionsRaw.map((s) => ({
     exerciseId: s.exerciseId,
     exerciseName: s.exercise.name as Record<string, string>,
-    formScore: s.sessionMetrics ? Math.round(s.sessionMetrics.avgFormScore / 10) : 0,
+    formScore: s.executionMetrics ? Math.round(s.executionMetrics.avgFormScore / 10) : 0,
     totalReps: s.totalReps,
     date: s.timestamp.toISOString(),
     context: s.context,
   }));
 
-  // ── Alerts ───────────────────────────────────────────────────────────────
+  // -- Alerts ---------------------------------------------------------------
 
   const alerts = buildAlerts(trainMode.status, unseenProgression, stats.streak, pendingReassessment);
 
@@ -257,18 +256,18 @@ async function buildHomeData(userId: string): Promise<HomeResponse> {
     },
     trainMode,
     stats: {
-      totalSessions: user?.totalWorkouts ?? 0,
+      totalWorkoutExecutions: user?.totalWorkoutExecutions ?? 0,
       avgFormScore: stats.avgFormScore,
       streak: stats.streak,
-      thisWeekSessions: stats.thisWeekSessions,
+      thisWeekExecutions: stats.thisWeekExecutions,
       totalMinutes: user?.totalMinutes ?? 0,
     },
-    recentSessions,
+    recentWorkouts: recentWorkoutExecutions,
     alerts,
   };
 }
 
-// ── TrainMode Builder ──────────────────────────────────────────────────────
+// -- TrainMode Builder ------------------------------------------------------
 
 async function buildTrainMode(
   userId: string,
@@ -291,7 +290,7 @@ async function buildTrainMode(
     return {
       status: 'no_assessment',
       activeProgram: null,
-      todaySession: null,
+      todayWorkout: null,
       dayType: null,
       nextReassessment: null,
       isTrainingDay: true,
@@ -299,12 +298,12 @@ async function buildTrainMode(
     };
   }
 
-  // State 2: Reassessment overdue — show before anything else
+  // State 2: Reassessment overdue � show before anything else
   if (pendingReassessment && new Date() >= pendingReassessment.scheduledDate) {
     return {
       status: 'reassessment_due',
       activeProgram: null,
-      todaySession: null,
+      todayWorkout: null,
       dayType: null,
       nextReassessment: reassessmentData,
       isTrainingDay: true,
@@ -318,7 +317,7 @@ async function buildTrainMode(
     return {
       status: 'no_plan',
       activeProgram: null,
-      todaySession: null,
+      todayWorkout: null,
       dayType: null,
       nextReassessment: reassessmentData,
       isTrainingDay: true,
@@ -328,9 +327,9 @@ async function buildTrainMode(
 
   const program = activeSlot.userProgram.program;
   const progressEntries: any[] = activeSlot.userProgram.progress ?? [];
-  const lastAt = await getLastProgramSessionCompletedAt(userId, program.id);
+  const lastAt = await getLastPlannedWorkoutCompletedAt(userId, program.id);
   const meta = resolveTrainingPositionMeta(program.weeks as any[], progressEntries, {
-    lastSessionCompletedAt: lastAt,
+    lastWorkoutCompletedAt: lastAt,
     trainingWeekdays,
     durationWeeks: program.durationWeeks,
   });
@@ -357,7 +356,7 @@ async function buildTrainMode(
           total: totalProgramTrainingDays,
         },
       },
-      todaySession: null,
+      todayWorkout: null,
       dayType: 'completed',
       nextReassessment: reassessmentData,
       isTrainingDay: position.isTrainingDay ?? true,
@@ -391,7 +390,7 @@ async function buildTrainMode(
     return {
       status: 'rest_day',
       activeProgram,
-      todaySession: null,
+      todayWorkout: null,
       dayType: isUserOffDay ? 'off_schedule' : day?.dayType ?? 'rest',
       nextReassessment: reassessmentData,
       isTrainingDay: position.isTrainingDay ?? true,
@@ -399,19 +398,19 @@ async function buildTrainMode(
     };
   }
 
-  // State 6: Active training day — find first incomplete session
-  const sessions: any[] = [...day.sessions].sort((a: any, b: any) => a.sortOrder - b.sortOrder);
-  const completedSessionIds = new Set(
-    sessions.flatMap((s: any) => s.reports.map((r: any) => r.programSessionId)),
+  // State 6: Active training day - find first incomplete planned workout
+  const todayPlannedWorkouts: any[] = [...day.plannedWorkouts].sort((a: any, b: any) => a.sortOrder - b.sortOrder);
+  const completedPlannedWorkoutIds = new Set(
+    todayPlannedWorkouts.flatMap((pw: any) => pw.reports.map((r: any) => r.plannedWorkoutId)),
   );
 
-  // All sessions completed for today — treat as rest (day done)
-  const nextSession = sessions.find((s: any) => !completedSessionIds.has(s.id));
-  if (!nextSession) {
+  // All planned workouts completed for today - treat as rest (day done)
+  const nextPlannedWorkout = todayPlannedWorkouts.find((pw: any) => !completedPlannedWorkoutIds.has(pw.id));
+  if (!nextPlannedWorkout) {
     return {
       status: 'rest_day',
       activeProgram,
-      todaySession: null,
+      todayWorkout: null,
       dayType: 'day_complete',
       nextReassessment: reassessmentData,
       isTrainingDay: position.isTrainingDay ?? true,
@@ -419,7 +418,7 @@ async function buildTrainMode(
     };
   }
 
-  let exerciseCount = (nextSession.items as any[]).filter((it: any) => it.type === 'exercise').length;
+  let exerciseCount = (nextPlannedWorkout.items as any[]).filter((it: any) => it.type === 'exercise').length;
   try {
     const eff = await effectivePlanService.getEffectivePlan(
       userId,
@@ -427,26 +426,26 @@ async function buildTrainMode(
       targetWeek,
       targetDay,
     );
-    const effSess = eff?.sessions.find((s) => s.id === nextSession.id);
-    if (effSess) {
-      exerciseCount = countEffectiveExerciseItems(effSess);
+    const effectivePlannedWorkout = eff?.plannedWorkouts.find((pw) => pw.id === nextPlannedWorkout.id);
+    if (effectivePlannedWorkout) {
+      exerciseCount = countEffectiveExerciseItems(effectivePlannedWorkout);
     }
   } catch (e) {
-    console.warn('[Mobile Home] effective plan for today session:', e);
+    console.warn('[Mobile Home] effective plan for today planned workout:', e);
   }
 
   return {
     status: 'active',
     activeProgram,
-    todaySession: {
-      sessionId: nextSession.id,
-      name: nextSession.name as Record<string, string>,
+    todayWorkout: {
+      plannedWorkoutId: nextPlannedWorkout.id,
+      name: nextPlannedWorkout.name as Record<string, string>,
       exerciseCount,
-      estimatedMinutes: nextSession.estimatedDurationMin,
-      role: nextSession.role != null ? String(nextSession.role) : null,
+      estimatedMinutes: nextPlannedWorkout.estimatedDurationMin,
+      role: nextPlannedWorkout.role != null ? String(nextPlannedWorkout.role) : null,
       isCompleted: false,
-      allSessionsCount: sessions.length,
-      completedSessionsCount: completedSessionIds.size,
+      allWorkoutsCount: todayPlannedWorkouts.length,
+      completedWorkoutsCount: completedPlannedWorkoutIds.size,
     },
     dayType: 'training',
     nextReassessment: reassessmentData,
@@ -455,7 +454,7 @@ async function buildTrainMode(
   };
 }
 
-// ── Level Progress Builder ─────────────────────────────────────────────────
+// -- Level Progress Builder -------------------------------------------------
 
 async function buildLevelProgress(
   prisma: any,
@@ -480,7 +479,7 @@ async function buildLevelProgress(
   return { code: current.code, progressPercent };
 }
 
-// ── Stats Builder ──────────────────────────────────────────────────────────
+// -- Stats Builder ----------------------------------------------------------
 
 async function buildStats(prisma: any, userId: string) {
   const now = new Date();
@@ -488,17 +487,17 @@ async function buildStats(prisma: any, userId: string) {
   startOfWeek.setDate(now.getDate() - ((now.getDay() + 6) % 7));
   startOfWeek.setHours(0, 0, 0, 0);
 
-  const [thisWeekSessions, recentScores, allDates] = await Promise.all([
-    prisma.trainingSession.count({
+  const [thisWeekExecutions, recentScores, allDates] = await Promise.all([
+    prisma.workoutExecution.count({
       where: { userId, timestamp: { gte: startOfWeek } },
     }),
-    prisma.trainingSession.findMany({
+    prisma.workoutExecution.findMany({
       where: { userId },
       orderBy: { timestamp: 'desc' },
       take: 10,
-      select: { sessionMetrics: { select: { avgFormScore: true } } },
+      select: { executionMetrics: { select: { avgFormScore: true } } },
     }),
-    prisma.trainingSession.findMany({
+    prisma.workoutExecution.findMany({
       where: { userId },
       orderBy: { timestamp: 'desc' },
       take: 365,
@@ -508,7 +507,7 @@ async function buildStats(prisma: any, userId: string) {
 
   // Average form score
   const validScores = recentScores
-    .map((s: any) => s.sessionMetrics?.avgFormScore)
+    .map((s: any) => s.executionMetrics?.avgFormScore)
     .filter((v: any): v is number => v != null && v > 0);
   const avgFormScore =
     validScores.length > 0
@@ -537,10 +536,10 @@ async function buildStats(prisma: any, userId: string) {
     }
   }
 
-  return { thisWeekSessions, avgFormScore, streak };
+  return { thisWeekExecutions, avgFormScore, streak };
 }
 
-// ── Alerts Builder ─────────────────────────────────────────────────────────
+// -- Alerts Builder ---------------------------------------------------------
 
 function buildAlerts(
   trainStatus: TrainModeStatus,
@@ -553,9 +552,9 @@ function buildAlerts(
   if (trainStatus === 'reassessment_due') {
     alerts.push({
       type: 'reassessment_due',
-      titleAr: 'حان وقت إعادة التقييم',
+      titleAr: '??? ??? ????? ???????',
       titleEn: 'Time for Reassessment',
-      messageAr: 'أكمل تمرين Body Scan لتحديث مستواك والحصول على خطة جديدة',
+      messageAr: '???? ????? Body Scan ?????? ?????? ??????? ??? ??? ?????',
       messageEn: 'Complete a Body Scan to update your level and get a new plan',
       actionRoute: 'assessment',
     });
@@ -564,9 +563,9 @@ function buildAlerts(
   if (unseenProgressionCount > 0) {
     alerts.push({
       type: 'progression_applied',
-      titleAr: 'تم تعديل خطة التدريب',
+      titleAr: '?? ????? ??? ???????',
       titleEn: 'Training Plan Adjusted',
-      messageAr: `تم تعديل ${unseenProgressionCount} تمرين بناءً على أدائك`,
+      messageAr: `?? ????? ${unseenProgressionCount} ????? ????? ??? ?????`,
       messageEn: `${unseenProgressionCount} exercise${unseenProgressionCount > 1 ? 's' : ''} adjusted based on your performance`,
       actionRoute: 'progression/recent',
     });
@@ -575,9 +574,9 @@ function buildAlerts(
   if (streak > 0 && streak % 7 === 0) {
     alerts.push({
       type: 'level_up',
-      titleAr: `🔥 ${streak} يوم متواصل!`,
-      titleEn: `🔥 ${streak} day streak!`,
-      messageAr: 'أنت في قمة الأداء. استمر!',
+      titleAr: `?? ${streak} ??? ??????!`,
+      titleEn: `?? ${streak} day streak!`,
+      messageAr: '??? ?? ??? ??????. ?????!',
       messageEn: 'You are at peak performance. Keep it up!',
     });
   }

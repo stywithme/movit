@@ -824,13 +824,13 @@
         android:textSize="12sp"
         android:layout_marginBottom="@dimen/spacing_xs"
         android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/tvSessionSetIndicator"
+        app:layout_constraintBottom_toTopOf="@id/tvWorkoutSetIndicator"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         tools:text="Alternating: Variant" />
 
     <TextView
-        android:id="@+id/tvSessionSetIndicator"
+        android:id="@+id/tvWorkoutSetIndicator"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textColor="#CCFFFFFF"
@@ -939,7 +939,7 @@
     <!-- ==================== SESSION MODE: Pre-Exercise Overlay ==================== -->
 
     <ScrollView
-        android:id="@+id/sessionPreExercisePanel"
+        android:id="@+id/WorkoutPreExercisePanel"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="#CC000000"
@@ -962,7 +962,7 @@
                 android:layout_height="wrap_content">
 
                 <FrameLayout
-                    android:id="@+id/sessionPreExerciseImageContainer"
+                    android:id="@+id/WorkoutPreExerciseImageContainer"
                     android:layout_width="0dp"
                     android:layout_height="0dp"
                     android:background="@drawable/gradient_report_hero"
@@ -972,14 +972,14 @@
                     app:layout_constraintTop_toTopOf="parent">
 
                     <ImageView
-                        android:id="@+id/ivSessionPreExercisePreview"
+                        android:id="@+id/ivWorkoutPreExercisePreview"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:scaleType="centerCrop"
-                        android:contentDescription="@string/session_preview_content_description" />
+                        android:contentDescription="@string/workout_preview_content_description" />
 
                     <ImageView
-                        android:id="@+id/ivSessionPreExerciseFallbackIcon"
+                        android:id="@+id/ivWorkoutPreExerciseFallbackIcon"
                         android:layout_width="96dp"
                         android:layout_height="96dp"
                         android:layout_gravity="center"
@@ -1001,7 +1001,7 @@
                 android:paddingBottom="@dimen/spacing_2xl">
 
                 <TextView
-                    android:id="@+id/tvSessionExerciseLabel"
+                    android:id="@+id/tvWorkoutExerciseLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@color/primary"
@@ -1011,7 +1011,7 @@
                     tools:text="EXERCISE 2/5" />
 
                 <LinearLayout
-                    android:id="@+id/layoutSessionPrepTimerRow"
+                    android:id="@+id/layoutWorkoutPrepTimerRow"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/spacing_sm"
@@ -1021,7 +1021,7 @@
                     tools:visibility="visible">
 
                     <TextView
-                        android:id="@+id/tvSessionPrepCountdown"
+                        android:id="@+id/tvWorkoutPrepCountdown"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="sans-serif-thin"
@@ -1030,7 +1030,7 @@
                         tools:text="00:23" />
 
                     <ImageButton
-                        android:id="@+id/btnSessionPrepPauseRestIcon"
+                        android:id="@+id/btnWorkoutPrepPauseRestIcon"
                         android:layout_width="40dp"
                         android:layout_height="40dp"
                         android:layout_marginStart="@dimen/spacing_sm"
@@ -1041,7 +1041,7 @@
                         app:tint="@color/primary" />
 
                     <ImageButton
-                        android:id="@+id/btnSessionPrepSkipRestIcon"
+                        android:id="@+id/btnWorkoutPrepSkipRestIcon"
                         android:layout_width="40dp"
                         android:layout_height="40dp"
                         android:layout_marginStart="@dimen/spacing_xs"
@@ -1053,7 +1053,7 @@
                 </LinearLayout>
 
                 <TextView
-                    android:id="@+id/tvSessionExerciseName"
+                    android:id="@+id/tvWorkoutExerciseName"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@android:color/white"
@@ -1064,7 +1064,7 @@
                     tools:text="Push-ups" />
 
                 <TextView
-                    android:id="@+id/tvSessionAlternatingLabel"
+                    android:id="@+id/tvWorkoutAlternatingLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@color/pro_gold"
@@ -1074,7 +1074,7 @@
                     tools:text="Alternating: Variant" />
 
                 <TextView
-                    android:id="@+id/tvSessionSetInfo"
+                    android:id="@+id/tvWorkoutSetInfo"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="#CCFFFFFF"
@@ -1084,7 +1084,7 @@
                     tools:text="Set 1 of 3 · 12 reps" />
 
                 <TextView
-                    android:id="@+id/tvSessionWeightInfo"
+                    android:id="@+id/tvWorkoutWeightInfo"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@color/pro_gold"
@@ -1094,7 +1094,7 @@
                     tools:text="Weight: 10 kg" />
 
                 <TextView
-                    android:id="@+id/tvSessionInstruction"
+                    android:id="@+id/tvWorkoutInstruction"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/spacing_sm"
@@ -1109,7 +1109,7 @@
 
                 <!-- Settings card (reps / duration / weight) - always shown in pre-exercise -->
                 <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardSessionSettings"
+                    android:id="@+id/cardWorkoutSettings"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/spacing_lg"
@@ -1131,7 +1131,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/session_set_settings"
+                            android:text="@string/workout_set_settings"
                             android:textColor="#99FFFFFF"
                             android:textSize="12sp"
                             android:letterSpacing="0.08"
@@ -1139,7 +1139,7 @@
 
                         <!-- Reps row -->
                         <LinearLayout
-                            android:id="@+id/layoutSessionSettingReps"
+                            android:id="@+id/layoutWorkoutSettingReps"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/spacing_md"
@@ -1150,7 +1150,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="@string/session_reps_label"
+                                android:text="@string/workout_reps_label"
                                 android:textColor="@android:color/white"
                                 android:textSize="16sp"
                                 android:textStyle="bold" />
@@ -1163,7 +1163,7 @@
                                 android:orientation="horizontal">
 
                                 <TextView
-                                    android:id="@+id/tvSessionRepsValue"
+                                    android:id="@+id/tvWorkoutRepsValue"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:minWidth="52dp"
@@ -1174,7 +1174,7 @@
                                     tools:text="12" />
 
                                 <com.google.android.material.slider.Slider
-                                    android:id="@+id/sliderSessionReps"
+                                    android:id="@+id/sliderWorkoutReps"
                                     android:layout_width="0dp"
                                     android:layout_height="wrap_content"
                                     android:layout_marginStart="@dimen/spacing_md"
@@ -1187,7 +1187,7 @@
 
                         <!-- Duration row -->
                         <LinearLayout
-                            android:id="@+id/layoutSessionSettingDuration"
+                            android:id="@+id/layoutWorkoutSettingDuration"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/spacing_md"
@@ -1198,7 +1198,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="@string/session_duration_label"
+                                android:text="@string/workout_duration_label"
                                 android:textColor="@android:color/white"
                                 android:textSize="16sp"
                                 android:textStyle="bold" />
@@ -1217,7 +1217,7 @@
                                     app:tint="@color/primary" />
 
                                 <TextView
-                                    android:id="@+id/tvSessionDurationValue"
+                                    android:id="@+id/tvWorkoutDurationValue"
                                     android:layout_width="0dp"
                                     android:layout_height="wrap_content"
                                     android:layout_marginStart="@dimen/spacing_md"
@@ -1228,7 +1228,7 @@
                                     tools:text="00:30" />
 
                                 <com.google.android.material.button.MaterialButton
-                                    android:id="@+id/btnSessionDurationPicker"
+                                    android:id="@+id/btnWorkoutDurationPicker"
                                     style="@style/Widget.WayToFix.Button.Secondary"
                                     android:layout_width="wrap_content"
                                     android:layout_height="40dp"
@@ -1239,7 +1239,7 @@
 
                         <!-- Weight row -->
                         <LinearLayout
-                            android:id="@+id/layoutSessionSettingWeight"
+                            android:id="@+id/layoutWorkoutSettingWeight"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/spacing_md"
@@ -1250,7 +1250,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="@string/session_weight_label"
+                                android:text="@string/workout_weight_label"
                                 android:textColor="@android:color/white"
                                 android:textSize="16sp"
                                 android:textStyle="bold" />
@@ -1263,7 +1263,7 @@
                                 android:orientation="horizontal">
 
                                 <TextView
-                                    android:id="@+id/tvSessionWeightValue"
+                                    android:id="@+id/tvWorkoutWeightValue"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:minWidth="72dp"
@@ -1274,7 +1274,7 @@
                                     tools:text="10 kg" />
 
                                 <com.google.android.material.slider.Slider
-                                    android:id="@+id/sliderSessionWeight"
+                                    android:id="@+id/sliderWorkoutWeight"
                                     android:layout_width="0dp"
                                     android:layout_height="wrap_content"
                                     android:layout_marginStart="@dimen/spacing_md"
@@ -1284,7 +1284,7 @@
                             </LinearLayout>
 
                             <TextView
-                                android:id="@+id/tvSessionWeightRange"
+                                android:id="@+id/tvWorkoutWeightRange"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="@dimen/spacing_xs"
@@ -1296,7 +1296,7 @@
                 </com.google.android.material.card.MaterialCardView>
 
                 <LinearLayout
-                    android:id="@+id/layoutSessionPrepRestControls"
+                    android:id="@+id/layoutWorkoutPrepRestControls"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:visibility="gone"
@@ -1304,12 +1304,12 @@
                 </LinearLayout>
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSessionStartSet"
+                    android:id="@+id/btnWorkoutStartSet"
                     style="@style/Widget.WayToFix.Button.Primary"
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
                     android:layout_marginTop="@dimen/spacing_2xl"
-                    android:text="@string/session_start_set"
+                    android:text="@string/workout_start_set"
                     android:textSize="18sp"
                     android:textStyle="bold" />
             </LinearLayout>
@@ -1320,7 +1320,7 @@
     <!-- ==================== SESSION MODE: Rest Overlay ==================== -->
 
     <ScrollView
-        android:id="@+id/sessionRestPanel"
+        android:id="@+id/WorkoutRestPanel"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="#CC000000"
@@ -1338,7 +1338,7 @@
             android:padding="@dimen/spacing_2xl">
 
             <TextView
-                android:id="@+id/tvSessionRestTitle"
+                android:id="@+id/tvWorkoutRestTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="#CCFFFFFF"
@@ -1348,7 +1348,7 @@
                 tools:text="REST BETWEEN SETS" />
 
             <TextView
-                android:id="@+id/tvSessionRestCountdown"
+                android:id="@+id/tvWorkoutRestCountdown"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="@color/primary"
@@ -1364,14 +1364,14 @@
                 android:background="@drawable/gradient_report_hero">
 
                 <ImageView
-                    android:id="@+id/ivSessionRestPreview"
+                    android:id="@+id/ivWorkoutRestPreview"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:scaleType="centerCrop"
-                    android:contentDescription="@string/session_preview_content_description" />
+                    android:contentDescription="@string/workout_preview_content_description" />
 
                 <ImageView
-                    android:id="@+id/ivSessionRestFallbackIcon"
+                    android:id="@+id/ivWorkoutRestFallbackIcon"
                     android:layout_width="64dp"
                     android:layout_height="64dp"
                     android:layout_gravity="center"
@@ -1382,7 +1382,7 @@
             </FrameLayout>
 
             <TextView
-                android:id="@+id/tvSessionRestHeadline"
+                android:id="@+id/tvWorkoutRestHeadline"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_sm"
@@ -1393,7 +1393,7 @@
                 tools:text="Push-ups" />
 
             <TextView
-                android:id="@+id/tvSessionRestNext"
+                android:id="@+id/tvWorkoutRestNext"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textColor="#99FFFFFF"
@@ -1403,7 +1403,7 @@
                 tools:text="Set 1/3 · 12 reps" />
 
             <TextView
-                android:id="@+id/tvSessionRestInstruction"
+                android:id="@+id/tvWorkoutRestInstruction"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_xs"
@@ -1417,7 +1417,7 @@
                 tools:visibility="visible" />
 
             <TextView
-                android:id="@+id/tvSessionRestTip"
+                android:id="@+id/tvWorkoutRestTip"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textColor="#99FFFFFF"
@@ -1434,7 +1434,7 @@
                 android:orientation="horizontal">
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSessionAddTime"
+                    android:id="@+id/btnWorkoutAddTime"
                     style="@style/Widget.WayToFix.Button.Secondary"
                     android:layout_width="0dp"
                     android:layout_height="48dp"
@@ -1443,7 +1443,7 @@
                     android:textSize="14sp" />
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSessionSkipRest"
+                    android:id="@+id/btnWorkoutSkipRest"
                     style="@style/Widget.WayToFix.Button.Secondary"
                     android:layout_width="0dp"
                     android:layout_height="48dp"
@@ -1453,7 +1453,7 @@
                     android:textSize="16sp" />
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSessionEditRest"
+                    android:id="@+id/btnWorkoutEditRest"
                     style="@style/Widget.WayToFix.Button.Secondary"
                     android:layout_width="0dp"
                     android:layout_height="48dp"
@@ -1469,7 +1469,7 @@
     <!-- ==================== SESSION MODE: Complete Overlay ==================== -->
 
     <LinearLayout
-        android:id="@+id/sessionCompletePanel"
+        android:id="@+id/WorkoutCompletePanel"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
@@ -1484,30 +1484,30 @@
             android:layout_width="80dp"
             android:layout_height="80dp"
             android:src="@drawable/ic_celebration"
-            android:contentDescription="@string/session_complete" />
+            android:contentDescription="@string/workout_complete" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/session_complete"
+            android:text="@string/workout_complete"
             android:textColor="@color/primary"
             android:textSize="28sp"
             android:textStyle="bold"
             android:layout_marginTop="@dimen/spacing_base" />
 
         <TextView
-            android:id="@+id/tvSessionCompleteSubtitle"
+            android:id="@+id/tvWorkoutCompleteSubtitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/spacing_sm"
             android:paddingHorizontal="@dimen/spacing_lg"
             android:gravity="center"
-            android:text="@string/session_complete_subtitle"
+            android:text="@string/workout_complete_subtitle"
             android:textColor="@color/text_secondary"
             android:textSize="15sp" />
 
         <TextView
-            android:id="@+id/tvSessionCompleteSets"
+            android:id="@+id/tvWorkoutCompleteSets"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@color/text_secondary"
@@ -1516,7 +1516,7 @@
             tools:text="Sets: 12/14" />
 
         <TextView
-            android:id="@+id/tvSessionCompleteReps"
+            android:id="@+id/tvWorkoutCompleteReps"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@color/text_secondary"
@@ -1525,7 +1525,7 @@
             tools:text="Total Reps: 156" />
 
         <TextView
-            android:id="@+id/tvSessionCompleteDuration"
+            android:id="@+id/tvWorkoutCompleteDuration"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@color/text_secondary"
@@ -1534,7 +1534,7 @@
             tools:text="Duration: 18:34" />
 
         <TextView
-            android:id="@+id/tvSessionCompleteAccuracy"
+            android:id="@+id/tvWorkoutCompleteAccuracy"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@color/text_secondary"
@@ -1543,12 +1543,12 @@
             tools:text="Average Accuracy: 87%" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnSessionDone"
+            android:id="@+id/btnWorkoutDone"
             style="@style/Widget.WayToFix.Button.Primary"
             android:layout_width="220dp"
             android:layout_height="56dp"
             android:layout_marginTop="@dimen/spacing_2xl"
-            android:text="@string/session_view_report"
+            android:text="@string/workout_view_report"
             android:textSize="18sp"
             android:textStyle="bold" />
 

@@ -14,7 +14,7 @@
 - `heightCm`, `weightKg`, `dateOfBirth`, `biologicalSex`
 - `currentActivityLevel`, `trainingExperienceMonths`, `resistanceExperience`
 - `availableDaysPerWeek`, `trainingWeekdays` (مصفوفة أرقام أيام 0=الأحد … 6=السبت)
-- `maxSessionMinutes`, `availableEquipment` (Json), `trainingLocation`, `knownInjuries` (Json)
+- `maxWorkoutMinutes`, `availableEquipment` (Json), `trainingLocation`, `knownInjuries` (Json)
 - `healthDisclaimerAccepted` (boolean)
 
 `User.trainingGoal` من enum `TrainingGoal` ويُحدَّث من نفس حمولة ملف التدريب عند الإرسال.

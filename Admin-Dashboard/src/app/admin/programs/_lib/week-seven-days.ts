@@ -1,7 +1,7 @@
 import type { LocalizedText } from '@/lib/types/localized';
 
-/** Minimal week/day/session shapes used by program editor pages (subset of WeekForm/DayForm). */
-export interface EditorSessionLike {
+/** Minimal week/day/planned-workout shapes used by program editor pages (subset of WeekForm/DayForm). */
+export interface EditorPlannedWorkoutLike {
   id?: string;
   name: LocalizedText;
   sortOrder: number;
@@ -16,7 +16,7 @@ export interface EditorDayLike {
   isRestDay: boolean;
   name: LocalizedText;
   dayFocus?: string;
-  sessions: EditorSessionLike[];
+  plannedWorkouts: EditorPlannedWorkoutLike[];
 }
 
 export interface EditorWeekLike {
@@ -30,7 +30,7 @@ function createPlaceholderDay(dayNumber: number): EditorDayLike {
     isRestDay: false,
     name: { ar: '', en: '' },
     dayFocus: '',
-    sessions: [],
+    plannedWorkouts: [],
   };
 }
 

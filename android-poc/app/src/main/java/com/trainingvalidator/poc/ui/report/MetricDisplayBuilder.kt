@@ -342,7 +342,7 @@ object MetricDisplayBuilder {
     ): MessageItem {
         val (icon, text) = when {
             rep.isPerfect() -> "⭐" to (if (isArabic) "أداء مثالي!" else "Perfect form!")
-            rep.isBestRep -> "🏆" to (if (isArabic) "أفضل عدة في الجلسة" else "Best rep of the session")
+            rep.isBestRep -> "🏆" to (if (isArabic) "أفضل عدة في التمرين" else "Best rep of the workout")
             rep.isWorstRep -> "📈" to (if (isArabic) "فرصة للتحسين" else "Room for improvement")
             rep.isDanger() -> "⚠️" to (if (isArabic) "تحقق من الشكل" else "Check your form")
             rep.score >= 80 -> "🟢" to (if (isArabic) "شكل جيد" else "Good form")

@@ -91,9 +91,9 @@ data class RepRecord(
 )
 ```
 
-### د. ملخص الجلسة (SessionRecord)
+### د. ملخص الجلسة (Planned WorkoutRecord)
 ```kotlin
-data class SessionRecord(
+data class Planned WorkoutRecord(
     val id: String,
     val exerciseId: String,
     val startEpoch: Long,          // Unix timestamp
@@ -102,7 +102,7 @@ data class SessionRecord(
     val defaultWeightKg: Float?,     // الوزن الافتراضي للجلسة
     val weightUnit: String = "kg",   // الوحدة المستخدمة (kg/lbs) - للتخزين فقط، التحويل في العرض
     val reps: List<RepRecord>,
-    val metrics: SessionMetrics    // المقاييس المحسوبة
+    val metrics: WorkoutExecutionMetrics    // المقاييس المحسوبة
 )
 ```
 
@@ -123,7 +123,7 @@ data class RepMetrics(
     val alignmentAccuracy: Short // نسبة الوقت في وضعية صحيحة × 10 (0-1000)
 )
 
-data class SessionMetrics(
+data class WorkoutExecutionMetrics(
     val avgRom: Short,
     val avgSymmetry: Short?,
     val avgStability: Short,
@@ -310,27 +310,27 @@ object MetricsCalculator {
                       ▼ عند انتهاء الجلسة
 ┌─────────────────────────────────────────────────────────────────┐
 │                    MotionRecorder.finalize()                     │
-│  - يجمّع RepMetrics → SessionMetrics                             │
-│  - ينشئ SessionUpload (metrics فقط، بدون frames)                │
+│  - يجمّع RepMetrics → WorkoutExecutionMetrics                             │
+│  - ينشئ WorkoutExecutionUpload (metrics فقط، بدون frames)                │
 │  - حجم: ~500 bytes بدل ~15KB!                                   │
 └─────────────────────┬───────────────────────────────────────────┘
                       │
         ┌─────────────┴─────────────┐
         ▼                           ▼
 ┌───────────────────────┐    ┌─────────────────────────┐
-│   AnalyticsStorage    │    │   SessionSyncService    │
+│   AnalyticsStorage    │    │   WorkoutSyncService    │
 │   (Pending Sync)      │    │   (Direct Upload)       │
 │   /analytics/pending/ │    │   POST /api/mobile/     │
-│   session_{id}.json.gz│    │   sessions              │
+│   workout_{id}.json.gz│    │   workout-executions         │
 │                       │    │                         │
-│   حجم: ~500 bytes     │    │   ← يُرسل SessionUpload │
+│   حجم: ~500 bytes     │    │   ← يُرسل WorkoutExecutionUpload │
 │   (للـ offline mode)  │    │   ← يحذف pending file   │
 └───────────────────────┘    └─────────────────────────┘
                                     │
                                     ▼
                          ┌─────────────────────────┐
-                         │   Backend (TrainingSession)
-                         │   - يحفظ sessionMetrics │
+                         │   Backend (WorkoutExecution)
+                         │   - يحفظ executionMetrics │
                          │   - يحفظ repMetrics     │
                          │   - يرجع exercise history
                          └─────────────────────────┘
@@ -339,7 +339,7 @@ object MetricsCalculator {
 ### ملخص الفوائد:
 | البند | قبل | بعد |
 |-------|-----|-----|
-| حجم الجلسة | ~15 KB | ~500 bytes |
+| حجم التمرين (upload) | ~15 KB | ~500 bytes |
 | استهلاك الذاكرة | Buffer + RepRecords | Buffer مؤقت فقط |
 | سرعة الـ Sync | بطيء (ملفات كبيرة) | سريع جداً |
 | البيانات المحفوظة | frames + metrics | metrics فقط |
@@ -357,7 +357,7 @@ class MotionRecorder {
     // العدات المكتملة
     private val completedReps = mutableListOf<RepRecord>()
     
-    // حد أقصى للأمان (في حالة جلسة طويلة جداً)
+    // حد أقصى للأمان (في حالة تمرين طويل جداً)
     private val maxFramesPerRep = 300  // 10 ثواني × 30fps
 }
 ```
@@ -365,7 +365,7 @@ class MotionRecorder {
 ### ب. Room DB (خفيف - للقوائم والبحث)
 ```kotlin
 @Entity
-data class SessionEntity(
+data class Planned WorkoutEntity(
     @PrimaryKey val id: String,
     val exerciseId: String,
     val timestamp: Long,
@@ -389,21 +389,21 @@ data class SessionEntity(
 ```
 /files/
 └── analytics/
-    ├── session_abc123.json.gz   (~10 KB)
-    ├── session_def456.json.gz
+    ├── workout_abc123.json.gz   (~10 KB)
+    ├── workout_def456.json.gz
     └── ...
 ```
 
 **تقدير الحجم:**
-- جلسة 12 عدة × 3 ثواني/عدة × 30fps = 1080 frame
+- تمرين 12 عدة × 3 ثواني/عدة × 30fps = 1080 frame
 - كل frame ≈ 20 bytes (بالتنسيق الخفيف)
 - إجمالي ≈ 22 KB قبل الضغط → ~8 KB بعد gzip
 
 ### د. التنظيف التلقائي
 ```kotlin
-fun cleanupOldSessions(keepDays: Int = 30, maxCount: Int = 100) {
-    // حذف الجلسات الأقدم من 30 يوم
-    // أو إذا تجاوز العدد 100 جلسة
+fun cleanupOldPlanned Workouts(keepDays: Int = 30, maxCount: Int = 100) {
+    // حذف التمارين الأقدم من 30 يوم
+    // أو إذا تجاوز العدد 100 تمرين
 }
 ```
 
@@ -436,8 +436,8 @@ motionRecorder?.finalizeRep(
 ### ج. في `TrainingActivity` عند الانتهاء:
 ```kotlin
 // بعد engine.stop()
-val sessionRecord = motionRecorder.finalize(sessionId, exerciseId)
-analyticsStorage.save(sessionRecord)
+val workoutRecord = motionRecorder.finalize(plannedWorkoutId, exerciseId)
+analyticsStorage.save(workoutRecord)
 ```
 
 ---
@@ -452,7 +452,7 @@ analyticsStorage.save(sessionRecord)
 | 4 | إنشاء `AnalyticsStorage` | `storage/AnalyticsStorage.kt` |
 | 5 | تكامل في `TrainingEngine` | تعديل `processFrame()` |
 | 6 | تكامل في `RepCounter` | تعديل `completeRep()` |
-| 7 | تحديث `ReportGenerator` | استخدام `SessionMetrics` |
+| 7 | تحديث `ReportGenerator` | استخدام `WorkoutExecutionMetrics` |
 
 ---
 
@@ -495,7 +495,7 @@ class MotionRecorder(
         states: Map<String, JointStateInfo>? // Map الحالي
     ) {
         val sample = FrameSample(
-            t = (timestamp - sessionStartMs).toInt(),
+            t = (timestamp - workoutStartMs).toInt(),
             phase = phase.toByteCode(),      // Enum → Byte
             angles = anglesToShortArray(angles),  // Map → ShortArray
             states = statesToByteArray(states)    // Map → ByteArray

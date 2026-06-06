@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
@@ -13,6 +13,13 @@
     <!-- Vibration Permission (for haptic feedback) -->
     <uses-permission android:name="android.permission.VIBRATE" />
     
+    <!-- Video/Media Permissions for video analysis -->
+    <!-- Android 13+ (API 33+) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <!-- Android 12 and below -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" 
+        android:maxSdkVersion="32" />
+
     <application
         android:name=".PoseApp"
         android:allowBackup="false"
@@ -153,6 +160,20 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix.Training" />
         
+        <!-- Main Activity (Camera Demo) -->
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix.Training" />
+        
+        <!-- Debug Activity (Measurement Testing) -->
+        <activity
+            android:name=".ui.debug.DebugActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix.Training" />
+        
         <!-- Workout Detail Activity (Timeline before start) -->
         <activity
             android:name=".ui.workouts.WorkoutDetailActivity"
@@ -167,9 +188,9 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
 
-        <!-- Workout Session Activity — Explore mode multi-exercise sequencer -->
+        <!-- Workout Run Activity — Explore mode multi-exercise sequencer -->
         <activity
-            android:name=".ui.workouts.WorkoutSessionActivity"
+            android:name=".ui.workouts.WorkoutRunActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
@@ -181,7 +202,7 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
 
-        <!-- Quick Start Activity — Build a free session from the exercise library -->
+        <!-- Quick Start Activity — Build a free workout from the exercise library -->
         <activity
             android:name=".ui.workouts.QuickStartActivity"
             android:exported="false"
@@ -209,18 +230,14 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
 
-        <!-- Program Session Activity -->
+        <!-- Program Workout Activity (planned workouts for a program day) -->
         <activity
-            android:name=".ui.programs.ProgramSessionActivity"
+            android:name=".ui.programs.ProgramWorkoutActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
 
-        <activity
-            android:name=".ui.programs.ProgramSessionReportActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
+        <!-- (Removed: ProgramWorkoutReportActivity — replaced by WorkoutReportActivity) -->
 
         <!-- Weekly Report Activity -->
         <activity
@@ -236,14 +253,9 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
 
+        <!-- Unified Workout Report Activity (replaces ReportPagerActivity + ProgramWorkoutReportActivity) -->
         <activity
-            android:name=".ui.report.ReportPagerActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
-
-        <activity
-            android:name=".ui.report.SessionReportActivity"
+            android:name=".ui.report.WorkoutReportActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
@@ -259,7 +271,7 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
 
-        <!-- Assessment Session (workout flow) -->
+        <!-- Assessment Session (Body Scan — exception to workout naming) -->
         <activity
             android:name=".assessment.ui.AssessmentSessionActivity"
             android:exported="false"

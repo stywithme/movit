@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui.workouts
+﻿package com.trainingvalidator.poc.ui.workouts
 
 import android.content.Context
 import android.content.Intent
@@ -29,7 +29,7 @@ import java.util.Collections
  * - Edit sets, reps, rest duration per exercise
  * - Remove exercises from the session
  *
- * After customization, launches [WorkoutSessionActivity] with the modified config.
+ * After customization, launches [WorkoutRunActivity] with the modified config.
  */
 class WorkoutCustomizeActivity : AppCompatActivity() {
 
@@ -114,11 +114,11 @@ class WorkoutCustomizeActivity : AppCompatActivity() {
 
             val customizedConfig = originalConfig.copy(exercises = exercises.toList())
             startActivity(
-                WorkoutSessionActivity.createIntent(
+                WorkoutRunActivity.createIntent(
                     context = this,
                     workoutConfig = customizedConfig,
                     workoutId = null,
-                    sessionContext = "explore_workout"
+                    workoutContext = "explore_workout"
                 )
             )
         }

@@ -449,7 +449,7 @@ RepResult:
 
 **الملفات المتأثرة:**
 - `training/engine/RepCounter.kt`
-- `training/models/TrainingSession.kt` (RepResult)
+- `training/models/WorkoutExecution.kt` (RepResult)
 
 ---
 
@@ -906,7 +906,7 @@ enum ZoneType {
 | `PhaseStateMachine.kt` | ✅ إزالة difficulty, استخدام `StateRanges.getOuterMin/Max()` |
 | `RepCounter.kt` | ✅ Score-based counting, `worstState`, `isCounted`, `isInvalidated` |
 | `TrainingEngine.kt` | ✅ تكامل كامل، إزالة difficulty، تتبع `worstStateThisRep` |
-| `TrainingSession.kt` | ✅ `RepResult` جديد مع score/worstState، `SessionSummary` محدث |
+| `WorkoutExecution.kt` | ✅ `RepResult` جديد مع score/worstState، `WorkoutRunSummary` محدث |
 | `PositionValidator.kt` | ✅ إزالة difficulty |
 | `FeedbackEvent.kt` | ✅ `RepCompleted` مع score/worstState، `DangerDetected` جديد |
 
@@ -927,7 +927,7 @@ enum ZoneType {
 #### تحسينات ما بعد التنفيذ ✅
 | التحسين | الوصف |
 |---------|------|
-| **Duration Tracking** | ✅ إضافة `sessionStartTimeMs`, `totalPausedDurationMs` في `TrainingEngine` لحساب المدة الفعلية |
+| **Duration Tracking** | ✅ إضافة `workoutStartTimeMs`, `totalPausedDurationMs` في `TrainingEngine` لحساب المدة الفعلية |
 | **Proper Hysteresis** | ✅ تطبيق hysteresis بالدرجات (3°/2°/2°) في `FormValidator.applyHysteresis()` |
 | **Safety-First Transitions** | ✅ التدهور (getting worse) يُؤكَّد فوراً، التحسّن يحتاج margin |
 | **Hold Exercises Support** | ✅ إضافة دعم لحساب الـ Weighted Score للتمارين الثابتة (Perfect=1.0, Normal=0.6, Pad=0.2) |
@@ -957,7 +957,7 @@ enum ZoneType {
 - [x] Rep يُحتسب بناءً على `stateConfig.isRepCounted`
 - [x] Rep يُلغى إذا `stateConfig.invalidatesRep` (DANGER)
 - [x] Score يُحسب من `worstState` خلال الـ phases المهمة
-- [x] `SessionSummary` يعرض `countedReps/totalReps` + `averageScore`
+- [x] `WorkoutRunSummary` يعرض `countedReps/totalReps` + `averageScore`
 
 ### تحديث إضافي على الخطة
 - ✅ تمت إضافة دعم رسائل **Up/Down لكل State** في تمارين `up_down` و `push_pull`.

@@ -39,8 +39,8 @@ interface Level {
   defaultRepsMax: number;
   defaultIntensityGuide: string;
   defaultRestBetweenSetsMs: number;
-  defaultSessionDurMin: number;
-  defaultSessionDurMax: number;
+  defaultWorkoutDurMin: number;
+  defaultWorkoutDurMax: number;
   defaultWeeklyFreqMin: number;
   defaultWeeklyFreqMax: number;
   userCount?: number;
@@ -76,8 +76,8 @@ const EMPTY_FORM: Omit<Level, 'id' | 'userCount'> = {
   defaultRepsMax: 12,
   defaultIntensityGuide: 'bodyweight_only',
   defaultRestBetweenSetsMs: 60000,
-  defaultSessionDurMin: 20,
-  defaultSessionDurMax: 40,
+  defaultWorkoutDurMin: 20,
+  defaultWorkoutDurMax: 40,
   defaultWeeklyFreqMin: 2,
   defaultWeeklyFreqMax: 4,
 };
@@ -147,8 +147,8 @@ export default function LevelsManagementPage() {
       defaultRepsMax: level.defaultRepsMax,
       defaultIntensityGuide: level.defaultIntensityGuide,
       defaultRestBetweenSetsMs: level.defaultRestBetweenSetsMs,
-      defaultSessionDurMin: level.defaultSessionDurMin,
-      defaultSessionDurMax: level.defaultSessionDurMax,
+      defaultWorkoutDurMin: level.defaultWorkoutDurMin,
+      defaultWorkoutDurMax: level.defaultWorkoutDurMax,
       defaultWeeklyFreqMin: level.defaultWeeklyFreqMin,
       defaultWeeklyFreqMax: level.defaultWeeklyFreqMax,
     });
@@ -662,18 +662,18 @@ export default function LevelsManagementPage() {
                     />
                   </div>
 
-                  {/* Session duration range */}
+                  {/* Workout duration range */}
                   <div>
-                    <Label required>Session Duration (min – max minutes)</Label>
+                    <Label required>Workout Duration (min – max minutes)</Label>
                     <div className="flex items-center gap-2">
                       <Input
                         type="number"
                         min={1}
-                        value={form.defaultSessionDurMin}
+                        value={form.defaultWorkoutDurMin}
                         onChange={(e) =>
                           setForm({
                             ...form,
-                            defaultSessionDurMin: Number(e.target.value),
+                            defaultWorkoutDurMin: Number(e.target.value),
                           })
                         }
                       />
@@ -681,11 +681,11 @@ export default function LevelsManagementPage() {
                       <Input
                         type="number"
                         min={1}
-                        value={form.defaultSessionDurMax}
+                        value={form.defaultWorkoutDurMax}
                         onChange={(e) =>
                           setForm({
                             ...form,
-                            defaultSessionDurMax: Number(e.target.value),
+                            defaultWorkoutDurMax: Number(e.target.value),
                           })
                         }
                       />

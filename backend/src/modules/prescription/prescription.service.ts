@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Prescription Engine V1 — Rule-based program recommendation.
  *
  * Flow: Build user attribute set (profile + goal + assessment hints) → Filter programs → Return best match.
@@ -74,7 +74,7 @@ type ProgramForPrescription = {
   coverImageUrl: string | null;
   durationWeeks: number;
   prescriptionPriority: number;
-  weeklySessionTarget: number | null;
+  weeklyWorkoutTarget: number | null;
   programType: import('@prisma/client').ProgramType;
   autoAssignable: boolean;
   isPublished: boolean;
@@ -320,8 +320,8 @@ function rankAndPick(
   matches = [...matches].sort((a, b) => {
     const trainMatch =
       userTrainingDaysPerWeek != null
-        ? (b.weeklySessionTarget === userTrainingDaysPerWeek ? 1 : 0) -
-          (a.weeklySessionTarget === userTrainingDaysPerWeek ? 1 : 0)
+        ? (b.weeklyWorkoutTarget === userTrainingDaysPerWeek ? 1 : 0) -
+          (a.weeklyWorkoutTarget === userTrainingDaysPerWeek ? 1 : 0)
         : 0;
     if (trainMatch !== 0) return trainMatch;
     const scoreDiff =

@@ -26,14 +26,14 @@
 TrainingEngine / MotionRecorder
         │
         ▼
-MetricsCalculator  ──► RepMetrics / SessionMetrics (models)
+MetricsCalculator  ──► RepMetrics / WorkoutExecutionMetrics (models)
         │
         ▼
 PostTrainingReport / PerformanceSummary
         │
         ├──► PerformanceMetricsBuilder ──► UI cards (Form / Safety / Control)
         │
-        └──► Session upload ──► backend SessionMetrics + RepMetrics (Prisma)
+        └──► Execution upload ──► backend WorkoutExecutionMetrics + RepMetrics (Prisma)
 ```
 
 ---

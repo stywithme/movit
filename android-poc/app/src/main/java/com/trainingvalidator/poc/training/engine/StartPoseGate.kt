@@ -13,10 +13,10 @@ import com.trainingvalidator.poc.training.models.ZoneType
  *
  * 1) **Config `TrackedJoint.startPose` (min/max)**
  *    - Used by [isInStartPose] and [getStartPoseFeedback].
- *    - Aligns with **pre-session** setup / countdown: [com.trainingvalidator.poc.ui.training.PoseSetupGuide]
+ *    - Aligns with **pre-run** setup / countdown: [com.trainingvalidator.poc.ui.training.PoseSetupGuide]
  *      and rough validation on the way into training. Not what drives the phase machine once reps run.
  *
- * 2) **In-session "ready" / start of rep path** – [isInStartPosition]
+ * 2) **In-run "ready" / start of rep path** – [isInStartPosition]
  *    - For PRIMARY with up/down: user must be in **UP zone** and angle must be in the **counted** band
  *      of the up-range (see [isInCountedState]).
  *    - For PRIMARY with hold only: must be in **counted** state in the hold range.
@@ -116,7 +116,7 @@ class StartPoseGate(
 
     /**
      * Structured [JointError]s for **config [TrackedJoint.startPose] box** (see [isInStartPose]).
-     * Pre-session [com.trainingvalidator.poc.ui.training.PoseSetupGuide] may use a similar check; this API is
+     * Pre-run [com.trainingvalidator.poc.ui.training.PoseSetupGuide] may use a similar check; this API is
      * available if you want engine-driven messages without wiring yet.
      */
     @Suppress("unused")

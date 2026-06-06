@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.network
+﻿package com.trainingvalidator.poc.network
 
 import retrofit2.Response
 import retrofit2.http.Body
@@ -46,7 +46,7 @@ interface MobileSyncApi {
     /**
      * Per-workout audio manifest (union of referenced exercises + system messages).
      */
-    @GET("api/mobile/workouts/{slug}/audio-manifest")
+    @GET("api/mobile/workout-templates/{slug}/audio-manifest")
     suspend fun getWorkoutAudioManifest(
         @Path("slug") slug: String,
         @Header("Authorization") authorization: String?
@@ -152,7 +152,7 @@ interface MobileSyncApi {
     /**
      * Get user home stats (weekly workouts, form score, streak).
      */
-    @GET("api/mobile/sessions/stats")
+    @GET("api/mobile/workout-executions/stats")
     suspend fun getUserStats(
         @Header("Authorization") authorization: String
     ): Response<UserStatsResponse>
@@ -229,7 +229,7 @@ interface MobileSyncApi {
     ): Response<ProgressionHistoryResponse>
 
     /**
-     * Get recent unseen progression changes — used for post-session notifications.
+     * Get recent unseen progression changes — used for post-workout notifications.
      */
     @GET("api/mobile/progression/recent")
     suspend fun getRecentProgression(
@@ -257,17 +257,17 @@ interface MobileSyncApi {
     /**
      * Get workout training configuration (full exercise data for the training engine).
      */
-    @GET("api/mobile/workouts/{id}/training-config")
+    @GET("api/mobile/workout-templates/{id}/training-config")
     suspend fun getWorkoutTrainingConfig(
         @Header("Authorization") authorization: String,
         @Path("id") workoutId: String
     ): Response<okhttp3.ResponseBody>
 
     /**
-     * Upload a multi-exercise free session (Explore / Quick Start mode).
+     * Upload a multi-exercise free workout (Explore / Quick Start mode).
      */
-    @POST("api/mobile/sessions/explore")
-    suspend fun uploadExploreSession(
+    @POST("api/mobile/workout-executions/explore")
+    suspend fun uploadExploreWorkout(
         @Header("Authorization") authorization: String,
         @Body payload: Map<String, @JvmSuppressWildcards Any?>
     ): Response<okhttp3.ResponseBody>
@@ -306,7 +306,7 @@ interface MobileSyncApi {
 
     /**
      * Unified metrics endpoint — returns aggregated metrics at any scope.
-     * scope: program | week | day | session | exercise
+     * scope: program | week | day | plannedWorkout | exercise
      */
     @GET("api/mobile/reports/metrics")
     suspend fun getMetrics(
@@ -315,40 +315,40 @@ interface MobileSyncApi {
         @Query("scope") scope: String,
         @Query("weekNumber") weekNumber: Int? = null,
         @Query("dayNumber") dayNumber: Int? = null,
-        @Query("sessionId") sessionId: String? = null,
+        @Query("plannedWorkoutId") workoutId: String? = null,
         @Query("exerciseSlug") exerciseSlug: String? = null,
         @Query("includeHistory") includeHistory: Boolean? = null,
         @Query("includeChildren") includeChildren: Boolean? = null
     ): Response<MetricsResponse>
 
-    // ─── Program Session Endpoints ──────────────────────────────
+    // ─── Planned Workout Endpoints ──────────────────────────────
 
     /**
-     * Notify server that a program session has started.
+     * Notify server that a planned workout has started.
      */
-    @POST("api/mobile/sessions/{sessionId}/start")
-    suspend fun startSession(
-        @Path("sessionId") sessionId: String,
+    @POST("api/mobile/planned-workouts/{workoutId}/start")
+    suspend fun startPlannedWorkout(
+        @Path("workoutId") workoutId: String,
         @Header("Authorization") authorization: String,
         @Body payload: Map<String, @JvmSuppressWildcards Any>
     ): Response<ResponseBody>
 
     /**
-     * Notify server that a program session has been completed.
+     * Notify server that a planned workout has been completed.
      */
-    @POST("api/mobile/sessions/{sessionId}/complete")
-    suspend fun completeSession(
-        @Path("sessionId") sessionId: String,
+    @POST("api/mobile/planned-workouts/{workoutId}/complete")
+    suspend fun completePlannedWorkout(
+        @Path("workoutId") workoutId: String,
         @Header("Authorization") authorization: String,
         @Body payload: Map<String, @JvmSuppressWildcards Any>
     ): Response<ResponseBody>
 
     /**
-     * Submit a detailed session report.
+     * Submit a detailed planned-workout report.
      */
-    @POST("api/mobile/sessions/{sessionId}/report")
-    suspend fun reportSession(
-        @Path("sessionId") sessionId: String,
+    @POST("api/mobile/planned-workouts/{workoutId}/report")
+    suspend fun reportPlannedWorkout(
+        @Path("workoutId") workoutId: String,
         @Header("Authorization") authorization: String,
         @Body payload: Map<String, @JvmSuppressWildcards Any>
     ): Response<ResponseBody>
@@ -356,7 +356,7 @@ interface MobileSyncApi {
     // ─── User Program Customization Endpoints ─────────────────
 
     /**
-     * Update user program customizations (session modifications, reorders, etc.)
+     * Update user program customizations (planned-workout modifications, reorders, etc.)
      */
     @PUT("api/mobile/user-programs/{id}")
     suspend fun updateUserProgram(

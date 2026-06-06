@@ -105,11 +105,11 @@ export class AdminAnalyticsController {
     return { success: true, data };
   }
 
-  @Get('sessions/:id/report')
+  @Get('workout-executions/:id/report')
   @CheckPermission('read', 'ReportTraining')
-  async getSessionReport(@Param('id') id: string) {
-    const data = await this.reportsService.getSessionReport(id);
-    if (!data) throw new NotFoundException('Session not found');
+  async getWorkoutExecutionReport(@Param('id') id: string) {
+    const data = await this.reportsService.getWorkoutExecutionReport(id);
+    if (!data) throw new NotFoundException('Workout execution not found');
     return { success: true, data };
   }
 

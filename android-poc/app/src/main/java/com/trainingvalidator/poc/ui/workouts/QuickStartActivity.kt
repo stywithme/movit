@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui.workouts
+﻿package com.trainingvalidator.poc.ui.workouts
 
 import android.content.Intent
 import android.os.Bundle
@@ -28,13 +28,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * QuickStartActivity — Build a free session on-the-fly
+ * QuickStartActivity — Build a free workout on-the-fly
  *
  * Flow:
  *   ExploreFragment → QuickStartActivity
  *     1. Browse & multi-select exercises from the library
  *     2. Reorder selected exercises (optional — uses customize screen)
- *     3. START → WorkoutSessionActivity (quick_start context)
+ *     3. START → WorkoutRunActivity (quick_start context)
  *
  * All sessions created here are saved with context = "quick_start"
  * and grouped under a shared groupId.
@@ -105,11 +105,11 @@ class QuickStartActivity : AppCompatActivity() {
 
             val workoutConfig = buildWorkoutConfig()
             startActivity(
-                WorkoutSessionActivity.createIntent(
+                WorkoutRunActivity.createIntent(
                     context = this,
                     workoutConfig = workoutConfig,
                     workoutId = null,
-                    sessionContext = "quick_start"
+                    workoutContext = "quick_start"
                 )
             )
         }
@@ -186,7 +186,7 @@ class QuickStartActivity : AppCompatActivity() {
         }
 
         return WorkoutConfig(
-            name = LocalizedText(ar = "جلسة سريعة", en = "Quick Session"),
+            name = LocalizedText(ar = "تمرين سريع", en = "Quick Workout"),
             description = null,
             difficulty = "beginner",
             exercises = exercises

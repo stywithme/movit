@@ -14,11 +14,11 @@
 
 - `PreScreeningActivity`: وصف الملف يشير إلى استبيان PAR-Q+ — مسار واجهة قبل التقييم من `HomeFragment`, `PlanOverviewActivity`, `TrainFragment`, إلخ.
 
-## القالب والجلسة
+## القالب والتقييم (Assessment)
 
 - `AssessmentTemplateManager` (`assessment/engine/AssessmentTemplateManager.kt`): `resolve` يستدعي `GET api/mobile/assessment-templates/resolve` **بدون** `mode` → الخادم يستخدم `initial`.
 - قائمة تمارير افتراضية ثابتة في الكلاس عند فشل الشبكة (`DEFAULT_CORE_EXERCISES`).
-- `AssessmentSessionActivity` — تنفيذ الجلسة؛ `AssessmentResultActivity` — النتائج والتسجيل في برنامج عند العرض.
+- `AssessmentSessionActivity` — تنفيذ جلسة التقييم (assessment session)؛ `AssessmentResultActivity` — النتائج والتسجيل في برنامج عند العرض.
 
 ## رفع التقييم
 

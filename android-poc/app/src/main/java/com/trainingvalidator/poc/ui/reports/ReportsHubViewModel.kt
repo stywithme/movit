@@ -116,7 +116,7 @@ class ReportsHubViewModel(app: Application) : AndroidViewModel(app) {
                         averageFormScore = exercise.averageFormScore,
                         averageCompletionRate = 0f,
                         totalVolume = exercise.totalVolume,
-                        sessionsCount = exercise.sessionsCount,
+                        workoutsCount = exercise.workoutsCount,
                         setsCompleted = 0,
                         setsPlanned = 0,
                         totalReps = exercise.totalReps,

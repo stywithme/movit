@@ -141,7 +141,7 @@ class FeedbackSchedulerTest {
             signal(
                 key = "target",
                 severity = FeedbackSeverity.MOTIVATION,
-                activeKey = "session_complete",
+                activeKey = "target_reached",
                 forceAudible = true,
                 interruptPolicy = FeedbackInterruptPolicy.REPLACE_LOWER
             ),

@@ -14,10 +14,10 @@ data class ExploreResponse(
 data class ExploreData(
     val levels: List<ExploreLevelItem> = emptyList(),
     val programs: List<ExploreProgramItem> = emptyList(),
-    val workouts: List<ExploreWorkoutItem> = emptyList(),
+    val workoutTemplates: List<ExploreWorkoutItem> = emptyList(),
     val exercises: List<ExploreExerciseItem> = emptyList(),
     val deletedProgramIds: List<String> = emptyList(),
-    val deletedWorkoutIds: List<String> = emptyList(),
+    val deletedWorkoutTemplateIds: List<String> = emptyList(),
     val deletedExerciseIds: List<String> = emptyList()
 )
 
@@ -26,7 +26,7 @@ data class ExploreMeta(
     val serverVersion: String,
     val levelsInResponse: Int,
     val programsInResponse: Int,
-    val workoutsInResponse: Int,
+    val workoutTemplatesInResponse: Int,
     val exercisesInResponse: Int
 )
 

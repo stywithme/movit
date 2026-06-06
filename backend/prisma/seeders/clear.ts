@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+﻿import type { PrismaClient } from '@prisma/client';
 
 export type ClearDatabaseOptions = {
   /**
@@ -44,20 +44,20 @@ export async function clearDatabase(prisma: PrismaClient, options: ClearDatabase
     { name: 'user_level_profiles', action: () => prisma.userLevelProfile.deleteMany() },
     { name: 'body_scan_results', action: () => prisma.bodyScanResult.deleteMany() },
     { name: 'levels', action: () => prisma.level.deleteMany() },
-    { name: 'program_session_reports', action: () => prisma.programSessionReport.deleteMany() },
+    { name: 'planned_workout_reports', action: () => prisma.plannedWorkoutReport.deleteMany() },
     { name: 'user_program_progress', action: () => prisma.userProgramProgress.deleteMany() },
     { name: 'user_programs', action: () => prisma.userProgram.deleteMany() },
-    { name: 'program_session_items', action: () => prisma.programSessionItem.deleteMany() },
-    { name: 'program_sessions', action: () => prisma.programSession.deleteMany() },
+    { name: 'planned_workout_items', action: () => prisma.plannedWorkoutItem.deleteMany() },
+    { name: 'planned_workouts', action: () => prisma.plannedWorkout.deleteMany() },
     { name: 'program_days', action: () => prisma.programDay.deleteMany() },
     { name: 'program_weeks', action: () => prisma.programWeek.deleteMany() },
     { name: 'programs', action: () => prisma.program.deleteMany() },
     { name: 'rep_metrics', action: () => prisma.repMetrics.deleteMany() },
-    { name: 'session_metrics', action: () => prisma.sessionMetrics.deleteMany() },
-    { name: 'training_sessions', action: () => prisma.trainingSession.deleteMany() },
+    { name: 'workout_execution_metrics', action: () => prisma.workoutExecutionMetrics.deleteMany() },
+    { name: 'workout_executions', action: () => prisma.workoutExecution.deleteMany() },
     { name: 'refresh_tokens', action: () => prisma.refreshToken.deleteMany() },
-    { name: 'workout_exercises', action: () => prisma.workoutExercise.deleteMany() },
-    { name: 'workouts', action: () => prisma.workout.deleteMany() },
+    { name: 'workout_template_exercises', action: () => prisma.workoutTemplateExercise.deleteMany() },
+    { name: 'workout_templates', action: () => prisma.workoutTemplate.deleteMany() },
     { name: 'feedback_message_assignments', action: () => prisma.feedbackMessageAssignment.deleteMany() },
     ...(preserveMessageTemplates
       ? []

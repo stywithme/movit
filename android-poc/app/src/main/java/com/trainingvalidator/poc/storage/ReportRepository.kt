@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.storage
+﻿package com.trainingvalidator.poc.storage
 
 import android.content.Context
 import android.util.Log
@@ -72,7 +72,7 @@ class ReportRepository private constructor(private val context: Context) {
     }
 
     /**
-     * Fetch day-level metrics (with session breakdown).
+     * Fetch day-level metrics (with planned-workout breakdown).
      */
     suspend fun getDayMetrics(
         programId: String, weekNumber: Int, dayNumber: Int,
@@ -89,19 +89,21 @@ class ReportRepository private constructor(private val context: Context) {
     }
 
     /**
-     * Fetch session-level metrics (with exercise breakdown).
+     * Fetch planned-workout-level metrics (with exercise breakdown).
      */
-    suspend fun getSessionMetrics(
-        programId: String, sessionId: String,
-        includeChildren: Boolean = true, includeHistory: Boolean = false
+    suspend fun getWorkoutBlockMetrics(
+        programId: String,
+        plannedWorkoutId: String,
+        includeChildren: Boolean = true,
+        includeHistory: Boolean = false
     ): MetricsResponse? {
         return fetchMetrics(
             programId = programId,
-            scope = "session",
-            sessionId = sessionId,
+            scope = "plannedWorkout",
+            plannedWorkoutId = plannedWorkoutId,
             includeChildren = includeChildren,
             includeHistory = includeHistory,
-            cacheKey = "session_${programId}_$sessionId"
+            cacheKey = "planned_workout_${programId}_$plannedWorkoutId"
         )
     }
 
@@ -193,7 +195,7 @@ class ReportRepository private constructor(private val context: Context) {
         scope: String,
         weekNumber: Int? = null,
         dayNumber: Int? = null,
-        sessionId: String? = null,
+        plannedWorkoutId: String? = null,
         exerciseSlug: String? = null,
         includeChildren: Boolean = false,
         includeHistory: Boolean = false,
@@ -217,7 +219,7 @@ class ReportRepository private constructor(private val context: Context) {
                 scope = scope,
                 weekNumber = weekNumber,
                 dayNumber = dayNumber,
-                sessionId = sessionId,
+                workoutId = plannedWorkoutId,
                 exerciseSlug = exerciseSlug,
                 includeHistory = includeHistory,
                 includeChildren = includeChildren

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Auth Types
  * ===========
  * 
@@ -81,7 +81,7 @@ export interface UserPublic {
   notifications: boolean;
   isPro: boolean;
   subscriptionExpiry: Date | null;
-  totalWorkouts: number;
+  totalWorkoutExecutions: number;
   totalMinutes: number;
   emailVerified: boolean;
   createdAt: Date;

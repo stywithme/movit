@@ -4,9 +4,9 @@ import com.trainingvalidator.poc.training.engine.PositionError
 import com.trainingvalidator.poc.training.engine.ScoreCalculator
 import com.trainingvalidator.poc.training.report.PerformanceRating
 
-// NOTE: TrainingSession class has been REMOVED as it duplicated RepCounter logic.
-// Session state is managed by TrainingEngine and RepCounter.
-// SessionSummary is used for the final report.
+// NOTE: Legacy TrainingSession class has been REMOVED as it duplicated RepCounter logic.
+// Exercise-run state is managed by TrainingEngine and RepCounter.
+// ExerciseWorkoutSummary is used for the final report.
 
 enum class RepQuality {
     CLEAN,
@@ -120,14 +120,14 @@ enum class ErrorType {
 }
 
 /**
- * SessionSummary - Final summary of training session
- * 
+ * ExerciseWorkoutSummary - Final summary of one exercise run inside a workout
+ *
  * STATE-BASED METRICS:
  * - averageScore: Average score of all completed reps (0-100)
  * - countedRatio: Ratio of counted reps to total reps
  * - stateBreakdown: Count of reps per worst state
  */
-data class SessionSummary(
+data class ExerciseWorkoutSummary(
     val exerciseName: String,
     val totalReps: Int,
     val countedReps: Int,

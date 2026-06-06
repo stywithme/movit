@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.training.engine
+﻿package com.trainingvalidator.poc.training.engine
 
 import android.util.Log
 import com.trainingvalidator.poc.training.engine.policy.TimingPolicy
@@ -32,7 +32,7 @@ class PauseController(
 
     private var visibilityResumeStartMs: Long = 0L
 
-    fun resetSession() {
+    fun resetExecution() {
         _isCountingSuspended.value = false
         _isVisibilityPaused.value = false
         visibilityResumeStartMs = 0L
@@ -40,7 +40,7 @@ class PauseController(
     }
 
     /**
-     * User or SessionSupervisor resume: clear engine-side visibility-pause flags and sync
+     * User or WorkoutRunSupervisor resume: clear engine-side visibility-pause flags and sync
      * [VisibilityMonitor] so a stale RESUMING/Paused monitor state does not fight with UI.
      *
      * @return true if visibility-pause state was active and was cleared (caller may sync UI flows).

@@ -1,4 +1,4 @@
-# Session Supervisor - Unified State Machine Plan
+# Workout Run Supervisor - Unified State Machine Plan
 
 ## Overview
 
@@ -12,9 +12,9 @@ This creates **inconsistencies**:
 - Resume after visibility loss incorrectly calls `startTraining()` instead of `resumeFromVisibilityPause()`
 - `onNoPoseDetected()` during TRAINING has no auto-pause path
 
-### Solution: Unified Session Supervisor
-A single **`SessionSupervisor`** component that:
-- Owns the **Single Source of Truth** for session state
+### Solution: Unified Workout Run Supervisor
+A single **`WorkoutRunSupervisor`** component that:
+- Owns the **Single Source of Truth** for planned workout state
 - Receives signals from UI, Pose Detection, and Engine
 - Issues commands to Engine and UI
 - Works for both **Camera** and **Video** modes
@@ -215,11 +215,13 @@ enum class PauseReason { MANUAL, VISIBILITY, NO_POSE }
 
 ### File Structure
 
+> **ملاحظة:** اسم مجلد `session/` في Android تاريخي لمكوّنات workout-run (Rep/Hold coordinators). المشرف الموحّد هو `WorkoutRunSupervisor` — لا يُخلط مع `PlannedWorkout` أو assessment session.
+
 ```
 training/
-├── session/
-│   ├── SessionSupervisor.kt      # State machine
-│   ├── SessionState.kt           # State enum  
+├── session/   <!-- legacy package segment: workout-run coordinators only -->
+│   ├── WorkoutRunSupervisor.kt      # State machine
+│   ├── WorkoutRunState.kt           # State enum  
 │   ├── SupervisorSignal.kt       # Input signals
 │   └── SupervisorAction.kt       # Output actions
 └── engine/
@@ -227,13 +229,13 @@ training/
     └── ...
 ```
 
-### SessionSupervisor.kt
+### WorkoutRunSupervisor.kt
 
 ```kotlin
-class SessionSupervisor {
+class WorkoutRunSupervisor {
     
-    private val _state = MutableStateFlow(SessionState.IDLE)
-    val state: StateFlow<SessionState> = _state.asStateFlow()
+    private val _state = MutableStateFlow(WorkoutRunState.IDLE)
+    val state: StateFlow<WorkoutRunState> = _state.asStateFlow()
     
     private val _actions = MutableSharedFlow<SupervisorAction>(extraBufferCapacity = 16)
     val actions: SharedFlow<SupervisorAction> = _actions
@@ -251,15 +253,15 @@ class SessionSupervisor {
     
     fun processSignal(signal: SupervisorSignal) {
         when (_state.value) {
-            SessionState.IDLE -> handleIdle(signal)
-            SessionState.SETUP_POSE -> handleSetupPose(signal)
-            SessionState.COUNTDOWN -> handleCountdown(signal)
-            SessionState.TRAINING -> handleTraining(signal)
-            SessionState.PAUSED -> handlePaused(signal)
-            SessionState.AUTO_PAUSED -> handleAutoPaused(signal)
-            SessionState.RESUME_SETUP -> handleResumeSetup(signal)
-            SessionState.RESUME_COUNTDOWN -> handleResumeCountdown(signal)
-            SessionState.COMPLETED -> handleCompleted(signal)
+            WorkoutRunState.IDLE -> handleIdle(signal)
+            WorkoutRunState.SETUP_POSE -> handleSetupPose(signal)
+            WorkoutRunState.COUNTDOWN -> handleCountdown(signal)
+            WorkoutRunState.TRAINING -> handleTraining(signal)
+            WorkoutRunState.PAUSED -> handlePaused(signal)
+            WorkoutRunState.AUTO_PAUSED -> handleAutoPaused(signal)
+            WorkoutRunState.RESUME_SETUP -> handleResumeSetup(signal)
+            WorkoutRunState.RESUME_COUNTDOWN -> handleResumeCountdown(signal)
+            WorkoutRunState.COMPLETED -> handleCompleted(signal)
         }
     }
     
@@ -276,27 +278,27 @@ class SessionSupervisor {
             
             is SupervisorSignal.VisibilityPaused -> {
                 pauseReason = PauseReason.VISIBILITY
-                transitionTo(SessionState.AUTO_PAUSED)
+                transitionTo(WorkoutRunState.AUTO_PAUSED)
                 emit(SupervisorAction.PauseEngine)
                 emit(SupervisorAction.ShowAutoPaused(PauseReason.VISIBILITY))
             }
             
             is SupervisorSignal.PauseRequested -> {
                 pauseReason = PauseReason.MANUAL
-                transitionTo(SessionState.PAUSED)
+                transitionTo(WorkoutRunState.PAUSED)
                 emit(SupervisorAction.PauseEngine)
                 if (isVideoMode) emit(SupervisorAction.PauseVideo)
             }
             
             is SupervisorSignal.TargetReached,
             is SupervisorSignal.VideoEnded -> {
-                transitionTo(SessionState.COMPLETED)
+                transitionTo(WorkoutRunState.COMPLETED)
                 emit(SupervisorAction.StopEngine)
                 emit(SupervisorAction.ShowCompleted)
             }
             
             is SupervisorSignal.StopRequested -> {
-                transitionTo(SessionState.COMPLETED)
+                transitionTo(WorkoutRunState.COMPLETED)
                 if (isVideoMode) emit(SupervisorAction.PauseVideo)
                 emit(SupervisorAction.StopEngine)
                 emit(SupervisorAction.ShowCompleted)
@@ -319,7 +321,7 @@ class SessionSupervisor {
         when {
             duration >= noPosePauseMs -> {
                 pauseReason = PauseReason.NO_POSE
-                transitionTo(SessionState.AUTO_PAUSED)
+                transitionTo(WorkoutRunState.AUTO_PAUSED)
                 emit(SupervisorAction.PauseEngine)
                 emit(SupervisorAction.ShowAutoPaused(PauseReason.NO_POSE))
                 if (isVideoMode) emit(SupervisorAction.PauseVideo)
@@ -335,7 +337,7 @@ class SessionSupervisor {
     private fun handleResumeCountdown(signal: SupervisorSignal) {
         when (signal) {
             is SupervisorSignal.CountdownFinished -> {
-                transitionTo(SessionState.TRAINING)
+                transitionTo(WorkoutRunState.TRAINING)
                 emit(SupervisorAction.ResumeFromVisibilityPause)  // KEY: preserves rep count
             }
             
@@ -345,7 +347,7 @@ class SessionSupervisor {
             }
             
             is SupervisorSignal.NoPoseFrame -> {
-                transitionTo(SessionState.AUTO_PAUSED)
+                transitionTo(WorkoutRunState.AUTO_PAUSED)
                 emit(SupervisorAction.CancelCountdown)
             }
             
@@ -362,7 +364,7 @@ class SessionSupervisor {
 ```kotlin
 class TrainingViewModel(private val assets: AssetManager) : ViewModel() {
     
-    val supervisor = SessionSupervisor()
+    val supervisor = WorkoutRunSupervisor()
     val poseValidator = PoseValidator()
     
     init {
@@ -479,8 +481,8 @@ viewModel.countdownController.setListener(object : CountdownController.Countdown
 
 ## Migration Steps
 
-### Step 1: Create Session Package
-- Create `training/session/` with `SessionSupervisor`, `SessionState`, `SupervisorSignal`, `SupervisorAction`
+### Step 1: Create Planned Workout Package
+- Create `training/session/` with `WorkoutRunSupervisor`, `WorkoutRunState`, `SupervisorSignal`, `SupervisorAction`
 - Pure logic, no dependencies on UI
 
 ### Step 2: Add Supervisor to ViewModel
@@ -537,7 +539,7 @@ viewModel.countdownController.setListener(object : CountdownController.Countdown
 ## Future Enhancements (Phase 2)
 
 1. **Mismatch Detection**: Detect wrong exercise based on phase progression stagnation
-2. **Quality Metrics in Supervisor**: Track session quality independent of Engine
+2. **Quality Metrics in Supervisor**: Track planned workout quality independent of Engine
 3. **Configurable Timings**: Make grace/warn/pause times configurable per exercise
 
 ---
@@ -546,7 +548,7 @@ viewModel.countdownController.setListener(object : CountdownController.Countdown
 
 This plan:
 1. **Fixes core issues**: Resume after visibility preserves rep count, NoPose during TRAINING triggers auto-pause
-2. **Single Source of Truth**: Supervisor owns session state
+2. **Single Source of Truth**: Supervisor owns planned workout state
 3. **Reuses existing code**: VisibilityMonitor, PoseValidator, FeedbackManager unchanged
 4. **Simple implementation**: No complex threading, no over-abstraction
 5. **Clean separation**: Supervisor decides → ViewModel executes → UI displays

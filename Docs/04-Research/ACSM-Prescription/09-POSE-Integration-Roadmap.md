@@ -10,11 +10,11 @@
 
 **الدليل:** القوة تتحسن أكثر عند ≥80% 1RM (استجابة جرعية واضحة — Table 4, 6 reviews, QoE 79%).
 
-**الوضع الحالي:** `est1RM` يُحسب في `MetricsCalculator`، و`intensityPercentage` معرّف في `SessionMetrics` (Prisma + Kotlin) لكنه **غير مملوء** (مُعلَّم Future/Later).
+**الوضع الحالي:** `est1RM` يُحسب في `MetricsCalculator`، و`intensityPercentage` معرّف في `WorkoutExecutionMetrics` (Prisma + Kotlin) لكنه **غير مملوء** (مُعلَّم Future/Later).
 
 **المطلوب:**
 
-- **Backend** — `training-sessions.service.ts`: عند حفظ `SessionMetrics`، حساب `intensityPercentage = (weightKg / est1RM) * 100` عندما يكون `est1RM > 0`.
+- **Backend** — `workout-executions.service.ts`: عند حفظ `WorkoutExecutionMetrics`، حساب `intensityPercentage = (weightKg / est1RM) * 100` عندما يكون `est1RM > 0`.
 - **Android** — `MetricsCalculator`: نفس الحساب محلياً لعرض فوري في `PostTrainingReport`.
 - **UI** — مؤشر في تقرير ما بعد التدريب: "شدة الحمل 85% من 1RM — مناسب لهدف القوة".
 
@@ -43,7 +43,7 @@
 **المطلوب:**
 
 - **Android** — `PostTrainingReport` / `EnhancedPerformanceMetrics`: حساب نسبة `eccentricMs / concentricMs`؛ عندما تكون >1.5 بشكل متكرر → عرض بطاقة "تدريب مع تركيز لاإرادي — مفيد للتضخم العضلي".
-- لاحقاً: يمكن لمصمم البرنامج أن يضبط `trainingIntent: eccentric` على `ProgramSessionItem` لتفعيل التغذية الراجعة المناسبة.
+- لاحقاً: يمكن لمصمم البرنامج أن يضبط `trainingIntent: eccentric` على `PlannedWorkoutItem` لتفعيل التغذية الراجعة المناسبة.
 
 ---
 
@@ -83,8 +83,8 @@
 
 **المطلوب:**
 
-- **Prisma** — إضافة `perceivedExertion Int?` (0–10) و/أو `repsInReserve Int?` (0–5) على `SessionMetrics` أو `RepMetrics`.
-- **Android** — `SessionUpload` + UI: بعد إنهاء كل مجموعة → bottom sheet سريع "كم تكرار كنت تقدر تكمل؟" (اختياري).
+- **Prisma** — إضافة `perceivedExertion Int?` (0–10) و/أو `repsInReserve Int?` (0–5) على `WorkoutExecutionMetrics` أو `RepMetrics`.
+- **Android** — `WorkoutExecutionUpload` + UI: بعد إنهاء كل مجموعة → bottom sheet سريع "كم تكرار كنت تقدر تكمل؟" (اختياري).
 - **Progression engine** — يُستخدم كإدخال ثانوي لقرار الترقية/التراجع: إذا `repsInReserve ≤ 1` لعدة جلسات → لا ترقية (الجهد أقصى فعلاً).
 
 ---
@@ -93,7 +93,7 @@
 
 **الدليل:** التضخم يحتاج ≥10 مجموعات/أسبوع/مجموعة عضلية (5 reviews, QoE 50%؛ dose-response حتى ~18–20 مجموعة).
 
-**الوضع الحالي:** كل `TrainingSession` فيها `sets`، وكل `Exercise` فيه `muscles` (Json). لكن لا يوجد تجميع أسبوعي per muscle.
+**الوضع الحالي:** كل `WorkoutExecution` فيها `sets`، وكل `Exercise` فيه `muscles` (Json). لكن لا يوجد تجميع أسبوعي per muscle.
 
 **المطلوب:**
 
@@ -102,11 +102,11 @@
 ```typescript
 // Pseudocode
 weeklyVolume = groupBy(
-  sessions.where(timestamp IN thisWeek),
+  planned workouts.where(timestamp IN thisWeek),
   exercise.muscles
 ).map(group => ({
   muscle: group.key,
-  totalSets: sum(group.sessions.sets),
+  totalSets: sum(group.planned workouts.sets),
   target: 10, // from ACSM
   status: totalSets >= 10 ? 'optimal' : 'below'
 }))
@@ -148,12 +148,12 @@ enum TrainingGoal {
 
 **الدليل:** التمارين في **بداية الجلسة** تُنتج قوة أعلى (4 reviews, QoE 88% — من أعلى درجات الجودة في الورقة).
 
-**الوضع الحالي:** `ProgramSessionItem.sortOrder` يتحكم في الترتيب، لكن لا توجد توصية أو فرز تلقائي.
+**الوضع الحالي:** `PlannedWorkoutItem.sortOrder` يتحكم في الترتيب، لكن لا توجد توصية أو فرز تلقائي.
 
 **المطلوب:**
 
-- **Backend** — عند بناء `ProgramSession`: فرز تلقائي يضع تمارين `ExerciseArchetype: weighted_strength` أو التمارين ذات الحمل الأعلى **أولاً** (قابل للتجاوز يدوياً).
-- **Android** — في `SessionTrainingEngine` عند عرض تمارين الجلسة: ملاحظة صغيرة "مُرتب لأفضل نتيجة قوة" أو تنبيه إذا عكس المستخدم الترتيب.
+- **Backend** — عند بناء `PlannedWorkout`: فرز تلقائي يضع تمارين `ExerciseArchetype: weighted_strength` أو التمارين ذات الحمل الأعلى **أولاً** (قابل للتجاوز يدوياً).
+- **Android** — في `WorkoutTrainingEngine` عند عرض تمارين الجلسة: ملاحظة صغيرة "مُرتب لأفضل نتيجة قوة" أو تنبيه إذا عكس المستخدم الترتيب.
 
 ---
 
@@ -165,7 +165,7 @@ enum TrainingGoal {
 
 **المطلوب:**
 
-- **Prisma** — حقل `trainingIntent` على `ProgramSessionItem`:
+- **Prisma** — حقل `trainingIntent` على `PlannedWorkoutItem`:
 
 ```
 enum TrainingIntent {

@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui.training
+﻿package com.trainingvalidator.poc.ui.training
 
 import android.content.Context
 import android.content.res.AssetManager
@@ -12,8 +12,8 @@ import com.trainingvalidator.poc.analysis.JointAngles
 import com.trainingvalidator.poc.analysis.SmoothedLandmark
 import com.trainingvalidator.poc.training.TrainingEngine
 import com.trainingvalidator.poc.training.analytics.MotionRecorder
-import com.trainingvalidator.poc.training.analytics.SessionUpload
-import com.trainingvalidator.poc.training.models.SessionSummary
+import com.trainingvalidator.poc.training.analytics.WorkoutUpload
+import com.trainingvalidator.poc.training.models.ExerciseWorkoutSummary
 import com.trainingvalidator.poc.training.engine.HoldStatus
 import com.trainingvalidator.poc.training.engine.Phase
 import com.trainingvalidator.poc.training.config.SettingsManager
@@ -26,11 +26,11 @@ import com.trainingvalidator.poc.training.feedback.FeedbackManager
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.training.models.JointRole
 import com.trainingvalidator.poc.storage.ExerciseRepository
-import com.trainingvalidator.poc.training.session.PauseReason
-import com.trainingvalidator.poc.training.session.SessionState
-import com.trainingvalidator.poc.training.session.SessionSupervisor
-import com.trainingvalidator.poc.training.session.SupervisorAction
-import com.trainingvalidator.poc.training.session.SupervisorSignal
+import com.trainingvalidator.poc.training.workout.PauseReason
+import com.trainingvalidator.poc.training.workout.WorkoutRunState
+import com.trainingvalidator.poc.training.workout.WorkoutRunSupervisor
+import com.trainingvalidator.poc.training.workout.SupervisorAction
+import com.trainingvalidator.poc.training.workout.SupervisorSignal
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -47,7 +47,7 @@ import kotlin.math.ceil
  * TrainingViewModel - Central state management for training
  * 
  * Manages:
- * - Session state via SessionSupervisor (Single Source of Truth)
+ * - Workout state via WorkoutRunSupervisor (Single Source of Truth)
  * - Exercise/Workout loading
  * - Training engine coordination
  * - UI state updates
@@ -60,9 +60,9 @@ class TrainingViewModel(
         private const val TAG = "TrainingViewModel"
     }
     
-    // ==================== Session Supervisor (Single Source of Truth) ====================
+    // ==================== Workout Supervisor (Single Source of Truth) ====================
     
-    val supervisor = SessionSupervisor()
+    val supervisor = WorkoutRunSupervisor()
     
     /** New rolling-window guided pose validation for SETUP_POSE. */
     val poseSetupGuide = PoseSetupGuide(
@@ -132,7 +132,7 @@ class TrainingViewModel(
     
     // ==================== Internal State ====================
     
-    private var sessionStartTime: Long = 0L
+    private var workoutStartTime: Long = 0L
     
     // Flag to prevent concurrent frame processing on background thread
     // This ensures frames are processed one at a time, dropping excess frames
@@ -383,14 +383,14 @@ class TrainingViewModel(
     // ==================== Action Execution ====================
     
     /**
-     * Execute actions from SessionSupervisor
+     * Execute actions from WorkoutRunSupervisor
      */
     private fun executeAction(action: SupervisorAction) {
         when (action) {
             // Engine Commands
             is SupervisorAction.StartEngine -> {
                 releaseSetupTiltCorrection()
-                sessionStartTime = System.currentTimeMillis()
+                workoutStartTime = System.currentTimeMillis()
                 feedbackManager?.resetMessageStates()
                 isEngineProcessingFrame = false  // Reset frame processing flag
                 
@@ -450,7 +450,7 @@ class TrainingViewModel(
                 val state = supervisor.state.value
 
                 when (state) {
-                    SessionState.SETUP_POSE, SessionState.RESUME_SETUP -> {
+                    WorkoutRunState.SETUP_POSE, WorkoutRunState.RESUME_SETUP -> {
                         val setupResult = poseSetupGuide.validate(
                             angles = action.angles,
                             landmarks = action.landmarks,
@@ -468,7 +468,7 @@ class TrainingViewModel(
                         }
                     }
 
-                    SessionState.COUNTDOWN, SessionState.RESUME_COUNTDOWN -> {
+                    WorkoutRunState.COUNTDOWN, WorkoutRunState.RESUME_COUNTDOWN -> {
                         // During countdown we re-check scene (region/posture/direction)
                         // and start pose to prevent starting from a drifted camera position.
                         val setupResult = poseSetupGuide.validate(
@@ -583,7 +583,7 @@ class TrainingViewModel(
     }
     
     @Deprecated("Use requestStop() instead")
-    fun stopTraining(): SessionSummary? {
+    fun stopTraining(): ExerciseWorkoutSummary? {
         requestStop()
         return trainingEngine?.stop()
     }
@@ -707,7 +707,7 @@ class TrainingViewModel(
             // Observe completion
             launch {
                 engine.isCompleted.collect { completed ->
-                    if (completed && supervisor.state.value == SessionState.TRAINING) {
+                    if (completed && supervisor.state.value == WorkoutRunState.TRAINING) {
                         supervisor.processSignal(SupervisorSignal.TargetReached)
                     }
                 }
@@ -827,7 +827,7 @@ class TrainingViewModel(
     /**
      * Get session duration
      */
-    fun getSessionDurationMs(): Long = System.currentTimeMillis() - sessionStartTime
+    fun getWorkoutDurationMs(): Long = System.currentTimeMillis() - workoutStartTime
     
     // ==================== Analytics ====================
     
@@ -835,16 +835,16 @@ class TrainingViewModel(
      * Finalize motion recording and get session upload data
      * Call this after training completes to get metrics for sync
      * 
-     * @param sessionId Optional custom session ID (generated if null)
-     * @return SessionUpload ready for backend sync, or null if no recording
+     * @param workoutId Optional workout execution ID (generated if null)
+     * @return WorkoutUpload ready for backend sync, or null if no recording
      */
-    fun finalizeAndGetSessionUpload(sessionId: String? = null): SessionUpload? {
+    fun finalizeAndGetWorkoutUpload(workoutId: String? = null): WorkoutUpload? {
         return try {
-            val upload = motionRecorder?.finalize(sessionId)
-            Log.d(TAG, "Session finalized: ${upload?.totalReps} reps, ${upload?.sessionMetrics?.avgFormScore?.div(10f)}% avg score")
+            val upload = motionRecorder?.finalize(workoutId)
+            Log.d(TAG, "Workout finalized: ${upload?.totalReps} reps, ${upload?.executionMetrics?.avgFormScore?.div(10f)}% avg score")
             upload
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to finalize session: ${e.message}", e)
+            Log.e(TAG, "Failed to finalize workout execution: ${e.message}", e)
             null
         }
     }
@@ -867,7 +867,7 @@ class TrainingViewModel(
     /**
      * Update weight for this session and refresh MotionRecorder defaults.
      */
-    fun updateSessionWeight(weightKg: Float?, unit: String = "kg") {
+    fun updateWorkoutWeight(weightKg: Float?, unit: String = "kg") {
         _weightKg = weightKg
         _weightUnit = unit
 
@@ -989,7 +989,7 @@ sealed class TrainingUIEvent {
     object ExerciseCompleted : TrainingUIEvent()
     
     /** Training completed (with summary) */
-    data class TrainingCompleted(val summary: SessionSummary?) : TrainingUIEvent()
+    data class TrainingCompleted(val summary: ExerciseWorkoutSummary?) : TrainingUIEvent()
     
     /** Auto-paused (visibility or no pose) */
     data class AutoPaused(val reason: PauseReason) : TrainingUIEvent()

@@ -55,7 +55,7 @@ class ReportsExercisesFragment : Fragment() {
                 ExerciseAggregate(
                     slug = it.exerciseSlug,
                     name = it.exerciseName,
-                    timesTrainedCount = it.sessionsCount ?: 0,
+                    timesTrainedCount = it.workoutsCount ?: 0,
                     averageScore = it.averageFormScore
                 )
             }
@@ -67,9 +67,9 @@ class ReportsExercisesFragment : Fragment() {
             for (week in weeks) {
                 val days = week.days ?: continue
                 for (day in days) {
-                    val sessions = day.sessions ?: continue
-                    for (session in sessions) {
-                        val exercises = session.exercises ?: continue
+                    val workouts = day.plannedWorkouts ?: continue
+                    for (workout in workouts) {
+                        val exercises = workout.exercises ?: continue
                         for (ex in exercises) {
                             val existing = exerciseMap.getOrPut(ex.exerciseSlug) {
                                 MutableAggregate(ex.exerciseSlug, ex.exerciseName)

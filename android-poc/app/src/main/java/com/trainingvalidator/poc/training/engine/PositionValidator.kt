@@ -663,7 +663,7 @@ class PositionValidator(
     
     
     /**
-     * Clear cooldowns and reset scene detector (call when session resets)
+     * Clear cooldowns and reset scene detector (call when exercise run resets)
      */
     fun lockScene() {
         cachedSceneResult?.let { scene ->

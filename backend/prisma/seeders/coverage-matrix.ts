@@ -43,9 +43,9 @@ export function deriveExerciseContentKind(input: {
 /** Minimum curated exercise count after JSON + library extensions (Blueprint library depth). */
 export const MIN_CURATED_EXERCISE_COUNT = 100;
 
-/** ACSM-oriented session design hints (validators use these as soft checks). */
-export const ACSM_SESSION_HINTS = {
-  strengthMinSessionsPerWeek: 2,
+/** ACSM-oriented planned workout design hints (validators use these as soft checks). */
+export const ACSM_WORKOUT_HINTS = {
+  strengthMinWorkoutsPerWeek: 2,
   hypertrophyMinWeeklySetsPerMuscle: 10,
   powerRepSetProductMax: 24,
 } as const;

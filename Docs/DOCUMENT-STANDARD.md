@@ -5,7 +5,22 @@
 | | |
 |---|---|
 | **Applies to** | جميع ملفات `.md` تحت `Docs/` |
-| **Verified** | 2026-05-29 |
+| **Verified** | 2026-06-06 |
+
+---
+
+## 0. تسمية مجال التدريب (Workout)
+
+لا تستخدم **Session** لوصف التدريب في وثائق جديدة أو محدَّثة. المرجع: [`00-Active-Reference/Contracts/Workout-Domain-Naming.md`](00-Active-Reference/Contracts/Workout-Domain-Naming.md).
+
+| استخدم | بدلاً من (قديم) |
+|--------|------------------|
+| `PlannedWorkout` | Program session / day session block |
+| `WorkoutTemplate` | Catalog `Workout` |
+| `WorkoutExecution` | `TrainingSession` (تنفيذ تمرين واحد) |
+| `WorkoutExecutionMetrics` | `SessionMetrics` |
+
+استثناءات: جلسات الطبيب/الحجوزات، جلسة تسجيل الدخول، `AssessmentSession`.
 
 ---
 

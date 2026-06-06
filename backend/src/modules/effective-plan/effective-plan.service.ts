@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Effective plan — template + progression state + user overrides (Blueprint).
  */
 
@@ -26,7 +26,7 @@ export interface EffectivePlanItem {
   restDurationMs: number | null;
   sortOrder: number;
   skipped?: boolean;
-  /** Populated from Exercise catalog at runtime (not stored on session item). */
+  /** Populated from Exercise catalog at runtime (not stored on planned workout item). */
   intent?: string | null;
   coachingNotes?: Prisma.JsonValue | null;
   /** Same-source substitutions as mobile substitution picker (family / movement pattern). */
@@ -40,7 +40,7 @@ export interface EffectivePlanItem {
   };
 }
 
-export interface EffectivePlanSession {
+export interface EffectivePlannedWorkout {
   id: string;
   name: Prisma.JsonValue;
   sortOrder: number;
@@ -53,10 +53,10 @@ export interface EffectivePlanResponse {
   programId: string | null;
   weekNumber: number;
   dayNumber: number;
-  sessions: EffectivePlanSession[];
+  plannedWorkouts: EffectivePlannedWorkout[];
 }
 
-type SessionItemRow = {
+type PlannedWorkoutItemRow = {
   id: string;
   type: string;
   exerciseId: string | null;
@@ -123,7 +123,7 @@ function buildSuggestion(
 }
 
 function mergeProgression(
-  item: SessionItemRow,
+  item: PlannedWorkoutItemRow,
   state: ProgressionStateRow | undefined,
   trainingGoal: TrainingGoal,
   substitutionCandidates?: ExerciseSubstitution[],
@@ -194,7 +194,7 @@ function applyOverride(
 }
 
 function buildAddedItem(
-  anchor: SessionItemRow,
+  anchor: PlannedWorkoutItemRow,
   ov: OverrideRow | undefined,
   trainingGoal: TrainingGoal,
 ): EffectivePlanItem | null {
@@ -244,8 +244,8 @@ function buildAddedItem(
 }
 
 /** Count non-skipped exercise items for home / today-plan summaries. */
-export function countEffectiveExerciseItems(session: EffectivePlanSession): number {
-  return session.items.filter((i) => i.type === 'exercise' && !i.skipped).length;
+export function countEffectiveExerciseItems(plannedWorkout: EffectivePlannedWorkout): number {
+  return plannedWorkout.items.filter((i) => i.type === 'exercise' && !i.skipped).length;
 }
 
 export const effectivePlanService = {
@@ -276,9 +276,9 @@ export const effectivePlanService = {
 
     const overridesByItem = new Map<string, Array<(typeof up.overrides)[0]>>();
     for (const o of up.overrides) {
-      const bucket = overridesByItem.get(o.sessionItemId) ?? [];
+      const bucket = overridesByItem.get(o.plannedWorkoutItemId) ?? [];
       bucket.push(o);
-      overridesByItem.set(o.sessionItemId, bucket);
+      overridesByItem.set(o.plannedWorkoutItemId, bucket);
     }
 
     const stateByExercise = new Map(up.progressionStates.map((s) => [s.exerciseId, s]));
@@ -291,14 +291,14 @@ export const effectivePlanService = {
         programId: up.programId,
         weekNumber,
         dayNumber,
-        sessions: [],
+        plannedWorkouts: [],
       };
     }
 
     const trainingGoal = up.user.trainingGoal;
 
     const exerciseIdsForSubs = new Set<string>();
-    for (const s of day.sessions) {
+    for (const s of day.plannedWorkouts) {
       for (const raw of s.items) {
         if (raw.type === 'exercise' && raw.exerciseId) {
           exerciseIdsForSubs.add(raw.exerciseId);
@@ -313,14 +313,14 @@ export const effectivePlanService = {
       }),
     );
 
-    const sessions: EffectivePlanSession[] = day.sessions.map((session) => {
+    const plannedWorkouts: EffectivePlannedWorkout[] = day.plannedWorkouts.map((plannedWorkoutRow) => {
       const items: EffectivePlanItem[] = [];
 
-      for (const raw of session.items) {
+      for (const raw of plannedWorkoutRow.items) {
         const st = raw.exerciseId ? stateByExercise.get(raw.exerciseId) : undefined;
         const subs = raw.exerciseId ? substitutionByExercise.get(raw.exerciseId) : undefined;
         let merged = mergeProgression(
-          raw as SessionItemRow,
+          raw as PlannedWorkoutItemRow,
           st,
           trainingGoal,
           subs,
@@ -343,10 +343,10 @@ export const effectivePlanService = {
       }
 
       return {
-        id: session.id,
-        name: session.name as Prisma.JsonValue,
-        sortOrder: session.sortOrder,
-        role: session.role != null ? String(session.role) : null,
+        id: plannedWorkoutRow.id,
+        name: plannedWorkoutRow.name as Prisma.JsonValue,
+        sortOrder: plannedWorkoutRow.sortOrder,
+        role: plannedWorkoutRow.role != null ? String(plannedWorkoutRow.role) : null,
         items: items.map((item, index) => ({ ...item, sortOrder: index })),
       };
     });
@@ -356,7 +356,7 @@ export const effectivePlanService = {
       programId: up.programId,
       weekNumber,
       dayNumber,
-      sessions,
+      plannedWorkouts,
     };
   },
 };

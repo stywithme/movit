@@ -38,7 +38,7 @@ interface ProgressionRule {
   name: string;
   scope: 'global' | 'program' | 'exercise';
   programId: string | null;
-  exerciseId: string | null;
+  exerciseSlug: string | null;
   trigger: string;
   conditions: Condition[];
   action: RuleAction;
@@ -70,14 +70,14 @@ const OPERATOR_OPTIONS = [
 ];
 
 const WINDOW_OPTIONS = [
-  { value: 'last_session', label: 'Last Session' },
-  { value: 'last_2_sessions', label: 'Last 2 Sessions' },
+  { value: 'last_workout', label: 'Last Workout' },
+  { value: 'last_2_workouts', label: 'Last 2 Workouts' },
   { value: 'last_week', label: 'Last Week' },
   { value: 'entire_program', label: 'Entire Program' },
 ];
 
 const TRIGGER_OPTIONS = [
-  { value: 'session_complete', label: 'Session Complete' },
+  { value: 'workout_complete', label: 'Workout Complete' },
   { value: 'week_complete', label: 'Week Complete' },
   { value: 'set_complete', label: 'Set Complete' },
 ];
@@ -107,7 +107,7 @@ const emptyCondition = (): Condition => ({
   metric: 'avgFormScore',
   operator: '>=',
   value: 0,
-  window: 'last_session',
+  window: 'last_workout',
 });
 
 const emptyAction = (): RuleAction => ({
@@ -129,8 +129,8 @@ export default function ProgressionRulesPage() {
   const [formName, setFormName] = useState('');
   const [formScope, setFormScope] = useState<'global' | 'program' | 'exercise'>('global');
   const [formProgramId, setFormProgramId] = useState('');
-  const [formExerciseId, setFormExerciseId] = useState('');
-  const [formTrigger, setFormTrigger] = useState('session_complete');
+  const [formExerciseSlug, setFormExerciseSlug] = useState('');
+  const [formTrigger, setFormTrigger] = useState('workout_complete');
   const [formPriority, setFormPriority] = useState(50);
   const [formIsActive, setFormIsActive] = useState(true);
   const [formConditions, setFormConditions] = useState<Condition[]>([emptyCondition()]);
@@ -185,8 +185,8 @@ export default function ProgressionRulesPage() {
     setFormName('');
     setFormScope('global');
     setFormProgramId('');
-    setFormExerciseId('');
-    setFormTrigger('session_complete');
+    setFormExerciseSlug('');
+    setFormTrigger('workout_complete');
     setFormPriority(50);
     setFormIsActive(true);
     setFormConditions([emptyCondition()]);
@@ -204,7 +204,7 @@ export default function ProgressionRulesPage() {
     setFormName(rule.name);
     setFormScope(rule.scope);
     setFormProgramId(rule.programId || '');
-    setFormExerciseId(rule.exerciseId || '');
+    setFormExerciseSlug(rule.exerciseSlug || '');
     setFormTrigger(rule.trigger);
     setFormPriority(rule.priority);
     setFormIsActive(rule.isActive);
@@ -241,7 +241,7 @@ export default function ProgressionRulesPage() {
     name: formName,
     scope: formScope,
     programId: formScope === 'program' ? formProgramId || null : null,
-    exerciseId: formScope === 'exercise' ? formExerciseId || null : null,
+    exerciseSlug: formScope === 'exercise' ? formExerciseSlug || null : null,
     trigger: formTrigger,
     priority: formPriority,
     isActive: formIsActive,
@@ -448,10 +448,10 @@ export default function ProgressionRulesPage() {
 
                 {formScope === 'exercise' && (
                   <div>
-                    <Label>Exercise ID</Label>
+                    <Label>Exercise Slug</Label>
                     <Input
-                      value={formExerciseId}
-                      onChange={(e) => setFormExerciseId(e.target.value)}
+                      value={formExerciseSlug}
+                      onChange={(e) => setFormExerciseSlug(e.target.value)}
                       placeholder="e.g. bicep-curl"
                     />
                   </div>

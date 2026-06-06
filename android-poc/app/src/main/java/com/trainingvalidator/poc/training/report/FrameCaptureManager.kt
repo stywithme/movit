@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.training.report
+﻿package com.trainingvalidator.poc.training.report
 
 import android.graphics.Bitmap
 import android.util.Log
@@ -26,7 +26,7 @@ import java.util.UUID
  */
 class FrameCaptureManager(
     private val storageDir: File,
-    private val sessionId: String
+    private val workoutId: String
 ) {
     companion object {
         private const val TAG = "FrameCaptureManager"
@@ -49,9 +49,9 @@ class FrameCaptureManager(
     }
     
     private val capturedFrames = mutableListOf<FrameCapture>()
-    private val sessionDir: File = File(storageDir, "frame_captures/$sessionId")
+    private val workoutDir: File = File(storageDir, "frame_captures/$workoutId")
     
-    // One capture per error type **per rep** (session-wide dedup caused missing worst-rep frames)
+    // One capture per error type **per rep** (workout-wide dedup caused missing worst-rep frames)
     private val capturedErrorsByRep = mutableMapOf<Int, MutableSet<String>>()
     /** Last capture time per rep+errorKey for cooldown (ms). */
     private val lastErrorCaptureTimes = mutableMapOf<String, Long>()
@@ -75,16 +75,16 @@ class FrameCaptureManager(
     private val replayStartTimesByRep = mutableMapOf<Int, Long>()
     
     init {
-        sessionDir.mkdirs()
-        Log.d(TAG, "FrameCaptureManager initialized: ${sessionDir.absolutePath}")
+        workoutDir.mkdirs()
+        Log.d(TAG, "FrameCaptureManager initialized: ${workoutDir.absolutePath}")
     }
     
     /**
      * Create instance with context
      */
-    constructor(context: android.content.Context, sessionId: String) : this(
+    constructor(context: android.content.Context, workoutId: String) : this(
         context.filesDir,
-        sessionId
+        workoutId
     )
     
     // ==================== Capture Methods ====================
@@ -439,7 +439,7 @@ class FrameCaptureManager(
                 bitmap
             }
 
-            val file = File(sessionDir, "$name.jpg")
+            val file = File(workoutDir, "$name.jpg")
             FileOutputStream(file).use { out ->
                 scaled.compress(Bitmap.CompressFormat.JPEG, quality, out)
             }
@@ -521,18 +521,18 @@ class FrameCaptureManager(
     fun getCaptureCount(): Int = capturedFrames.size
     
     /**
-     * Get session ID
+     * Get workout execution ID used for frame capture storage.
      */
-    fun getSessionId(): String = sessionId
+    fun getWorkoutId(): String = workoutId
     
     // ==================== Cleanup ====================
     
     /**
-     * Cleanup all captures for this session
+     * Cleanup all captures for this workout execution
      */
     fun cleanup() {
         try {
-            sessionDir.deleteRecursively()
+            workoutDir.deleteRecursively()
             capturedFrames.clear()
             capturedErrorsByRep.clear()
             lastErrorCaptureTimes.clear()
@@ -543,38 +543,38 @@ class FrameCaptureManager(
             holdSampleCount = 0
             replayFramesByRep.clear()
             replayStartTimesByRep.clear()
-            Log.d(TAG, "Cleaned up session: $sessionId")
+            Log.d(TAG, "Cleaned up workout captures: $workoutId")
         } catch (e: Exception) {
             Log.e(TAG, "Error during cleanup: ${e.message}")
         }
     }
     
     /**
-     * Cleanup old sessions (keep only last N)
+     * Cleanup old workout capture directories (keep only last N)
      */
-    fun cleanupOldSessions(keepCount: Int = 5) {
+    fun cleanupOldWorkouts(keepCount: Int = 5) {
         try {
-            val parentDir = sessionDir.parentFile ?: return
-            val sessions = parentDir.listFiles()
+            val parentDir = workoutDir.parentFile ?: return
+            val workoutDirs = parentDir.listFiles()
                 ?.filter { it.isDirectory }
                 ?.sortedByDescending { it.lastModified() }
                 ?: return
             
-            sessions.drop(keepCount).forEach { dir ->
+            workoutDirs.drop(keepCount).forEach { dir ->
                 dir.deleteRecursively()
-                Log.d(TAG, "Deleted old session: ${dir.name}")
+                Log.d(TAG, "Deleted old workout captures: ${dir.name}")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error cleaning up old sessions: ${e.message}")
+            Log.e(TAG, "Error cleaning up old workout captures: ${e.message}")
         }
     }
     
     /**
-     * Get storage size for this session (bytes)
+     * Get storage size for this workout execution (bytes)
      */
     fun getStorageSize(): Long {
         return try {
-            sessionDir.walkTopDown()
+            workoutDir.walkTopDown()
                 .filter { it.isFile }
                 .map { it.length() }
                 .sum()

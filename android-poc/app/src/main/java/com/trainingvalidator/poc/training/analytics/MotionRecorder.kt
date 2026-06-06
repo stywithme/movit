@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.training.analytics
+﻿package com.trainingvalidator.poc.training.analytics
 
 import android.util.Log
 import com.trainingvalidator.poc.training.engine.Phase
@@ -19,12 +19,12 @@ import java.util.UUID
  * Data Flow:
  * TrainingEngine.processFrame() → record() → buffer frames temporarily
  * RepCounter.completeRep() → finalizeRep() → calculate metrics → DISCARD frames
- * Session end → finalize() → SessionUpload (metrics only, no raw data)
+ * Workout execution end → finalize() → WorkoutUpload (metrics only, no raw data)
  * 
  * Memory Management:
  * - Only current rep's frames in memory (~3KB max)
  * - Frames discarded after each rep
- * - Final output: ~500 bytes of metrics per session
+ * - Final output: ~500 bytes of metrics per workout execution
  */
 class MotionRecorder(
     private val trackedJoints: List<String>,
@@ -40,8 +40,8 @@ class MotionRecorder(
         private const val MAX_REPS = 100              // Prevent memory bloat
     }
     
-    // Session state
-    private var sessionStartMs: Long = 0L
+    // Recording state
+    private var recordingStartMs: Long = 0L
     private var isRecording = false
     
     // Current rep buffer (TEMPORARY - discarded after metrics calculation)
@@ -64,10 +64,10 @@ class MotionRecorder(
     private var bestVelocity: Short? = null
     
     /**
-     * Start recording a new session
+     * Start recording a new workout execution
      */
     fun start(startTimestampMs: Long = System.currentTimeMillis()) {
-        sessionStartMs = startTimestampMs
+        recordingStartMs = startTimestampMs
         isRecording = true
         currentRepBuffer.clear()
         completedRepMetrics.clear()
@@ -129,8 +129,8 @@ class MotionRecorder(
     ) {
         if (!isRecording) return
         
-        if (sessionStartMs == 0L) {
-            sessionStartMs = timestamp
+        if (recordingStartMs == 0L) {
+            recordingStartMs = timestamp
         }
         
         // Safety: limit frames per rep
@@ -143,12 +143,12 @@ class MotionRecorder(
             // (if rep never completes, old data isn't useful)
             currentRepBuffer.clear()
             lastStates = null
-            currentRepStartT = (timestamp - sessionStartMs).toInt()
+            currentRepStartT = (timestamp - recordingStartMs).toInt()
             // Don't return - let the new frame be recorded below
         }
         
         // Calculate relative time
-        val relativeT = (timestamp - sessionStartMs).toInt()
+        val relativeT = (timestamp - recordingStartMs).toInt()
         
         // Convert angles to ShortArray
         val angleArray = anglesToShortArray(angles, skippedJointCodes)
@@ -232,7 +232,7 @@ class MotionRecorder(
         // Calculate metrics from buffered frames
         val velocity = MetricsCalculator.calculateVelocity(currentRepBuffer, primaryJointIndex)
         
-        // Velocity Loss: compare current velocity against session best
+        // Velocity Loss: compare current velocity against execution best
         val velocityLoss = if (bestVelocity != null && bestVelocity!! > 0 && velocity != null) {
             val vl = ((bestVelocity!! - velocity).toFloat() / bestVelocity!! * 1000).toInt()
             vl.coerceIn(0, 1000).toShort()
@@ -287,29 +287,29 @@ class MotionRecorder(
     }
     
     /**
-     * Finalize session and create SessionUpload
+     * Finalize recording and create WorkoutUpload
      * 
      * Called when training ends. Aggregates all rep metrics.
      * Returns a lightweight object ready for server upload.
      * 
-     * @param sessionId Optional session ID (generated if null)
-     * @return SessionUpload ready for API upload
+     * @param workoutId Optional workout execution ID (generated if null)
+     * @return WorkoutUpload ready for API upload
      */
-    fun finalize(sessionId: String? = null, endTimestampMs: Long = System.currentTimeMillis()): SessionUpload {
+    fun finalize(workoutId: String? = null, endTimestampMs: Long = System.currentTimeMillis()): WorkoutUpload {
         isRecording = false
         
-        val id = sessionId ?: UUID.randomUUID().toString()
+        val id = workoutId ?: UUID.randomUUID().toString()
         // Never cast (end - start) straight to Int: wall ms since epoch (~1e12) overflows Int → negative DB values.
-        val deltaMs = (endTimestampMs - sessionStartMs).coerceAtLeast(0L)
+        val deltaMs = (endTimestampMs - recordingStartMs).coerceAtLeast(0L)
         val durationMs = deltaMs.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
         
-        // Calculate aggregated session metrics
-        val sessionMetrics = calculateSessionMetrics()
+        // Calculate aggregated execution metrics
+        val executionMetrics = calculateWorkoutExecutionMetrics()
         
-        val upload = SessionUpload(
+        val upload = WorkoutUpload(
             id = id,
             exerciseId = exerciseId,
-            timestamp = sessionStartMs,
+            timestamp = recordingStartMs,
             durationMs = durationMs,
             totalReps = completedRepMetrics.size,
             countedReps = completedRepMetrics.count { it.worstState <= StateCode.PAD },
@@ -317,22 +317,22 @@ class MotionRecorder(
             weightKg = defaultWeightKg,
             weightUnit = weightUnit,
             repMetrics = completedRepMetrics.toList(),
-            sessionMetrics = sessionMetrics
+            executionMetrics = executionMetrics
         )
         
-        Log.d(TAG, "Session finalized: ${completedRepMetrics.size} reps, " +
-                   "avgScore=${sessionMetrics.avgFormScore / 10f}%, " +
+        Log.d(TAG, "Workout finalized: ${completedRepMetrics.size} reps, " +
+                   "avgScore=${executionMetrics.avgFormScore / 10f}%, " +
                    "NO raw data saved (metrics only)")
         
         return upload
     }
     
     /**
-     * Calculate aggregated session metrics from all rep metrics
+     * Calculate aggregated workout-execution metrics from all rep metrics
      */
-    private fun calculateSessionMetrics(): SessionMetrics {
+    private fun calculateWorkoutExecutionMetrics(): WorkoutExecutionMetrics {
         if (completedRepMetrics.isEmpty()) {
-            return createEmptySessionMetrics()
+            return createEmptyWorkoutExecutionMetrics()
         }
         
         val repMetricsList = completedRepMetrics.map { it.metrics }
@@ -380,7 +380,7 @@ class MotionRecorder(
             completedRepMetrics.map { it.durationMs }
         )
         
-        return SessionMetrics(
+        return WorkoutExecutionMetrics(
             avgRom = avgRom,
             avgSymmetry = avgSymmetry,
             avgStability = avgStability,
@@ -444,8 +444,8 @@ class MotionRecorder(
         }
     }
     
-    private fun createEmptySessionMetrics(): SessionMetrics {
-        return SessionMetrics(
+    private fun createEmptyWorkoutExecutionMetrics(): WorkoutExecutionMetrics {
+        return WorkoutExecutionMetrics(
             avgRom = 0,
             avgSymmetry = null,
             avgStability = 1000,
@@ -547,10 +547,10 @@ data class RepMetricsData(
 )
 
 /**
- * SessionUpload - Lightweight session data ready for server upload
+ * WorkoutUpload - Lightweight workout-execution data ready for server upload
  * Contains only computed metrics, no raw frame data
  */
-data class SessionUpload(
+data class WorkoutUpload(
     val id: String,
     val exerciseId: String,
     val timestamp: Long,
@@ -561,7 +561,7 @@ data class SessionUpload(
     val weightKg: Float?,
     val weightUnit: String,
     val repMetrics: List<RepMetricsData>,
-    val sessionMetrics: SessionMetrics
+    val executionMetrics: WorkoutExecutionMetrics
 ) {
     /**
      * Get formatted duration
@@ -575,5 +575,5 @@ data class SessionUpload(
     /**
      * Get average score as percentage
      */
-    fun getAverageScorePercent(): Float = sessionMetrics.avgFormScore / 10f
+    fun getAverageScorePercent(): Float = executionMetrics.avgFormScore / 10f
 }

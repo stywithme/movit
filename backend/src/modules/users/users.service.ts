@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Users Service
  * =============
  * 
@@ -20,7 +20,7 @@ const userSelect = {
   isPro: true,
   subscriptionExpiry: true,
   totalMinutes: true,
-  totalWorkouts: true,
+  totalWorkoutExecutions: true,
   createdAt: true,
   updatedAt: true,
 };

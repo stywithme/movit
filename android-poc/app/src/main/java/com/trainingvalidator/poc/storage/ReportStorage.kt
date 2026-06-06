@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.storage
+﻿package com.trainingvalidator.poc.storage
 
 import android.content.Context
 import android.util.Log
@@ -233,20 +233,20 @@ class ReportStorage(private val context: Context) {
                 delete(report.id)
                 
                 // Also delete associated frame captures
-                deleteFrameCaptures(report.sessionId)
+                deleteFrameCaptures(report.workoutId)
             }
             Log.d(TAG, "Cleaned up ${reports.size - MAX_REPORTS} old reports")
         }
     }
     
     /**
-     * Delete frame captures for a session
+     * Delete frame captures for a workout execution
      */
-    private fun deleteFrameCaptures(sessionId: String) {
-        val capturesDir = File(context.filesDir, "frame_captures/$sessionId")
+    private fun deleteFrameCaptures(workoutId: String) {
+        val capturesDir = File(context.filesDir, "frame_captures/$workoutId")
         if (capturesDir.exists()) {
             capturesDir.deleteRecursively()
-            Log.d(TAG, "Deleted frame captures for session: $sessionId")
+            Log.d(TAG, "Deleted frame captures for workout: $workoutId")
         }
     }
     
@@ -261,21 +261,21 @@ class ReportStorage(private val context: Context) {
         if (reports.isEmpty()) {
             return ReportStats(
                 exerciseId = exerciseId,
-                totalSessions = 0,
+                totalExecutions = 0,
                 totalReps = 0,
                 averageAccuracy = 0f,
                 bestAccuracy = 0f,
-                lastSessionDate = null
+                lastExecutionDate = null
             )
         }
         
         return ReportStats(
             exerciseId = exerciseId,
-            totalSessions = reports.size,
+            totalExecutions = reports.size,
             totalReps = reports.sumOf { it.summary.totalReps },
             averageAccuracy = reports.map { it.summary.accuracy }.average().toFloat(),
             bestAccuracy = reports.maxOf { it.summary.accuracy },
-            lastSessionDate = reports.maxOf { it.timestamp }
+            lastExecutionDate = reports.maxOf { it.timestamp }
         )
     }
 }
@@ -285,17 +285,17 @@ class ReportStorage(private val context: Context) {
  */
 data class ReportStats(
     val exerciseId: String,
-    val totalSessions: Int,
+    val totalExecutions: Int,
     val totalReps: Int,
     val averageAccuracy: Float,
     val bestAccuracy: Float,
-    val lastSessionDate: Long?
+    val lastExecutionDate: Long?
 ) {
     fun getFormattedAverageAccuracy(): String = String.format("%.0f%%", averageAccuracy)
     fun getFormattedBestAccuracy(): String = String.format("%.0f%%", bestAccuracy)
     
-    fun getFormattedLastSession(): String {
-        return lastSessionDate?.let {
+    fun getFormattedLastExecution(): String {
+        return lastExecutionDate?.let {
             val sdf = java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault())
             sdf.format(java.util.Date(it))
         } ?: "Never"

@@ -44,7 +44,7 @@ While recording:
 *Benefits:* Privacy, lower storage costs, faster processing.
 
 **Step 5 – Post-Workout Report**
-After the session:
+After the planned workout:
 - The system analyzes the full exercise timeline
 - A structured summary is generated (Total reps, Incorrect reps, Issues)
 - LLM generates a motivational and actionable report.
@@ -186,7 +186,7 @@ Mobile App Structure (Android Kotlin / iOS Swift)
     *   Updates State (Rep Count).
     *   Triggers Feedback (Audio/Haptic).
 5.  **Mobile App:** Renders Overlay on top of camera feed.
-6.  **Mobile App:** On finish → Saves "Session Summary" to local DB.
+6.  **Mobile App:** On finish → Saves workout execution summary to local DB.
 7.  **Mobile App:** Syncs results to Backend API.
 
 ---

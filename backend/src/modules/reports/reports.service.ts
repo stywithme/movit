@@ -1,5 +1,5 @@
 /**
- * Reports Service — Unified Metrics Aggregation Engine
+ * Reports Service ? Unified Metrics Aggregation Engine
  * =====================================================
  *
  * Single source of truth for all report computations.
@@ -13,7 +13,7 @@ import type {
   MetricsResponse,
   ReportDashboardQuery,
   ReportDashboardResponse,
-  StoredSessionReport,
+  StoredPlannedWorkoutReport,
   StoredExerciseReport,
   StoredSetMetrics,
   StoredRepDetail,
@@ -22,7 +22,7 @@ import type {
   RepMetricsOutput,
   SetMetricsOutput,
   ExerciseMetricsOutput,
-  SessionMetricsOutput,
+  ExecutionMetricsOutput,
   DayMetricsOutput,
   WeekMetricsOutput,
   ProgramMetricsOutput,
@@ -82,11 +82,11 @@ function safeAvg(values: number[]): number {
   return filtered.reduce((a, b) => a + b, 0) / filtered.length;
 }
 
-function safeParseReport(json: unknown): StoredSessionReport | null {
+function safeParseReport(json: unknown): StoredPlannedWorkoutReport | null {
   if (!json || typeof json !== 'object') return null;
   const report = json as Record<string, unknown>;
   if (typeof report.totalExercises !== 'number') return null;
-  return json as StoredSessionReport;
+  return json as StoredPlannedWorkoutReport;
 }
 
 function emptyStateBreakdown(): StateBreakdown {
@@ -359,7 +359,7 @@ function extractVolumeFromExercise(exercise: StoredExerciseReport): number {
   return (exercise.setMetrics || []).reduce((sum, set) => sum + extractVolumeFromSet(set), 0);
 }
 
-function extractVolumeFromSessionReport(report: StoredSessionReport | null): number {
+function extractVolumeFromSessionReport(report: StoredPlannedWorkoutReport | null): number {
   if (!report?.exerciseReports) return 0;
   return report.exerciseReports.reduce((sum, ex) => sum + extractVolumeFromExercise(ex), 0);
 }
@@ -540,7 +540,7 @@ function buildExerciseMetrics(
 
 interface ReportRow {
   id: string;
-  programSessionId: string;
+  plannedWorkoutId: string;
   weekNumber: number;
   dayNumber: number;
   completedAt: Date | null;
@@ -555,13 +555,13 @@ interface ReportRow {
 }
 
 // ============================================
-// SESSION METRICS BUILDER
+// PLANNED WORKOUT METRICS BUILDER
 // ============================================
 
-function buildSessionMetrics(
+function buildPlannedWorkoutMetrics(
   row: ReportRow,
   includeExercises: boolean,
-): SessionMetricsOutput {
+): ExecutionMetricsOutput {
   const parsed = safeParseReport(row.report);
   const exercises = parsed?.exerciseReports
     ? parsed.exerciseReports.map((e) => buildExerciseMetrics(e, includeExercises))
@@ -624,7 +624,7 @@ function buildSessionMetrics(
   const averageFormScore = Math.round(avgFormScoreSource * 10) / 10;
 
   return {
-    sessionId: row.programSessionId,
+    plannedWorkoutId: row.plannedWorkoutId,
     weekNumber: row.weekNumber,
     dayNumber: row.dayNumber,
     completedAt: row.completedAt?.toISOString() ?? null,
@@ -635,7 +635,7 @@ function buildSessionMetrics(
     totalReps: counting.totalReps,
     averageAccuracy: counting.accuracy,
     averageFormScore,
-    sessionRating: getFormRating(averageFormScore),
+    workoutRating: getFormRating(averageFormScore),
     strongestExercise,
     weakestExercise,
     exercises: includeExercises ? exercises : undefined,
@@ -663,13 +663,13 @@ function buildDayMetrics(
   rows: ReportRow[],
   totalSessionsInDay: number,
   isRestDay: boolean,
-  includeSessions: boolean,
+  includePlannedWorkouts: boolean,
 ): DayMetricsOutput {
-  const sessions = rows.map((r) => buildSessionMetrics(r, false));
-  const formScores = sessions.map((s) => s.averageFormScore).filter((s) => s > 0);
+  const plannedWorkouts = rows.map((r) => buildPlannedWorkoutMetrics(r, false));
+  const formScores = plannedWorkouts.map((s) => s.averageFormScore).filter((s) => s > 0);
   const avgFormScore = safeAvg(formScores);
   const dayCounting = aggregateCountingSummaries(
-    sessions.map((s) =>
+    plannedWorkouts.map((s) =>
       buildCountingSummary({
         totalReps: s.totalReps,
         countedReps: s.countedReps,
@@ -691,13 +691,13 @@ function buildDayMetrics(
     weekNumber,
     dayNumber,
     isRestDay,
-    sessionsCompleted: sessions.length,
-    sessionsPlanned: totalSessionsInDay,
-    totalTrainingTime: sessions.reduce((sum, s) => sum + s.totalDurationMs, 0),
+    workoutsCompleted: plannedWorkouts.length,
+    workoutsPlanned: totalSessionsInDay,
+    totalTrainingTime: plannedWorkouts.reduce((sum, s) => sum + s.totalDurationMs, 0),
     averageFormScore: Math.round(avgFormScore * 10) / 10,
     dayRating: getFormRating(avgFormScore),
-    isComplete: sessions.length >= totalSessionsInDay && totalSessionsInDay > 0,
-    sessions: includeSessions ? sessions : undefined,
+    isComplete: plannedWorkouts.length >= totalSessionsInDay && totalSessionsInDay > 0,
+    plannedWorkouts: includePlannedWorkouts ? plannedWorkouts : undefined,
     countedReps: dayCounting.countedReps,
     invalidatedReps: dayCounting.invalidatedReps,
     uncountedReps: dayCounting.uncountedReps,
@@ -723,7 +723,7 @@ function buildWeekMetrics(
   weekRows: ReportRow[],
 ): WeekMetricsOutput {
   const trainingDays = dayMetrics.filter((d) => !d.isRestDay);
-  const daysTrained = trainingDays.filter((d) => d.sessionsCompleted > 0).length;
+  const daysTrained = trainingDays.filter((d) => d.workoutsCompleted > 0).length;
   const totalTrainingTime = dayMetrics.reduce((sum, d) => sum + d.totalTrainingTime, 0);
 
   // Form scores per day for sparkline
@@ -756,7 +756,7 @@ function buildWeekMetrics(
   );
 
   // Consistency: how evenly distributed training was (lower stddev = higher consistency)
-  const dailyCounts = trainingDays.map((d) => d.sessionsCompleted);
+  const dailyCounts = trainingDays.map((d) => d.workoutsCompleted);
   const consistencyRaw = dailyCounts.length > 0
     ? Math.max(0, 100 - stddev(dailyCounts) * 20)
     : 0;
@@ -829,7 +829,7 @@ function getWeekKey(date: Date): string {
   return start.toISOString().slice(0, 10);
 }
 
-function buildTrainingSessionTrends(sessions: any[]) {
+function buildWorkoutExecutionTrends(workoutExecutions: any[]) {
   const byWeek = new Map<string, {
     scores: number[];
     days: Set<string>;
@@ -837,19 +837,19 @@ function buildTrainingSessionTrends(sessions: any[]) {
     reps: number;
   }>();
 
-  for (const session of sessions) {
-    const key = getWeekKey(session.timestamp);
+  for (const execution of workoutExecutions) {
+    const key = getWeekKey(execution.timestamp);
     const existing = byWeek.get(key) ?? {
       scores: [],
       days: new Set<string>(),
       volume: 0,
       reps: 0,
     };
-    const score = normalizeStoredScore(session.sessionMetrics?.avgFormScore);
+    const score = normalizeStoredScore(execution.executionMetrics?.avgFormScore);
     if (score > 0) existing.scores.push(score);
-    existing.days.add(session.timestamp.toISOString().slice(0, 10));
-    existing.volume += session.sessionMetrics?.totalVolume ?? 0;
-    existing.reps += session.totalReps;
+    existing.days.add(execution.timestamp.toISOString().slice(0, 10));
+    existing.volume += execution.executionMetrics?.totalVolume ?? 0;
+    existing.reps += execution.totalReps;
     byWeek.set(key, existing);
   }
 
@@ -890,15 +890,15 @@ export const reportsService = {
    * Coach-style dashboard payload for the mobile Reports tab.
    *
    * Combines two report sources:
-   * - program sessions from ProgramSessionReport
-   * - free / quick / workout sessions from TrainingSession
+   * - program planned workouts from PlannedWorkoutReport
+   * - free / quick / explore executions from WorkoutExecution
    */
   async getDashboard(userId: string, query: ReportDashboardQuery): Promise<ReportDashboardResponse> {
     const prisma = await getPrisma();
     const period = query.period ?? 'all';
     const source = query.source ?? 'all';
     const includeProgram = source === 'all' || source === 'program';
-    const includeTrainingSessions = source !== 'program';
+    const includeWorkoutExecutions = source !== 'program';
     const periodStart = getDashboardPeriodStart(period);
 
     const resolvedProgramId = query.programId ?? (
@@ -942,12 +942,12 @@ export const reportsService = {
     const weeks = programSummary?.weeks ?? [];
     const programExercises = (programSummary?.exercises ?? [])
       .filter((exercise) => !query.exerciseSlug || exercise.exerciseSlug === query.exerciseSlug);
-    const programSessions = weeks.flatMap((week) =>
-      (week.days ?? []).flatMap((day) => day.sessions ?? []),
+    const programPlannedWorkouts = weeks.flatMap((week) =>
+      (week.days ?? []).flatMap((day) => day.plannedWorkouts ?? []),
     );
 
-    const trainingSessionRows = includeTrainingSessions
-      ? await prisma.trainingSession.findMany({
+    const workoutExecutionRows = includeWorkoutExecutions
+      ? await prisma.workoutExecution.findMany({
         where: {
           userId,
           ...(periodStart && { timestamp: { gte: periodStart } }),
@@ -956,43 +956,43 @@ export const reportsService = {
         take: 500,
         include: {
           exercise: { select: { name: true, slug: true } },
-          sessionMetrics: true,
+          executionMetrics: true,
         },
       })
       : [];
 
-    const filteredTrainingSessions = trainingSessionRows.filter((session) => {
-      if (query.exerciseSlug && session.exercise?.slug !== query.exerciseSlug) return false;
-      if (source === 'free') return session.context === 'free';
-      if (source === 'quick') return session.context === 'quick_start';
-      if (source === 'explore') return session.context === 'explore_workout';
-      if (source === 'workout') return Boolean(session.workoutId);
-      return ['free', 'quick_start', 'explore_workout'].includes(session.context);
+    const filteredWorkoutExecutions = workoutExecutionRows.filter((execution) => {
+      if (query.exerciseSlug && execution.exercise?.slug !== query.exerciseSlug) return false;
+      if (source === 'free') return execution.context === 'free';
+      if (source === 'quick') return execution.context === 'quick_start';
+      if (source === 'explore') return execution.context === 'explore_workout';
+      if (source === 'workout') return Boolean(execution.workoutTemplateId);
+      return ['free', 'quick_start', 'explore_workout'].includes(execution.context);
     });
 
     const freeExerciseMap = new Map<string, {
       slug: string;
       name: string;
-      sessionsCount: number;
+      workoutsCount: number;
       totalScore: number;
       totalReps: number;
       totalVolume: number;
     }>();
 
-    for (const session of filteredTrainingSessions) {
-      const slug = session.exercise?.slug ?? session.exerciseId;
+    for (const execution of filteredWorkoutExecutions) {
+      const slug = execution.exercise?.slug ?? execution.exerciseId;
       const existing = freeExerciseMap.get(slug) ?? {
         slug,
-        name: formatExerciseName(session.exercise?.name, slug),
-        sessionsCount: 0,
+        name: formatExerciseName(execution.exercise?.name, slug),
+        workoutsCount: 0,
         totalScore: 0,
         totalReps: 0,
         totalVolume: 0,
       };
-      existing.sessionsCount += 1;
-      existing.totalScore += normalizeStoredScore(session.sessionMetrics?.avgFormScore);
-      existing.totalReps += session.totalReps;
-      existing.totalVolume += session.sessionMetrics?.totalVolume ?? 0;
+      existing.workoutsCount += 1;
+      existing.totalScore += normalizeStoredScore(execution.executionMetrics?.avgFormScore);
+      existing.totalReps += execution.totalReps;
+      existing.totalVolume += execution.executionMetrics?.totalVolume ?? 0;
       freeExerciseMap.set(slug, existing);
     }
 
@@ -1000,7 +1000,7 @@ export const reportsService = {
       exerciseSlug: string;
       exerciseName: string;
       averageFormScore: number;
-      sessionsCount: number;
+      workoutsCount: number;
       totalReps: number;
       totalVolume: number;
     }>();
@@ -1010,15 +1010,15 @@ export const reportsService = {
         exerciseSlug: exercise.exerciseSlug,
         exerciseName: exercise.exerciseName,
         averageFormScore: exercise.averageFormScore,
-        sessionsCount: exercise.sessionsCount ?? 0,
+        workoutsCount: exercise.workoutsCount ?? 0,
         totalReps: exercise.totalReps,
         totalVolume: exercise.totalVolume,
       });
     }
 
     for (const exercise of freeExerciseMap.values()) {
-      const averageFormScore = exercise.sessionsCount > 0
-        ? Math.round((exercise.totalScore / exercise.sessionsCount) * 10) / 10
+      const averageFormScore = exercise.workoutsCount > 0
+        ? Math.round((exercise.totalScore / exercise.workoutsCount) * 10) / 10
         : 0;
       const existing = combinedExerciseMap.get(exercise.slug);
 
@@ -1027,18 +1027,18 @@ export const reportsService = {
           exerciseSlug: exercise.slug,
           exerciseName: exercise.name,
           averageFormScore,
-          sessionsCount: exercise.sessionsCount,
+          workoutsCount: exercise.workoutsCount,
           totalReps: exercise.totalReps,
           totalVolume: Math.round(exercise.totalVolume * 10) / 10,
         });
       } else {
-        const totalSessions = existing.sessionsCount + exercise.sessionsCount;
+        const totalWorkouts = existing.workoutsCount + exercise.workoutsCount;
         combinedExerciseMap.set(exercise.slug, {
           ...existing,
-          averageFormScore: totalSessions > 0
-            ? Math.round(((existing.averageFormScore * existing.sessionsCount) + exercise.totalScore) / totalSessions * 10) / 10
+          averageFormScore: totalWorkouts > 0
+            ? Math.round(((existing.averageFormScore * existing.workoutsCount) + exercise.totalScore) / totalWorkouts * 10) / 10
             : 0,
-          sessionsCount: totalSessions,
+          workoutsCount: totalWorkouts,
           totalReps: existing.totalReps + exercise.totalReps,
           totalVolume: Math.round((existing.totalVolume + exercise.totalVolume) * 10) / 10,
         });
@@ -1047,49 +1047,49 @@ export const reportsService = {
 
     const exerciseBreakdown = [...combinedExerciseMap.values()]
       .sort((a, b) => b.averageFormScore - a.averageFormScore);
-    const programTimeline = programSessions.map((session) => ({
-      sessionId: session.sessionId,
-      weekNumber: session.weekNumber,
-      dayNumber: session.dayNumber,
-      completedAt: session.completedAt,
-      totalDurationMs: session.totalDurationMs,
-      totalReps: session.totalReps,
-      averageFormScore: session.averageFormScore,
-      strongestExercise: session.strongestExercise,
-      weakestExercise: session.weakestExercise,
+    const programTimeline = programPlannedWorkouts.map((plannedWorkout) => ({
+      plannedWorkoutId: plannedWorkout.plannedWorkoutId,
+      weekNumber: plannedWorkout.weekNumber,
+      dayNumber: plannedWorkout.dayNumber,
+      completedAt: plannedWorkout.completedAt,
+      totalDurationMs: plannedWorkout.totalDurationMs,
+      totalReps: plannedWorkout.totalReps,
+      averageFormScore: plannedWorkout.averageFormScore,
+      strongestExercise: plannedWorkout.strongestExercise,
+      weakestExercise: plannedWorkout.weakestExercise,
     }));
-    const freeTimeline = filteredTrainingSessions.map((session) => ({
-      sessionId: session.groupId ?? session.id,
+    const freeTimeline = filteredWorkoutExecutions.map((execution) => ({
+      plannedWorkoutId: execution.workoutGroupId ?? execution.id,
       weekNumber: 0,
       dayNumber: 0,
-      completedAt: session.timestamp.toISOString(),
-      totalDurationMs: Math.max(0, session.durationMs),
-      totalReps: session.totalReps,
-      averageFormScore: normalizeStoredScore(session.sessionMetrics?.avgFormScore),
-      strongestExercise: formatExerciseName(session.exercise?.name, session.exercise?.slug ?? session.exerciseId),
+      completedAt: execution.timestamp.toISOString(),
+      totalDurationMs: Math.max(0, execution.durationMs),
+      totalReps: execution.totalReps,
+      averageFormScore: normalizeStoredScore(execution.executionMetrics?.avgFormScore),
+      strongestExercise: formatExerciseName(execution.exercise?.name, execution.exercise?.slug ?? execution.exerciseId),
       weakestExercise: null,
     }));
-    const sortedSessions = [...programTimeline, ...freeTimeline].sort((a, b) => {
+    const sortedWorkoutTimeline = [...programTimeline, ...freeTimeline].sort((a, b) => {
       const aTime = a.completedAt ? new Date(a.completedAt).getTime() : 0;
       const bTime = b.completedAt ? new Date(b.completedAt).getTime() : 0;
       return bTime - aTime;
     });
 
-    const freeScores = filteredTrainingSessions.map((session) => normalizeStoredScore(session.sessionMetrics?.avgFormScore));
-    const programScores = programSessions.map((session) => session.averageFormScore);
+    const freeScores = filteredWorkoutExecutions.map((execution) => normalizeStoredScore(execution.executionMetrics?.avgFormScore));
+    const programScores = programPlannedWorkouts.map((plannedWorkout) => plannedWorkout.averageFormScore);
     const allScores = [...programScores, ...freeScores].filter((score) => score > 0);
     const overallFormScore = allScores.length > 0
       ? Math.round((allScores.reduce((sum, score) => sum + score, 0) / allScores.length) * 10) / 10
       : 0;
-    const rawTrends = buildTrainingSessionTrends(filteredTrainingSessions);
-    const rawStreak = calculateDateStreak(filteredTrainingSessions.map((session) => session.timestamp));
+    const rawTrends = buildWorkoutExecutionTrends(filteredWorkoutExecutions);
+    const rawStreak = calculateDateStreak(filteredWorkoutExecutions.map((execution) => execution.timestamp));
     const totalReps = (programSummary?.totalReps ?? 0) +
-      filteredTrainingSessions.reduce((sum, session) => sum + session.totalReps, 0);
+      filteredWorkoutExecutions.reduce((sum, execution) => sum + execution.totalReps, 0);
     const totalVolume = (programSummary?.totalVolume ?? 0) +
-      filteredTrainingSessions.reduce((sum, session) => sum + (session.sessionMetrics?.totalVolume ?? 0), 0);
+      filteredWorkoutExecutions.reduce((sum, execution) => sum + (execution.executionMetrics?.totalVolume ?? 0), 0);
     const totalTrainingTime = (programSummary?.totalTrainingTime ?? 0) +
-      filteredTrainingSessions.reduce((sum, session) => sum + Math.max(0, session.durationMs), 0);
-    const rawDays = new Set(filteredTrainingSessions.map((session) => session.timestamp.toISOString().slice(0, 10))).size;
+      filteredWorkoutExecutions.reduce((sum, execution) => sum + Math.max(0, execution.durationMs), 0);
+    const rawDays = new Set(filteredWorkoutExecutions.map((execution) => execution.timestamp.toISOString().slice(0, 10))).size;
     const daysTrained = (programSummary?.daysTrained ?? 0) + rawDays;
     const currentStreak = Math.max(programSummary?.currentStreak ?? 0, rawStreak);
     const strongestExercise = exerciseBreakdown[0]?.exerciseName ?? null;
@@ -1125,34 +1125,34 @@ export const reportsService = {
         exerciseSlug: exercise.exerciseSlug,
         exerciseName: exercise.exerciseName,
         averageFormScore: exercise.averageFormScore,
-        sessionsCount: exercise.sessionsCount,
+        workoutsCount: exercise.workoutsCount,
         totalReps: exercise.totalReps,
         totalVolume: exercise.totalVolume,
         focusArea: exercise.averageFormScore >= 85
           ? 'maintain'
-          : exercise.sessionsCount < 3
+          : exercise.workoutsCount < 3
             ? 'build-consistency'
             : 'improve-form',
       })),
-      sessionTimeline: sortedSessions.slice(0, 20),
+      workoutTimeline: sortedWorkoutTimeline.slice(0, 20),
       records: {
         bestFormScore: Math.max(0, ...weeks.map((week) => week.averageFormScore), ...freeScores),
         bestWeekNumber: programSummary?.bestWeekNumber ?? null,
         longestStreak: currentStreak,
-        mostRepsInSession: Math.max(0, ...sortedSessions.map((session) => session.totalReps)),
+        mostRepsInWorkout: Math.max(0, ...sortedWorkoutTimeline.map((workout) => workout.totalReps)),
       },
       insights: metrics?.success ? metrics.insights : [],
     };
   },
 
   /**
-   * Unified metrics endpoint — returns aggregated metrics at the requested scope.
+   * Unified metrics endpoint ? returns aggregated metrics at the requested scope.
    */
   async getMetrics(userId: string, query: MetricsQuery): Promise<MetricsResponse> {
     const prisma = await getPrisma();
-    const { programId, scope, weekNumber, dayNumber, sessionId, exerciseSlug, includeHistory, includeChildren } = query;
+    const { programId, scope, weekNumber, dayNumber, plannedWorkoutId, exerciseSlug, includeHistory, includeChildren } = query;
 
-    // ── Verify enrollment (active OR historical) ──
+    // -- Verify enrollment (active OR historical) --
     // Phase 0 fix: allow querying reports for completed programs, not just active ones.
     // Try active enrollment first, then fall back to any enrollment for this program.
     let userProgram = await prisma.userProgram.findFirst({
@@ -1163,8 +1163,7 @@ export const reportsService = {
             weeks: {
               include: {
                 days: {
-                  include: {
-                    sessions: { include: { items: true } },
+                  include: { plannedWorkouts: { include: { items: true } },
                   },
                 },
               },
@@ -1184,8 +1183,7 @@ export const reportsService = {
               weeks: {
                 include: {
                   days: {
-                    include: {
-                      sessions: { include: { items: true } },
+                    include: { plannedWorkouts: { include: { items: true } },
                     },
                   },
                 },
@@ -1202,7 +1200,7 @@ export const reportsService = {
 
     const program = userProgram.program;
 
-    // ── Fetch all completed reports for this user + program ──
+    // -- Fetch all completed reports for this user + program --
     const whereClause: Record<string, unknown> = {
       userId,
       programId,
@@ -1210,17 +1208,17 @@ export const reportsService = {
     };
     if (weekNumber !== undefined) whereClause.weekNumber = weekNumber;
     if (dayNumber !== undefined) whereClause.dayNumber = dayNumber;
-    if (sessionId) whereClause.programSessionId = sessionId;
+    if (plannedWorkoutId) whereClause.plannedWorkoutId = plannedWorkoutId;
 
-    const reportRows: ReportRow[] = await prisma.programSessionReport.findMany({
+    const reportRows: ReportRow[] = await prisma.plannedWorkoutReport.findMany({
       where: whereClause,
       orderBy: [{ weekNumber: 'asc' }, { dayNumber: 'asc' }, { completedAt: 'asc' }],
     });
 
-    // ── Route to scope handler ──
+    // -- Route to scope handler --
     switch (scope) {
-      case 'session':
-        return this.buildSessionScope(reportRows, query, includeChildren ?? false);
+      case 'plannedWorkout':
+        return this.buildPlannedWorkoutScope(reportRows, query, includeChildren ?? false);
 
       case 'exercise':
         return this.buildExerciseScope(reportRows, query, includeHistory ?? false);
@@ -1239,30 +1237,29 @@ export const reportsService = {
     }
   },
 
-  // ── SESSION SCOPE ──
-  buildSessionScope(
+  // -- PLANNED WORKOUT SCOPE --
+  buildPlannedWorkoutScope(
     rows: ReportRow[],
     query: MetricsQuery,
     includeChildren: boolean,
   ): MetricsResponse {
-    const targetRow = query.sessionId
-      ? rows.find((r) => r.programSessionId === query.sessionId)
+    const targetRow = query.plannedWorkoutId
+      ? rows.find((r) => r.plannedWorkoutId === query.plannedWorkoutId)
       : rows[0];
 
     if (!targetRow) {
       return {
         success: false,
-        scope: 'session',
+        scope: 'plannedWorkout',
         summary: {} as never,
-        error: 'No completed session report found',
+        error: 'No completed planned workout report found',
       };
     }
 
-    const summary = buildSessionMetrics(targetRow, includeChildren);
+    const summary = buildPlannedWorkoutMetrics(targetRow, includeChildren);
 
-    // Generate insights for this session
     const insightCtx: InsightContext = {
-      sessionFormScore: summary.averageFormScore,
+      workoutFormScore: summary.averageFormScore,
       exercises: summary.exercises?.map((e) => ({
         name: e.exerciseName,
         formScore: e.averageFormScore,
@@ -1273,10 +1270,10 @@ export const reportsService = {
     };
     const insights = generateInsights(insightCtx);
 
-    return { success: true, scope: 'session', summary, insights };
+    return { success: true, scope: 'plannedWorkout', summary, insights };
   },
 
-  // ── EXERCISE SCOPE ──
+  // -- EXERCISE SCOPE --
   buildExerciseScope(
     rows: ReportRow[],
     query: MetricsQuery,
@@ -1287,16 +1284,16 @@ export const reportsService = {
       return { success: false, scope: 'exercise', summary: {} as never, error: 'exerciseSlug is required for exercise scope' };
     }
 
-    // Collect all exercise data across sessions
+    // Collect all exercise data across planned workout reports
     const allExerciseData: StoredExerciseReport[] = [];
-    const sessionDates: string[] = [];
+    const plannedWorkoutReportDates: string[] = [];
     for (const row of rows) {
       const parsed = safeParseReport(row.report);
       if (!parsed?.exerciseReports) continue;
       const match = parsed.exerciseReports.find((e) => e.exerciseSlug === slug);
       if (match) {
         allExerciseData.push(match);
-        sessionDates.push(row.completedAt?.toISOString() ?? '');
+        plannedWorkoutReportDates.push(row.completedAt?.toISOString() ?? '');
       }
     }
 
@@ -1304,11 +1301,11 @@ export const reportsService = {
       return { success: false, scope: 'exercise', summary: {} as never, error: `No data found for exercise: ${slug}` };
     }
 
-    // Build aggregate from latest session
+    // Build aggregate from latest planned workout report
     const latest = allExerciseData[allExerciseData.length - 1];
     const summary = buildExerciseMetrics(latest, true);
 
-    // Comparison with previous session
+    // Comparison with previous planned workout report
     let comparison: ComparisonData | undefined;
     if (includeHistory && allExerciseData.length >= 2) {
       const prev = allExerciseData[allExerciseData.length - 2];
@@ -1329,7 +1326,7 @@ export const reportsService = {
     return { success: true, scope: 'exercise', summary, comparison };
   },
 
-  // ── DAY SCOPE ──
+  // -- DAY SCOPE --
   buildDayScope(
     rows: ReportRow[],
     program: ProgramWithStructure,
@@ -1342,14 +1339,14 @@ export const reportsService = {
     const dayRows = rows.filter((r) => r.weekNumber === wn && r.dayNumber === dn);
     const week = program.weeks.find((w) => w.weekNumber === wn);
     const day = week?.days.find((d) => d.dayNumber === dn);
-    const totalSessions = day?.sessions.length ?? 0;
+    const totalSessions = day?.plannedWorkouts.length ?? 0;
     const isRestDay = day?.isRestDay ?? false;
 
     const summary = buildDayMetrics(wn, dn, dayRows, totalSessions, isRestDay, includeChildren);
     return { success: true, scope: 'day', summary };
   },
 
-  // ── WEEK SCOPE ──
+  // -- WEEK SCOPE --
   async buildWeekScope(
     rows: ReportRow[],
     program: ProgramWithStructure,
@@ -1372,7 +1369,7 @@ export const reportsService = {
     for (let d = 1; d <= 7; d++) {
       const programDay = week.days.find((pd) => pd.dayNumber === d);
       const dayRows = weekRows.filter((r) => r.dayNumber === d);
-      const totalSessions = programDay?.sessions.length ?? 0;
+      const totalSessions = programDay?.plannedWorkouts.length ?? 0;
       const isRestDay = programDay?.isRestDay ?? !programDay;
 
       dayMetrics.push(
@@ -1386,7 +1383,7 @@ export const reportsService = {
       const prevWeekStruct = program.weeks.find((w) => w.weekNumber === wn - 1);
       if (prevWeekStruct) {
         const prisma = await getPrisma();
-        const prevRows: ReportRow[] = await prisma.programSessionReport.findMany({
+        const prevRows: ReportRow[] = await prisma.plannedWorkoutReport.findMany({
           where: {
             userId,
             programId: query.programId,
@@ -1400,7 +1397,7 @@ export const reportsService = {
           const pd = prevWeekStruct.days.find((dy) => dy.dayNumber === d);
           const dayRows = prevRows.filter((r) => r.dayNumber === d);
           prevDayMetrics.push(
-            buildDayMetrics(wn - 1, d, dayRows, pd?.sessions.length ?? 0, pd?.isRestDay ?? !pd, false),
+            buildDayMetrics(wn - 1, d, dayRows, pd?.plannedWorkouts.length ?? 0, pd?.isRestDay ?? !pd, false),
           );
         }
         previousWeek = buildWeekMetrics(wn - 1, prevDayMetrics, null, prevRows);
@@ -1415,7 +1412,7 @@ export const reportsService = {
     return { success: true, scope: 'week', summary };
   },
 
-  // ── PROGRAM SCOPE ──
+  // -- PROGRAM SCOPE --
   buildProgramScope(
     rows: ReportRow[],
     program: ProgramWithStructure,
@@ -1433,7 +1430,7 @@ export const reportsService = {
       for (let d = 1; d <= 7; d++) {
         const programDay = week.days.find((pd) => pd.dayNumber === d);
         const dayRows = weekRows.filter((r) => r.dayNumber === d);
-        const totalSessions = programDay?.sessions.length ?? 0;
+        const totalSessions = programDay?.plannedWorkouts.length ?? 0;
         const isRestDay = programDay?.isRestDay ?? !programDay;
         dayMetrics.push(
           buildDayMetrics(week.weekNumber, d, dayRows, totalSessions, isRestDay, false),
@@ -1510,7 +1507,7 @@ export const reportsService = {
     const avgConsistency = safeAvg(weekMetrics.map((w) => w.consistencyScore));
     const programGrade = getProgramGrade(attendance, overallFormScore, avgConsistency);
 
-    // Aggregate exercises across all sessions
+    // Aggregate exercises across all planned workout reports
     const exerciseMap = new Map<string, {
       slug: string;
       name: string;
@@ -1598,7 +1595,7 @@ export const reportsService = {
           averageFormScore: Math.round((e.totalScore / e.count) * 10) / 10,
           averageCompletionRate: Math.round(counting.countedRatio * 10) / 10,
           totalVolume: Math.round(e.totalVolume * 10) / 10,
-          sessionsCount: e.count,
+          workoutsCount: e.count,
           setsCompleted: e.totalSets,
           setsPlanned: e.totalPlanned,
           totalReps: counting.totalReps,
@@ -1710,7 +1707,7 @@ type ProgramWithStructure = {
     days: Array<{
       dayNumber: number;
       isRestDay: boolean;
-      sessions: Array<{
+      plannedWorkouts: Array<{
         id: string;
         items: Array<{
           id: string;

@@ -7,7 +7,7 @@
     android:layout_height="match_parent"
     android:background="@color/background"
     android:fitsSystemWindows="true"
-    tools:context=".ui.ProgramDayActivity">
+    tools:context=".ui.programs.ProgramDayActivity">
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarLayout"
@@ -55,7 +55,7 @@
                 android:layout_marginTop="8dp"
                 android:textColor="@color/text_secondary"
                 android:textSize="14sp"
-                tools:text="5 Sessions • 2 Rest Days" />
+                tools:text="5 workouts • 2 rest days" />
 
         </LinearLayout>
     </com.google.android.material.appbar.AppBarLayout>
