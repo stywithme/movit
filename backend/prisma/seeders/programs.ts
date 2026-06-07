@@ -1,5 +1,7 @@
-﻿import type { Prisma, PrismaClient, WorkoutBlockRole } from '@prisma/client';
-import { ProgramAttributeMode } from '@prisma/client';
+﻿import { randomUUID } from 'crypto';
+import type { Prisma, PrismaClient, WorkoutBlockRole } from '@prisma/client';
+import { createEmbeddedPlannedWorkout, type SeedPlannedWorkoutItem } from './program-embedded-workout-seed';
+import { PlannedWorkoutItemType, ProgramAttributeMode } from '@prisma/client';
 import {
   PROGRAM_DOMAIN_VALUE_CODE,
   TRAINING_GOAL_VALUE_CODE,
@@ -24,6 +26,9 @@ export async function seedPrograms(prisma: PrismaClient) {
     },
   });
   const bySlug = new Map(exercises.map((e) => [e.slug, e]));
+  const levels = await prisma.level.findMany({ select: { id: true, number: true } });
+  const levelIdByNumber = new Map(levels.map((level) => [level.number, level.id]));
+  const levelIdForNumber = (levelNumber: number): string | undefined => levelIdByNumber.get(levelNumber);
 
   const requireExercise = (slug: string): ExerciseRow => {
     const row = bySlug.get(slug);
@@ -58,8 +63,8 @@ export async function seedPrograms(prisma: PrismaClient) {
       weightPerSet?: number[];
       sortOrder: number;
     },
-  ) => ({
-    type: 'exercise' as const,
+  ): SeedPlannedWorkoutItem => ({
+    type: PlannedWorkoutItemType.exercise,
     exerciseId: exercise.id,
     sets: opts.sets ?? 3,
     ...buildExerciseTarget(exercise, { reps: opts.reps, duration: opts.duration }),
@@ -69,22 +74,30 @@ export async function seedPrograms(prisma: PrismaClient) {
     sortOrder: opts.sortOrder,
   });
 
+  type PlannedWorkoutSeed = {
+    name: { ar: string; en: string };
+    sortOrder: number;
+    estimatedDurationMin: number;
+    blockRole: WorkoutBlockRole;
+    items: SeedPlannedWorkoutItem[];
+  };
+
   const buildPlannedWorkout = (
     name: { ar: string; en: string },
-    items: Record<string, unknown>[],
+    items: SeedPlannedWorkoutItem[],
     sortOrder = 1,
     estimatedDurationMin = 35,
     blockRole: WorkoutBlockRole = 'MAIN',
-  ) => ({
+  ): PlannedWorkoutSeed => ({
     name,
     sortOrder,
     estimatedDurationMin,
-    role: blockRole,
-    items: { create: items as Prisma.PlannedWorkoutItemCreateWithoutPlannedWorkoutInput[] },
+    blockRole,
+    items,
   });
 
-  const restItem = (durationMs: number, sortOrder: number) => ({
-    type: 'rest' as const,
+  const restItem = (durationMs: number, sortOrder: number): SeedPlannedWorkoutItem => ({
+    type: PlannedWorkoutItemType.rest,
     restDurationMs: durationMs,
     sortOrder,
   });
@@ -94,17 +107,8 @@ export async function seedPrograms(prisma: PrismaClient) {
     isRestDay?: boolean;
     dayType?: string;
     dayFocus?: string | null;
-    plannedWorkouts?: ReturnType<typeof buildPlannedWorkout>[];
+    plannedWorkouts?: PlannedWorkoutSeed[];
   };
-
-  const mapDayCreate = (day: DayDef): Prisma.ProgramDayCreateWithoutWeekInput => ({
-    dayNumber: day.dayNumber,
-    isRestDay: day.isRestDay ?? false,
-    dayType: day.isRestDay ? 'rest' : (day.dayType ?? 'training'),
-    dayFocus: day.dayFocus ?? (day.isRestDay ? null : 'general'),
-    name: day.isRestDay ? { ar: 'راحة', en: 'Rest' } : undefined,
-    plannedWorkouts: day.plannedWorkouts ? { create: day.plannedWorkouts } : undefined,
-  });
 
   const createWeek = async (
     programId: string,
@@ -112,18 +116,41 @@ export async function seedPrograms(prisma: PrismaClient) {
     days: DayDef[],
     weekType: 'NORMAL' | 'DELOAD' = 'NORMAL',
   ) => {
-    await prisma.programWeek.create({
+    const week = await prisma.programWeek.create({
       data: {
         programId,
         weekNumber,
         sortOrder: weekNumber,
         weekType,
         name: { ar: `الأسبوع ${weekNumber}`, en: `Week ${weekNumber}` },
-        days: {
-          create: days.map(mapDayCreate),
-        },
       },
     });
+
+    for (const day of days) {
+      const createdDay = await prisma.programDay.create({
+        data: {
+          weekId: week.id,
+          dayNumber: day.dayNumber,
+          isRestDay: day.isRestDay ?? false,
+          dayType: day.isRestDay ? 'rest' : (day.dayType ?? 'training'),
+          dayFocus: day.dayFocus ?? (day.isRestDay ? null : 'general'),
+          name: day.isRestDay ? { ar: 'راحة', en: 'Rest' } : undefined,
+        },
+      });
+
+      for (const plannedWorkout of day.plannedWorkouts ?? []) {
+        await createEmbeddedPlannedWorkout(prisma, {
+          dayId: createdDay.id,
+          programId,
+          plannedWorkoutId: randomUUID(),
+          name: plannedWorkout.name,
+          sortOrder: plannedWorkout.sortOrder,
+          estimatedDurationMin: plannedWorkout.estimatedDurationMin,
+          blockRole: plannedWorkout.blockRole,
+          items: plannedWorkout.items,
+        });
+      }
+    }
   };
 
   const programIdBySlug = new Map<string, string>();
@@ -212,8 +239,8 @@ export async function seedPrograms(prisma: PrismaClient) {
         isPublished: def.isPublished,
         tags: def.tags,
         programType: def.programType,
-        levelRangeMin: def.levelRangeMin,
-        levelRangeMax: def.levelRangeMax,
+        levelMinId: levelIdForNumber(def.levelRangeMin),
+        levelMaxId: levelIdForNumber(def.levelRangeMax),
         prescriptionPriority: def.prescriptionPriority,
         autoAssignable: def.autoAssignable,
         version: def.version,
@@ -232,8 +259,8 @@ export async function seedPrograms(prisma: PrismaClient) {
         isPublished: def.isPublished,
         tags: def.tags,
         programType: def.programType,
-        levelRangeMin: def.levelRangeMin,
-        levelRangeMax: def.levelRangeMax,
+        levelMinId: levelIdForNumber(def.levelRangeMin),
+        levelMaxId: levelIdForNumber(def.levelRangeMax),
         prescriptionPriority: def.prescriptionPriority,
         autoAssignable: def.autoAssignable,
         version: def.version,
@@ -262,7 +289,7 @@ export async function seedPrograms(prisma: PrismaClient) {
           };
         }
         const plannedWorkouts = d.plannedWorkouts.map((catalogWorkout) => {
-          const prismaItems: Record<string, unknown>[] = [];
+          const prismaItems: SeedPlannedWorkoutItem[] = [];
           let sortOrder = 1;
           for (const raw of catalogWorkout.items) {
             if ('restMs' in raw && !('slug' in raw)) {

@@ -310,10 +310,24 @@ class ExerciseDetailActivity : AppCompatActivity() {
         
         val intent = Intent(this, TrainingActivity::class.java).apply {
             putExtra(TrainingActivity.EXTRA_EXERCISE_NAME, exercise.fileName)
-            // Kept for backward compatibility, ignored by new engine
-            putExtra(TrainingActivity.EXTRA_DIFFICULTY, "")
             putExtra(TrainingActivity.EXTRA_POSE_VARIANT, selectedVariantIndex)
             putExtra(TrainingActivity.EXTRA_TRAINING_MODE, TrainingActivity.MODE_CAMERA)
+            putExtra(TrainingActivity.EXTRA_INDICATOR_TYPE, selectedIndicatorType)
+        }
+        startActivity(intent)
+    }
+
+    /**
+     * Start video-based training
+     */
+    private fun startVideoTraining(videoUri: Uri) {
+        val exercise = exerciseConfig ?: return
+
+        val intent = Intent(this, TrainingActivity::class.java).apply {
+            putExtra(TrainingActivity.EXTRA_EXERCISE_NAME, exercise.fileName)
+            putExtra(TrainingActivity.EXTRA_POSE_VARIANT, selectedVariantIndex)
+            putExtra(TrainingActivity.EXTRA_TRAINING_MODE, TrainingActivity.MODE_VIDEO)
+            putExtra(TrainingActivity.EXTRA_VIDEO_URI, videoUri)
             putExtra(TrainingActivity.EXTRA_INDICATOR_TYPE, selectedIndicatorType)
         }
         startActivity(intent)

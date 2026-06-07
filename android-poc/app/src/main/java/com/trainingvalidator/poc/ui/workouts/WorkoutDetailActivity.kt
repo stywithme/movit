@@ -29,7 +29,7 @@ import com.trainingvalidator.poc.training.models.*
  * WorkoutDetailActivity - Shows workout overview with timeline before starting
  *
  * Displays:
- * - Workout hero header (cover image, name, difficulty, quick summary)
+ * - Workout hero header (cover image, name, level, quick summary)
  * - Basic info sections (stats, tags, description)
  * - Timeline of exercises with rest periods between them
  * - Start button
@@ -108,8 +108,7 @@ class WorkoutDetailActivity : AppCompatActivity() {
             resolvedDurationMinutes(config)
         )
 
-        // Difficulty badge
-        binding.tvWorkoutTypeBadge.text = formatDifficulty(config.difficulty)
+        binding.tvWorkoutTypeBadge.text = formatWorkoutLevel(config)
 
         // Media & supporting info
         setupPreviewImage()
@@ -221,7 +220,7 @@ class WorkoutDetailActivity : AppCompatActivity() {
         }
 
         if (resolvedTags.isEmpty()) {
-            resolvedTags += formatDifficulty(config.difficulty)
+            resolvedTags += formatWorkoutLevel(config)
         }
 
         return resolvedTags.distinct().take(4)
@@ -332,15 +331,15 @@ class WorkoutDetailActivity : AppCompatActivity() {
             context = this,
             workoutConfig = config,
             workoutId = null, // local workout — no backend ID yet
-            workoutContext = "explore_workout"
+            workoutContext = WorkoutExecutionContext.EXPLORE_WORKOUT
         )
         startActivity(intent)
     }
 
-    private fun formatDifficulty(difficulty: String): String {
-        if (difficulty.isBlank()) return getString(R.string.workout_detail_default_difficulty)
-        val normalized = difficulty.replace('_', ' ').lowercase()
-        return normalized.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+    private fun formatWorkoutLevel(config: WorkoutConfig): String {
+        val level = config.level ?: return getString(R.string.workout_detail_default_difficulty)
+        val label = level.name.get(currentLanguage).ifBlank { level.name.en }.ifBlank { level.code }
+        return if (level.number > 0) "Level ${level.number} • $label" else label
     }
 
     private fun humanizeCode(code: String): String {

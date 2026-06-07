@@ -25,7 +25,11 @@ export interface AutoAssignmentProgramShape {
   isPublished?: boolean | null;
   programType?: ProgramTypeValue | null;
   autoAssignable?: boolean | null;
+  levelMinId?: string | null;
+  levelMaxId?: string | null;
+  /** @deprecated */
   levelRangeMin?: number | null;
+  /** @deprecated */
   levelRangeMax?: number | null;
   prescriptionPriority?: number | null;
   programAttributes?: ProgramAttributeRowForReadiness[];
@@ -38,6 +42,10 @@ export interface AutoAssignmentReadiness {
 
 function hasNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
+}
+
+function hasLevelReference(id: unknown, legacyNumber: unknown): boolean {
+  return (typeof id === 'string' && id.trim().length > 0) || hasNumber(legacyNumber);
 }
 
 function programAttrRows(program: AutoAssignmentProgramShape): ProgramAttributeRowForReadiness[] {
@@ -73,8 +81,8 @@ export function getAutoAssignmentMissingFields(program: AutoAssignmentProgramSha
   const missing: string[] = [];
 
   if (!program.programType) missing.push('programType');
-  if (!hasNumber(program.levelRangeMin)) missing.push('levelRangeMin');
-  if (!hasNumber(program.levelRangeMax)) missing.push('levelRangeMax');
+  if (!hasLevelReference(program.levelMinId, program.levelRangeMin)) missing.push('levelMin');
+  if (!hasLevelReference(program.levelMaxId, program.levelRangeMax)) missing.push('levelMax');
   if (!hasNumber(program.prescriptionPriority)) missing.push('prescriptionPriority');
 
   const rows = programAttrRows(program);

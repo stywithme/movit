@@ -325,6 +325,10 @@
     <string name="workout_exit_message">يمكنك المتابعة لاحقاً، لكن الجلسة ستكون غير مكتملة.</string>
     <string name="workout_exit_keep">تابع التدريب</string>
     <string name="workout_exit_exit">خروج</string>
+    <string name="workout_skip_phase">تخطّي المرحلة</string>
+    <string name="workout_phase_skipped">تم تخطّي المرحلة</string>
+    <string name="workout_phase_restarted_no_continue">لا يمكن استكمال هذه المرحلة — سنعيدها من البداية.</string>
+    <string name="workout_phase_continue_expired">انتهت مهلة الاستكمال — سنعيد هذه المرحلة من البداية.</string>
 
     <!-- Session Training Mode -->
     <string name="workout_start_set">ابدأ المجموعة</string>

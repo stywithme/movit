@@ -1,5 +1,7 @@
 ﻿package com.trainingvalidator.poc.network
 
+import com.trainingvalidator.poc.training.models.PlannedWorkoutItemType
+
 /**
  * API Models for Prescription, ActivePlan, Progression, and Reassessment endpoints.
  */
@@ -33,10 +35,19 @@ data class RecommendedProgramData(
     val slug: String,
     val type: String,
     val durationWeeks: Int,
-    val levelRangeMin: Int = 0,
-    val levelRangeMax: Int = 0,
+    val levelMinId: String? = null,
+    val levelMaxId: String? = null,
+    val levelMin: PlanLevelData? = null,
+    val levelMax: PlanLevelData? = null,
     val coverImageUrl: String? = null,
     val matchReason: String
+)
+
+data class PlanLevelData(
+    val id: String? = null,
+    val number: Int = 0,
+    val code: String = "",
+    val name: Map<String, String>? = null
 )
 
 // ── Active Plan ──
@@ -75,8 +86,10 @@ data class PlanProgramInfo(
     val slug: String,
     val type: String,
     val durationWeeks: Int,
-    val levelRangeMin: Int = 0,
-    val levelRangeMax: Int = 0,
+    val levelMinId: String? = null,
+    val levelMaxId: String? = null,
+    val levelMin: PlanLevelData? = null,
+    val levelMax: PlanLevelData? = null,
     val coverImageUrl: String? = null
 )
 
@@ -126,8 +139,6 @@ data class TodayProgramData(
 data class TodayWorkoutData(
     val id: String,
     val name: Map<String, String>,
-    /** Planned workout block role (warmup / main / cooldown / …). */
-    val role: String? = null,
     val estimatedDurationMin: Int? = null,
     val itemCount: Int,
     val isCompleted: Boolean
@@ -217,24 +228,25 @@ data class EffectivePlannedWorkoutData(
     val id: String,
     val name: Map<String, String>?,
     val sortOrder: Int,
-    val role: String? = null,
+    val workoutTemplateId: String? = null,
     val estimatedDurationMin: Int? = null,
     val items: List<EffectivePlanItemData>
 )
 
 data class EffectivePlanItemData(
     val id: String,
-    val type: String,
+    val type: PlannedWorkoutItemType,
     val exerciseId: String? = null,
     val sets: Int? = null,
     val targetReps: Int? = null,
     val targetDuration: Int? = null,
     val restBetweenSetsMs: Int? = null,
-    val weightKg: Double? = null,
     val weightPerSet: List<Double>? = null,
     val notes: Map<String, String>? = null,
     val restDurationMs: Int? = null,
     val sortOrder: Int,
+    val phaseIndex: Int? = null,
+    val phaseRole: String? = null,
     /** From Exercise catalog (effective plan), not from template item row. */
     val intent: String? = null,
     val coachingNotes: Map<String, @JvmSuppressWildcards Any>? = null,
@@ -263,7 +275,8 @@ data class UserProgramOverrideData(
     val userProgramId: String,
     val weekNumber: Int,
     val dayNumber: Int,
-    val plannedWorkoutItemId: String,
+    val plannedWorkoutItemId: String? = null,
+    val workoutTemplateExerciseId: String? = null,
     val overrideType: String,
     val reasonCode: String? = null,
     val data: Map<String, @JvmSuppressWildcards Any>? = null,

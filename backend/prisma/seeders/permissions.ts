@@ -32,6 +32,12 @@ const permissions = [
     { subject: 'WorkoutTemplate', action: 'update' },
     { subject: 'WorkoutTemplate', action: 'delete' },
 
+    // Workout Phase
+    { subject: 'WorkoutPhase', action: 'read' },
+    { subject: 'WorkoutPhase', action: 'create' },
+    { subject: 'WorkoutPhase', action: 'update' },
+    { subject: 'WorkoutPhase', action: 'delete' },
+
     // Program
     { subject: 'Program', action: 'read' },
     { subject: 'Program', action: 'create' },
@@ -223,5 +229,49 @@ export async function seedPermissions(prisma: PrismaClient) {
         }
     }
 
+    await mirrorWorkoutPhasePermissions(prisma);
+
     console.log(`✅ Seeded ${count} permissions.`);
+}
+
+/**
+ * Grant WorkoutPhase permissions to every role that already has the matching WorkoutTemplate permission.
+ */
+async function mirrorWorkoutPhasePermissions(prisma: PrismaClient) {
+    const templatePermissions = await prisma.permission.findMany({
+        where: { subject: 'WorkoutTemplate' },
+        include: { roles: true },
+    });
+
+    let mirrored = 0;
+    for (const templatePermission of templatePermissions) {
+        const phasePermission = await prisma.permission.upsert({
+            where: {
+                subject_action: {
+                    subject: 'WorkoutPhase',
+                    action: templatePermission.action,
+                },
+            },
+            update: {},
+            create: {
+                subject: 'WorkoutPhase',
+                action: templatePermission.action,
+            },
+        });
+
+        if (templatePermission.roles.length === 0) continue;
+
+        const result = await prisma.rolePermission.createMany({
+            data: templatePermission.roles.map((rolePermission) => ({
+                roleId: rolePermission.roleId,
+                permissionId: phasePermission.id,
+            })),
+            skipDuplicates: true,
+        });
+        mirrored += result.count;
+    }
+
+    if (mirrored > 0) {
+        console.log(`✅ Mirrored ${mirrored} WorkoutPhase role permission(s) from WorkoutTemplate.`);
+    }
 }

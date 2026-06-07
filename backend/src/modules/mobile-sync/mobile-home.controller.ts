@@ -20,6 +20,7 @@ import { Controller, Get, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { verifyMobileToken } from '@/modules/auth/auth.service';
 import { getPrisma } from '@/lib/prisma/client';
+import { PlannedWorkoutItemType, WorkoutExecutionContext } from '@prisma/client';
 import {
   countEffectiveExerciseItems,
   effectivePlanService,
@@ -56,7 +57,7 @@ interface TrainModeData {
     name: Record<string, string>;
     exerciseCount: number;
     estimatedMinutes: number | null;
-    role: string | null;
+    workoutTemplateId: string | null;
     isCompleted: boolean;
     allWorkoutsCount: number;
     completedWorkoutsCount: number;
@@ -99,7 +100,7 @@ interface HomeResponse {
     formScore: number;
     totalReps: number;
     date: string;
-    context: string;
+    context: WorkoutExecutionContext;
   }[];
   alerts: AlertData[];
 }
@@ -152,7 +153,7 @@ async function buildHomeData(userId: string): Promise<HomeResponse> {
       prisma.bodyScanResult.findFirst({
         where: { userId },
         orderBy: { completedAt: 'desc' },
-        select: { bodyScore: true, fitnessLevel: true, completedAt: true },
+        select: { bodyScore: true, levelId: true, completedAt: true },
       }),
       prisma.activePlan.findUnique({
         where: { userId },
@@ -170,7 +171,7 @@ async function buildHomeData(userId: string): Promise<HomeResponse> {
                           days: {
                             include: { plannedWorkouts: {
                                 include: {
-                                  items: { where: { type: 'exercise' }, select: { id: true } },
+                                  items: { where: { type: PlannedWorkoutItemType.exercise }, select: { id: true } },
                                   reports: {
                                     where: { userId, status: 'completed' },
                                     select: { id: true, plannedWorkoutId: true },
@@ -271,7 +272,7 @@ async function buildHomeData(userId: string): Promise<HomeResponse> {
 
 async function buildTrainMode(
   userId: string,
-  latestAssessment: { bodyScore: number; fitnessLevel: string; completedAt: Date } | null,
+  latestAssessment: { bodyScore: number; levelId: string | null; completedAt: Date } | null,
   activePlan: any,
   pendingReassessment: { scheduledDate: Date; reason: string } | null,
   trainingProfile: { trainingWeekdays: number[] } | null,
@@ -442,7 +443,7 @@ async function buildTrainMode(
       name: nextPlannedWorkout.name as Record<string, string>,
       exerciseCount,
       estimatedMinutes: nextPlannedWorkout.estimatedDurationMin,
-      role: nextPlannedWorkout.role != null ? String(nextPlannedWorkout.role) : null,
+      workoutTemplateId: nextPlannedWorkout.workoutTemplateId ?? null,
       isCompleted: false,
       allWorkoutsCount: todayPlannedWorkouts.length,
       completedWorkoutsCount: completedPlannedWorkoutIds.size,

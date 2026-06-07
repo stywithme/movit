@@ -52,7 +52,7 @@ class DayCustomizationStore(context: Context) {
         val id: String = "",
         val name: LocalizedText = LocalizedText(),
         val sortOrder: Int = 0,
-        val role: String = "MAIN",
+        val workoutTemplateId: String? = null,
         val estimatedDurationMin: Int? = null,
         val items: List<WorkoutLineItem> = emptyList(),
         val isDeleted: Boolean = false
@@ -123,7 +123,7 @@ class DayCustomizationStore(context: Context) {
                 id = workout.id,
                 name = workout.name,
                 sortOrder = workout.sortOrder,
-                role = workout.role.ifBlank { "MAIN" },
+                workoutTemplateId = workout.workoutTemplateId,
                 estimatedDurationMin = workout.estimatedDurationMin,
                 items = workout.items.sortedBy { it.sortOrder }
             )

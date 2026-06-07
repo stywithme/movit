@@ -6,15 +6,14 @@ import { getPrisma } from '@/lib/prisma/client';
 import { programService } from '@/modules/programs/programs.service';
 import type { ExerciseSubstitution } from '@/modules/exercises/exercise-substitutions.service';
 import { exerciseSubstitutionsService } from '@/modules/exercises/exercise-substitutions.service';
-import type { Prisma, TrainingGoal } from '@prisma/client';
-import type { OverrideType } from '@prisma/client';
+import { PlannedWorkoutItemType, type OverrideType, type Prisma, type TrainingGoal } from '@prisma/client';
 import { getGoalDefaults } from '@/constants/goal-defaults';
 
 export type SuggestionSource = 'progression_state' | 'template' | 'goal_default';
 
 export interface EffectivePlanItem {
   id: string;
-  type: string;
+  type: PlannedWorkoutItemType;
   exerciseId: string | null;
   sets: number | null;
   targetReps: number | null;
@@ -25,6 +24,8 @@ export interface EffectivePlanItem {
   notes: Prisma.JsonValue | null;
   restDurationMs: number | null;
   sortOrder: number;
+  phaseIndex?: number;
+  phaseRole?: string;
   skipped?: boolean;
   /** Populated from Exercise catalog at runtime (not stored on planned workout item). */
   intent?: string | null;
@@ -44,7 +45,7 @@ export interface EffectivePlannedWorkout {
   id: string;
   name: Prisma.JsonValue;
   sortOrder: number;
-  role: string | null;
+  workoutTemplateId: string;
   items: EffectivePlanItem[];
 }
 
@@ -58,7 +59,7 @@ export interface EffectivePlanResponse {
 
 type PlannedWorkoutItemRow = {
   id: string;
-  type: string;
+  type: PlannedWorkoutItemType;
   exerciseId: string | null;
   sets: number | null;
   targetReps: number | null;
@@ -144,7 +145,7 @@ function mergeProgression(
     intent: item.exercise?.intent ?? null,
     coachingNotes: item.exercise?.coachingNotes ?? null,
     substitutionCandidates:
-      item.type === 'exercise' && item.exerciseId && substitutionCandidates?.length
+      item.type === PlannedWorkoutItemType.exercise && item.exerciseId && substitutionCandidates?.length
         ? substitutionCandidates
         : undefined,
   };
@@ -206,13 +207,15 @@ function buildAddedItem(
       : {};
 
   const type =
-    typeof patch.type === 'string'
-      ? patch.type
-      : typeof patch.exerciseId === 'string'
-        ? 'exercise'
-        : 'rest';
+    patch.type === PlannedWorkoutItemType.exercise || patch.type === 'exercise'
+      ? PlannedWorkoutItemType.exercise
+      : patch.type === PlannedWorkoutItemType.rest || patch.type === 'rest'
+        ? PlannedWorkoutItemType.rest
+        : typeof patch.exerciseId === 'string'
+          ? PlannedWorkoutItemType.exercise
+          : PlannedWorkoutItemType.rest;
   const exerciseId = typeof patch.exerciseId === 'string' ? patch.exerciseId : null;
-  if (type === 'exercise' && !exerciseId) {
+  if (type === PlannedWorkoutItemType.exercise && !exerciseId) {
     return null;
   }
 
@@ -245,7 +248,7 @@ function buildAddedItem(
 
 /** Count non-skipped exercise items for home / today-plan summaries. */
 export function countEffectiveExerciseItems(plannedWorkout: EffectivePlannedWorkout): number {
-  return plannedWorkout.items.filter((i) => i.type === 'exercise' && !i.skipped).length;
+  return plannedWorkout.items.filter((i) => i.type === PlannedWorkoutItemType.exercise && !i.skipped).length;
 }
 
 export const effectivePlanService = {
@@ -276,9 +279,11 @@ export const effectivePlanService = {
 
     const overridesByItem = new Map<string, Array<(typeof up.overrides)[0]>>();
     for (const o of up.overrides) {
-      const bucket = overridesByItem.get(o.plannedWorkoutItemId) ?? [];
+      const key = o.workoutTemplateExerciseId ?? o.plannedWorkoutItemId;
+      if (!key) continue;
+      const bucket = overridesByItem.get(key) ?? [];
       bucket.push(o);
-      overridesByItem.set(o.plannedWorkoutItemId, bucket);
+      overridesByItem.set(key, bucket);
     }
 
     const stateByExercise = new Map(up.progressionStates.map((s) => [s.exerciseId, s]));
@@ -299,9 +304,9 @@ export const effectivePlanService = {
 
     const exerciseIdsForSubs = new Set<string>();
     for (const s of day.plannedWorkouts) {
-      for (const raw of s.items) {
-        if (raw.type === 'exercise' && raw.exerciseId) {
-          exerciseIdsForSubs.add(raw.exerciseId);
+      for (const phase of s.workoutTemplate.phases) {
+        for (const ex of phase.exercises) {
+          if (ex.exerciseId) exerciseIdsForSubs.add(ex.exerciseId);
         }
       }
     }
@@ -315,29 +320,87 @@ export const effectivePlanService = {
 
     const plannedWorkouts: EffectivePlannedWorkout[] = day.plannedWorkouts.map((plannedWorkoutRow) => {
       const items: EffectivePlanItem[] = [];
+      const sortedPhases = [...plannedWorkoutRow.workoutTemplate.phases].sort(
+        (a, b) => a.sortOrder - b.sortOrder,
+      );
 
-      for (const raw of plannedWorkoutRow.items) {
-        const st = raw.exerciseId ? stateByExercise.get(raw.exerciseId) : undefined;
-        const subs = raw.exerciseId ? substitutionByExercise.get(raw.exerciseId) : undefined;
-        let merged = mergeProgression(
-          raw as PlannedWorkoutItemRow,
-          st,
-          trainingGoal,
-          subs,
-        );
-        const itemOverrides = overridesByItem.get(raw.id) ?? [];
+      for (const [phaseIndex, phase] of sortedPhases.entries()) {
+        const sortedExercises = [...phase.exercises].sort((a, b) => a.sortOrder - b.sortOrder);
+        const phaseRole = String(phase.phase.role);
+        for (let exerciseIndex = 0; exerciseIndex < sortedExercises.length; exerciseIndex++) {
+          const exercise = sortedExercises[exerciseIndex]!;
+          const raw: PlannedWorkoutItemRow = {
+            id: exercise.id,
+            type: PlannedWorkoutItemType.exercise,
+            exerciseId: exercise.exerciseId,
+            sets: exercise.sets,
+            targetReps: exercise.targetReps,
+            targetDuration: exercise.targetDuration,
+            restBetweenSetsMs: exercise.restBetweenSetsMs,
+            weightKg: exercise.weightKg,
+            weightPerSet: exercise.weightPerSet,
+            notes: exercise.notes,
+            restDurationMs: null,
+            sortOrder: items.length,
+            exercise: exercise.exercise,
+          };
 
-        for (const ov of itemOverrides) {
-          if (ov.overrideType !== 'ADD_ITEM') {
-            merged = applyOverride(merged, ov);
+          const st = raw.exerciseId ? stateByExercise.get(raw.exerciseId) : undefined;
+          const subs = raw.exerciseId ? substitutionByExercise.get(raw.exerciseId) : undefined;
+          let merged = mergeProgression(raw, st, trainingGoal, subs);
+          const itemOverrides = overridesByItem.get(exercise.id) ?? [];
+
+          for (const ov of itemOverrides) {
+            if (ov.overrideType !== 'ADD_ITEM') {
+              merged = applyOverride(merged, ov);
+            }
           }
-        }
-        items.push(merged);
+          items.push({ ...merged, phaseIndex, phaseRole });
 
-        for (const ov of itemOverrides) {
-          const added = buildAddedItem(raw, ov, trainingGoal);
-          if (added) {
-            items.push(added);
+          for (const ov of itemOverrides) {
+            const added = buildAddedItem(raw, ov, trainingGoal);
+            if (added) items.push({ ...added, phaseIndex, phaseRole });
+          }
+
+          const isLastOverall =
+            phaseIndex === sortedPhases.length - 1 &&
+            exerciseIndex === sortedExercises.length - 1;
+          const restAfter = exercise.restAfterExerciseMs ?? 0;
+          if (!isLastOverall && restAfter > 0) {
+            items.push({
+              id: `${exercise.id}__rest`,
+              type: PlannedWorkoutItemType.rest,
+              exerciseId: null,
+              sets: null,
+              targetReps: null,
+              targetDuration: null,
+              restBetweenSetsMs: null,
+              weightKg: null,
+              weightPerSet: null,
+              notes: null,
+              restDurationMs: restAfter,
+              sortOrder: items.length,
+              phaseIndex,
+              phaseRole,
+              suggestion: buildSuggestion(
+                {
+                  id: `${exercise.id}__rest`,
+                  type: PlannedWorkoutItemType.rest,
+                  exerciseId: null,
+                  sets: null,
+                  targetReps: null,
+                  targetDuration: null,
+                  restBetweenSetsMs: null,
+                  weightKg: null,
+                  weightPerSet: null,
+                  notes: null,
+                  restDurationMs: restAfter,
+                  sortOrder: items.length,
+                },
+                undefined,
+                trainingGoal,
+              ),
+            });
           }
         }
       }
@@ -346,7 +409,7 @@ export const effectivePlanService = {
         id: plannedWorkoutRow.id,
         name: plannedWorkoutRow.name as Prisma.JsonValue,
         sortOrder: plannedWorkoutRow.sortOrder,
-        role: plannedWorkoutRow.role != null ? String(plannedWorkoutRow.role) : null,
+        workoutTemplateId: plannedWorkoutRow.workoutTemplateId,
         items: items.map((item, index) => ({ ...item, sortOrder: index })),
       };
     });

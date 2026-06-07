@@ -8,11 +8,6 @@
 
 import type { LocalizedText } from '@/lib/types/localized';
 
-/**
- * Difficulty level for exercise in workout
- */
-export type DifficultyLevel = 'beginner' | 'normal' | 'advanced';
-
 // ============================================
 // WORKOUT EXERCISE TYPES
 // ============================================
@@ -27,16 +22,34 @@ export interface WorkoutExerciseInput {
   id?: string;
   exerciseId: string;
   variantIndex?: number;
-  difficulty?: DifficultyLevel;
+  /** @deprecated Use targetRepsPerSet — kept for legacy payloads */
   targetReps?: number;
+  targetRepsPerSet?: number[];
   targetDuration?: number;
   sets?: number;
+  /** @deprecated Use restBetweenSetsPerSetMs — kept for legacy payloads */
   restBetweenSetsMs?: number;
+  restBetweenSetsPerSetMs?: number[];
   restAfterExerciseMs?: number;
+  /** @deprecated Use weightPerSet — kept for legacy payloads */
   weightKg?: number;
   weightPerSet?: number[];
   notes?: LocalizedText;
   sortOrder?: number;
+}
+
+/**
+ * Workout phase input for creating/updating nested workout templates
+ */
+export interface WorkoutPhaseInput {
+  id?: string;
+  phaseId: string;
+  sortOrder?: number;
+  nameOverride?: LocalizedText;
+  canSkipOverride?: boolean;
+  canContinueOverride?: boolean;
+  maxContinueTimeMsOverride?: number | null;
+  exercises?: WorkoutExerciseInput[];
 }
 
 /**
@@ -45,15 +58,32 @@ export interface WorkoutExerciseInput {
 export interface WorkoutExerciseExport {
   exercise: string;        // Exercise slug
   variantIndex: number;
-  difficulty: DifficultyLevel;
   targetReps?: number;
+  targetRepsPerSet?: number[];
   targetDuration?: number;
   sets: number;
   restBetweenSetsMs: number;
+  restBetweenSetsPerSetMs?: number[];
   restAfterExerciseMs: number;
-  weightKg?: number;
   weightPerSet?: number[];
   notes?: LocalizedText;
+}
+
+/**
+ * Workout phase for mobile export
+ */
+export interface WorkoutPhaseExport {
+  id: string;
+  phaseId: string;
+  slug: string;
+  role: string;
+  name: LocalizedText;
+  description?: LocalizedText;
+  canSkip: boolean;
+  canContinue: boolean;
+  maxContinueTimeMs?: number;
+  sortOrder: number;
+  exercises: WorkoutExerciseExport[];
 }
 
 // ============================================
@@ -68,12 +98,13 @@ export interface CreateWorkoutInput {
   description?: LocalizedText;
   slug?: string;
   coverImageUrl?: string;
-  difficulty?: 'beginner' | 'intermediate' | 'advanced';
+  levelId?: string | null;
   estimatedDurationMin?: number;
   tags?: string[];
   /** Highlight in Explore / ordering; defaults false in DB */
   isFeatured?: boolean;
   exercises?: WorkoutExerciseInput[];
+  phases?: WorkoutPhaseInput[];
 }
 
 /**
@@ -92,11 +123,18 @@ export interface WorkoutExport {
   name: LocalizedText;
   description?: LocalizedText;
   coverImageUrl?: string;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  levelId?: string | null;
+  level?: {
+    id: string;
+    number: number;
+    code: string;
+    name: LocalizedText;
+  } | null;
   estimatedDurationMin?: number;
   tags?: string[];
   isFeatured: boolean;
   exercises: WorkoutExerciseExport[];
+  phases: WorkoutPhaseExport[];
   updatedAt: string;
 }
 
@@ -128,11 +166,3 @@ export const DEFAULT_REST_TIMES = {
   restAfterExerciseMs: 60000,
 } as const;
 
-/**
- * Difficulty labels
- */
-export const DIFFICULTY_LABELS: Record<DifficultyLevel, LocalizedText> = {
-  beginner: { ar: 'مبتدئ', en: 'Beginner' },
-  normal: { ar: 'متوسط', en: 'Normal' },
-  advanced: { ar: 'متقدم', en: 'Advanced' },
-};

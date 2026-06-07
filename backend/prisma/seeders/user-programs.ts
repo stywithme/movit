@@ -1,5 +1,5 @@
 ﻿import type { PrismaClient } from '@prisma/client';
-import { ProgressStatus, ReportStatus } from '@prisma/client';
+import { PlannedWorkoutItemType, ProgressStatus, ReportStatus } from '@prisma/client';
 
 // ============================================
 // Realistic training data generator
@@ -196,7 +196,7 @@ export async function seedUserPrograms(prisma: PrismaClient) {
     include: {
       day: { include: { week: true } },
       items: {
-        where: { type: 'exercise', exerciseId: { not: null } },
+        where: { type: PlannedWorkoutItemType.exercise, exerciseId: { not: null } },
         include: { exercise: true },
         orderBy: { sortOrder: 'asc' },
       },

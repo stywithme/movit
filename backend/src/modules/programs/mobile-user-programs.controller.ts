@@ -2,6 +2,7 @@
 import type { Request, Response } from 'express';
 import { verifyMobileToken } from '@/modules/auth/auth.service';
 import { getPrisma } from '@/lib/prisma/client';
+import { validateOverrideTargetInput } from '@/lib/user-program-override';
 import type { Prisma } from '@prisma/client';
 import { effectivePlanService } from '@/modules/effective-plan/effective-plan.service';
 import { programService } from './programs.service';
@@ -140,7 +141,10 @@ export class MobileUserProgramsController {
     body: {
       weekNumber: number;
       dayNumber: number;
-      plannedWorkoutItemId: string;
+      /** Legacy target — mutually exclusive with workoutTemplateExerciseId */
+      plannedWorkoutItemId?: string;
+      /** Template exercise target — mutually exclusive with plannedWorkoutItemId */
+      workoutTemplateExerciseId?: string;
       overrideType: string;
       reasonCode?: string;
       data?: Record<string, unknown>;
@@ -161,21 +165,30 @@ export class MobileUserProgramsController {
         res.status(404);
         return { success: false, error: 'User program not found' };
       }
-      if (
-        body.weekNumber === undefined ||
-        body.dayNumber === undefined ||
-        !body.plannedWorkoutItemId ||
-        !body.overrideType
-      ) {
+      if (body.weekNumber === undefined || body.dayNumber === undefined || !body.overrideType) {
         res.status(400);
-        return { success: false, error: 'weekNumber, dayNumber, plannedWorkoutItemId, overrideType are required' };
+        return {
+          success: false,
+          error: 'weekNumber, dayNumber, overrideType are required',
+        };
       }
+
+      const target = validateOverrideTargetInput({
+        plannedWorkoutItemId: body.plannedWorkoutItemId,
+        workoutTemplateExerciseId: body.workoutTemplateExerciseId,
+      });
+      if (!target.valid) {
+        res.status(400);
+        return { success: false, error: target.error };
+      }
+
       const row = await prisma.userProgramOverride.create({
         data: {
           userProgramId: id,
           weekNumber: body.weekNumber,
           dayNumber: body.dayNumber,
-          plannedWorkoutItemId: body.plannedWorkoutItemId,
+          plannedWorkoutItemId: target.plannedWorkoutItemId,
+          workoutTemplateExerciseId: target.workoutTemplateExerciseId,
           overrideType: body.overrideType as never,
           reasonCode: (body.reasonCode as never) ?? undefined,
           data: (body.data as Prisma.InputJsonValue) ?? undefined,

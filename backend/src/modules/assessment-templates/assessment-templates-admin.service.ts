@@ -69,8 +69,6 @@ export interface TemplateCreateData {
   description?: { ar: string; en: string } | null;
   type?: string;
   targetLevelId?: string | null;
-  levelRangeMin?: number;
-  levelRangeMax?: number;
   domainWeights?: Record<string, number>;
   isDefault?: boolean;
   sortOrder?: number;
@@ -245,8 +243,6 @@ export const assessmentTemplateService = {
           description: data.description ?? undefined,
           type: data.type ?? 'initial',
           targetLevelId: data.targetLevelId ?? undefined,
-          ...(data.levelRangeMin !== undefined ? { levelRangeMin: data.levelRangeMin } : {}),
-          ...(data.levelRangeMax !== undefined ? { levelRangeMax: data.levelRangeMax } : {}),
           domainWeights: data.domainWeights ?? undefined,
           isDefault: data.isDefault ?? false,
           sortOrder: data.sortOrder ?? 0,
@@ -287,8 +283,6 @@ export const assessmentTemplateService = {
     if (data.description !== undefined) updateData.description = data.description;
     if (data.type !== undefined) updateData.type = data.type;
     if (data.targetLevelId !== undefined) updateData.targetLevelId = data.targetLevelId;
-    if (data.levelRangeMin !== undefined) updateData.levelRangeMin = data.levelRangeMin;
-    if (data.levelRangeMax !== undefined) updateData.levelRangeMax = data.levelRangeMax;
     if (data.domainWeights !== undefined) updateData.domainWeights = data.domainWeights;
     if (data.isDefault !== undefined) updateData.isDefault = data.isDefault;
     if (data.sortOrder !== undefined) updateData.sortOrder = data.sortOrder;

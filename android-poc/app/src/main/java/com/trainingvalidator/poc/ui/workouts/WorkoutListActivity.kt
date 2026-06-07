@@ -134,8 +134,7 @@ class WorkoutListActivity : AppCompatActivity() {
             val durationMinutes = (workout.getEstimatedDurationMs() / 60000).toInt()
             holder.tvDuration.text = getString(R.string.duration_minutes_format, durationMinutes)
             
-            // Workout difficulty badge
-            holder.tvDifficulty.text = formatDifficulty(workout.difficulty)
+            holder.tvDifficulty.text = formatWorkoutLevel(workout)
 
             // Optional: muscles not available in workout config
             holder.tvMuscles.visibility = View.GONE
@@ -147,9 +146,9 @@ class WorkoutListActivity : AppCompatActivity() {
         override fun getItemCount() = items.size
     }
 
-    private fun formatDifficulty(difficulty: String): String {
-        if (difficulty.isBlank()) return getString(R.string.workout_detail_default_difficulty)
-        val normalized = difficulty.replace('_', ' ').lowercase()
-        return normalized.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+    private fun formatWorkoutLevel(workout: WorkoutConfig): String {
+        val level = workout.level ?: return getString(R.string.workout_detail_default_difficulty)
+        val label = level.name.en.ifBlank { level.name.ar }.ifBlank { level.code }
+        return if (level.number > 0) "Level ${level.number} • $label" else label
     }
 }

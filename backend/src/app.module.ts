@@ -10,6 +10,7 @@ import { AttributesModule } from './modules/attributes/attributes.module';
 import { PosePositionsModule } from './modules/pose-positions/pose-positions.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ExercisesModule } from './modules/exercises/exercises.module';
+import { WorkoutPhasesModule } from './modules/workout-phases/workout-phases.module';
 import { WorkoutTemplatesModule } from './modules/workout-templates/workout-templates.module';
 import { ProgramsModule } from './modules/programs/programs.module';
 import { MessagesModule } from './modules/messages/messages.module';
@@ -60,6 +61,7 @@ import { TrainingProfileModule } from './modules/training-profile/training-profi
     PosePositionsModule,
     AuthModule,
     ExercisesModule,
+    WorkoutPhasesModule,
     WorkoutTemplatesModule,
     ProgramsModule,
     MessagesModule,

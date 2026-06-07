@@ -70,12 +70,14 @@ model Exercise {
   createdAt                 DateTime                     @default(now())
   updatedAt                 DateTime                     @updatedAt
   deletedAt                 DateTime?
+  levelId                   String?
   isFeatured                Boolean                      @default(false)
   assessmentTemplateEntries AssessmentTemplateExercise[]
   attributes                ExerciseAttribute[]
   media                     ExerciseMedia[]
   category                  AttributeValue               @relation("ExerciseCategory", fields: [categoryId], references: [id])
   countingMethod            AttributeValue               @relation("ExerciseCountingMethod", fields: [countingMethodId], references: [id])
+  level                     Level?                       @relation(fields: [levelId], references: [id])
   poseVariants              PoseVariant[]
   archetype                 ExerciseArchetype?
   movementPattern           MovementPattern?
@@ -87,12 +89,14 @@ model Exercise {
   plannedWorkoutItems       PlannedWorkoutItem[]
   workoutExecutions         WorkoutExecution[]
   workoutTemplateExercises  WorkoutTemplateExercise[]
+  progressionRules          ProgressionRule[]
   progressionProfile        ExerciseProgressionProfile?
   progressionStates         UserProgramExerciseProgressionState[]
   userExercisePreferences   UserExercisePreference[]
 
   @@index([categoryId])
   @@index([countingMethodId])
+  @@index([levelId])
   @@index([status])
   @@index([deletedAt])
   @@map("exercises")
@@ -299,7 +303,7 @@ model WorkoutTemplate {
   description          Json?
   slug                 String                    @unique
   coverImageUrl        String?
-  difficulty           Difficulty                @default(beginner)
+  levelId              String?
   estimatedDurationMin Int?
   tags                 Json?
   status               ContentStatus             @default(draft)
@@ -310,35 +314,98 @@ model WorkoutTemplate {
   updatedAt            DateTime                  @updatedAt
   deletedAt            DateTime?
   isFeatured           Boolean                   @default(false)
+  origin               WorkoutTemplateOrigin     @default(STANDALONE)
+  programId            String?
   plannedWorkoutItems  PlannedWorkoutItem[]
+  plannedWorkouts      PlannedWorkout[]
+  workoutExecutions    WorkoutExecution[]
+  phases               WorkoutTemplatePhase[]
   exercises            WorkoutTemplateExercise[]
+  program              Program?                  @relation(fields: [programId], references: [id], onDelete: SetNull)
+  level                Level?                    @relation(fields: [levelId], references: [id])
 
   @@index([status])
   @@index([deletedAt])
+  @@index([levelId])
+  @@index([origin])
+  @@index([programId])
   @@map("workout_templates")
+}
+
+/// WorkoutPhase - reusable phase definition (Warm-up / Main / Cool-down).
+model WorkoutPhase {
+  id                String                 @id @default(uuid())
+  slug              String                 @unique
+  name              Json
+  description       Json?
+  role              WorkoutBlockRole       @default(MAIN)
+  canSkip           Boolean                @default(false)
+  canContinue       Boolean                @default(true)
+  maxContinueTimeMs Int?
+  color             String?
+  icon              String?
+  isActive          Boolean                @default(true)
+  sortOrder         Int                    @default(0)
+  createdBy         String?
+  updatedBy         String?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  deletedAt         DateTime?
+  templatePhases    WorkoutTemplatePhase[]
+
+  @@index([role])
+  @@index([deletedAt])
+  @@map("workout_phases")
+}
+
+/// WorkoutTemplatePhase - an ordered phase instance inside a workout template.
+model WorkoutTemplatePhase {
+  id                        String                    @id @default(uuid())
+  workoutTemplateId         String
+  phaseId                   String
+  sortOrder                 Int                       @default(0)
+  nameOverride              Json?
+  canSkipOverride           Boolean?
+  canContinueOverride       Boolean?
+  maxContinueTimeMsOverride Int?
+  createdAt                 DateTime                  @default(now())
+  updatedAt                 DateTime                  @updatedAt
+  workoutTemplate           WorkoutTemplate           @relation(fields: [workoutTemplateId], references: [id], onDelete: Cascade)
+  phase                     WorkoutPhase              @relation(fields: [phaseId], references: [id])
+  exercises                 WorkoutTemplateExercise[]
+
+  @@unique([id, workoutTemplateId])
+  @@index([workoutTemplateId])
+  @@index([phaseId])
+  @@map("workout_template_phases")
 }
 
 /// WorkoutTemplateExercise - Exercise within a template with specific configuration
 model WorkoutTemplateExercise {
-  id                  String          @id @default(uuid())
-  workoutTemplateId   String
-  exerciseId          String
-  variantIndex        Int             @default(0)
-  difficulty          String          @default("beginner")
-  targetReps          Int?
-  targetDuration      Int?
-  sets                Int             @default(1)
-  restBetweenSetsMs   Int             @default(30000)
-  restAfterExerciseMs Int             @default(60000)
-  weightKg            Float?
-  weightPerSet        Json?
-  notes               Json?
-  sortOrder           Int             @default(0)
-  createdAt           DateTime        @default(now())
-  exercise            Exercise        @relation(fields: [exerciseId], references: [id])
-  workoutTemplate     WorkoutTemplate @relation(fields: [workoutTemplateId], references: [id], onDelete: Cascade)
+  id                     String               @id @default(uuid())
+  workoutTemplateId      String
+  workoutTemplatePhaseId String
+  exerciseId             String
+  variantIndex           Int                  @default(0)
+  targetReps             Int?
+  targetRepsPerSet       Json?
+  targetDuration         Int?
+  sets                   Int                  @default(1)
+  restBetweenSetsMs      Int                  @default(30000)
+  restBetweenSetsPerSetMs Json?
+  restAfterExerciseMs    Int                  @default(60000)
+  weightKg               Float?
+  weightPerSet           Json?
+  notes                  Json?
+  sortOrder              Int                  @default(0)
+  createdAt              DateTime             @default(now())
+  exercise               Exercise             @relation(fields: [exerciseId], references: [id])
+  workoutTemplate        WorkoutTemplate      @relation(fields: [workoutTemplateId], references: [id], onDelete: Cascade)
+  workoutTemplatePhase   WorkoutTemplatePhase @relation(fields: [workoutTemplatePhaseId, workoutTemplateId], references: [id, workoutTemplateId], onDelete: Cascade)
+  userProgramOverrides   UserProgramOverride[]
 
   @@index([workoutTemplateId])
+  @@index([workoutTemplatePhaseId])
   @@index([exerciseId])
   @@map("workout_template_exercises")
 }
@@ -358,8 +425,8 @@ model Program {
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   deletedAt             DateTime?
-  levelRangeMax         Int                    @default(5)
-  levelRangeMin         Int                    @default(1)
+  levelMinId            String?
+  levelMaxId            String?
   nextProgramId         String?
   prerequisiteProgramId String?
   prescriptionPriority  Int                    @default(100)
@@ -381,20 +448,23 @@ model Program {
   dependentPrograms     Program[]              @relation("ProgramChain")
   forkedFrom            Program?               @relation("ProgramFork", fields: [forkedFromId], references: [id])
   forkedPrograms        Program[]              @relation("ProgramFork")
+  levelMin              Level?                 @relation("ProgramMinLevel", fields: [levelMinId], references: [id])
+  levelMax              Level?                 @relation("ProgramMaxLevel", fields: [levelMaxId], references: [id])
   progressionRules      ProgressionRule[]
   userPrograms          UserProgram[]
   phases                ProgramPhase[]
+  embeddedWorkoutTemplates WorkoutTemplate[]
 
   @@index([deletedAt])
   @@index([isPublished])
   @@index([programType])
-  @@index([levelRangeMin, levelRangeMax])
+  @@index([levelMinId])
+  @@index([levelMaxId])
   @@map("programs")
 }
 
-/// ProgramPhase — Phase-based structure for program editor.
-/// Each phase has a name, week range, weekType, and a weeklyPattern template.
-/// Backend expands pattern to concrete ProgramWeek rows at save time for mobile compatibility.
+/// ProgramPhase — phase metadata for the program editor.
+/// The calendar itself lives only in ProgramWeek -> ProgramDay -> PlannedWorkout.
 model ProgramPhase {
   id            String   @id @default(uuid())
   programId     String
@@ -404,7 +474,6 @@ model ProgramPhase {
   startWeek     Int
   endWeek       Int
   sortOrder     Int      @default(0)
-  weeklyPattern Json?                      // Serialized pattern: { days: DayPatternInput[] }
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   program       Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
@@ -469,17 +538,20 @@ model ProgramDay {
 model PlannedWorkout {
   id                   String               @id @default(uuid())
   dayId                String
+  workoutTemplateId    String
   name                 Json
   sortOrder            Int                  @default(0)
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
   estimatedDurationMin Int?
-  role                 WorkoutBlockRole     @default(MAIN)
   items                PlannedWorkoutItem[]
   reports              PlannedWorkoutReport[]
+  progressionHistory   ProgressionHistory[]
   day                  ProgramDay           @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  workoutTemplate      WorkoutTemplate      @relation(fields: [workoutTemplateId], references: [id], onDelete: Restrict)
 
   @@index([dayId])
+  @@index([workoutTemplateId])
   @@map("planned_workouts")
 }
 
@@ -487,7 +559,7 @@ model PlannedWorkoutItem {
   id                    String            @id @default(uuid())
   plannedWorkoutId      String
   sortOrder             Int               @default(0)
-  type                  String
+  type                  PlannedWorkoutItemType
   exerciseId            String?
   sets                  Int?              @default(1)
   targetReps            Int?
@@ -539,22 +611,26 @@ model UserProgram {
 }
 
 /// User-specific overrides applied on top of program template (effective plan).
+/// Target XOR (DB CHECK): exactly one of plannedWorkoutItemId (legacy) or workoutTemplateExerciseId (template).
 model UserProgramOverride {
-  id             String             @id @default(uuid())
-  userProgramId  String
-  weekNumber     Int
-  dayNumber      Int
-  plannedWorkoutItemId String
-  overrideType         OverrideType
-  reasonCode           OverrideReason?
-  data                 Json?
-  appliedBy            OverrideAppliedBy  @default(USER)
-  createdAt            DateTime           @default(now())
-  userProgram          UserProgram        @relation(fields: [userProgramId], references: [id], onDelete: Cascade)
-  plannedWorkoutItem   PlannedWorkoutItem @relation(fields: [plannedWorkoutItemId], references: [id], onDelete: Cascade)
+  id                        String                   @id @default(uuid())
+  userProgramId             String
+  weekNumber                Int
+  dayNumber                 Int
+  plannedWorkoutItemId      String?
+  workoutTemplateExerciseId String?
+  overrideType              OverrideType
+  reasonCode                OverrideReason?
+  data                      Json?
+  appliedBy                 OverrideAppliedBy        @default(USER)
+  createdAt                 DateTime                 @default(now())
+  userProgram               UserProgram              @relation(fields: [userProgramId], references: [id], onDelete: Cascade)
+  plannedWorkoutItem        PlannedWorkoutItem?      @relation(fields: [plannedWorkoutItemId], references: [id], onDelete: Cascade)
+  workoutTemplateExercise   WorkoutTemplateExercise? @relation(fields: [workoutTemplateExerciseId], references: [id], onDelete: Cascade)
 
   @@index([userProgramId, weekNumber, dayNumber])
   @@index([plannedWorkoutItemId])
+  @@index([workoutTemplateExerciseId])
   @@map("user_program_overrides")
 }
 
@@ -832,6 +908,11 @@ model Level {
   updatedAt                DateTime             @updatedAt
   maxThreshold             Float?
   assessmentTemplates      AssessmentTemplate[]
+  exercises                Exercise[]
+  workoutTemplates         WorkoutTemplate[]
+  programsAsMinLevel       Program[] @relation("ProgramMinLevel")
+  programsAsMaxLevel       Program[] @relation("ProgramMaxLevel")
+  bodyScanResults          BodyScanResult[]
 
   @@map("levels")
 }
@@ -907,9 +988,11 @@ model ProgressionRule {
   updatedAt    DateTime             @updatedAt
   history      ProgressionHistory[]
   program      Program?             @relation(fields: [programId], references: [id])
+  exercise     Exercise?            @relation(fields: [exerciseSlug], references: [slug], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([scope])
   @@index([programId])
+  @@index([exerciseSlug])
   @@index([isActive])
   @@map("progression_rules")
 }
@@ -990,9 +1073,11 @@ model ProgressionHistory {
 
   user User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   rule ProgressionRule? @relation(fields: [ruleId], references: [id])
+  plannedWorkout PlannedWorkout? @relation(fields: [plannedWorkoutId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([ruleId])
+  @@index([plannedWorkoutId])
   @@index([userId, appliedAt])
   @@index([userId, seen])
   @@map("progression_history")
@@ -1024,8 +1109,6 @@ model AssessmentTemplate {
   description   Json?
   type          String                       @default("initial")
   targetLevelId String?
-  levelRangeMin Int                          @default(1)
-  levelRangeMax Int                          @default(5)
   domainWeights Json                         @default("{\"safety\": 0.20, \"control\": 0.25, \"mobility\": 0.35, \"symmetry\": 0.20}")
   isDefault     Boolean                      @default(false)
   isPublished   Boolean                      @default(false)
@@ -1094,7 +1177,7 @@ model BodyScanResult {
   controlScore          Float
   symmetryScore         Float?
   safetyScore           Float
-  fitnessLevel          String
+  levelId               String?
   regions               Json
   symmetryData          Json?
   hypotheses            Json?
@@ -1111,6 +1194,7 @@ model BodyScanResult {
   nextAssessments       BodyScanResult[]       @relation("AssessmentProgress")
   template              AssessmentTemplate?    @relation(fields: [templateId], references: [id])
   user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  level                 Level?                 @relation(fields: [levelId], references: [id])
   reassessmentSchedules ReassessmentSchedule[]
   levelProfiles         UserLevelProfile?
 
@@ -1118,6 +1202,7 @@ model BodyScanResult {
   @@index([userId, type])
   @@index([userId, completedAt])
   @@index([templateId])
+  @@index([levelId])
   @@map("body_scan_results")
 }
 
@@ -1138,7 +1223,7 @@ model WorkoutExecution {
   weightKg   Float?
   weightUnit String @default("kg")
 
-  context String @default("free") // free | program | assessment | explore_workout | quick_start
+  context WorkoutExecutionContext @default(free)
 
   workoutGroupId String?
 
@@ -1153,6 +1238,7 @@ model WorkoutExecution {
 
   user              User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   exercise          Exercise                 @relation(fields: [exerciseId], references: [id])
+  workoutTemplate   WorkoutTemplate?         @relation(fields: [workoutTemplateId], references: [id], onDelete: SetNull)
   executionMetrics  WorkoutExecutionMetrics?
   repMetrics        RepMetrics[]
 
@@ -1161,6 +1247,7 @@ model WorkoutExecution {
   @@index([timestamp])
   @@index([userId, exerciseId])
   @@index([workoutGroupId])
+  @@index([workoutTemplateId])
   @@index([context])
   @@map("workout_executions")
 }
@@ -1220,12 +1307,6 @@ enum ContentStatus {
   published
 }
 
-enum Difficulty {
-  beginner
-  intermediate
-  advanced
-}
-
 enum ProgramType {
   SYSTEM
   COACH
@@ -1256,6 +1337,11 @@ enum ProgramAttributeMode {
   EXCLUDED
 }
 
+enum WorkoutTemplateOrigin {
+  STANDALONE
+  PROGRAM_EMBEDDED
+}
+
 enum WorkoutBlockRole {
   WARMUP
   ACTIVATION
@@ -1264,6 +1350,19 @@ enum WorkoutBlockRole {
   CORRECTIVE
   COOLDOWN
   TEST
+}
+
+enum PlannedWorkoutItemType {
+  exercise
+  rest
+}
+
+enum WorkoutExecutionContext {
+  free
+  program
+  assessment
+  explore_workout
+  quick_start
 }
 
 enum WorkoutItemIntent {

@@ -19,7 +19,7 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.trainingvalidator.poc.ui.utils.bindUserAvatar
 import com.trainingvalidator.poc.ui.utils.currentLanguage
-import com.trainingvalidator.poc.ui.utils.formatProgramLevelRange
+import com.trainingvalidator.poc.ui.utils.formatProgramLevel
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.FragmentTrainBinding
 import com.trainingvalidator.poc.network.UserProgramExport
@@ -29,6 +29,7 @@ import com.trainingvalidator.poc.storage.ProgramDayCalculator
 import com.trainingvalidator.poc.storage.ProgramRepository
 import com.trainingvalidator.poc.storage.ProgramWorkoutReportStore
 import com.trainingvalidator.poc.training.workout.ReportAggregator
+import com.trainingvalidator.poc.training.models.PlannedWorkoutItemType
 import com.trainingvalidator.poc.training.models.ProgramConfig
 import com.trainingvalidator.poc.training.models.ProgramDay
 import com.trainingvalidator.poc.training.models.ProgramWorkout
@@ -340,7 +341,7 @@ class TrainFragment : Fragment() {
         binding.tvProgramName.text = programName
 
         binding.tvProgramDifficulty.text =
-            requireContext().formatProgramLevelRange(program.levelRangeMin, program.levelRangeMax)
+            requireContext().formatProgramLevel(program.levelMin, program.levelMax)
 
         binding.tvProgramPosition.text = getString(
             R.string.pg_position_format,
@@ -547,7 +548,7 @@ class TrainFragment : Fragment() {
             if (tomorrowDay != null) {
                 val tomorrowName = tomorrowDay.name?.get(language)?.ifBlank { tomorrowDay.name.en }
                     ?: getString(R.string.programs_day_title_format, tomorrowDay.dayNumber)
-                val exerciseCount = tomorrowDay.workouts.sumOf { w -> w.items.count { it.type == "exercise" } }
+                val exerciseCount = tomorrowDay.workouts.sumOf { w -> w.items.count { it.type == PlannedWorkoutItemType.EXERCISE } }
                 binding.tvRestDayTomorrow.text = getString(
                     R.string.pg_rest_tomorrow_format, tomorrowName, exerciseCount
                 )
@@ -619,7 +620,7 @@ class TrainFragment : Fragment() {
             val plannedWorkoutName = plannedWorkout.name.get(language).ifBlank { plannedWorkout.name.en }
             tvPlannedWorkoutName.text = plannedWorkoutName
 
-            val exerciseCount = plannedWorkout.items.count { it.type == "exercise" }
+            val exerciseCount = plannedWorkout.items.count { it.type == PlannedWorkoutItemType.EXERCISE }
             val estimatedMin = estimatePlannedWorkoutDuration(plannedWorkout)
             tvWorkoutMeta.text = getString(R.string.pg_planned_workout_exercises_format, exerciseCount, estimatedMin)
 
@@ -701,7 +702,7 @@ class TrainFragment : Fragment() {
             val tvStatus = row.findViewById<TextView>(R.id.tvPlanStatus)
             tvStatus.visibility = View.GONE
 
-            if (item.type == "rest") {
+            if (item.type == PlannedWorkoutItemType.REST) {
                 tvBullet.text = "?"
                 tvBullet.setTextColor(requireContext().getColor(R.color.text_tertiary))
                 tvTitle.text = getString(R.string.programs_rest_label)
@@ -910,7 +911,7 @@ class TrainFragment : Fragment() {
             val btnAction = row.findViewById<MaterialButton>(R.id.btnWorkoutAction)
 
             val plannedWorkoutName = plannedWorkout.name.get(language).ifBlank { plannedWorkout.name.en }
-            val exerciseCount = plannedWorkout.items.count { it.type == "exercise" }
+            val exerciseCount = plannedWorkout.items.count { it.type == PlannedWorkoutItemType.EXERCISE }
             tvWorkoutTitle.text = plannedWorkoutName
             tvWorkoutMeta.text = getString(R.string.programs_exercises_count_format, exerciseCount)
 
@@ -1124,7 +1125,7 @@ class TrainFragment : Fragment() {
     private fun estimatePlannedWorkoutDuration(plannedWorkout: ProgramWorkout): Int {
         var totalSeconds = 0
         plannedWorkout.items.forEach { item ->
-            if (item.type == "rest") {
+            if (item.type == PlannedWorkoutItemType.REST) {
                 totalSeconds += ((item.restDurationMs ?: 0L) / 1000).toInt()
             } else {
                 val sets = item.sets ?: 1
@@ -1169,7 +1170,7 @@ class TrainFragment : Fragment() {
             holder.tvDuration.text = getString(R.string.weeks_count_format, program.durationWeeks)
 
             holder.tvDifficulty.text =
-                requireContext().formatProgramLevelRange(program.levelRangeMin, program.levelRangeMax)
+                requireContext().formatProgramLevel(program.levelMin, program.levelMax)
 
             val totalPlannedWorkouts = program.weeks.sumOf { w -> w.days.sumOf { d -> d.workouts.size } }
             holder.tvStats.text = getString(R.string.pg_stats_format, program.durationWeeks, totalPlannedWorkouts)

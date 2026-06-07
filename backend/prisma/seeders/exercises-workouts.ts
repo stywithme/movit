@@ -359,7 +359,6 @@ export async function seedExercisesAndWorkouts(
       exercises: Array<{
         exercise: string;
         variantIndex?: number;
-        difficulty?: 'beginner' | 'normal' | 'advanced';
         target?: { reps?: number; durationSec?: number };
         notes?: { ar: string; en: string };
       }>;
@@ -384,8 +383,30 @@ export async function seedExercisesAndWorkouts(
       },
     });
 
-    await prisma.workoutTemplateExercise.deleteMany({
+    const mainPhase = await prisma.workoutPhase.upsert({
+      where: { slug: 'main' },
+      update: { deletedAt: null, isActive: true },
+      create: {
+        slug: 'main',
+        name: { en: 'Main Workout', ar: 'التمرين الأساسي' },
+        description: { en: 'Primary training work.', ar: 'الجزء الأساسي من التمرين.' },
+        role: 'MAIN',
+        canSkip: false,
+        canContinue: true,
+        sortOrder: 10,
+      },
+    });
+
+    await prisma.workoutTemplatePhase.deleteMany({
       where: { workoutTemplateId: workoutRecord.id },
+    });
+
+    const workoutTemplatePhase = await prisma.workoutTemplatePhase.create({
+      data: {
+        workoutTemplateId: workoutRecord.id,
+        phaseId: mainPhase.id,
+        sortOrder: 0,
+      },
     });
 
     for (let index = 0; index < workoutJson.exercises.length; index++) {
@@ -407,13 +428,15 @@ export async function seedExercisesAndWorkouts(
       await prisma.workoutTemplateExercise.create({
         data: {
           workoutTemplateId: workoutRecord.id,
+          workoutTemplatePhaseId: workoutTemplatePhase.id,
           exerciseId: exerciseRecord.id,
           variantIndex: exerciseEntry.variantIndex ?? 0,
-          difficulty: exerciseEntry.difficulty ?? 'beginner',
           targetReps: exerciseEntry.target?.reps ?? undefined,
+          targetRepsPerSet: exerciseEntry.target?.reps != null ? [exerciseEntry.target.reps] : undefined,
           targetDuration: exerciseEntry.target?.durationSec ?? undefined,
           sets: 1,
           restBetweenSetsMs: 30000,
+          restBetweenSetsPerSetMs: [30000],
           restAfterExerciseMs,
           notes: exerciseEntry.notes || undefined,
           sortOrder: index,

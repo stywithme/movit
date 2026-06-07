@@ -4,6 +4,10 @@
  * Types for storing and retrieving per-exercise workout execution data from mobile app
  */
 
+import { WorkoutExecutionContext } from '@prisma/client';
+
+export { WorkoutExecutionContext };
+
 // ============================================
 // Rep Metrics
 // ============================================
@@ -76,8 +80,8 @@ export interface WorkoutExecutionUploadPayload {
   repMetrics: RepMetricsData[];
   executionMetrics: ExecutionMetrics | null;
 
-  // Context ? source/mode of this execution
-  context?: string;         // free | program | assessment | explore_workout | quick_start
+  // Context — source/mode of this execution
+  context?: WorkoutExecutionContext;
 
   // Grouping ? shared ID for multi-exercise free workouts
   workoutGroupId?: string;
@@ -97,8 +101,12 @@ export interface ExploreWorkoutUploadPayload {
   workoutGroupId: string;
   workoutTemplateId?: string;
   isCustomized?: boolean;
-  context: 'explore_workout' | 'quick_start';
-  executions: (WorkoutExecutionUploadPayload & { context: string; workoutGroupId: string; workoutTemplateId?: string })[];
+  context: WorkoutExecutionContext;
+  executions: (WorkoutExecutionUploadPayload & {
+    context: WorkoutExecutionContext;
+    workoutGroupId: string;
+    workoutTemplateId?: string;
+  })[];
 }
 
 export interface ExploreWorkoutResponse {

@@ -114,6 +114,10 @@ export const mobileSyncService = {
       }),
       prisma.program.findMany({
         where: programWhere,
+        include: {
+          levelMin: { select: { number: true } },
+          levelMax: { select: { number: true } },
+        },
         orderBy: [
           { isFeatured: 'desc' },
           { updatedAt: 'desc' },
@@ -123,6 +127,7 @@ export const mobileSyncService = {
       prisma.workoutTemplate.findMany({
         where: workoutWhere,
         include: {
+          level: { select: { id: true, number: true, code: true, name: true } },
           exercises: {
             select: { id: true },
           },
@@ -212,8 +217,8 @@ export const mobileSyncService = {
         id: p.id,
         slug: p.slug,
         name: toSyncLocalizedText(p.name as Record<string, unknown>),
-        levelRangeMin: p.levelRangeMin,
-        levelRangeMax: p.levelRangeMax,
+        levelRangeMin: p.levelMin?.number ?? 0,
+        levelRangeMax: p.levelMax?.number ?? 0,
         durationWeeks: p.durationWeeks,
         coverImageUrl: p.coverImageUrl,
         updatedAt: p.updatedAt.toISOString(),
@@ -223,7 +228,15 @@ export const mobileSyncService = {
           id: w.id,
           slug: w.slug,
           name: toSyncLocalizedText(w.name as Record<string, unknown>),
-          difficulty: w.difficulty,
+          levelId: w.levelId,
+          level: w.level
+            ? {
+                id: w.level.id,
+                number: w.level.number,
+                code: w.level.code,
+                name: toSyncLocalizedText(w.level.name as Record<string, unknown>),
+              }
+            : null,
           estimatedDurationMin: w.estimatedDurationMin,
           coverImageUrl: w.coverImageUrl,
           exerciseCount: w.exercises.length,
@@ -387,6 +400,25 @@ export const mobileSyncService = {
     const workouts = await prisma.workoutTemplate.findMany({
       where: workoutWhereCondition,
       include: {
+        phases: {
+          orderBy: { sortOrder: 'asc' },
+          include: {
+            phase: true,
+            exercises: {
+              orderBy: { sortOrder: 'asc' },
+              include: {
+                exercise: {
+                  select: {
+                    id: true,
+                    slug: true,
+                    name: true,
+                    countingMethod: { select: { code: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
         exercises: {
           orderBy: { sortOrder: 'asc' },
           include: {

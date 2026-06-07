@@ -3,6 +3,8 @@ package com.trainingvalidator.poc.ui.utils
 import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
 import com.trainingvalidator.poc.R
+import com.trainingvalidator.poc.network.PlanLevelData
+import com.trainingvalidator.poc.training.models.ProgramLevelConfig
 
 /**
  * Returns the active app language code (e.g. "en", "ar").
@@ -30,12 +32,17 @@ fun Context.feedbackLanguageCode(): String {
     return if (raw.startsWith("ar")) "ar" else "en"
 }
 
-/**
- * User-visible label for a program's allowed trainee level span from the API.
- */
-fun Context.formatProgramLevelRange(min: Int, max: Int): String {
-    val a = min.coerceAtLeast(0)
-    val b = max.coerceAtLeast(0)
+fun Context.formatProgramLevel(levelMin: ProgramLevelConfig?, levelMax: ProgramLevelConfig?): String {
+    return formatProgramLevelNumbers(levelMin?.number, levelMax?.number)
+}
+
+fun Context.formatPlanProgramLevel(levelMin: PlanLevelData?, levelMax: PlanLevelData?): String {
+    return formatProgramLevelNumbers(levelMin?.number, levelMax?.number)
+}
+
+private fun Context.formatProgramLevelNumbers(min: Int?, max: Int?): String {
+    val a = (min ?: 0).coerceAtLeast(0)
+    val b = (max ?: 0).coerceAtLeast(0)
     if (a <= 0 && b <= 0) {
         return getString(R.string.program_level_unknown)
     }

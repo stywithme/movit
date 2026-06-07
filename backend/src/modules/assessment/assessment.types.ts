@@ -91,7 +91,10 @@ export interface BodyScanResultCreate {
   controlScore: number;
   symmetryScore?: number;
   safetyScore: number;
-  fitnessLevel: FitnessLevel;
+  /** Preferred Level reference. */
+  levelId?: string | null;
+  /** @deprecated Legacy client value, converted to levelId on write. */
+  fitnessLevel?: FitnessLevel;
   regions: AssessmentRegion[];
   symmetryData?: Record<string, number>;
   hypotheses?: HypothesisCard[];

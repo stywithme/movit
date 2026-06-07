@@ -377,9 +377,9 @@ class ExploreFragment : Fragment() {
     private fun matchesWorkoutFilter(workout: WorkoutConfig): Boolean {
         return when (currentWorkoutFilter) {
             WorkoutFilter.ALL -> true
-            WorkoutFilter.EASY -> matchesAnyValue(workout.difficulty, "beginner", "easy")
-            WorkoutFilter.MEDIUM -> matchesAnyValue(workout.difficulty, "intermediate", "medium")
-            WorkoutFilter.HARD -> matchesAnyValue(workout.difficulty, "advanced", "hard")
+            WorkoutFilter.EASY -> (workout.level?.number ?: 0) in 1..2
+            WorkoutFilter.MEDIUM -> workout.level?.number == 3
+            WorkoutFilter.HARD -> (workout.level?.number ?: 0) >= 4
             WorkoutFilter.SHORT -> resolvedWorkoutDurationMinutes(workout) in 1..20
         }
     }
@@ -395,7 +395,7 @@ class ExploreFragment : Fragment() {
             workout.description?.en,
             workout.description?.ar,
             workout.fileName,
-            formatDifficulty(workout.difficulty)
+            formatWorkoutLevel(workout)
         )
     }
 
@@ -481,10 +481,11 @@ class ExploreFragment : Fragment() {
         return minutes.coerceAtLeast(1)
     }
 
-    private fun formatDifficulty(difficulty: String?): String {
-        if (difficulty.isNullOrBlank()) return getString(R.string.workout_detail_default_difficulty)
-        val normalized = difficulty.replace('_', ' ').trim().lowercase()
-        return normalized.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+    private fun formatWorkoutLevel(workout: WorkoutConfig): String {
+        val level = workout.level ?: return getString(R.string.workout_detail_default_difficulty)
+        val language = requireContext().currentLanguage
+        val label = level.name.get(language).ifBlank { level.name.en }.ifBlank { level.code }
+        return if (level.number > 0) "Level ${level.number} • $label" else label
     }
 
     private fun buildWorkoutTags(workout: WorkoutConfig, language: String): String {
@@ -507,7 +508,7 @@ class ExploreFragment : Fragment() {
             if (resolvedWorkoutDurationMinutes(workout) <= 20) {
                 resolvedTags += getString(R.string.explore_workout_filter_short)
             }
-            resolvedTags += formatDifficulty(workout.difficulty)
+            resolvedTags += formatWorkoutLevel(workout)
         }
 
         return resolvedTags.distinct().take(3).joinToString(" • ")
@@ -607,7 +608,7 @@ class ExploreFragment : Fragment() {
                 imageUrl = workout.coverImageUrl,
                 placeholderRes = R.drawable.gradient_report_hero
             )
-            holder.tvType.text = formatDifficulty(workout.difficulty)
+            holder.tvType.text = formatWorkoutLevel(workout)
             holder.tvName.text = localizedWorkoutName(workout, language)
             holder.tvTags.text = buildWorkoutTags(workout, language)
             holder.tvMeta.text = getString(

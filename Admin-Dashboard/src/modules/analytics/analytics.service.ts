@@ -104,7 +104,7 @@ export interface SafetyAnalytics {
 
 export interface ContentAnalytics {
   exercises: { total: number; byStatus: ChartPoint[]; byCategory: ChartPoint[]; familyCoverage: ChartPoint[] };
-  workoutTemplates: { total: number; byStatus: ChartPoint[]; byDifficulty: ChartPoint[] };
+  workoutTemplates: { total: number; byStatus: ChartPoint[]; byLevel: ChartPoint[] };
   programs: { total: number; published: number; byType: ChartPoint[] };
   messages: { total: number; active: number; byCategory: ChartPoint[] };
   cameraPositions: { total: number; active: number };

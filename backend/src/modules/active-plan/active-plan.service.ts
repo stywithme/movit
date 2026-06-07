@@ -60,8 +60,8 @@ export interface ActivePlanProgramData {
     slug: string;
     type: string;
     durationWeeks: number;
-    levelRangeMin: number;
-    levelRangeMax: number;
+    levelRangeMin: number | null;
+    levelRangeMax: number | null;
     coverImageUrl: string | null;
   } | null;
   progress: {
@@ -83,7 +83,7 @@ export interface TodayPlanData {
     plannedWorkouts: {
       id: string;
       name: Record<string, string>;
-      role: string;
+      workoutTemplateId: string;
       estimatedDurationMin: number | null;
       itemCount: number;
       isCompleted: boolean;
@@ -134,6 +134,8 @@ export const activePlanService = {
                         attributeValue: { include: { attribute: true } },
                       },
                     },
+                    levelMin: { select: { number: true } },
+                    levelMax: { select: { number: true } },
                     weeks: {
                       select: {
                         weekNumber: true,
@@ -175,6 +177,8 @@ export const activePlanService = {
                           attributeValue: { include: { attribute: true } },
                         },
                       },
+                      levelMin: { select: { number: true } },
+                      levelMax: { select: { number: true } },
                       weeks: {
                         select: {
                           weekNumber: true,
@@ -255,8 +259,8 @@ export const activePlanService = {
                   getEffectiveProgramDomain({ programAttributes: prog.programAttributes ?? [] }) ?? 'TRAINING',
                 ),
                 durationWeeks: prog.durationWeeks,
-                levelRangeMin: prog.levelRangeMin,
-                levelRangeMax: prog.levelRangeMax,
+                levelRangeMin: prog.levelMin?.number ?? null,
+                levelRangeMax: prog.levelMax?.number ?? null,
                 coverImageUrl: prog.coverImageUrl,
               }
             : null,
@@ -382,7 +386,13 @@ export const activePlanService = {
                           days: {
                             include: { plannedWorkouts: {
                                 include: {
-                                  items: true,
+                                  workoutTemplate: {
+                                    include: {
+                                      phases: {
+                                        include: { exercises: true },
+                                      },
+                                    },
+                                  },
                                   reports: {
                                     where: { userId, status: 'completed' },
                                   },
@@ -535,11 +545,14 @@ export const activePlanService = {
           const effS = effPlannedWorkoutById.get(s.id);
           const itemCount = effS
             ? countEffectiveExerciseItems(effS)
-            : s.items.filter((it) => it.type === 'exercise').length;
+            : s.workoutTemplate.phases.reduce(
+                (count, phase) => count + phase.exercises.length,
+                0,
+              );
           return {
             id: s.id,
             name: s.name as Record<string, string>,
-            role: String(s.role),
+            workoutTemplateId: s.workoutTemplateId,
             estimatedDurationMin: s.estimatedDurationMin,
             itemCount,
             isCompleted: s.reports.length > 0,

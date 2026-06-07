@@ -39,8 +39,6 @@ export async function seedAssessmentTemplates(prisma: PrismaClient) {
         ar: 'تقييم شامل لمسح الجسم لتقييم المرونة والتحكم والتناظر والسلامة.',
       },
       type: 'initial',
-      levelRangeMin: 1,
-      levelRangeMax: 5,
       domainWeights: {
         mobility: 0.35,
         control: 0.25,

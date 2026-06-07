@@ -86,7 +86,13 @@ export interface ExploreWorkoutItem {
   id: string;
   slug: string;
   name: LocalizedText;
-  difficulty: string;
+  levelId?: string | null;
+  level?: {
+    id: string;
+    number: number;
+    code: string;
+    name: LocalizedText;
+  } | null;
   estimatedDurationMin?: number | null;
   coverImageUrl?: string | null;
   exerciseCount: number;

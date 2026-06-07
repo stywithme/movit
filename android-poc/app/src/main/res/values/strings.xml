@@ -724,6 +724,10 @@
     <string name="workout_preview_content_description">Exercise preview image</string>
     <string name="workout_start_set_numbered">Start set %1$d</string>
     <string name="workout_start_first_exercise">Start exercise</string>
+    <string name="workout_skip_phase">Skip phase</string>
+    <string name="workout_phase_skipped">Phase skipped</string>
+    <string name="workout_phase_restarted_no_continue">This phase cannot be resumed — restarting from the beginning.</string>
+    <string name="workout_phase_continue_expired">Resume window expired — restarting this phase from the beginning.</string>
     <string name="workout_target_reps_format">%1$d sets · %2$d reps</string>
     <string name="workout_target_hold_format">%1$d sets · %2$ds hold</string>
     <string name="workout_target_sets_only_format">%1$d sets</string>

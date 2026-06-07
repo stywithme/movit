@@ -7,9 +7,12 @@ import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.training.models.WorkoutConfig
 import com.trainingvalidator.poc.training.models.LocalizedText
 import com.trainingvalidator.poc.training.models.WorkoutExercise
+import com.trainingvalidator.poc.training.models.WorkoutLevelConfig
+import com.trainingvalidator.poc.training.models.WorkoutPhaseConfig
 import com.trainingvalidator.poc.training.models.ReportMetricsConfig
 import com.trainingvalidator.poc.training.models.BilateralConfig
 import com.trainingvalidator.poc.training.models.ProgramConfig
+import com.trainingvalidator.poc.training.models.ProgramLevelConfig
 import com.trainingvalidator.poc.training.models.ProgramWeek
 
 /**
@@ -290,10 +293,12 @@ data class WorkoutConfigWithMeta(
     val name: LocalizedText,
     val description: LocalizedText? = null,
     val coverImageUrl: String? = null,
-    val difficulty: String = "beginner",
+    val levelId: String? = null,
+    val level: WorkoutLevelConfig? = null,
     val estimatedDurationMin: Int? = null,
     val tags: List<String>? = emptyList(),
-    val exercises: List<WorkoutExercise>? = emptyList()
+    val exercises: List<WorkoutExercise>? = emptyList(),
+    val phases: List<WorkoutPhaseConfig>? = emptyList()
 ) {
     /**
      * Convert to WorkoutConfig (without meta)
@@ -303,10 +308,12 @@ data class WorkoutConfigWithMeta(
             name = name,
             description = description,
             coverImageUrl = coverImageUrl,
-            difficulty = difficulty,
+            levelId = levelId,
+            level = level,
             estimatedDurationMin = estimatedDurationMin,
             tags = tags ?: emptyList(),
             exercises = exercises ?: emptyList(),
+            phases = phases ?: emptyList(),
             fileName = slug  // Use slug as fileName for compatibility
         )
     }
@@ -323,8 +330,10 @@ data class ProgramConfigWithMeta(
     val description: LocalizedText? = null,
     val coverImageUrl: String? = null,
     val durationWeeks: Int,
-    val levelRangeMin: Int = 0,
-    val levelRangeMax: Int = 0,
+    val levelMinId: String? = null,
+    val levelMaxId: String? = null,
+    val levelMin: ProgramLevelConfig? = null,
+    val levelMax: ProgramLevelConfig? = null,
     val tags: List<String>? = emptyList(),
     val weeks: List<ProgramWeek>? = emptyList(),
     val weeklyWorkoutTarget: Int? = null,
@@ -339,8 +348,10 @@ data class ProgramConfigWithMeta(
             description = description,
             coverImageUrl = coverImageUrl,
             durationWeeks = durationWeeks,
-            levelRangeMin = levelRangeMin,
-            levelRangeMax = levelRangeMax,
+            levelMinId = levelMinId,
+            levelMaxId = levelMaxId,
+            levelMin = levelMin,
+            levelMax = levelMax,
             tags = tags ?: emptyList(),
             weeksField = weeks ?: emptyList(),
             weeklyWorkoutTarget = weeklyWorkoutTarget,

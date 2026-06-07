@@ -22,7 +22,7 @@ import com.trainingvalidator.poc.training.models.LocalizedText
 import com.trainingvalidator.poc.ui.programs.ProgramListActivity
 import com.trainingvalidator.poc.ui.main.MainContainerActivity
 import com.trainingvalidator.poc.ui.utils.feedbackLanguageCode
-import com.trainingvalidator.poc.ui.utils.formatProgramLevelRange
+import com.trainingvalidator.poc.ui.utils.formatPlanProgramLevel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -339,7 +339,7 @@ class AssessmentResultActivity : AppCompatActivity() {
 
             // Program info row
             addView(TextView(context).apply {
-                val levelLabel = formatProgramLevelRange(program.levelRangeMin, program.levelRangeMax)
+                val levelLabel = formatPlanProgramLevel(program.levelMin, program.levelMax)
                 text = "${program.durationWeeks} weeks • $levelLabel • ${program.type}"
                 setTextColor(Color.parseColor("#B0B0B0"))
                 textSize = 13f

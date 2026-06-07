@@ -9,6 +9,7 @@ import type {
   CreateWorkoutInput, 
   UpdateWorkoutInput,
   WorkoutExerciseInput,
+  WorkoutPhaseInput,
 } from './workout-templates.types';
 
 // ============================================
@@ -37,16 +38,23 @@ export function validateWorkoutExercise(
     errors.push(`${prefix}: targetReps must be positive`);
   }
 
+  if (exercise.targetRepsPerSet?.some((value) => value <= 0)) {
+    errors.push(`${prefix}: all targetRepsPerSet values must be positive`);
+  }
+
   if (exercise.targetDuration !== undefined && exercise.targetDuration <= 0) {
     errors.push(`${prefix}: targetDuration must be positive`);
   }
-  const hasTargetReps = exercise.targetReps !== undefined;
+
+  const hasTargetReps =
+    exercise.targetReps !== undefined ||
+    (exercise.targetRepsPerSet !== undefined && exercise.targetRepsPerSet.length > 0);
   const hasTargetDuration = exercise.targetDuration !== undefined;
   if (!hasTargetReps && !hasTargetDuration) {
-    errors.push(`${prefix}: either targetReps or targetDuration is required`);
+    errors.push(`${prefix}: either targetReps/targetRepsPerSet or targetDuration is required`);
   }
   if (hasTargetReps && hasTargetDuration) {
-    errors.push(`${prefix}: provide only one target (targetReps or targetDuration), not both`);
+    errors.push(`${prefix}: provide only one target (reps or duration), not both`);
   }
 
   if (exercise.sets !== undefined && exercise.sets <= 0) {
@@ -57,6 +65,10 @@ export function validateWorkoutExercise(
     errors.push(`${prefix}: restBetweenSetsMs must be non-negative`);
   }
 
+  if (exercise.restBetweenSetsPerSetMs?.some((value) => value < 0)) {
+    errors.push(`${prefix}: all restBetweenSetsPerSetMs values must be non-negative`);
+  }
+
   if (exercise.restAfterExerciseMs !== undefined && exercise.restAfterExerciseMs < 0) {
     errors.push(`${prefix}: restAfterExerciseMs must be non-negative`);
   }
@@ -65,11 +77,43 @@ export function validateWorkoutExercise(
     errors.push(`${prefix}: weightKg must be non-negative`);
   }
 
+  if (exercise.weightPerSet?.some((value) => value < 0)) {
+    errors.push(`${prefix}: all weightPerSet values must be non-negative`);
+  }
+
+  return errors;
+}
+
+/**
+ * Validate nested workout phase input
+ */
+export function validateWorkoutPhase(
+  phase: WorkoutPhaseInput,
+  index: number
+): string[] {
+  const errors: string[] = [];
+  const prefix = `Phase ${index + 1}`;
+
+  if (!phase.phaseId) {
+    errors.push(`${prefix}: phaseId is required`);
+  }
+
+  if (phase.sortOrder !== undefined && phase.sortOrder < 0) {
+    errors.push(`${prefix}: sortOrder must be non-negative`);
+  }
+
   if (
-    exercise.difficulty && 
-    !['beginner', 'normal', 'advanced'].includes(exercise.difficulty)
+    phase.maxContinueTimeMsOverride !== undefined &&
+    phase.maxContinueTimeMsOverride !== null &&
+    phase.maxContinueTimeMsOverride < 0
   ) {
-    errors.push(`${prefix}: invalid difficulty level`);
+    errors.push(`${prefix}: maxContinueTimeMsOverride must be non-negative`);
+  }
+
+  if (phase.exercises && phase.exercises.length > 0) {
+    for (let i = 0; i < phase.exercises.length; i++) {
+      errors.push(...validateWorkoutExercise(phase.exercises[i], i).map((error) => `${prefix}: ${error}`));
+    }
   }
 
   return errors;
@@ -104,6 +148,12 @@ export function validateCreateWorkout(input: CreateWorkoutInput): string[] {
     }
   }
 
+  if (input.phases && input.phases.length > 0) {
+    for (let i = 0; i < input.phases.length; i++) {
+      errors.push(...validateWorkoutPhase(input.phases[i], i));
+    }
+  }
+
   return errors;
 }
 
@@ -133,7 +183,26 @@ export function validateUpdateWorkout(input: UpdateWorkoutInput): string[] {
     }
   }
 
+  if (input.phases && input.phases.length > 0) {
+    for (let i = 0; i < input.phases.length; i++) {
+      errors.push(...validateWorkoutPhase(input.phases[i], i));
+    }
+  }
+
   return errors;
+}
+
+/**
+ * Count exercises from nested phases or the legacy flat list.
+ */
+export function countWorkoutExercises(workout: {
+  exercises?: unknown[];
+  phases?: Array<{ exercises?: unknown[] }>;
+}): number {
+  if (workout.phases && workout.phases.length > 0) {
+    return workout.phases.reduce((sum, phase) => sum + (phase.exercises?.length ?? 0), 0);
+  }
+  return workout.exercises?.length ?? 0;
 }
 
 /**
@@ -141,7 +210,8 @@ export function validateUpdateWorkout(input: UpdateWorkoutInput): string[] {
  */
 export function validateCanPublish(workout: {
   name: { ar?: string; en?: string };
-  exercises: unknown[];
+  exercises?: unknown[];
+  phases?: Array<{ exercises?: unknown[] }>;
 }): string[] {
   const errors: string[] = [];
 
@@ -149,7 +219,7 @@ export function validateCanPublish(workout: {
     errors.push('Both Arabic and English names are required to publish');
   }
 
-  if (!workout.exercises || workout.exercises.length === 0) {
+  if (countWorkoutExercises(workout) === 0) {
     errors.push('At least one exercise is required to publish');
   }
 

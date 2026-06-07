@@ -105,6 +105,7 @@ export const exerciseService = {
   async list(filters?: {
     status?: 'draft' | 'published';
     categoryId?: string;
+    familyKey?: string;
     search?: string;
     page?: number;
     limit?: number;
@@ -126,6 +127,10 @@ export const exerciseService = {
 
     if (filters?.categoryId) {
       where.categoryId = filters.categoryId;
+    }
+
+    if (filters?.familyKey) {
+      where.familyKey = filters.familyKey;
     }
 
     const searchWhere = buildExerciseSearchWhere(filters?.search);

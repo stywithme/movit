@@ -17,6 +17,7 @@ import com.trainingvalidator.poc.databinding.ActivityWorkoutCustomizeBinding
 import com.trainingvalidator.poc.databinding.ItemWorkoutCustomizeExerciseBinding
 import com.trainingvalidator.poc.storage.ExerciseRepository
 import com.trainingvalidator.poc.training.models.WorkoutConfig
+import com.trainingvalidator.poc.training.models.WorkoutExecutionContext
 import com.trainingvalidator.poc.training.models.WorkoutExercise
 import com.trainingvalidator.poc.ui.utils.currentLanguage
 import java.util.Collections
@@ -118,7 +119,7 @@ class WorkoutCustomizeActivity : AppCompatActivity() {
                     context = this,
                     workoutConfig = customizedConfig,
                     workoutId = null,
-                    workoutContext = "explore_workout"
+                    workoutContext = WorkoutExecutionContext.EXPLORE_WORKOUT
                 )
             )
         }

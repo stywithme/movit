@@ -6,6 +6,7 @@ export type Subject =
   | 'Role'
   | 'User'
   | 'Exercise'
+  | 'WorkoutPhase'
   | 'WorkoutTemplate'
   | 'Program'
   | 'ProgramMap'

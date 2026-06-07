@@ -4,14 +4,20 @@
  * Service for Program CRUD operations.
  */
 
+import { randomUUID } from 'crypto';
 import { getPrisma } from '@/lib/prisma/client';
+import {
+  cloneTemplateForPlannedWorkout,
+  syncPlannedWorkoutTemplate,
+} from '@/lib/program-embedded-workout';
+import { flattenTemplatePhasesToProgramItems } from '@/lib/program-workout-export';
 import {
   Prisma,
   type Program,
   ProgramAttributeMode,
   type PrismaClient,
-  type WorkoutBlockRole,
 } from '@prisma/client';
+import { workoutService } from '@/modules/workout-templates/workout-templates.service';
 import { resolveTrainingPositionMeta, countTrainingDaySlots } from '@/modules/active-plan/plan-position';
 import { getAutoAssignmentReadiness } from './program-assignment';
 import { validateCalendarProgramStructure, inferWeeklySessionTargetFromWeeks } from './calendar-program-structure';
@@ -78,6 +84,12 @@ const programFullInclude = {
       },
     },
   },
+  levelMin: {
+    select: { id: true, number: true, code: true, name: true },
+  },
+  levelMax: {
+    select: { id: true, number: true, code: true, name: true },
+  },
   weeks: {
     orderBy: [
       { sortOrder: 'asc' as const },
@@ -89,6 +101,30 @@ const programFullInclude = {
         include: { plannedWorkouts: {
             orderBy: { sortOrder: 'asc' as const },
             include: {
+              workoutTemplate: {
+                include: {
+                  phases: {
+                    orderBy: { sortOrder: 'asc' as const },
+                    include: {
+                      phase: true,
+                      exercises: {
+                        orderBy: { sortOrder: 'asc' as const },
+                        include: {
+                          exercise: {
+                            select: {
+                              id: true,
+                              slug: true,
+                              name: true,
+                              intent: true,
+                              coachingNotes: true,
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
               items: {
                 orderBy: { sortOrder: 'asc' as const },
                 include: {
@@ -129,6 +165,49 @@ async function replaceProgramAttributes(
   });
 }
 
+async function resolveLevelIdByNumber(
+  db: Pick<PrismaClient, 'level'>,
+  levelNumber: number | undefined,
+): Promise<string | undefined> {
+  if (levelNumber === undefined || levelNumber === null) return undefined;
+  const level = await db.level.findUnique({
+    where: { number: levelNumber },
+    select: { id: true },
+  });
+  return level?.id;
+}
+
+async function resolveProgramLevelIds(
+  db: Pick<PrismaClient, 'level'>,
+  data: {
+    levelMinId?: string | null;
+    levelMaxId?: string | null;
+    levelRangeMin?: number;
+    levelRangeMax?: number;
+  },
+) {
+  return {
+    levelMinId:
+      data.levelMinId !== undefined
+        ? data.levelMinId ?? undefined
+        : await resolveLevelIdByNumber(db, data.levelRangeMin),
+    levelMaxId:
+      data.levelMaxId !== undefined
+        ? data.levelMaxId ?? undefined
+        : await resolveLevelIdByNumber(db, data.levelRangeMax),
+  };
+}
+
+function exportLevel(level: { id: string; number: number; code: string; name: unknown } | null | undefined) {
+  if (!level) return null;
+  return {
+    id: level.id,
+    number: level.number,
+    code: level.code,
+    name: parseLocalizedText(level.name) || { ar: '', en: '' },
+  };
+}
+
 export { validateCalendarProgramStructure, inferWeeklySessionTargetFromWeeks } from './calendar-program-structure';
 
 function buildPlannedWorkoutItems(items?: PlannedWorkoutItemInput[]) {
@@ -151,39 +230,38 @@ function buildPlannedWorkoutItems(items?: PlannedWorkoutItemInput[]) {
   };
 }
 
-function buildWeeksCreate(weeks?: ProgramWeekInput[]) {
-  if (!weeks || weeks.length === 0) return undefined;
-  return {
-    create: weeks.map((week, weekIndex) => ({
-      weekNumber: week.weekNumber,
-      name: (week.name as object) || undefined,
-      description: (week.description as object) || undefined,
-      sortOrder: week.sortOrder ?? weekIndex,
-      weekType: week.weekType ?? 'NORMAL',
-      days: week.days
-        ? {
-            create: week.days.map((day, dayIndex) => ({
-              dayNumber: day.dayNumber,
-              isRestDay: day.isRestDay ?? false,
-              name: (day.name as object) || undefined,
-              dayFocus: day.dayFocus ?? undefined,
-              plannedWorkouts: day.plannedWorkouts
-                ? {
-                    create: day.plannedWorkouts.map((plannedWorkout, plannedWorkoutIndex) => ({
-                      ...prismaPlannedWorkoutScalars(plannedWorkout, plannedWorkoutIndex),
-                      items: {
-                        create: (plannedWorkout.items ?? []).map((item, ii) =>
-                          plannedWorkoutItemScalarFromInput(item, item.sortOrder ?? ii),
-                        ),
-                      },
-                    })),
-                  }
-                : undefined,
-            })),
-          }
-        : undefined,
-    })),
-  };
+async function seedProgramWeeks(
+  tx: Prisma.TransactionClient,
+  programId: string,
+  weeks?: ProgramWeekInput[],
+) {
+  if (!weeks || weeks.length === 0) return;
+
+  for (const [weekIndex, week] of weeks.entries()) {
+    const createdWeek = await tx.programWeek.create({
+      data: {
+        programId,
+        weekNumber: week.weekNumber,
+        name: (week.name as object) || undefined,
+        description: (week.description as object) || undefined,
+        sortOrder: week.sortOrder ?? weekIndex,
+        weekType: week.weekType ?? 'NORMAL',
+      },
+    });
+
+    for (const day of week.days ?? []) {
+      const createdDay = await tx.programDay.create({
+        data: {
+          weekId: createdWeek.id,
+          dayNumber: day.dayNumber,
+          isRestDay: day.isRestDay ?? false,
+          name: (day.name as object) || undefined,
+          dayFocus: day.dayFocus ?? undefined,
+        },
+      });
+      await syncPlannedWorkouts(tx, createdDay.id, day.plannedWorkouts);
+    }
+  }
 }
 
 const WEEK_NUMBER_TEMP_OFFSET = 100_000;
@@ -205,24 +283,164 @@ function plannedWorkoutItemScalarFromInput(item: PlannedWorkoutItemInput, sortOr
   };
 }
 
-const DEFAULT_WORKOUT_BLOCK_ROLE = 'MAIN' as WorkoutBlockRole;
-
 function prismaPlannedWorkoutScalars(plannedWorkout: PlannedWorkoutInput, workoutIndex: number) {
   return {
     name: plannedWorkout.name as object,
     sortOrder: plannedWorkout.sortOrder ?? workoutIndex,
     estimatedDurationMin: plannedWorkout.estimatedDurationMin ?? undefined,
-    role: (plannedWorkout.role ?? DEFAULT_WORKOUT_BLOCK_ROLE) as WorkoutBlockRole,
   };
 }
 
-function expandPhasesToWeeks(phases: ProgramPhaseInput[]): ProgramWeekInput[] {
+type PlannedWorkoutWithTemplate = {
+  id: string;
+  name: unknown;
+  sortOrder: number;
+  workoutTemplateId: string;
+  estimatedDurationMin: number | null;
+  workoutTemplate: NonNullable<Parameters<typeof workoutService.buildWorkoutExport>[0]> & {
+    phases: Array<{
+      id: string;
+      phaseId: string;
+      sortOrder: number;
+      nameOverride: unknown;
+      canSkipOverride: boolean | null;
+      canContinueOverride: boolean | null;
+      maxContinueTimeMsOverride: number | null;
+      phase: { role: string };
+      exercises: Array<{
+        id: string;
+        exerciseId: string;
+        variantIndex: number;
+        targetReps: number | null;
+        targetRepsPerSet: unknown;
+        targetDuration: number | null;
+        sets: number;
+        restBetweenSetsMs: number;
+        restBetweenSetsPerSetMs: unknown;
+        restAfterExerciseMs: number;
+        weightKg: number | null;
+        weightPerSet: unknown;
+        notes: unknown;
+        sortOrder: number;
+        exercise: {
+          slug: string;
+          intent?: string | null;
+          coachingNotes?: unknown;
+        } | null;
+      }>;
+    }>;
+  };
+};
+
+function exportPlannedWorkout(plannedWorkout: PlannedWorkoutWithTemplate) {
+  const workoutExport = workoutService.buildWorkoutExport(
+    plannedWorkout.workoutTemplate as Parameters<typeof workoutService.buildWorkoutExport>[0],
+  );
+  const phases = workoutExport?.phases ?? [];
+  const templatePhases = plannedWorkout.workoutTemplate.phases.map((templatePhase) => ({
+    id: templatePhase.id,
+    sortOrder: templatePhase.sortOrder,
+    phase: { role: String(templatePhase.phase.role) },
+    canSkip: templatePhase.canSkipOverride ?? templatePhase.phase.canSkip,
+    canContinue: templatePhase.canContinueOverride ?? templatePhase.phase.canContinue,
+    maxContinueTimeMs:
+      templatePhase.maxContinueTimeMsOverride ?? templatePhase.phase.maxContinueTimeMs ?? undefined,
+    exercises: templatePhase.exercises.map((exercise) => ({
+      id: exercise.id,
+      exercise: exercise.exercise,
+      sets: exercise.sets,
+      targetReps: exercise.targetReps,
+      targetRepsPerSet: (exercise.targetRepsPerSet as number[]) ?? undefined,
+      targetDuration: exercise.targetDuration,
+      restBetweenSetsMs: exercise.restBetweenSetsMs,
+      restBetweenSetsPerSetMs: (exercise.restBetweenSetsPerSetMs as number[]) ?? undefined,
+      restAfterExerciseMs: exercise.restAfterExerciseMs,
+      weightKg: exercise.weightKg,
+      weightPerSet: (exercise.weightPerSet as number[]) ?? undefined,
+      notes: parseLocalizedText(exercise.notes),
+      sortOrder: exercise.sortOrder,
+    })),
+  }));
+  const items = flattenTemplatePhasesToProgramItems(templatePhases);
+  return {
+    id: plannedWorkout.id,
+    name: parseLocalizedText(plannedWorkout.name) || workoutExport?.name || { ar: '', en: '' },
+    sortOrder: plannedWorkout.sortOrder,
+    workoutTemplateId: plannedWorkout.workoutTemplateId,
+    workoutTemplateSlug: workoutExport?.slug,
+    estimatedDurationMin:
+      plannedWorkout.estimatedDurationMin ?? workoutExport?.estimatedDurationMin ?? undefined,
+    phases,
+    items,
+  };
+}
+
+function plannedWorkoutInputFromTemplate(
+  plannedWorkout: PlannedWorkoutWithTemplate,
+  plannedWorkoutIndex: number,
+): PlannedWorkoutInput {
+  const template = plannedWorkout.workoutTemplate;
+  return {
+    name: parseLocalizedText(plannedWorkout.name) || { ar: '', en: '' },
+    sortOrder: plannedWorkout.sortOrder ?? plannedWorkoutIndex,
+    estimatedDurationMin: plannedWorkout.estimatedDurationMin ?? undefined,
+    workoutTemplateId: plannedWorkout.workoutTemplateId,
+    phases: template.phases.map((templatePhase, phaseIndex) => ({
+      phaseId: templatePhase.phaseId,
+      sortOrder: templatePhase.sortOrder ?? phaseIndex,
+      nameOverride: parseLocalizedText(templatePhase.nameOverride),
+      canSkipOverride: templatePhase.canSkipOverride ?? undefined,
+      canContinueOverride: templatePhase.canContinueOverride ?? undefined,
+      maxContinueTimeMsOverride: templatePhase.maxContinueTimeMsOverride ?? undefined,
+      exercises: templatePhase.exercises.map((exercise, exerciseIndex) => ({
+        exerciseId: exercise.exerciseId,
+        variantIndex: exercise.variantIndex,
+        targetReps: exercise.targetReps ?? undefined,
+        targetRepsPerSet: (exercise.targetRepsPerSet as number[]) ?? undefined,
+        targetDuration: exercise.targetDuration ?? undefined,
+        sets: exercise.sets ?? undefined,
+        restBetweenSetsMs: exercise.restBetweenSetsMs ?? undefined,
+        restBetweenSetsPerSetMs: (exercise.restBetweenSetsPerSetMs as number[]) ?? undefined,
+        restAfterExerciseMs: exercise.restAfterExerciseMs ?? undefined,
+        weightKg: exercise.weightKg ?? undefined,
+        weightPerSet: (exercise.weightPerSet as number[]) ?? undefined,
+        notes: parseLocalizedText(exercise.notes),
+        sortOrder: exercise.sortOrder ?? exerciseIndex,
+      })),
+    })),
+  };
+}
+
+async function createPlannedWorkoutRecord(
+  tx: Prisma.TransactionClient,
+  dayId: string,
+  plannedWorkout: PlannedWorkoutInput,
+  sortOrder: number,
+): Promise<string> {
+  const id = plannedWorkout.id ?? randomUUID();
+  const templateId = await syncPlannedWorkoutTemplate(tx, {
+    plannedWorkoutId: id,
+    dayId,
+    input: plannedWorkout,
+    existingTemplateId: plannedWorkout.workoutTemplateId,
+  });
+  await tx.plannedWorkout.create({
+    data: {
+      id,
+      dayId,
+      workoutTemplateId: templateId,
+      ...prismaPlannedWorkoutScalars(plannedWorkout, sortOrder),
+    },
+  });
+  return id;
+}
+
+function buildWeeksFromPhaseMetadata(phases: ProgramPhaseInput[]): ProgramWeekInput[] {
   const sorted = [...phases].sort(
     (a, b) => (a.sortOrder ?? a.startWeek) - (b.sortOrder ?? b.startWeek),
   );
   const weeks: ProgramWeekInput[] = [];
   for (const phase of sorted) {
-    const patternDays = phase.weeklyPattern?.days ?? [];
     for (let w = phase.startWeek; w <= phase.endWeek; w++) {
       weeks.push({
         weekNumber: w,
@@ -230,13 +448,7 @@ function expandPhasesToWeeks(phases: ProgramPhaseInput[]): ProgramWeekInput[] {
         description: phase.description,
         weekType: phase.weekType ?? 'NORMAL',
         sortOrder: w - 1,
-        days: patternDays.map((d) => ({
-          dayNumber: d.dayNumber,
-          isRestDay: d.isRestDay ?? false,
-          name: d.name,
-          dayFocus: d.dayFocus,
-          plannedWorkouts: d.plannedWorkouts,
-        })),
+        days: [],
       });
     }
   }
@@ -260,9 +472,6 @@ async function syncProgramPhasesStructure(
         startWeek: p.startWeek,
         endWeek: p.endWeek,
         sortOrder: p.sortOrder ?? i,
-        weeklyPattern: p.weeklyPattern
-          ? (p.weeklyPattern as unknown as Prisma.InputJsonValue)
-          : undefined,
       },
     });
   }
@@ -317,9 +526,9 @@ async function syncPlannedWorkouts(
   const plannedWorkouts = workoutsInput ?? [];
   const existing = await tx.plannedWorkout.findMany({
     where: { dayId },
-    select: { id: true },
+    select: { id: true, workoutTemplateId: true },
   });
-  const existingIds = new Set(existing.map((e) => e.id));
+  const existingById = new Map(existing.map((e) => [e.id, e]));
   const payloadIds = new Set(plannedWorkouts.map((s) => s.id).filter(Boolean) as string[]);
 
   const toRemove = existing.filter((e) => !payloadIds.has(e.id)).map((e) => e.id);
@@ -330,29 +539,23 @@ async function syncPlannedWorkouts(
   for (let index = 0; index < plannedWorkouts.length; index++) {
     const plannedWorkout = plannedWorkouts[index]!;
     const sortOrder = plannedWorkout.sortOrder ?? index;
-    if (plannedWorkout.id) {
-      if (!existingIds.has(plannedWorkout.id)) {
-        throw new Error(`Invalid planned workout id for day ${dayId}: ${plannedWorkout.id}`);
-      }
+    if (plannedWorkout.id && existingById.has(plannedWorkout.id)) {
+      const current = existingById.get(plannedWorkout.id)!;
+      const templateId = await syncPlannedWorkoutTemplate(tx, {
+        plannedWorkoutId: plannedWorkout.id,
+        dayId,
+        input: plannedWorkout,
+        existingTemplateId: current.workoutTemplateId,
+      });
       await tx.plannedWorkout.update({
         where: { id: plannedWorkout.id },
         data: {
           ...prismaPlannedWorkoutScalars(plannedWorkout, sortOrder),
+          workoutTemplateId: templateId,
         },
       });
-      await syncPlannedWorkoutItems(tx, plannedWorkout.id, plannedWorkout.items);
     } else {
-      await tx.plannedWorkout.create({
-        data: {
-          dayId,
-          ...prismaPlannedWorkoutScalars(plannedWorkout, sortOrder),
-          items: {
-            create: (plannedWorkout.items ?? []).map((item, ii) =>
-              plannedWorkoutItemScalarFromInput(item, item.sortOrder ?? ii),
-            ),
-          },
-        },
-      });
+      await createPlannedWorkoutRecord(tx, dayId, plannedWorkout, sortOrder);
     }
   }
 }
@@ -392,24 +595,16 @@ async function syncDays(
       });
       await syncPlannedWorkouts(tx, day.id, day.plannedWorkouts);
     } else {
-      await tx.programDay.create({
+      const createdDay = await tx.programDay.create({
         data: {
           weekId,
           dayNumber: day.dayNumber,
           isRestDay: day.isRestDay ?? false,
           name: (day.name as object) || undefined,
           dayFocus: day.dayFocus ?? undefined,
-          plannedWorkouts: { create: (day.plannedWorkouts ?? []).map((plannedWorkout, pwIndex) => ({
-              ...prismaPlannedWorkoutScalars(plannedWorkout, pwIndex),
-              items: {
-                create: (plannedWorkout.items ?? []).map((item, ii) =>
-                  plannedWorkoutItemScalarFromInput(item, item.sortOrder ?? ii),
-                ),
-              },
-            })),
-          },
         },
       });
+      await syncPlannedWorkouts(tx, createdDay.id, day.plannedWorkouts);
     }
   }
 }
@@ -475,7 +670,7 @@ async function syncProgramWeeksStructure(
       });
       await syncDays(tx, week.id, week.days);
     } else {
-      await tx.programWeek.create({
+      const createdWeek = await tx.programWeek.create({
         data: {
           programId,
           weekNumber: week.weekNumber,
@@ -483,25 +678,20 @@ async function syncProgramWeeksStructure(
           description: (week.description as object) || undefined,
           sortOrder,
           weekType: week.weekType ?? 'NORMAL',
-          days: {
-            create: (week.days ?? []).map((day, di) => ({
-              dayNumber: day.dayNumber,
-              isRestDay: day.isRestDay ?? false,
-              name: (day.name as object) || undefined,
-              dayFocus: day.dayFocus ?? undefined,
-              plannedWorkouts: { create: (day.plannedWorkouts ?? []).map((plannedWorkout, pwIndex) => ({
-                  ...prismaPlannedWorkoutScalars(plannedWorkout, pwIndex),
-                  items: {
-                    create: (plannedWorkout.items ?? []).map((item, ii) =>
-                      plannedWorkoutItemScalarFromInput(item, item.sortOrder ?? ii),
-                    ),
-                  },
-                })),
-              },
-            })),
-          },
         },
       });
+      for (const day of week.days ?? []) {
+        const createdDay = await tx.programDay.create({
+          data: {
+            weekId: createdWeek.id,
+            dayNumber: day.dayNumber,
+            isRestDay: day.isRestDay ?? false,
+            name: (day.name as object) || undefined,
+            dayFocus: day.dayFocus ?? undefined,
+          },
+        });
+        await syncPlannedWorkouts(tx, createdDay.id, day.plannedWorkouts);
+      }
     }
   }
 }
@@ -693,10 +883,11 @@ export const programService = {
       if (!phaseValidation.valid) {
         throw new Error(`Invalid phases: ${phaseValidation.errors.join('; ')}`);
       }
-      effectiveWeeks = expandPhasesToWeeks(data.phases);
+      effectiveWeeks = data.weeks ?? buildWeeksFromPhaseMetadata(data.phases);
     }
 
     const programId = await prisma.$transaction(async (tx) => {
+      const resolvedLevels = await resolveProgramLevelIds(tx, data);
       const program = await tx.program.create({
         data: {
           name: data.name as object,
@@ -725,14 +916,15 @@ export const programService = {
             ) ??
             undefined,
           estimatedWorkoutMinutes: data.estimatedWorkoutMinutes ?? undefined,
-          levelRangeMin: data.levelRangeMin ?? 1,
-          levelRangeMax: data.levelRangeMax ?? 5,
+          levelMinId: resolvedLevels.levelMinId,
+          levelMaxId: resolvedLevels.levelMaxId,
           prescriptionPriority: data.prescriptionPriority ?? 100,
           prerequisiteProgramId: data.prerequisiteProgramId ?? undefined,
           nextProgramId: data.nextProgramId ?? undefined,
-          weeks: buildWeeksCreate(effectiveWeeks),
         },
       });
+
+      await seedProgramWeeks(tx, program.id, effectiveWeeks);
 
       if (data.phases && data.phases.length > 0) {
         await syncProgramPhasesStructure(tx, program.id, data.phases);
@@ -775,8 +967,20 @@ export const programService = {
     if (data.estimatedWorkoutMinutes !== undefined) {
       updateData.estimatedWorkoutMinutes = data.estimatedWorkoutMinutes;
     }
-    if (data.levelRangeMin !== undefined) updateData.levelRangeMin = data.levelRangeMin;
-    if (data.levelRangeMax !== undefined) updateData.levelRangeMax = data.levelRangeMax;
+    if (
+      data.levelMinId !== undefined ||
+      data.levelMaxId !== undefined ||
+      data.levelRangeMin !== undefined ||
+      data.levelRangeMax !== undefined
+    ) {
+      const resolvedLevels = await resolveProgramLevelIds(prisma, data);
+      if (data.levelMinId !== undefined || data.levelRangeMin !== undefined) {
+        updateData.levelMinId = resolvedLevels.levelMinId ?? null;
+      }
+      if (data.levelMaxId !== undefined || data.levelRangeMax !== undefined) {
+        updateData.levelMaxId = resolvedLevels.levelMaxId ?? null;
+      }
+    }
     if (data.prescriptionPriority !== undefined) updateData.prescriptionPriority = data.prescriptionPriority;
     if (data.prerequisiteProgramId !== undefined) updateData.prerequisiteProgramId = data.prerequisiteProgramId;
     if (data.nextProgramId !== undefined) updateData.nextProgramId = data.nextProgramId;
@@ -787,7 +991,7 @@ export const programService = {
         data: updateData as Prisma.ProgramUpdateInput,
       });
 
-      if (data.phases !== undefined && data.phases.length > 0) {
+      if (data.phases !== undefined) {
         const prog = await tx.program.findUnique({
           where: { id },
           select: { durationWeeks: true },
@@ -800,10 +1004,10 @@ export const programService = {
         if (!phaseValidation.valid) {
           throw new Error(`Invalid phases: ${phaseValidation.errors.join('; ')}`);
         }
-        const expandedWeeks = expandPhasesToWeeks(data.phases);
         await syncProgramPhasesStructure(tx, id, data.phases);
-        await syncProgramWeeksStructure(tx, id, expandedWeeks);
-      } else if (data.weeks !== undefined) {
+      }
+
+      if (data.weeks !== undefined) {
         await syncProgramWeeksStructure(tx, id, data.weeks);
       }
 
@@ -894,26 +1098,9 @@ export const programService = {
         isRestDay: day.isRestDay,
         name: parseLocalizedText(day.name),
         dayFocus: day.dayFocus ?? undefined,
-        plannedWorkouts: day.plannedWorkouts.map((plannedWorkout, plannedWorkoutIndex) => ({
-          name: parseLocalizedText(plannedWorkout.name) || { ar: '', en: '' },
-          sortOrder: plannedWorkout.sortOrder ?? plannedWorkoutIndex,
-          role: plannedWorkout.role ? String(plannedWorkout.role) : 'MAIN',
-          estimatedDurationMin: plannedWorkout.estimatedDurationMin ?? undefined,
-          items: plannedWorkout.items.map((item, itemIndex) => ({
-            type: item.type as 'exercise' | 'rest',
-            exerciseId: item.exerciseId ?? undefined,
-            sets: item.sets ?? undefined,
-            targetReps: item.targetReps ?? undefined,
-            targetDuration: item.targetDuration ?? undefined,
-            restBetweenSetsMs: item.restBetweenSetsMs ?? undefined,
-            weightKg: item.weightKg ?? undefined,
-            weightPerSet: (item.weightPerSet as number[]) || undefined,
-            notes: toInputJson(parseLocalizedText(item.notes)),
-            restDurationMs: item.restDurationMs ?? undefined,
-            sourceWorkoutTemplateId: item.sourceWorkoutTemplateId ?? undefined,
-            sortOrder: item.sortOrder ?? itemIndex,
-          })),
-        })),
+        plannedWorkouts: day.plannedWorkouts.map((plannedWorkout, plannedWorkoutIndex) =>
+          plannedWorkoutInputFromTemplate(plannedWorkout as PlannedWorkoutWithTemplate, plannedWorkoutIndex),
+        ),
       })),
     }));
 
@@ -933,8 +1120,8 @@ export const programService = {
         coachingNotes: (original.coachingNotes as Record<string, unknown>) || undefined,
         weeklyWorkoutTarget: original.weeklyWorkoutTarget ?? undefined,
         estimatedWorkoutMinutes: original.estimatedWorkoutMinutes ?? undefined,
-        levelRangeMin: original.levelRangeMin,
-        levelRangeMax: original.levelRangeMax,
+        levelMinId: original.levelMinId,
+        levelMaxId: original.levelMaxId,
         prescriptionPriority: original.prescriptionPriority,
         prerequisiteProgramId: original.prerequisiteProgramId ?? undefined,
         nextProgramId: original.nextProgramId ?? undefined,
@@ -950,18 +1137,32 @@ export const programService = {
 
   async createWeek(programId: string, week: ProgramWeekInput) {
     const prisma = await getPrisma();
-    return prisma.programWeek.create({
-      data: {
-        programId,
-        weekNumber: week.weekNumber,
-        weekType: week.weekType ?? 'NORMAL',
-        name: (week.name as object) || undefined,
-        description: (week.description as object) || undefined,
-        sortOrder: week.sortOrder ?? 0,
-        days: buildWeeksCreate([week])?.create?.[0]?.days,
-      },
-      include: { days: { include: { plannedWorkouts: { include: { items: true } } } } },
+    const weekId = await prisma.$transaction(async (tx) => {
+      const createdWeek = await tx.programWeek.create({
+        data: {
+          programId,
+          weekNumber: week.weekNumber,
+          weekType: week.weekType ?? 'NORMAL',
+          name: (week.name as object) || undefined,
+          description: (week.description as object) || undefined,
+          sortOrder: week.sortOrder ?? 0,
+        },
+      });
+      for (const day of week.days ?? []) {
+        const createdDay = await tx.programDay.create({
+          data: {
+            weekId: createdWeek.id,
+            dayNumber: day.dayNumber,
+            isRestDay: day.isRestDay ?? false,
+            name: (day.name as object) || undefined,
+            dayFocus: day.dayFocus ?? undefined,
+          },
+        });
+        await syncPlannedWorkouts(tx, createdDay.id, day.plannedWorkouts);
+      }
+      return createdWeek.id;
     });
+    return this.getById(programId).then((p) => p?.weeks.find((w) => w.id === weekId) ?? null);
   },
 
   async updateWeek(programId: string, weekId: string, week: ProgramWeekInput) {
@@ -981,39 +1182,24 @@ export const programService = {
     });
 
     if (week.days !== undefined) {
-      await prisma.programDay.deleteMany({ where: { weekId } });
-      if (week.days.length > 0) {
-        await prisma.programWeek.update({
-          where: { id: weekId },
-          data: {
-            days: {
-              create: week.days.map((day, dayIndex) => ({
-                dayNumber: day.dayNumber,
-                isRestDay: day.isRestDay ?? false,
-                name: (day.name as object) || undefined,
-                plannedWorkouts: day.plannedWorkouts
-                  ? {
-                      create: day.plannedWorkouts.map((plannedWorkout, plannedWorkoutIndex) => ({
-                        ...prismaPlannedWorkoutScalars(plannedWorkout, plannedWorkoutIndex),
-                        items: {
-                          create: (plannedWorkout.items ?? []).map((item, ii) =>
-                            plannedWorkoutItemScalarFromInput(item, item.sortOrder ?? ii),
-                          ),
-                        },
-                      })),
-                    }
-                  : undefined,
-              })),
+      await prisma.$transaction(async (tx) => {
+        await tx.programDay.deleteMany({ where: { weekId } });
+        for (const day of week.days ?? []) {
+          const createdDay = await tx.programDay.create({
+            data: {
+              weekId,
+              dayNumber: day.dayNumber,
+              isRestDay: day.isRestDay ?? false,
+              name: (day.name as object) || undefined,
+              dayFocus: day.dayFocus ?? undefined,
             },
-          },
-        });
-      }
+          });
+          await syncPlannedWorkouts(tx, createdDay.id, day.plannedWorkouts);
+        }
+      });
     }
 
-    return prisma.programWeek.findFirst({
-      where: { id: weekId },
-      include: { days: { include: { plannedWorkouts: { include: { items: true } } } } },
-    });
+    return this.getById(programId).then((p) => p?.weeks.find((w) => w.id === weekId) ?? null);
   },
 
   async deleteWeek(programId: string, weekId: string) {
@@ -1028,81 +1214,98 @@ export const programService = {
     const prisma = await getPrisma();
     const sourceWeek = await prisma.programWeek.findFirst({
       where: { id: weekId, programId },
-      include: { days: { include: { plannedWorkouts: { include: { items: true } } } } },
+      include: {
+        days: {
+          include: {
+            plannedWorkouts: {
+              include: {
+                workoutTemplate: {
+                  include: {
+                    phases: {
+                      orderBy: { sortOrder: 'asc' },
+                      include: { exercises: { orderBy: { sortOrder: 'asc' } } },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     });
     if (!sourceWeek) return null;
 
-    return prisma.programWeek.create({
-      data: {
-        programId,
-        weekNumber: targetWeekNumber,
-        weekType: sourceWeek.weekType,
-        name: toInputJsonOrNull(sourceWeek.name),
-        description: toInputJsonOrNull(sourceWeek.description),
-        sortOrder: sourceWeek.sortOrder,
-        days: {
-          create: sourceWeek.days.map((day) => ({
+    const newWeekId = await prisma.$transaction(async (tx) => {
+      const createdWeek = await tx.programWeek.create({
+        data: {
+          programId,
+          weekNumber: targetWeekNumber,
+          weekType: sourceWeek.weekType,
+          name: toInputJsonOrNull(sourceWeek.name),
+          description: toInputJsonOrNull(sourceWeek.description),
+          sortOrder: sourceWeek.sortOrder,
+        },
+      });
+
+      for (const day of sourceWeek.days) {
+        const createdDay = await tx.programDay.create({
+          data: {
+            weekId: createdWeek.id,
             dayNumber: day.dayNumber,
             isRestDay: day.isRestDay,
             name: toInputJsonOrNull(day.name),
             dayFocus: day.dayFocus ?? undefined,
-            plannedWorkouts: { create: day.plannedWorkouts.map((plannedWorkout, pwIndex) => ({
-                name: toInputJsonOrNull(plannedWorkout.name),
-                sortOrder: plannedWorkout.sortOrder,
-                estimatedDurationMin: plannedWorkout.estimatedDurationMin ?? undefined,
-                role: plannedWorkout.role ?? DEFAULT_WORKOUT_BLOCK_ROLE,
-                items: {
-                  create: plannedWorkout.items.map((item, ii) =>
-                    plannedWorkoutItemScalarFromInput(
-                      {
-                        type: item.type as 'exercise' | 'rest',
-                        exerciseId: item.exerciseId ?? undefined,
-                        sets: item.sets ?? undefined,
-                        targetReps: item.targetReps ?? undefined,
-                        targetDuration: item.targetDuration ?? undefined,
-                        restBetweenSetsMs: item.restBetweenSetsMs ?? undefined,
-                        weightKg: item.weightKg ?? undefined,
-                        weightPerSet: (item.weightPerSet as number[]) ?? undefined,
-                        notes: parseLocalizedText(item.notes),
-                        restDurationMs: item.restDurationMs ?? undefined,
-                        sourceWorkoutTemplateId: item.sourceWorkoutTemplateId ?? undefined,
-                        sortOrder: item.sortOrder ?? ii,
-                      },
-                      item.sortOrder ?? ii,
-                    ),
-                  ),
-                },
-              })),
+          },
+        });
+
+        for (const [pwIndex, plannedWorkout] of day.plannedWorkouts.entries()) {
+          const newPwId = randomUUID();
+          const templateId = await cloneTemplateForPlannedWorkout(tx, {
+            sourceTemplateId: plannedWorkout.workoutTemplateId,
+            plannedWorkoutId: newPwId,
+            programId,
+            name: plannedWorkout.name as Prisma.InputJsonValue,
+          });
+          await tx.plannedWorkout.create({
+            data: {
+              id: newPwId,
+              dayId: createdDay.id,
+              workoutTemplateId: templateId,
+              name: plannedWorkout.name as object,
+              sortOrder: plannedWorkout.sortOrder ?? pwIndex,
+              estimatedDurationMin: plannedWorkout.estimatedDurationMin ?? undefined,
             },
-          })),
-        },
-      },
-      include: { days: { include: { plannedWorkouts: { include: { items: true } } } } },
+          });
+        }
+      }
+
+      return createdWeek.id;
     });
+
+    return this.getById(programId).then((p) => p?.weeks.find((w) => w.id === newWeekId) ?? null);
   },
 
   async createDay(programId: string, weekId: string, day: ProgramDayInput) {
     const prisma = await getPrisma();
     const week = await prisma.programWeek.findFirst({ where: { id: weekId, programId } });
     if (!week) return null;
-    return prisma.programDay.create({
-      data: {
-        weekId,
-        dayNumber: day.dayNumber,
-        isRestDay: day.isRestDay ?? false,
-        name: (day.name as object) || undefined,
-        dayFocus: day.dayFocus ?? undefined,
-        plannedWorkouts: day.plannedWorkouts
-          ? {
-              create: day.plannedWorkouts.map((plannedWorkout, plannedWorkoutIndex) => ({
-                ...prismaPlannedWorkoutScalars(plannedWorkout, plannedWorkoutIndex),
-                items: buildPlannedWorkoutItems(plannedWorkout.items),
-              })),
-            }
-          : undefined,
-      },
-      include: { plannedWorkouts: { include: { items: true } } },
+
+    const dayId = await prisma.$transaction(async (tx) => {
+      const createdDay = await tx.programDay.create({
+        data: {
+          weekId,
+          dayNumber: day.dayNumber,
+          isRestDay: day.isRestDay ?? false,
+          name: (day.name as object) || undefined,
+          dayFocus: day.dayFocus ?? undefined,
+        },
+      });
+      await syncPlannedWorkouts(tx, createdDay.id, day.plannedWorkouts);
+      return createdDay.id;
     });
+
+    const program = await this.getById(programId);
+    return program?.weeks.flatMap((w) => w.days).find((d) => d.id === dayId) ?? null;
   },
 
   async updateDay(programId: string, dayId: string, day: ProgramDayInput) {
@@ -1123,25 +1326,13 @@ export const programService = {
     });
 
     if (day.plannedWorkouts !== undefined) {
-      await prisma.plannedWorkout.deleteMany({ where: { dayId } });
-      if (day.plannedWorkouts.length > 0) {
-        await prisma.programDay.update({
-          where: { id: dayId },
-          data: {
-            plannedWorkouts: { create: day.plannedWorkouts.map((plannedWorkout, plannedWorkoutIndex) => ({
-                ...prismaPlannedWorkoutScalars(plannedWorkout, plannedWorkoutIndex),
-                items: buildPlannedWorkoutItems(plannedWorkout.items),
-              })),
-            },
-          },
-        });
-      }
+      await prisma.$transaction(async (tx) => {
+        await syncPlannedWorkouts(tx, dayId, day.plannedWorkouts);
+      });
     }
 
-    return prisma.programDay.findFirst({
-      where: { id: dayId },
-      include: { plannedWorkouts: { include: { items: true } } },
-    });
+    const program = await this.getById(programId);
+    return program?.weeks.flatMap((w) => w.days).find((d) => d.id === dayId) ?? null;
   },
 
   async deleteDay(programId: string, dayId: string) {
@@ -1158,14 +1349,18 @@ export const programService = {
     const prisma = await getPrisma();
     const day = await prisma.programDay.findFirst({ where: { id: dayId, week: { programId } } });
     if (!day) return null;
-    return prisma.plannedWorkout.create({
-      data: {
-        dayId,
-        ...prismaPlannedWorkoutScalars(plannedWorkout, plannedWorkout.sortOrder ?? 0),
-        items: buildPlannedWorkoutItems(plannedWorkout.items),
-      },
-      include: { items: true },
-    });
+
+    const plannedWorkoutId = await prisma.$transaction(async (tx) =>
+      createPlannedWorkoutRecord(tx, dayId, plannedWorkout, plannedWorkout.sortOrder ?? 0),
+    );
+
+    const program = await this.getById(programId);
+    return (
+      program?.weeks
+        .flatMap((w) => w.days)
+        .flatMap((d) => d.plannedWorkouts)
+        .find((pw) => pw.id === plannedWorkoutId) ?? null
+    );
   },
 
   async updatePlannedWorkout(programId: string, plannedWorkoutId: string, plannedWorkout: PlannedWorkoutInput) {
@@ -1175,34 +1370,34 @@ export const programService = {
     });
     if (!existing) return null;
 
-    await prisma.plannedWorkout.update({
-      where: { id: plannedWorkoutId },
-      data: {
-        name: plannedWorkout.name !== undefined ? (plannedWorkout.name as object) : undefined,
-        sortOrder: plannedWorkout.sortOrder !== undefined ? plannedWorkout.sortOrder : undefined,
-        estimatedDurationMin:
-          plannedWorkout.estimatedDurationMin !== undefined ? plannedWorkout.estimatedDurationMin : undefined,
-        role:
-          plannedWorkout.role !== undefined ? (plannedWorkout.role as WorkoutBlockRole) : undefined,
-      },
+    await prisma.$transaction(async (tx) => {
+      const templateId = await syncPlannedWorkoutTemplate(tx, {
+        plannedWorkoutId,
+        dayId: existing.dayId,
+        input: plannedWorkout,
+        existingTemplateId: existing.workoutTemplateId,
+      });
+      await tx.plannedWorkout.update({
+        where: { id: plannedWorkoutId },
+        data: {
+          name: plannedWorkout.name !== undefined ? (plannedWorkout.name as object) : undefined,
+          sortOrder: plannedWorkout.sortOrder !== undefined ? plannedWorkout.sortOrder : undefined,
+          estimatedDurationMin:
+            plannedWorkout.estimatedDurationMin !== undefined
+              ? plannedWorkout.estimatedDurationMin
+              : undefined,
+          workoutTemplateId: templateId,
+        },
+      });
     });
 
-    if (plannedWorkout.items !== undefined) {
-      await prisma.plannedWorkoutItem.deleteMany({ where: { plannedWorkoutId } });
-      if (plannedWorkout.items.length > 0) {
-        await prisma.plannedWorkout.update({
-          where: { id: plannedWorkoutId },
-          data: {
-            items: buildPlannedWorkoutItems(plannedWorkout.items),
-          },
-        });
-      }
-    }
-
-    return prisma.plannedWorkout.findFirst({
-      where: { id: plannedWorkoutId },
-      include: { items: true },
-    });
+    const program = await this.getById(programId);
+    return (
+      program?.weeks
+        .flatMap((w) => w.days)
+        .flatMap((d) => d.plannedWorkouts)
+        .find((pw) => pw.id === plannedWorkoutId) ?? null
+    );
   },
 
   async deletePlannedWorkout(programId: string, plannedWorkoutId: string) {
@@ -1282,56 +1477,35 @@ export const programService = {
     const prisma = await getPrisma();
     const plannedWorkout = await prisma.plannedWorkout.findFirst({
       where: { id: plannedWorkoutId, day: { week: { programId } } },
+      select: { id: true, dayId: true, name: true },
     });
     if (!plannedWorkout) return null;
 
-    const workout = await prisma.workoutTemplate.findFirst({
+    const source = await prisma.workoutTemplate.findFirst({
       where: { id: workoutId, deletedAt: null },
-      include: { exercises: { orderBy: { sortOrder: 'asc' } } },
     });
-    if (!workout) return null;
+    if (!source) return null;
 
-    const existingCount = await prisma.plannedWorkoutItem.count({ where: { plannedWorkoutId } });
-    let sortIndex = existingCount;
-    const itemsToCreate: Prisma.PlannedWorkoutItemCreateManyInput[] = [];
-
-    workout.exercises.forEach((exercise) => {
-      itemsToCreate.push({
+    await prisma.$transaction(async (tx) => {
+      const templateId = await cloneTemplateForPlannedWorkout(tx, {
+        sourceTemplateId: workoutId,
         plannedWorkoutId,
-        type: 'exercise',
-        exerciseId: exercise.exerciseId,
-        sets: exercise.sets,
-        targetReps: exercise.targetReps ?? undefined,
-        targetDuration: exercise.targetDuration ?? undefined,
-        restBetweenSetsMs: exercise.restBetweenSetsMs,
-        weightKg: exercise.weightKg ?? undefined,
-        weightPerSet: exercise.weightPerSet ?? undefined,
-        notes: exercise.notes ?? undefined,
-        sourceWorkoutTemplateId: workout.id,
-        sortOrder: sortIndex++,
-        isModified: false,
+        programId,
+        name: plannedWorkout.name as Prisma.InputJsonValue,
       });
-
-      if (exercise.restAfterExerciseMs && exercise.restAfterExerciseMs > 0) {
-        itemsToCreate.push({
-          plannedWorkoutId,
-          type: 'rest',
-          restDurationMs: exercise.restAfterExerciseMs,
-          sourceWorkoutTemplateId: workout.id,
-          sortOrder: sortIndex++,
-          isModified: false,
-        });
-      }
+      await tx.plannedWorkout.update({
+        where: { id: plannedWorkoutId },
+        data: { workoutTemplateId: templateId },
+      });
     });
 
-    if (itemsToCreate.length > 0) {
-      await prisma.plannedWorkoutItem.createMany({ data: itemsToCreate });
-    }
-
-    return prisma.plannedWorkout.findFirst({
-      where: { id: plannedWorkoutId },
-      include: { items: true },
-    });
+    const program = await this.getById(programId);
+    return (
+      program?.weeks
+        .flatMap((w) => w.days)
+        .flatMap((d) => d.plannedWorkouts)
+        .find((pw) => pw.id === plannedWorkoutId) ?? null
+    );
   },
 
   async updateUserProgram(userProgramId: string, userId: string, data: UpdateUserProgramInput) {
@@ -1449,31 +1623,9 @@ export const programService = {
       catchUpSuggestion,
       plannedWorkouts:
         showSessions && day
-          ? day.plannedWorkouts.map((plannedWorkout) => ({
-              id: plannedWorkout.id,
-              name: parseLocalizedText(plannedWorkout.name) || { ar: '', en: '' },
-              sortOrder: plannedWorkout.sortOrder,
-              role: String(plannedWorkout.role),
-              estimatedDurationMin: plannedWorkout.estimatedDurationMin ?? undefined,
-              items: plannedWorkout.items.map((item) => ({
-                type: item.type as 'exercise' | 'rest',
-                serverItemId: item.id,
-                exerciseSlug: item.exercise?.slug ?? undefined,
-                deletedExercise:
-                  item.type === 'exercise' && !item.exercise ? true : undefined,
-                intent: item.exercise?.intent ?? undefined,
-                coachingNotes: item.exercise?.coachingNotes ?? undefined,
-                sets: item.sets ?? undefined,
-                targetReps: item.targetReps ?? undefined,
-                targetDuration: item.targetDuration ?? undefined,
-                restBetweenSetsMs: item.restBetweenSetsMs ?? undefined,
-                weightKg: item.weightKg ?? undefined,
-                weightPerSet: (item.weightPerSet as number[]) || undefined,
-                notes: parseLocalizedText(item.notes),
-                restDurationMs: item.restDurationMs ?? undefined,
-                sortOrder: item.sortOrder,
-              })),
-            }))
+          ? day.plannedWorkouts.map((plannedWorkout) =>
+              exportPlannedWorkout(plannedWorkout as PlannedWorkoutWithTemplate),
+            )
           : [],
     };
   },
@@ -1488,8 +1640,12 @@ export const programService = {
       description: parseLocalizedText(program.description),
       coverImageUrl: program.coverImageUrl ?? undefined,
       durationWeeks: program.durationWeeks,
-      levelRangeMin: program.levelRangeMin,
-      levelRangeMax: program.levelRangeMax,
+      levelMinId: program.levelMinId,
+      levelMaxId: program.levelMaxId,
+      levelMin: exportLevel(program.levelMin),
+      levelMax: exportLevel(program.levelMax),
+      levelRangeMin: program.levelMin?.number ?? null,
+      levelRangeMax: program.levelMax?.number ?? null,
       tags: (program.tags as string[]) || undefined,
       weeklyWorkoutTarget: program.weeklyWorkoutTarget ?? undefined,
       estimatedWorkoutMinutes: program.estimatedWorkoutMinutes ?? undefined,
@@ -1502,31 +1658,9 @@ export const programService = {
           dayNumber: day.dayNumber,
           isRestDay: day.isRestDay,
           name: parseLocalizedText(day.name),
-          plannedWorkouts: day.plannedWorkouts.map((plannedWorkout) => ({
-            id: plannedWorkout.id,
-            name: parseLocalizedText(plannedWorkout.name) || { ar: '', en: '' },
-            sortOrder: plannedWorkout.sortOrder,
-            role: String(plannedWorkout.role),
-            estimatedDurationMin: plannedWorkout.estimatedDurationMin ?? undefined,
-            items: plannedWorkout.items.map((item) => ({
-              type: item.type as 'exercise' | 'rest',
-              serverItemId: item.id,
-              exerciseSlug: item.exercise?.slug ?? undefined,
-              deletedExercise:
-                item.type === 'exercise' && !item.exercise ? true : undefined,
-              intent: item.exercise?.intent ?? undefined,
-              coachingNotes: item.exercise?.coachingNotes ?? undefined,
-              sets: item.sets ?? undefined,
-              targetReps: item.targetReps ?? undefined,
-              targetDuration: item.targetDuration ?? undefined,
-              restBetweenSetsMs: item.restBetweenSetsMs ?? undefined,
-              weightKg: item.weightKg ?? undefined,
-              weightPerSet: (item.weightPerSet as number[]) || undefined,
-              notes: parseLocalizedText(item.notes),
-              restDurationMs: item.restDurationMs ?? undefined,
-              sortOrder: item.sortOrder,
-            })),
-          })),
+          plannedWorkouts: day.plannedWorkouts.map((plannedWorkout) =>
+            exportPlannedWorkout(plannedWorkout as PlannedWorkoutWithTemplate),
+          ),
         })),
       })),
       updatedAt: program.updatedAt.toISOString(),
@@ -1554,6 +1688,8 @@ export const programService = {
       description: full.description,
       coverImageUrl: full.coverImageUrl,
       durationWeeks: full.durationWeeks,
+      levelMinId: full.levelMinId,
+      levelMaxId: full.levelMaxId,
       levelRangeMin: full.levelRangeMin,
       levelRangeMax: full.levelRangeMax,
       totalExercisesInFirstWeek: exerciseCount,

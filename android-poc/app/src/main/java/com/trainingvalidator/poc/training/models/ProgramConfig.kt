@@ -12,8 +12,10 @@ data class ProgramConfig(
     val description: LocalizedText? = null,
     val coverImageUrl: String? = null,
     val durationWeeks: Int,
-    val levelRangeMin: Int = 0,
-    val levelRangeMax: Int = 0,
+    val levelMinId: String? = null,
+    val levelMaxId: String? = null,
+    val levelMin: ProgramLevelConfig? = null,
+    val levelMax: ProgramLevelConfig? = null,
     val tags: List<String> = emptyList(),
     @SerializedName("weeks") private val weeksField: List<ProgramWeek>? = null,
     val weeklyWorkoutTarget: Int? = null,
@@ -22,6 +24,13 @@ data class ProgramConfig(
 ) {
     val weeks: List<ProgramWeek> get() = weeksField.orEmpty()
 }
+
+data class ProgramLevelConfig(
+    val id: String? = null,
+    val number: Int = 0,
+    val code: String = "",
+    val name: LocalizedText = LocalizedText()
+)
 
 data class ProgramWeek(
     val weekNumber: Int,
@@ -47,27 +56,36 @@ data class ProgramWorkout(
     val id: String,
     val name: LocalizedText,
     val sortOrder: Int = 0,
-    val role: String = "MAIN",
+    val workoutTemplateId: String? = null,
+    val workoutTemplateSlug: String? = null,
     val estimatedDurationMin: Int? = null,
+    @SerializedName("phases") private val phasesField: List<WorkoutPhaseConfig>? = null,
     @SerializedName("items") private val itemsField: List<WorkoutLineItem>? = null
 ) {
+    val phases: List<WorkoutPhaseConfig> get() = phasesField.orEmpty()
     val items: List<WorkoutLineItem> get() = itemsField.orEmpty()
 }
 
 data class WorkoutLineItem(
-    val type: String,
+    val type: PlannedWorkoutItemType,
     val serverItemId: String? = null,
     val exerciseSlug: String? = null,
     val deletedExercise: Boolean? = null,
     val sets: Int? = null,
     val targetReps: Int? = null,
+    val targetRepsPerSet: List<Int>? = null,
     val targetDuration: Int? = null,
     val restBetweenSetsMs: Long? = null,
-    val weightKg: Float? = null,
+    val restBetweenSetsPerSetMs: List<Long>? = null,
     val weightPerSet: List<Float>? = null,
     val notes: LocalizedText? = null,
     val restDurationMs: Long? = null,
     val suggestionSource: String? = null,
     val variantIndex: Int? = null,
+    val phaseIndex: Int? = null,
+    val phaseRole: String? = null,
+    val phaseCanSkip: Boolean? = null,
+    val phaseCanContinue: Boolean? = null,
+    val phaseMaxContinueTimeMs: Long? = null,
     val sortOrder: Int = 0
 )
