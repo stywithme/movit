@@ -104,7 +104,7 @@ export interface CreateProgramInput {
   prescriptionPriority?: number;
   prerequisiteProgramId?: string;
   nextProgramId?: string;
-  /** Program matching dimensions (domain, goal, equipment, ù). */
+  /** Program matching dimensions (domain, goal, equipment, etc.). */
   programAttributes?: ProgramAttributeInput[];
   /** Phase-based structure (preferred for new editor). Backend expands to weeks at save. */
   phases?: ProgramPhaseInput[];
@@ -129,11 +129,11 @@ export interface TodayPlanResponse {
   dayNumber: number;
   date: string;
   isProgramComplete: boolean;
-  progress: Record<string, string>; // "weekNum_dayNum_plannedWorkoutId" ? status
+  progress: Record<string, string>; // "weekNum_dayNum_plannedWorkoutId" -> status
   plannedWorkouts: ProgramExportPlannedWorkout[];
   /** False when today (UTC) is not one of the user's training weekdays. */
   isTrainingDay?: boolean;
-  /** 0=Sun ù 6=Sat ù copy of profile.trainingWeekdays for mobile. */
+  /** 0=Sun..6=Sat, copy of profile.trainingWeekdays for mobile. */
   trainingWeekdays: number[];
   catchUpSuggestion?: {
     resetType: 'none' | 'week_restart' | 'program_restart';

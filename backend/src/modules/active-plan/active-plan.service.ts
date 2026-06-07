@@ -1,5 +1,5 @@
 /**
- * ActivePlan Service — Manages user's training schedule with ordered programs.
+ * ActivePlan Service - Manages user's training schedule with ordered programs.
  *
  * Replaces the simple UserProgram.isActive boolean with a structured plan
  * that supports program sequencing, transitions, and auto-scheduling.
@@ -93,7 +93,7 @@ export interface TodayPlanData {
     scheduledDate: string;
     reason: string;
   } | null;
-  /** User's scheduled training day (UTC weekday); false on off days — show rest UX. */
+  /** User's scheduled training day (UTC weekday); false on off days - show rest UX. */
   isTrainingDay?: boolean;
   /** When catch-up snap changed position vs natural completion-based slot. */
   catchUpSuggestion?: CatchUpSuggestion | null;
@@ -707,7 +707,7 @@ export const activePlanService = {
         });
       }
     } else {
-      // journey_summary (manual path) or null — activate next queued slot if any
+      // journey_summary (manual path) or null - activate next queued slot if any
       if (nextSlot) {
         await prisma.activePlanProgram.update({
           where: { id: nextSlot.id },
