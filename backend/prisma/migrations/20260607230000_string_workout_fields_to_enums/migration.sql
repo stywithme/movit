@@ -23,9 +23,13 @@ ALTER TABLE "planned_workout_items"
   ALTER COLUMN "type" TYPE "PlannedWorkoutItemType"
   USING ("type"::"PlannedWorkoutItemType");
 
+-- Drop TEXT default before enum cast (Postgres cannot auto-cast column defaults)
+ALTER TABLE "workout_executions"
+  ALTER COLUMN "context" DROP DEFAULT;
+
 ALTER TABLE "workout_executions"
   ALTER COLUMN "context" TYPE "WorkoutExecutionContext"
   USING ("context"::"WorkoutExecutionContext");
 
 ALTER TABLE "workout_executions"
-  ALTER COLUMN "context" SET DEFAULT 'free';
+  ALTER COLUMN "context" SET DEFAULT 'free'::"WorkoutExecutionContext";
