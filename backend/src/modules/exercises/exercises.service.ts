@@ -148,6 +148,10 @@ export const exerciseService = {
             where: { isPrimary: true },
             take: 1,
           },
+          poseVariants: {
+            select: { id: true, name: true, sortOrder: true },
+            orderBy: { sortOrder: 'asc' },
+          },
           _count: {
             select: { poseVariants: true },
           },

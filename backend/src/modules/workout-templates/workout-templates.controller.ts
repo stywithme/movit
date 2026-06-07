@@ -1,9 +1,10 @@
-﻿import { Body, Controller, Delete, Get, Param, Post, Put, Query, Res, UseGuards } from '@nestjs/common';
-import type { Response } from 'express';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req, Res, UseGuards } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import { workoutService } from './workout-templates.service';
 import { validateCreateWorkout, validateUpdateWorkout } from './workout-templates.validation';
 import { CaslGuard } from '@/lib/casl/casl.guard';
 import { CheckPermission } from '@/lib/casl/check-permission.decorator';
+import { getAdminIdFromRequest } from '@/lib/auth/admin';
 
 @UseGuards(CaslGuard)
 @Controller('workout-templates')
@@ -14,7 +15,6 @@ export class WorkoutTemplatesController {
     @Query('status') status?: string,
     @Query('search') search?: string,
     @Query('featured') featured?: string,
-    @Query('visibility') visibility?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string
   ) {
@@ -30,7 +30,6 @@ export class WorkoutTemplatesController {
         status: (status as 'draft' | 'published') || undefined,
         search: search || undefined,
         isFeatured,
-        visibility: (visibility as 'public' | 'private') || undefined,
         page: Number.parseInt(page || '1', 10),
         limit: Number.parseInt(limit || '20', 10),
       });
@@ -41,14 +40,14 @@ export class WorkoutTemplatesController {
         pagination: result.pagination,
       };
     } catch (error) {
-      console.error('Error fetching workouts:', error);
-      return { success: false, error: 'Failed to fetch workouts' };
+      console.error('Error fetching workout templates:', error);
+      return { success: false, error: 'Failed to fetch workout templates' };
     }
   }
 
   @Post()
   @CheckPermission('create', 'WorkoutTemplate')
-  async create(@Body() body: any, @Res({ passthrough: true }) res: Response) {
+  async create(@Body() body: any, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     try {
       const errors = validateCreateWorkout(body);
       if (errors.length > 0) {
@@ -56,13 +55,13 @@ export class WorkoutTemplatesController {
         return { success: false, errors };
       }
 
-      const workout = await workoutService.create(body);
+      const workout = await workoutService.create(body, getAdminIdFromRequest(req) ?? undefined);
       res.status(201);
       return { success: true, data: workout };
     } catch (error) {
-      console.error('Error creating workout:', error);
+      console.error('Error creating workout template:', error);
       res.status(500);
-      return { success: false, error: 'Failed to create workout' };
+      return { success: false, error: 'Failed to create workout template' };
     }
   }
 
@@ -73,19 +72,19 @@ export class WorkoutTemplatesController {
       const workout = await workoutService.getById(id);
       if (!workout) {
         res.status(404);
-        return { success: false, error: 'Workout not found' };
+        return { success: false, error: 'Workout template not found' };
       }
       return { success: true, data: workout };
     } catch (error) {
-      console.error('Error fetching workout:', error);
+      console.error('Error fetching workout template:', error);
       res.status(500);
-      return { success: false, error: 'Failed to fetch workout' };
+      return { success: false, error: 'Failed to fetch workout template' };
     }
   }
 
   @Put(':id')
   @CheckPermission('update', 'WorkoutTemplate')
-  async update(@Param('id') id: string, @Body() body: any, @Res({ passthrough: true }) res: Response) {
+  async update(@Param('id') id: string, @Body() body: any, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     try {
       const errors = validateUpdateWorkout(body);
       if (errors.length > 0) {
@@ -96,99 +95,83 @@ export class WorkoutTemplatesController {
       const existing = await workoutService.getById(id);
       if (!existing) {
         res.status(404);
-        return { success: false, error: 'Workout not found' };
-      }
-      if ((existing as { visibility?: string }).visibility === 'private') {
-        res.status(403);
-        return { success: false, error: 'Private workouts cannot be edited' };
+        return { success: false, error: 'Workout template not found' };
       }
 
-      const workout = await workoutService.update(id, body);
+      const workout = await workoutService.update(id, body, getAdminIdFromRequest(req) ?? undefined);
       return { success: true, data: workout };
     } catch (error) {
-      console.error('Error updating workout:', error);
+      console.error('Error updating workout template:', error);
       res.status(500);
-      return { success: false, error: 'Failed to update workout' };
+      return { success: false, error: 'Failed to update workout template' };
     }
   }
 
   @Delete(':id')
   @CheckPermission('delete', 'WorkoutTemplate')
-  async remove(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
+  async remove(@Param('id') id: string, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     try {
-      await workoutService.delete(id);
-      return { success: true, message: 'Workout deleted successfully' };
+      await workoutService.delete(id, getAdminIdFromRequest(req) ?? undefined);
+      return { success: true, message: 'Workout template deleted successfully' };
     } catch (error) {
-      console.error('Error deleting workout:', error);
+      console.error('Error deleting workout template:', error);
       res.status(500);
-      return { success: false, error: 'Failed to delete workout' };
+      return { success: false, error: 'Failed to delete workout template' };
     }
   }
 
   @Post(':id/publish')
   @CheckPermission('update', 'WorkoutTemplate')
-  async publish(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
+  async publish(@Param('id') id: string, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     try {
       const existing = await workoutService.getById(id);
       if (!existing) {
         res.status(404);
-        return { success: false, error: 'Workout not found' };
+        return { success: false, error: 'Workout template not found' };
       }
-      if ((existing as { visibility?: string }).visibility === 'private') {
-        res.status(403);
-        return { success: false, error: 'Private workouts cannot be published' };
-      }
-      const workout = await workoutService.publish(id);
+      const workout = await workoutService.publish(id, getAdminIdFromRequest(req) ?? undefined);
       return { success: true, data: workout };
     } catch (error) {
-      console.error('Error publishing workout:', error);
+      console.error('Error publishing workout template:', error);
       res.status(500);
-      return { success: false, error: 'Failed to publish workout' };
+      return { success: false, error: 'Failed to publish workout template' };
     }
   }
 
   @Delete(':id/publish')
   @CheckPermission('update', 'WorkoutTemplate')
-  async unpublish(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
+  async unpublish(@Param('id') id: string, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     try {
       const existing = await workoutService.getById(id);
       if (!existing) {
         res.status(404);
-        return { success: false, error: 'Workout not found' };
+        return { success: false, error: 'Workout template not found' };
       }
-      if ((existing as { visibility?: string }).visibility === 'private') {
-        res.status(403);
-        return { success: false, error: 'Private workouts cannot be unpublished' };
-      }
-      const workout = await workoutService.unpublish(id);
+      const workout = await workoutService.unpublish(id, getAdminIdFromRequest(req) ?? undefined);
       return { success: true, data: workout };
     } catch (error) {
-      console.error('Error unpublishing workout:', error);
+      console.error('Error unpublishing workout template:', error);
       res.status(500);
-      return { success: false, error: 'Failed to unpublish workout' };
+      return { success: false, error: 'Failed to unpublish workout template' };
     }
   }
 
   @Post(':id/duplicate')
   @CheckPermission('update', 'WorkoutTemplate')
-  async duplicate(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
+  async duplicate(@Param('id') id: string, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     try {
       const existing = await workoutService.getById(id);
       if (!existing) {
         res.status(404);
-        return { success: false, error: 'Workout not found' };
+        return { success: false, error: 'Workout template not found' };
       }
-      if ((existing as { visibility?: string }).visibility === 'private') {
-        res.status(403);
-        return { success: false, error: 'Private workouts cannot be duplicated' };
-      }
-      const workout = await workoutService.duplicate(id);
+      const workout = await workoutService.duplicate(id, getAdminIdFromRequest(req) ?? undefined);
       res.status(201);
       return { success: true, data: workout };
     } catch (error) {
-      console.error('Error duplicating workout:', error);
+      console.error('Error duplicating workout template:', error);
       res.status(500);
-      return { success: false, error: 'Failed to duplicate workout' };
+      return { success: false, error: 'Failed to duplicate workout template' };
     }
   }
 }

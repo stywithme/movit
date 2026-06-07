@@ -183,11 +183,11 @@ export default function NewWorkoutTemplatePage() {
         toast.success('Workout template created');
         router.push('/admin/workout-templates');
       } else {
-        toast.error(data.errors?.join('\n') || data.error || 'Failed to create workout');
+        toast.error(data.errors?.join('\n') || data.error || 'Failed to create template');
       }
     } catch (error) {
       console.error('Error creating workout:', error);
-      toast.error('Failed to create workout');
+      toast.error('Failed to create template');
     } finally {
       setLoading(false);
     }
@@ -209,7 +209,7 @@ export default function NewWorkoutTemplatePage() {
               <Input
                 value={name.en}
                 onChange={(e) => setName({ ...name, en: e.target.value })}
-                placeholder="Enter workout name"
+                placeholder="Enter template name"
                 required
               />
             </div>
@@ -218,7 +218,7 @@ export default function NewWorkoutTemplatePage() {
               <Input
                 value={name.ar}
                 onChange={(e) => setName({ ...name, ar: e.target.value })}
-                placeholder="أدخل اسم التمرين"
+                placeholder="أدخل اسم القالب"
                 dir="rtl"
                 required
               />
@@ -317,7 +317,7 @@ export default function NewWorkoutTemplatePage() {
                   id="workout-featured-new"
                 />
                 <span>
-                  <span className="text-sm font-medium text-zinc-900">Featured workout</span>
+                  <span className="text-sm font-medium text-zinc-900">Featured template</span>
                   <span className="mt-0.5 block text-xs text-zinc-500">
                     Shown first in Explore and sync lists when published.
                   </span>
@@ -351,7 +351,7 @@ export default function NewWorkoutTemplatePage() {
             </div>
           ) : templateExercises.length === 0 ? (
             <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50/50 py-12 text-center text-sm text-zinc-500">
-              Add at least one exercise to save this workout.
+              Add at least one exercise to save this template.
             </div>
           ) : (
             <div className="mt-6 space-y-4">
@@ -396,6 +396,22 @@ export default function NewWorkoutTemplatePage() {
                             }))}
                           />
                         </div>
+
+                        {we.exercise?.poseVariants && we.exercise.poseVariants.length > 1 && (
+                          <div className="sm:col-span-2">
+                            <Label>Variant</Label>
+                            <Select
+                              value={String(we.variantIndex)}
+                              onChange={(e) =>
+                                updateExercise(index, { variantIndex: parseInt(e.target.value) || 0 })
+                              }
+                              options={we.exercise.poseVariants.map((pv, vIdx) => ({
+                                value: String(vIdx),
+                                label: pv.name.en || pv.name.ar || `Variant ${vIdx + 1}`,
+                              }))}
+                            />
+                          </div>
+                        )}
 
                         <div>
                           <Label>Difficulty</Label>
@@ -567,7 +583,7 @@ export default function NewWorkoutTemplatePage() {
             Cancel
           </Button>
           <Button type="submit" disabled={loading || templateExercises.length < 1}>
-            {loading ? 'Creating…' : 'Create workout'}
+            {loading ? 'Creating…' : 'Create template'}
           </Button>
         </div>
       </form>

@@ -132,7 +132,7 @@ export default function EditWorkoutTemplatePage() {
         }
       } catch (error) {
         console.error('Error fetching workout:', error);
-        toast.error('Error loading workout');
+        toast.error('Error loading template');
         router.push('/admin/workout-templates');
       } finally {
         setLoadingTemplate(false);
@@ -270,11 +270,11 @@ export default function EditWorkoutTemplatePage() {
         toast.success('Workout template updated');
         router.push('/admin/workout-templates');
       } else {
-        toast.error(data.errors?.join('\n') || data.error || 'Failed to update workout');
+        toast.error(data.errors?.join('\n') || data.error || 'Failed to update template');
       }
     } catch (error) {
       console.error('Error updating workout:', error);
-      toast.error('Failed to update workout');
+      toast.error('Failed to update template');
     } finally {
       setLoading(false);
     }
@@ -283,7 +283,7 @@ export default function EditWorkoutTemplatePage() {
   if (loadingTemplate) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-gray-500">Loading workout...</div>
+        <div className="text-gray-500">Loading template...</div>
       </div>
     );
   }
@@ -292,7 +292,7 @@ export default function EditWorkoutTemplatePage() {
     <div className="mx-auto max-w-5xl space-y-8 pb-12">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">Edit workout</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">Edit template</h1>
           <p className="mt-1 text-sm text-zinc-500">Update template, Explore visibility, and exercise sequence.</p>
         </div>
         <Badge variant={status === 'published' ? 'success' : 'warning'} className="w-fit shrink-0 capitalize">
@@ -309,7 +309,7 @@ export default function EditWorkoutTemplatePage() {
               <Input
                 value={name.en}
                 onChange={(e) => setName({ ...name, en: e.target.value })}
-                placeholder="Enter workout name"
+                placeholder="Enter template name"
                 required
               />
             </div>
@@ -318,7 +318,7 @@ export default function EditWorkoutTemplatePage() {
               <Input
                 value={name.ar}
                 onChange={(e) => setName({ ...name, ar: e.target.value })}
-                placeholder="أدخل اسم التمرين"
+                placeholder="أدخل اسم القالب"
                 dir="rtl"
                 required
               />
@@ -417,7 +417,7 @@ export default function EditWorkoutTemplatePage() {
                   id="workout-featured-edit"
                 />
                 <span>
-                  <span className="text-sm font-medium text-zinc-900">Featured workout</span>
+                  <span className="text-sm font-medium text-zinc-900">Featured template</span>
                   <span className="mt-0.5 block text-xs text-zinc-500">
                     Shown first in Explore and sync lists when published.
                   </span>
@@ -451,7 +451,7 @@ export default function EditWorkoutTemplatePage() {
             </div>
           ) : templateExercises.length === 0 ? (
             <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50/50 py-12 text-center text-sm text-zinc-500">
-              Add at least one exercise to save this workout.
+              Add at least one exercise to save this template.
             </div>
           ) : (
             <div className="mt-6 space-y-4">
@@ -493,6 +493,22 @@ export default function EditWorkoutTemplatePage() {
                             }))}
                           />
                         </div>
+
+                        {we.exercise?.poseVariants && we.exercise.poseVariants.length > 1 && (
+                          <div className="sm:col-span-2">
+                            <Label>Variant</Label>
+                            <Select
+                              value={String(we.variantIndex)}
+                              onChange={(e) =>
+                                updateExercise(index, { variantIndex: parseInt(e.target.value) || 0 })
+                              }
+                              options={we.exercise.poseVariants.map((pv, vIdx) => ({
+                                value: String(vIdx),
+                                label: pv.name.en || pv.name.ar || `Variant ${vIdx + 1}`,
+                              }))}
+                            />
+                          </div>
+                        )}
 
                         <div>
                           <Label>Difficulty</Label>
