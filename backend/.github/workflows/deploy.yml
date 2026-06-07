@@ -65,8 +65,9 @@ jobs:
             npx prisma generate
 
             echo "==> Running migrations..."
-            # Recover P3009 if a previous deploy left this migration in "failed" (e.g. enum cast error); no-op otherwise.
+            # Recover P3009 if a previous deploy left a migration in "failed"; no-op when not needed.
             npx prisma migrate resolve --rolled-back "20260505100000_unified_progression_refactor" || true
+            npx prisma migrate resolve --rolled-back "20260607230000_string_workout_fields_to_enums" || true
             npx prisma migrate deploy
 
             echo "==> Building..."
