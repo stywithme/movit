@@ -13,7 +13,7 @@ interface WorkoutTemplate {
   name: LocalizedText;
   description: LocalizedText | null;
   slug: string;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  level?: { id: string; number: number; code: string; name: LocalizedText } | null;
   status: string;
   isFeatured: boolean;
   createdAt: string;
@@ -116,9 +116,6 @@ export default function WorkoutTemplatesListPage() {
     }
   };
 
-  const difficultyLabel = (d: string) =>
-    d === 'beginner' ? 'Beginner' : d === 'intermediate' ? 'Intermediate' : 'Advanced';
-
   return (
     <div className="space-y-6">
       <PageHeader
@@ -183,7 +180,7 @@ export default function WorkoutTemplatesListPage() {
               <thead>
                 <tr className="border-b bg-muted/50">
                   <th className="px-5 py-3 font-medium text-muted-foreground">Template</th>
-                  <th className="px-5 py-3 font-medium text-muted-foreground">Difficulty</th>
+                  <th className="px-5 py-3 font-medium text-muted-foreground">Level</th>
                   <th className="hidden px-5 py-3 font-medium text-muted-foreground sm:table-cell">Exercises</th>
                   <th className="px-5 py-3 font-medium text-muted-foreground">Featured</th>
                   <th className="px-5 py-3 font-medium text-muted-foreground">Status</th>
@@ -201,7 +198,9 @@ export default function WorkoutTemplatesListPage() {
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 align-middle">
                       <Badge variant="outline" className="font-normal capitalize">
-                        {difficultyLabel(workout.difficulty)}
+                        {workout.level
+                          ? `Level ${workout.level.number} — ${workout.level.name.en || workout.level.name.ar || workout.level.code}`
+                          : 'No level'}
                       </Badge>
                     </td>
                     <td className="hidden whitespace-nowrap px-5 py-4 align-middle text-muted-foreground sm:table-cell">

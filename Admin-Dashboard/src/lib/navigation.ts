@@ -54,6 +54,7 @@ export const navGroups: NavGroup[] = [
       { title: 'Programs', href: '/admin/programs', icon: CalendarDays, requiredSubject: 'Program' },
       { title: 'Programs Map', href: '/admin/programs/map', icon: Map, requiredSubject: 'ProgramMap' },
       { title: 'Workout Templates', href: '/admin/workout-templates', icon: Repeat, requiredSubject: 'WorkoutTemplate' },
+      { title: 'Workout Phases', href: '/admin/workout-phases', icon: Layers, requiredSubject: 'WorkoutPhase' },
       { title: 'Attributes', href: '/admin/attributes', icon: Tags, requiredSubject: 'Attribute' },
       { title: 'Messages', href: '/admin/messages', icon: MessageSquare, requiredSubject: 'FeedbackMessage' },
       { title: 'Camera Positions', href: '/admin/camera-positions', icon: Layers, requiredSubject: 'PosePosition' },

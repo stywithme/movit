@@ -41,6 +41,9 @@ import com.trainingvalidator.poc.storage.ProgramWorkoutReportStore
 import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.training.models.LocalizedText
+import com.trainingvalidator.poc.training.models.PerSetValues
+import com.trainingvalidator.poc.training.models.PlannedWorkoutItemType
+import com.trainingvalidator.poc.training.models.wireValue
 import com.trainingvalidator.poc.training.models.ProgramConfig
 import com.trainingvalidator.poc.training.models.ProgramDay
 import com.trainingvalidator.poc.training.models.ProgramWorkout
@@ -384,7 +387,7 @@ class ProgramWorkoutActivity : AppCompatActivity() {
         tvName.text = getLocalizedName(plannedWorkout.name)
 
         // --- Meta info ---
-        val exerciseCount = plannedWorkout.items.count { it.type == "exercise" }
+        val exerciseCount = plannedWorkout.items.count { it.type == PlannedWorkoutItemType.EXERCISE }
         val backendMin = plannedWorkout.estimatedDurationMin
         val estimatedMinutes = backendMin ?: estimatePlannedWorkoutDuration(plannedWorkout.items)
         val baseMeta = getString(R.string.ds_exercises_meta_format, exerciseCount, estimatedMinutes)
@@ -457,7 +460,6 @@ class ProgramWorkoutActivity : AppCompatActivity() {
         val adapter = TimelineItemAdapter(
             items = plannedWorkout.items.toMutableList(),
             workoutId = plannedWorkout.id,
-            plannedWorkoutRole = plannedWorkout.role.ifBlank { "MAIN" },
             isPlannedWorkoutCompleted = isPlannedWorkoutCompleted,
             totalCount = plannedWorkout.items.size
         )
@@ -510,7 +512,6 @@ class ProgramWorkoutActivity : AppCompatActivity() {
     private inner class TimelineItemAdapter(
         val items: MutableList<WorkoutLineItem>,
         private val workoutId: String,
-        private val plannedWorkoutRole: String,
         private val isPlannedWorkoutCompleted: Boolean,
         private val totalCount: Int
     ) : RecyclerView.Adapter<TimelineItemAdapter.VH>() {
@@ -545,7 +546,7 @@ class ProgramWorkoutActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: VH, position: Int) {
             val item = items[position]
-            val isRest = item.type == "rest"
+            val isRest = item.type == PlannedWorkoutItemType.REST
             val unavailable = !isRest && (item.deletedExercise == true || item.exerciseSlug.isNullOrBlank())
 
             // --- Timeline connector lines ---
@@ -624,8 +625,12 @@ class ProgramWorkoutActivity : AppCompatActivity() {
                 } else {
                     holder.tvName.text = exerciseNameMap[slug] ?: slug
                 }
-                val sectionPrefix = if (item.type == "exercise" && position == 0) {
-                    formatRoleTitle(normalizeRoleKey(plannedWorkoutRole)) + "\n"
+                val showSectionHeader = item.type == PlannedWorkoutItemType.EXERCISE && (
+                    position == 0 ||
+                        normalizeRoleKey(item.phaseRole) != normalizeRoleKey(items.getOrNull(position - 1)?.phaseRole)
+                    )
+                val sectionPrefix = if (showSectionHeader) {
+                    formatRoleTitle(normalizeRoleKey(item.phaseRole ?: "MAIN")) + "\n"
                 } else ""
                 holder.tvDetail.text = sectionPrefix + buildExerciseDetailText(item)
                 if (unavailable) {
@@ -663,7 +668,7 @@ class ProgramWorkoutActivity : AppCompatActivity() {
                     val pos = holder.bindingAdapterPosition
                     if (pos != RecyclerView.NO_POSITION) {
                         val currentItem = items[pos]
-                        if (currentItem.type == "rest") showEditRestDialog(workoutId, pos, currentItem)
+                        if (currentItem.type == PlannedWorkoutItemType.REST) showEditRestDialog(workoutId, pos, currentItem)
                         else showEditExerciseDialog(workoutId, pos, currentItem)
                     }
                 }
@@ -711,7 +716,7 @@ class ProgramWorkoutActivity : AppCompatActivity() {
 
     private fun buildExerciseDetailText(item: WorkoutLineItem): String {
         val sets = item.sets ?: 1
-        val weight = item.weightKg
+        val weight = PerSetValues.floatAt(item.weightPerSet, 1, sets)
 
         val base = when {
             item.targetDuration != null && weight != null && weight > 0 ->
@@ -769,7 +774,7 @@ class ProgramWorkoutActivity : AppCompatActivity() {
         }
 
         val firstBadIdx = plannedWorkout.items.indexOfFirst {
-            it.type == "exercise" && (it.deletedExercise == true || it.exerciseSlug.isNullOrBlank())
+            it.type == PlannedWorkoutItemType.EXERCISE && (it.deletedExercise == true || it.exerciseSlug.isNullOrBlank())
         }
         if (firstBadIdx >= 0) {
             expandedPlannedWorkoutIds.add(plannedWorkout.id)
@@ -793,7 +798,6 @@ class ProgramWorkoutActivity : AppCompatActivity() {
         val intent = Intent(this, TrainingActivity::class.java).apply {
             putExtra(TrainingActivity.EXTRA_IS_WORKOUT_MODE, true)
             putExtra(TrainingActivity.EXTRA_WORKOUT_ITEMS_JSON, itemsJson)
-            putExtra(TrainingActivity.EXTRA_WORKOUT_ROLE, plannedWorkout.role.ifBlank { "MAIN" })
             putExtra(TrainingActivity.EXTRA_TRAINING_MODE, TrainingActivity.MODE_CAMERA)
         }
 
@@ -982,28 +986,38 @@ class ProgramWorkoutActivity : AppCompatActivity() {
         val item: WorkoutLineItem
     )
 
-    private fun hasWarmupBeforeFirstMainWork(): Boolean {
-        val ordered = plannedWorkouts.filter { !it.isDeleted }.sortedBy { it.sortOrder }
-        val firstMainIdx = ordered.indexOfFirst {
-            val r = it.role.trim().uppercase(Locale.US)
-            r == "MAIN" || r == "ACCESSORY" || r == "CORRECTIVE" || r == "TEST"
+    private fun allExerciseRefs(): List<PlannedWorkoutExerciseRef> {
+        val refs = mutableListOf<PlannedWorkoutExerciseRef>()
+        for (plannedWorkout in plannedWorkouts.filter { !it.isDeleted }.sortedBy { it.sortOrder }) {
+            plannedWorkout.items.forEachIndexed { index, item ->
+                if (item.type == PlannedWorkoutItemType.EXERCISE && !item.exerciseSlug.isNullOrBlank()) {
+                    refs.add(PlannedWorkoutExerciseRef(plannedWorkout.id, index, item))
+                }
+            }
         }
-        if (firstMainIdx <= 0) return false
-        return ordered.take(firstMainIdx).any {
-            val r = it.role.trim().uppercase(Locale.US)
-            r == "WARMUP" || r == "ACTIVATION"
+        return refs
+    }
+
+    private fun isMainWorkRole(role: String?): Boolean {
+        return when (normalizeRoleKey(role)) {
+            "MAIN", "OTHER" -> true
+            else -> false
         }
     }
 
+    private fun isWarmupRole(role: String?): Boolean {
+        return normalizeRoleKey(role) == "WARMUP"
+    }
+
+    private fun hasWarmupBeforeFirstMainWork(): Boolean {
+        val refs = allExerciseRefs()
+        val firstMainIdx = refs.indexOfFirst { isMainWorkRole(it.item.phaseRole) }
+        if (firstMainIdx <= 0) return false
+        return refs.take(firstMainIdx).any { isWarmupRole(it.item.phaseRole) }
+    }
+
     private fun firstMainWorkExerciseRef(): PlannedWorkoutExerciseRef? {
-        for (plannedWorkout in plannedWorkouts.filter { !it.isDeleted }.sortedBy { it.sortOrder }) {
-            val r = plannedWorkout.role.trim().uppercase(Locale.US)
-            if (r == "MAIN" || r == "ACCESSORY" || r == "CORRECTIVE" || r == "TEST") {
-                val idx = plannedWorkout.items.indexOfFirst { it.type == "exercise" && it.exerciseSlug != null }
-                if (idx >= 0) return PlannedWorkoutExerciseRef(plannedWorkout.id, idx, plannedWorkout.items[idx])
-            }
-        }
-        return null
+        return allExerciseRefs().firstOrNull { isMainWorkRole(it.item.phaseRole) }
     }
 
     private fun updateSkipWarmupButtonVisibility() {
@@ -1068,7 +1082,7 @@ class ProgramWorkoutActivity : AppCompatActivity() {
     // -----------------------------------------------------------
 
     private fun showReplaceExerciseSheet(workoutId: String, itemIndex: Int, item: WorkoutLineItem) {
-        if (item.type != "exercise") return
+        if (item.type != PlannedWorkoutItemType.EXERCISE) return
 
         val dialog = com.google.android.material.bottomsheet.BottomSheetDialog(this)
         val sheet = layoutInflater.inflate(R.layout.bottom_sheet_replace_exercise, null)
@@ -1261,7 +1275,7 @@ class ProgramWorkoutActivity : AppCompatActivity() {
         inputReps.setText(item.targetReps?.toString() ?: "")
         inputDuration.setText(item.targetDuration?.toString() ?: "")
         inputRestBetween.setText(item.restBetweenSetsMs?.let { (it / 1000).toString() } ?: "")
-        inputWeight.setText(item.weightKg?.toString() ?: "")
+        inputWeight.setText(PerSetValues.floatAt(item.weightPerSet, 1, item.sets ?: 1)?.toString() ?: "")
 
         val bottomSheet = com.google.android.material.bottomsheet.BottomSheetDialog(this)
         bottomSheet.setContentView(dialogView)
@@ -1273,7 +1287,12 @@ class ProgramWorkoutActivity : AppCompatActivity() {
                 targetReps = if (layoutReps.visibility == View.VISIBLE) inputReps.text.toString().toIntOrNull() else null,
                 targetDuration = if (layoutDuration.visibility == View.VISIBLE) inputDuration.text.toString().toIntOrNull() else null,
                 restBetweenSetsMs = inputRestBetween.text.toString().toLongOrNull()?.times(1000),
-                weightKg = if (layoutWeight.visibility == View.VISIBLE) inputWeight.text.toString().toFloatOrNull() else null
+                weightPerSet = if (layoutWeight.visibility == View.VISIBLE) {
+                    val sets = inputSets.text.toString().toIntOrNull()?.coerceAtLeast(1) ?: 1
+                    inputWeight.text.toString().toFloatOrNull()?.let { weight -> List(sets) { weight } }
+                } else {
+                    null
+                }
             )
             updateItemInPlannedWorkout(workoutId, itemIndex, updated)
             bottomSheet.dismiss()
@@ -1350,7 +1369,7 @@ class ProgramWorkoutActivity : AppCompatActivity() {
                     val reps = ex.repCountingConfig.reps
                     val duration = ex.repCountingConfig.duration
                     val newItem = WorkoutLineItem(
-                        type = "exercise",
+                        type = PlannedWorkoutItemType.EXERCISE,
                         exerciseSlug = ex.fileName,
                         sets = 3,
                         targetReps = if (duration == null) reps else null,
@@ -1395,7 +1414,7 @@ class ProgramWorkoutActivity : AppCompatActivity() {
             val seconds = inputSeconds.text.toString().toLongOrNull() ?: 0L
             if (seconds > 0) {
                 val newItem = WorkoutLineItem(
-                    type = "rest",
+                    type = PlannedWorkoutItemType.REST,
                     restDurationMs = seconds * 1000L
                 )
                 addItemToPlannedWorkout(targetPlannedWorkout.id, newItem)
@@ -1459,7 +1478,7 @@ class ProgramWorkoutActivity : AppCompatActivity() {
                 "isDeleted" to plannedWorkout.isDeleted,
                 "items" to plannedWorkout.items.map { item ->
                     val itemMap = mutableMapOf<String, Any?>(
-                        "type" to item.type,
+                        "type" to item.type.wireValue(),
                         "sortOrder" to item.sortOrder
                     )
                     item.exerciseSlug?.let { itemMap["exerciseSlug"] = it }
@@ -1468,7 +1487,7 @@ class ProgramWorkoutActivity : AppCompatActivity() {
                     item.targetDuration?.let { itemMap["targetDuration"] = it }
                     item.restBetweenSetsMs?.let { itemMap["restBetweenSetsMs"] = it }
                     item.restDurationMs?.let { itemMap["restDurationMs"] = it }
-                    item.weightKg?.let { itemMap["weightKg"] = it }
+                    item.weightPerSet?.let { itemMap["weightPerSet"] = it }
                     itemMap.filterValues { it != null }
                 }
             )
@@ -1663,28 +1682,33 @@ class ProgramWorkoutActivity : AppCompatActivity() {
             val items = mutableListOf<WorkoutLineItem>()
             for (serverItem in serverPlannedWorkout.items.sortedBy { it.sortOrder }) {
                 if (serverItem.skipped == true) continue
-                when (serverItem.type.lowercase(Locale.US)) {
-                    "exercise" -> {
+                when (serverItem.type) {
+                    PlannedWorkoutItemType.EXERCISE -> {
                         val ex = serverItem.exerciseId?.let { exerciseRepo.getExerciseById(it) }
                         val resolvedSets = serverItem.sets ?: serverItem.suggestion?.suggestedSets
                         val resolvedReps = serverItem.targetReps ?: serverItem.suggestion?.suggestedReps
                         val resolvedDuration = serverItem.targetDuration ?: serverItem.suggestion?.suggestedDuration
-                        val resolvedWeight = serverItem.weightKg ?: serverItem.suggestion?.suggestedWeightKg
+                        val resolvedWeightPerSet = serverItem.weightPerSet
+                            ?.map { value -> value.toFloat() }
+                            ?: serverItem.suggestion?.suggestedWeightKg?.let { weight ->
+                                List((resolvedSets ?: 1).coerceAtLeast(1)) { weight.toFloat() }
+                            }
                         if (ex != null) {
                             items.add(
                                 WorkoutLineItem(
-                                    type = "exercise",
+                                    type = PlannedWorkoutItemType.EXERCISE,
                                     serverItemId = serverItem.id,
                                     exerciseSlug = ex.fileName,
                                     sets = resolvedSets,
                                     targetReps = resolvedReps,
                                     targetDuration = resolvedDuration,
                                     restBetweenSetsMs = serverItem.restBetweenSetsMs?.toLong(),
-                                    weightKg = resolvedWeight?.toFloat(),
-                                    weightPerSet = serverItem.weightPerSet?.map { v -> v.toFloat() },
+                                    weightPerSet = resolvedWeightPerSet,
                                     notes = notesFromApi(serverItem.notes),
                                     restDurationMs = serverItem.restDurationMs?.toLong(),
                                     suggestionSource = serverItem.suggestion?.source,
+                                    phaseIndex = serverItem.phaseIndex,
+                                    phaseRole = serverItem.phaseRole,
                                     sortOrder = serverItem.sortOrder
                                 )
                             )
@@ -1692,7 +1716,7 @@ class ProgramWorkoutActivity : AppCompatActivity() {
                             val fallbackOriginal = orig
                                 ?.items
                                 ?.firstOrNull { item ->
-                                    item.type == "exercise" && item.sortOrder == serverItem.sortOrder
+                                    item.type == PlannedWorkoutItemType.EXERCISE && item.sortOrder == serverItem.sortOrder
                                 }
                             if (fallbackOriginal != null) {
                                 items.add(
@@ -1703,13 +1727,13 @@ class ProgramWorkoutActivity : AppCompatActivity() {
                                         targetDuration = resolvedDuration ?: fallbackOriginal.targetDuration,
                                         restBetweenSetsMs = serverItem.restBetweenSetsMs?.toLong()
                                             ?: fallbackOriginal.restBetweenSetsMs,
-                                        weightKg = resolvedWeight?.toFloat() ?: fallbackOriginal.weightKg,
-                                        weightPerSet = serverItem.weightPerSet?.map { value -> value.toFloat() }
-                                            ?: fallbackOriginal.weightPerSet,
+                                        weightPerSet = resolvedWeightPerSet ?: fallbackOriginal.weightPerSet,
                                         notes = notesFromApi(serverItem.notes) ?: fallbackOriginal.notes,
                                         restDurationMs = serverItem.restDurationMs?.toLong()
                                             ?: fallbackOriginal.restDurationMs,
                                         suggestionSource = serverItem.suggestion?.source ?: fallbackOriginal.suggestionSource,
+                                        phaseIndex = serverItem.phaseIndex ?: fallbackOriginal.phaseIndex,
+                                        phaseRole = serverItem.phaseRole ?: fallbackOriginal.phaseRole,
                                         sortOrder = serverItem.sortOrder
                                     )
                                 )
@@ -1721,19 +1745,20 @@ class ProgramWorkoutActivity : AppCompatActivity() {
                             }
                         }
                     }
-                    "rest" -> {
+                    PlannedWorkoutItemType.REST -> {
                         items.add(
                             WorkoutLineItem(
-                                type = "rest",
+                                type = PlannedWorkoutItemType.REST,
                                 serverItemId = serverItem.id,
                                 restDurationMs = serverItem.restDurationMs?.toLong()
                                     ?: ((serverItem.targetDuration ?: 60) * 1000L),
                                 suggestionSource = serverItem.suggestion?.source,
+                                phaseIndex = serverItem.phaseIndex,
+                                phaseRole = serverItem.phaseRole,
                                 sortOrder = serverItem.sortOrder
                             )
                         )
                     }
-                    else -> { /* ignore unknown line types */ }
                 }
             }
             out.add(
@@ -1741,9 +1766,7 @@ class ProgramWorkoutActivity : AppCompatActivity() {
                     id = serverPlannedWorkout.id,
                     name = name,
                     sortOrder = serverPlannedWorkout.sortOrder,
-                    role = serverPlannedWorkout.role?.trim()?.takeIf { it.isNotEmpty() }
-                        ?: orig?.role?.trim()?.takeIf { it.isNotEmpty() }
-                        ?: "MAIN",
+                    workoutTemplateId = serverPlannedWorkout.workoutTemplateId ?: orig?.workoutTemplateId,
                     estimatedDurationMin = serverPlannedWorkout.estimatedDurationMin,
                     items = items
                 )
@@ -1781,7 +1804,7 @@ class ProgramWorkoutActivity : AppCompatActivity() {
         val exerciseRepo = ExerciseRepository.getInstance(this)
         val exerciseId = exerciseRepo.getExerciseServerId(slug) ?: return
         syncOverride(
-            plannedWorkoutItemId = originalItem?.serverItemId,
+            targetItemId = originalItem?.serverItemId,
             overrideType = "REPLACE_EXERCISE",
             data = mapOf("exerciseId" to exerciseId)
         )
@@ -1796,7 +1819,7 @@ class ProgramWorkoutActivity : AppCompatActivity() {
         updatedItem.targetDuration?.let { data["targetDuration"] = it }
         updatedItem.restBetweenSetsMs?.let { data["restBetweenSetsMs"] = it }
         updatedItem.restDurationMs?.let { data["restDurationMs"] = it }
-        updatedItem.weightKg?.let { data["weightKg"] = it }
+        updatedItem.weightPerSet?.let { data["weightPerSet"] = it }
 
         val slug = updatedItem.exerciseSlug
         if (!slug.isNullOrBlank()) {
@@ -1804,7 +1827,7 @@ class ProgramWorkoutActivity : AppCompatActivity() {
         }
 
         syncOverride(
-            plannedWorkoutItemId = originalItem.serverItemId,
+            targetItemId = originalItem.serverItemId,
             overrideType = "ADJUST_PRESCRIPTION",
             data = data
         )
@@ -1812,7 +1835,7 @@ class ProgramWorkoutActivity : AppCompatActivity() {
 
     private fun syncSkipOverride(item: WorkoutLineItem?) {
         syncOverride(
-            plannedWorkoutItemId = item?.serverItemId,
+            targetItemId = item?.serverItemId,
             overrideType = "SKIP_ITEM",
             data = null
         )
@@ -1821,10 +1844,10 @@ class ProgramWorkoutActivity : AppCompatActivity() {
     private fun syncAddOverride(anchorItem: WorkoutLineItem?, addedItem: WorkoutLineItem) {
         val anchorId = anchorItem?.serverItemId ?: return
         val data = mutableMapOf<String, Any?>(
-            "type" to addedItem.type
+            "type" to addedItem.type.wireValue()
         )
 
-        if (addedItem.type == "exercise") {
+        if (addedItem.type == PlannedWorkoutItemType.EXERCISE) {
             val slug = addedItem.exerciseSlug ?: return
             val exerciseId = ExerciseRepository.getInstance(this).getExerciseServerId(slug) ?: return
             data["exerciseId"] = exerciseId
@@ -1832,33 +1855,33 @@ class ProgramWorkoutActivity : AppCompatActivity() {
             addedItem.targetReps?.let { data["targetReps"] = it }
             addedItem.targetDuration?.let { data["targetDuration"] = it }
             addedItem.restBetweenSetsMs?.let { data["restBetweenSetsMs"] = it }
-            addedItem.weightKg?.let { data["weightKg"] = it }
+            addedItem.weightPerSet?.let { data["weightPerSet"] = it }
         } else {
             addedItem.restDurationMs?.let { data["restDurationMs"] = it }
         }
 
         syncOverride(
-            plannedWorkoutItemId = anchorId,
+            targetItemId = anchorId,
             overrideType = "ADD_ITEM",
             data = data
         )
     }
 
     private fun syncOverride(
-        plannedWorkoutItemId: String?,
+        targetItemId: String?,
         overrideType: String,
         data: Map<String, Any?>?
     ) {
         val userProgramId = currentUserProgramId
         val token = AuthManager.getAccessToken(this)
-        if (plannedWorkoutItemId.isNullOrBlank() || userProgramId.isNullOrBlank() || token.isNullOrBlank()) {
+        if (targetItemId.isNullOrBlank() || userProgramId.isNullOrBlank() || token.isNullOrBlank()) {
             return
         }
 
         val body = mutableMapOf<String, Any?>(
             "weekNumber" to weekNumber,
             "dayNumber" to dayNumber,
-            "plannedWorkoutItemId" to plannedWorkoutItemId,
+            "workoutTemplateExerciseId" to targetItemId,
             "overrideType" to overrideType,
             "reasonCode" to "PREFERENCE"
         )
@@ -1900,11 +1923,11 @@ class ProgramWorkoutActivity : AppCompatActivity() {
     private fun estimatePlannedWorkoutDuration(items: List<WorkoutLineItem>): Int {
         var totalSeconds = 0
         items.forEach { item ->
-            if (item.type == "exercise") {
+            if (item.type == PlannedWorkoutItemType.EXERCISE) {
                 val sets = item.sets ?: 1
                 val perSet = (item.targetDuration ?: 30) + ((item.restBetweenSetsMs ?: 30000L) / 1000).toInt()
                 totalSeconds += sets * perSet
-            } else if (item.type == "rest") {
+            } else if (item.type == PlannedWorkoutItemType.REST) {
                 totalSeconds += ((item.restDurationMs ?: 0L) / 1000).toInt()
             }
         }

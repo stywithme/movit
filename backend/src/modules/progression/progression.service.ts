@@ -12,6 +12,7 @@
  */
 
 import { getPrisma } from '@/lib/prisma/client';
+import { WorkoutExecutionContext } from '@prisma/client';
 import { intX10ToFloat } from '@/lib/metrics';
 import {
   applyGoalPriorityOrder,
@@ -86,7 +87,7 @@ async function getRecentMetrics(
   const prisma = await getPrisma();
 
   const recentExecutions = await prisma.workoutExecution.findMany({
-    where: { userId, exerciseId, context: 'program' },
+    where: { userId, exerciseId, context: WorkoutExecutionContext.program },
     include: { executionMetrics: true },
     orderBy: { timestamp: 'desc' },
     take: executionCount,

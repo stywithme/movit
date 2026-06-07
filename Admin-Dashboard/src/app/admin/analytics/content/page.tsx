@@ -54,8 +54,8 @@ export default function ContentAnalyticsPage() {
         <ChartCard title="Exercise Categories" loading={loading} empty={!data?.exercises.byCategory?.length}>
           <BarsChart data={data?.exercises.byCategory ?? []} />
         </ChartCard>
-        <ChartCard title="Workout Template Difficulty" loading={loading} empty={!data?.workoutTemplates.byDifficulty?.length}>
-          <DonutChart data={data?.workoutTemplates.byDifficulty ?? []} />
+        <ChartCard title="Workout Template Level" loading={loading} empty={!data?.workoutTemplates.byLevel?.length}>
+          <DonutChart data={data?.workoutTemplates.byLevel ?? []} />
         </ChartCard>
         <ChartCard title="Program Types" loading={loading} empty={!data?.programs.byType?.length}>
           <BarsChart data={data?.programs.byType ?? []} />

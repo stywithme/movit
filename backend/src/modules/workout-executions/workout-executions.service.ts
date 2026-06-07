@@ -6,8 +6,9 @@
  */
 
 import { prisma } from '@/lib/prisma/client';
-import { Prisma } from '@prisma/client';
+import { Prisma, WorkoutExecutionContext } from '@prisma/client';
 import { intX10ToFloat } from '@/lib/metrics';
+import { parseWorkoutExecutionContext } from '@/lib/workout-execution-context';
 import { progressionService } from '@/modules/progression/progression.service';
 import {
   WorkoutExecutionUploadPayload,
@@ -51,6 +52,8 @@ export async function saveWorkoutExecution(
     throw new Error(`Exercise not found: ${payload.exerciseId}`);
   }
 
+  const context = parseWorkoutExecutionContext(payload.context);
+
   // Use transaction to ensure all data is saved together
   const result = await prisma.$transaction(async (tx) => {
     // 1. Create or update WorkoutExecution (use actual exercise.id, not slug)
@@ -69,7 +72,7 @@ export async function saveWorkoutExecution(
         invalidReps: payload.invalidReps,
         weightKg: payload.weightKg,
         weightUnit: payload.weightUnit,
-        context: payload.context ?? 'free',
+        context,
         workoutGroupId: payload.workoutGroupId ?? null,
         workoutTemplateId: payload.workoutTemplateId ?? null,
         legacyReport: payload.legacyReport as any,
@@ -80,7 +83,7 @@ export async function saveWorkoutExecution(
         countedReps: payload.countedReps,
         invalidReps: payload.invalidReps,
         weightKg: payload.weightKg,
-        context: payload.context ?? 'free',
+        context,
         workoutGroupId: payload.workoutGroupId ?? null,
         workoutTemplateId: payload.workoutTemplateId ?? null,
         legacyReport: payload.legacyReport as any,
@@ -163,6 +166,14 @@ export async function saveExploreWorkout(
   userId: string,
   payload: ExploreWorkoutUploadPayload,
 ): Promise<ExploreWorkoutResponse> {
+  const context = parseWorkoutExecutionContext(payload.context);
+  if (
+    context !== WorkoutExecutionContext.explore_workout
+    && context !== WorkoutExecutionContext.quick_start
+  ) {
+    throw new Error('Explore workout context must be explore_workout or quick_start');
+  }
+
   const savedExecutions: { id: string; exerciseId: string; totalReps: number }[] = [];
 
   for (const executionPayload of payload.executions) {
@@ -179,7 +190,7 @@ export async function saveExploreWorkout(
       await prisma.workoutExecution.update({
         where: { id: existing.id },
         data: {
-          context: payload.context,
+          context,
           workoutGroupId: payload.workoutGroupId,
           workoutTemplateId: payload.workoutTemplateId ?? null,
         },
@@ -193,7 +204,7 @@ export async function saveExploreWorkout(
       // Fallback: individual sync hasn't arrived yet ? full save with metrics
       const enriched: WorkoutExecutionUploadPayload = {
         ...executionPayload,
-        context: payload.context,
+        context,
         workoutGroupId: payload.workoutGroupId,
         workoutTemplateId: payload.workoutTemplateId,
       };
@@ -1242,7 +1253,7 @@ export async function getUserHomeStats(userId: string) {
   const latestAssessment = await prisma.bodyScanResult.findFirst({
     where: { userId },
     orderBy: { completedAt: 'desc' },
-    select: { bodyScore: true, fitnessLevel: true, completedAt: true },
+    select: { bodyScore: true, levelId: true, completedAt: true },
   });
 
   return {
@@ -1254,7 +1265,7 @@ export async function getUserHomeStats(userId: string) {
     latestAssessment: latestAssessment
       ? {
           bodyScore: latestAssessment.bodyScore,
-          fitnessLevel: latestAssessment.fitnessLevel,
+          levelId: latestAssessment.levelId,
           completedAt: latestAssessment.completedAt.toISOString(),
         }
       : null,

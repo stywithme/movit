@@ -5,6 +5,8 @@ import java.util.Locale
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import com.trainingvalidator.poc.training.models.PerSetValues
+import com.trainingvalidator.poc.training.models.PlannedWorkoutItemType
 import com.trainingvalidator.poc.training.models.WorkoutLineItem
 
 /** Where optional in-flow rest applies (merged into pre-exercise UI). */
@@ -12,6 +14,14 @@ enum class WorkoutRestContext {
     NONE,
     BETWEEN_SETS,
     BETWEEN_EXERCISES,
+}
+
+/** Result of evaluating phase-continue policy after the host activity resumes. */
+enum class PhaseResumeAction {
+    NONE,
+    RESUMED,
+    PHASE_RESTARTED_NO_CONTINUE,
+    PHASE_RESTARTED_TIMEOUT,
 }
 
 /**
@@ -46,8 +56,8 @@ class WorkoutTrainingEngine(
     }
 
     /** Warm-up / activation / cooldown roles are excluded from workout-level progress totals. */
-    private fun countsTowardWorkoutProgress(@Suppress("UNUSED_PARAMETER") item: WorkoutLineItem): Boolean {
-        val r = plannedWorkoutRole.trim().uppercase(Locale.US)
+    private fun countsTowardWorkoutProgress(item: WorkoutLineItem): Boolean {
+        val r = (item.phaseRole ?: plannedWorkoutRole).trim().uppercase(Locale.US)
         if (r.isEmpty()) return true
         return r !in setOf("WARMUP", "ACTIVATION", "COOLDOWN")
     }
@@ -187,6 +197,12 @@ class WorkoutTrainingEngine(
     /** Listener for exercise completion events. */
     var onExerciseCompletedListener: OnExerciseCompletedListener? = null
 
+    /** Snapshot taken when the host activity backgrounds mid-phase. */
+    private var phasePausedAtMs: Long? = null
+    private var pausedExerciseIdx: Int? = null
+    private var pausedSetNumber: Int? = null
+    private var pausedWasTraining: Boolean = false
+
     // ==================== Init ====================
 
     init {
@@ -194,10 +210,10 @@ class WorkoutTrainingEngine(
         var i = 0
         while (i < workoutLineItems.size) {
             val item = workoutLineItems[i]
-            if (item.type == "exercise" && item.exerciseSlug != null) {
+            if (item.type == PlannedWorkoutItemType.EXERCISE && item.exerciseSlug != null) {
                 // Look ahead for a rest item
                 val nextItem = workoutLineItems.getOrNull(i + 1)
-                val restAfter = if (nextItem?.type == "rest") {
+                val restAfter = if (nextItem?.type == PlannedWorkoutItemType.REST) {
                     i++ // consume the rest item
                     nextItem.restDurationMs ?: DEFAULT_REST_BETWEEN_EXERCISES_MS
                 } else {
@@ -249,27 +265,133 @@ class WorkoutTrainingEngine(
     /** Current set number (1-based). */
     fun getCurrentSetNumber(): Int = currentSetNumber
 
+    fun isAtPhaseStart(): Boolean {
+        val currentPhase = exerciseItems.getOrNull(currentExerciseIdx)?.item?.phaseIndex ?: return false
+        val firstIndex = exerciseItems.indexOfFirst { it.item.phaseIndex == currentPhase }
+        return firstIndex == currentExerciseIdx && currentSetNumber == 1
+    }
+
+    fun canSkipCurrentPhase(): Boolean {
+        val item = exerciseItems.getOrNull(currentExerciseIdx)?.item ?: return false
+        return item.phaseCanSkip == true && isAtPhaseStart()
+    }
+
+    fun skipCurrentPhase(): Boolean {
+        val current = exerciseItems.getOrNull(currentExerciseIdx) ?: return false
+        val currentPhase = current.item.phaseIndex ?: return false
+        if (current.item.phaseCanSkip != true || !isAtPhaseStart()) return false
+
+        clearPhasePauseSnapshot()
+        val nextIndex = exerciseItems.indexOfFirst {
+            (it.item.phaseIndex ?: currentPhase) != currentPhase &&
+                (it.item.phaseIndex ?: Int.MAX_VALUE) > currentPhase
+        }
+
+        currentSetNumber = 1
+        if (nextIndex < 0) {
+            currentExerciseIdx = exerciseItems.size
+            _state.value = State.WorkoutComplete(buildReport())
+        } else {
+            currentExerciseIdx = nextIndex
+            showPreExercise()
+        }
+        return true
+    }
+
     /**
-     * Weight for the current set. Checks weightPerSet first, falls back to weightKg.
+     * Record mid-phase position when the host activity backgrounds.
+     * No-op at phase start or after the workout completes.
      */
+    fun onActivityPaused() {
+        when (_state.value) {
+            is State.Idle, is State.WorkoutComplete -> return
+            else -> Unit
+        }
+        if (isAtPhaseStart()) return
+
+        phasePausedAtMs = System.currentTimeMillis()
+        pausedExerciseIdx = currentExerciseIdx
+        pausedSetNumber = currentSetNumber
+        pausedWasTraining = _state.value is State.Training
+    }
+
+    /**
+     * Apply per-phase continue policy when the host activity returns to foreground.
+     */
+    fun onActivityResumed(): PhaseResumeAction {
+        val pausedAt = phasePausedAtMs ?: return PhaseResumeAction.NONE
+        val snapshotIdx = pausedExerciseIdx ?: currentExerciseIdx
+        val snapshotItem = exerciseItems.getOrNull(snapshotIdx)?.item
+            ?: run {
+                clearPhasePauseSnapshot()
+                return PhaseResumeAction.NONE
+            }
+
+        val canContinue = snapshotItem.phaseCanContinue != false
+        val maxContinueMs = snapshotItem.phaseMaxContinueTimeMs
+
+        if (!canContinue) {
+            clearPhasePauseSnapshot()
+            restartCurrentPhase(clearPhaseMetrics = true)
+            return PhaseResumeAction.PHASE_RESTARTED_NO_CONTINUE
+        }
+
+        if (maxContinueMs != null && maxContinueMs > 0L) {
+            val elapsed = System.currentTimeMillis() - pausedAt
+            if (elapsed > maxContinueMs) {
+                clearPhasePauseSnapshot()
+                restartCurrentPhase(clearPhaseMetrics = true)
+                return PhaseResumeAction.PHASE_RESTARTED_TIMEOUT
+            }
+        }
+
+        pausedExerciseIdx?.let { currentExerciseIdx = it }
+        pausedSetNumber?.let { currentSetNumber = it }
+        val resumeTraining = pausedWasTraining
+        clearPhasePauseSnapshot()
+
+        if (resumeTraining && _state.value !is State.WorkoutComplete) {
+            _state.value = State.Training
+        } else if (_state.value !is State.WorkoutComplete) {
+            showPreExercise()
+        }
+        return PhaseResumeAction.RESUMED
+    }
+
+    /** Weight for the current set (expanded per-set list with last-value repeat). */
     fun getCurrentSetWeight(): Float? {
         val item = exerciseItems.getOrNull(currentExerciseIdx)?.item ?: return null
-        val perSet = item.weightPerSet
-        if (perSet != null && currentSetNumber <= perSet.size) {
-            return perSet[currentSetNumber - 1]
-        }
-        return item.weightKg
+        val sets = item.sets?.coerceAtLeast(1) ?: 1
+        return PerSetValues.floatAt(item.weightPerSet, currentSetNumber, sets)
+            ?.takeIf { it > 0f }
+    }
+
+    /** Target reps for the current set. */
+    fun getCurrentSetReps(): Int? {
+        val item = exerciseItems.getOrNull(currentExerciseIdx)?.item ?: return null
+        val sets = item.sets?.coerceAtLeast(1) ?: 1
+        return PerSetValues.intAt(item.targetRepsPerSet, currentSetNumber, sets, item.targetReps)
+            ?.takeIf { it > 0 }
+    }
+
+    /** Rest after completing [completedSetNumber] before the next set. */
+    fun getRestAfterSet(completedSetNumber: Int): Long {
+        val item = exerciseItems.getOrNull(currentExerciseIdx)?.item
+            ?: return DEFAULT_REST_BETWEEN_SETS_MS
+        val sets = item.sets?.coerceAtLeast(1) ?: 1
+        return PerSetValues.longAt(
+            item.restBetweenSetsPerSetMs,
+            completedSetNumber,
+            sets,
+            item.restBetweenSetsMs
+        ) ?: DEFAULT_REST_BETWEEN_SETS_MS
     }
 
     /** Update planned weights for the current exercise (workout run mode, before training). */
     fun setWeightPerSetForCurrentExercise(weights: List<Float>?) {
         val idx = currentExerciseIdx
         val cur = exerciseItems.getOrNull(idx) ?: return
-        val first = weights?.firstOrNull { it > 0f }
-        val newItem = cur.item.copy(
-            weightPerSet = weights,
-            weightKg = first ?: cur.item.weightKg
-        )
+        val newItem = cur.item.copy(weightPerSet = weights)
         exerciseItems[idx] = cur.copy(item = newItem)
     }
 
@@ -277,7 +399,11 @@ class WorkoutTrainingEngine(
     fun updateCurrentTargetReps(reps: Int?) {
         val idx = currentExerciseIdx
         val cur = exerciseItems.getOrNull(idx) ?: return
-        val newItem = cur.item.copy(targetReps = reps?.coerceAtLeast(1))
+        val sets = cur.item.sets?.coerceAtLeast(1) ?: 1
+        val newItem = cur.item.copy(
+            targetReps = reps?.coerceAtLeast(1),
+            targetRepsPerSet = reps?.let { List(sets) { it } }
+        )
         exerciseItems[idx] = cur.copy(item = newItem)
     }
 
@@ -295,15 +421,14 @@ class WorkoutTrainingEngine(
         val cur = exerciseItems.getOrNull(idx) ?: return
         val totalSets = cur.item.sets?.coerceAtLeast(1) ?: 1
         val currentSetIdx = (currentSetNumber - 1).coerceIn(0, totalSets - 1)
-        val baseList = cur.item.weightPerSet?.toMutableList()
-            ?: MutableList(totalSets) { cur.item.weightKg ?: 0f }
-        if (currentSetIdx < baseList.size) {
-            baseList[currentSetIdx] = kg
+        val expanded = PerSetValues.expandFloats(
+            cur.item.weightPerSet,
+            totalSets
+        )?.toMutableList() ?: MutableList(totalSets) { 0f }
+        if (currentSetIdx < expanded.size) {
+            expanded[currentSetIdx] = kg
         }
-        val newItem = cur.item.copy(
-            weightPerSet = baseList,
-            weightKg = kg
-        )
+        val newItem = cur.item.copy(weightPerSet = expanded)
         exerciseItems[idx] = cur.copy(item = newItem)
     }
 
@@ -352,9 +477,8 @@ class WorkoutTrainingEngine(
         Log.d(TAG, "Set completed: ${metrics.exerciseSlug} set ${metrics.setNumber}/$totalSets")
 
         if (currentSetNumber < totalSets) {
-            // More sets for this exercise ? set rest
+            val restMs = getRestAfterSet(currentSetNumber)
             currentSetNumber++
-            val restMs = currentItem.item.restBetweenSetsMs ?: DEFAULT_REST_BETWEEN_SETS_MS
             if (restMs > 0) {
                 showPreExercise(
                     pendingRestMs = restMs,
@@ -382,6 +506,40 @@ class WorkoutTrainingEngine(
     fun getCurrentReport(): WorkoutReport = buildReport()
 
     // ==================== Private ====================
+
+    private fun clearPhasePauseSnapshot() {
+        phasePausedAtMs = null
+        pausedExerciseIdx = null
+        pausedSetNumber = null
+        pausedWasTraining = false
+    }
+
+    private fun restartCurrentPhase(clearPhaseMetrics: Boolean) {
+        val phaseIndex = exerciseItems.getOrNull(currentExerciseIdx)?.item?.phaseIndex
+            ?: exerciseItems.getOrNull(pausedExerciseIdx ?: -1)?.item?.phaseIndex
+            ?: return
+        val firstIdx = exerciseItems.indexOfFirst { it.item.phaseIndex == phaseIndex }
+        if (firstIdx < 0) return
+
+        if (clearPhaseMetrics) {
+            val phaseExerciseIndices = exerciseItems.indices
+                .filter { exerciseItems[it].item.phaseIndex == phaseIndex }
+                .toSet()
+            allSetMetrics.removeAll { it.exerciseIndex in phaseExerciseIndices }
+            phaseExerciseIndices.forEach { idx ->
+                exerciseReportIds.remove(idx)
+                exerciseExecutionIds.remove(idx)
+            }
+        }
+
+        currentExerciseIdx = firstIdx
+        currentSetNumber = 1
+        if (currentExerciseIdx >= exerciseItems.size) {
+            _state.value = State.WorkoutComplete(buildReport())
+        } else {
+            showPreExercise()
+        }
+    }
 
     private fun showPreExercise(
         pendingRestMs: Long = 0L,

@@ -11,6 +11,7 @@ import { reassessmentService } from '@/modules/reassessment/reassessment.service
 import { prescriptionService } from '@/modules/prescription/prescription.service';
 import { activePlanService } from '@/modules/active-plan/active-plan.service';
 import type { BodyScanResultCreate, BodyScanProgress, DomainScores } from './assessment.types';
+import { fitnessLevelToNumber, scoreToLevel } from '@/lib/metrics';
 
 // Minimum Detectable Change threshold (points) for "real" improvement
 const MDC_THRESHOLD = 5;
@@ -25,6 +26,15 @@ export const assessmentService = {
    */
   async create(data: BodyScanResultCreate) {
     const prisma = await getPrisma();
+    const inferredLevelNumber = data.fitnessLevel
+      ? fitnessLevelToNumber(data.fitnessLevel)
+      : scoreToLevel(data.bodyScore);
+    const inferredLevel = data.levelId
+      ? null
+      : await prisma.level.findUnique({
+          where: { number: inferredLevelNumber },
+          select: { id: true },
+        });
 
     const result = await prisma.bodyScanResult.create({
       data: {
@@ -35,7 +45,7 @@ export const assessmentService = {
         controlScore: data.controlScore,
         symmetryScore: data.symmetryScore ?? null,
         safetyScore: data.safetyScore,
-        fitnessLevel: data.fitnessLevel,
+        levelId: data.levelId ?? inferredLevel?.id ?? null,
         regions: data.regions as object,
         symmetryData: data.symmetryData ? (data.symmetryData as object) : undefined,
         hypotheses: data.hypotheses ? (data.hypotheses as object) : undefined,

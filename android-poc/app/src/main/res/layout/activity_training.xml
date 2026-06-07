@@ -1383,11 +1383,23 @@
                 </LinearLayout>
 
                 <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnWorkoutSkipPhase"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="@dimen/spacing_lg"
+                    android:text="@string/workout_skip_phase"
+                    android:textColor="@color/pro_gold"
+                    android:visibility="gone"
+                    app:strokeColor="@color/pro_gold"
+                    tools:visibility="visible" />
+
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnWorkoutStartSet"
                     style="@style/Widget.WayToFix.Button.Primary"
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
-                    android:layout_marginTop="@dimen/spacing_2xl"
+                    android:layout_marginTop="@dimen/spacing_md"
                     android:text="@string/workout_start_set"
                     android:textSize="18sp"
                     android:textStyle="bold" />

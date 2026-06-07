@@ -8,6 +8,7 @@
  */
 
 import { getPrisma } from '@/lib/prisma/client';
+import { WorkoutExecutionContext } from '@prisma/client';
 import type {
   MetricsQuery,
   MetricsResponse,
@@ -963,11 +964,15 @@ export const reportsService = {
 
     const filteredWorkoutExecutions = workoutExecutionRows.filter((execution) => {
       if (query.exerciseSlug && execution.exercise?.slug !== query.exerciseSlug) return false;
-      if (source === 'free') return execution.context === 'free';
-      if (source === 'quick') return execution.context === 'quick_start';
-      if (source === 'explore') return execution.context === 'explore_workout';
+      if (source === 'free') return execution.context === WorkoutExecutionContext.free;
+      if (source === 'quick') return execution.context === WorkoutExecutionContext.quick_start;
+      if (source === 'explore') return execution.context === WorkoutExecutionContext.explore_workout;
       if (source === 'workout') return Boolean(execution.workoutTemplateId);
-      return ['free', 'quick_start', 'explore_workout'].includes(execution.context);
+      return (
+        execution.context === WorkoutExecutionContext.free
+        || execution.context === WorkoutExecutionContext.quick_start
+        || execution.context === WorkoutExecutionContext.explore_workout
+      );
     });
 
     const freeExerciseMap = new Map<string, {

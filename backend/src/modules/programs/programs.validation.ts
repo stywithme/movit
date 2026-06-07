@@ -4,6 +4,7 @@
  * Validation helpers for program data.
  */
 
+import { PlannedWorkoutItemType } from '@prisma/client';
 import type {
   CreateProgramInput,
   ProgramDayInput,
@@ -14,16 +15,17 @@ import type {
 } from './programs.types';
 
 const VALID_PROGRAM_ATTRIBUTE_MODES = ['REQUIRED', 'OPTIONAL', 'EXCLUDED'] as const;
+const VALID_PLANNED_WORKOUT_ITEM_TYPES = new Set<string>(Object.values(PlannedWorkoutItemType));
 
 function validatePlannedWorkoutItem(item: PlannedWorkoutItemInput, index: number): string[] {
   const errors: string[] = [];
   const prefix = `Planned workout item ${index + 1}`;
 
-  if (!item.type || !['exercise', 'rest'].includes(item.type)) {
+  if (!item.type || !VALID_PLANNED_WORKOUT_ITEM_TYPES.has(item.type)) {
     errors.push(`${prefix}: type must be "exercise" or "rest"`);
   }
 
-  if (item.type === 'exercise') {
+  if (item.type === PlannedWorkoutItemType.exercise) {
     if (!item.exerciseId) {
       errors.push(`${prefix}: exerciseId is required for exercise items`);
     }
@@ -52,7 +54,7 @@ function validatePlannedWorkoutItem(item: PlannedWorkoutItemInput, index: number
     }
   }
 
-  if (item.type === 'rest') {
+  if (item.type === PlannedWorkoutItemType.rest) {
     if (item.restDurationMs === undefined || item.restDurationMs < 0) {
       errors.push(`${prefix}: restDurationMs must be non-negative for rest items`);
     }

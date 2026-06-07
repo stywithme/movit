@@ -75,7 +75,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         
         // Intent extras
         const val EXTRA_EXERCISE_NAME = "exercise_name"
-        const val EXTRA_DIFFICULTY = "difficulty"
         const val EXTRA_POSE_VARIANT = "pose_variant"
         const val EXTRA_TRAINING_MODE = "training_mode"
         const val EXTRA_VIDEO_URI = "video_uri"
@@ -320,7 +319,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         
         // ── SINGLE EXERCISE MODE ──
         val exerciseName = intent.getStringExtra(EXTRA_EXERCISE_NAME) ?: DEFAULT_EXERCISE
-        val difficultyStr = intent.getStringExtra(EXTRA_DIFFICULTY) ?: DEFAULT_DIFFICULTY
         val poseVariantIndex = intent.getIntExtra(EXTRA_POSE_VARIANT, 0)
         
         val prefStore = UserExercisePreferenceStore(this)
@@ -349,7 +347,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
 
         if (!viewModel.loadExercise(
                 exerciseName,
-                difficultyStr,
+                "",
                 poseVariantIndex,
                 targetRepsOverride,
                 targetDurationOverride,
@@ -1117,9 +1115,15 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     override fun onResume() {
         super.onResume()
         viewModel.handleActivityResume()
+        if (isWorkoutMode) {
+            workoutModeController.onActivityResumed()
+        }
     }
 
     override fun onPause() {
+        if (isWorkoutMode) {
+            workoutModeController.onActivityPaused()
+        }
         viewModel.handleActivityPause()
         super.onPause()
     }

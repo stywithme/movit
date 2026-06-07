@@ -15,8 +15,14 @@ import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityWorkoutRunBinding
 import com.trainingvalidator.poc.network.ApiClient
 import com.trainingvalidator.poc.storage.AuthManager
+import com.trainingvalidator.poc.training.models.PlannedWorkoutItemType
+import com.trainingvalidator.poc.training.models.WorkoutExecutionContext
+import com.trainingvalidator.poc.training.models.WorkoutExercise
 import com.trainingvalidator.poc.training.models.WorkoutLineItem
+import com.trainingvalidator.poc.training.models.parseWorkoutExecutionContext
+import com.trainingvalidator.poc.training.models.wireValue
 import com.trainingvalidator.poc.training.models.WorkoutConfig
+import com.trainingvalidator.poc.training.models.WorkoutPhaseConfig
 import com.trainingvalidator.poc.training.workout.WorkoutTrainingEngine
 import com.trainingvalidator.poc.ui.report.WorkoutReportActivity
 import com.trainingvalidator.poc.ui.train.TrainingActivity
@@ -52,11 +58,11 @@ class WorkoutRunActivity : AppCompatActivity() {
             context: Context,
             workoutConfig: WorkoutConfig,
             workoutId: String? = null,
-            workoutContext: String = "explore_workout"
+            workoutContext: WorkoutExecutionContext = WorkoutExecutionContext.EXPLORE_WORKOUT
         ): Intent = Intent(context, WorkoutRunActivity::class.java).apply {
             putExtra(EXTRA_WORKOUT_CONFIG_JSON, Gson().toJson(workoutConfig))
             putExtra(EXTRA_WORKOUT_ID, workoutId)
-            putExtra(EXTRA_CONTEXT, workoutContext)
+            putExtra(EXTRA_CONTEXT, workoutContext.wireValue())
             putExtra(EXTRA_WORKOUT_SLUG, workoutConfig.fileName)
         }
     }
@@ -67,7 +73,7 @@ class WorkoutRunActivity : AppCompatActivity() {
     private lateinit var workoutConfig: WorkoutConfig
 
     private var workoutId: String? = null
-    private var workoutContext: String = "explore_workout"
+    private var workoutContext: WorkoutExecutionContext = WorkoutExecutionContext.EXPLORE_WORKOUT
 
     /** Client-generated group ID linking all executions in this workout block */
     private val groupId: String = UUID.randomUUID().toString()
@@ -94,7 +100,7 @@ class WorkoutRunActivity : AppCompatActivity() {
 
         val configJson = intent.getStringExtra(EXTRA_WORKOUT_CONFIG_JSON)
         workoutId = intent.getStringExtra(EXTRA_WORKOUT_ID)
-        workoutContext = intent.getStringExtra(EXTRA_CONTEXT) ?: "explore_workout"
+        workoutContext = parseWorkoutExecutionContext(intent.getStringExtra(EXTRA_CONTEXT))
 
         if (configJson.isNullOrBlank()) {
             Toast.makeText(this, getString(R.string.error_workout_not_found), Toast.LENGTH_SHORT).show()
@@ -154,7 +160,7 @@ class WorkoutRunActivity : AppCompatActivity() {
         val intent = Intent(this, TrainingActivity::class.java).apply {
             putExtra(TrainingActivity.EXTRA_IS_WORKOUT_MODE, true)
             putExtra(TrainingActivity.EXTRA_WORKOUT_ITEMS_JSON, itemsJson)
-            putExtra(TrainingActivity.EXTRA_WORKOUT_ROLE, "MAIN")
+            putExtra(TrainingActivity.EXTRA_WORKOUT_ROLE, resolvePrimaryWorkoutRole())
             putExtra(TrainingActivity.EXTRA_TRAINING_MODE, TrainingActivity.MODE_CAMERA)
         }
 
@@ -162,42 +168,114 @@ class WorkoutRunActivity : AppCompatActivity() {
     }
 
     /**
-     * Converts [WorkoutConfig.exercises] into a flat list of [WorkoutLineItem]s,
-     * interleaving "rest" items between exercises (not after the last one).
+     * Primary role for legacy progress fallbacks — prefers MAIN, else first ordered phase.
+     */
+    private fun resolvePrimaryWorkoutRole(): String {
+        if (workoutConfig.phases.isNotEmpty()) {
+            val sorted = workoutConfig.phases.sortedBy { it.sortOrder }
+            return sorted.firstOrNull { it.role.equals("MAIN", ignoreCase = true) }?.role
+                ?: sorted.first().role
+        }
+        return "MAIN"
+    }
+
+    /**
+     * Converts workout phases or legacy flat exercises into [WorkoutLineItem]s.
+     * Rest remains derived from the previous exercise's restAfterExerciseMs.
      */
     private fun buildWorkoutLineItems(): List<WorkoutLineItem> {
         val items = mutableListOf<WorkoutLineItem>()
         var sortIndex = 0
 
-        workoutConfig.exercises.forEachIndexed { index, exercise ->
-            items.add(
-                WorkoutLineItem(
-                    type = "exercise",
-                    exerciseSlug = exercise.exercise,
-                    sets = exercise.sets,
-                    targetReps = exercise.targetReps,
-                    targetDuration = exercise.targetDurationSec,
-                    restBetweenSetsMs = exercise.restBetweenSetsMs,
-                    weightKg = exercise.weightKg,
-                    weightPerSet = exercise.weightPerSet,
-                    notes = exercise.notes,
-                    variantIndex = exercise.variantIndex,
-                    sortOrder = sortIndex++
-                )
-            )
+        if (workoutConfig.phases.isNotEmpty()) {
+            val sortedPhases = workoutConfig.phases.sortedBy { it.sortOrder }
+            sortedPhases.forEachIndexed { phaseIndex, phase ->
+                phase.exercises.forEachIndexed { index, exercise ->
+                    items.add(
+                        exerciseToLineItem(
+                            exercise = exercise,
+                            phaseIndex = phaseIndex,
+                            phase = phase,
+                            sortOrder = sortIndex++
+                        )
+                    )
 
-            val isLastExercise = index == workoutConfig.exercises.size - 1
-            if (!isLastExercise && exercise.restAfterExerciseMs > 0) {
+                    val isLastOverall = phaseIndex == sortedPhases.size - 1 && index == phase.exercises.size - 1
+                    if (!isLastOverall && exercise.restAfterExerciseMs > 0) {
+                        items.add(
+                            WorkoutLineItem(
+                                type = PlannedWorkoutItemType.REST,
+                                restDurationMs = exercise.restAfterExerciseMs,
+                                phaseIndex = phaseIndex,
+                                phaseRole = phase.role,
+                                phaseCanSkip = phase.canSkip,
+                                phaseCanContinue = phase.canContinue,
+                                phaseMaxContinueTimeMs = phase.maxContinueTimeMs,
+                                sortOrder = sortIndex++
+                            )
+                        )
+                    }
+                }
+            }
+        } else {
+            workoutConfig.exercises.forEachIndexed { index, exercise ->
                 items.add(
-                    WorkoutLineItem(
-                        type = "rest",
-                        restDurationMs = exercise.restAfterExerciseMs,
+                    exerciseToLineItem(
+                        exercise = exercise,
+                        phaseIndex = 0,
+                        phase = null,
                         sortOrder = sortIndex++
                     )
                 )
+
+                val isLastExercise = index == workoutConfig.exercises.size - 1
+                if (!isLastExercise && exercise.restAfterExerciseMs > 0) {
+                    items.add(
+                        WorkoutLineItem(
+                            type = PlannedWorkoutItemType.REST,
+                            restDurationMs = exercise.restAfterExerciseMs,
+                            phaseIndex = 0,
+                            phaseRole = "MAIN",
+                            phaseCanSkip = false,
+                            phaseCanContinue = true,
+                            sortOrder = sortIndex++
+                        )
+                    )
+                }
             }
         }
         return items
+    }
+
+    private fun exerciseToLineItem(
+        exercise: WorkoutExercise,
+        phaseIndex: Int,
+        phase: WorkoutPhaseConfig?,
+        sortOrder: Int
+    ): WorkoutLineItem {
+        val sets = exercise.sets.coerceAtLeast(1)
+        val expandedReps = exercise.expandedRepsPerSet()
+        val expandedRest = exercise.expandedRestBetweenSetsMs()
+        val expandedWeight = exercise.expandedWeightPerSet()
+        return WorkoutLineItem(
+            type = PlannedWorkoutItemType.EXERCISE,
+            exerciseSlug = exercise.exercise,
+            sets = sets,
+            targetReps = expandedReps?.firstOrNull() ?: exercise.targetReps,
+            targetRepsPerSet = expandedReps,
+            targetDuration = exercise.targetDurationSec,
+            restBetweenSetsMs = expandedRest?.firstOrNull() ?: exercise.restBetweenSetsMs,
+            restBetweenSetsPerSetMs = expandedRest,
+            weightPerSet = expandedWeight,
+            notes = exercise.notes,
+            variantIndex = exercise.variantIndex,
+            phaseIndex = phaseIndex,
+            phaseRole = phase?.role ?: "MAIN",
+            phaseCanSkip = phase?.canSkip ?: false,
+            phaseCanContinue = phase?.canContinue ?: true,
+            phaseMaxContinueTimeMs = phase?.maxContinueTimeMs,
+            sortOrder = sortOrder
+        )
     }
 
     // ── Result Handling ────────────────────────────────────────────────────────
@@ -283,13 +361,13 @@ class WorkoutRunActivity : AppCompatActivity() {
             "workoutGroupId" to groupId,
             "workoutTemplateId" to workoutId,
             "isCustomized" to false,
-            "context" to workoutContext,
+            "context" to workoutContext.wireValue(),
             "executions" to workoutExecutionIds.mapIndexed { index, id ->
                 mapOf(
                     "id" to id,
                     "workoutGroupId" to groupId,
                     "workoutTemplateId" to workoutId,
-                    "context" to workoutContext,
+                    "context" to workoutContext.wireValue(),
                     "exerciseId" to (exerciseSlugs.getOrNull(index) ?: "")
                 )
             }

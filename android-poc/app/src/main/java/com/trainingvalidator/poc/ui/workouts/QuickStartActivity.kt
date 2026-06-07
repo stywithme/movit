@@ -20,6 +20,7 @@ import com.trainingvalidator.poc.storage.ExerciseRepository
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.training.models.LocalizedText
 import com.trainingvalidator.poc.training.models.WorkoutConfig
+import com.trainingvalidator.poc.training.models.WorkoutExecutionContext
 import com.trainingvalidator.poc.training.models.WorkoutExercise
 import com.trainingvalidator.poc.ui.utils.ExerciseSearchMatcher
 import com.trainingvalidator.poc.ui.utils.currentLanguage
@@ -109,7 +110,7 @@ class QuickStartActivity : AppCompatActivity() {
                     context = this,
                     workoutConfig = workoutConfig,
                     workoutId = null,
-                    workoutContext = "quick_start"
+                    workoutContext = WorkoutExecutionContext.QUICK_START
                 )
             )
         }
@@ -188,7 +189,6 @@ class QuickStartActivity : AppCompatActivity() {
         return WorkoutConfig(
             name = LocalizedText(ar = "تمرين سريع", en = "Quick Workout"),
             description = null,
-            difficulty = "beginner",
             exercises = exercises
         )
     }

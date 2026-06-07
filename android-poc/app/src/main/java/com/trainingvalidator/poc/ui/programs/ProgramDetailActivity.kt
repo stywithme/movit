@@ -28,7 +28,7 @@ import com.trainingvalidator.poc.storage.ProgramRepository
 import com.trainingvalidator.poc.training.models.ProgramConfig
 import com.trainingvalidator.poc.training.models.ProgramWeek
 import com.trainingvalidator.poc.ui.utils.currentLanguage
-import com.trainingvalidator.poc.ui.utils.formatProgramLevelRange
+import com.trainingvalidator.poc.ui.utils.formatProgramLevel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -181,7 +181,7 @@ class ProgramDetailActivity : AppCompatActivity() {
         binding.tvProgramWeeks.text = getString(R.string.weeks_count_format, program.durationWeeks)
         binding.tvProgramDays.text = getString(R.string.days_count_format, totalDays)
         binding.tvProgramWorkouts.text = getString(R.string.planned_workouts_count_format, totalPlannedWorkouts)
-        binding.tvProgramDifficulty.text = formatProgramLevelRange(program.levelRangeMin, program.levelRangeMax)
+        binding.tvProgramDifficulty.text = formatProgramLevel(program.levelMin, program.levelMax)
 
         binding.btnWeeklyReport.setOnClickListener {
             startActivity(Intent(this, WeeklyReportActivity::class.java).apply {

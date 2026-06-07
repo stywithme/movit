@@ -6,17 +6,19 @@
 
 import type { LocalizedText } from '@/lib/types/localized';
 import type {
+  PlannedWorkoutItemType,
   ProgramAttributeMode,
   ProgramType,
   WeekType,
 } from '@prisma/client';
 
+export type { PlannedWorkoutItemType };
+import type { WorkoutPhaseExport, WorkoutPhaseInput } from '@/modules/workout-templates/workout-templates.types';
+
 export interface ProgramAttributeInput {
   attributeValueId: string;
   mode?: ProgramAttributeMode;
 }
-
-export type PlannedWorkoutItemType = 'exercise' | 'rest';
 
 export interface PlannedWorkoutItemInput {
   id?: string;
@@ -39,7 +41,11 @@ export interface PlannedWorkoutInput {
   name: LocalizedText;
   sortOrder?: number;
   estimatedDurationMin?: number | null;
-  role?: 'WARMUP' | 'ACTIVATION' | 'MAIN' | 'ACCESSORY' | 'CORRECTIVE' | 'COOLDOWN' | 'TEST';
+  /** Link to standalone catalog template (read-only reference until edited). */
+  workoutTemplateId?: string;
+  /** Preferred: phased workout content (same shape as workout templates). */
+  phases?: WorkoutPhaseInput[];
+  /** Legacy admin flat list — converted to a single MAIN phase on save. */
   items?: PlannedWorkoutItemInput[];
 }
 
@@ -62,15 +68,6 @@ export interface ProgramWeekInput {
   days?: ProgramDayInput[];
 }
 
-/** Day pattern inside a weekly template for a Phase. Fixed 7-day structure. */
-export interface DayPatternInput {
-  dayNumber: number;
-  isRestDay?: boolean;
-  name?: LocalizedText;
-  dayFocus?: string;
-  plannedWorkouts?: PlannedWorkoutInput[];
-}
-
 /** Phase input for phase-based program editor. */
 export interface ProgramPhaseInput {
   id?: string;
@@ -80,7 +77,6 @@ export interface ProgramPhaseInput {
   startWeek: number;
   endWeek: number;
   sortOrder?: number;
-  weeklyPattern?: { days: DayPatternInput[] };
 }
 
 export interface CreateProgramInput {
@@ -99,14 +95,18 @@ export interface CreateProgramInput {
   coachingNotes?: Record<string, unknown>;
   weeklyWorkoutTarget?: number | null;
   estimatedWorkoutMinutes?: number | null;
+  levelMinId?: string | null;
+  levelMaxId?: string | null;
+  /** @deprecated Use levelMinId / levelMaxId */
   levelRangeMin?: number;
+  /** @deprecated Use levelMinId / levelMaxId */
   levelRangeMax?: number;
   prescriptionPriority?: number;
   prerequisiteProgramId?: string;
   nextProgramId?: string;
   /** Program matching dimensions (domain, goal, equipment, etc.). */
   programAttributes?: ProgramAttributeInput[];
-  /** Phase-based structure (preferred for new editor). Backend expands to weeks at save. */
+  /** Phase metadata for the editor. Calendar source of truth remains `weeks`. */
   phases?: ProgramPhaseInput[];
   /** Legacy flat weeks (still accepted for backward compat). */
   weeks?: ProgramWeekInput[];
@@ -157,21 +157,31 @@ export interface ProgramExportItem {
   coachingNotes?: unknown;
   sets?: number;
   targetReps?: number;
+  targetRepsPerSet?: number[];
   targetDuration?: number;
   restBetweenSetsMs?: number;
+  restBetweenSetsPerSetMs?: number[];
   weightKg?: number;
   weightPerSet?: number[];
   notes?: LocalizedText;
   restDurationMs?: number;
   sortOrder: number;
+  phaseIndex?: number;
+  phaseRole?: string;
+  phaseCanSkip?: boolean;
+  phaseCanContinue?: boolean;
+  phaseMaxContinueTimeMs?: number;
 }
 
 export interface ProgramExportPlannedWorkout {
   id: string;
   name: LocalizedText;
   sortOrder: number;
-  role: string;
+  workoutTemplateId: string;
+  workoutTemplateSlug?: string;
   estimatedDurationMin?: number | null;
+  phases: WorkoutPhaseExport[];
+  /** Flattened line items (derived from phases) for mobile runners. */
   items: ProgramExportItem[];
 }
 
@@ -196,8 +206,14 @@ export interface ProgramExport {
   description?: LocalizedText;
   coverImageUrl?: string;
   durationWeeks: number;
-  levelRangeMin: number;
-  levelRangeMax: number;
+  levelMinId?: string | null;
+  levelMaxId?: string | null;
+  levelMin?: { id: string; number: number; code: string; name: LocalizedText } | null;
+  levelMax?: { id: string; number: number; code: string; name: LocalizedText } | null;
+  /** Derived legacy field for old mobile/admin clients. */
+  levelRangeMin?: number | null;
+  /** Derived legacy field for old mobile/admin clients. */
+  levelRangeMax?: number | null;
   tags?: string[];
   weeklyWorkoutTarget?: number | null;
   estimatedWorkoutMinutes?: number | null;
@@ -214,8 +230,10 @@ export interface ProgramPreviewExport {
   description?: LocalizedText;
   coverImageUrl?: string;
   durationWeeks: number;
-  levelRangeMin: number;
-  levelRangeMax: number;
+  levelMinId?: string | null;
+  levelMaxId?: string | null;
+  levelRangeMin?: number | null;
+  levelRangeMax?: number | null;
   totalExercisesInFirstWeek: number;
   muscleGroups: string[];
   weeks: ProgramExportWeek[];
@@ -249,13 +267,6 @@ export function validatePhaseStructure(
     }
     expectedWeek = p.endWeek + 1;
 
-    // Check pattern has 7 days if provided
-    if (p.weeklyPattern?.days) {
-      const days = p.weeklyPattern.days;
-      if (days.length !== 7) {
-        errors.push(`Phase ${i + 1} weeklyPattern must have exactly 7 days`);
-      }
-    }
   }
 
   if (expectedWeek - 1 !== durationWeeks) {

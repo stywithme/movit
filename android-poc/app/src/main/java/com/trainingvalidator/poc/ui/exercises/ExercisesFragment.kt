@@ -287,13 +287,7 @@ class ExercisesFragment : Fragment() {
             holder.tvName.text = exercise.name.get(language).ifBlank { exercise.name.en }
             holder.tvCategory.text = exercise.category.name.get(language).ifBlank { exercise.category.name.en }
             
-            // Difficulty indicator (mock for now)
-            val difficulty = when {
-                exercise.muscles.size > 2 -> getString(R.string.hard)
-                exercise.muscles.size > 1 -> getString(R.string.medium)
-                else -> getString(R.string.easy)
-            }
-            holder.tvDifficulty.text = difficulty
+            holder.tvDifficulty.text = exercise.category.name.get(language).ifBlank { exercise.category.code }
             
             holder.card.setOnClickListener {
                 onClick(exercise)
@@ -335,7 +329,7 @@ class ExercisesFragment : Fragment() {
                 desc.get(language).ifBlank { desc.en }
             } ?: ""
 
-            holder.tvType.text = formatDifficulty(workout.difficulty)
+            holder.tvType.text = formatWorkoutLevel(workout)
 
             holder.tvExerciseCount.text = getString(
                 R.string.exercises_count_format,
@@ -351,9 +345,9 @@ class ExercisesFragment : Fragment() {
         override fun getItemCount() = items.size
     }
 
-    private fun formatDifficulty(difficulty: String?): String {
-        if (difficulty.isNullOrBlank()) return getString(R.string.workout_detail_default_difficulty)
-        val normalized = difficulty.replace('_', ' ').lowercase()
-        return normalized.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+    private fun formatWorkoutLevel(workout: WorkoutConfig): String {
+        val level = workout.level ?: return getString(R.string.workout_detail_default_difficulty)
+        val label = level.name.get(requireContext().currentLanguage).ifBlank { level.name.en }.ifBlank { level.code }
+        return if (level.number > 0) "Level ${level.number} • $label" else label
     }
 }

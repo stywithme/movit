@@ -1,6 +1,7 @@
 ﻿package com.trainingvalidator.poc.network
 
 import com.google.gson.annotations.SerializedName
+import com.trainingvalidator.poc.training.models.WorkoutExecutionContext
 
 /**
  * Home API Models
@@ -83,7 +84,6 @@ data class TrainTodayWorkoutData(
     val name: Map<String, String>,
     val exerciseCount: Int,
     val estimatedMinutes: Int?,
-    val role: String?,
     val isCompleted: Boolean,
     val allWorkoutsCount: Int,
     val completedWorkoutsCount: Int
@@ -107,7 +107,7 @@ data class RecentWorkoutData(
     val formScore: Int,
     val totalReps: Int,
     val date: String,
-    val context: String
+    val context: WorkoutExecutionContext
 )
 
 // ── Alerts ────────────────────────────────────────────────────────────────────

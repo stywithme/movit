@@ -12,35 +12,41 @@ data class WorkoutConfig(
     val name: LocalizedText,
     val description: LocalizedText? = null,
     val coverImageUrl: String? = null,
-    val difficulty: String = "beginner",
+    val levelId: String? = null,
+    val level: WorkoutLevelConfig? = null,
     val estimatedDurationMin: Int? = null,
     val tags: List<String> = emptyList(),
     val exercises: List<WorkoutExercise> = emptyList(),
+    val phases: List<WorkoutPhaseConfig> = emptyList(),
     // Runtime field - set by WorkoutLoader
     @Transient
     var fileName: String = ""
 ) {
+    fun effectiveExercises(): List<WorkoutExercise> =
+        if (phases.isNotEmpty()) phases.sortedBy { it.sortOrder }.flatMap { it.exercises } else exercises
+
     /**
      * Get total number of exercises in this workout
      */
-    fun getTotalExerciseCount(): Int = exercises.size
+    fun getTotalExerciseCount(): Int = effectiveExercises().size
     
     /**
      * Get exercise by index (within a single round)
      */
-    fun getExercise(index: Int): WorkoutExercise? = exercises.getOrNull(index)
+    fun getExercise(index: Int): WorkoutExercise? = effectiveExercises().getOrNull(index)
     
     /**
      * Check if workout is valid (has at least one exercise)
      */
-    fun isValid(): Boolean = exercises.isNotEmpty()
+    fun isValid(): Boolean = effectiveExercises().isNotEmpty()
     
     /**
      * Get estimated total duration in milliseconds (rough estimate)
      * Based on average rep time and rest periods per exercise
      */
     fun getEstimatedDurationMs(): Long {
-        val exerciseDuration = exercises.sumOf { exercise ->
+        val items = effectiveExercises()
+        val exerciseDuration = items.sumOf { exercise ->
             val perSetDuration = when {
                 exercise.targetDurationSec != null -> exercise.targetDurationSec * 1000L
                 exercise.targetReps != null -> exercise.targetReps * 3000L
@@ -50,10 +56,31 @@ data class WorkoutConfig(
             val restBetweenSets = (sets - 1) * exercise.restBetweenSetsMs
             (perSetDuration * sets) + restBetweenSets
         }
-        val restDuration = exercises.sumOf { it.restAfterExerciseMs }
+        val restDuration = items.sumOf { it.restAfterExerciseMs }
         return exerciseDuration + restDuration
     }
 }
+
+data class WorkoutLevelConfig(
+    val id: String,
+    val number: Int = 0,
+    val code: String = "",
+    val name: LocalizedText = LocalizedText()
+)
+
+data class WorkoutPhaseConfig(
+    val id: String? = null,
+    val phaseId: String? = null,
+    val slug: String? = null,
+    val role: String = "MAIN",
+    val name: LocalizedText = LocalizedText(en = "Phase", ar = "مرحلة"),
+    val description: LocalizedText? = null,
+    val canSkip: Boolean = false,
+    val canContinue: Boolean = true,
+    val maxContinueTimeMs: Long? = null,
+    val sortOrder: Int = 0,
+    val exercises: List<WorkoutExercise> = emptyList()
+)
 
 /**
  * Single exercise within a workout
@@ -66,19 +93,32 @@ data class WorkoutExercise(
     val exercise: String,                           // Exercise file name
     val variantIndex: Int = 0,                      // Pose variant index
     val targetReps: Int? = null,
+    val targetRepsPerSet: List<Int>? = null,
     @SerializedName("targetDuration")
     val targetDurationSec: Int? = null,
     val sets: Int = 1,
     val restBetweenSetsMs: Long = 30000,
+    val restBetweenSetsPerSetMs: List<Long>? = null,
     val restAfterExerciseMs: Long = 60000,
-    val weightKg: Float? = null,
     val weightPerSet: List<Float>? = null,
     val notes: LocalizedText? = null                // Optional notes/tips for this exercise in workout
 ) {
+    fun expandedRepsPerSet(): List<Int>? =
+        PerSetValues.expandInts(targetRepsPerSet, sets, targetReps)
+
+    fun expandedRestBetweenSetsMs(): List<Long>? =
+        PerSetValues.expandLongs(restBetweenSetsPerSetMs, sets, restBetweenSetsMs)
+
+    fun expandedWeightPerSet(): List<Float>? =
+        PerSetValues.expandFloats(weightPerSet, sets)
+
     /**
      * Check if this exercise has a valid target
      */
-    fun hasValidTarget(): Boolean = targetReps != null || targetDurationSec != null
+    fun hasValidTarget(): Boolean =
+        targetReps != null ||
+            !targetRepsPerSet.isNullOrEmpty() ||
+            targetDurationSec != null
 }
 
 /**

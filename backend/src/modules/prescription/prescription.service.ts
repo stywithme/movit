@@ -58,8 +58,8 @@ export interface RecommendedProgram {
   name: Record<string, string>;
   slug: string;
   type: string;
-  levelRangeMin: number;
-  levelRangeMax: number;
+  levelRangeMin: number | null;
+  levelRangeMax: number | null;
   durationWeeks: number;
   coverImageUrl: string | null;
   matchReason: string;
@@ -69,8 +69,8 @@ type ProgramForPrescription = {
   id: string;
   name: unknown;
   slug: string;
-  levelRangeMin: number;
-  levelRangeMax: number;
+  levelRangeMin: number | null;
+  levelRangeMax: number | null;
   coverImageUrl: string | null;
   durationWeeks: number;
   prescriptionPriority: number;
@@ -89,10 +89,40 @@ type ProgramForPrescription = {
 };
 
 const programPrescriptionInclude = {
+  levelMin: { select: { number: true } },
+  levelMax: { select: { number: true } },
   programAttributes: {
     include: { attributeValue: { include: { attribute: true } } },
   },
 } as const;
+
+const levelMatchWhere = (overallLevel: number) => ({
+  AND: [
+    {
+      OR: [
+        { levelMinId: null },
+        { levelMin: { number: { lte: overallLevel } } },
+      ],
+    },
+    {
+      OR: [
+        { levelMaxId: null },
+        { levelMax: { number: { gte: overallLevel } } },
+      ],
+    },
+  ],
+});
+
+function toPrescriptionProgram<T extends { levelMin?: { number: number } | null; levelMax?: { number: number } | null }>(
+  program: T,
+): Omit<T, 'levelMin' | 'levelMax'> & { levelRangeMin: number | null; levelRangeMax: number | null } {
+  const { levelMin, levelMax, ...rest } = program;
+  return {
+    ...rest,
+    levelRangeMin: levelMin?.number ?? null,
+    levelRangeMax: levelMax?.number ?? null,
+  };
+}
 
 interface DomainLevel {
   domain: string;
@@ -403,8 +433,7 @@ export const prescriptionService = {
         where: {
           isPublished: true,
           deletedAt: null,
-          levelRangeMin: { lte: overallLevel },
-          levelRangeMax: { gte: overallLevel },
+          ...levelMatchWhere(overallLevel),
           programAttributes: {
             some: {
               mode: { in: [ProgramAttributeMode.REQUIRED, ProgramAttributeMode.OPTIONAL] },
@@ -416,7 +445,7 @@ export const prescriptionService = {
         orderBy: { prescriptionPriority: 'asc' },
       });
 
-      const typed = programs as ProgramForPrescription[];
+      const typed = programs.map(toPrescriptionProgram) as ProgramForPrescription[];
       const limitingFactor = determineLimitingFactor(classification.safetyGateCodes, []);
       const best = rankAndPick(typed, classification, limitingFactor, userCodes, hints, userTrainingDaysPerWeek);
       const availList = Array.isArray(profileForCodes.availableEquipment)
@@ -495,8 +524,7 @@ export const prescriptionService = {
       where: {
         isPublished: true,
         deletedAt: null,
-        levelRangeMin: { lte: overallLevel },
-        levelRangeMax: { gte: overallLevel },
+        ...levelMatchWhere(overallLevel),
         programAttributes: {
           some: {
             mode: { in: [ProgramAttributeMode.REQUIRED, ProgramAttributeMode.OPTIONAL] },
@@ -508,7 +536,7 @@ export const prescriptionService = {
       orderBy: { prescriptionPriority: 'asc' },
     });
 
-    const typed = programs as ProgramForPrescription[];
+    const typed = programs.map(toPrescriptionProgram) as ProgramForPrescription[];
     const best = rankAndPick(typed, classification, limitingFactor, userCodes, hints, userTrainingDaysPerWeek);
 
     if (best) {
@@ -545,14 +573,13 @@ export const prescriptionService = {
       where: {
         isPublished: true,
         deletedAt: null,
-        levelRangeMin: { lte: overallLevel },
-        levelRangeMax: { gte: overallLevel },
+        ...levelMatchWhere(overallLevel),
       },
       include: programPrescriptionInclude,
       orderBy: { prescriptionPriority: 'asc' },
     });
 
-    const fallbackTyped = fallbackPrograms as ProgramForPrescription[];
+    const fallbackTyped = fallbackPrograms.map(toPrescriptionProgram) as ProgramForPrescription[];
     const fallback = rankAndPick(fallbackTyped, classification, limitingFactor, userCodes, hints, userTrainingDaysPerWeek);
 
     if (fallback) {

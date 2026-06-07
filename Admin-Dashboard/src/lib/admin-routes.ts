@@ -7,6 +7,7 @@ export const protectedAdminRoutes: { prefix: string; subject: Subject }[] = [
   { prefix: '/admin/admins', subject: 'Admin' },
   { prefix: '/admin/users', subject: 'User' },
   { prefix: '/admin/exercises', subject: 'Exercise' },
+  { prefix: '/admin/workout-phases', subject: 'WorkoutPhase' },
   { prefix: '/admin/workout-templates', subject: 'WorkoutTemplate' },
   { prefix: '/admin/programs/map', subject: 'ProgramMap' },
   { prefix: '/admin/programs', subject: 'Program' },

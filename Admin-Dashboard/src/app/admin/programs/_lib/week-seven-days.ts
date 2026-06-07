@@ -5,7 +5,6 @@ export interface EditorPlannedWorkoutLike {
   id?: string;
   name: LocalizedText;
   sortOrder: number;
-  role?: string;
   estimatedDurationMin?: number | null;
   items: unknown[];
 }

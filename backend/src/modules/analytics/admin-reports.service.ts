@@ -527,7 +527,14 @@ export class AdminReportsService {
     const period = this.resolvePeriod(query);
     const [exercises, workouts, programs, messages, positions, usage] = await Promise.all([
       prisma.exercise.findMany({ select: { id: true, status: true, familyKey: true, category: { select: { name: true } } } }),
-      prisma.workoutTemplate.findMany({ select: { id: true, status: true, difficulty: true, createdAt: true } }),
+      prisma.workoutTemplate.findMany({
+        select: {
+          id: true,
+          status: true,
+          createdAt: true,
+          level: { select: { number: true, code: true } },
+        },
+      }),
       prisma.program.findMany({ select: { id: true, isPublished: true, programType: true, createdAt: true } }),
       prisma.feedbackMessageTemplate.findMany({ select: { id: true, category: true, isActive: true } }),
       prisma.posePosition.findMany({ select: { id: true, code: true, isActive: true } }),
@@ -548,7 +555,7 @@ export class AdminReportsService {
       workoutTemplates: {
         total: workouts.length,
         byStatus: this.countBy(workouts, (w) => w.status),
-        byDifficulty: this.countBy(workouts, (w) => w.difficulty),
+        byLevel: this.countBy(workouts, (w) => w.level?.code ?? 'unassigned'),
       },
       programs: {
         total: programs.length,

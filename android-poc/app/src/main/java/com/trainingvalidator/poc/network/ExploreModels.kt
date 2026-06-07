@@ -43,22 +43,39 @@ data class ExploreProgramItem(
     val id: String,
     val slug: String,
     val name: LocalizedName,
-    val levelRangeMin: Int = 0,
-    val levelRangeMax: Int = 0,
+    val levelMinId: String? = null,
+    val levelMaxId: String? = null,
+    val levelMin: ExploreProgramLevel? = null,
+    val levelMax: ExploreProgramLevel? = null,
     val durationWeeks: Int,
     val coverImageUrl: String? = null,
     val updatedAt: String
+)
+
+data class ExploreProgramLevel(
+    val id: String? = null,
+    val number: Int = 0,
+    val code: String = "",
+    val name: LocalizedName
 )
 
 data class ExploreWorkoutItem(
     val id: String,
     val slug: String,
     val name: LocalizedName,
-    val difficulty: String,
+    val levelId: String? = null,
+    val level: ExploreWorkoutLevel? = null,
     val estimatedDurationMin: Int? = null,
     val coverImageUrl: String? = null,
     val exerciseCount: Int,
     val updatedAt: String
+)
+
+data class ExploreWorkoutLevel(
+    val id: String,
+    val number: Int = 0,
+    val code: String = "",
+    val name: LocalizedName
 )
 
 data class ExploreExerciseItem(

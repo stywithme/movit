@@ -14,25 +14,12 @@ import { exerciseProgramAttributeStatus } from '../../_lib/exercise-program-attr
 import { PROGRAM_EDITOR_TABS, type ProgramEditorTabId } from '../../_components/program-editor-tabs';
 import { ProgramEditorTabBar } from '../../_components/ProgramEditorTabBar';
 import { padProgramWeeksToSevenDays } from '../../_lib/week-seven-days';
-import {
-  allPhasesHomogeneous,
-  buildProgramPhasesPayload,
-} from '../../_lib/build-program-phases-payload';
+import { buildProgramPhasesPayload } from '../../_lib/build-program-phases-payload';
 
 interface ProgramSummaryRef {
   id: string;
   name: LocalizedText;
 }
-
-const SESSION_ROLE_OPTIONS = [
-  { value: 'WARMUP', label: 'WARMUP' },
-  { value: 'ACTIVATION', label: 'ACTIVATION' },
-  { value: 'MAIN', label: 'MAIN' },
-  { value: 'ACCESSORY', label: 'ACCESSORY' },
-  { value: 'CORRECTIVE', label: 'CORRECTIVE' },
-  { value: 'COOLDOWN', label: 'COOLDOWN' },
-  { value: 'TEST', label: 'TEST' },
-];
 
 interface ExerciseSummary {
   id: string;
@@ -86,7 +73,6 @@ interface PlannedWorkoutForm {
   id?: string;
   name: LocalizedText;
   sortOrder: number;
-  role?: string;
   estimatedDurationMin?: number | null;
   items: PlannedWorkoutItemForm[];
 }
@@ -169,7 +155,6 @@ interface ProgramResponse {
         id?: string;
         name: LocalizedText;
         sortOrder: number;
-        role?: string | null;
         estimatedDurationMin?: number | null;
         items: Array<{
           id?: string;
@@ -206,7 +191,6 @@ const createEmptyItem = (type: 'exercise' | 'rest', exerciseId?: string): Planne
 const createEmptyPlannedWorkout = (sortOrder: number): PlannedWorkoutForm => ({
   name: { ar: 'صباحا', en: 'Morning' },
   sortOrder,
-  role: 'MAIN',
   estimatedDurationMin: undefined,
   items: [],
 });
@@ -457,7 +441,6 @@ export default function EditProgramPage() {
                     id: plannedWorkout.id,
                     name: plannedWorkout.name || { ar: '', en: '' },
                     sortOrder: plannedWorkout.sortOrder ?? plannedWorkoutIndex,
-                    role: plannedWorkout.role ?? 'MAIN',
                     estimatedDurationMin: plannedWorkout.estimatedDurationMin ?? undefined,
                     items:
                       plannedWorkout.items?.map((item) => ({
@@ -1072,9 +1055,7 @@ export default function EditProgramPage() {
   };
 
   const buildPayload = () => {
-    const phasesPayload = allPhasesHomogeneous(phases, weeks)
-      ? buildProgramPhasesPayload(phases, weeks)
-      : null;
+    const phasesPayload = buildProgramPhasesPayload(phases, weeks);
 
     return {
     name,
@@ -1097,7 +1078,7 @@ export default function EditProgramPage() {
     prerequisiteProgramId: prerequisiteProgramId || undefined,
     nextProgramId: nextProgramId || undefined,
     programAttributes: programAttributeRows,
-    ...(phasesPayload ? { phases: phasesPayload } : {}),
+    ...(phasesPayload.length > 0 ? { phases: phasesPayload } : {}),
     weeks: weeks.map((week, weekIndex) => ({
       ...(week.id ? { id: week.id } : {}),
       weekNumber: week.weekNumber || weekIndex + 1,
@@ -1115,7 +1096,6 @@ export default function EditProgramPage() {
           ...(plannedWorkout.id ? { id: plannedWorkout.id } : {}),
           name: plannedWorkout.name,
           sortOrder: plannedWorkout.sortOrder ?? plannedWorkoutIndex,
-          role: plannedWorkout.role || 'MAIN',
           estimatedDurationMin:
             plannedWorkout.estimatedDurationMin === undefined || plannedWorkout.estimatedDurationMin === null
               ? undefined
@@ -1159,13 +1139,6 @@ export default function EditProgramPage() {
     setLoading(true);
 
     try {
-      if (phases.length > 0 && !allPhasesHomogeneous(phases, weeks)) {
-        toast(
-          'Weeks differ within at least one phase — saving as flat weeks only. Use "Apply Pattern" in each phase to align weeks before save if you need phase rows synced.',
-          { duration: 6500 }
-        );
-      }
-
       const res = await fetch(`/api/programs/${programId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -1879,18 +1852,6 @@ export default function EditProgramPage() {
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label>Planned workout role</Label>
-                          <Select
-                            value={plannedWorkout.role ?? 'MAIN'}
-                            onChange={(e) =>
-                              updatePlannedWorkout(weekIndex, dayIndex, plannedWorkoutIndex, {
-                                role: e.target.value,
-                              })
-                            }
-                            options={SESSION_ROLE_OPTIONS}
-                          />
-                        </div>
                         <div>
                           <Label>Estimated duration (min)</Label>
                           <Input

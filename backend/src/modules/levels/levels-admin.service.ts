@@ -307,13 +307,13 @@ export const levelsAdminService = {
       );
     }
 
-    // 3. No programs with levelRangeMin/Max matching this level number
+    // 3. No content/programs referencing this level.
     const programsUsingLevel = await prisma.program.findFirst({
       where: {
         deletedAt: null,
         OR: [
-          { levelRangeMin: level.number },
-          { levelRangeMax: level.number },
+          { levelMinId: level.id },
+          { levelMaxId: level.id },
         ],
       },
     });

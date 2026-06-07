@@ -20,8 +20,11 @@ import com.trainingvalidator.poc.ui.components.GlassmorphicMessageView
 import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.trainingvalidator.poc.training.models.PerSetValues
+import com.trainingvalidator.poc.training.models.PlannedWorkoutItemType
 import com.trainingvalidator.poc.training.models.WorkoutLineItem
 import com.trainingvalidator.poc.training.report.ReportGenerator
+import com.trainingvalidator.poc.training.workout.PhaseResumeAction
 import com.trainingvalidator.poc.training.workout.WorkoutRestContext
 import com.trainingvalidator.poc.training.workout.WorkoutTrainingEngine
 import com.trainingvalidator.poc.training.workout.WorkoutTrainingEngine.SetMetrics
@@ -63,6 +66,26 @@ class TrainingWorkoutModeController(
         workoutPrepRestPaused = false
     }
 
+    fun onActivityPaused() {
+        workoutEngine?.onActivityPaused()
+    }
+
+    fun onActivityResumed() {
+        when (workoutEngine?.onActivityResumed()) {
+            PhaseResumeAction.PHASE_RESTARTED_NO_CONTINUE -> Toast.makeText(
+                host,
+                host.getString(R.string.workout_phase_restarted_no_continue),
+                Toast.LENGTH_LONG
+            ).show()
+            PhaseResumeAction.PHASE_RESTARTED_TIMEOUT -> Toast.makeText(
+                host,
+                host.getString(R.string.workout_phase_continue_expired),
+                Toast.LENGTH_LONG
+            ).show()
+            else -> Unit
+        }
+    }
+
     fun cancelWorkoutRestOnClose() {
         workoutRestTimer?.cancel()
         pendingPrepRestKey = null
@@ -94,7 +117,7 @@ class TrainingWorkoutModeController(
             return
         }
         val workoutRole = host.intent.getStringExtra(TrainingActivity.EXTRA_WORKOUT_ROLE) ?: "MAIN"
-        val invalidExerciseItem = items.firstOrNull { it.type == "exercise" && it.exerciseSlug.isNullOrBlank() }
+        val invalidExerciseItem = items.firstOrNull { it.type == PlannedWorkoutItemType.EXERCISE && it.exerciseSlug.isNullOrBlank() }
         if (invalidExerciseItem != null) {
             Log.e(tag, "Invalid workout payload: exercise item without exerciseSlug")
             Toast.makeText(
@@ -110,7 +133,7 @@ class TrainingWorkoutModeController(
         val exerciseRepo = ExerciseRepository.getInstance(host)
         val language = host.currentLanguage
         workoutExerciseConfigMap.clear()
-        items.filter { it.type == "exercise" && it.exerciseSlug != null }.forEach { item ->
+        items.filter { it.type == PlannedWorkoutItemType.EXERCISE && it.exerciseSlug != null }.forEach { item ->
             val slug = item.exerciseSlug ?: return@forEach
             val config = exerciseRepo.getExercise(slug)
             if (config != null) {
@@ -162,16 +185,16 @@ class TrainingWorkoutModeController(
 
     private fun buildWorkoutTargetSummaryLine(item: WorkoutLineItem): String {
         val sets = item.sets?.coerceAtLeast(1) ?: 1
+        val reps = PerSetValues.intAt(item.targetRepsPerSet, 1, sets, item.targetReps)
         val base = when {
             item.targetDuration != null && item.targetDuration > 0 ->
                 host.getString(R.string.workout_target_hold_format, sets, item.targetDuration)
-            item.targetReps != null && item.targetReps > 0 ->
-                host.getString(R.string.workout_target_reps_format, sets, item.targetReps)
+            reps != null && reps > 0 ->
+                host.getString(R.string.workout_target_reps_format, sets, reps)
             else ->
                 host.getString(R.string.workout_target_sets_only_format, sets)
         }
-        val w = item.weightPerSet?.firstOrNull()?.takeIf { it > 0f }
-            ?: item.weightKg?.takeIf { it > 0f }
+        val w = PerSetValues.floatAt(item.weightPerSet, 1, sets)?.takeIf { it > 0f }
         return if (w != null) {
             "$base · ${host.getString(R.string.workout_weight_format, w)}"
         } else {
@@ -252,7 +275,7 @@ class TrainingWorkoutModeController(
         } else if (inRest && state.restContext == WorkoutRestContext.BETWEEN_EXERCISES) {
             b.tvWorkoutSetInfo.text = buildWorkoutTargetSummaryLine(item)
         } else {
-            val targetReps = item.targetReps
+            val targetReps = engine.getCurrentSetReps()
             val targetDuration = item.targetDuration
             b.tvWorkoutSetInfo.text = when {
                 targetReps != null && targetReps > 0 -> host.getString(
@@ -303,6 +326,13 @@ class TrainingWorkoutModeController(
 
         // Settings card (reps/duration/weight) - visible for both rest and pre-start
         bindWorkoutSettings(state, engine, cfg)
+        val canSkipPhase = !inRest && engine.canSkipCurrentPhase()
+        b.btnWorkoutSkipPhase.visibility = if (canSkipPhase) View.VISIBLE else View.GONE
+        b.btnWorkoutSkipPhase.setOnClickListener {
+            if (workoutEngine?.skipCurrentPhase() == true) {
+                Toast.makeText(host, host.getString(R.string.workout_phase_skipped), Toast.LENGTH_SHORT).show()
+            }
+        }
 
         if (inRest) {
             pendingPrepRestKey = state.exerciseIndex to state.setNumber
@@ -372,7 +402,8 @@ class TrainingWorkoutModeController(
         val b = host.binding
         val item = engine.getCurrentExerciseItem() ?: state.item
 
-        val hasReps = (item.targetReps ?: 0) > 0
+        val hasReps = (engine.getCurrentSetReps() ?: item.targetReps ?: 0) > 0
+            || !item.targetRepsPerSet.isNullOrEmpty()
         val hasDuration = (item.targetDuration ?: 0) > 0
         val weightCfg = cfg?.takeIf { it.supportsWeight }
         val supportsWeight = weightCfg != null
@@ -383,7 +414,7 @@ class TrainingWorkoutModeController(
         // Reps row
         b.layoutWorkoutSettingReps.visibility = if (hasReps) View.VISIBLE else View.GONE
         if (hasReps) {
-            val currentReps = item.targetReps ?: 10
+            val currentReps = engine.getCurrentSetReps() ?: item.targetReps ?: 10
             val maxReps = maxOf(100, currentReps)
             b.tvWorkoutRepsValue.text = currentReps.toString()
             b.sliderWorkoutReps.clearOnChangeListeners()
@@ -500,7 +531,7 @@ class TrainingWorkoutModeController(
         val b = host.binding
         val currentItem = engine.getCurrentExerciseItem() ?: state.item
 
-        val hasReps = (currentItem.targetReps ?: 0) > 0
+        val hasReps = (engine.getCurrentSetReps() ?: currentItem.targetReps ?: 0) > 0
         if (hasReps) {
             val reps = b.sliderWorkoutReps.value.toInt().coerceAtLeast(1)
             engine.updateCurrentTargetReps(reps)
@@ -655,7 +686,7 @@ class TrainingWorkoutModeController(
         updateWorkoutSetIndicator(state.setNumber, state.totalSets)
         host.viewModel.supervisor.reset()
         preferences.hasShownWeightDialog = false
-        val targetReps = item.targetReps?.takeIf { it > 0 }
+        val targetReps = engine.getCurrentSetReps()
         val targetDurationMs = item.targetDuration?.takeIf { it > 0 }?.let { it * 1000L }
         val weight = engine.getCurrentSetWeight()
         val poseVariantIndex = item.variantIndex ?: 0
@@ -811,7 +842,7 @@ class TrainingWorkoutModeController(
         val accuracy = trainingEng?.getAccuracy() ?: 0f
         val durationMs = System.currentTimeMillis() - workoutSetStartTimeMs
         val weight = engine.getCurrentSetWeight()
-        val targetReps = currentItem.targetReps ?: reps
+        val targetReps = engine.getCurrentSetReps() ?: currentItem.targetReps ?: reps
         trainingEng?.stop()
         host.stopElapsedTimeTimer()
         val repDetails = trainingEng?.getRepResults()?.map { repResult ->
@@ -949,6 +980,7 @@ class TrainingWorkoutModeController(
         b.tvAlternatingLabel.visibility = View.GONE
         b.tvWorkoutSetIndicator.visibility = View.GONE
         b.tvWorkoutPrepCountdown.visibility = View.GONE
+        b.btnWorkoutSkipPhase.visibility = View.GONE
         b.layoutWorkoutPrepRestControls.visibility = View.GONE
         workoutRestTimer?.cancel()
         pendingPrepRestKey = null

@@ -19,7 +19,7 @@ import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.assessment.models.AssessmentType
 import com.trainingvalidator.poc.assessment.ui.PreScreeningActivity
 import com.trainingvalidator.poc.network.*
-import com.trainingvalidator.poc.ui.utils.formatProgramLevelRange
+import com.trainingvalidator.poc.ui.utils.formatPlanProgramLevel
 import kotlinx.coroutines.launch
 
 /**
@@ -245,7 +245,7 @@ class PlanOverviewActivity : AppCompatActivity() {
             if (info != null) {
                 addView(TextView(context).apply {
                     text = "${info.type} • ${info.durationWeeks} weeks • ${
-                        formatProgramLevelRange(info.levelRangeMin, info.levelRangeMax)
+                        formatPlanProgramLevel(info.levelMin, info.levelMax)
                     }"
                     setTextColor(Color.parseColor("#757575"))
                     textSize = 11f

@@ -2,7 +2,11 @@ import { api } from '@/lib/api/client';
 
 export interface ExerciseListParams {
   page?: number;
+  limit?: number;
   status?: string;
+  categoryId?: string;
+  familyKey?: string;
+  includeAttributes?: boolean;
   search?: string;
 }
 

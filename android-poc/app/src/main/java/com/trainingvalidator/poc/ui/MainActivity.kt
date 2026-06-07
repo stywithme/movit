@@ -191,7 +191,6 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionList
     private fun startTrainingActivity() {
         val intent = Intent(this, TrainingActivity::class.java).apply {
             putExtra(TrainingActivity.EXTRA_EXERCISE_NAME, "squat")
-            putExtra(TrainingActivity.EXTRA_DIFFICULTY, "beginner")
             putExtra(TrainingActivity.EXTRA_POSE_VARIANT, 0)
         }
         startActivity(intent)

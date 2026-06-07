@@ -12,7 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.chip.Chip
 import com.trainingvalidator.poc.ui.utils.currentLanguage
-import com.trainingvalidator.poc.ui.utils.formatProgramLevelRange
+import com.trainingvalidator.poc.ui.utils.formatProgramLevel
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityProgramListBinding
 import com.trainingvalidator.poc.storage.ProgramRepository
@@ -32,7 +32,7 @@ class ProgramListActivity : AppCompatActivity() {
     private val displayedPrograms = mutableListOf<ProgramConfig>()
 
 
-    /** Level-range filter; null = all. Tag is "min,max". */
+    /** Level filter; null = all. Tag is derived from level IDs/numbers. */
     private var selectedLevelKey: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -109,15 +109,14 @@ class ProgramListActivity : AppCompatActivity() {
         allRanges.isChecked = true
         binding.chipGroupDifficulty.addView(allRanges)
 
-        val distinctRanges = allPrograms
-            .map { it.levelRangeMin to it.levelRangeMax }
-            .distinct()
-            .sortedWith(compareBy({ it.first }, { it.second }))
+        val distinctLevels = allPrograms
+            .distinctBy { levelFilterKey(it) }
+            .sortedWith(compareBy({ it.levelMin?.number ?: 0 }, { it.levelMax?.number ?: 0 }))
 
-        distinctRanges.forEach { (min, max) ->
-            val key = "$min,$max"
+        distinctLevels.forEach { program ->
+            val key = levelFilterKey(program)
             binding.chipGroupDifficulty.addView(
-                makeChip(formatProgramLevelRange(min, max), key)
+                makeChip(formatProgramLevel(program.levelMin, program.levelMax), key)
             )
         }
 
@@ -129,20 +128,22 @@ class ProgramListActivity : AppCompatActivity() {
             applyFilters()
         }
 
-        val showRangeFilter = allPrograms.size > 1 && distinctRanges.size > 1
+        val showRangeFilter = allPrograms.size > 1 && distinctLevels.size > 1
         binding.scrollDifficultyFilters.visibility =
             if (showRangeFilter) View.VISIBLE else View.GONE
+    }
+
+    private fun levelFilterKey(program: ProgramConfig): String {
+        val min = program.levelMinId ?: program.levelMin?.id ?: program.levelMin?.number?.toString().orEmpty()
+        val max = program.levelMaxId ?: program.levelMax?.id ?: program.levelMax?.number?.toString().orEmpty()
+        return "$min:$max"
     }
 
     private fun applyFilters() {
         displayedPrograms.clear()
         displayedPrograms.addAll(
             allPrograms.filter { p ->
-                selectedLevelKey == null || run {
-                    val parts = selectedLevelKey!!.split(',')
-                    if (parts.size != 2) return@run true
-                    p.levelRangeMin == parts[0].toInt() && p.levelRangeMax == parts[1].toInt()
-                }
+                selectedLevelKey == null || levelFilterKey(p) == selectedLevelKey
             }
         )
         if (displayedPrograms.isEmpty() && allPrograms.isNotEmpty()) {
@@ -209,7 +210,7 @@ class ProgramListActivity : AppCompatActivity() {
 
             holder.tvWeeks.text = getString(R.string.weeks_count_format, program.durationWeeks)
             holder.tvWorkouts.text = workoutsLabel
-            holder.tvDifficulty.text = formatProgramLevelRange(program.levelRangeMin, program.levelRangeMax)
+            holder.tvDifficulty.text = formatProgramLevel(program.levelMin, program.levelMax)
             holder.tvFeaturedBadge.visibility = if (program.isFeatured) View.VISIBLE else View.GONE
 
             val metaParts = buildList {

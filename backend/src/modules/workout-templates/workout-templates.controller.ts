@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req, Res, UseGuards } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { workoutService } from './workout-templates.service';
-import { validateCreateWorkout, validateUpdateWorkout } from './workout-templates.validation';
+import { validateCanPublish, validateCreateWorkout, validateUpdateWorkout } from './workout-templates.validation';
 import { CaslGuard } from '@/lib/casl/casl.guard';
 import { CheckPermission } from '@/lib/casl/check-permission.decorator';
 import { getAdminIdFromRequest } from '@/lib/auth/admin';
@@ -129,6 +129,17 @@ export class WorkoutTemplatesController {
         res.status(404);
         return { success: false, error: 'Workout template not found' };
       }
+
+      const publishErrors = validateCanPublish({
+        name: existing.name as { ar?: string; en?: string },
+        exercises: existing.exercises,
+        phases: existing.phases,
+      });
+      if (publishErrors.length > 0) {
+        res.status(400);
+        return { success: false, errors: publishErrors };
+      }
+
       const workout = await workoutService.publish(id, getAdminIdFromRequest(req) ?? undefined);
       return { success: true, data: workout };
     } catch (error) {
