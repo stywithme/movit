@@ -35,6 +35,33 @@ import {
 // Server version for API compatibility
 const SERVER_VERSION = '1.0.0';
 
+/** Legacy mobile sync keys (pre workoutTemplates rename). */
+function withLegacyWorkoutSyncAliases<T>(workouts: T[]) {
+  return {
+    workoutTemplates: workouts,
+    workouts,
+  };
+}
+
+function withLegacyWorkoutDeleteAliases(ids: string[]) {
+  return {
+    deletedWorkoutTemplateIds: ids,
+    deletedWorkoutIds: ids,
+  };
+}
+
+function withLegacyWorkoutMetaAliases(
+  totalWorkoutTemplates: number,
+  workoutTemplatesInResponse: number
+) {
+  return {
+    totalWorkoutTemplates,
+    totalWorkouts: totalWorkoutTemplates,
+    workoutTemplatesInResponse,
+    workoutsInResponse: workoutTemplatesInResponse,
+  };
+}
+
 function toSyncLocalizedText(value: Record<string, unknown> | null | undefined) {
   const ar = typeof value?.ar === 'string' ? value.ar : '';
   const en = typeof value?.en === 'string' ? value.en : '';
@@ -191,16 +218,18 @@ export const mobileSyncService = {
         coverImageUrl: p.coverImageUrl,
         updatedAt: p.updatedAt.toISOString(),
       })),
-      workoutTemplates: workouts.map((w) => ({
-        id: w.id,
-        slug: w.slug,
-        name: toSyncLocalizedText(w.name as Record<string, unknown>),
-        difficulty: w.difficulty,
-        estimatedDurationMin: w.estimatedDurationMin,
-        coverImageUrl: w.coverImageUrl,
-        exerciseCount: w.exercises.length,
-        updatedAt: w.updatedAt.toISOString(),
-      })),
+      ...withLegacyWorkoutSyncAliases(
+        workouts.map((w) => ({
+          id: w.id,
+          slug: w.slug,
+          name: toSyncLocalizedText(w.name as Record<string, unknown>),
+          difficulty: w.difficulty,
+          estimatedDurationMin: w.estimatedDurationMin,
+          coverImageUrl: w.coverImageUrl,
+          exerciseCount: w.exercises.length,
+          updatedAt: w.updatedAt.toISOString(),
+        }))
+      ),
       exercises: exercises.map((e) => ({
         id: e.id,
         slug: e.slug,
@@ -211,7 +240,7 @@ export const mobileSyncService = {
         updatedAt: e.updatedAt.toISOString(),
       })),
       deletedProgramIds,
-      deletedWorkoutTemplateIds,
+      ...withLegacyWorkoutDeleteAliases(deletedWorkoutTemplateIds),
       deletedExerciseIds,
     };
 
@@ -225,6 +254,7 @@ export const mobileSyncService = {
         levelsInResponse: data.levels.length,
         programsInResponse: data.programs.length,
         workoutTemplatesInResponse: data.workoutTemplates.length,
+        workoutsInResponse: data.workoutTemplates.length,
         exercisesInResponse: data.exercises.length,
       },
     };
@@ -519,8 +549,8 @@ export const mobileSyncService = {
         messageLibrary,
         systemMessages,
         deletedExerciseIds,
-        workoutTemplates: workoutsExport,
-        deletedWorkoutTemplateIds,
+        ...withLegacyWorkoutSyncAliases(workoutsExport),
+        ...withLegacyWorkoutDeleteAliases(deletedWorkoutTemplateIds),
         programs: filteredPrograms,
         deletedProgramIds,
         userPrograms,
@@ -535,7 +565,7 @@ export const mobileSyncService = {
         isFullSync,
         serverVersion: SERVER_VERSION,
         exercisesInResponse: exercisesWithMeta.length,
-        workoutTemplatesInResponse: workoutsExport.length,
+        ...withLegacyWorkoutMetaAliases(totalWorkoutTemplates, workoutsExport.length),
         programsInResponse: filteredPrograms.length,
         messageLibraryStats,
       },

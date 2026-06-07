@@ -52,9 +52,13 @@ export interface ExploreData {
   levels: ExploreLevelItem[];
   programs: ExploreProgramItem[];
   workoutTemplates: ExploreWorkoutItem[];
+  /** @deprecated use workoutTemplates */
+  workouts?: ExploreWorkoutItem[];
   exercises: ExploreExerciseItem[];
   deletedProgramIds: string[];
   deletedWorkoutTemplateIds: string[];
+  /** @deprecated use deletedWorkoutTemplateIds */
+  deletedWorkoutIds?: string[];
   deletedExerciseIds: string[];
 }
 
@@ -105,6 +109,8 @@ export interface ExploreMeta {
   levelsInResponse: number;
   programsInResponse: number;
   workoutTemplatesInResponse: number;
+  /** @deprecated use workoutTemplatesInResponse */
+  workoutsInResponse?: number;
   exercisesInResponse: number;
 }
 
@@ -144,6 +150,8 @@ export interface SyncData {
    * Published workout templates (catalog) for mobile training engine
    */
   workoutTemplates: WorkoutExport[];
+  /** @deprecated use workoutTemplates */
+  workouts?: WorkoutExport[];
 
   /**
    * List of programs (weeks / days / planned workouts)
@@ -154,6 +162,8 @@ export interface SyncData {
    * IDs of workout templates deleted or unpublished since last sync
    */
   deletedWorkoutTemplateIds: string[];
+  /** @deprecated use deletedWorkoutTemplateIds */
+  deletedWorkoutIds?: string[];
 
   /**
    * IDs of programs that were deleted since last sync
@@ -252,6 +262,8 @@ export interface SyncMeta {
    * Total number of published workout templates
    */
   totalWorkoutTemplates: number;
+  /** @deprecated use totalWorkoutTemplates */
+  totalWorkouts?: number;
 
   /**
    * Total number of published programs
@@ -277,6 +289,8 @@ export interface SyncMeta {
    * Number of workout templates in this response
    */
   workoutTemplatesInResponse: number;
+  /** @deprecated use workoutTemplatesInResponse */
+  workoutsInResponse?: number;
 
   /**
    * Number of programs in this response

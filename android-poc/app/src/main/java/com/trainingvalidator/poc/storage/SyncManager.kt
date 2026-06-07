@@ -191,6 +191,11 @@ class SyncManager(
 
             var result = processSyncResponse(body, isFullSync = body.meta?.isFullSync ?: false)
 
+            if (result is SyncResult.NeedsFullRefresh) {
+                Log.w(TAG, "Cache drift detected during incremental sync — performing full refresh")
+                result = executeFullRefreshLocked()
+            }
+
             if (result is SyncResult.NoChanges || result is SyncResult.Success) {
                 val needsMessageRefresh = checkMessageStatsMismatch(body.meta?.messageLibraryStats)
                 if (needsMessageRefresh) {
@@ -439,9 +444,14 @@ class SyncManager(
             val serverTotalWk = meta?.totalWorkoutTemplates ?: localWorkouts
             val serverTotalPr = meta?.totalPrograms ?: localPrograms
 
+            val workoutUnderflow = workoutCache != null && localWorkouts < serverTotalWk
+            val programUnderflow = programCache != null && localPrograms < serverTotalPr
+
             if (localExercises > serverTotalEx ||
                 (workoutCache != null && localWorkouts > serverTotalWk) ||
-                (programCache != null && localPrograms > serverTotalPr)
+                (programCache != null && localPrograms > serverTotalPr) ||
+                workoutUnderflow ||
+                programUnderflow
             ) {
                 Log.w(
                     TAG,

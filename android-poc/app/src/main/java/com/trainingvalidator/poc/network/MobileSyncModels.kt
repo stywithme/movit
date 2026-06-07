@@ -38,7 +38,9 @@ data class SyncData(
     /** Fixed-key system messages (training TTS/UI); looked up by code */
     val systemMessages: List<SystemMessageTemplate> = emptyList(),
     val deletedExerciseIds: List<String>,
+    @SerializedName(value = "workoutTemplates", alternate = ["workouts"])
     val workoutTemplates: List<WorkoutConfigWithMeta> = emptyList(),
+    @SerializedName(value = "deletedWorkoutTemplateIds", alternate = ["deletedWorkoutIds"])
     val deletedWorkoutTemplateIds: List<String> = emptyList(),
     val programs: List<ProgramConfigWithMeta> = emptyList(),
     val deletedProgramIds: List<String> = emptyList(),
@@ -235,11 +237,13 @@ data class ExerciseConfigWithMeta(
  */
 data class SyncMeta(
     val totalExercises: Int,
+    @SerializedName(value = "totalWorkoutTemplates", alternate = ["totalWorkouts"])
     val totalWorkoutTemplates: Int = 0,
     val totalPrograms: Int = 0,
     val isFullSync: Boolean,
     val serverVersion: String,
     val exercisesInResponse: Int,
+    @SerializedName(value = "workoutTemplatesInResponse", alternate = ["workoutsInResponse"])
     val workoutTemplatesInResponse: Int = 0,
     val programsInResponse: Int = 0,
     val messageLibraryStats: MessageLibraryStats? = null

@@ -11,7 +11,7 @@ import com.trainingvalidator.poc.training.models.WorkoutLineItem
 import com.trainingvalidator.poc.training.models.LocalizedText
 
 /**
- * DayCustomizationStore ù Offline-first local storage for day/workout customizations.
+ * DayCustomizationStore ÔøΩ Offline-first local storage for day/workout customizations.
  *
  * Stores user modifications to planned workouts (reorder, rename, delete) and workout items
  * (add, remove, reorder, edit sets/reps/weight) persistently in SharedPreferences.
@@ -19,7 +19,7 @@ import com.trainingvalidator.poc.training.models.LocalizedText
  * Key format: "day_{programId}_{weekNumber}_{dayNumber}"
  *
  * Each key maps to a DayCustomization containing the full modified planned workout list.
- * This is the source of truth for the day view ù if a customization exists,
+ * This is the source of truth for the day view ÔøΩ if a customization exists,
  * it overrides the original program data.
  */
 class DayCustomizationStore(context: Context) {
@@ -298,14 +298,14 @@ class DayCustomizationStore(context: Context) {
                 val existing = get(programId, weekNumber, dayNumber) ?: continue
                 if (existing.isUserModified) {
                     if (serverMs != null && serverMs > existing.lastModifiedAt) {
-                        Log.w(TAG, "hydrateFromBackend: CONFLICT $dayKey ù local user edits kept; server is newer")
+                        Log.w(TAG, "hydrateFromBackend: CONFLICT $dayKey ÔøΩ local user edits kept; server is newer")
                     } else {
-                        Log.d(TAG, "hydrateFromBackend: SKIP $dayKey ù local user customization exists")
+                        Log.d(TAG, "hydrateFromBackend: SKIP $dayKey ÔøΩ local user customization exists")
                     }
                     continue
                 }
                 if (serverMs != null && serverMs <= existing.lastModifiedAt) {
-                    Log.d(TAG, "hydrateFromBackend: SKIP $dayKey ù local copy same or newer than server marker")
+                    Log.d(TAG, "hydrateFromBackend: SKIP $dayKey ÔøΩ local copy same or newer than server marker")
                     continue
                 }
             }
@@ -335,7 +335,7 @@ class DayCustomizationStore(context: Context) {
                 Log.w(TAG, "hydrateFromBackend: FAILED to parse $dayKey", e)
             }
         }
-        Log.d(TAG, "hydrateFromBackend: done ù imported $imported day(s) for programId=$programId")
+        Log.d(TAG, "hydrateFromBackend: done ÔøΩ imported $imported day(s) for programId=$programId")
     }
 
     // ???????????????????????????????????????????????????????????
