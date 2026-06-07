@@ -83,6 +83,7 @@ ENV/
 # Java/Kotlin
 *.class
 *.jar
+!android-poc/gradle/wrapper/gradle-wrapper.jar
 *.war
 *.ear
 hs_err_pid*
@@ -95,6 +96,9 @@ google-mediapipe-sample/
 
 
 
+
+# Database dumps (local only)
+backend/backups/
 
 #tools
 tools/
