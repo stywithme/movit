@@ -11,10 +11,27 @@ import { reassessmentService } from '@/modules/reassessment/reassessment.service
 import { prescriptionService } from '@/modules/prescription/prescription.service';
 import { activePlanService } from '@/modules/active-plan/active-plan.service';
 import type { BodyScanResultCreate, BodyScanProgress, DomainScores } from './assessment.types';
-import { fitnessLevelToNumber, scoreToLevel } from '@/lib/metrics';
+import { levelNumberToFitnessLevel, scoreToLevelAsync } from '@/lib/metrics';
+import type { BodyScanResult, Level } from '@prisma/client';
 
 // Minimum Detectable Change threshold (points) for "real" improvement
 const MDC_THRESHOLD = 5;
+
+type BodyScanWithLevel = BodyScanResult & { level?: Pick<Level, 'number'> | null };
+
+async function serializeBodyScanForApi(row: BodyScanWithLevel) {
+  const levelNumber =
+    row.level?.number ?? (await scoreToLevelAsync(row.bodyScore));
+  return {
+    ...row,
+    levelNumber,
+    fitnessLevel: levelNumberToFitnessLevel(levelNumber),
+  };
+}
+
+const bodyScanWithLevelInclude = {
+  level: { select: { number: true } },
+} as const;
 
 // ============================================
 // SERVICE
@@ -26,15 +43,22 @@ export const assessmentService = {
    */
   async create(data: BodyScanResultCreate) {
     const prisma = await getPrisma();
-    const inferredLevelNumber = data.fitnessLevel
-      ? fitnessLevelToNumber(data.fitnessLevel)
-      : scoreToLevel(data.bodyScore);
-    const inferredLevel = data.levelId
-      ? null
-      : await prisma.level.findUnique({
-          where: { number: inferredLevelNumber },
-          select: { id: true },
-        });
+    let resolvedLevelId = data.levelId ?? null;
+    if (!resolvedLevelId && data.levelNumber != null) {
+      const byNumber = await prisma.level.findUnique({
+        where: { number: data.levelNumber },
+        select: { id: true },
+      });
+      resolvedLevelId = byNumber?.id ?? null;
+    }
+    if (!resolvedLevelId) {
+      const inferredLevelNumber = await scoreToLevelAsync(data.bodyScore);
+      const inferredLevel = await prisma.level.findUnique({
+        where: { number: inferredLevelNumber },
+        select: { id: true },
+      });
+      resolvedLevelId = inferredLevel?.id ?? null;
+    }
 
     const result = await prisma.bodyScanResult.create({
       data: {
@@ -45,7 +69,7 @@ export const assessmentService = {
         controlScore: data.controlScore,
         symmetryScore: data.symmetryScore ?? null,
         safetyScore: data.safetyScore,
-        levelId: data.levelId ?? inferredLevel?.id ?? null,
+        levelId: resolvedLevelId,
         regions: data.regions as object,
         symmetryData: data.symmetryData ? (data.symmetryData as object) : undefined,
         hypotheses: data.hypotheses ? (data.hypotheses as object) : undefined,
@@ -127,7 +151,13 @@ export const assessmentService = {
       console.warn('[Assessment] Prescription after assessment failed (non-fatal):', error);
     }
 
-    return { ...result, autoPrescription, recommendation };
+    const withLevel = await prisma.bodyScanResult.findUnique({
+      where: { id: result.id },
+      include: bodyScanWithLevelInclude,
+    });
+    const serialized = withLevel ? await serializeBodyScanForApi(withLevel) : result;
+
+    return { ...serialized, autoPrescription, recommendation };
   },
 
   /**
@@ -136,10 +166,13 @@ export const assessmentService = {
   async getLatest(userId: string) {
     const prisma = await getPrisma();
 
-    return prisma.bodyScanResult.findFirst({
+    const row = await prisma.bodyScanResult.findFirst({
       where: { userId },
       orderBy: { completedAt: 'desc' },
+      include: bodyScanWithLevelInclude,
     });
+    if (!row) return null;
+    return serializeBodyScanForApi(row);
   },
 
   /**
@@ -148,9 +181,12 @@ export const assessmentService = {
   async getById(id: string) {
     const prisma = await getPrisma();
 
-    return prisma.bodyScanResult.findUnique({
+    const row = await prisma.bodyScanResult.findUnique({
       where: { id },
+      include: bodyScanWithLevelInclude,
     });
+    if (!row) return null;
+    return serializeBodyScanForApi(row);
   },
 
   /**
@@ -159,10 +195,12 @@ export const assessmentService = {
   async getHistory(userId: string) {
     const prisma = await getPrisma();
 
-    return prisma.bodyScanResult.findMany({
+    const rows = await prisma.bodyScanResult.findMany({
       where: { userId },
       orderBy: { completedAt: 'desc' },
+      include: bodyScanWithLevelInclude,
     });
+    return Promise.all(rows.map((row) => serializeBodyScanForApi(row)));
   },
 
   /**

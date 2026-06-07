@@ -1,5 +1,6 @@
 import { assessmentMatchingService } from '@/modules/assessments/assessment-matching.service';
 import { getPrisma } from '@/lib/prisma/client';
+import { assertEnrollableProgram } from './program-graph-validation';
 
 export interface ProgramCompletionDecision {
   nextAction: 'next_program' | 'reassess' | 'journey_summary' | 'level_up_auto';
@@ -71,6 +72,20 @@ export const programCompletionService = {
     }
 
     if (program.nextProgramId) {
+      try {
+        await assertEnrollableProgram(prisma, program.nextProgramId);
+      } catch (error) {
+        console.warn(
+          `[ProgramCompletion] nextProgramId ${program.nextProgramId} is not enrollable:`,
+          error instanceof Error ? error.message : error,
+        );
+        return {
+          nextAction: 'journey_summary',
+          nextProgramId: null,
+          reassessmentTemplateId: null,
+        };
+      }
+
       return {
         nextAction: 'next_program',
         nextProgramId: program.nextProgramId,

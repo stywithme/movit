@@ -3,6 +3,7 @@ package com.trainingvalidator.poc.assessment
 import android.content.Context
 import android.util.Log
 import com.trainingvalidator.poc.assessment.engine.AssessmentTemplateManager
+import com.trainingvalidator.poc.assessment.engine.LevelThresholdsManager
 import com.trainingvalidator.poc.assessment.models.*
 import com.trainingvalidator.poc.network.ApiClient
 import com.trainingvalidator.poc.network.AssessmentFullData
@@ -114,13 +115,11 @@ object AssessmentUploadService {
             "progression", "level_specific" -> AssessmentType.PROGRESSION
             else -> AssessmentType.INITIAL
         }
-        val level = when (fitnessLevel.lowercase()) {
-            "excellent" -> FitnessLevel.EXCELLENT
-            "good" -> FitnessLevel.GOOD
-            "average" -> FitnessLevel.AVERAGE
-            "limited" -> FitnessLevel.LIMITED
-            else -> FitnessLevel.NEEDS_REHAB
-        }
+        val level = resolveFitnessLevelFromApi(
+            levelNumber = levelNumber,
+            fitnessLevel = fitnessLevel,
+            bodyScore = bodyScore.toFloat(),
+        )
         return BodyScanResult(
             id = id,
             userId = userId,
@@ -158,6 +157,7 @@ object AssessmentUploadService {
      * Map the Android BodyScanResult to the backend's expected API payload.
      */
     private fun mapToPayload(result: BodyScanResult): Map<String, Any?> {
+        val levelNumber = LevelThresholdsManager.getLevelNumber(result.bodyScore)
         return mapOf(
             "type" to result.type.name.lowercase(),
             "bodyScore" to result.bodyScore,
@@ -165,7 +165,7 @@ object AssessmentUploadService {
             "controlScore" to result.domainScores.control,
             "symmetryScore" to result.domainScores.symmetry,
             "safetyScore" to result.domainScores.safety,
-            "fitnessLevel" to mapFitnessLevel(result.fitnessLevel),
+            "levelNumber" to levelNumber,
             "regions" to result.regions.map { mapRegion(it) },
             "symmetryData" to result.symmetryData,
             "hypotheses" to result.hypotheses.map { mapHypothesis(it) },
@@ -182,12 +182,33 @@ object AssessmentUploadService {
         )
     }
 
-    private fun mapFitnessLevel(level: FitnessLevel): String = when (level) {
-        FitnessLevel.EXCELLENT -> "excellent"
-        FitnessLevel.GOOD -> "good"
-        FitnessLevel.AVERAGE -> "average"
-        FitnessLevel.LIMITED -> "limited"
-        FitnessLevel.NEEDS_REHAB -> "needs_rehab"
+    private fun resolveFitnessLevelFromApi(
+        levelNumber: Int?,
+        fitnessLevel: String?,
+        bodyScore: Float,
+    ): FitnessLevel {
+        if (levelNumber != null) {
+            return fitnessLevelFromLevelNumber(levelNumber)
+        }
+        val legacy = fitnessLevel?.trim()?.lowercase()
+        if (!legacy.isNullOrEmpty()) {
+            return when (legacy) {
+                "excellent" -> FitnessLevel.EXCELLENT
+                "good" -> FitnessLevel.GOOD
+                "average" -> FitnessLevel.AVERAGE
+                "limited" -> FitnessLevel.LIMITED
+                else -> FitnessLevel.NEEDS_REHAB
+            }
+        }
+        return LevelThresholdsManager.fromBodyScore(bodyScore)
+    }
+
+    private fun fitnessLevelFromLevelNumber(levelNumber: Int): FitnessLevel = when (levelNumber) {
+        5 -> FitnessLevel.EXCELLENT
+        4 -> FitnessLevel.GOOD
+        3 -> FitnessLevel.AVERAGE
+        2 -> FitnessLevel.LIMITED
+        else -> FitnessLevel.NEEDS_REHAB
     }
 
     private fun mapRegion(region: AssessmentRegion): Map<String, Any?> = mapOf(

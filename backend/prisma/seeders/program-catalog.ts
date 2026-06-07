@@ -29,13 +29,13 @@ export type CatalogDay = {
   dayNumber: number;
   isRestDay?: boolean;
   dayType?: string;
+  /** Legacy catalog metadata — not persisted after program simplification. */
   dayFocus?: string | null;
   plannedWorkouts?: CatalogPlannedWorkout[];
 };
 
 export type CatalogWeek = {
   weekNumber: number;
-  weekType?: 'NORMAL' | 'DELOAD';
   days: CatalogDay[];
 };
 
@@ -227,7 +227,6 @@ function buildSystemTrainingWeeks(goal: GoalKey, bandIdx: number): CatalogWeek[]
 
   const week = (num: number, type: 'NORMAL' | 'DELOAD'): CatalogWeek => ({
     weekNumber: num,
-    weekType: type,
     days: [
       {
         dayNumber: 1,
@@ -357,7 +356,6 @@ function starterProgram(): ProgramCatalogEntry {
     weeks: [
       {
         weekNumber: 1,
-        weekType: 'NORMAL',
         days: [
           {
             dayNumber: 1,
@@ -440,7 +438,6 @@ function starterProgram(): ProgramCatalogEntry {
       },
       {
         weekNumber: 2,
-        weekType: 'NORMAL',
         days: [
           {
             dayNumber: 1,
@@ -521,7 +518,6 @@ function starterProgram(): ProgramCatalogEntry {
       },
       {
         weekNumber: 3,
-        weekType: 'NORMAL',
         days: [
           {
             dayNumber: 1,
@@ -604,7 +600,6 @@ function starterProgram(): ProgramCatalogEntry {
       },
       {
         weekNumber: 4,
-        weekType: 'DELOAD',
         days: [
           {
             dayNumber: 1,
@@ -700,7 +695,6 @@ function mobilityProgram(): ProgramCatalogEntry {
   });
   const mkWeek = (w: number): CatalogWeek => ({
     weekNumber: w,
-    weekType: 'NORMAL',
     days: [
       {
         dayNumber: 1,
@@ -825,7 +819,6 @@ function intermediateStrengthProgram(): ProgramCatalogEntry {
     const baseWeight = 5 + (w - 1) * 2.5;
     weeks.push({
       weekNumber: w,
-      weekType: 'NORMAL',
       days: [
         {
           dayNumber: 1,
@@ -978,7 +971,6 @@ function therapeuticLowBack(): ProgramCatalogEntry {
     weeks: [
       {
         weekNumber: 1,
-        weekType: 'NORMAL',
         days: [
           {
             dayNumber: 1,
@@ -1024,7 +1016,6 @@ function therapeuticLowBack(): ProgramCatalogEntry {
       },
       {
         weekNumber: 2,
-        weekType: 'NORMAL',
         days: [
           {
             dayNumber: 1,
@@ -1113,7 +1104,6 @@ function therapeuticShoulder(): ProgramCatalogEntry {
     weeks: [
       {
         weekNumber: 1,
-        weekType: 'NORMAL',
         days: [
           {
             dayNumber: 1,
@@ -1158,7 +1148,6 @@ function therapeuticShoulder(): ProgramCatalogEntry {
       },
       {
         weekNumber: 2,
-        weekType: 'NORMAL',
         days: [
           {
             dayNumber: 1,
@@ -1248,7 +1237,6 @@ function customFixture(): ProgramCatalogEntry {
     weeks: [
       {
         weekNumber: 1,
-        weekType: 'NORMAL',
         days: [
           {
             dayNumber: 1,

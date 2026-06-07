@@ -380,7 +380,7 @@ class ProgramDetailActivity : AppCompatActivity() {
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val week = weeks[position]
             val language = currentLanguage
-            val title = week.name?.let { it.get(language).ifBlank { it.en } } ?: ""
+            val title = week.target?.let { it.get(language).ifBlank { it.en } } ?: ""
             holder.tvWeekTitle.text = if (title.isNotBlank()) {
                 getString(R.string.week_title_with_name, week.weekNumber, title)
             } else {

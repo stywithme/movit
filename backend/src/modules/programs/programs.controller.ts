@@ -45,6 +45,18 @@ export class ProgramsController {
     }
   }
 
+  @Get('map')
+  @CheckPermission('read', 'Program')
+  async mapData() {
+    try {
+      const data = await programService.getMapData();
+      return { success: true, data };
+    } catch (error) {
+      console.error('Error fetching programs map data:', error);
+      return { success: false, error: 'Failed to fetch programs map data' };
+    }
+  }
+
   @Post()
   @CheckPermission('create', 'Program')
   async create(@Body() body: any, @Res({ passthrough: true }) res: Response) {

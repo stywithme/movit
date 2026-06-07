@@ -20,7 +20,6 @@ export interface AutoAssignmentReadinessInput {
   autoAssignable?: boolean | null;
   levelRangeMin?: number | null;
   levelRangeMax?: number | null;
-  prescriptionPriority?: number | null;
   programAttributes?: ProgramAttributeRowInput[];
 }
 
@@ -69,7 +68,6 @@ export function getAutoAssignmentReadiness(input: AutoAssignmentReadinessInput):
   if (!input.programType) missingFields.push('programType');
   if (!hasNumber(input.levelRangeMin)) missingFields.push('levelRangeMin');
   if (!hasNumber(input.levelRangeMax)) missingFields.push('levelRangeMax');
-  if (!hasNumber(input.prescriptionPriority)) missingFields.push('prescriptionPriority');
 
   const rows = programAttrRows(input);
   if (rows.length === 0) {

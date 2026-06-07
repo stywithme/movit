@@ -73,7 +73,6 @@ type ProgramForPrescription = {
   levelRangeMax: number | null;
   coverImageUrl: string | null;
   durationWeeks: number;
-  prescriptionPriority: number;
   weeklyWorkoutTarget: number | null;
   programType: import('@prisma/client').ProgramType;
   autoAssignable: boolean;
@@ -338,7 +337,6 @@ function rankAndPick(
   limitingFactor: string | null,
   userCodes: Set<string>,
   hints: UserAttributeHints,
-  userTrainingDaysPerWeek: number | null,
 ): ProgramForPrescription | null {
   let matches = candidates.filter(
     (p) =>
@@ -348,19 +346,13 @@ function rankAndPick(
   );
   matches = narrowByFocusAndRegions(matches, hints);
   matches = [...matches].sort((a, b) => {
-    const trainMatch =
-      userTrainingDaysPerWeek != null
-        ? (b.weeklyWorkoutTarget === userTrainingDaysPerWeek ? 1 : 0) -
-          (a.weeklyWorkoutTarget === userTrainingDaysPerWeek ? 1 : 0)
-        : 0;
-    if (trainMatch !== 0) return trainMatch;
     const scoreDiff =
       scoreProgramForLimitingFactor(b, limitingFactor) - scoreProgramForLimitingFactor(a, limitingFactor);
     if (scoreDiff !== 0) return scoreDiff;
     const optDiff =
       countOptionalMatches(programToRows(b), userCodes) - countOptionalMatches(programToRows(a), userCodes);
     if (optDiff !== 0) return optDiff;
-    return a.prescriptionPriority - b.prescriptionPriority;
+    return a.slug.localeCompare(b.slug);
   });
   return matches[0] ?? null;
 }
@@ -392,12 +384,6 @@ export const prescriptionService = {
     });
 
     const tp = userPrefs?.trainingProfile;
-    const userTrainingDaysPerWeek =
-      tp?.trainingWeekdays && tp.trainingWeekdays.length > 0
-        ? tp.trainingWeekdays.length
-        : typeof tp?.availableDaysPerWeek === 'number'
-          ? tp.availableDaysPerWeek
-          : null;
     if (tp && tp.healthDisclaimerAccepted === false) {
       return {
         classification: {
@@ -442,12 +428,12 @@ export const prescriptionService = {
           },
         },
         include: programPrescriptionInclude,
-        orderBy: { prescriptionPriority: 'asc' },
+        orderBy: { slug: 'asc' },
       });
 
       const typed = programs.map(toPrescriptionProgram) as ProgramForPrescription[];
       const limitingFactor = determineLimitingFactor(classification.safetyGateCodes, []);
-      const best = rankAndPick(typed, classification, limitingFactor, userCodes, hints, userTrainingDaysPerWeek);
+      const best = rankAndPick(typed, classification, limitingFactor, userCodes, hints);
       const availList = Array.isArray(profileForCodes.availableEquipment)
         ? (profileForCodes.availableEquipment as string[])
         : [];
@@ -533,11 +519,11 @@ export const prescriptionService = {
         },
       },
       include: programPrescriptionInclude,
-      orderBy: { prescriptionPriority: 'asc' },
+      orderBy: { slug: 'asc' },
     });
 
     const typed = programs.map(toPrescriptionProgram) as ProgramForPrescription[];
-    const best = rankAndPick(typed, classification, limitingFactor, userCodes, hints, userTrainingDaysPerWeek);
+    const best = rankAndPick(typed, classification, limitingFactor, userCodes, hints);
 
     if (best) {
       return {
@@ -576,11 +562,11 @@ export const prescriptionService = {
         ...levelMatchWhere(overallLevel),
       },
       include: programPrescriptionInclude,
-      orderBy: { prescriptionPriority: 'asc' },
+      orderBy: { slug: 'asc' },
     });
 
     const fallbackTyped = fallbackPrograms.map(toPrescriptionProgram) as ProgramForPrescription[];
-    const fallback = rankAndPick(fallbackTyped, classification, limitingFactor, userCodes, hints, userTrainingDaysPerWeek);
+    const fallback = rankAndPick(fallbackTyped, classification, limitingFactor, userCodes, hints);
 
     if (fallback) {
       return {

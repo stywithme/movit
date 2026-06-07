@@ -42,7 +42,7 @@ describe('validateCalendarProgramStructure', () => {
     expect(() => validateCalendarProgramStructure(1, [bad])).toThrow(/at least one training day/);
   });
 
-  it('throws when training dayNumbers are not sequential from 1', () => {
+  it('throws when dayNumbers are not sequential from 1', () => {
     const bad = {
       weekNumber: 1,
       days: [
@@ -51,6 +51,18 @@ describe('validateCalendarProgramStructure', () => {
       ],
     };
     expect(() => validateCalendarProgramStructure(1, [bad])).toThrow(/sequentially/);
+  });
+
+  it('accepts interleaved rest days when all days are numbered 1..N', () => {
+    const ok = {
+      weekNumber: 1,
+      days: [
+        { dayNumber: 1, isRestDay: false, dayType: 'training' },
+        { dayNumber: 2, isRestDay: true, dayType: 'rest' },
+        { dayNumber: 3, isRestDay: false, dayType: 'training' },
+      ],
+    };
+    expect(() => validateCalendarProgramStructure(1, [ok])).not.toThrow();
   });
 
   it('accepts fewer than 7 days when training slots are 1..N', () => {

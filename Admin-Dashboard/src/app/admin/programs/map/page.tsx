@@ -6,13 +6,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { Card, CardContent, Button } from '@/components/ui';
 import { FilterBar, PageHeader } from '@/components/common';
-import { RefreshCw, ArrowRight } from 'lucide-react';
+import { RefreshCw, ArrowRight, AlertTriangle } from 'lucide-react';
 import { LocalizedText } from '@/lib/types/localized';
 
 interface Level {
   id: string;
   name: LocalizedText;
-  order: number;
+  number: number;
   color: string;
 }
 
@@ -106,7 +106,7 @@ function programPassesFilters(
   return true;
 }
 
-function targetLevelOrder(t: AssessmentMapItem): number | null {
+function targetLevelNumber(t: AssessmentMapItem): number | null {
   const tl = t.targetLevel;
   if (!tl) return null;
   if (typeof tl.number === 'number') return tl.number;
@@ -125,17 +125,48 @@ function isInitialAssessment(t: AssessmentMapItem): boolean {
 
 function assessmentMatchesLevelColumn(
   t: AssessmentMapItem,
-  levelOrder: number,
+  levelNumber: number,
   levels: Level[],
 ): boolean {
   if (isInitialAssessment(t)) return false;
-  const tl = targetLevelOrder(t);
-  if (tl != null) return tl === levelOrder;
-  const minOrder = levels[0]?.order ?? 1;
-  const maxOrder = levels[levels.length - 1]?.order ?? levelOrder;
-  const min = t.levelRangeMin ?? minOrder;
-  const max = t.levelRangeMax ?? maxOrder;
-  return levelOrder >= min && levelOrder <= max;
+  const tl = targetLevelNumber(t);
+  if (tl != null) return tl === levelNumber;
+  const minNumber = levels[0]?.number ?? 1;
+  const maxNumber = levels[levels.length - 1]?.number ?? levelNumber;
+  const min = t.levelRangeMin ?? minNumber;
+  const max = t.levelRangeMax ?? maxNumber;
+  return levelNumber >= min && levelNumber <= max;
+}
+
+type ChainRefStatus = 'ok' | 'missing' | 'draft' | 'self_loop';
+
+interface ChainTarget {
+  id: string;
+  slug: string;
+  name: LocalizedText;
+  isPublished: boolean;
+  deletedAt: string | null;
+}
+
+function resolveNextProgramRef(
+  program: Program,
+  programById: Map<string, Program>,
+  chainTargets: Record<string, ChainTarget>,
+): { status: ChainRefStatus; targetName?: string } {
+  const nextId = program.nextProgramId;
+  if (!nextId) return { status: 'ok' };
+  if (nextId === program.id) return { status: 'self_loop' };
+
+  const fromList = programById.get(nextId);
+  const fromRefs = chainTargets[nextId];
+  const target = fromList ?? fromRefs;
+
+  if (!target) return { status: 'missing' };
+  if ('deletedAt' in target && target.deletedAt) return { status: 'missing' };
+  if (!target.isPublished) {
+    return { status: 'draft', targetName: target.name?.en || target.slug };
+  }
+  return { status: 'ok', targetName: target.name?.en || target.slug };
 }
 
 function formatProgramLevelRangeLabel(program: Program): string {
@@ -155,6 +186,7 @@ export default function ProgramsMapPage() {
   const [programs, setPrograms] = useState<Program[]>([]);
   const [assessments, setAssessments] = useState<AssessmentMapItem[]>([]);
   const [levels, setLevels] = useState<Level[]>([]);
+  const [chainTargets, setChainTargets] = useState<Record<string, ChainTarget>>({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showPublishedOnly, setShowPublishedOnly] = useState(false);
@@ -170,18 +202,23 @@ export default function ProgramsMapPage() {
     setLoading(true);
     try {
       const [programsRes, levelsRes, assessRes] = await Promise.allSettled([
-        fetch('/api/programs?limit=500').then((r) => r.json()),
+        fetch('/api/programs/map').then((r) => r.json()),
         fetch('/api/admin/levels').then((r) => r.json()),
         fetch('/api/admin/assessment-templates').then((r) => r.json()),
       ]);
 
       if (programsRes.status === 'fulfilled' && programsRes.value?.data) {
-        setPrograms(Array.isArray(programsRes.value.data) ? programsRes.value.data : []);
+        const mapPayload = programsRes.value.data as {
+          programs?: Program[];
+          chainTargets?: Record<string, ChainTarget>;
+        };
+        setPrograms(Array.isArray(mapPayload.programs) ? mapPayload.programs : []);
+        setChainTargets(mapPayload.chainTargets ?? {});
       }
       if (levelsRes.status === 'fulfilled' && levelsRes.value?.data) {
         setLevels(
           (Array.isArray(levelsRes.value.data) ? levelsRes.value.data : []).sort(
-            (a: Level, b: Level) => a.order - b.order,
+            (a: Level, b: Level) => a.number - b.number,
           ),
         );
       }
@@ -249,7 +286,7 @@ export default function ProgramsMapPage() {
     }
     leveledAssessments.forEach((t) => {
       levels.forEach((level) => {
-        if (!assessmentMatchesLevelColumn(t, level.order, levels)) return;
+        if (!assessmentMatchesLevelColumn(t, level.number, levels)) return;
         const list = col[level.id];
         if (list && !list.some((x) => x.id === t.id)) list.push(t);
       });
@@ -259,19 +296,19 @@ export default function ProgramsMapPage() {
 
   const programsByLevelColumn = useMemo(() => {
     const map: Record<string, Program[]> = {};
-    const minOrder = levels[0]?.order ?? 1;
-    const maxOrder = levels[levels.length - 1]?.order ?? levels.length;
+    const minNumber = levels[0]?.number ?? 1;
+    const maxNumber = levels[levels.length - 1]?.number ?? levels.length;
 
     for (const level of levels) {
       map[level.id] = [];
     }
 
     filteredPrograms.forEach((program) => {
-      const minLevel = program.levelRangeMin ?? minOrder;
-      const maxLevel = program.levelRangeMax ?? maxOrder;
+      const minLevel = program.levelRangeMin ?? minNumber;
+      const maxLevel = program.levelRangeMax ?? maxNumber;
 
       levels.forEach((level) => {
-        if (level.order >= minLevel && level.order <= maxLevel) {
+        if (level.number >= minLevel && level.number <= maxLevel) {
           const list = map[level.id];
           if (list && !list.some((p) => p.id === program.id)) {
             list.push(program);
@@ -282,15 +319,27 @@ export default function ProgramsMapPage() {
     return map;
   }, [filteredPrograms, levels]);
 
+  const programById = useMemo(() => new Map(programs.map((p) => [p.id, p])), [programs]);
+
   const connectionsMap = useMemo(() => {
     const m = new Map<string, string>();
-    programs.forEach((p) => {
+    filteredPrograms.forEach((p) => {
       if (p.nextProgramId) {
         m.set(p.id, p.nextProgramId);
       }
     });
     return m;
-  }, [programs]);
+  }, [filteredPrograms]);
+
+  const brokenChainCount = useMemo(() => {
+    let count = 0;
+    for (const p of filteredPrograms) {
+      if (!p.nextProgramId) continue;
+      const ref = resolveNextProgramRef(p, programById, chainTargets);
+      if (ref.status !== 'ok') count += 1;
+    }
+    return count;
+  }, [filteredPrograms, programById, chainTargets]);
 
   const filterOptions = useMemo(() => {
     const o: Partial<Record<(typeof FILTER_ATTR_CODES)[number], { code: string; label: string }[]>> = {};
@@ -302,8 +351,8 @@ export default function ProgramsMapPage() {
 
   const createHereHref = (level: Level) => {
     const params = new URLSearchParams();
-    params.set('levelRangeMin', String(level.order));
-    params.set('levelRangeMax', String(level.order));
+    params.set('levelRangeMin', String(level.number));
+    params.set('levelRangeMax', String(level.number));
     params.set('source', 'map');
     if (filters.domain) params.set('programDomain', filters.domain === 'pd_mobility' ? 'MOBILITY' : filters.domain === 'pd_therapeutic' ? 'THERAPEUTIC' : 'TRAINING');
     return `/admin/programs/new?${params.toString()}`;
@@ -436,7 +485,7 @@ export default function ProgramsMapPage() {
                           style={{ backgroundColor: level.color || '#6B7280' }}
                         />
                         <span className="text-xs font-semibold text-muted-foreground">
-                          {level.name?.en || `Level ${level.order}`}
+                          {level.name?.en || `Level ${level.number}`}
                         </span>
                       </div>
                     </div>
@@ -462,6 +511,9 @@ export default function ProgramsMapPage() {
                             const type = mapProgramDomainToCellType(program);
                             const typeColors = TYPE_COLORS[type] ?? TYPE_COLORS.training;
                             const hasNext = connectionsMap.has(program.id);
+                            const chainRef = hasNext
+                              ? resolveNextProgramRef(program, programById, chainTargets)
+                              : null;
                             const badges = (program.programAttributes ?? [])
                               .filter((r) => r.mode === 'REQUIRED' || r.mode === 'OPTIONAL')
                               .slice(0, 4)
@@ -519,13 +571,34 @@ export default function ProgramsMapPage() {
                                     </button>
                                   </div>
                                 </div>
-                                {hasNext && (
-                                  <div className="absolute -right-3 top-1/2 -translate-y-1/2 z-10">
-                                    <div className="flex size-5 items-center justify-center rounded-full border-2 bg-card shadow-sm">
-                                      <ArrowRight className="size-3 text-muted-foreground" />
+                                {hasNext && chainRef ? (
+                                  <div
+                                    className="absolute -right-3 top-1/2 z-10 -translate-y-1/2"
+                                    title={
+                                      chainRef.status === 'ok'
+                                        ? `Next: ${chainRef.targetName ?? 'program'}`
+                                        : chainRef.status === 'self_loop'
+                                          ? 'Broken chain: self-loop'
+                                          : chainRef.status === 'missing'
+                                            ? 'Broken chain: target missing or deleted'
+                                            : `Draft target: ${chainRef.targetName ?? 'program'}`
+                                    }
+                                  >
+                                    <div
+                                      className={`flex size-5 items-center justify-center rounded-full border-2 bg-card shadow-sm ${
+                                        chainRef.status === 'ok'
+                                          ? 'border-muted-foreground/30'
+                                          : 'border-amber-500 bg-amber-50'
+                                      }`}
+                                    >
+                                      {chainRef.status === 'ok' ? (
+                                        <ArrowRight className="size-3 text-muted-foreground" />
+                                      ) : (
+                                        <AlertTriangle className="size-3 text-amber-700" />
+                                      )}
                                     </div>
                                   </div>
-                                )}
+                                ) : null}
                               </div>
                             );
                           })}
@@ -597,8 +670,11 @@ export default function ProgramsMapPage() {
           </Card>
           <Card>
             <CardContent className="pt-6 text-center">
-              <p className="text-sm text-muted-foreground">With Sequences</p>
+              <p className="text-sm text-muted-foreground">Visible With Sequences</p>
               <p className="mt-1 text-2xl font-bold text-violet-600">{connectionsMap.size}</p>
+              {brokenChainCount > 0 ? (
+                <p className="mt-1 text-xs text-amber-700">{brokenChainCount} broken</p>
+              ) : null}
             </CardContent>
           </Card>
           <Card>
