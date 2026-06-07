@@ -46,3 +46,6 @@ coverage/
 
 # Uploads (local storage)
 uploads/
+
+# Portable Redis 7 (downloaded by npm run redis:up)
+tools/redis-win/

@@ -25,6 +25,10 @@
     "seed:pose-positions": "tsx --env-file=.env prisma/run-pose-positions-seed.ts",
     "seed:unified-refactor": "tsx --env-file=.env prisma/run-unified-refactor-seed.ts",
     "migrate:remove-rest-days": "tsx --env-file=.env scripts/migrate-remove-program-rest-days.ts",
+    "redis:up": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-redis-dev.ps1",
+    "redis:down": "powershell -NoProfile -Command \"Get-Process redis-server -ErrorAction SilentlyContinue | Where-Object { $_.Path -like '*backend\\\\tools\\\\redis-win*' } | Stop-Process -Force\"",
+    "redis:docker:up": "docker compose -f docker-compose.redis.yml up -d",
+    "redis:docker:down": "docker compose -f docker-compose.redis.yml down",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
@@ -96,6 +100,9 @@
     "tsx": "^4.21.0",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0"
+  },
+  "overrides": {
+    "glob": "^13.0.6"
   },
   "jest": {
     "moduleFileExtensions": [
