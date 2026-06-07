@@ -1,0 +1,20 @@
+# Redis 7 for local BullMQ (requires Redis >= 6.2; Laragon ships 5.x).
+# Usage: npm run redis:up  then set REDIS_PORT=6380 in .env
+services:
+  redis:
+    image: redis:7.4-alpine
+    container_name: pose-redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - pose_redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+volumes:
+  pose_redis_data:
