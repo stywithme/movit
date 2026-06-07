@@ -560,7 +560,6 @@ export const mobileSyncService = {
       },
       meta: {
         totalExercises,
-        totalWorkoutTemplates,
         totalPrograms,
         isFullSync,
         serverVersion: SERVER_VERSION,

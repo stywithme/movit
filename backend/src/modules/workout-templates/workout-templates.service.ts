@@ -5,6 +5,7 @@
  * Service for workout (Super Set / Circuit) CRUD operations.
  */
 
+import { Prisma } from '@prisma/client';
 import { getPrisma } from '@/lib/prisma/client';
 import { DEFAULT_REST_TIMES } from './workout-templates.types';
 
@@ -188,26 +189,30 @@ export const workoutService = {
     const prisma = await getPrisma();
     const slug = data.slug || generateSlug(data.name);
 
-    const workout = await prisma.workoutTemplate.create({
-      data: {
-        name: data.name as object,
-        description: (data.description as object) || undefined,
-        slug,
-        coverImageUrl: data.coverImageUrl ?? undefined,
-        difficulty: data.difficulty ?? 'beginner',
-        estimatedDurationMin: data.estimatedDurationMin ?? undefined,
-        tags: data.tags ?? undefined,
-        isFeatured: data.isFeatured ?? false,
-        status: 'draft',
-        createdBy,
-        updatedBy: createdBy,
-      },
-    });
+    const workout = await prisma.$transaction(async (tx) => {
+      const created = await tx.workoutTemplate.create({
+        data: {
+          name: data.name as object,
+          description: (data.description as object) || undefined,
+          slug,
+          coverImageUrl: data.coverImageUrl ?? undefined,
+          difficulty: data.difficulty ?? 'beginner',
+          estimatedDurationMin: data.estimatedDurationMin ?? undefined,
+          tags: data.tags ?? undefined,
+          isFeatured: data.isFeatured ?? false,
+          status: 'draft',
+          createdBy,
+          updatedBy: createdBy,
+        },
+      });
 
-    // Create workout exercises if provided
-    if (data.exercises && data.exercises.length > 0) {
-      await this.createWorkoutExercises(prisma, workout.id, data.exercises);
-    }
+      // Create workout exercises if provided
+      if (data.exercises && data.exercises.length > 0) {
+        await this.createWorkoutExercises(tx, created.id, data.exercises);
+      }
+
+      return created;
+    });
 
     return this.getById(workout.id);
   },
@@ -216,7 +221,7 @@ export const workoutService = {
    * Create workout exercises
    */
   async createWorkoutExercises(
-    prisma: Awaited<ReturnType<typeof getPrisma>>,
+    prisma: Prisma.TransactionClient,
     workoutTemplateId: string,
     exercises: WorkoutExerciseInput[]
   ) {
@@ -258,23 +263,23 @@ export const workoutService = {
     if (data.isFeatured !== undefined) updateData.isFeatured = data.isFeatured;
     if (data.status !== undefined) updateData.status = data.status;
 
-    await prisma.workoutTemplate.update({
-      where: { id },
-      data: updateData,
-    });
-
-    // Update exercises if provided
-    if (data.exercises !== undefined) {
-      // Delete existing exercises
-      await prisma.workoutTemplateExercise.deleteMany({
-        where: { workoutTemplateId: id },
+    await prisma.$transaction(async (tx) => {
+      await tx.workoutTemplate.update({
+        where: { id },
+        data: updateData,
       });
 
-      // Create new exercises
-      if (data.exercises.length > 0) {
-        await this.createWorkoutExercises(prisma, id, data.exercises);
+      // Replace exercises if provided (delete + recreate, atomically)
+      if (data.exercises !== undefined) {
+        await tx.workoutTemplateExercise.deleteMany({
+          where: { workoutTemplateId: id },
+        });
+
+        if (data.exercises.length > 0) {
+          await this.createWorkoutExercises(tx, id, data.exercises);
+        }
       }
-    }
+    });
 
     return this.getById(id);
   },

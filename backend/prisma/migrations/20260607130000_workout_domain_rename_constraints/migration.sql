@@ -1,0 +1,52 @@
+-- Finish Session->Workout rename: rename leftover constraints & indexes to match new table/column names.
+-- (ALTER TABLE RENAME does not auto-rename PK/FK/index names; this completes it.)
+-- Excludes pre-existing, unrelated drift (subscription unique indexes = false positives; progression_history FK on-delete; program_phases default).
+
+ALTER TABLE "planned_workout_items" RENAME CONSTRAINT "program_session_items_pkey" TO "planned_workout_items_pkey";
+ALTER TABLE "planned_workout_reports" RENAME CONSTRAINT "program_session_reports_pkey" TO "planned_workout_reports_pkey";
+ALTER TABLE "planned_workouts" RENAME CONSTRAINT "program_sessions_pkey" TO "planned_workouts_pkey";
+ALTER TABLE "workout_execution_metrics" RENAME CONSTRAINT "session_metrics_pkey" TO "workout_execution_metrics_pkey";
+ALTER TABLE "workout_executions" RENAME CONSTRAINT "training_sessions_pkey" TO "workout_executions_pkey";
+ALTER TABLE "workout_template_exercises" RENAME CONSTRAINT "workout_exercises_pkey" TO "workout_template_exercises_pkey";
+ALTER TABLE "workout_templates" RENAME CONSTRAINT "workouts_pkey" TO "workout_templates_pkey";
+ALTER TABLE "planned_workout_items" RENAME CONSTRAINT "program_session_items_exerciseId_fkey" TO "planned_workout_items_exerciseId_fkey";
+ALTER TABLE "planned_workout_items" RENAME CONSTRAINT "program_session_items_sessionId_fkey" TO "planned_workout_items_plannedWorkoutId_fkey";
+ALTER TABLE "planned_workout_items" RENAME CONSTRAINT "program_session_items_sourceWorkoutId_fkey" TO "planned_workout_items_sourceWorkoutTemplateId_fkey";
+ALTER TABLE "planned_workout_reports" RENAME CONSTRAINT "program_session_reports_programId_fkey" TO "planned_workout_reports_programId_fkey";
+ALTER TABLE "planned_workout_reports" RENAME CONSTRAINT "program_session_reports_programSessionId_fkey" TO "planned_workout_reports_plannedWorkoutId_fkey";
+ALTER TABLE "planned_workout_reports" RENAME CONSTRAINT "program_session_reports_userId_fkey" TO "planned_workout_reports_userId_fkey";
+ALTER TABLE "planned_workouts" RENAME CONSTRAINT "program_sessions_dayId_fkey" TO "planned_workouts_dayId_fkey";
+ALTER TABLE "rep_metrics" RENAME CONSTRAINT "rep_metrics_sessionId_fkey" TO "rep_metrics_workoutExecutionId_fkey";
+ALTER TABLE "user_program_overrides" RENAME CONSTRAINT "user_program_overrides_sessionItemId_fkey" TO "user_program_overrides_plannedWorkoutItemId_fkey";
+ALTER TABLE "workout_execution_metrics" RENAME CONSTRAINT "session_metrics_sessionId_fkey" TO "workout_execution_metrics_workoutExecutionId_fkey";
+ALTER TABLE "workout_executions" RENAME CONSTRAINT "training_sessions_exerciseId_fkey" TO "workout_executions_exerciseId_fkey";
+ALTER TABLE "workout_executions" RENAME CONSTRAINT "training_sessions_userId_fkey" TO "workout_executions_userId_fkey";
+ALTER TABLE "workout_template_exercises" RENAME CONSTRAINT "workout_exercises_exerciseId_fkey" TO "workout_template_exercises_exerciseId_fkey";
+ALTER TABLE "workout_template_exercises" RENAME CONSTRAINT "workout_exercises_workoutId_fkey" TO "workout_template_exercises_workoutTemplateId_fkey";
+ALTER INDEX "program_session_items_exerciseId_idx" RENAME TO "planned_workout_items_exerciseId_idx";
+ALTER INDEX "program_session_items_sessionId_idx" RENAME TO "planned_workout_items_plannedWorkoutId_idx";
+ALTER INDEX "program_session_items_sourceWorkoutId_idx" RENAME TO "planned_workout_items_sourceWorkoutTemplateId_idx";
+ALTER INDEX "program_session_reports_programId_idx" RENAME TO "planned_workout_reports_programId_idx";
+ALTER INDEX "program_session_reports_programSessionId_idx" RENAME TO "planned_workout_reports_plannedWorkoutId_idx";
+ALTER INDEX "program_session_reports_userId_idx" RENAME TO "planned_workout_reports_userId_idx";
+ALTER INDEX "program_session_reports_userId_programId_idx" RENAME TO "planned_workout_reports_userId_programId_idx";
+ALTER INDEX "program_session_reports_userId_programSessionId_status_idx" RENAME TO "planned_workout_reports_userId_plannedWorkoutId_status_idx";
+ALTER INDEX "program_session_reports_userId_weekNumber_dayNumber_idx" RENAME TO "planned_workout_reports_userId_weekNumber_dayNumber_idx";
+ALTER INDEX "program_sessions_dayId_idx" RENAME TO "planned_workouts_dayId_idx";
+ALTER INDEX "rep_metrics_sessionId_idx" RENAME TO "rep_metrics_workoutExecutionId_idx";
+ALTER INDEX "rep_metrics_sessionId_repNumber_idx" RENAME TO "rep_metrics_workoutExecutionId_repNumber_idx";
+ALTER INDEX "user_program_exercise_progression_state_userProgramId_exer_key" RENAME TO "user_program_exercise_progression_state_userProgramId_exerc_key";
+ALTER INDEX "user_program_overrides_sessionItemId_idx" RENAME TO "user_program_overrides_plannedWorkoutItemId_idx";
+ALTER INDEX "user_program_progress_userProgramId_weekNumber_dayNumber_se_key" RENAME TO "user_program_progress_userProgramId_weekNumber_dayNumber_pl_key";
+ALTER INDEX "session_metrics_sessionId_key" RENAME TO "workout_execution_metrics_workoutExecutionId_key";
+ALTER INDEX "training_sessions_context_idx" RENAME TO "workout_executions_context_idx";
+ALTER INDEX "training_sessions_exerciseId_idx" RENAME TO "workout_executions_exerciseId_idx";
+ALTER INDEX "training_sessions_groupId_idx" RENAME TO "workout_executions_workoutGroupId_idx";
+ALTER INDEX "training_sessions_timestamp_idx" RENAME TO "workout_executions_timestamp_idx";
+ALTER INDEX "training_sessions_userId_exerciseId_idx" RENAME TO "workout_executions_userId_exerciseId_idx";
+ALTER INDEX "training_sessions_userId_idx" RENAME TO "workout_executions_userId_idx";
+ALTER INDEX "workout_exercises_exerciseId_idx" RENAME TO "workout_template_exercises_exerciseId_idx";
+ALTER INDEX "workout_exercises_workoutId_idx" RENAME TO "workout_template_exercises_workoutTemplateId_idx";
+ALTER INDEX "workouts_deletedAt_idx" RENAME TO "workout_templates_deletedAt_idx";
+ALTER INDEX "workouts_slug_key" RENAME TO "workout_templates_slug_key";
+ALTER INDEX "workouts_status_idx" RENAME TO "workout_templates_status_idx";

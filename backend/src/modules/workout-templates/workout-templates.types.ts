@@ -112,7 +112,6 @@ export interface WorkoutListFilters {
   search?: string;
   /** When true: only featured; when false: only non-featured; omit: all */
   isFeatured?: boolean;
-  visibility?: 'public' | 'private';
   page?: number;
   limit?: number;
 }
