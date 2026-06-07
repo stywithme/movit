@@ -97,7 +97,7 @@ class ProgramDayActivity : AppCompatActivity() {
         }
 
         val language = currentLanguage
-        val title = week.name?.let { it.get(language).ifBlank { it.en } } ?: ""
+        val title = week.target?.let { it.get(language).ifBlank { it.en } } ?: ""
         
         binding.tvWeekTitle.text = if (title.isNotBlank()) {
             getString(R.string.week_title_with_name, week.weekNumber, title)
@@ -136,9 +136,12 @@ class ProgramDayActivity : AppCompatActivity() {
             val day = days[position]
             val language = currentLanguage
 
-            val dayName = day.name?.let { it.get(language).ifBlank { it.en } } ?: ""
-            holder.tvDayTitle.text = if (dayName.isNotBlank()) {
-                getString(R.string.day_title_with_name, day.dayNumber, dayName)
+            val muscleLabel = day.targetMuscles
+                .map { it.name.get(language).ifBlank { it.name.en }.ifBlank { it.code } }
+                .filter { it.isNotBlank() }
+                .joinToString(", ")
+            holder.tvDayTitle.text = if (muscleLabel.isNotBlank()) {
+                getString(R.string.day_title_with_name, day.dayNumber, muscleLabel)
             } else {
                 getString(R.string.day_title_only, day.dayNumber)
             }

@@ -40,6 +40,7 @@ model AttributeValue {
   exercisesAsCountingMethod Exercise[]          @relation("ExerciseCountingMethod")
   posePositionJoints        PosePositionJoint[] @relation("PosePositionJoint")
   programAttributes         ProgramAttribute[]
+  programDayAttributes      ProgramDayAttribute[]
   assessmentAttributes     AssessmentAttribute[]
 
   @@index([attributeId])
@@ -452,7 +453,6 @@ model Program {
   levelMax              Level?                 @relation("ProgramMaxLevel", fields: [levelMaxId], references: [id])
   progressionRules      ProgressionRule[]
   userPrograms          UserProgram[]
-  phases                ProgramPhase[]
   embeddedWorkoutTemplates WorkoutTemplate[]
 
   @@index([deletedAt])
@@ -461,26 +461,6 @@ model Program {
   @@index([levelMinId])
   @@index([levelMaxId])
   @@map("programs")
-}
-
-/// ProgramPhase — phase metadata for the program editor.
-/// The calendar itself lives only in ProgramWeek -> ProgramDay -> PlannedWorkout.
-model ProgramPhase {
-  id            String   @id @default(uuid())
-  programId     String
-  name          Json                       // LocalizedText {en, ar}
-  description   Json?                      // LocalizedText
-  weekType      WeekType @default(NORMAL)  // NORMAL or DELOAD -- applies to all weeks in phase
-  startWeek     Int
-  endWeek       Int
-  sortOrder     Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  program       Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
-
-  @@unique([programId, sortOrder])
-  @@index([programId])
-  @@map("program_phases")
 }
 
 /// Program matching dimensions (domain, goal, equipment, etc.) — reuses AttributeValue catalog with Exercise.
@@ -503,12 +483,11 @@ model ProgramWeek {
   id          String       @id @default(uuid())
   programId   String
   weekNumber  Int
-  name        Json?
+  target      Json?
   description Json?
   sortOrder   Int          @default(0)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
-  weekType    WeekType     @default(NORMAL)
   days        ProgramDay[]
   program     Program      @relation(fields: [programId], references: [id], onDelete: Cascade)
 
@@ -521,18 +500,31 @@ model ProgramDay {
   id        String           @id @default(uuid())
   weekId    String
   dayNumber Int
+  dayType   String           @default("training")
   isRestDay Boolean          @default(false)
-  name      Json?
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
-  dayType   String           @default("training")
-  dayFocus  String?
   week      ProgramWeek      @relation(fields: [weekId], references: [id], onDelete: Cascade)
   plannedWorkouts PlannedWorkout[]
+  targetMuscles   ProgramDayAttribute[]
 
   @@unique([weekId, dayNumber])
   @@index([weekId])
   @@map("program_days")
+}
+
+model ProgramDayAttribute {
+  id               String         @id @default(uuid())
+  dayId            String
+  attributeValueId String
+  createdAt        DateTime       @default(now())
+  day              ProgramDay     @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  attributeValue   AttributeValue @relation(fields: [attributeValueId], references: [id], onDelete: Cascade)
+
+  @@unique([dayId, attributeValueId])
+  @@index([dayId])
+  @@index([attributeValueId])
+  @@map("program_day_attributes")
 }
 
 model PlannedWorkout {
@@ -1324,11 +1316,6 @@ enum TrainingGoal {
   HYPERTROPHY
   POWER
   GENERAL_HEALTH
-}
-
-enum WeekType {
-  NORMAL
-  DELOAD
 }
 
 enum ProgramAttributeMode {

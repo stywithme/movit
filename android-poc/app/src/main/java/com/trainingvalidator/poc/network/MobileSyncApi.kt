@@ -384,12 +384,6 @@ interface MobileSyncApi {
         @Header("Authorization") authorization: String
     ): Response<ResponseBody>
 
-    @POST("api/mobile/user-programs/{id}/complete")
-    suspend fun completeUserProgram(
-        @Path("id") userProgramId: String,
-        @Header("Authorization") authorization: String
-    ): Response<ProgramCompleteApiResponse>
-
     @GET("api/mobile/user-programs/{id}/progress-metrics")
     suspend fun getProgramProgressMetrics(
         @Path("id") userProgramId: String,

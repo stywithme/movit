@@ -31,7 +31,6 @@ export interface AutoAssignmentProgramShape {
   levelRangeMin?: number | null;
   /** @deprecated */
   levelRangeMax?: number | null;
-  prescriptionPriority?: number | null;
   programAttributes?: ProgramAttributeRowForReadiness[];
 }
 
@@ -83,7 +82,6 @@ export function getAutoAssignmentMissingFields(program: AutoAssignmentProgramSha
   if (!program.programType) missing.push('programType');
   if (!hasLevelReference(program.levelMinId, program.levelRangeMin)) missing.push('levelMin');
   if (!hasLevelReference(program.levelMaxId, program.levelRangeMax)) missing.push('levelMax');
-  if (!hasNumber(program.prescriptionPriority)) missing.push('prescriptionPriority');
 
   const rows = programAttrRows(program);
   if (rows.length === 0) {

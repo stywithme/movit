@@ -38,7 +38,9 @@ data class AssessmentData(
     val controlScore: Double,
     val symmetryScore: Double?,
     val safetyScore: Double,
-    val fitnessLevel: String,
+    val levelNumber: Int? = null,
+    /** @deprecated Prefer [levelNumber]; kept for backward compatibility. */
+    val fitnessLevel: String? = null,
     val completedAt: String,
     val createdAt: String,
     val autoPrescription: AssessmentPrescriptionFromUpload? = null,
@@ -62,7 +64,9 @@ data class AssessmentFullData(
     val controlScore: Double,
     val symmetryScore: Double?,
     val safetyScore: Double,
-    val fitnessLevel: String,
+    val levelNumber: Int? = null,
+    /** @deprecated Prefer [levelNumber]; kept for backward compatibility. */
+    val fitnessLevel: String? = null,
     val regions: Any?,
     val symmetryData: Any?,
     val hypotheses: Any?,

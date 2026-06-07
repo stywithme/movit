@@ -309,9 +309,13 @@ class ProgramWorkoutActivity : AppCompatActivity() {
     // -----------------------------------------------------------
 
     private fun renderHeader() {
-        val dayName = day?.name?.let { getLocalizedName(it) } ?: ""
-        binding.tvDayTitle.text = if (dayName.isNotBlank()) {
-            getString(R.string.ds_day_title_format, dayNumber, dayName)
+        val muscleLabel = day?.targetMuscles
+            ?.map { getLocalizedName(it.name).ifBlank { it.code } }
+            ?.filter { it.isNotBlank() }
+            ?.joinToString(", ")
+            .orEmpty()
+        binding.tvDayTitle.text = if (muscleLabel.isNotBlank()) {
+            getString(R.string.ds_day_title_format, dayNumber, muscleLabel)
         } else {
             "Day $dayNumber"
         }

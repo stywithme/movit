@@ -106,7 +106,6 @@ export async function seedPrograms(prisma: PrismaClient) {
     dayNumber: number;
     isRestDay?: boolean;
     dayType?: string;
-    dayFocus?: string | null;
     plannedWorkouts?: PlannedWorkoutSeed[];
   };
 
@@ -114,27 +113,24 @@ export async function seedPrograms(prisma: PrismaClient) {
     programId: string,
     weekNumber: number,
     days: DayDef[],
-    weekType: 'NORMAL' | 'DELOAD' = 'NORMAL',
   ) => {
     const week = await prisma.programWeek.create({
       data: {
         programId,
         weekNumber,
         sortOrder: weekNumber,
-        weekType,
-        name: { ar: `الأسبوع ${weekNumber}`, en: `Week ${weekNumber}` },
+        target: { ar: `الأسبوع ${weekNumber}`, en: `Week ${weekNumber}` },
       },
     });
 
     for (const day of days) {
+      const dayType = day.isRestDay ? 'rest' : (day.dayType ?? 'training');
       const createdDay = await prisma.programDay.create({
         data: {
           weekId: week.id,
           dayNumber: day.dayNumber,
-          isRestDay: day.isRestDay ?? false,
-          dayType: day.isRestDay ? 'rest' : (day.dayType ?? 'training'),
-          dayFocus: day.dayFocus ?? (day.isRestDay ? null : 'general'),
-          name: day.isRestDay ? { ar: 'راحة', en: 'Rest' } : undefined,
+          dayType,
+          isRestDay: dayType !== 'training',
         },
       });
 
@@ -285,7 +281,6 @@ export async function seedPrograms(prisma: PrismaClient) {
             dayNumber: d.dayNumber,
             isRestDay: d.isRestDay,
             dayType: d.dayType,
-            dayFocus: d.dayFocus,
           };
         }
         const plannedWorkouts = d.plannedWorkouts.map((catalogWorkout) => {
@@ -324,12 +319,11 @@ export async function seedPrograms(prisma: PrismaClient) {
           dayNumber: d.dayNumber,
           isRestDay: d.isRestDay,
           dayType: d.dayType,
-          dayFocus: d.dayFocus,
           plannedWorkouts,
         };
       });
 
-      await createWeek(program.id, w.weekNumber, days, w.weekType ?? 'NORMAL');
+      await createWeek(program.id, w.weekNumber, days);
     }
 
     console.log(`  ✅ Program seeded: ${def.slug}`);

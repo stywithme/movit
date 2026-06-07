@@ -40,7 +40,6 @@ interface Program {
   version?: number;
   levelRangeMin?: number | null;
   levelRangeMax?: number | null;
-  prescriptionPriority?: number | null;
   /** Present on list/detail from API; used by client readiness when `autoAssignmentReadiness` is absent. */
   programAttributes?: Array<{
     mode: string;

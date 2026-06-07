@@ -37,9 +37,9 @@ import type {
   TodayPlanResponse,
   UpdateProgramInput,
   ProgramAttributeInput,
-  ProgramPhaseInput,
+  ProgramDayType,
 } from './programs.types';
-import { validatePhaseStructure } from './programs.types';
+import { validateProgramGraphRefs } from './program-graph-validation';
 
 interface LocalizedText {
   ar: string;
@@ -72,10 +72,72 @@ function generateSlug(name: { en?: string; ar?: string }): string {
     + '_' + Date.now().toString(36);
 }
 
+function normalizeProgramDayType(dayType?: string): ProgramDayType {
+  if (dayType === 'rest' || dayType === 'active_recovery') return dayType;
+  return 'training';
+}
+
+function deriveIsRestDayFromDayType(dayType?: string): boolean {
+  return normalizeProgramDayType(dayType) !== 'training';
+}
+
+function programDayScalarsFromInput(day: ProgramDayInput, dayNumber: number) {
+  const dayType = normalizeProgramDayType(day.dayType);
+  return {
+    dayNumber,
+    dayType,
+    isRestDay: deriveIsRestDayFromDayType(dayType),
+  };
+}
+
+function normalizeWeeksInput(weeks: ProgramWeekInput[] | undefined): ProgramWeekInput[] {
+  if (!weeks) return [];
+  return weeks.map((week, weekIndex) => ({
+    ...week,
+    weekNumber: weekIndex + 1,
+    sortOrder: week.sortOrder ?? weekIndex,
+    days: (week.days ?? []).map((day, dayIndex) => ({
+      ...day,
+      ...programDayScalarsFromInput(day, dayIndex + 1),
+    })),
+  }));
+}
+
+async function assertMuscleAttributeValueIds(
+  db: Pick<PrismaClient, 'attributeValue'>,
+  valueIds: string[],
+) {
+  if (valueIds.length === 0) return;
+  const uniqueIds = Array.from(new Set(valueIds));
+  const rows = await db.attributeValue.findMany({
+    where: { id: { in: uniqueIds } },
+    include: { attribute: true },
+  });
+  if (rows.length !== uniqueIds.length) {
+    throw new Error('One or more target muscle value ids are invalid');
+  }
+  const invalid = rows.find((row) => row.attribute.code !== 'muscle');
+  if (invalid) {
+    throw new Error(`Attribute value ${invalid.id} is not a muscle attribute`);
+  }
+}
+
+async function syncDayTargetMuscles(
+  tx: Prisma.TransactionClient,
+  dayId: string,
+  targetMuscleValueIds: string[] | undefined,
+) {
+  if (targetMuscleValueIds === undefined) return;
+  const uniqueIds = Array.from(new Set(targetMuscleValueIds));
+  await assertMuscleAttributeValueIds(tx, uniqueIds);
+  await tx.programDayAttribute.deleteMany({ where: { dayId } });
+  if (uniqueIds.length === 0) return;
+  await tx.programDayAttribute.createMany({
+    data: uniqueIds.map((attributeValueId) => ({ dayId, attributeValueId })),
+  });
+}
+
 const programFullInclude = {
-  phases: {
-    orderBy: { sortOrder: 'asc' as const },
-  },
   programAttributes: {
     orderBy: { createdAt: 'asc' as const },
     include: {
@@ -98,7 +160,11 @@ const programFullInclude = {
     include: {
       days: {
         orderBy: { dayNumber: 'asc' as const },
-        include: { plannedWorkouts: {
+        include: {
+          targetMuscles: {
+            include: { attributeValue: true },
+          },
+          plannedWorkouts: {
             orderBy: { sortOrder: 'asc' as const },
             include: {
               workoutTemplate: {
@@ -235,17 +301,17 @@ async function seedProgramWeeks(
   programId: string,
   weeks?: ProgramWeekInput[],
 ) {
-  if (!weeks || weeks.length === 0) return;
+  const normalized = normalizeWeeksInput(weeks);
+  if (normalized.length === 0) return;
 
-  for (const [weekIndex, week] of weeks.entries()) {
+  for (const [weekIndex, week] of normalized.entries()) {
     const createdWeek = await tx.programWeek.create({
       data: {
         programId,
-        weekNumber: week.weekNumber,
-        name: (week.name as object) || undefined,
+        weekNumber: week.weekNumber!,
+        target: (week.target as object) || undefined,
         description: (week.description as object) || undefined,
         sortOrder: week.sortOrder ?? weekIndex,
-        weekType: week.weekType ?? 'NORMAL',
       },
     });
 
@@ -253,12 +319,10 @@ async function seedProgramWeeks(
       const createdDay = await tx.programDay.create({
         data: {
           weekId: createdWeek.id,
-          dayNumber: day.dayNumber,
-          isRestDay: day.isRestDay ?? false,
-          name: (day.name as object) || undefined,
-          dayFocus: day.dayFocus ?? undefined,
+          ...programDayScalarsFromInput(day, day.dayNumber!),
         },
       });
+      await syncDayTargetMuscles(tx, createdDay.id, day.targetMuscleValueIds);
       await syncPlannedWorkouts(tx, createdDay.id, day.plannedWorkouts);
     }
   }
@@ -435,48 +499,6 @@ async function createPlannedWorkoutRecord(
   return id;
 }
 
-function buildWeeksFromPhaseMetadata(phases: ProgramPhaseInput[]): ProgramWeekInput[] {
-  const sorted = [...phases].sort(
-    (a, b) => (a.sortOrder ?? a.startWeek) - (b.sortOrder ?? b.startWeek),
-  );
-  const weeks: ProgramWeekInput[] = [];
-  for (const phase of sorted) {
-    for (let w = phase.startWeek; w <= phase.endWeek; w++) {
-      weeks.push({
-        weekNumber: w,
-        name: phase.name,
-        description: phase.description,
-        weekType: phase.weekType ?? 'NORMAL',
-        sortOrder: w - 1,
-        days: [],
-      });
-    }
-  }
-  return weeks;
-}
-
-async function syncProgramPhasesStructure(
-  tx: Prisma.TransactionClient,
-  programId: string,
-  phases: ProgramPhaseInput[],
-) {
-  await tx.programPhase.deleteMany({ where: { programId } });
-  for (let i = 0; i < phases.length; i++) {
-    const p = phases[i]!;
-    await tx.programPhase.create({
-      data: {
-        programId,
-        name: p.name as object,
-        description: (p.description as object) || undefined,
-        weekType: p.weekType ?? 'NORMAL',
-        startWeek: p.startWeek,
-        endWeek: p.endWeek,
-        sortOrder: p.sortOrder ?? i,
-      },
-    });
-  }
-}
-
 async function syncPlannedWorkoutItems(
   tx: Prisma.TransactionClient,
   plannedWorkoutId: string,
@@ -586,24 +608,18 @@ async function syncDays(
       }
       await tx.programDay.update({
         where: { id: day.id },
-        data: {
-          dayNumber: day.dayNumber,
-          isRestDay: day.isRestDay ?? false,
-          name: (day.name as object) || undefined,
-          dayFocus: day.dayFocus ?? undefined,
-        },
+        data: programDayScalarsFromInput(day, day.dayNumber!),
       });
+      await syncDayTargetMuscles(tx, day.id, day.targetMuscleValueIds);
       await syncPlannedWorkouts(tx, day.id, day.plannedWorkouts);
     } else {
       const createdDay = await tx.programDay.create({
         data: {
           weekId,
-          dayNumber: day.dayNumber,
-          isRestDay: day.isRestDay ?? false,
-          name: (day.name as object) || undefined,
-          dayFocus: day.dayFocus ?? undefined,
+          ...programDayScalarsFromInput(day, day.dayNumber!),
         },
       });
+      await syncDayTargetMuscles(tx, createdDay.id, day.targetMuscleValueIds);
       await syncPlannedWorkouts(tx, createdDay.id, day.plannedWorkouts);
     }
   }
@@ -618,19 +634,20 @@ async function syncProgramWeeksStructure(
   programId: string,
   weeksIn: ProgramWeekInput[],
 ) {
+  const weeks = normalizeWeeksInput(weeksIn);
   const existingRows = await tx.programWeek.findMany({
     where: { programId },
     select: { id: true },
   });
   const validWeekIds = new Set(existingRows.map((w) => w.id));
 
-  for (const week of weeksIn) {
+  for (const week of weeks) {
     if (week.id && !validWeekIds.has(week.id)) {
       throw new Error(`Invalid program week id for this program: ${week.id}`);
     }
   }
 
-  const payloadWeekIds = new Set(weeksIn.map((w) => w.id).filter(Boolean) as string[]);
+  const payloadWeekIds = new Set(weeks.map((w) => w.id).filter(Boolean) as string[]);
   const weekIdsToDelete = existingRows.map((w) => w.id).filter((wid) => !payloadWeekIds.has(wid));
   if (weekIdsToDelete.length > 0) {
     await tx.programWeek.deleteMany({
@@ -644,28 +661,27 @@ async function syncProgramWeeksStructure(
   });
   const validAfterDelete = new Set(refreshed.map((w) => w.id));
 
-  const existingWeeksInPayload = weeksIn.filter((w) => w.id && validAfterDelete.has(w.id));
+  const existingWeeksInPayload = weeks.filter((w) => w.id && validAfterDelete.has(w.id));
   for (const week of existingWeeksInPayload) {
     await tx.programWeek.update({
       where: { id: week.id! },
       data: {
-        weekNumber: week.weekNumber + WEEK_NUMBER_TEMP_OFFSET,
+        weekNumber: week.weekNumber! + WEEK_NUMBER_TEMP_OFFSET,
         sortOrder: week.sortOrder ?? 0,
       },
     });
   }
 
-  for (const week of weeksIn) {
+  for (const week of weeks) {
     const sortOrder = week.sortOrder ?? 0;
     if (week.id && validAfterDelete.has(week.id)) {
       await tx.programWeek.update({
         where: { id: week.id },
         data: {
-          weekNumber: week.weekNumber,
-          name: (week.name as object) || undefined,
+          weekNumber: week.weekNumber!,
+          target: (week.target as object) || undefined,
           description: (week.description as object) || undefined,
           sortOrder,
-          weekType: week.weekType ?? 'NORMAL',
         },
       });
       await syncDays(tx, week.id, week.days);
@@ -673,23 +689,20 @@ async function syncProgramWeeksStructure(
       const createdWeek = await tx.programWeek.create({
         data: {
           programId,
-          weekNumber: week.weekNumber,
-          name: (week.name as object) || undefined,
+          weekNumber: week.weekNumber!,
+          target: (week.target as object) || undefined,
           description: (week.description as object) || undefined,
           sortOrder,
-          weekType: week.weekType ?? 'NORMAL',
         },
       });
       for (const day of week.days ?? []) {
         const createdDay = await tx.programDay.create({
           data: {
             weekId: createdWeek.id,
-            dayNumber: day.dayNumber,
-            isRestDay: day.isRestDay ?? false,
-            name: (day.name as object) || undefined,
-            dayFocus: day.dayFocus ?? undefined,
+            ...programDayScalarsFromInput(day, day.dayNumber!),
           },
         });
+        await syncDayTargetMuscles(tx, createdDay.id, day.targetMuscleValueIds);
         await syncPlannedWorkouts(tx, createdDay.id, day.plannedWorkouts);
       }
     }
@@ -739,7 +752,98 @@ async function batchActiveEnrollmentCounts(
   );
 }
 
+function formatMapProgramRow(
+  program: Program & {
+    levelMin?: { number: number } | null;
+    levelMax?: { number: number } | null;
+  },
+  activeEnrollmentCount: number,
+) {
+  const base = enrichProgramListRow(program, activeEnrollmentCount);
+  return {
+    ...base,
+    levelRangeMin: program.levelMin?.number ?? null,
+    levelRangeMax: program.levelMax?.number ?? null,
+  };
+}
+
 export const programService = {
+  /**
+   * Programs map payload: all non-deleted programs plus chain target metadata
+   * for next/prerequisite refs (including targets outside the main list).
+   */
+  async getMapData() {
+    const prisma = await getPrisma();
+
+    const rows = await prisma.program.findMany({
+      where: { deletedAt: null },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        levelMin: { select: { number: true } },
+        levelMax: { select: { number: true } },
+        programAttributes: {
+          orderBy: { createdAt: 'asc' },
+          include: {
+            attributeValue: { include: { attribute: true } },
+          },
+        },
+      },
+    });
+
+    const refIds = new Set<string>();
+    for (const program of rows) {
+      if (program.nextProgramId) refIds.add(program.nextProgramId);
+      if (program.prerequisiteProgramId) refIds.add(program.prerequisiteProgramId);
+    }
+
+    const chainTargetRows =
+      refIds.size > 0
+        ? await prisma.program.findMany({
+            where: { id: { in: [...refIds] } },
+            select: {
+              id: true,
+              slug: true,
+              name: true,
+              isPublished: true,
+              deletedAt: true,
+            },
+          })
+        : [];
+
+    const counts = await batchActiveEnrollmentCounts(
+      prisma,
+      rows.map((r) => r.id),
+    );
+
+    const chainTargets: Record<
+      string,
+      {
+        id: string;
+        slug: string;
+        name: LocalizedText;
+        isPublished: boolean;
+        deletedAt: string | null;
+      }
+    > = {};
+
+    for (const target of chainTargetRows) {
+      chainTargets[target.id] = {
+        id: target.id,
+        slug: target.slug,
+        name: parseLocalizedText(target.name) || { ar: '', en: '' },
+        isPublished: target.isPublished,
+        deletedAt: target.deletedAt?.toISOString() ?? null,
+      };
+    }
+
+    return {
+      programs: rows.map((program) =>
+        formatMapProgramRow(program, counts.get(program.id) ?? 0),
+      ),
+      chainTargets,
+    };
+  },
+
   async list(filters?: {
     status?: 'draft' | 'published';
     search?: string;
@@ -877,14 +981,12 @@ export const programService = {
     const prisma = await getPrisma();
     const slug = data.slug || generateSlug(data.name);
 
-    let effectiveWeeks = data.weeks;
-    if (data.phases && data.phases.length > 0) {
-      const phaseValidation = validatePhaseStructure(data.phases, data.durationWeeks);
-      if (!phaseValidation.valid) {
-        throw new Error(`Invalid phases: ${phaseValidation.errors.join('; ')}`);
-      }
-      effectiveWeeks = data.weeks ?? buildWeeksFromPhaseMetadata(data.phases);
-    }
+    const effectiveWeeks = normalizeWeeksInput(data.weeks);
+
+    await validateProgramGraphRefs(prisma, '', {
+      nextProgramId: data.nextProgramId,
+      prerequisiteProgramId: data.prerequisiteProgramId,
+    });
 
     const programId = await prisma.$transaction(async (tx) => {
       const resolvedLevels = await resolveProgramLevelIds(tx, data);
@@ -918,17 +1020,12 @@ export const programService = {
           estimatedWorkoutMinutes: data.estimatedWorkoutMinutes ?? undefined,
           levelMinId: resolvedLevels.levelMinId,
           levelMaxId: resolvedLevels.levelMaxId,
-          prescriptionPriority: data.prescriptionPriority ?? 100,
           prerequisiteProgramId: data.prerequisiteProgramId ?? undefined,
           nextProgramId: data.nextProgramId ?? undefined,
         },
       });
 
       await seedProgramWeeks(tx, program.id, effectiveWeeks);
-
-      if (data.phases && data.phases.length > 0) {
-        await syncProgramPhasesStructure(tx, program.id, data.phases);
-      }
 
       if (data.programAttributes !== undefined) {
         await replaceProgramAttributes(tx, program.id, data.programAttributes);
@@ -943,6 +1040,35 @@ export const programService = {
 
   async update(id: string, data: UpdateProgramInput, updatedBy?: string) {
     const prisma = await getPrisma();
+
+    const current = await prisma.program.findFirst({
+      where: { id, deletedAt: null },
+      select: { nextProgramId: true, prerequisiteProgramId: true, isPublished: true },
+    });
+    if (!current) throw new Error('Program not found');
+
+    const graphRefsTouched =
+      data.nextProgramId !== undefined ||
+      data.prerequisiteProgramId !== undefined ||
+      data.isPublished === true;
+
+    if (graphRefsTouched) {
+      await validateProgramGraphRefs(
+        prisma,
+        id,
+        {
+          nextProgramId:
+            data.nextProgramId !== undefined ? data.nextProgramId : current.nextProgramId,
+          prerequisiteProgramId:
+            data.prerequisiteProgramId !== undefined
+              ? data.prerequisiteProgramId
+              : current.prerequisiteProgramId,
+        },
+        {
+          requirePublishedTargets: data.isPublished === true || current.isPublished,
+        },
+      );
+    }
 
     const updateData: Record<string, unknown> = {
       updatedBy,
@@ -981,7 +1107,6 @@ export const programService = {
         updateData.levelMaxId = resolvedLevels.levelMaxId ?? null;
       }
     }
-    if (data.prescriptionPriority !== undefined) updateData.prescriptionPriority = data.prescriptionPriority;
     if (data.prerequisiteProgramId !== undefined) updateData.prerequisiteProgramId = data.prerequisiteProgramId;
     if (data.nextProgramId !== undefined) updateData.nextProgramId = data.nextProgramId;
 
@@ -990,22 +1115,6 @@ export const programService = {
         where: { id },
         data: updateData as Prisma.ProgramUpdateInput,
       });
-
-      if (data.phases !== undefined) {
-        const prog = await tx.program.findUnique({
-          where: { id },
-          select: { durationWeeks: true },
-        });
-        const durationWeeks = data.durationWeeks ?? prog?.durationWeeks;
-        if (!durationWeeks) {
-          throw new Error('durationWeeks required to validate program phases');
-        }
-        const phaseValidation = validatePhaseStructure(data.phases, durationWeeks);
-        if (!phaseValidation.valid) {
-          throw new Error(`Invalid phases: ${phaseValidation.errors.join('; ')}`);
-        }
-        await syncProgramPhasesStructure(tx, id, data.phases);
-      }
 
       if (data.weeks !== undefined) {
         await syncProgramWeeksStructure(tx, id, data.weeks);
@@ -1059,6 +1168,16 @@ export const programService = {
       }
     }
 
+    await validateProgramGraphRefs(
+      prisma,
+      id,
+      {
+        nextProgramId: program.nextProgramId,
+        prerequisiteProgramId: program.prerequisiteProgramId,
+      },
+      { requirePublishedTargets: true },
+    );
+
     return prisma.program.update({
       where: { id },
       data: {
@@ -1089,15 +1208,13 @@ export const programService = {
 
     const weeks = original.weeks.map((week, weekIndex) => ({
       weekNumber: week.weekNumber,
-      weekType: week.weekType,
-      name: parseLocalizedText(week.name),
+      target: parseLocalizedText(week.target),
       description: parseLocalizedText(week.description),
       sortOrder: week.sortOrder ?? weekIndex,
       days: week.days.map((day) => ({
         dayNumber: day.dayNumber,
-        isRestDay: day.isRestDay,
-        name: parseLocalizedText(day.name),
-        dayFocus: day.dayFocus ?? undefined,
+        dayType: normalizeProgramDayType(day.dayType),
+        targetMuscleValueIds: day.targetMuscles?.map((m) => m.attributeValueId) ?? [],
         plannedWorkouts: day.plannedWorkouts.map((plannedWorkout, plannedWorkoutIndex) =>
           plannedWorkoutInputFromTemplate(plannedWorkout as PlannedWorkoutWithTemplate, plannedWorkoutIndex),
         ),
@@ -1122,7 +1239,6 @@ export const programService = {
         estimatedWorkoutMinutes: original.estimatedWorkoutMinutes ?? undefined,
         levelMinId: original.levelMinId,
         levelMaxId: original.levelMaxId,
-        prescriptionPriority: original.prescriptionPriority,
         prerequisiteProgramId: original.prerequisiteProgramId ?? undefined,
         nextProgramId: original.nextProgramId ?? undefined,
         programAttributes: original.programAttributes?.map((pa) => ({
@@ -1137,27 +1253,25 @@ export const programService = {
 
   async createWeek(programId: string, week: ProgramWeekInput) {
     const prisma = await getPrisma();
+    const normalized = normalizeWeeksInput([week])[0]!;
     const weekId = await prisma.$transaction(async (tx) => {
       const createdWeek = await tx.programWeek.create({
         data: {
           programId,
-          weekNumber: week.weekNumber,
-          weekType: week.weekType ?? 'NORMAL',
-          name: (week.name as object) || undefined,
-          description: (week.description as object) || undefined,
-          sortOrder: week.sortOrder ?? 0,
+          weekNumber: normalized.weekNumber!,
+          target: (normalized.target as object) || undefined,
+          description: (normalized.description as object) || undefined,
+          sortOrder: normalized.sortOrder ?? 0,
         },
       });
-      for (const day of week.days ?? []) {
+      for (const day of normalized.days ?? []) {
         const createdDay = await tx.programDay.create({
           data: {
             weekId: createdWeek.id,
-            dayNumber: day.dayNumber,
-            isRestDay: day.isRestDay ?? false,
-            name: (day.name as object) || undefined,
-            dayFocus: day.dayFocus ?? undefined,
+            ...programDayScalarsFromInput(day, day.dayNumber!),
           },
         });
+        await syncDayTargetMuscles(tx, createdDay.id, day.targetMuscleValueIds);
         await syncPlannedWorkouts(tx, createdDay.id, day.plannedWorkouts);
       }
       return createdWeek.id;
@@ -1170,30 +1284,34 @@ export const programService = {
     const existing = await prisma.programWeek.findFirst({ where: { id: weekId, programId } });
     if (!existing) return null;
 
+    const normalizedDays = week.days
+      ? (week.days ?? []).map((day, dayIndex) => ({
+          ...day,
+          ...programDayScalarsFromInput(day, dayIndex + 1),
+        }))
+      : undefined;
+
     await prisma.programWeek.update({
       where: { id: weekId },
       data: {
         weekNumber: week.weekNumber ?? existing.weekNumber,
-        weekType: week.weekType ?? existing.weekType,
-        name: week.name ? (week.name as object) : undefined,
+        target: week.target ? (week.target as object) : undefined,
         description: week.description ? (week.description as object) : undefined,
         sortOrder: week.sortOrder ?? existing.sortOrder,
       },
     });
 
-    if (week.days !== undefined) {
+    if (normalizedDays !== undefined) {
       await prisma.$transaction(async (tx) => {
         await tx.programDay.deleteMany({ where: { weekId } });
-        for (const day of week.days ?? []) {
+        for (const day of normalizedDays) {
           const createdDay = await tx.programDay.create({
             data: {
               weekId,
-              dayNumber: day.dayNumber,
-              isRestDay: day.isRestDay ?? false,
-              name: (day.name as object) || undefined,
-              dayFocus: day.dayFocus ?? undefined,
+              ...programDayScalarsFromInput(day, day.dayNumber!),
             },
           });
+          await syncDayTargetMuscles(tx, createdDay.id, day.targetMuscleValueIds);
           await syncPlannedWorkouts(tx, createdDay.id, day.plannedWorkouts);
         }
       });
@@ -1240,8 +1358,7 @@ export const programService = {
         data: {
           programId,
           weekNumber: targetWeekNumber,
-          weekType: sourceWeek.weekType,
-          name: toInputJsonOrNull(sourceWeek.name),
+          target: toInputJsonOrNull(sourceWeek.target),
           description: toInputJsonOrNull(sourceWeek.description),
           sortOrder: sourceWeek.sortOrder,
         },
@@ -1252,11 +1369,23 @@ export const programService = {
           data: {
             weekId: createdWeek.id,
             dayNumber: day.dayNumber,
+            dayType: day.dayType,
             isRestDay: day.isRestDay,
-            name: toInputJsonOrNull(day.name),
-            dayFocus: day.dayFocus ?? undefined,
           },
         });
+
+        const sourceMuscles = await tx.programDayAttribute.findMany({
+          where: { dayId: day.id },
+          select: { attributeValueId: true },
+        });
+        if (sourceMuscles.length > 0) {
+          await tx.programDayAttribute.createMany({
+            data: sourceMuscles.map((m) => ({
+              dayId: createdDay.id,
+              attributeValueId: m.attributeValueId,
+            })),
+          });
+        }
 
         for (const [pwIndex, plannedWorkout] of day.plannedWorkouts.entries()) {
           const newPwId = randomUUID();
@@ -1291,15 +1420,14 @@ export const programService = {
     if (!week) return null;
 
     const dayId = await prisma.$transaction(async (tx) => {
+      const scalars = programDayScalarsFromInput(day, day.dayNumber ?? 1);
       const createdDay = await tx.programDay.create({
         data: {
           weekId,
-          dayNumber: day.dayNumber,
-          isRestDay: day.isRestDay ?? false,
-          name: (day.name as object) || undefined,
-          dayFocus: day.dayFocus ?? undefined,
+          ...scalars,
         },
       });
+      await syncDayTargetMuscles(tx, createdDay.id, day.targetMuscleValueIds);
       await syncPlannedWorkouts(tx, createdDay.id, day.plannedWorkouts);
       return createdDay.id;
     });
@@ -1315,21 +1443,22 @@ export const programService = {
     });
     if (!existing) return null;
 
+    const dayNumber = day.dayNumber ?? existing.dayNumber;
     await prisma.programDay.update({
       where: { id: dayId },
-      data: {
-        dayNumber: day.dayNumber ?? existing.dayNumber,
-        isRestDay: day.isRestDay ?? existing.isRestDay,
-        name: day.name ? (day.name as object) : undefined,
-        dayFocus: day.dayFocus !== undefined ? day.dayFocus : undefined,
-      },
+      data: day.dayType !== undefined
+        ? programDayScalarsFromInput(day, dayNumber)
+        : { dayNumber },
     });
 
-    if (day.plannedWorkouts !== undefined) {
-      await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx) => {
+      if (day.targetMuscleValueIds !== undefined) {
+        await syncDayTargetMuscles(tx, dayId, day.targetMuscleValueIds);
+      }
+      if (day.plannedWorkouts !== undefined) {
         await syncPlannedWorkouts(tx, dayId, day.plannedWorkouts);
-      });
-    }
+      }
+    });
 
     const program = await this.getById(programId);
     return program?.weeks.flatMap((w) => w.days).find((d) => d.id === dayId) ?? null;
@@ -1652,12 +1781,16 @@ export const programService = {
       isFeatured: program.isFeatured ?? undefined,
       weeks: program.weeks.map((week) => ({
         weekNumber: week.weekNumber,
-        name: parseLocalizedText(week.name),
+        target: parseLocalizedText(week.target),
         description: parseLocalizedText(week.description),
         days: week.days.map((day) => ({
           dayNumber: day.dayNumber,
+          dayType: normalizeProgramDayType(day.dayType),
           isRestDay: day.isRestDay,
-          name: parseLocalizedText(day.name),
+          targetMuscles: (day.targetMuscles ?? []).map((link) => ({
+            code: link.attributeValue.code,
+            name: parseLocalizedText(link.attributeValue.name) || { ar: '', en: link.attributeValue.code },
+          })),
           plannedWorkouts: day.plannedWorkouts.map((plannedWorkout) =>
             exportPlannedWorkout(plannedWorkout as PlannedWorkoutWithTemplate),
           ),

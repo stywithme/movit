@@ -1,4 +1,5 @@
 import type { LocalizedText } from '@/lib/types/localized';
+import type { ProgramDayType } from './program-calendar';
 
 /** Minimal week/day/planned-workout shapes used by program editor pages (subset of WeekForm/DayForm). */
 export interface EditorPlannedWorkoutLike {
@@ -12,9 +13,9 @@ export interface EditorPlannedWorkoutLike {
 export interface EditorDayLike {
   id?: string;
   dayNumber: number;
+  dayType: ProgramDayType;
   isRestDay: boolean;
-  name: LocalizedText;
-  dayFocus?: string;
+  targetMuscleIds: string[];
   plannedWorkouts: EditorPlannedWorkoutLike[];
 }
 
@@ -26,9 +27,9 @@ export interface EditorWeekLike {
 function createPlaceholderDay(dayNumber: number): EditorDayLike {
   return {
     dayNumber,
+    dayType: 'training',
     isRestDay: false,
-    name: { ar: '', en: '' },
-    dayFocus: '',
+    targetMuscleIds: [],
     plannedWorkouts: [],
   };
 }

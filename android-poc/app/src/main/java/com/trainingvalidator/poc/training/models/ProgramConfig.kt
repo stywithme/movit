@@ -34,17 +34,23 @@ data class ProgramLevelConfig(
 
 data class ProgramWeek(
     val weekNumber: Int,
-    val name: LocalizedText? = null,
+    val target: LocalizedText? = null,
     val description: LocalizedText? = null,
     @SerializedName("days") private val daysField: List<ProgramDay>? = null
 ) {
     val days: List<ProgramDay> get() = daysField.orEmpty()
 }
 
+data class MuscleRef(
+    val code: String,
+    val name: LocalizedText = LocalizedText()
+)
+
 data class ProgramDay(
     val dayNumber: Int,
+    val dayType: String = "training",
     val isRestDay: Boolean = false,
-    val name: LocalizedText? = null,
+    val targetMuscles: List<MuscleRef> = emptyList(),
     @SerializedName("plannedWorkouts") private val plannedWorkoutsField: List<ProgramWorkout>? = null,
     @SerializedName("sessions") private val legacySessionsField: List<ProgramWorkout>? = null
 ) {

@@ -51,15 +51,18 @@ export function validateCalendarProgramStructure(
     if (!week) {
       throw new Error(`Calendar-based program: missing week ${wn} of ${durationWeeks}`);
     }
+    if (week.days.length < 1) {
+      throw new Error(`Calendar-based program: week ${wn} must have at least one day`);
+    }
     const trainingDays = week.days.filter((d) => isProgramTrainingDaySlot(d));
     if (trainingDays.length < 1) {
       throw new Error(`Calendar-based program: week ${wn} must have at least one training day`);
     }
-    const nums = trainingDays.map((d) => d.dayNumber).sort((a, b) => a - b);
+    const nums = week.days.map((d) => d.dayNumber).sort((a, b) => a - b);
     for (let i = 0; i < nums.length; i++) {
       if (nums[i] !== i + 1) {
         throw new Error(
-          `Calendar-based program: week ${wn} training days must use dayNumber 1..N sequentially, got ${nums.join(',')}`,
+          `Calendar-based program: week ${wn} days must use dayNumber 1..N sequentially, got ${nums.join(',')}`,
         );
       }
     }

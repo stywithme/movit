@@ -20,7 +20,6 @@ describe('program-assignment', () => {
       programType: 'SYSTEM',
       levelRangeMin: 1,
       levelRangeMax: 3,
-      prescriptionPriority: 50,
       programAttributes: [],
     });
     expect(missing).toContain('programAttributes');
@@ -32,7 +31,6 @@ describe('program-assignment', () => {
       programType: 'SYSTEM',
       levelRangeMin: 1,
       levelRangeMax: 3,
-      prescriptionPriority: 50,
       programAttributes: [domainTraining, goalStrength],
     });
     expect(readiness.ready).toBe(true);
@@ -44,7 +42,6 @@ describe('program-assignment', () => {
       programType: 'SYSTEM',
       levelRangeMin: 1,
       levelRangeMax: 3,
-      prescriptionPriority: 50,
       programAttributes: [
         { mode: 'OPTIONAL', attributeValue: { code: 'pd_training', attribute: { code: 'domain' } } },
         goalStrength,
@@ -58,7 +55,6 @@ describe('program-assignment', () => {
       programType: 'SYSTEM',
       levelRangeMin: 1,
       levelRangeMax: 3,
-      prescriptionPriority: 50,
       programAttributes: [
         domainTraining,
         { mode: 'OPTIONAL', attributeValue: { code: 'pg_strength', attribute: { code: 'goal' } } },
@@ -73,7 +69,6 @@ describe('program-assignment', () => {
       programType: 'CUSTOM',
       levelRangeMin: 1,
       levelRangeMax: 2,
-      prescriptionPriority: 50,
       programAttributes: [domainTraining, goalStrength],
     });
     expect(eligible).toBe(false);

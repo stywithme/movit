@@ -58,6 +58,7 @@ import android.widget.Toast
 import com.trainingvalidator.poc.assessment.models.AssessmentType
 import com.trainingvalidator.poc.assessment.ui.PreScreeningActivity
 import com.trainingvalidator.poc.network.ApiClient
+import com.trainingvalidator.poc.network.TrainModeData
 import com.trainingvalidator.poc.storage.HomeRepository
 
 /**
@@ -77,6 +78,7 @@ class TrainFragment : Fragment() {
     private lateinit var reportStore: ProgramWorkoutReportStore
     private lateinit var customizationStore: DayCustomizationStore
     private lateinit var reportRepo: ReportRepository
+    private lateinit var homeRepo: HomeRepository
 
     private var expandedPlannedWorkoutIndex = 0
     private var isFirstLoad = true
@@ -123,11 +125,13 @@ class TrainFragment : Fragment() {
                 reportStore = ProgramWorkoutReportStore(requireContext())
                 customizationStore = DayCustomizationStore(requireContext())
                 reportRepo = ReportRepository.getInstance(requireContext())
+                homeRepo = HomeRepository.getInstance(requireContext())
 
                 withContext(Dispatchers.IO) {
                     programRepo.initialize()
                     exerciseRepo.initialize(autoSync = false)
                     exerciseRepo.checkForUpdates()
+                    homeRepo.syncFromServer()
                     programRepo.reloadFromCache()
                 }
 
@@ -184,6 +188,7 @@ class TrainFragment : Fragment() {
             reportStore = ProgramWorkoutReportStore(requireContext())
             customizationStore = DayCustomizationStore(requireContext())
             reportRepo = ReportRepository.getInstance(requireContext())
+            homeRepo = HomeRepository.getInstance(requireContext())
 
             withContext(Dispatchers.IO) {
                 programRepo.initialize()
@@ -198,12 +203,53 @@ class TrainFragment : Fragment() {
     }
 
     private fun renderCurrentState() {
-        val activeProgram = programRepo.getActiveProgram()
+        val trainMode = homeRepo.getCachedData()?.trainMode
+        if (trainMode != null) {
+            renderFromTrainMode(trainMode)
+            return
+        }
 
+        // Offline fallback only when home cache is unavailable
+        val activeProgram = programRepo.getActiveProgram()
         if (activeProgram != null) {
-            showActiveProgramState(activeProgram)
+            showActiveProgramState(activeProgram, trainMode = null)
         } else {
             showBrowseState()
+        }
+    }
+
+    /** Server-driven UI — mirrors HomeFragment trainMode handling. */
+    private fun renderFromTrainMode(trainMode: TrainModeData) {
+        when (trainMode.status) {
+            "no_assessment" -> showBrowseState(
+                title = getString(R.string.home_no_assessment_title),
+                subtitle = getString(R.string.home_no_assessment_subtitle),
+            )
+            "no_plan" -> showBrowseState(
+                title = getString(R.string.home_plan_generating_title),
+                subtitle = getString(R.string.home_plan_generating_subtitle),
+            )
+            "reassessment_due" -> showBrowseState(
+                title = getString(R.string.reassessment_due_title),
+                subtitle = getString(R.string.reassessment_due_subtitle),
+            )
+            "program_complete" -> {
+                val program = trainMode.activeProgram?.id?.let { programRepo.getProgramById(it) }
+                if (program != null) showProgramComplete(program)
+                else showBrowseState(
+                    title = getString(R.string.pg_complete_title),
+                    subtitle = getString(R.string.pg_complete_subtitle),
+                )
+            }
+            "active", "rest_day" -> {
+                val program = trainMode.activeProgram?.id?.let { programRepo.getProgramById(it) }
+                if (program != null) showActiveProgramState(program, trainMode)
+                else showBrowseState(
+                    title = getString(R.string.home_plan_generating_title),
+                    subtitle = getString(R.string.home_plan_generating_subtitle),
+                )
+            }
+            else -> showBrowseState()
         }
     }
 
@@ -242,6 +288,7 @@ class TrainFragment : Fragment() {
                 }
 
                 withContext(Dispatchers.IO) {
+                    homeRepo.syncFromServer()
                     programRepo.reloadFromCache()
                 }
                 renderCurrentState()
@@ -285,9 +332,19 @@ class TrainFragment : Fragment() {
     // STATE 1: Browse Programs (No Active Program)
     // -----------------------------------------------------------
 
-    private fun showBrowseState() {
+    private fun showBrowseState(
+        title: String? = null,
+        subtitle: String? = null,
+    ) {
         binding.layoutNoProgramState.visibility = View.VISIBLE
         binding.layoutActiveProgramState.visibility = View.GONE
+        binding.cardProgramComplete.visibility = View.GONE
+
+        val headerLayout = binding.layoutNoProgramState.getChildAt(0) as? LinearLayout
+        val titleTv = headerLayout?.getChildAt(0) as? TextView
+        val subtitleTv = headerLayout?.getChildAt(1) as? TextView
+        titleTv?.text = title ?: getString(R.string.pg_browse_title)
+        subtitleTv?.text = subtitle ?: getString(R.string.pg_browse_subtitle)
 
         val allPrograms = programRepo.getAllPrograms()
         val rv = binding.rvProgramList
@@ -299,7 +356,7 @@ class TrainFragment : Fragment() {
     // STATE 2: Active Program Dashboard
     // -----------------------------------------------------------
 
-    private fun showActiveProgramState(program: ProgramConfig) {
+    private fun showActiveProgramState(program: ProgramConfig, trainMode: TrainModeData?) {
         binding.layoutNoProgramState.visibility = View.GONE
         binding.layoutActiveProgramState.visibility = View.VISIBLE
         binding.cardProgramComplete.visibility = View.GONE
@@ -307,14 +364,44 @@ class TrainFragment : Fragment() {
         reportStore.migrateFromSharedPreferences(requireContext())
 
         val language = requireContext().currentLanguage
-
         val userProgram = programRepo.getActiveUserProgramExport()
+
+        if (trainMode != null) {
+            when (trainMode.status) {
+                "program_complete" -> {
+                    showProgramComplete(program)
+                    return
+                }
+                "active", "rest_day" -> {
+                    val resolved = resolveServerWeekDay(program, trainMode) ?: run {
+                        showProgramComplete(program)
+                        return
+                    }
+                    val (week, day) = resolved
+                    renderIdentityCard(program, week, day)
+                    renderWeekCalendar(program, week, day, userProgram, highlightByProgramDay = true)
+                    if (trainMode.status == "rest_day") {
+                        renderRestDayFromServer(program, week, day, trainMode, language)
+                    } else {
+                        renderTodaySection(program, week, day, language)
+                    }
+                    renderReportSummary(program)
+                    binding.btnBrowseAllPrograms.setOnClickListener { openProgramList() }
+                    return
+                }
+                else -> {
+                    renderFromTrainMode(trainMode)
+                    return
+                }
+            }
+        }
+
+        // Offline fallback when trainMode is unavailable
         val currentRef = if (userProgram != null) {
             ProgramDayCalculator.getCurrentDay(program, userProgram)
         } else {
             null
         }
-
         if (currentRef == null || currentRef.isProgramComplete) {
             showProgramComplete(program)
             return
@@ -322,13 +409,54 @@ class TrainFragment : Fragment() {
 
         val week = currentRef.week
         val day = currentRef.day
-
         renderIdentityCard(program, week, day)
-        renderWeekCalendar(program, week, day, userProgram)
+        renderWeekCalendar(program, week, day, userProgram, highlightByProgramDay = false)
         renderTodaySection(program, week, day, language)
         renderReportSummary(program)
-
         binding.btnBrowseAllPrograms.setOnClickListener { openProgramList() }
+    }
+
+    /** Server position only — no local calculator fallback. */
+    private fun resolveServerWeekDay(
+        program: ProgramConfig,
+        trainMode: TrainModeData,
+    ): Pair<ProgramWeek, ProgramDay>? {
+        val active = trainMode.activeProgram ?: return null
+        if (active.id != program.id) return null
+        val week = program.weeks.find { it.weekNumber == active.weekNumber } ?: return null
+        val day = week.days.find { it.dayNumber == active.dayNumber } ?: return null
+        return week to day
+    }
+
+    private fun renderRestDayFromServer(
+        program: ProgramConfig,
+        week: ProgramWeek,
+        day: ProgramDay,
+        trainMode: TrainModeData,
+        language: String
+    ) {
+        binding.tvTodayHeader.text = when (trainMode.dayType) {
+            "day_complete" -> getString(R.string.pg_today_rest)
+            "off_schedule" -> getString(R.string.pg_today_rest)
+            else -> getString(R.string.pg_today_rest)
+        }
+        binding.layoutTodayWorkouts.removeAllViews()
+        binding.cardDayComplete.visibility = View.GONE
+        binding.cardRestDay.visibility = View.VISIBLE
+
+        val tomorrowDay = findTomorrowDay(program, week, day)
+        if (tomorrowDay != null) {
+            val tomorrowName = getString(R.string.programs_day_title_format, tomorrowDay.dayNumber)
+            val exerciseCount = tomorrowDay.workouts.sumOf { w ->
+                w.items.count { it.type == PlannedWorkoutItemType.EXERCISE }
+            }
+            binding.tvRestDayTomorrow.text = getString(
+                R.string.pg_rest_tomorrow_format, tomorrowName, exerciseCount
+            )
+            binding.tvRestDayTomorrow.visibility = View.VISIBLE
+        } else {
+            binding.tvRestDayTomorrow.visibility = View.GONE
+        }
     }
 
     // -----------------------------------------------------
@@ -375,7 +503,8 @@ class TrainFragment : Fragment() {
         program: ProgramConfig,
         week: ProgramWeek,
         currentDay: ProgramDay,
-        userProgram: UserProgramExport? = null
+        userProgram: UserProgramExport? = null,
+        highlightByProgramDay: Boolean = false
     ) {
         binding.tvWeekTitle.text = getString(R.string.pg_week_format, week.weekNumber)
         binding.layoutWeekCalendar.removeAllViews()
@@ -403,7 +532,11 @@ class TrainFragment : Fragment() {
                 ?.let { date -> Calendar.getInstance().apply { time = date } }
                 ?: calculateDateFromSaturdayStart(fallbackWeekStartSaturday, dayNumber)
             val calendarDate = realDate.get(Calendar.DAY_OF_MONTH)
-            val isToday = isSameDay(realDate, today)
+            val isToday = if (highlightByProgramDay) {
+                dayNumber == currentDay.dayNumber
+            } else {
+                isSameDay(realDate, today)
+            }
             val isPast = realDate.before(today) && !isToday
 
             val hasPlannedWorkouts = day != null && !day.isRestDay && day.workouts.isNotEmpty()
@@ -546,8 +679,7 @@ class TrainFragment : Fragment() {
             binding.cardRestDay.visibility = View.VISIBLE
             val tomorrowDay = findTomorrowDay(program, week, day)
             if (tomorrowDay != null) {
-                val tomorrowName = tomorrowDay.name?.get(language)?.ifBlank { tomorrowDay.name.en }
-                    ?: getString(R.string.programs_day_title_format, tomorrowDay.dayNumber)
+                val tomorrowName = getString(R.string.programs_day_title_format, tomorrowDay.dayNumber)
                 val exerciseCount = tomorrowDay.workouts.sumOf { w -> w.items.count { it.type == PlannedWorkoutItemType.EXERCISE } }
                 binding.tvRestDayTomorrow.text = getString(
                     R.string.pg_rest_tomorrow_format, tomorrowName, exerciseCount
@@ -884,8 +1016,11 @@ class TrainFragment : Fragment() {
         val tvRestHint = sheet.findViewById<TextView>(R.id.tvDayRestHint)
 
         val language = requireContext().currentLanguage
-        val dayTitle = day.name?.get(language)?.ifBlank { day.name.en }
-            ?: getString(R.string.programs_day_title_only, day.dayNumber)
+        val muscleLabel = day.targetMuscles
+            .map { it.name.get(language).ifBlank { it.name.en }.ifBlank { it.code } }
+            .filter { it.isNotBlank() }
+            .joinToString(", ")
+        val dayTitle = muscleLabel.ifBlank { getString(R.string.programs_day_title_only, day.dayNumber) }
         tvTitle.text = getString(R.string.programs_day_detail_title_format, dayTitle)
 
         val effectivePlannedWorkoutsSheet = customizationStore.getEffectivePlannedWorkouts(

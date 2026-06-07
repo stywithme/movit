@@ -23,6 +23,7 @@ import {
   countTrainingDaySlots,
 } from './plan-position';
 import { prescriptionService } from '@/modules/prescription/prescription.service';
+import { assertEnrollableProgram } from '@/modules/programs/program-graph-validation';
 import { programCompletionService } from '@/modules/programs/program-completion.service';
 import type { ProgramCompletionDecision } from '@/modules/programs/program-completion.service';
 import {
@@ -286,6 +287,8 @@ export const activePlanService = {
     options?: EnrollProgramOptions,
   ): Promise<ActivePlanData> {
     const prisma = await getPrisma();
+
+    await assertEnrollableProgram(prisma, programId);
 
     await prisma.$transaction(async (tx) => {
       const plan = await tx.activePlan.upsert({

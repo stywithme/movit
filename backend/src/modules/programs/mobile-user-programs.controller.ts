@@ -7,7 +7,7 @@ import type { Prisma } from '@prisma/client';
 import { effectivePlanService } from '@/modules/effective-plan/effective-plan.service';
 import { programService } from './programs.service';
 import { programProgressService } from './program-progress.service';
-import { programCompletionService } from './program-completion.service';
+import { activePlanService } from '@/modules/active-plan/active-plan.service';
 
 @Controller('mobile/user-programs')
 export class MobileUserProgramsController {
@@ -203,6 +203,9 @@ export class MobileUserProgramsController {
     }
   }
 
+  /**
+   * @deprecated Prefer POST /api/mobile/plan/complete — this route now delegates to the same mutation.
+   */
   @Post(':id/complete')
   async completeProgram(
     @Req() req: Request,
@@ -216,14 +219,36 @@ export class MobileUserProgramsController {
         return { success: false, error: authResult.error || 'Unauthorized' };
       }
 
-      const decision = await programCompletionService.evaluate(authResult.userId, id);
-      if (!decision) {
+      const prisma = await getPrisma();
+      const userProgram = await prisma.userProgram.findFirst({
+        where: { id, userId: authResult.userId },
+        select: { id: true },
+      });
+      if (!userProgram) {
         res.status(404);
         return { success: false, error: 'User program not found' };
       }
+
+      const plan = await prisma.activePlan.findUnique({
+        where: { userId: authResult.userId },
+        include: { programs: { where: { status: 'active' } } },
+      });
+      const activeSlot = plan?.programs?.[0];
+      if (!activeSlot || activeSlot.userProgramId !== id) {
+        res.status(400);
+        return { success: false, error: 'User program is not the active plan slot' };
+      }
+
+      const result = await activePlanService.completeActiveProgram(authResult.userId);
+      if (!result) {
+        res.status(404);
+        return { success: false, error: 'No active plan found' };
+      }
       return {
         success: true,
-        data: decision,
+        data: result.completion,
+        completion: result.completion,
+        plan: result.plan,
       };
     } catch (error) {
       console.error('Error completing program:', error);
