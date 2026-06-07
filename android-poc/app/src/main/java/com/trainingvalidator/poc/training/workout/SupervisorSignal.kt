@@ -78,4 +78,12 @@ sealed class SupervisorSignal {
     
     /** Countdown finished (3-2-1-GO completed) */
     object CountdownFinished : SupervisorSignal()
+
+    // ==================== Video Events ====================
+
+    /** Video playback ended */
+    object VideoEnded : SupervisorSignal()
+
+    /** User seeked in video - requires analysis reset */
+    object VideoSeeked : SupervisorSignal()
 }

@@ -606,13 +606,14 @@
 
                 </androidx.cardview.widget.CardView>
 
-                <!-- Analyze Video -->
+                <!-- Analyze Video (debug tooling only — hidden in production UI) -->
                 <androidx.cardview.widget.CardView
                     android:id="@+id/cardAnalyzeVideo"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="@dimen/spacing_sm"
+                    android:visibility="gone"
                     app:cardBackgroundColor="@color/surface"
                     app:cardCornerRadius="@dimen/radius_base"
                     app:cardElevation="0dp">

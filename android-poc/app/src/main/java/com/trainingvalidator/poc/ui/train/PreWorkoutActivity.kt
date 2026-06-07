@@ -249,17 +249,4 @@ class PreWorkoutActivity : AppCompatActivity() {
         startActivity(intent)
     }
 
-    private fun startVideoTraining(videoUri: Uri) {
-        val exercise = exerciseConfig ?: return
-
-        val intent = Intent(this, TrainingActivity::class.java).apply {
-            putExtra(TrainingActivity.EXTRA_EXERCISE_NAME, exercise.fileName)
-            putExtra(TrainingActivity.EXTRA_POSE_VARIANT, selectedVariantIndex)
-            putExtra(TrainingActivity.EXTRA_TRAINING_MODE, TrainingActivity.MODE_VIDEO)
-            putExtra(TrainingActivity.EXTRA_VIDEO_URI, videoUri)
-            val indicatorType = com.trainingvalidator.poc.training.config.SettingsManager.getIndicatorType()
-            putExtra(TrainingActivity.EXTRA_INDICATOR_TYPE, indicatorType)
-        }
-        startActivity(intent)
-    }
 }

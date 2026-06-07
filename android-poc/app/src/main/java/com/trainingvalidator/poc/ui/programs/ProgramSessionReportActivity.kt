@@ -11,6 +11,7 @@ import com.trainingvalidator.poc.databinding.ActivityProgramSessionReportBinding
 import com.trainingvalidator.poc.network.ApiClient
 import com.trainingvalidator.poc.network.ProgressionMarkSeenRequest
 import com.trainingvalidator.poc.storage.AuthManager
+import com.trainingvalidator.poc.training.workout.WorkoutTrainingEngine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -70,8 +71,8 @@ class ProgramSessionReportActivity : AppCompatActivity() {
         if (!reportJson.isNullOrBlank()) {
             val report = runCatching {
                 val gson = com.google.gson.Gson()
-                val type = object : com.google.gson.reflect.TypeToken<com.trainingvalidator.poc.training.session.SessionTrainingEngine.SessionReport>() {}.type
-                gson.fromJson<com.trainingvalidator.poc.training.session.SessionTrainingEngine.SessionReport>(reportJson, type)
+                val type = object : com.google.gson.reflect.TypeToken<WorkoutTrainingEngine.WorkoutReport>() {}.type
+                gson.fromJson<WorkoutTrainingEngine.WorkoutReport>(reportJson, type)
             }.getOrNull()
 
             if (report != null && report.exerciseReports.isNotEmpty()) {
@@ -110,7 +111,7 @@ class ProgramSessionReportActivity : AppCompatActivity() {
     }
 
     private inner class SessionExerciseAdapter(
-        private val items: List<com.trainingvalidator.poc.training.session.SessionTrainingEngine.ExerciseReport>
+        private val items: List<WorkoutTrainingEngine.ExerciseReport>
     ) : androidx.recyclerview.widget.RecyclerView.Adapter<SessionExerciseAdapter.ViewHolder>() {
 
         inner class ViewHolder(view: android.view.View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(view) {
@@ -174,7 +175,7 @@ class ProgramSessionReportActivity : AppCompatActivity() {
     }
 
     private fun showExerciseSummarySheet(
-        report: com.trainingvalidator.poc.training.session.SessionTrainingEngine.ExerciseReport
+        report: WorkoutTrainingEngine.ExerciseReport
     ) {
         val dialog = com.google.android.material.bottomsheet.BottomSheetDialog(this)
         val sheet = layoutInflater.inflate(com.trainingvalidator.poc.R.layout.bottom_sheet_exercise_summary, null)
@@ -214,7 +215,7 @@ class ProgramSessionReportActivity : AppCompatActivity() {
     }
 
     private fun renderInsights(
-        exercises: List<com.trainingvalidator.poc.training.session.SessionTrainingEngine.ExerciseReport>
+        exercises: List<WorkoutTrainingEngine.ExerciseReport>
     ) {
         if (exercises.size < 2) return
 

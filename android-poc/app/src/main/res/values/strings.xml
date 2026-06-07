@@ -162,6 +162,24 @@
     <string name="progression_field_reps">Reps</string>
     <string name="progression_field_sets">Sets</string>
     <string name="progression_next_reps_tip">Next workout target: %1$d reps (previous: %2$d)</string>
+    <string name="progression_page_title">Progression</string>
+    <string name="progression_loading">Loading progression changes…</string>
+    <string name="progression_level_up">Level Up!</string>
+    <string name="progression_deload_title">Deload Week</string>
+    <string name="progression_great_performance">Great performance! Your training load is increasing.</string>
+    <string name="progression_deload_message">We reduced the load to help you recover and come back stronger.</string>
+    <string name="progression_what_changed">What Changed</string>
+    <string name="progression_why">Why</string>
+    <string name="progression_what_next">What\'s Next</string>
+    <string name="progression_change_increase">%1$s increased from %2$s to %3$s</string>
+    <string name="progression_change_decrease">%1$s decreased from %2$s to %3$s</string>
+    <string name="progression_next_deload_tip">Focus on form and recovery during this deload phase.</string>
+    <string name="progression_next_weight_tip">Keep the same focus on form as the weight increases.</string>
+    <string name="progression_no_changes_title">No Changes Yet</string>
+    <string name="progression_no_changes_message">Keep training consistently and we\'ll adjust your plan based on your performance.</string>
+    <string name="progression_no_changes_goal">Complete more sessions to unlock personalized progression.</string>
+    <string name="progression_field_reassessment">Reassessment</string>
+    <string name="unified_evaluation_message">Unified evaluation across all difficulty levels</string>
 
     <!-- Quick Start -->
     <string name="quick_start_title">Quick Start</string>
@@ -378,6 +396,10 @@
     <string name="language">Language</string>
     <string name="language_english">English</string>
     <string name="language_arabic">العربية</string>
+    <string name="theme_mode">Theme</string>
+    <string name="theme_mode_system">System default</string>
+    <string name="theme_mode_light">Light</string>
+    <string name="theme_mode_dark">Dark</string>
     <string name="log_out">Log Out</string>
     <string name="log_out_confirm">Are you sure you want to log out?</string>
     
@@ -410,6 +432,10 @@
     <string name="looping_preview">LOOPING PREVIEW</string>
     <string name="no_equipment">No Equipment</string>
     <string name="camera_position">Camera Position</string>
+    <string name="exercise_detail_title">Exercise Detail</string>
+    <string name="difficulty_level">Difficulty Level</string>
+    <string name="tracked_joints">Tracked Joints</string>
+    <string name="start_exercise">Start Exercise</string>
     <string name="exercise_instructions">Instructions</string>
     <string name="exercise_description">Description</string>
     <string name="target_muscles">Target Muscles</string>
@@ -865,6 +891,26 @@
     <string name="workout_report_strongest">Strongest: %s</string>
     <string name="workout_report_weakest">Needs work: %s</string>
     <string name="workout_report_improved_format">Improved %+.1f%% since last workout</string>
+
+    <!-- Session Report -->
+    <string name="session_complete">Session Complete!</string>
+    <string name="session_report_exercises_title">Exercise Breakdown</string>
+    <string name="session_report_sets_format">Sets %1$d/%2$d</string>
+    <string name="session_report_accuracy_format">Accuracy %1$d%%</string>
+    <string name="session_report_quality_format">Quality: %1$s</string>
+    <string name="session_report_weights_format">Weights: %1$s</string>
+    <string name="session_report_weights_empty">Weights: --</string>
+    <string name="session_report_strongest">Strongest: %s</string>
+    <string name="session_report_weakest">Needs work: %s</string>
+    <string name="session_report_excellent">Excellent</string>
+    <string name="session_report_good">Good</string>
+    <string name="session_report_solid">Solid</string>
+    <string name="session_report_keep_going">Keep going</string>
+    <string name="session_message_excellent">Amazing session. Your form and focus were strong.</string>
+    <string name="session_message_good">Great job. You made real progress today.</string>
+    <string name="session_message_keep_going">Good effort. Keep going and you will build momentum.</string>
+    <string name="session_message_get_started">Ready to begin? One small step today is enough.</string>
+    <string name="session_share_text_format">I completed %1$d/%2$d sets in %3$02d:%4$02d with %5$d%% quality.</string>
 
     <!-- Program Complete -->
     <string name="pg_complete_title">🏆 You Did It!</string>

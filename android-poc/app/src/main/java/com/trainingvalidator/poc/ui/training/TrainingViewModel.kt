@@ -366,6 +366,18 @@ class TrainingViewModel(
         releaseSetupTiltCorrection()
     }
 
+    fun requestVideoStart() {
+        supervisor.processSignal(SupervisorSignal.StartRequested)
+    }
+
+    fun onVideoEnded() {
+        supervisor.processSignal(SupervisorSignal.VideoEnded)
+    }
+
+    fun onVideoSeeked() {
+        supervisor.processSignal(SupervisorSignal.VideoSeeked)
+    }
+
     fun handleActivityResume() {
         supervisor.processSignal(SupervisorSignal.ActivityResumed)
         if (supervisor.state.value.shouldValidatePose()) {
@@ -422,6 +434,12 @@ class TrainingViewModel(
             is SupervisorAction.ResumeFromVisibilityPause -> {
                 releaseSetupTiltCorrection()
                 trainingEngine?.resume()
+            }
+
+            is SupervisorAction.ResetEngine -> {
+                releaseSetupTiltCorrection()
+                trainingEngine?.stop()
+                trainingEngine?.start()
             }
             
             // Frame Processing - Run on background thread to keep UI responsive
@@ -561,7 +579,18 @@ class TrainingViewModel(
                     _events.emit(TrainingUIEvent.ExerciseCompleted)
                 }
             }
-            
+
+            is SupervisorAction.PauseVideo -> {
+                viewModelScope.launch {
+                    _events.emit(TrainingUIEvent.PauseVideoPlayback)
+                }
+            }
+
+            is SupervisorAction.ResumeVideo -> {
+                viewModelScope.launch {
+                    _events.emit(TrainingUIEvent.ResumeVideoPlayback)
+                }
+            }
         }
     }
     
@@ -996,4 +1025,10 @@ sealed class TrainingUIEvent {
     
     /** No pose warning (before auto-pause) */
     data class NoPoseWarning(val elapsedMs: Long) : TrainingUIEvent()
+
+    /** Pause video playback (video mode) */
+    object PauseVideoPlayback : TrainingUIEvent()
+
+    /** Resume video playback (video mode) */
+    object ResumeVideoPlayback : TrainingUIEvent()
 }

@@ -24,16 +24,13 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 /**
- * Cameras: audio + vignette, no training glassmorphic text. Video: glassmorphic + vignette.
+ * Camera training: audio + vignette feedback (no glassmorphic overlay during live training).
  * Subscribes to [TrainingViewModel.feedbackEvents] and, once [TrainingViewModel.initializeFeedback]
  * has run, to [FeedbackManager.visualMessages] (rebind with [rebindVisualMessageFlow]).
  */
 class TrainingFeedbackBinder(
     private val host: TrainingActivity
 ) {
-    private val isVideoMode: Boolean
-        get() = host.isVideoMode
-
     private var visualMessagesJob: kotlinx.coroutines.Job? = null
 
     private val colorCorrect = Color.parseColor("#00E676")
@@ -92,15 +89,7 @@ class TrainingFeedbackBinder(
             engine.isVisibilityPaused.collect { paused ->
                 if (paused) {
                     host.binding.vignetteOverlay.showError()
-                    if (isVideoMode) {
-                        host.binding.glassmorphicMessage.showMessage(
-                            "Return to frame to continue",
-                            GlassmorphicMessageView.TYPE_ERROR,
-                            durationMs = -1
-                        )
-                    }
                 } else {
-                    if (isVideoMode) host.binding.glassmorphicMessage.clearAll()
                     host.binding.vignetteOverlay.clear()
                 }
             }
@@ -108,13 +97,7 @@ class TrainingFeedbackBinder(
         parentScope.launch {
             engine.visibilityResumeCountdown.collect { seconds ->
                 if (seconds != null && seconds > 0) {
-                    if (isVideoMode) {
-                        host.binding.glassmorphicMessage.showMessage(
-                            "Resuming in $seconds...",
-                            GlassmorphicMessageView.TYPE_INFO,
-                            durationMs = 900
-                        )
-                    }
+                    // Countdown handled via audio/haptic in camera mode
                 }
             }
         }
@@ -128,17 +111,6 @@ class TrainingFeedbackBinder(
             FeedbackManager.MessageType.MOTIVATION -> GlassmorphicMessageView.TYPE_MOTIVATION
             FeedbackManager.MessageType.INFO -> GlassmorphicMessageView.TYPE_INFO
         }
-
-        if (!isVideoMode) {
-            when (message.type) {
-                FeedbackManager.MessageType.ERROR -> host.binding.vignetteOverlay.showError()
-                FeedbackManager.MessageType.WARNING -> host.binding.vignetteOverlay.showWarning()
-                else -> {}
-            }
-            return
-        }
-
-        host.binding.glassmorphicMessage.showMessage(message.text, type, message.durationMs)
 
         when (message.type) {
             FeedbackManager.MessageType.ERROR -> host.binding.vignetteOverlay.showError()
@@ -228,18 +200,11 @@ class TrainingFeedbackBinder(
             host.binding.vignetteOverlay.showError()
         }
 
-        if (!isVideoMode && reason != PauseReason.MANUAL) {
+        if (reason != PauseReason.MANUAL) {
             host.viewModel.feedbackManager?.speakSystemCue(
                 messageKey = "auto_pause_${reason.name.lowercase()}",
                 localizedText = lt,
                 severity = FeedbackSeverity.CRITICAL
-            )
-        } else {
-            host.binding.glassmorphicMessage.showMessage(
-                message,
-                if (reason == PauseReason.MANUAL) GlassmorphicMessageView.TYPE_INFO
-                else GlassmorphicMessageView.TYPE_ERROR,
-                durationMs = -1
             )
         }
         Log.d(TrainingActivity.TAG, "Auto-paused: $reason")
@@ -254,69 +219,23 @@ class TrainingFeedbackBinder(
 
         host.binding.vignetteOverlay.showWarning()
 
-        if (!isVideoMode) {
-            if (!host.noPoseTtsSpoken) {
-                host.noPoseTtsSpoken = true
-                val lt = SystemMessageRegistry.get(
-                    "training_no_pose_return_camera",
-                    "عد إلى الكاميرا",
-                    "Return to the camera"
-                )
-                host.viewModel.feedbackManager?.speakSystemCue(
-                    messageKey = "no_pose_return_camera",
-                    localizedText = lt,
-                    severity = FeedbackSeverity.WARNING
-                )
-            }
-        } else {
-            val remainingSeconds = ((4000 - elapsedMs) / 1000).toInt().coerceAtLeast(0)
-            val base = SystemMessageRegistry.get(
-                "training_no_pose_countdown_warning",
-                "لم يتم اكتشاف وضعية! العودة خلال {seconds}ث...",
-                "No pose detected! Return in {seconds}s..."
+        if (!host.noPoseTtsSpoken) {
+            host.noPoseTtsSpoken = true
+            val lt = SystemMessageRegistry.get(
+                "training_no_pose_return_camera",
+                "عد إلى الكاميرا",
+                "Return to the camera"
             )
-            val message = SystemMessageRegistry.substitute(
-                base,
-                mapOf("seconds" to remainingSeconds.toString())
-            ).get(host.viewModel.poseSetupGuide.language)
-            host.binding.glassmorphicMessage.showMessage(
-                message,
-                GlassmorphicMessageView.TYPE_WARNING,
-                durationMs = 500
+            host.viewModel.feedbackManager?.speakSystemCue(
+                messageKey = "no_pose_return_camera",
+                localizedText = lt,
+                severity = FeedbackSeverity.WARNING
             )
         }
     }
 
     fun showCountdownPoseIssue(result: SetupResult) {
-        if (!isVideoMode) {
-            host.binding.glassmorphicMessage.clearAll()
-            host.binding.vignetteOverlay.showWarning()
-            return
-        }
-        if (host.viewModel.supervisor.state.value == WorkoutRunState.SETUP_POSE ||
-            host.viewModel.supervisor.state.value == WorkoutRunState.RESUME_SETUP
-        ) {
-            host.binding.glassmorphicMessage.clearAll()
-            host.binding.vignetteOverlay.showWarning()
-            return
-        }
-
-        val lang = host.viewModel.poseSetupGuide.language
-        val message = when {
-            result.phase != SetupPhase.ANGLES -> result.phaseMessage?.get(lang)
-            result.worstJoint != null -> result.worstJoint.message.get(lang)
-            else -> SystemMessageRegistry.get(
-                "training_setup_return_start_pose",
-                "عد إلى وضعية البداية",
-                "Return to the start pose"
-            ).get(lang)
-        } ?: return
-
-        host.binding.glassmorphicMessage.showMessage(
-            message,
-            GlassmorphicMessageView.TYPE_WARNING,
-            1000
-        )
+        host.binding.glassmorphicMessage.clearAll()
         host.binding.vignetteOverlay.showWarning()
     }
 }

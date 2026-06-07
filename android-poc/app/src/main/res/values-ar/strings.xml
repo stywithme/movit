@@ -165,6 +165,24 @@
     <string name="progression_field_reps">التكرارات</string>
     <string name="progression_field_sets">المجموعات</string>
     <string name="progression_next_reps_tip">هدف الجلسة القادمة: %1$d تكرار (السابق: %2$d)</string>
+    <string name="progression_page_title">التقدم</string>
+    <string name="progression_loading">جارٍ تحميل تغييرات التقدم…</string>
+    <string name="progression_level_up">ارتقيت مستوى!</string>
+    <string name="progression_deload_title">أسبوع تخفيف</string>
+    <string name="progression_great_performance">أداء رائع! يزداد حمل التدريب.</string>
+    <string name="progression_deload_message">خفّفنا الحمل لمساعدتك على التعافي والعودة أقوى.</string>
+    <string name="progression_what_changed">ما الذي تغيّر</string>
+    <string name="progression_why">لماذا</string>
+    <string name="progression_what_next">ما التالي</string>
+    <string name="progression_change_increase">%1$s زاد من %2$s إلى %3$s</string>
+    <string name="progression_change_decrease">%1$s انخفض من %2$s إلى %3$s</string>
+    <string name="progression_next_deload_tip">ركّز على الأداء والتعافي خلال مرحلة التخفيف.</string>
+    <string name="progression_next_weight_tip">حافظ على نفس تركيز الأداء مع زيادة الوزن.</string>
+    <string name="progression_no_changes_title">لا تغييرات بعد</string>
+    <string name="progression_no_changes_message">واصل التدريب بانتظام وسنعدّل خطتك بناءً على أدائك.</string>
+    <string name="progression_no_changes_goal">أكمل المزيد من الجلسات لفتح التقدم المخصص.</string>
+    <string name="progression_field_reassessment">إعادة التقييم</string>
+    <string name="unified_evaluation_message">تقييم موحّد عبر جميع مستويات الصعوبة</string>
 
     <!-- Quick Start -->
     <string name="quick_start_title">ابدأ الآن</string>
@@ -235,6 +253,10 @@
     <string name="featured_program_subtitle">اتقن الأداء مع ملاحظات فورية.</string>
     <string name="featured_program_meta">45 دقيقة - متوسط</string>
     <string name="no_exercises_found">لا توجد تمارين</string>
+    <string name="exercise_detail_title">تفاصيل التمرين</string>
+    <string name="difficulty_level">مستوى الصعوبة</string>
+    <string name="tracked_joints">المفاصل المتابعة</string>
+    <string name="start_exercise">ابدأ التمرين</string>
     
     <!-- Workout Detail -->
     <string name="workout_detail_timeline">الجدول الزمني للتمرين</string>
@@ -517,6 +539,10 @@
     <string name="language">اللغة</string>
     <string name="language_english">English</string>
     <string name="language_arabic">العربية</string>
+    <string name="theme_mode">المظهر</string>
+    <string name="theme_mode_system">افتراضي النظام</string>
+    <string name="theme_mode_light">فاتح</string>
+    <string name="theme_mode_dark">داكن</string>
     <string name="log_out">تسجيل الخروج</string>
     <string name="log_out_confirm">هل أنت متأكد من رغبتك في تسجيل الخروج؟</string>
     
@@ -840,6 +866,26 @@
     <string name="workout_report_strongest">الأقوى: %s</string>
     <string name="workout_report_weakest">يحتاج تحسين: %s</string>
     <string name="workout_report_improved_format">تحسّن %+.1f%% منذ آخر تمرين</string>
+
+    <!-- Session Report -->
+    <string name="session_complete">اكتملت الجلسة!</string>
+    <string name="session_report_exercises_title">تفصيل التمارين</string>
+    <string name="session_report_sets_format">المجموعات %1$d/%2$d</string>
+    <string name="session_report_accuracy_format">الدقة %1$d%%</string>
+    <string name="session_report_quality_format">الجودة: %1$s</string>
+    <string name="session_report_weights_format">الأوزان: %1$s</string>
+    <string name="session_report_weights_empty">الأوزان: --</string>
+    <string name="session_report_strongest">الأقوى: %s</string>
+    <string name="session_report_weakest">يحتاج تحسين: %s</string>
+    <string name="session_report_excellent">ممتاز</string>
+    <string name="session_report_good">جيد</string>
+    <string name="session_report_solid">مقبول</string>
+    <string name="session_report_keep_going">واصل</string>
+    <string name="session_message_excellent">تمرين رائع. كان أداؤك وتركيزك قويَّين.</string>
+    <string name="session_message_good">عمل ممتاز. حققت تقدماً حقيقياً اليوم.</string>
+    <string name="session_message_keep_going">جهد جيد. واصل وستبني الزخم.</string>
+    <string name="session_message_get_started">جاهز للبدء؟ خطوة صغيرة اليوم تكفي.</string>
+    <string name="session_share_text_format">أكملت %1$d/%2$d مجموعات في %3$02d:%4$02d بجودة %5$d%%.</string>
 
     <!-- Day Session Page -->
     <string name="ds_day_title_format">اليوم %1$d — %2$s</string>

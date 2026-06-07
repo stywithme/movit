@@ -29,6 +29,9 @@ sealed class SupervisorAction {
     
     /** Resume from visibility pause - preserves rep count */
     object ResumeFromVisibilityPause : SupervisorAction()
+
+    /** Reset engine for video seek (stop + start) */
+    object ResetEngine : SupervisorAction()
     
     // ==================== Frame Processing ====================
     
@@ -81,6 +84,14 @@ sealed class SupervisorAction {
     
     /** Show completed panel */
     object ShowCompleted : SupervisorAction()
+
+    // ==================== Video Commands ====================
+
+    /** Pause video playback */
+    object PauseVideo : SupervisorAction()
+
+    /** Resume video playback */
+    object ResumeVideo : SupervisorAction()
 }
 
 /**

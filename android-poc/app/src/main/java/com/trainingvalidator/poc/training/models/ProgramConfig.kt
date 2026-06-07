@@ -95,3 +95,30 @@ data class WorkoutLineItem(
     val phaseMaxContinueTimeMs: Long? = null,
     val sortOrder: Int = 0
 )
+
+data class ProgramSession(
+    val id: String,
+    val name: LocalizedText,
+    val sortOrder: Int = 0,
+    val role: String = "MAIN",
+    val estimatedDurationMin: Int? = null,
+    val items: List<ProgramSessionItem> = emptyList()
+)
+
+data class ProgramSessionItem(
+    val type: String,
+    val serverItemId: String? = null,
+    val exerciseSlug: String? = null,
+    val deletedExercise: Boolean? = null,
+    val sets: Int? = null,
+    val targetReps: Int? = null,
+    val targetDuration: Int? = null,
+    val restBetweenSetsMs: Long? = null,
+    val weightKg: Float? = null,
+    val weightPerSet: List<Float>? = null,
+    val notes: LocalizedText? = null,
+    val restDurationMs: Long? = null,
+    val suggestionSource: String? = null,
+    val variantIndex: Int? = null,
+    val sortOrder: Int = 0
+)
