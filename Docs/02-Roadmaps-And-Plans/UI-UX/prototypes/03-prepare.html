@@ -6,10 +6,9 @@
 <title>WayToFix · Prepare & Rest</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="app.css?v=4">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css?v=7">
 <style>
-  /* Base structural adjustments */
   .progress-session-bar {
     width: 100%;
     height: 4px;
@@ -25,70 +24,7 @@
     border-radius: var(--r-pill);
     transition: width 0.3s ease;
   }
-  
-  /* Hero Media block - SQUARE 1:1 */
-  .hero-media {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    background: var(--surface-2);
-    border-radius: var(--r-lg);
-    overflow: hidden;
-    margin-bottom: var(--sp-md);
-    border: 1px solid var(--border);
-  }
-  .hero-media img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  
-  /* Quick stats strip */
-  .stats-strip {
-    display: flex;
-    gap: var(--sp-sm);
-    margin-bottom: var(--sp-lg);
-  }
-  .stats-strip-cell {
-    flex: 1;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--r-base);
-    padding: var(--sp-sm) var(--sp-md);
-    text-align: center;
-  }
-  .stats-strip-cell:nth-child(1),
-  .stats-strip-cell:nth-child(2) {
-    background: var(--lime-tint);
-    border-color: var(--lime);
-  }
-  .stats-strip-cell:nth-child(1) .val,
-  .stats-strip-cell:nth-child(2) .val {
-    color: var(--lime-deep);
-  }
-  .stats-strip-cell:nth-child(3) {
-    background: var(--coral-tint);
-    border-color: var(--coral);
-  }
-  .stats-strip-cell:nth-child(3) .val {
-    color: var(--coral);
-  }
-  .stats-strip-cell:nth-child(4) {
-    background: var(--primary-tint);
-    border-color: var(--primary);
-  }
-  .stats-strip-cell .val {
-    font-size: 16px;
-    font-weight: 800;
-    color: var(--text);
-  }
-  .stats-strip-cell .lbl {
-    font-size: 11px;
-    color: var(--text-3);
-    margin-top: 2px;
-  }
-  
-  /* VISUAL 3-AXIS CAMERA SETUP GUIDE CARD (Optimised Aspect & Size) */
+
   .setup-guide-card {
     background: linear-gradient(135deg, var(--primary-tint), var(--surface) 62%);
     border: 1px solid var(--primary);
@@ -163,132 +99,6 @@
     line-height: 1.3;
   }
 
-  /* PREMIUM FLOATING ACTIONS BAR */
-  .premium-floating-bar {
-    position: absolute;
-    bottom: 24px;
-    left: 18px;
-    right: 18px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 28px;
-    padding: 12px 16px 12px 20px;
-    box-shadow: 0 16px 36px -12px rgba(0,0,0,0.15), var(--shadow-sm);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    z-index: 100;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  
-  /* Left Info Side of Floating Bar */
-  .pf-info {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    flex: 1;
-    min-width: 0;
-  }
-  .pf-title {
-    font-size: 15px;
-    font-weight: 800;
-    color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .pf-desc {
-    font-size: 12px;
-    color: var(--text-3);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  
-  /* Right Button of Floating Bar */
-  .pf-btn {
-    appearance: none;
-    border: none;
-    outline: none;
-    font-family: var(--font);
-    font-size: 14px;
-    font-weight: 700;
-    padding: 10px 24px;
-    border-radius: var(--r-pill);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.2s ease;
-    flex-shrink: 0;
-  }
-  .pf-btn--primary {
-    background: var(--primary);
-    color: var(--on-primary);
-    box-shadow: 0 10px 24px -12px var(--primary);
-  }
-  .pf-btn--primary:hover {
-    background: var(--primary-press);
-  }
-  .pf-btn--coral {
-    background: var(--coral);
-    color: var(--on-coral);
-    box-shadow: 0 10px 24px -12px var(--coral);
-  }
-  
-  /* Timer / Control Elements on Left in Rest state */
-  .pf-timer-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .pf-timer-digits {
-    font-size: 20px;
-    font-weight: 800;
-    color: var(--text);
-    letter-spacing: -0.01em;
-    font-variant-numeric: tabular-nums;
-  }
-  .pf-divider-line {
-    width: 1px;
-    height: 24px;
-    background: var(--border);
-  }
-  .pf-timer-controls {
-    display: flex;
-    gap: 6px;
-  }
-  .pf-mini-btn {
-    appearance: none;
-    border: 1px solid var(--stroke);
-    background: var(--surface);
-    color: var(--text-2);
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-    flex: none;
-  }
-  .pf-mini-btn svg {
-    width: 17px;
-    height: 17px;
-  }
-  .pf-mini-btn--text {
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-  }
-  .pf-mini-btn:hover {
-    background: var(--lime-tint);
-    border-color: var(--lime);
-    color: var(--lime-deep);
-  }
-
-  /* Up next label flag */
   .up-next-flag {
     font-size: 10px;
     font-weight: 800;
@@ -309,17 +119,7 @@
   }
 </style>
 </head>
-<body>
-
-<!-- page navigator -->
-<nav class="page-nav">
-  <div class="pn-title">Pages</div>
-  <a href="00-components.html">00 · Components</a>
-  <a href="01-train.html">01 · Train</a>
-  <a href="02-session.html">02 · Session</a>
-  <a href="03-prepare.html" class="is-active">03 · Prepare</a>
-  <a href="04-explore.html">04 · Explore</a>
-</nav>
+<body data-main="01-train.html" data-flow="training">
 
 <!-- theme toggle (outside the phone) -->
 <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
@@ -359,22 +159,22 @@
     <span class="sb-right"><svg class="ic" viewBox="0 0 24 24"><use href="#i-wifi"/></svg><svg class="ic" viewBox="0 0 24 24"><use href="#i-batt"/></svg></span>
   </div>
 
-  <main class="screen" style="padding-bottom: 0;">
+  <main class="screen screen--compact">
 
     <!-- top navigation bar -->
-    <div class="sess-top" style="padding: var(--sp-sm) var(--sp-base);">
+    <div class="sess-top">
       <button class="float-pill" onclick="window.history.back();"><svg class="ic" viewBox="0 0 24 24"><use href="#i-arrow-l"/></svg>Back</button>
-      <div class="spacer" style="display:flex; flex-direction:column; align-items:center;">
-        <span style="font-size: 11px; font-weight:700; color: var(--text-3); text-transform: uppercase;" id="stateHeaderLabel">Prepare Workout</span>
-        <div class="progress-session-bar" style="width: 80px;">
-          <i style="width: 20%;" id="stateHeaderProgress"></i>
+      <div class="spacer text-center">
+        <span class="type-caption" id="stateHeaderLabel">Prepare Workout</span>
+        <div class="progress-session-bar mx-auto" style="width:80px">
+          <i style="width:20%" id="stateHeaderProgress"></i>
         </div>
       </div>
-      <button class="float-pill" style="visibility: hidden;"><svg class="ic" viewBox="0 0 24 24"><use href="#i-info"/></svg></button>
+      <button class="float-pill" style="visibility:hidden" aria-hidden="true"><svg class="ic" viewBox="0 0 24 24"><use href="#i-info"/></svg></button>
     </div>
 
     <!-- ============ SCREEN CONTENT: EXERCISE DISPLAY ============ -->
-    <div class="screen-scroll" style="flex:1; overflow-y:auto; padding: 0 var(--sp-base) 110px;">
+    <div class="screen-scroll flex-1" style="overflow-y:auto;padding:0 var(--sp-base) 110px">
       
       <!-- Up Next Tag (only visible during Rest State) -->
       <div class="up-next-flag" id="restStateFlag" style="display: none;">Up Next Exercise</div>
@@ -388,9 +188,9 @@
       </div>
 
       <!-- Title & Category -->
-      <div style="margin-bottom: var(--sp-md);">
-        <div id="exName" style="font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: var(--text);">Bodyweight Squat</div>
-        <div id="exCategory" style="font-size: 13px; color: var(--text-3); margin-top: 4px;">Lower Body · Quads &amp; Glutes focus</div>
+      <div class="mb-0 mt-md">
+        <div id="exName" class="type-display" style="font-size:24px">Bodyweight Squat</div>
+        <div id="exCategory" class="type-caption mt-xs">Lower Body · Quads &amp; Glutes focus</div>
       </div>
 
       <!-- Quick Stats Strip -->
@@ -408,13 +208,13 @@
           <div class="lbl">Rest</div>
         </div>
         <div class="stats-strip-cell">
-          <div class="val" id="statEquipment" style="color:var(--primary);"><svg class="ic" style="width:16px;height:16px;vertical-align:-2px;"><use href="#i-dumbbell"/></svg></div>
+          <div class="val text-primary" id="statEquipment"><svg class="ic" style="width:16px;height:16px;vertical-align:-2px"><use href="#i-dumbbell"/></svg></div>
           <div class="lbl" id="statEquipmentLabel">None</div>
         </div>
       </div>
 
-      <!-- VISUAL 3-AXIS CAMERA SETUP GUIDE CARD (Optimised Aspect & Size) -->
-      <div class="setup-guide-card">
+      <!-- VISUAL 3-AXIS CAMERA SETUP GUIDE CARD -->
+      <div class="setup-guide-card state-card">
         
         <!-- Left Column: Big square posture preview image (takes ~1/3 of card) -->
         <div class="pose-ref-box">
@@ -442,8 +242,8 @@
       </div>
 
       <!-- Instructions Section -->
-      <div class="sec-label" style="margin-top: 0;"><span class="sl-t">Instructions</span><span class="sl-line"></span></div>
-      <div class="card" style="padding: var(--sp-base); margin-bottom: var(--sp-lg);" id="instructionsCard">
+      <div class="sec-label"><span class="sl-t">Instructions</span><span class="sl-line"></span></div>
+      <div class="state-card mb-0" id="instructionsCard">
         <div style="display:flex; gap:12px; margin-bottom: 12px; align-items: flex-start;">
           <span style="width:20px; height:20px; border-radius:50%; background:var(--lime); color:var(--on-lime); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; flex-shrink:0;">1</span>
           <span class="step-text" style="font-size: 13.5px; color: var(--text-2); line-height:1.4;">Stand with feet shoulder-width apart, chest upright.</span>
@@ -459,8 +259,8 @@
       </div>
 
       <!-- Target Muscles chips -->
-      <div class="sec-label" style="margin-top: 0;"><span class="sl-t">Target Muscles</span><span class="sl-line"></span></div>
-      <div style="display:flex; gap: 8px; flex-wrap:wrap; margin-bottom: var(--sp-lg);" id="musclesContainer">
+      <div class="sec-label"><span class="sl-t">Target Muscles</span><span class="sl-line"></span></div>
+      <div class="dh-foot mb-0" id="musclesContainer">
         <span class="tag tag--blue">Quads</span>
         <span class="tag tag--blue">Glutes</span>
         <span class="tag tag--blue">Hamstrings</span>
@@ -468,36 +268,30 @@
 
     </div>
 
-    <!-- ============ PREMIUM FLOATING ACTIONS CARD ============ -->
-    <div class="premium-floating-bar" id="floatingBar">
-      
-      <!-- STATE 1: PREPARE (Ready to Train Bar layout) -->
-      <div class="pf-info" id="prepareBarInfo">
-        <div class="pf-title">Ready to train</div>
-        <div class="pf-desc">6 exercises · ~45 min</div>
+    <!-- ============ ACTION DOCK ============ -->
+    <div class="action-dock" id="floatingBar">
+
+      <!-- STATE 1: PREPARE -->
+      <div class="dock-info" id="prepareBarInfo">
+        <div class="dock-title">Ready to train</div>
+        <div class="dock-desc">6 exercises · ~45 min</div>
       </div>
-      <button class="pf-btn pf-btn--primary" id="btnPrepareAction">
-        <svg class="ic" style="width: 16px; height: 16px; fill: currentColor;"><use href="#i-play"/></svg> Start
+      <button class="btn btn--primary" id="btnPrepareAction">
+        <svg class="ic"><use href="#i-play"/></svg> Start
       </button>
 
-      <!-- STATE 2: REST TIMER (Resting & Time Controls Bar layout) -->
-      <div class="pf-timer-wrapper" id="restBarTimer" style="display: none;">
-        <!-- Timer countdown value -->
-        <div class="pf-timer-digits" id="timerDigits">00:30</div>
-        
-        <div class="pf-divider-line"></div>
-        
-        <!-- Controls: Pause & +15s -->
-        <div class="pf-timer-controls">
-          <button class="pf-mini-btn" id="btnPauseTimer" title="Pause">
+      <!-- STATE 2: REST TIMER -->
+      <div class="dock-timer" id="restBarTimer" style="display:none">
+        <div class="dock-digits" id="timerDigits">00:30</div>
+        <div class="dock-divider"></div>
+        <div class="dock-controls">
+          <button class="dock-mini-btn" id="btnPauseTimer" title="Pause">
             <svg class="ic" id="pauseIcon"><use href="#i-pause"/></svg>
           </button>
-          <button class="pf-mini-btn pf-mini-btn--text" id="btnAddTime" title="Add 15 seconds">
-            +15
-          </button>
+          <button class="dock-mini-btn dock-mini-btn--text" id="btnAddTime" title="Add 15 seconds">+15</button>
         </div>
       </div>
-      <button class="pf-btn pf-btn--coral" id="btnRestAction" style="display: none;" data-go-state="prepare">
+      <button class="btn" id="btnRestAction" style="display:none;background:var(--coral);color:var(--on-coral)" data-go-state="prepare">
         Skip
       </button>
 
@@ -506,7 +300,8 @@
   </main>
 </div>
 
-<script src="app.js?v=4"></script>
+<script src="nav.js?v=1"></script>
+<script src="app.js?v=6"></script>
 <script>
   // Comprehensive script to manage square exercise preview content swap and floating bar states
   (function(){
@@ -711,7 +506,7 @@
         populateExerciseContent(exercises.prepare, false);
 
         // Show/Hide Floating Elements
-        if(prepareBarInfo) prepareBarInfo.style.display = 'flex';
+        if(prepareBarInfo) prepareBarInfo.style.display = 'block';
         if(btnPrepareAction) btnPrepareAction.style.display = 'block';
         if(restBarTimer) restBarTimer.style.display = 'none';
         if(btnRestAction) btnRestAction.style.display = 'none';

@@ -1,6 +1,6 @@
 # Android UI/UX Modernization Status
 
-آخر تحديث: 2026-06-03
+آخر تحديث: 2026-06-08
 
 ## الهدف
 
@@ -30,6 +30,122 @@
 ## الخطة العامة
 
 الخطة ليست إعادة بناء كاملة مرة واحدة. التحويل يتم تدريجياً على مراحل مع الحفاظ على السلوك الحالي وربط الـ IDs الموجودة، ثم تحسين الهيكلة لاحقاً.
+
+## تحديث 2026-06-08: HTML Prototypes / Premium UI Refresh
+
+تم تنفيذ موجة تحديث كبيرة على نماذج الـ HTML داخل:
+
+- `Docs/02-Roadmaps-And-Plans/UI-UX/prototypes/`
+
+الغرض من هذه الموجة هو جعل الـ prototypes مرجعاً بصرياً أحدث وأوضح قبل نقل الأنماط إلى Android تدريجياً. هذه الموجة لا تعني أن كل شاشات Android الفعلية أصبحت محدثة، لكنها تثبت الاتجاه النهائي للـ UI/UX.
+
+### ما تم تنفيذه في النماذج
+
+- ترقية `app.css` إلى طبقة Premium مشتركة (`app.css?v=7`) تشمل مكونات reusable جديدة:
+  - `dashboard-hero`
+  - `metric-row`
+  - `metric-grid`
+  - `kpi-grid`
+  - `feature-card`
+  - `media-card`
+  - `wide-media-card`
+  - `state-card`
+  - `timeline-card`
+  - `chart-panel`
+  - `action-dock`
+  - `program-hero`
+  - `stats-strip`
+  - `empty-state`
+  - `quick-grid`
+  - `catalog-page`
+  - مكونات polishing لـ Auth/Profile/Onboarding
+- تحديث `00-components.html` بقسم جديد:
+  - **Premium patterns**
+  - يعرض hero، metrics، KPI cards، feature card، library toolbar، timeline، empty state، وaction dock.
+- تحديث كل ملفات HTML لاستخدام `app.css?v=7`.
+- تقليل الاعتماد على inline styles في الصفحات الرئيسية، ونقل أنماط مشتركة إلى `app.css`.
+- تثبيت typography scale للـ prototypes:
+  - Display 32 / 800
+  - Title 18 / 700
+  - Body 15 / 400
+  - Caption 12 / 600
+
+### تنظيم التنقل في النماذج
+
+- تنظيم `nav.js` بحيث يصبح:
+  - التنقل السفلي: الصفحات الرئيسية (`Home`, `Train`, `Explore`, `Reports`) + `Account` + `Components`.
+  - التنقل العلوي: التدفقات الداخلية (`training`, `program`, `library`, `workout`, `assessment`, `onboarding`).
+- حذف شاشة `18-training-live.html` من النماذج وإزالة روابطها من `nav.js` و`index.html`.
+- تحديث مسار التدريب ليشمل:
+  - `03-prepare.html`
+  - `02-session.html`
+  - `16-workout-flow.html`
+  - `17-report-detail.html`
+- إصلاح `03-prepare.html` ليكون تابعاً لـ `Train` عبر `data-main="01-train.html"`.
+
+### الشاشات التي تم تحديثها بصرياً
+
+- الشاشات الرئيسية:
+  - `08-home.html`
+  - `01-train.html`
+  - `04-explore.html`
+  - `05-exercises.html`
+  - `06-workouts.html`
+  - `09-reports.html`
+- تدفقات التدريب والبرامج:
+  - `02-session.html`
+  - `03-prepare.html`
+  - `07-program.html`
+  - `15-program-flow.html`
+  - `16-workout-flow.html`
+  - `17-report-detail.html`
+- التقييم والمستوى:
+  - `13-assessment.html`
+  - `14-level-plan.html`
+- الحساب والبروفايل:
+  - `10-auth.html`
+  - `11-profile.html`
+  - `12-profile-onboarding.html`
+- الكتالوج والنظام:
+  - `index.html`
+  - `00-components.html`
+
+### إصلاحات مهمة تمت أثناء المراجعة البصرية
+
+- إصلاح تداخل شاشة Splash في `10-auth.html` عبر فصل `auth-panel` / `auth-content` وتوسيط الحالات.
+- استبدال/توحيد ألوان semantic في الـ prototypes حتى تظل ضمن palette:
+  - `success` مرتبط بـ Lime.
+  - `warning/error` مرتبطان بـ Coral.
+  - `gold` مرتبط بـ Lime tint بدلاً من لون خارجي.
+- إضافة tokens ناقصة في `app.css`:
+  - `--mist`
+  - `--ink-veil-18`
+  - `--ink-veil-55`
+- إصلاح تباين النصوص في:
+  - `dashboard-hero--ink`
+  - `feature-card`
+  - `accent--blue`
+- إصلاح تمدد الأزرار داخل الصفوف:
+  - `.row .btn`
+  - `.action-dock > .btn`
+  - `.prog-card .btn`
+  - `.copy-actions .btn`
+- إصلاح بطاقات الـ rings في `00-components.html` عبر `ring-card` حتى لا يحدث قص للنص داخل الأعمدة الضيقة.
+- حصر `.filter-chip` داخل `.swap-filters` لتجنب تضاربها مع filter chips الخاصة بصفحات المكتبة.
+- تعطيل فواصل `.stat-grid` داخل `program-screen` لتجنب خطوط غير صحيحة في `07-program.html`.
+- إضافة `@keyframes spin` و`hero-media .gpill` لدعم شاشة `03-prepare.html`.
+- تنظيف ألوان raw داخل HTML، بحيث تبقى hex الخام فقط في عرض الـ palette داخل `00-components.html`.
+
+### حالة النماذج حالياً
+
+النماذج أصبحت مرجعاً بصرياً أفضل للمرحلة التالية، لكنها ما زالت HTML prototypes وليست تطبيق Android الفعلي. يجب استخدام هذه النماذج كمرجع عند تحويل شاشات Android التالية:
+
+- `Train`
+- `Explore`
+- `Reports`
+- `Program Session`
+- `Level Profile`
+- `Assessment`
 
 ## المرحلة 1: تثبيت Design System
 
@@ -345,6 +461,14 @@
 - `ReadLints` أظهر عدم وجود أخطاء على الملفات التي تم تعديلها أثناء العمل.
 - المستخدم شغّل build من Android Studio ونجح قبل بعض التعديلات اللاحقة.
 - بعد ظهور خطأ duplicate strings، تم إصلاحه.
+- تم تشغيل `ReadLints` على مجلد `Docs/02-Roadmaps-And-Plans/UI-UX/prototypes` بعد موجة Premium Refresh، ولم تظهر أخطاء linter.
+- تم فحص توازن أقواس `app.css` بعد تعديلات Premium، والنتيجة سليمة (`css_brace_delta 0`).
+- تم التأكد من عدم وجود بقايا `app.css?v=6` داخل prototypes.
+- تم التأكد من عدم وجود raw colors داخل HTML خارج قسم عرض الـ palette في `00-components.html`.
+- تم التأكد من عدم وجود بقايا كلاسات/مسارات قديمة مثل:
+  - `premium-floating-bar`
+  - `explore-toolbar`
+  - `explore-search`
 
 ### مطلوب من Android Studio
 
@@ -369,14 +493,24 @@
 
 ## الأولوية التالية
 
-1. Build ومراجعة `Home`.
-2. تحويل `Train`.
-3. تحويل `Explore`.
-4. تحويل `Reports`.
-5. مراجعة `Exercise Detail` بعد build بصري.
-6. تنظيف `Program Session` UI.
-7. تحويل `Level Profile`.
-8. البدء في refactor معماري تدريجي.
+1. مراجعة الـ prototypes بصرياً في المتصفح بعد تحديث Premium UI، خصوصاً:
+   - `00-components.html`
+   - `08-home.html`
+   - `01-train.html`
+   - `04-explore.html`
+   - `03-prepare.html`
+   - `07-program.html`
+   - `09-reports.html`
+2. Build ومراجعة `Home` في Android.
+3. نقل اتجاه Prototype Premium UI إلى Android تدريجياً حسب الأولوية:
+   - `Train`
+   - `Explore`
+   - `Reports`
+   - `Program Session`
+   - `Level Profile`
+   - `Assessment`
+4. مراجعة `Exercise Detail` بعد build بصري.
+5. البدء في refactor معماري تدريجي بعد تثبيت موجات UI.
 
 ## Checklist
 
@@ -389,8 +523,19 @@
 - [x] إضافة `SectionHeader`.
 - [x] تحويل `Home` مبدئياً.
 - [x] تحويل `Exercise Detail` مبدئياً.
+- [x] تحديث `prototypes/app.css` إلى Premium UI v7.
+- [x] تحديث `00-components.html` بقسم Premium patterns.
+- [x] تحديث كتالوج prototypes في `index.html`.
+- [x] تنظيم `nav.js` بين main tabs والتدفقات الداخلية.
+- [x] حذف `18-training-live.html` من prototype navigation.
+- [x] تحديث prototypes الرئيسية: `Home`, `Train`, `Explore`, `Reports`.
+- [x] تحديث prototypes الداخلية: session, prepare, program, workout flow, assessment, level, report detail.
+- [x] تحديث Auth/Profile/Onboarding prototypes.
+- [x] مراجعة ألوان prototypes وحصرها في palette.
+- [x] إصلاح مشاكل التداخل والمساحات والتناسق في مكونات prototypes.
 - [ ] Build نهائي بعد تحويل `Home`.
-- [ ] مراجعة light/dark بصرياً.
+- [ ] مراجعة light/dark بصرياً على Android.
+- [ ] مراجعة prototypes بصرياً يدوياً في المتصفح بعد آخر إصلاحات Premium.
 - [ ] تحويل `Train`.
 - [ ] تحويل `Explore`.
 - [ ] تحويل `Reports`.

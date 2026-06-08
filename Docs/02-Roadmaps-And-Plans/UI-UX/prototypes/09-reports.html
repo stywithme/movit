@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en" dir="ltr" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WayToFix · Reports</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css?v=7">
+<style>
+  .reports-tabs{display:flex;gap:0;border-bottom:1px solid var(--divider);margin:0 -16px;padding:0 16px 0}
+  .reports-tabs button{flex:1;border:none;background:none;font-family:var(--font);font-size:13px;font-weight:700;
+    color:var(--text-3);padding:12px 4px 14px;cursor:pointer;position:relative}
+  .reports-tabs button.is-active{color:var(--primary)}
+  .reports-tabs button.is-active::after{content:"";position:absolute;left:20%;right:20%;bottom:0;height:3px;
+    border-radius:3px 3px 0 0;background:var(--primary)}
+  .tab-panel{display:none}
+  :root[data-report-tab="overview"] .tab-overview{display:block}
+  :root[data-report-tab="exercises"] .tab-exercises{display:block}
+  :root[data-report-tab="trends"] .tab-trends{display:block}
+  .ex-report{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--divider)}
+  .ex-report:last-child{border-bottom:0}
+  .score-pill{min-width:44px;text-align:center;font-size:14px;font-weight:800;padding:8px 10px;border-radius:12px;background:var(--success-tint);color:var(--success)}
+</style>
+</head>
+<body data-main="09-reports.html">
+
+<button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+  <svg class="ic sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+  <svg class="ic moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+  <span class="tlabel">Light</span>
+</button>
+
+<div class="proto-nav-top">
+  <div class="state-switch" data-state-switch data-default="data">
+    <div class="ss-title">Reports · state</div>
+    <button data-go="data">With data</button>
+    <button data-go="empty">Empty</button>
+    <button data-go="locked">Locked</button>
+    <button data-go="loading">Loading</button>
+  </div>
+  <nav class="internal-nav" id="tabSwitch" data-local aria-label="Report tabs">
+    <div class="in-title">Tabs</div>
+    <a href="#" data-tab="overview" class="is-active">Overview</a>
+    <a href="#" data-tab="exercises">Exercises</a>
+    <a href="#" data-tab="trends">Trends</a>
+  </nav>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5 10v10h5v-6h4v6h5V10"/></symbol>
+<symbol id="i-dumbbell" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M3 8v8M6 5v14M18 5v14M21 8v8"/></symbol>
+<symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></symbol>
+<symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+<symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2 8.5a16 16 0 0 1 20 0M5 12a11 11 0 0 1 14 0M8.5 15.5a6 6 0 0 1 7 0"/><path d="M12 19h.01"/></symbol>
+<symbol id="i-batt" viewBox="0 0 24 24"><rect x="2" y="7" width="17" height="10" rx="2.5"/><path d="M22 11v2"/><rect x="4" y="9" width="11" height="6" rx="1" fill="currentColor" stroke="none"/></symbol>
+</defs></svg>
+
+<div class="phone">
+  <div class="statusbar"><span>9:41</span><span class="sb-right"><svg class="ic" viewBox="0 0 24 24"><use href="#i-wifi"/></svg><svg class="ic" viewBox="0 0 24 24"><use href="#i-batt"/></svg></span></div>
+
+  <header class="app-header">
+    <div class="flex-1">
+      <div class="htitle type-title">Reports</div>
+      <div class="hsub type-caption">Performance &amp; progress</div>
+    </div>
+    <img class="avatar" src="https://i.pravatar.cc/120?img=8" alt="">
+  </header>
+
+  <div class="reports-tabs" data-single id="reportsTabBar">
+    <button class="is-active" data-tab-btn="overview">Overview</button>
+    <button data-tab-btn="exercises">Exercises</button>
+    <button data-tab-btn="trends">Trends</button>
+  </div>
+
+  <main class="screen screen--compact">
+
+    <!-- Loading -->
+    <div data-state="loading" class="empty-state">
+      <div class="ring-ic" style="animation:none;background:transparent;border:none">
+        <div class="sk" style="width:48px;height:48px;border-radius:50%"></div>
+      </div>
+      <div class="t">Loading your metrics…</div>
+      <div class="s">Pull down to refresh anytime.</div>
+    </div>
+
+    <!-- Empty -->
+    <div data-state="empty" class="empty-state">
+      <div class="ring-ic"><svg class="ic" viewBox="0 0 24 24"><use href="#i-chart"/></svg></div>
+      <div class="t">No reports yet</div>
+      <div class="s">Complete your first workout to unlock performance insights.</div>
+      <button class="btn btn--primary btn--sm w-auto mx-auto">Start training</button>
+    </div>
+
+    <!-- Locked -->
+    <div data-state="locked" class="empty-state">
+      <div class="ring-ic icon-box--coral" style="width:74px;height:74px;border-radius:50%;margin:0 auto 16px">
+        <svg class="ic" viewBox="0 0 24 24"><use href="#i-lock"/></svg>
+      </div>
+      <div class="t">Reports are a Pro feature</div>
+      <div class="s">Upgrade to unlock detailed analytics, trends, and export.</div>
+      <button class="btn btn--tonal btn--sm w-auto mx-auto">Upgrade</button>
+    </div>
+
+    <!-- Data panels -->
+    <div data-state="data">
+
+      <div class="tab-panel tab-overview">
+        <section class="section">
+          <div class="sec-head"><div class="sec-title type-title">Key numbers</div><div class="type-caption">Last 30 days</div></div>
+          <div class="kpi-grid">
+            <div class="kpi-card"><div class="kv">18</div><div class="kl">Days trained</div></div>
+            <div class="kpi-card kpi-card--highlight"><div class="kv">1,240</div><div class="kl">Total reps</div></div>
+            <div class="kpi-card"><div class="kv">8.2k</div><div class="kl">Volume (kg)</div></div>
+            <div class="kpi-card"><div class="kv">14h</div><div class="kl">Training time</div></div>
+          </div>
+        </section>
+        <section class="section">
+          <div class="chart-panel">
+            <h4 class="type-title">Form score journey</h4>
+            <svg class="chart" viewBox="0 0 320 120" aria-hidden="true">
+              <polyline fill="none" stroke="var(--primary)" stroke-width="2.5" points="10,90 50,75 90,68 130,55 170,48 210,42 250,38 290,32"/>
+              <circle cx="290" cy="32" r="4" fill="var(--primary)"/>
+            </svg>
+          </div>
+        </section>
+        <section class="section">
+          <div class="chart-panel">
+            <h4 class="type-title">Weekly breakdown</h4>
+            <div class="bars">
+              <div class="b" style="height:45%"></div>
+              <div class="b hi" style="height:78%"></div>
+              <div class="b" style="height:55%"></div>
+              <div class="b hi" style="height:92%"></div>
+              <div class="b" style="height:40%"></div>
+            </div>
+            <div class="bars-x"><span>W1</span><span>W2</span><span>W3</span><span>W4</span><span>W5</span></div>
+          </div>
+        </section>
+      </div>
+
+      <div class="tab-panel tab-exercises">
+        <section class="section">
+          <div class="sec-head"><div class="sec-title type-title">By exercise</div></div>
+          <div class="card">
+            <div class="ex-report">
+              <div class="score-pill">92</div>
+              <div class="flex-1"><div class="type-title">Barbell Squat</div><div class="type-caption">12 sessions</div></div>
+            </div>
+            <div class="ex-report">
+              <div class="score-pill text-primary" style="background:var(--primary-tint)">85</div>
+              <div class="flex-1"><div class="type-title">Romanian Deadlift</div><div class="type-caption">8 sessions</div></div>
+            </div>
+            <div class="ex-report">
+              <div class="score-pill text-warning" style="background:var(--warning-tint)">71</div>
+              <div class="flex-1"><div class="type-title">Overhead Press</div><div class="type-caption">6 sessions</div></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="tab-panel tab-trends">
+        <section class="section">
+          <div class="insight insight--success">
+            <div class="ic"><svg class="ic" viewBox="0 0 24 24"><use href="#i-chart"/></svg></div>
+            <div><div class="t">Form improving</div><div class="s">+6% average form score over 4 weeks.</div></div>
+          </div>
+        </section>
+        <section class="section">
+          <div class="chart-panel">
+            <h4 class="type-title">Volume trend</h4>
+            <div class="bars">
+              <div class="b" style="height:35%"></div><div class="b" style="height:48%"></div>
+              <div class="b hi" style="height:65%"></div><div class="b hi" style="height:88%"></div>
+            </div>
+            <div class="bars-x"><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span></div>
+          </div>
+        </section>
+        <section class="section">
+          <div class="state-card">
+            <div class="state-card__label">FATIGUE INDEX</div>
+            <div class="state-card__title text-warning">Moderate</div>
+            <div class="state-card__sub">Consider an extra rest day this week.</div>
+          </div>
+        </section>
+      </div>
+
+    </div>
+  </main>
+
+  <nav class="bottom-nav" data-nav>
+    <button class="nav-item" type="button"><svg class="ic" viewBox="0 0 24 24"><use href="#i-home"/></svg></button>
+    <button class="nav-item" type="button"><svg class="ic" viewBox="0 0 24 24"><use href="#i-dumbbell"/></svg></button>
+    <button class="nav-item" type="button"><svg class="ic" viewBox="0 0 24 24"><use href="#i-compass"/></svg></button>
+    <button class="nav-item is-active" type="button"><svg class="ic" viewBox="0 0 24 24"><use href="#i-chart"/></svg>Reports</button>
+  </nav>
+</div>
+
+<script src="nav.js?v=1"></script>
+<script src="app.js?v=6"></script>
+<script>
+(function(){
+  var root = document.documentElement;
+  root.setAttribute('data-report-tab', 'overview');
+  function setTab(t){
+    root.setAttribute('data-report-tab', t);
+    document.querySelectorAll('[data-tab-btn]').forEach(function(b){
+      b.classList.toggle('is-active', b.getAttribute('data-tab-btn') === t);
+    });
+    document.querySelectorAll('#tabSwitch a').forEach(function(a){
+      a.classList.toggle('is-active', a.getAttribute('data-tab') === t);
+    });
+  }
+  document.querySelectorAll('[data-tab-btn]').forEach(function(b){
+    b.addEventListener('click', function(){ setTab(b.getAttribute('data-tab-btn')); });
+  });
+  document.querySelectorAll('#tabSwitch a').forEach(function(a){
+    a.addEventListener('click', function(e){ e.preventDefault(); setTab(a.getAttribute('data-tab')); });
+  });
+})();
+</script>
+</body>
+</html>

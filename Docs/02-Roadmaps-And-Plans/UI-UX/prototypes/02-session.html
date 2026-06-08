@@ -6,20 +6,9 @@
 <title>WayToFix · Session</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="app.css?v=4">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css?v=7">
 <style>
-  .day-summary .ds-cell {
-    background: var(--lime-tint);
-    border-color: var(--lime);
-  }
-  .day-summary .ds-v {
-    color: var(--lime-deep);
-  }
-  .day-summary .ds-l {
-    color: var(--text-2);
-  }
-
   .rest-block {
     background: var(--coral-tint);
     border-color: var(--coral);
@@ -39,17 +28,7 @@
   }
 </style>
 </head>
-<body>
-
-<!-- page navigator -->
-<nav class="page-nav">
-  <div class="pn-title">Pages</div>
-  <a href="00-components.html">00 · Components</a>
-  <a href="01-train.html">01 · Train</a>
-  <a href="02-session.html" class="is-active">02 · Session</a>
-  <a href="03-prepare.html">03 · Prepare</a>
-  <a href="04-explore.html">04 · Explore</a>
-</nav>
+<body data-main="01-train.html" data-flow="training">
 
 <!-- theme toggle -->
 <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
@@ -115,11 +94,11 @@
     <!-- day header -->
     <div class="day-head">
       <div class="dh-title">Day 3 · Lower Body</div>
-      <div class="dh-sub">Week 2 · Strength focus <span class="edit-only" style="color:var(--coral);font-weight:700">· editing</span></div>
-      <div class="day-summary">
-        <div class="ds-cell"><div class="ds-v">6</div><div class="ds-l">Exercises</div></div>
-        <div class="ds-cell"><div class="ds-v">~45<span style="font-size:11px">m</span></div><div class="ds-l">Duration</div></div>
-        <div class="ds-cell"><div class="ds-v">18</div><div class="ds-l">Sets</div></div>
+      <div class="dh-sub">Week 2 · Strength focus <span class="edit-only text-coral fw-800">· editing</span></div>
+      <div class="stats-strip">
+        <div class="stats-strip-cell"><div class="val">6</div><div class="lbl">Exercises</div></div>
+        <div class="stats-strip-cell"><div class="val">~45<small style="font-size:11px">m</small></div><div class="lbl">Duration</div></div>
+        <div class="stats-strip-cell"><div class="val">18</div><div class="lbl">Sets</div></div>
       </div>
     </div>
 
@@ -290,15 +269,17 @@
 
   </main>
 
-  <!-- sticky bottom action bar -->
-  <div class="action-bar">
-    <!-- view: start -->
-    <div class="ab-start view-only" style="display:flex">
-      <div class="ab-sum"><div class="s1">Ready to train</div><div class="s2">6 exercises · ~45 min</div></div>
-      <button class="ab-go"><svg class="ic" viewBox="0 0 24 24"><use href="#i-play"/></svg>Start</button>
+  <!-- sticky bottom action dock -->
+  <div class="action-dock view-only">
+    <div class="dock-info">
+      <div class="dock-title">Ready to train</div>
+      <div class="dock-desc">6 exercises · ~45 min</div>
     </div>
+    <button class="btn btn--primary ab-go"><svg class="ic" viewBox="0 0 24 24"><use href="#i-play"/></svg>Start</button>
+  </div>
+  <div class="action-bar edit-only">
     <!-- edit: add / done -->
-    <div class="ab-edit edit-only">
+    <div class="ab-edit">
       <button class="ab-add"><svg class="ic" viewBox="0 0 24 24"><use href="#i-plus"/></svg>Add exercise</button>
       <button class="ab-add ab-add--rest"><svg class="ic" viewBox="0 0 24 24"><use href="#i-clock"/></svg>Rest</button>
       <button class="ab-done" data-go-state="view">Done</button>
@@ -350,7 +331,7 @@
     <div class="grab"></div>
     <div style="display:flex;align-items:center;gap:12px">
       <img src="https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&w=160&q=70" alt="" style="width:48px;height:48px;border-radius:12px;object-fit:cover" onerror="this.style.visibility='hidden'">
-      <div style="flex:1"><div class="sh-title">Barbell Squat</div><button class="btn--text" style="padding:2px 0;font-size:12.5px;color:var(--primary);background:none;border:none;font-weight:700;cursor:pointer" data-go-state="swap">Change exercise →</button></div>
+      <div style="flex:1"><div class="sh-title">Barbell Squat</div><button class="btn btn--text p-0" data-go-state="swap">Change exercise →</button></div>
     </div>
 
     <div style="margin-top:10px">
@@ -380,6 +361,7 @@
 
 </div>
 
-<script src="app.js?v=2"></script>
+<script src="nav.js?v=1"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>

@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en" dir="ltr" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WayToFix · Profile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css?v=7">
+<style>
+  .profile-top{display:flex;align-items:center;padding:8px 12px}
+  .profile-top .title{flex:1;text-align:center;font-size:17px;font-weight:800}
+  .profile-hero .edit{position:absolute;right:0;bottom:0;width:32px;height:32px;border-radius:50%;
+    background:var(--primary);color:var(--on-primary);border:2px solid var(--surface);display:grid;place-items:center}
+  .profile-hero .av-wrap{position:relative;display:inline-block}
+  .profile-hero .name{font-size:22px;font-weight:800;margin-top:14px}
+  .pro-card .title{font-size:18px;font-weight:800}
+  .pro-card .sub{font-size:13px;opacity:.85;margin-top:6px;line-height:1.45}
+  .pro-card .btn{margin-top:14px;width:auto}
+  .settings-group{margin:0 16px 16px}
+  .settings-group h3{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin:0 0 8px 4px}
+  .settings-row{display:flex;align-items:center;gap:14px;padding:15px 16px;background:var(--surface);
+    border:1px solid var(--border)}
+  .settings-row:first-of-type{border-radius:var(--r-lg) var(--r-lg) 0 0}
+  .settings-row:last-of-type{border-radius:0 0 var(--r-lg) var(--r-lg)}
+  .settings-row+.settings-row{border-top:0;margin-top:-1px}
+  .settings-row .meta{flex:1}
+  .settings-row .meta .t{font-size:15px;font-weight:600}
+  .settings-row .meta .s{font-size:12px;color:var(--text-3);margin-top:2px}
+  .settings-row .val{font-size:13px;font-weight:600;color:var(--text-2)}
+  .profile-menu{width:48px;height:48px;border:none;box-shadow:none}
+  .ic-sm{width:18px;height:18px}
+  .chev-muted{color:var(--text-4)}
+  .text-error{color:var(--error)}
+  .pro-manage{color:var(--on-ink);border-color:var(--on-ink-veil-35)}
+  .sub-header{position:relative;top:0;left:0;right:0;margin-bottom:16px}
+  .sub-header__title{flex:1;text-align:center;font-weight:800}
+  .sub-plan{text-align:center;padding:24px}
+  .sub-plan .tag{margin:0 auto}
+  .sub-plan .num{margin-top:12px}
+  .sub-features{text-align:left;margin:16px 0 0;padding-left:18px;font-size:13px;color:var(--text-2);line-height:1.8}
+  .sub-alt{margin-top:12px;opacity:.85}
+</style>
+</head>
+<body data-main="11-profile.html">
+
+<button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+  <svg class="ic sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+  <svg class="ic moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+  <span class="tlabel">Light</span>
+</button>
+
+<div class="state-switch" data-state-switch data-default="free">
+  <div class="ss-title">Profile · plan</div>
+  <button data-go="free">Free user</button>
+  <button data-go="pro">Pro member</button>
+  <button data-go="sub">Subscription</button>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+<symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+<symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2 8.5a16 16 0 0 1 20 0M5 12a11 11 0 0 1 14 0M8.5 15.5a6 6 0 0 1 7 0"/><path d="M12 19h.01"/></symbol>
+<symbol id="i-batt" viewBox="0 0 24 24"><rect x="2" y="7" width="17" height="10" rx="2.5"/><path d="M22 11v2"/><rect x="4" y="9" width="11" height="6" rx="1" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></symbol>
+</defs></svg>
+
+<div class="phone">
+  <div class="statusbar"><span>9:41</span><span class="sb-right"><svg class="ic" viewBox="0 0 24 24"><use href="#i-wifi"/></svg><svg class="ic" viewBox="0 0 24 24"><use href="#i-batt"/></svg></span></div>
+
+  <div class="profile-top">
+    <div class="spacer" style="width:48px"></div>
+    <div class="title">Profile</div>
+    <button class="icon-btn profile-menu" aria-label="More options"><svg class="ic" viewBox="0 0 24 24"><use href="#i-more"/></svg></button>
+  </div>
+
+  <main class="screen screen--compact screen--tight">
+
+    <div data-state="free pro">
+      <div class="profile-hero">
+        <div class="av-wrap">
+          <img class="av" src="https://i.pravatar.cc/200?img=8" alt="">
+          <span class="edit"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-edit"/></svg></span>
+        </div>
+        <div class="name">Mahmoud Hassan</div>
+        <div class="label">mahmoud@email.com</div>
+      </div>
+    </div>
+
+    <div data-state="free">
+      <div class="pro-card">
+        <div class="title">Unlock Pro</div>
+        <div class="sub">Advanced reports, program analytics, and unlimited body scans.</div>
+        <button class="btn btn--tonal btn--sm">View plans</button>
+      </div>
+    </div>
+
+    <div data-state="pro">
+      <div class="pro-card">
+        <span class="tag tag--gold">PRO ACTIVE</span>
+        <div class="title">WayToFix Pro</div>
+        <div class="sub">Renews Jun 15, 2026 · Monthly</div>
+        <button class="btn btn--outline btn--sm pro-manage">Manage subscription</button>
+      </div>
+    </div>
+
+    <!-- Subscription screen -->
+    <div data-state="sub">
+      <div class="float-header sub-header">
+        <button class="float-pill float-pill--icon" type="button"><svg class="ic" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
+        <span class="sub-header__title">Subscription</span>
+        <span class="spacer" style="width:46px"></span>
+      </div>
+      <div class="card stack sub-plan">
+        <div class="tag tag--lime">Best value</div>
+        <div class="num num-lg">$9.99</div>
+        <div class="cap">per month</div>
+        <ul class="sub-features">
+          <li>Full reports &amp; trends</li>
+          <li>Program progression insights</li>
+          <li>Unlimited body scans</li>
+          <li>Priority support</li>
+        </ul>
+        <button class="btn btn--primary">Subscribe now</button>
+        <button class="btn btn--text">Restore purchases</button>
+      </div>
+      <div class="card sub-alt">
+        <div class="list-row"><div class="meta"><div class="t">Annual plan</div><div class="s">$79.99 / year · save 33%</div></div>
+        <svg class="ic chev ic-sm" viewBox="0 0 24 24"><use href="#i-chev"/></svg></div>
+      </div>
+    </div>
+
+    <div data-state="free pro">
+      <div class="settings-group">
+        <h3>Preferences</h3>
+        <div class="settings-row">
+          <div class="meta"><div class="t">Language</div></div>
+          <span class="val">English</span>
+          <svg class="ic ic-sm chev-muted" viewBox="0 0 24 24"><use href="#i-chev"/></svg>
+        </div>
+        <div class="settings-row">
+          <div class="meta"><div class="t">Appearance</div><div class="s">Light · Dark · System</div></div>
+          <span class="val">System</span>
+          <svg class="ic ic-sm chev-muted" viewBox="0 0 24 24"><use href="#i-chev"/></svg>
+        </div>
+        <div class="settings-row">
+          <div class="meta"><div class="t">Audio cues</div></div>
+          <div class="switch is-on" data-switch role="switch" aria-checked="true"></div>
+        </div>
+        <div class="settings-row">
+          <div class="meta"><div class="t">Haptic feedback</div></div>
+          <div class="switch is-on" data-switch role="switch"></div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <h3>Account</h3>
+        <div class="settings-row clickable">
+          <div class="meta"><div class="t">Edit profile</div></div>
+          <svg class="ic ic-sm chev-muted" viewBox="0 0 24 24"><use href="#i-chev"/></svg>
+        </div>
+        <div class="settings-row clickable">
+          <div class="meta"><div class="t">Training profile</div><div class="s">Goals · equipment · schedule</div></div>
+          <svg class="ic ic-sm chev-muted" viewBox="0 0 24 24"><use href="#i-chev"/></svg>
+        </div>
+        <div class="settings-row clickable">
+          <div class="meta"><div class="t text-error">Sign out</div></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="nav.js?v=1"></script>
+<script src="app.js?v=6"></script>
+</body>
+</html>
