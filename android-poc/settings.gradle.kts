@@ -14,5 +14,10 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "TrainingValidatorPoC"
+rootProject.name = "Movit"
 include(":app")
+include(":shared")
+include(":core:designsystem")
+include(":feature:explore")
+include(":feature:home")
+include(":feature:shell")

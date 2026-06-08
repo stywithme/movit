@@ -13,6 +13,24 @@
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix.Training" />
+
+        <activity
+            android:name="com.movit.debug.MovitDesignSystemCatalogActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix" />
+
+        <activity
+            android:name="com.movit.debug.MovitExplorePilotActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix" />
+
+        <activity
+            android:name="com.movit.debug.MovitShellPilotActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix" />
     </application>
 
 </manifest>

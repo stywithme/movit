@@ -4,27 +4,30 @@
 
 ## الهدف
 
-بناء واجهة موبايل احترافية وقابلة للتوسع لتطبيق `android-poc`، مع تجهيز المسار الطبيعي لتطبيق iOS عبر Kotlin Multiplatform. الخطة لا تفترض إعادة بناء كاملة مرة واحدة. المسار الصحيح هو تحديث Android الحالي تدريجياً، ثم نقل المنطق والـ UI إلى KMP/Compose Multiplatform شاشة بشاشة.
+بناء واجهة موبايل احترافية وقابلة للتوسع لتطبيق `android-poc`، مع تجهيز المسار الطبيعي لتطبيق iOS عبر Kotlin Multiplatform. بما أن التطبيق ما زال تحت التطوير والتعديلات الكبيرة ستكون على فرع آخر، فالهدف ليس الحفاظ المفرط على الشكل الحالي، بل تنفيذ التحول الصحيح من البداية. التدرج هنا ليس خوفاً من التغيير، بل طريقة منظمة للتجربة، البناء، والتحقق بعد كل خطوة.
 
 القرار التصميمي المعتمد:
 
 - Material Design 3 كأساس تصميمي.
 - Compose Multiplatform كمسار الواجهة الجديد القابل للمشاركة بين Android وiOS.
-- الإبقاء على View/XML مؤقتاً فقط للشاشات الحالية إلى أن يتم نقلها.
+- View/XML يصبح legacy مؤقتاً وليس الأساس الذي نقيّد به التصميم الجديد.
 - Design System واحد بمصدر حقيقة واحد للألوان، typography، spacing، radius، elevation، motion، والحالات.
+- تبني أفكار Material 3 من foundations وcomponents، مع تخصيصها لهوية التطبيق بدل نسخ شكل Google الافتراضي.
 
 ## ملخص القرار التنفيذي
 
-المشروع الحالي Android فقط، View/XML، بموديول واحد `:app`. لا يوجد Compose أو KMP حالياً. لذلك أفضل مسار هو:
+المشروع الحالي Android فقط، View/XML، بموديول واحد `:app`. لا يوجد Compose أو KMP حالياً. وبما أن المنتج ما زال في مرحلة تطوير، فالقرار الاستراتيجي هو التحول إلى بنية جديدة صحيحة، مع استخدام التطبيق الحالي كمصدر سلوك وبيانات وتجارب، وليس كقيد تصميمي دائم.
 
-1. تثبيت foundations داخل Android الحالي حتى لا يتدهور الـ UI أثناء التطوير.
-2. إنشاء طبقة Design System قابلة للترجمة إلى Compose.
-3. إضافة KMP تدريجياً، بدءاً من models/domain/data وليس الكاميرا أو الـ ML.
-4. إضافة Compose في Android كممر انتقال.
-5. نقل الشاشات المناسبة إلى Compose Multiplatform واحدة تلو الأخرى.
-6. إنشاء iOS entry point بعد أن تصبح أول مجموعة features تعمل من `commonMain`.
+أفضل مسار هو:
 
-هذا يتماشى مع دليل JetBrains الرسمي للهجرة التدريجية من Android إلى KMP، حيث يتم نقل المكتبات والمنطق أولاً، ثم UI screen-by-screen، مع إبقاء التطبيق في حالة build ناجحة بعد كل خطوة.
+1. تثبيت foundations الجديدة كقرار منتج، وليس كتجميل فوق النظام القديم.
+2. إنشاء Design System مبني على Material 3 ويعمل في Compose Multiplatform.
+3. إنشاء KMP structure مبكراً حتى يكون Android وiOS جزءاً من نفس التفكير.
+4. نقل المنطق القابل للمشاركة إلى `commonMain`.
+5. بناء الشاشات الجديدة بـ Compose Multiplatform، مع استخدام Android الحالي كمرجع سلوك فقط.
+6. إنشاء iOS entry point مبكراً بعد أول feature قابلة للمشاركة.
+
+هذا يتماشى مع دليل JetBrains الرسمي للهجرة التدريجية من Android إلى KMP، لكن تفسير التدرج هنا عملي: كل خطوة يجب أن تبني وتجرب وتثبت القرار التالي. لا نتمسك بـ View/XML أو single-module لأنهما موجودان حالياً فقط.
 
 ## قراءة الوضع الحالي
 
@@ -67,9 +70,9 @@
 
 ## المبادئ المعمارية
 
-### 1. UI حديث لكن غير متهور
+### 1. التحول الصحيح أهم من الحفاظ على القديم
 
-لا ننقل كل شيء إلى Compose مرة واحدة. أي شاشة تعمل الآن تظل تعمل، ويتم نقلها عندما تكون لها قيمة واضحة أو عندما يكون استمرارها في XML مكلفاً.
+بما أن التطبيق تحت التطوير، نسمح بتغييرات جذرية في البنية والواجهة عندما تكون هي الطريق الصحيح. لا ننقل كل شيء دفعة واحدة فقط لأننا نحتاج build وتجربة مستمرة، وليس لأننا نريد حماية الشكل الحالي. أي شاشة legacy يمكن إعادة بنائها بالكامل إذا كان ذلك أنظف وأقرب للـ KMP/iOS.
 
 ### 2. KMP يبدأ من المنطق وليس الكاميرا
 
@@ -89,11 +92,15 @@
 
 أي شاشة جديدة أو منقولة إلى Compose يجب أن تستخدم `PoseTheme` ومكونات النظام فقط. لا توجد ألوان مباشرة أو typography عشوائية داخل feature screen.
 
-### 4. Feature-first مع core واضح
+### 4. Material 3 كأسلوب تفكير لا كقالب جاهز
+
+نستخدم Material 3 foundations لتحديد أدوار اللون، typography، shape، motion، elevation، layout، states، والتفاعل. ونستخدم components كنقطة بداية لسلوك المكونات، لكن المظهر النهائي يجب أن يعبر عن هوية تطبيق health/fitness: هادئ، نظيف، light-first، ومرتبط بالتمرين والتحليل، وليس نسخة عامة من تطبيقات Google.
+
+### 5. Feature-first مع core واضح
 
 نقسم المشروع حول features، لكن بدون تكرار data/network/domain. كل feature تملك UI/state/navigation الخاصة بها، والـ core يملك primitives المشتركة.
 
-### 5. Unidirectional Data Flow
+### 6. Unidirectional Data Flow
 
 كل شاشة Compose يجب أن تكون:
 
@@ -250,6 +257,74 @@ core/designsystem/src/commonMain/kotlin/com/waytofix/designsystem/
 - كل icon button له content description أو يتم تعليمه decorative.
 - الـ charts داخل Compose تكون Canvas خفيفة ومقروءة، ولا نعتمد على MPAndroidChart في الشاشات الجديدة المشتركة.
 
+## تبني Material 3 عملياً
+
+### Foundations المعتمدة
+
+نستخدم Material 3 foundations كمرجع تصميم رئيسي، خصوصاً:
+
+- Color system: أدوار semantic مثل `primary`, `secondary`, `tertiary`, `surface`, `surfaceVariant`, `outline`, `error` بدلاً من أسماء ألوان خام.
+- Typography: الاعتماد على scale واضح يقابل أدوار Material 3 مثل display/headline/title/body/label.
+- Shape: shape scale موحد للمكونات، مع radius أكبر للكروت والـ CTAs بما يناسب النمط الحالي.
+- Layout: spacing rhythm، touch targets، responsive/adaptive behavior.
+- Motion: transitions قصيرة وواضحة، motion لخدمة feedback وليس decoration.
+- Elevation: tonal elevation وحدود ناعمة بدلاً من shadows ثقيلة.
+- Interaction states: pressed, focused, disabled, selected, error, loading.
+- Accessibility: contrast، font scaling، semantic labels، وminimum touch target.
+
+### Components المعتمدة كنواة
+
+مكونات Material 3 التالية تصبح أساس مكتبة `Pose`، لكن بأسماء وهوية التطبيق:
+
+- Buttons:
+  - `PoseButton.Filled`
+  - `PoseButton.Tonal`
+  - `PoseButton.Outlined`
+  - `PoseButton.Text`
+  - `PoseIconButton`
+- Cards:
+  - `PoseCard.Filled`
+  - `PoseCard.Outlined`
+  - `PoseMetricCard`
+  - `PoseMediaCard`
+- Navigation:
+  - `PoseNavigationBar`
+  - `PoseTopAppBar`
+  - `PoseTabs`
+  - `PoseAdaptiveNavigation` لاحقاً للتابلت/foldables.
+- Selection:
+  - `PoseFilterChip`
+  - `PoseAssistChip`
+  - `PoseSegmentedControl`
+  - `PoseSwitch`
+  - `PoseCheckbox`
+- Feedback:
+  - `PoseSnackbar`
+  - `PoseDialog`
+  - `PoseBottomSheet`
+  - `PoseProgressIndicator`
+  - `PoseEmptyState`
+- Input:
+  - `PoseTextField`
+  - `PoseSearchBar`
+  - `PoseSlider`
+- Training-specific:
+  - `PoseExerciseCard`
+  - `PoseWorkoutCard`
+  - `PoseProgramHero`
+  - `PoseMetricRow`
+  - `PoseActionDock`
+  - `PoseTimeline`
+  - `PoseScoreRing`
+
+### قواعد تخصيص Material 3
+
+- لا نستخدم default Material component مباشرة داخل feature screens إلا لو مغلف داخل `Pose*`.
+- أي component جديد يبدأ من Material 3 behavior ثم يأخذ visual identity من prototypes.
+- dynamic color من Android يمكن دعمه كاختيار لاحق، لكن brand palette هي الافتراضي حتى لا تضيع هوية التطبيق.
+- اللون لا يشرح الحالة وحده؛ يجب دعم icon/text/semantic state.
+- المكونات لا تحتوي business logic. أي logic يبقى في ViewModel/use case.
+
 ## Pattern الشاشة القياسي
 
 ```kotlin
@@ -322,13 +397,15 @@ sealed interface ExploreEffect {
 
 ## خطة الهجرة
 
-### Phase 0 - تثبيت أساس التطوير
+### Phase 0 - تأسيس فرع التحول
 
-الهدف: منع الفوضى قبل KMP.
+الهدف: تجهيز فرع جديد للتحول الصحيح، بحيث نستطيع تغيير البنية والواجهة بحرية مع الحفاظ على build/test checkpoints.
 
 - إضافة `gradle/libs.versions.toml`.
 - نقل versions من `app/build.gradle.kts` إلى version catalog.
 - إضافة convention plugins لاحقاً في `build-logic`.
+- تحديد package/module naming النهائي قبل إنشاء موديولات كثيرة.
+- اعتماد Compose Multiplatform وMaterial 3 كقرار مبكر، لا كمرحلة مؤجلة.
 - توثيق compatibility matrix:
   - Kotlin
   - Compose Multiplatform
@@ -340,45 +417,46 @@ sealed interface ExploreEffect {
   - `android-poc/gradlew.bat :app:testDebugUnitTest`
 - تحديث مستند الحالة لأن `gradlew` موجود الآن.
 
-### Phase 1 - Android UI stabilization
+### Phase 1 - Design System + KMP skeleton
 
-الهدف: التطبيق الحالي يظل قابل للاستخدام أثناء التحول.
+الهدف: بناء الهيكل الصحيح قبل نقل الشاشات. التطبيق الحالي يظل مرجعاً للسلوك، لكن البنية الجديدة هي المصدر الذي سنبني عليه Android وiOS.
 
 الأولويات:
 
-1. مراجعة build وvisual لـ `Home`.
-2. نقل `Train` من prototype إلى Android.
-3. نقل `Explore`.
-4. نقل `Reports`.
-5. تنظيف `Level Profile` لأنه programmatic ومناسب لاحقاً كـ Compose pilot.
-6. تأجيل `TrainingActivity` وcamera-heavy screens إلى أن يثبت الـ design system.
+1. إنشاء `shared` أو `core` كبداية KMP.
+2. إنشاء `core/designsystem` أو `shared-ui` للـ Material 3 theme والمكونات.
+3. إضافة Android Compose host مبكر.
+4. إضافة iOS shell مبكر بعد أول شاشة بسيطة.
+5. بناء component catalog حقيقي داخل Compose، مستوحى من `00-components.html`.
+6. اختيار أول feature pilot.
 
 قواعد كل شاشة:
 
 - لا raw colors.
-- لا hardcoded text sizes إلا عبر styles/tokens.
-- الحفاظ على IDs عند تعديل XML.
+- لا hardcoded text sizes إلا عبر tokens.
+- لا ضرورة للحفاظ على IDs إذا كانت الشاشة ستعاد بناؤها في Compose داخل الفرع الجديد.
 - دعم Light/Dark/System.
 - مراجعة RTL.
-- عدم تغيير business logic أثناء موجة UI إلا عند الضرورة.
+- فصل business logic عن UI أثناء إعادة البناء بدلاً من نقلها كما هي.
 
-### Phase 2 - Compose داخل Android
+### Phase 2 - Feature pilots
 
-الهدف: تعلم migration داخل Android قبل iOS.
+الهدف: إثبات أن البنية الجديدة تعمل end-to-end على Android، ثم iOS عند أول فرصة عملية.
 
-- تفعيل Compose في `:app`.
-- إنشاء `PoseTheme` في Android أولاً، مطابق لـ XML tokens.
+- تفعيل Compose في Android host.
+- إنشاء `PoseTheme` في shared UI، مع bridge مؤقت لـ Android إذا لزم.
 - إنشاء مكونات Compose الأساسية.
-- بناء أول شاشة Compose منخفضة المخاطر.
+- بناء أول شاشة feature كاملة بـ `UiState` و`ViewModel` وnavigation.
 
 أفضل مرشحين:
 
 1. `Level Profile`: لأن UI programmatic حالياً ويحتاج تنظيف.
 2. `Explore`: لأنه catalog/cards/filters ويشبه prototypes.
+3. `Home`: لأن تصميمها واضح ومناسب لإثبات dashboard patterns.
 
 لا نبدأ بـ `TrainingActivity` لأن الكاميرا والـ overlay والـ ML تزيد المخاطر.
 
-### Phase 3 - KMP shared logic
+### Phase 3 - Shared logic + data
 
 الهدف: بناء أساس iOS بدون لمس UI المعقد أولاً.
 
@@ -472,16 +550,18 @@ iosMain:
 
 ### الأسبوع 1-2
 
+- إنشاء فرع التحول.
 - تثبيت version catalog.
 - تشغيل build/test من Gradle wrapper.
 - توثيق compatibility matrix.
-- مراجعة Home بصرياً.
-- تحويل Train أو Explore على Android الحالي حسب الأولوية التجارية.
+- إنشاء KMP skeleton.
+- إنشاء Compose/Material 3 design system skeleton.
+- تحويل `00-components.html` إلى component backlog داخل `Pose` components.
 
 ### الأسبوع 3-4
 
-- إضافة Compose إلى `:app`.
-- بناء `PoseTheme` Compose مطابق للـ XML.
+- إضافة Compose host إلى Android.
+- بناء `PoseTheme` Compose مطابق للـ palette والـ Material 3 roles.
 - بناء مكونات:
   - `PoseCard`
   - `PoseButton`
@@ -489,21 +569,22 @@ iosMain:
   - `PoseSectionHeader`
   - `PoseEmptyState`
   - `PoseFilterChip`
-- تنفيذ Compose pilot.
+- تنفيذ أول feature pilot: `Explore` أو `Level Profile`.
 
 ### الشهر 2
 
-- إنشاء `shared`.
+- توسيع `shared`.
 - نقل أول models/use cases/repository contracts.
 - إدخال Koin في shared.
 - إدخال Ktor/kotlinx.serialization لميزة واحدة.
 - كتابة tests مشتركة.
+- إضافة iOS shell إذا كان أول feature أصبح قابلاً للعرض.
 
 ### الشهر 3
 
 - نقل أول feature screen إلى `commonMain`.
-- إضافة `iosApp`.
-- تشغيل الشاشة الأولى على iOS.
+- تشغيلها على Android وiOS.
+- نقل feature ثانية من prototypes إلى Compose.
 - مراجعة RTL/theme/accessibility على Android وiOS.
 
 ## Definition of Done لأي شاشة
@@ -520,16 +601,27 @@ iosMain:
 - لا يوجد تداخل نصوص عند font scale كبير.
 - navigation/back behavior واضح.
 
-## قرارات لا تؤخذ الآن
+## قرارات تؤخذ مبكراً في فرع التحول
+
+- Compose Multiplatform هو مسار UI الجديد.
+- Material 3 هو أساس الـ Design System.
+- KMP structure يبدأ مبكراً حتى لو بقيت بعض الشاشات Android-only مؤقتاً.
+- الشاشات الجديدة تبنى بـ `Pose*` components وليس XML.
+- التطبيق الحالي مرجع للسلوك والـ APIs، وليس قيداً على UI أو الملفات.
+
+## قرارات تؤجل حتى تتضح حدودها
 
 - لا نقرر مشاركة camera UI قبل تجربة iOS فعلية.
 - لا نقرر Room vs SQLDelight إلا بعد حصر احتياج offline cache.
-- لا نحذف Retrofit/Gson من Android دفعة واحدة.
-- لا نعيد تسمية package/applicationId أثناء UI/KMP migration.
+- لا نحذف Retrofit/Gson إلا بعد أن يثبت Ktor/kotlinx.serialization أول feature end-to-end.
+- لا نعيد تسمية package/applicationId إلا عندما يكون الاسم التجاري النهائي واضحاً.
 - لا ننقل `TrainingActivity` إلى Compose قبل فصل engine/state/adapters.
 
 ## قائمة مصادر تم الاعتماد عليها
 
+- [Material Design 3](https://m3.material.io/)
+- [Material 3 foundations](https://m3.material.io/foundations)
+- [Material 3 components](https://m3.material.io/components)
 - [Android app architecture](https://developer.android.com/topic/architecture)
 - [Android modularization guide](https://developer.android.com/topic/modularization)
 - [Android Kotlin Multiplatform guidance](https://developer.android.com/kotlin/multiplatform)
@@ -543,4 +635,3 @@ iosMain:
 - [Ktor client supported platforms](https://ktor.io/docs/client-supported-platforms.html)
 - [Koin Kotlin Multiplatform setup](https://insert-koin.io/docs/reference/koin-core/kmp-setup/)
 - [KMP with Ktor and SQLDelight tutorial](https://kotlinlang.org/docs/multiplatform/multiplatform-ktor-sqldelight.html)
-

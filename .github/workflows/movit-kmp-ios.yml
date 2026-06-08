@@ -1,0 +1,42 @@
+name: Movit KMP iOS Compile
+
+on:
+  push:
+    paths:
+      - 'android-poc/**'
+      - '.github/workflows/movit-kmp-ios.yml'
+  pull_request:
+    paths:
+      - 'android-poc/**'
+      - '.github/workflows/movit-kmp-ios.yml'
+
+jobs:
+  ios-compile:
+    name: Compile KMP iOS targets
+    runs-on: macos-14
+    defaults:
+      run:
+        working-directory: android-poc
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Compile iOS targets
+        run: |
+          ./gradlew --console=plain \
+            :shared:compileKotlinIosX64 \
+            :shared:compileKotlinIosSimulatorArm64 \
+            :core:designsystem:compileKotlinIosSimulatorArm64 \
+            :feature:explore:compileKotlinIosSimulatorArm64 \
+            :feature:home:compileKotlinIosSimulatorArm64 \
+            :feature:shell:compileKotlinIosSimulatorArm64

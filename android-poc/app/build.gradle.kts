@@ -1,8 +1,9 @@
 import java.util.Properties
 
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
 }
 
 // Read API config from local.properties (like .env for Android)
@@ -55,6 +56,7 @@ android {
     buildFeatures {
         viewBinding = true
         buildConfig = true
+        compose = true
     }
 
     packaging {
@@ -80,6 +82,15 @@ kotlin {
 val litertVersion = "1.4.0"
 
 dependencies {
+    // Movit pilot modules — debug-only (Phase 03 release hygiene)
+    debugImplementation(project(":shared"))
+    debugImplementation(project(":core:designsystem"))
+    debugImplementation(project(":feature:explore"))
+    debugImplementation(project(":feature:home"))
+    debugImplementation(project(":feature:shell"))
+    debugImplementation(libs.androidx.activity.compose)
+    debugImplementation(libs.compose.ui.tooling)
+
     // Core Android — March 2026
     implementation("androidx.core:core-ktx:1.17.0")
     implementation("androidx.appcompat:appcompat:1.7.1")
