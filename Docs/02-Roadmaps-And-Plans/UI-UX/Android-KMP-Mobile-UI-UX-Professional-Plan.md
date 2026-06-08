@@ -16,7 +16,7 @@
 
 ## ملخص القرار التنفيذي
 
-المشروع الحالي Android فقط، View/XML، بموديول واحد `:app`. لا يوجد Compose أو KMP حالياً. وبما أن المنتج ما زال في مرحلة تطوير، فالقرار الاستراتيجي هو التحول إلى بنية جديدة صحيحة، مع استخدام التطبيق الحالي كمصدر سلوك وبيانات وتجارب، وليس كقيد تصميمي دائم.
+الخط الأساس الذي بدأنا منه كان Android فقط، View/XML، بموديول واحد `:app`. على فرع التحول الحالي لم يعد هذا هو الواقع الكامل: تم إنشاء KMP/Compose foundation وموديولات `shared`, `core:designsystem`, `feature:home`, `feature:explore`, و`feature:shell`، كما تم إثبات iOS من Xcode. لذلك أصبح القرار الاستراتيجي الآن هو توسيع البنية الجديدة صفحة بصفحة، مع استخدام التطبيق القديم كمصدر سلوك وبيانات وتجارب، وليس كقيد تصميمي دائم.
 
 أفضل مسار هو:
 
@@ -31,7 +31,7 @@
 
 ## حالة التنفيذ الفعلية (تحديث 2026-06-08)
 
-تم تنفيذ Phase 01→04 بالكامل، إغلاق ملاحظات مراجعة System Designer، والبدء في iOS entry point (التحقّق الثالث). الحالة الحقيقية على فرع `codex/kmp-mobile-foundation`:
+تم تنفيذ Phase 01→04 بالكامل، إغلاق ملاحظات مراجعة System Designer، واكتمال التحقّقات الثلاثة (آخرها iOS render proof على Xcode). الحالة الحقيقية على فرع `codex/kmp-mobile-foundation`:
 
 ### مبنيّ ومتحقَّق منه
 
@@ -44,9 +44,20 @@
 - **Release hygiene:** كل موديولات Movit `debugImplementation`؛ الـ launcher القديم لم يُلمس؛ `releaseRuntimeClasspath` نظيف.
 - **Tests:** خضراء عبر كل الموديولات.
 
-### قيد التنفيذ الآن
+### iOS entry point — متحقَّق (render proof نجح) ✅
 
-- **iOS entry point (`iosApp/`):** `:feature:shell` يُصدّر framework ثابت (`MovitApp`) عبر `MainViewController()`، وiosApp (SwiftUI) يستضيفه. الهدف: إثبات أن Compose **يَرسُم** على simulator وليس فقط يكمبّل. CI يتحقق من ربط الـ framework على macOS.
+- **`iosApp/` يَرسُم فعلياً على iOS Simulator من Xcode.** `:feature:shell` يُصدّر framework ثابت (`MovitApp`) عبر `MainViewController()`، وiosApp (SwiftUI + XcodeGen) يستضيفه. تم التحقق على Mac (Xcode 26.5 / iPhone 17 / iOS 26.5): الـ Movit shell ظهر مع bottom navigation (Home/Train/Explore/Reports/Profile) ببيانات fake.
+- التفاصيل الكاملة (البيئة + 6 مشاكل وحلولها) في `Android-KMP-iOS-Xcode-Mac-Validation-Report.md`.
+- بهذا اكتملت التحقّقات الثلاثة: iOS **يكمبّل** (CI) + النمط **يتعمّم** (Home bridge) + Compose **يَرسُم** على iOS (هذا التقرير).
+
+### ديون iOS معروفة (تُتبَّع قبل إنتاج iOS)
+
+ظهرت أثناء render proof وتم تجاوزها مؤقتاً؛ ليست أعطالاً في الأساس لكنها **ليست قرارات نهائية**:
+
+- **(P1) deployment target = iOS 18.5:** ناتج عن Kotlin/Native prebuilt deps (مثل `libicu`) المبنية لـ 18.5 على toolchain الخاص بـ Xcode 26 الجديد جداً — **ليست أرضية إنتاج مقبولة** (تستثني تقريباً كل الأجهزة). تُحسم باختيار توليفة Kotlin/Xcode مستقرة وضبط هدف منطقى (iOS 15/16). أرضية 18.5 للإثبات فقط.
+- **(P2) فقدان lifecycle-awareness:** تم استبدال `collectAsStateWithLifecycle()` بـ `collectAsState()` في الـ routes المشتركة (Shell/Home/Explore) لتجاوز crash على iOS — وهو تراجع عن أفضل ممارسة على **Android أيضاً**. يُستعاد لاحقاً عبر ضبط `LifecycleOwner` على iOS أو تجميع state بـ `expect/actual`.
+- **(P3) ViewModels على iOS عبر `remember`:** الـ entry point يمرر `remember { ViewModel() }` بدل `viewModel()`، فلا يوجد `ViewModelStoreOwner` حقيقى على iOS (لا `onCleared`). يُضبط لاحقاً عبر entry point يوفّر store owner. مرتبط بـ P2.
+- **(P4 — معلومة تشغيل) بيئة Mac:** JDK 17 + Android SDK + `DEVELOPER_DIR` لـ Xcode الكامل لازمة لربط الـ framework؛ ثبّتها في shell profile (التفاصيل في تقرير التحقق).
 
 ### مؤجَّل عمداً (بـ trigger واضح)
 
@@ -60,14 +71,14 @@
 
 - `Phase 01 Foundation` = Phase 0 + Phase 1 هنا.
 - `Phase 02/03/04` = feature pilots (Explore/Shell/Home) ضمن Phase 2 + Phase 4 هنا.
-- **iOS entry point (Phase 6 هنا) سُحب مبكراً** لأن الأساس أثبت نفسه أسرع من المتوقع — يُنفَّذ الآن قبل توسيع الشاشات.
+- **iOS entry point (Phase 6 هنا) سُحب مبكراً** لأن الأساس أثبت نفسه أسرع من المتوقع — اكتمل كـ render proof قبل توسيع الشاشات.
 - `Phase 05 Train` = بداية Phase 5 هنا (Shared feature screens).
 
-## قراءة الوضع الحالي
+## قراءة وضع legacy الأصلي
 
-### الموجود الآن
+### الموجود في التطبيق القديم الذي ننقل منه
 
-- `android-poc` مشروع Android single-module.
+- `android-poc/app` ما زال يحتوي launcher وlegacy screens التي يستمر الرجوع إليها كسلوك مرجعي.
 - `app/build.gradle.kts` يستخدم:
   - Kotlin Android plugin.
   - Android Gradle Plugin.
@@ -81,9 +92,9 @@
 - `gradlew` و`gradlew.bat` موجودان حالياً داخل `android-poc`.
 - الـ prototypes داخل `Docs/02-Roadmaps-And-Plans/UI-UX/prototypes/` أصبحت مرجعاً بصرياً جيداً، خصوصاً `app.css?v=7` و`00-components.html`.
 
-### ديون واضحة من الفحص
+### ديون legacy واضحة من الفحص
 
-- لا يوجد Compose/KMP حالياً.
+- داخل legacy `:app` نفسه ما زالت أغلب الشاشات View/XML أو programmatic UI. موديولات KMP الجديدة موجودة بجانبه في فرع التحول ولا تعني أن legacy UI اختفى.
 - ما زال هناك `findViewById` في ملفات محورية، أهمها:
   - `ProgramWorkoutActivity`: 60
   - `TrainFragment`: 34
@@ -124,7 +135,7 @@
 
 ### 3. Design System قبل feature screens
 
-أي شاشة جديدة أو منقولة إلى Compose يجب أن تستخدم `PoseTheme` ومكونات النظام فقط. لا توجد ألوان مباشرة أو typography عشوائية داخل feature screen.
+أي شاشة جديدة أو منقولة إلى Compose يجب أن تستخدم `MovitTheme` ومكونات النظام فقط. لا توجد ألوان مباشرة أو typography عشوائية داخل feature screen.
 
 ### 4. Material 3 كأسلوب تفكير لا كقالب جاهز
 
@@ -206,7 +217,7 @@ android-poc/
 مثال `feature/explore`:
 
 ```text
-feature/explore/src/commonMain/kotlin/com/waytofix/feature/explore/
+feature/explore/src/commonMain/kotlin/com/movit/feature/explore/
   ExploreRoute.kt            # navigation boundary
   ExploreScreen.kt           # stateless screen composable
   ExploreViewModel.kt        # state holder
@@ -258,26 +269,26 @@ error                = Semantic error, derived from Coral but not identical blin
 ### Compose files
 
 ```text
-core/designsystem/src/commonMain/kotlin/com/waytofix/designsystem/
-  PoseTheme.kt
-  PoseColorScheme.kt
-  PoseTypography.kt
-  PoseShapes.kt
-  PoseSpacing.kt
-  PoseElevation.kt
-  PoseMotion.kt
-  PoseIcons.kt
+core/designsystem/src/commonMain/kotlin/com/movit/designsystem/
+  MovitTheme.kt
+  MovitColorScheme.kt
+  MovitTypography.kt
+  MovitShapes.kt
+  MovitSpacing.kt
+  MovitElevation.kt
+  MovitMotion.kt
+  MovitIcons.kt
   components/
-    PoseScaffold.kt
-    PoseTopBar.kt
-    PoseCard.kt
-    PoseButton.kt
-    PoseIconButton.kt
-    PoseChip.kt
-    PoseMetricTile.kt
-    PoseEmptyState.kt
-    PoseSectionHeader.kt
-    PoseActionDock.kt
+    MovitScaffold.kt
+    MovitTopBar.kt
+    MovitCard.kt
+    MovitButton.kt
+    MovitIconButton.kt
+    MovitChip.kt
+    MovitMetricTile.kt
+    MovitEmptyState.kt
+    MovitSectionHeader.kt
+    MovitActionDock.kt
 ```
 
 ### قواعد التصميم
@@ -308,52 +319,52 @@ core/designsystem/src/commonMain/kotlin/com/waytofix/designsystem/
 
 ### Components المعتمدة كنواة
 
-مكونات Material 3 التالية تصبح أساس مكتبة `Pose`، لكن بأسماء وهوية التطبيق:
+مكونات Material 3 التالية تصبح أساس مكتبة `Movit`، لكن بأسماء وهوية التطبيق:
 
 - Buttons:
-  - `PoseButton.Filled`
-  - `PoseButton.Tonal`
-  - `PoseButton.Outlined`
-  - `PoseButton.Text`
-  - `PoseIconButton`
+  - `MovitButton.Filled`
+  - `MovitButton.Tonal`
+  - `MovitButton.Outlined`
+  - `MovitButton.Text`
+  - `MovitIconButton`
 - Cards:
-  - `PoseCard.Filled`
-  - `PoseCard.Outlined`
-  - `PoseMetricCard`
-  - `PoseMediaCard`
+  - `MovitCard.Filled`
+  - `MovitCard.Outlined`
+  - `MovitMetricCard`
+  - `MovitMediaCard`
 - Navigation:
-  - `PoseNavigationBar`
-  - `PoseTopAppBar`
-  - `PoseTabs`
-  - `PoseAdaptiveNavigation` لاحقاً للتابلت/foldables.
+  - `MovitNavigationBar`
+  - `MovitTopAppBar`
+  - `MovitTabs`
+  - `MovitAdaptiveNavigation` لاحقاً للتابلت/foldables.
 - Selection:
-  - `PoseFilterChip`
-  - `PoseAssistChip`
-  - `PoseSegmentedControl`
-  - `PoseSwitch`
-  - `PoseCheckbox`
+  - `MovitFilterChip`
+  - `MovitAssistChip`
+  - `MovitSegmentedControl`
+  - `MovitSwitch`
+  - `MovitCheckbox`
 - Feedback:
-  - `PoseSnackbar`
-  - `PoseDialog`
-  - `PoseBottomSheet`
-  - `PoseProgressIndicator`
-  - `PoseEmptyState`
+  - `MovitSnackbar`
+  - `MovitDialog`
+  - `MovitBottomSheet`
+  - `MovitProgressIndicator`
+  - `MovitEmptyState`
 - Input:
-  - `PoseTextField`
-  - `PoseSearchBar`
-  - `PoseSlider`
+  - `MovitTextField`
+  - `MovitSearchBar`
+  - `MovitSlider`
 - Training-specific:
-  - `PoseExerciseCard`
-  - `PoseWorkoutCard`
-  - `PoseProgramHero`
-  - `PoseMetricRow`
-  - `PoseActionDock`
-  - `PoseTimeline`
-  - `PoseScoreRing`
+  - `MovitExerciseCard`
+  - `MovitWorkoutCard`
+  - `MovitProgramHero`
+  - `MovitMetricRow`
+  - `MovitActionDock`
+  - `MovitTimeline`
+  - `MovitScoreRing`
 
 ### قواعد تخصيص Material 3
 
-- لا نستخدم default Material component مباشرة داخل feature screens إلا لو مغلف داخل `Pose*`.
+- لا نستخدم default Material component مباشرة داخل feature screens إلا لو مغلف داخل `Movit*`.
 - أي component جديد يبدأ من Material 3 behavior ثم يأخذ visual identity من prototypes.
 - dynamic color من Android يمكن دعمه كاختيار لاحق، لكن brand palette هي الافتراضي حتى لا تضيع هوية التطبيق.
 - اللون لا يشرح الحالة وحده؛ يجب دعم icon/text/semantic state.
@@ -431,7 +442,7 @@ sealed interface ExploreEffect {
 
 ## خطة الهجرة
 
-> حالة التنفيذ (انظر "حالة التنفيذ الفعلية" أعلاه): Phase 0→4 + Design System + KMP skeleton ✅ مكتملة. Phase 6 (iOS entry point) 🔄 قيد التنفيذ الآن — سُحب مبكراً. Phase 5 (Shared feature screens) ⏳ التالى، يبدأ بـ Train. Phase 7 (camera/ML) ⬜ مؤجّل.
+> حالة التنفيذ (انظر "حالة التنفيذ الفعلية" أعلاه): Phase 0→4 + Design System + KMP skeleton ✅ مكتملة. Phase 6 (iOS entry point) ✅ سُحب مبكراً واكتمل كـ render proof على Xcode، مع ديون iOS مؤقتة P1/P2/P3. Phase 5 (Shared feature screens) ⏳ هو المسار التالي الآن، ويبدأ بـ Train. Phase 7 (camera/ML) ⬜ مؤجّل.
 
 ### Phase 0 - تأسيس فرع التحول
 
@@ -480,7 +491,7 @@ sealed interface ExploreEffect {
 الهدف: إثبات أن البنية الجديدة تعمل end-to-end على Android، ثم iOS عند أول فرصة عملية.
 
 - تفعيل Compose في Android host.
-- إنشاء `PoseTheme` في shared UI، مع bridge مؤقت لـ Android إذا لزم.
+- إنشاء `MovitTheme` في shared UI، مع bridge مؤقت لـ Android إذا لزم.
 - إنشاء مكونات Compose الأساسية.
 - بناء أول شاشة feature كاملة بـ `UiState` و`ViewModel` وnavigation.
 
@@ -507,7 +518,7 @@ sealed interface ExploreEffect {
 
 ### Phase 4 - Shared Design System
 
-الهدف: `PoseTheme` يعمل من `commonMain`.
+الهدف: `MovitTheme` يعمل من `commonMain`.
 
 - نقل theme إلى `core/designsystem`.
 - استخدام `composeResources` بدلاً من Android `res` للمشترك.
@@ -520,35 +531,37 @@ sealed interface ExploreEffect {
 
 ### Phase 5 - Shared feature screens
 
-الترتيب المقترح:
+الواقع الحالي: `Explore`, `Home`, و`shell` أصبحوا pilots مشتركين ومربوطين بالـ debug bridge على Android، وظهروا داخل iOS shell ببيانات fake. لذلك ترتيب Phase 5 العملي من هذه النقطة:
 
-1. `Explore`
-2. `Level Profile`
-3. `Reports Overview`
-4. `Home`
-5. `Train dashboard`
-6. `Program plan/day`
-7. `Assessment`
-8. `Training session/camera`
+1. `Train dashboard` — أول صفحة page-by-page بعد اكتمال Phase 04 وiOS render proof.
+2. `Reports Overview` — dashboard/state/charts بدون session live.
+3. `Profile / Account shell` — إعدادات وهوية المستخدم بدون قرارات auth عميقة.
+4. `Program plan/day` — خطة اليوم والبرنامج، بدون camera.
+5. `Level Profile` — تفكيك UI programmatic وتحويله لنمط Movit.
+6. `Assessment` — قبل الجلسات الحية، مع state واضح.
+7. `Training session/camera` — لا يبدأ إلا بعد حدود Phase 7.
 
 السبب: نبدأ بالشاشات التي تعتمد على lists/cards/state ونؤجل الشاشات ذات camera/overlay/ML.
 
-### Phase 6 - iOS entry point
+### Phase 6 - iOS entry point (تم سحبه مبكراً واكتمل كـ render proof)
 
 الهدف: إثبات المنتج على iOS مبكراً بدون انتظار كل Android.
 
-- إضافة `iosApp`.
-- تشغيل shared DI.
-- عرض أول شاشة Compose Multiplatform من iOS.
-- ربط navigation الأساسي.
-- ربط auth/session لاحقاً.
-- تنفيذ platform adapters:
+- **تم:** إضافة `iosApp`.
+- **تم:** عرض shell بـ Compose Multiplatform من iOS عبر `MovitApp.framework`.
+- **تم:** ربط navigation الأساسي بصرياً على Simulator.
+- **تم:** إثبات XcodeGen + Xcode build/run على iPhone 17 Simulator.
+- **لم يتم بعد:** تشغيل shared DI؛ ما زال مؤجلاً حتى Ktor/repository مشترك.
+- **لم يتم بعد:** auth/session وبيانات حقيقية على iOS.
+- **لم يتم بعد:** platform adapters:
   - secure storage
   - network engine
   - file/cache paths
   - locale/direction
   - haptics
   - permissions
+
+بوابة هذه المرحلة قبل الإنتاج: إغلاق P1/P2/P3 المذكورة أعلاه أو توثيق بديل مقبول لها. إلى أن يحدث ذلك، iOS صالح كـ render proof ومسار تطوير، وليس كأرضية إصدار نهائي.
 
 ### Phase 7 - Camera/ML multiplatform boundary
 
@@ -592,19 +605,19 @@ iosMain:
 - توثيق compatibility matrix.
 - إنشاء KMP skeleton.
 - إنشاء Compose/Material 3 design system skeleton.
-- تحويل `00-components.html` إلى component backlog داخل `Pose` components.
+- تحويل `00-components.html` إلى component backlog داخل `Movit` components.
 
 ### الأسبوع 3-4
 
 - إضافة Compose host إلى Android.
-- بناء `PoseTheme` Compose مطابق للـ palette والـ Material 3 roles.
+- بناء `MovitTheme` Compose مطابق للـ palette والـ Material 3 roles.
 - بناء مكونات:
-  - `PoseCard`
-  - `PoseButton`
-  - `PoseMetricTile`
-  - `PoseSectionHeader`
-  - `PoseEmptyState`
-  - `PoseFilterChip`
+  - `MovitCard`
+  - `MovitButton`
+  - `MovitMetricTile`
+  - `MovitSectionHeader`
+  - `MovitEmptyState`
+  - `MovitFilterChip`
 - تنفيذ أول feature pilot: `Explore` أو `Level Profile`.
 
 ### الشهر 2
@@ -642,7 +655,7 @@ iosMain:
 - Compose Multiplatform هو مسار UI الجديد.
 - Material 3 هو أساس الـ Design System.
 - KMP structure يبدأ مبكراً حتى لو بقيت بعض الشاشات Android-only مؤقتاً.
-- الشاشات الجديدة تبنى بـ `Pose*` components وليس XML.
+- الشاشات الجديدة في KMP تبنى بـ `Movit*` components وليس XML. أسماء `Pose*` أو `WayToFix*` تبقى فقط في legacy Android/prototype history إلى أن تُستبدل تدريجياً.
 - التطبيق الحالي مرجع للسلوك والـ APIs، وليس قيداً على UI أو الملفات.
 - (مُنفَّذ) KMP `androidx.lifecycle.ViewModel` كحامل حالة مشترك، بدل Controller أو Android-only ViewModel.
 - (مُنفَّذ) iOS targets + CI على macOS من البداية — "iOS-ready بالـ build وليس بالاتفاق".

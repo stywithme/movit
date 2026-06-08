@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.movit.feature.explore.MovitExploreViewModel
 import com.movit.feature.home.MovitHomeViewModel
+import com.movit.feature.train.MovitTrainViewModel
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
@@ -17,6 +18,7 @@ fun MovitAppShellRoute(
     modifier: Modifier = Modifier,
     shellViewModel: MovitAppShellViewModel = viewModel(),
     homeViewModel: MovitHomeViewModel = viewModel { MovitHomeViewModel() },
+    trainViewModel: MovitTrainViewModel = viewModel { MovitTrainViewModel() },
     exploreViewModel: MovitExploreViewModel = viewModel { MovitExploreViewModel() },
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
@@ -36,6 +38,7 @@ fun MovitAppShellRoute(
         state = state,
         onEvent = shellViewModel::onEvent,
         homeViewModel = homeViewModel,
+        trainViewModel = trainViewModel,
         exploreViewModel = exploreViewModel,
         modifier = modifier,
         snackbarHostState = snackbarHostState,

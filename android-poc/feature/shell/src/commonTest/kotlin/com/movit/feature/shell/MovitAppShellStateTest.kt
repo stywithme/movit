@@ -1,6 +1,7 @@
 package com.movit.feature.shell
 
 import com.movit.feature.home.MovitHomeEffect
+import com.movit.feature.train.MovitTrainEffect
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -52,7 +53,7 @@ class MovitAppShellStateTest {
         viewModel.onEvent(MovitAppShellEvent.ExploreItemSelected("ex-squat"))
         val effect = effectDeferred.await()
         assertTrue(effect is MovitAppShellEffect.ShowMessage)
-        assertEquals("Opening ex-squat…", (effect as MovitAppShellEffect.ShowMessage).message)
+        assertEquals("Opening ex-squat…", effect.message)
     }
 
     @Test
@@ -60,5 +61,37 @@ class MovitAppShellStateTest {
         val viewModel = MovitAppShellViewModel()
         viewModel.onEvent(MovitAppShellEvent.HomeEffectReceived(MovitHomeEffect.OpenExplore))
         assertEquals(MovitAppDestination.Explore, viewModel.state.value.selectedDestination)
+    }
+
+    @Test
+    fun trainOpenExplore_changesDestination() {
+        val viewModel = MovitAppShellViewModel()
+        viewModel.onEvent(MovitAppShellEvent.TrainEffectReceived(MovitTrainEffect.OpenExplore))
+        assertEquals(MovitAppDestination.Explore, viewModel.state.value.selectedDestination)
+    }
+
+    @Test
+    fun trainOpenReports_changesDestination() {
+        val viewModel = MovitAppShellViewModel()
+        viewModel.onEvent(MovitAppShellEvent.TrainEffectReceived(MovitTrainEffect.OpenReports))
+        assertEquals(MovitAppDestination.Reports, viewModel.state.value.selectedDestination)
+    }
+
+    @Test
+    fun trainOpenSessionPreview_emitsPlaceholderMessage() = runBlocking {
+        val viewModel = MovitAppShellViewModel()
+        val effectDeferred = async {
+            withTimeout(5_000) {
+                viewModel.effects.first()
+            }
+        }
+        yield()
+        viewModel.onEvent(MovitAppShellEvent.TrainEffectReceived(MovitTrainEffect.OpenSessionPreview))
+        val effect = effectDeferred.await()
+        assertTrue(effect is MovitAppShellEffect.ShowMessage)
+        assertEquals(
+            "Session flow starts in a later phase.",
+            effect.message,
+        )
     }
 }

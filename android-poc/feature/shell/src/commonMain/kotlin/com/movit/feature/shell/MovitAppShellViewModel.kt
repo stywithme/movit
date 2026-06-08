@@ -2,6 +2,7 @@ package com.movit.feature.shell
 
 import androidx.lifecycle.ViewModel
 import com.movit.feature.home.MovitHomeEffect
+import com.movit.feature.train.MovitTrainEffect
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -30,6 +31,9 @@ class MovitAppShellViewModel : ViewModel() {
             is MovitAppShellEvent.HomeEffectReceived -> {
                 handleHomeEffect(event.effect)
             }
+            is MovitAppShellEvent.TrainEffectReceived -> {
+                handleTrainEffect(event.effect)
+            }
         }
     }
 
@@ -40,6 +44,21 @@ class MovitAppShellViewModel : ViewModel() {
             MovitHomeEffect.OpenReports -> navigateTo(MovitAppDestination.Reports)
             MovitHomeEffect.OpenProfile -> navigateTo(MovitAppDestination.Profile)
             is MovitHomeEffect.ShowMessage -> {
+                _effects.tryEmit(MovitAppShellEffect.ShowMessage(effect.message))
+            }
+        }
+    }
+
+    private fun handleTrainEffect(effect: MovitTrainEffect) {
+        when (effect) {
+            MovitTrainEffect.OpenExplore -> navigateTo(MovitAppDestination.Explore)
+            MovitTrainEffect.OpenReports -> navigateTo(MovitAppDestination.Reports)
+            MovitTrainEffect.OpenSessionPreview -> {
+                _effects.tryEmit(
+                    MovitAppShellEffect.ShowMessage("Session flow starts in a later phase."),
+                )
+            }
+            is MovitTrainEffect.ShowMessage -> {
                 _effects.tryEmit(MovitAppShellEffect.ShowMessage(effect.message))
             }
         }

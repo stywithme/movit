@@ -238,6 +238,19 @@ BUILD SUCCESSFUL
 
 الخلاصة: Kotlin side وربط `MovitApp.framework` مؤكدان، وواجهة Movit shell تعمل على iOS Simulator من Xcode. أي مشاكل لاحقة بعد هذه النقطة ستكون غالباً ضمن wiring أو تحسينات iOS runtime، وليست دليلاً على فشل أساس KMP/Compose.
 
+## أثر التقرير على المراحل التالية
+
+هذا التقرير يغلق تحقق iOS الثالث المطلوب قبل التوسع في الشاشات المشتركة: لم يعد iOS مجرد compile/link على CI، بل أصبح يرسم shell فعلياً من Xcode.
+
+القرارات العملية الناتجة:
+
+- Phase 05 يمكن أن يبدأ بـ `Train dashboard` على أساس KMP/Compose متحقق على Android وiOS.
+- أي feature جديدة داخل shell يجب أن تُراجع على Android أولاً، ثم يضاف لها smoke check على `:feature:shell:linkDebugFrameworkIosSimulatorArm64`.
+- iOS في هذه المرحلة يستخدم بيانات fake/fixtures، ولا يتطلب Ktor أو API حقيقي قبل قرار منفصل.
+- لا يُسمح بربط `Train` بـ camera/session/ML ضمن Phase 05؛ هدفها إثبات صفحة تدريب يومية قابلة للرسم على المنصتين.
+- `deploymentTarget iOS 18.5` حل مؤقت لإثبات التشغيل على toolchain الحالي، وليس قرار إصدار.
+- استخدام `collectAsState()` في routes المشتركة وViewModels عبر `remember` على iOS حلول تشغيلية مؤقتة. يجب تتبعها كديون قبل أي إصدار iOS أو قبل تعقيد state/navigation.
+
 ## ملاحظات تشغيل لاحقة
 
 يفضل تثبيت هذه القيم في shell profile على جهاز Mac:

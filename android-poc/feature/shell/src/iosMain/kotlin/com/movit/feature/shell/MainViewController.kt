@@ -5,6 +5,7 @@ import androidx.compose.ui.window.ComposeUIViewController
 import com.movit.designsystem.MovitTheme
 import com.movit.feature.explore.MovitExploreViewModel
 import com.movit.feature.home.MovitHomeViewModel
+import com.movit.feature.train.MovitTrainViewModel
 import platform.UIKit.UIViewController
 
 /**
@@ -24,6 +25,7 @@ fun MainViewController(): UIViewController = ComposeUIViewController(
         MovitAppShellRoute(
             shellViewModel = remember { MovitAppShellViewModel() },
             homeViewModel = remember { MovitHomeViewModel() },
+            trainViewModel = remember { MovitTrainViewModel() },
             exploreViewModel = remember { MovitExploreViewModel() },
         )
     }

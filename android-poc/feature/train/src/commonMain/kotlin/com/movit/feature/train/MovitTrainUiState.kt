@@ -1,0 +1,7 @@
+package com.movit.feature.train
+
+data class MovitTrainUiState(
+    val isLoading: Boolean = false,
+    val dashboard: TrainDashboardUi? = null,
+    val errorMessage: String? = null,
+)

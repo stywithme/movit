@@ -29,7 +29,26 @@
 
 ## الخطة العامة
 
-الخطة ليست إعادة بناء كاملة مرة واحدة. التحويل يتم تدريجياً على مراحل مع الحفاظ على السلوك الحالي وربط الـ IDs الموجودة، ثم تحسين الهيكلة لاحقاً.
+الخطة لم تعد مجرد تنظيف XML داخل `:app`. هذا المستند بدأ كمتابعة لمسار Android legacy UI/prototypes، لكن الحالة الحالية أصبحت مقسومة إلى مسارين واضحين:
+
+- **مسار legacy Android/XML:** يحتفظ بالـ launcher والشاشات القديمة، ويُستخدم كمرجع سلوك وبيانات أثناء النقل.
+- **مسار KMP/Compose الجديد:** أصبح المسار الرئيسي للتوسع. Phase 01→04 اكتملت، وتم بناء Design System وموديولات Home/Explore/Shell، وربط debug API bridge، وإثبات iOS من Xcode.
+
+التحويل ما زال تدريجياً، لكن الأولوية الآن ليست تجميل كل XML قديم أولاً؛ الأولوية هي نقل الشاشات صفحة بصفحة إلى KMP/Compose عندما يكون ذلك أوضح وأكثر قابلية للمشاركة بين Android وiOS.
+
+## تحديث 2026-06-08: اكتمال Phase 04 ونجاح iOS render proof
+
+وصل مسار KMP إلى نقطة تحقق مهمة:
+
+- Phase 01→04 مكتملة على فرع `codex/kmp-mobile-foundation`.
+- الموديولات المشتركة الحالية: `:shared`, `:core:designsystem`, `:feature:home`, `:feature:explore`, `:feature:shell`.
+- `Home` و`Explore` أصبحا features مشتركة داخل shell مع ViewModel/UDF، وليسا مجرد XML legacy.
+- debug bridge أثبت نمطه على `/api/mobile/explore` و`/api/mobile/home` على Android، مع fallback آمن.
+- CI macOS الخاص بـ KMP/iOS أخضر.
+- `iosApp/` اشتغل من Xcode ورسم Movit shell على iOS Simulator بنجاح.
+- الديون المؤقتة المعروفة قبل إنتاج iOS: target 18.5، استخدام `collectAsState()` بدلاً من lifecycle-aware collection في routes المشتركة، وتمرير ViewModels على iOS عبر `remember`.
+
+بناءً على ذلك، المرحلة التالية الرسمية هي **Phase 05: Train dashboard / Today Training Overview** داخل KMP shell، وليس نقل `TrainingActivity` أو camera/session/ML.
 
 ## تحديث 2026-06-08: HTML Prototypes / Premium UI Refresh
 
@@ -441,16 +460,28 @@
 - تخفيف `TrainingViewModel`.
 - لاحقاً إدخال DI خفيف مثل Hilt أو factory منظم.
 
-### لم ينفذ بعد
+### ما تم تنفيذه ضمن مسار KMP
 
-لم يتم البدء في التحسين المعماري ضمن هذه الموجة. العمل الحالي مركز على UI/UX وDesign System.
+- تم إنشاء بنية موديولات KMP بدلاً من الاعتماد على `:app` فقط.
+- تم نقل نمط الشاشات الجديدة إلى `Route / Screen / ViewModel / UiState / Event / Effect`.
+- تم اعتماد KMP `androidx.lifecycle.ViewModel` بدلاً من Controller أو Android-only ViewModel في Home/Explore/Shell.
+- تم فصل مصادر البيانات الجديدة عبر repository contracts وdebug bridge بدلاً من استدعاء Retrofit مباشرة داخل feature.
+- تم الحفاظ على debug bridge داخل `app/debug` حتى لا تعتمد موديولات features على `:app`.
+- تم تثبيت boundary واضح: iOS يستخدم fake data حتى قرار Ktor/repository مشترك.
+- تم إبقاء shell الجديد debug-only، لذلك لم يتلوث `releaseRuntimeClasspath`.
+
+### ما يزال ديناً داخل legacy Android
+
+التفاصيل في القسم التالي. المهم هنا أن هذه الديون لا تمنع Phase 05، لكنها تمنع نسخ legacy architecture كما هي إلى KMP.
 
 ## أهم المشاكل المعمارية التي ما زالت قائمة
+
+المشاكل التالية تخص legacy app أو المراحل التي لم تنتقل بعد إلى KMP. لا تمنع Phase 05، لكنها تحدد ما يجب عدم نسخه كما هو:
 
 - `ProgramSessionActivity` ما زالت كبيرة وتخلط UI + API + sync + state.
 - `TrainingViewModel` ما زال ثقيلاً ويحتوي مسؤوليات كثيرة.
 - بعض Activities تستدعي `ApiClient` مباشرة.
-- لا يوجد DI واضح.
+- لا يوجد DI مشترك بعد؛ Koin/Ktor مؤجلان حتى أول repository حقيقي مشترك.
 - بعض شاشات UI لا تزال programmatic.
 - ما زال هناك تكرار في cards والـ layouts خارج المكونات المشتركة.
 
@@ -472,9 +503,31 @@
 
 ### مطلوب من Android Studio
 
-لا يوجد `gradlew` داخل المشروع ولا `gradle` متاح في PATH هنا، لذلك build النهائي يجب أن يتم من Android Studio.
+يوجد Gradle wrapper داخل `android-poc` الآن، لذلك التحقق لم يعد معتمداً على Android Studio فقط.
 
-بعد كل موجة تعديل، شغّل:
+على Windows:
+
+```powershell
+cd android-poc
+.\gradlew.bat --console=plain :app:assembleDebug
+.\gradlew.bat --console=plain :feature:shell:testDebugUnitTest
+```
+
+على Mac/Linux:
+
+```bash
+cd android-poc
+./gradlew --console=plain :app:assembleDebug
+./gradlew --console=plain :feature:shell:testDebugUnitTest
+```
+
+بعد تعديلات KMP أو iOS entry point، أضف:
+
+```bash
+./gradlew --console=plain :feature:shell:linkDebugFrameworkIosSimulatorArm64
+```
+
+Android Studio ما زال مفيداً للمراجعة البصرية وتشغيل المحاكي:
 
 - `Build > Make Project`
 - أو task المناسب داخل Android Studio.
@@ -493,24 +546,14 @@
 
 ## الأولوية التالية
 
-1. مراجعة الـ prototypes بصرياً في المتصفح بعد تحديث Premium UI، خصوصاً:
-   - `00-components.html`
-   - `08-home.html`
-   - `01-train.html`
-   - `04-explore.html`
-   - `03-prepare.html`
-   - `07-program.html`
-   - `09-reports.html`
-2. Build ومراجعة `Home` في Android.
-3. نقل اتجاه Prototype Premium UI إلى Android تدريجياً حسب الأولوية:
-   - `Train`
-   - `Explore`
-   - `Reports`
-   - `Program Session`
-   - `Level Profile`
-   - `Assessment`
-4. مراجعة `Exercise Detail` بعد build بصري.
-5. البدء في refactor معماري تدريجي بعد تثبيت موجات UI.
+1. مراجعة Train على Mac/Xcode Simulator بعد الربط الجديد:
+   - `:feature:shell:linkDebugFrameworkIosSimulatorArm64`
+   - `xcodegen`
+   - Xcode Simulator render check.
+2. مراجعة Train بصرياً على Android debug shell، خصوصاً light/dark وfont scaling.
+3. قبول Train أو تسجيل تعديلات UX صغيرة قبل الانتقال للصفحة التالية.
+4. بعد قبول Train، الانتقال إلى `Reports Overview` ثم `Profile / Account shell`.
+5. إبقاء `Program Session`, `Assessment`, و`Training session/camera` مؤجلة حتى لا تختلط Phase 05 مع camera/ML.
 
 ## Checklist
 
@@ -533,13 +576,25 @@
 - [x] تحديث Auth/Profile/Onboarding prototypes.
 - [x] مراجعة ألوان prototypes وحصرها في palette.
 - [x] إصلاح مشاكل التداخل والمساحات والتناسق في مكونات prototypes.
+- [x] إنشاء KMP foundation وموديولات `shared`, `core:designsystem`, `feature:home`, `feature:explore`, `feature:shell`.
+- [x] اعتماد `MovitTheme` و`Movit*` naming في الموديولات الجديدة.
+- [x] تحويل Home/Explore إلى ViewModel + UDF داخل KMP shell.
+- [x] إثبات debug API bridge على Home وExplore.
+- [x] CI macOS/iOS أخضر.
+- [x] iOS render proof من Xcode ناجح.
 - [ ] Build نهائي بعد تحويل `Home`.
 - [ ] مراجعة light/dark بصرياً على Android.
 - [ ] مراجعة prototypes بصرياً يدوياً في المتصفح بعد آخر إصلاحات Premium.
-- [ ] تحويل `Train`.
-- [ ] تحويل `Explore`.
-- [ ] تحويل `Reports`.
-- [ ] تحويل `Program Session`.
+- [x] إنشاء `Train-Page-Modernization-Spec.md`.
+- [x] تنفيذ `feature:train` داخل KMP shell.
+- [x] ربط Train داخل `feature:shell` كصفحة حقيقية بدلاً من placeholder.
+- [x] تشغيل اختبارات Train وShell بعد الربط.
+- [x] تشغيل Android debug assemble بعد ربط Train.
+- [x] فحص release runtime بعد ربط Train.
+- [ ] iOS smoke بعد ربط Train.
+- [ ] تحويل `Reports Overview`.
+- [ ] تحويل `Profile / Account shell`.
+- [ ] تحويل `Program Session` بعد فصل منطقها.
 - [ ] تحويل `Level Profile`.
 - [ ] تنظيف Assessment UI.
 - [ ] نقل API calls إلى repositories/use cases.

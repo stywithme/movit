@@ -87,6 +87,7 @@ dependencies {
     debugImplementation(project(":core:designsystem"))
     debugImplementation(project(":feature:explore"))
     debugImplementation(project(":feature:home"))
+    debugImplementation(project(":feature:train"))
     debugImplementation(project(":feature:shell"))
     debugImplementation(libs.androidx.activity.compose)
     debugImplementation(libs.compose.ui.tooling)

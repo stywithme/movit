@@ -1,6 +1,6 @@
 # Android / KMP Mobile UI/UX - Phase 05 Page-by-Page Modernization + Train Page Plan
 
-آخر تحديث: 2026-06-08 (post-Phase-04: ViewModel + iOS targets + API bridge؛ ثم CI أخضر + Home bridge + iOS entry point قيد التنفيذ)
+آخر تحديث: 2026-06-08 (post-Phase-04 مكتملة: ViewModels + iOS targets + API bridge + CI أخضر + Home bridge + iOS render proof ناجح؛ Phase 05 يبدأ بـ Train)
 
 ## تعريف المرحلة
 
@@ -124,7 +124,8 @@ Profile
   - CI macOS `.github/workflows/movit-kmp-ios.yml` — **أخضر** (يكمبّل commonMain لـ iOS + يربط framework الـ shell). ✅
   - API bridge عبر debug pilot لـ **Explore و Home** (`/api/mobile/explore` + `/api/mobile/home`) — النمط متحقَّق إنه يتعمّم على شاشتين وعقدين بيانات. ✅
   - theme boundary tests في `androidUnitTest`. ✅
-- **iOS entry point (`iosApp/`) قيد التنفيذ** كتحقّق ثالث (render proof) قبل/بالتوازى مع Train. Train يبنى على foundation متحقَّق على المنصتين، ويتبع نفس نمط bridge الخاص بـ Home.
+- **iOS entry point (`iosApp/`) — render proof نجح ✅** على Xcode/Simulator (تقرير `Android-KMP-iOS-Xcode-Mac-Validation-Report.md`)؛ التحقّقات الثلاثة اكتملت.
+- **معرفة لازمة لـ Train على iOS:** توجد ديون iOS متتبَّعة في الخطة الأساسية (deployment target 18.5، استبدال `collectAsStateWithLifecycle`→`collectAsState` في الـ routes المشتركة، ViewModels عبر `remember`). أى `MovitTrainRoute` جديد **يتبع نفس نمط routes الحالية الآمن على iOS** ولا يعيد إدخال `collectAsStateWithLifecycle` قبل حسم `LifecycleOwner` على iOS. ولا يفترض deployment target نهائى حتى تُحسم P1.
 
 ## خارج نطاق هذه المرحلة
 
@@ -403,13 +404,15 @@ Route pattern:
 fun MovitTrainRoute(
     viewModel: MovitTrainViewModel = viewModel { MovitTrainViewModel() },
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
+    val state by viewModel.state.collectAsState()
     LaunchedEffect(viewModel) { viewModel.loadInitial() }
     // ...
 }
 ```
 
-Shell يحتفظ بـ `trainViewModel` على مستوى `MovitAppShellRoute` (نفس نمط Home/Explore) ليبقى عبر تدوير الشاشة.
+ملاحظة iOS مهمة: استخدام `collectAsState()` هنا مقصود مؤقتاً، لأنه نفس النمط الذي نجّح `Shell/Home/Explore` على iOS أثناء render proof. لا نرجع إلى `collectAsStateWithLifecycle()` في routes المشتركة إلا بعد حل دين `LifecycleOwner` على iOS. على Android يمكن استعادة lifecycle-aware collection لاحقاً عبر abstraction مشتركة أو `expect/actual`.
+
+Shell يحتفظ بـ `trainViewModel` على مستوى `MovitAppShellRoute` (نفس نمط Home/Explore) ليبقى عبر تدوير الشاشة. على iOS، يمرر `MainViewController()` الـ ViewModels صراحة باستخدام `remember` إلى أن يتوفر `ViewModelStoreOwner` حقيقي.
 
 ### 4.2 UDF
 
@@ -970,6 +973,7 @@ MovitTrainThemeBoundaryTest في androidUnitTest
 .\gradlew.bat --console=plain :feature:train:compileKotlinMetadata
 .\gradlew.bat --console=plain :feature:train:compileDebugKotlinAndroid
 .\gradlew.bat --console=plain :feature:shell:compileDebugKotlinAndroid
+.\gradlew.bat --console=plain :feature:shell:linkDebugFrameworkIosSimulatorArm64
 .\gradlew.bat --console=plain :feature:train:testDebugUnitTest
 .\gradlew.bat --console=plain :feature:explore:testDebugUnitTest
 .\gradlew.bat --console=plain :feature:home:testDebugUnitTest
@@ -1029,7 +1033,38 @@ Home after returning from Train
 Explore after Train quick action
 ```
 
+### 13.1 iOS smoke بعد Train
+
+بعد ربط `feature:train` داخل `feature:shell`:
+
+```bash
+cd android-poc
+./gradlew --console=plain :feature:shell:linkDebugFrameworkIosSimulatorArm64
+cd iosApp
+xcodegen
+```
+
+ثم شغّل `iosApp.xcodeproj` من Xcode وتأكد من:
+
+- التطبيق ما زال يرسم Movit shell على iOS Simulator.
+- Train tab يعرض صفحة Train الجديدة ببيانات fake أو fixture آمنة.
+- CTA لا يفتح camera ولا session live.
+- Home/Explore navigation ما زالت تعمل.
+- لا يظهر crash مرتبط بـ lifecycle أو ViewModel ownership.
+
 ## معايير القبول
+
+## حالة تنفيذ 2026-06-08
+
+- تم إنشاء `Train-Page-Modernization-Spec.md`.
+- تم إنشاء `:feature:train` كـ KMP Compose feature مستقل.
+- تم ربط `MovitAppDestination.Train` بصفحة Train حقيقية داخل `:feature:shell`.
+- تم الحفاظ على `MovitShellPilotActivity` كمسار debug-only، ولم يتم نقل shell إلى production launcher.
+- تم تأجيل camera/session/ML كما هو محدد في نطاق Phase 05.
+- تم التحقق من عدم إدخال raw colors داخل commonMain الخاص بـ Train.
+- تم تشغيل `:feature:train:testDebugUnitTest`, `:feature:shell:testDebugUnitTest`, و`:app:assembleDebug` بنجاح.
+- تم فحص `releaseRuntimeClasspath` ولم تظهر موديولات pilot (`feature:train`, `feature:shell`, `feature:home`, `feature:explore`, `core:designsystem`) ضمن release runtime.
+- تم تشغيل `:feature:shell:linkDebugFrameworkIosSimulatorArm64` من Windows بنجاح؛ مهمة الربط نفسها بقيت host-specific/skipped، لكن Kotlin iOS simulator compilation مرّت. ما زال Xcode Simulator visual smoke على Mac مطلوباً قبل اعتبار Train مقبولاً بصرياً على iOS.
 
 Phase 05 لا تعتبر مكتملة إلا إذا:
 
@@ -1047,8 +1082,10 @@ Phase 05 لا تعتبر مكتملة إلا إذا:
 - active plan/no plan/rest/completed ممثلة في preview data أو tests.
 - tests الخاصة بـ Train ناجحة.
 - tests الخاصة بـ Shell ناجحة بعد ربط Train.
+- `:feature:shell:linkDebugFrameworkIosSimulatorArm64` ناجح بعد ربط Train.
 - release runtime ما زال نظيفاً إذا shell debug-only.
 - Visual QA مقبول.
+- iOS smoke مقبول على الأقل بتشغيل Train tab ببيانات fake.
 
 ## ما أحتاجه عند الرجوع للمراجعة
 
@@ -1072,5 +1109,6 @@ Phase 05 لا تعتبر مكتملة إلا إذا:
 - `Train` يجب أن يشعر كجزء طبيعي من Home وExplore، لا كجزيرة تصميمية جديدة.
 - **لا تراجع لـ Controller pattern** — ViewModel + `viewModelScope` إلزامي.
 - **iOS:** `iosArm64` + `iosSimulatorArm64` في `feature:train`؛ لا `iosX64` في أي موديول Compose.
+- **iOS runtime:** التزم بنمط `collectAsState()` وViewModels الممررة من iOS entry point إلى أن تُغلق ديون P1/P2/P3 في الخطة الأساسية.
 - **API:** bridge عبر `app/debug` فقط؛ الـ feature يبقى مستقلاً عن Retrofit.
 - **DI/Koin:** ما زال مؤجلاً حتى أول repository حقيقي يحتاج Ktor client مشترك.

@@ -13,25 +13,16 @@ kotlin {
         }
     }
     // Compose Multiplatform 1.11 — no iosX64 artifacts; use arm64 targets only.
-    // Shell is the iOS app entry point: it produces a static framework (MovitApp)
-    // consumed by iosApp/ (Swift). It already aggregates designsystem + explore + home.
-    listOf(iosArm64(), iosSimulatorArm64()).forEach { iosTarget ->
-        iosTarget.binaries.framework {
-            baseName = "MovitApp"
-            isStatic = true
-        }
-    }
+    iosArm64()
+    iosSimulatorArm64()
 
     sourceSets {
         commonMain.dependencies {
+            implementation(project(":shared"))
             implementation(project(":core:designsystem"))
-            implementation(project(":feature:explore"))
-            implementation(project(":feature:home"))
-            implementation(project(":feature:train"))
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)
-            implementation(compose.materialIconsExtended)
             implementation(compose.ui)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.jetbrains.lifecycle.viewmodel)
@@ -42,11 +33,14 @@ kotlin {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.core)
         }
+        androidUnitTest.dependencies {
+            implementation(kotlin("test"))
+        }
     }
 }
 
 android {
-    namespace = "com.movit.feature.shell"
+    namespace = "com.movit.feature.train"
     compileSdk = libs.versions.compile.sdk.get().toInt()
 
     defaultConfig {
