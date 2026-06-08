@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class MovitHomeViewModel(
-    private val repository: HomeRepository = FakeHomeRepository(),
+    private val repository: HomeRepository = defaultHomeRepository(),
 ) : ViewModel() {
     private val _state = MutableStateFlow(MovitHomeUiState(isLoading = true))
     val state: StateFlow<MovitHomeUiState> = _state.asStateFlow()

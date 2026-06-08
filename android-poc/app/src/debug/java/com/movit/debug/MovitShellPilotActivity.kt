@@ -16,6 +16,7 @@ class MovitShellPilotActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         MovitExploreApiBridge.install(applicationContext)
+        MovitHomeApiBridge.install(applicationContext)
         enableEdgeToEdge()
         setContent {
             MovitTheme {
