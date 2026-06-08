@@ -1,0 +1,42 @@
+# XcodeGen spec — generates iosApp.xcodeproj from text (no fragile pbxproj by hand).
+# On the Mac:  brew install xcodegen  &&  cd android-poc/iosApp  &&  xcodegen
+name: iosApp
+options:
+  bundleIdPrefix: com.movit
+  deploymentTarget:
+    iOS: "15.0"
+targets:
+  iosApp:
+    type: application
+    platform: iOS
+    sources:
+      - path: iosApp
+    info:
+      path: iosApp/Info.plist
+      properties:
+        CFBundleDisplayName: Movit
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.movit.iosApp
+        # Static framework produced by :feature:shell (baseName = MovitApp)
+        FRAMEWORK_SEARCH_PATHS:
+          - "$(inherited)"
+          - "$(SRCROOT)/../feature/shell/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)"
+        OTHER_LDFLAGS:
+          - "$(inherited)"
+          - "-framework"
+          - "MovitApp"
+        LD_RUNPATH_SEARCH_PATHS:
+          - "$(inherited)"
+          - "@executable_path/Frameworks"
+    preBuildScripts:
+      - name: "Build MovitApp Kotlin framework"
+        basedOnDependencyAnalysis: false
+        script: |
+          set -e
+          cd "$SRCROOT/.."
+          ./gradlew :feature:shell:embedAndSignAppleFrameworkForXcode

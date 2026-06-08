@@ -40,4 +40,5 @@ jobs:
             :core:designsystem:compileKotlinIosSimulatorArm64 \
             :feature:explore:compileKotlinIosSimulatorArm64 \
             :feature:home:compileKotlinIosSimulatorArm64 \
-            :feature:shell:compileKotlinIosSimulatorArm64
+            :feature:shell:compileKotlinIosSimulatorArm64 \
+            :feature:shell:linkDebugFrameworkIosSimulatorArm64

@@ -13,8 +13,14 @@ kotlin {
         }
     }
     // Compose Multiplatform 1.11 — no iosX64 artifacts; use arm64 targets only.
-    iosArm64()
-    iosSimulatorArm64()
+    // Shell is the iOS app entry point: it produces a static framework (MovitApp)
+    // consumed by iosApp/ (Swift). It already aggregates designsystem + explore + home.
+    listOf(iosArm64(), iosSimulatorArm64()).forEach { iosTarget ->
+        iosTarget.binaries.framework {
+            baseName = "MovitApp"
+            isStatic = true
+        }
+    }
 
     sourceSets {
         commonMain.dependencies {
