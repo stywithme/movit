@@ -33,6 +33,7 @@ jobs:
 
       - name: Compile iOS targets
         run: |
+          chmod +x ./gradlew
           ./gradlew --console=plain \
             :shared:compileKotlinIosX64 \
             :shared:compileKotlinIosSimulatorArm64 \
