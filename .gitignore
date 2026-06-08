@@ -20,6 +20,7 @@ out/
 *.dex
 *.class
 .gradle/
+android-poc/.kotlin/
 local.properties
 *.iml
 .idea/
