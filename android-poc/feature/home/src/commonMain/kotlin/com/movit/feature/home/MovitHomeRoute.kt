@@ -2,10 +2,10 @@ package com.movit.feature.home
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 
@@ -15,7 +15,7 @@ fun MovitHomeRoute(
     viewModel: MovitHomeViewModel = viewModel { MovitHomeViewModel() },
     onEffect: (MovitHomeEffect) -> Unit = {},
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
+    val state by viewModel.state.collectAsState()
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(viewModel) {

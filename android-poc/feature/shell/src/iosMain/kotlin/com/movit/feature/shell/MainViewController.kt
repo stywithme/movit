@@ -1,7 +1,10 @@
 package com.movit.feature.shell
 
+import androidx.compose.runtime.remember
 import androidx.compose.ui.window.ComposeUIViewController
 import com.movit.designsystem.MovitTheme
+import com.movit.feature.explore.MovitExploreViewModel
+import com.movit.feature.home.MovitHomeViewModel
 import platform.UIKit.UIViewController
 
 /**
@@ -14,8 +17,14 @@ import platform.UIKit.UIViewController
  *
  * Exposed to Swift as `MainViewControllerKt.MainViewController()`.
  */
-fun MainViewController(): UIViewController = ComposeUIViewController {
+fun MainViewController(): UIViewController = ComposeUIViewController(
+    configure = { enforceStrictPlistSanityCheck = false },
+) {
     MovitTheme {
-        MovitAppShellRoute()
+        MovitAppShellRoute(
+            shellViewModel = remember { MovitAppShellViewModel() },
+            homeViewModel = remember { MovitHomeViewModel() },
+            exploreViewModel = remember { MovitExploreViewModel() },
+        )
     }
 }

@@ -3,10 +3,10 @@ package com.movit.feature.shell
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.movit.feature.explore.MovitExploreViewModel
 import com.movit.feature.home.MovitHomeViewModel
@@ -20,7 +20,7 @@ fun MovitAppShellRoute(
     exploreViewModel: MovitExploreViewModel = viewModel { MovitExploreViewModel() },
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
-    val state by shellViewModel.state.collectAsStateWithLifecycle()
+    val state by shellViewModel.state.collectAsState()
 
     LaunchedEffect(shellViewModel, snackbarHostState) {
         shellViewModel.effects.collectLatest { effect ->

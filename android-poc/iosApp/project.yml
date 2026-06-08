@@ -4,7 +4,8 @@ name: iosApp
 options:
   bundleIdPrefix: com.movit
   deploymentTarget:
-    iOS: "15.0"
+    # Match Kotlin/Native prebuilt deps (e.g. libicu) — Xcode 26 SDK targets 18.5+.
+    iOS: "18.5"
 targets:
   iosApp:
     type: application
@@ -15,6 +16,7 @@ targets:
       path: iosApp/Info.plist
       properties:
         CFBundleDisplayName: Movit
+        CADisableMinimumFrameDurationOnPhone: true
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
@@ -38,5 +40,9 @@ targets:
         basedOnDependencyAnalysis: false
         script: |
           set -e
+          export PATH="/opt/homebrew/opt/openjdk@17/bin:$PATH"
+          export JAVA_HOME="/opt/homebrew/opt/openjdk@17"
+          export ANDROID_HOME="/opt/homebrew/share/android-commandlinetools"
+          export DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer"
           cd "$SRCROOT/.."
           ./gradlew :feature:shell:embedAndSignAppleFrameworkForXcode
