@@ -29,6 +29,40 @@
 
 هذا يتماشى مع دليل JetBrains الرسمي للهجرة التدريجية من Android إلى KMP، لكن تفسير التدرج هنا عملي: كل خطوة يجب أن تبني وتجرب وتثبت القرار التالي. لا نتمسك بـ View/XML أو single-module لأنهما موجودان حالياً فقط.
 
+## حالة التنفيذ الفعلية (تحديث 2026-06-08)
+
+تم تنفيذ Phase 01→04 بالكامل، إغلاق ملاحظات مراجعة System Designer، والبدء في iOS entry point (التحقّق الثالث). الحالة الحقيقية على فرع `codex/kmp-mobile-foundation`:
+
+### مبنيّ ومتحقَّق منه
+
+- **موديولات KMP:** `:shared`, `:core:designsystem`, `:feature:explore`, `:feature:home`, `:feature:shell`.
+- **`commonMain` نظيف 100%** من أى `android.*` / `java.*` — تحقّق آلي.
+- **UDF لكل feature:** `State / Event / Effect / ViewModel / Route / Screen`، باستخدام KMP `androidx.lifecycle.ViewModel` (لا Controller، لا Android-only ViewModel).
+- **Design System كمصدر حقيقة واحد:** `MovitTheme` + tokens؛ الـ palette الوحيدة بها hex؛ Light/Dark؛ `error` مميّز عن `tertiary`؛ line-heights مناسبة للعربى.
+- **iOS مفروض بالـ build:** كل الموديولات بها `iosArm64 + iosSimulatorArm64` (`iosX64` في `:shared` فقط)، وCI على macOS (`.github/workflows/movit-kmp-ios.yml`) يكمبّل `commonMain` لـ iOS عند كل push على `android-poc/**` — **أخضر**.
+- **بيانات حقيقية عبر debug bridge:** `Explore` و`Home` يقرآن `/api/mobile/explore` و`/api/mobile/home` عبر نمط bridge (app/debug يحقن fetcher يربط Retrofit القديم؛ fallback آمن لبيانات fake). iOS يبقى على fake حتى Ktor.
+- **Release hygiene:** كل موديولات Movit `debugImplementation`؛ الـ launcher القديم لم يُلمس؛ `releaseRuntimeClasspath` نظيف.
+- **Tests:** خضراء عبر كل الموديولات.
+
+### قيد التنفيذ الآن
+
+- **iOS entry point (`iosApp/`):** `:feature:shell` يُصدّر framework ثابت (`MovitApp`) عبر `MainViewController()`، وiosApp (SwiftUI) يستضيفه. الهدف: إثبات أن Compose **يَرسُم** على simulator وليس فقط يكمبّل. CI يتحقق من ربط الـ framework على macOS.
+
+### مؤجَّل عمداً (بـ trigger واضح)
+
+- **Koin/DI:** حتى أول repository حقيقى يحتاج Ktor client مشترك.
+- **Ktor/serialization على iOS:** البيانات الحقيقية على iOS تنتظره؛ النمط الحالى bridge على Android فقط.
+- **`TrainingActivity` / camera / MediaPipe / LiteRT / ONNX:** Phase 7، خلف حدود `expect/actual`.
+
+### تطابق الترقيم
+
+مستندات التنفيذ (`Phase-01..05`) أدق حبيبيّة من المراحل المفاهيمية أدناه:
+
+- `Phase 01 Foundation` = Phase 0 + Phase 1 هنا.
+- `Phase 02/03/04` = feature pilots (Explore/Shell/Home) ضمن Phase 2 + Phase 4 هنا.
+- **iOS entry point (Phase 6 هنا) سُحب مبكراً** لأن الأساس أثبت نفسه أسرع من المتوقع — يُنفَّذ الآن قبل توسيع الشاشات.
+- `Phase 05 Train` = بداية Phase 5 هنا (Shared feature screens).
+
 ## قراءة الوضع الحالي
 
 ### الموجود الآن
@@ -397,6 +431,8 @@ sealed interface ExploreEffect {
 
 ## خطة الهجرة
 
+> حالة التنفيذ (انظر "حالة التنفيذ الفعلية" أعلاه): Phase 0→4 + Design System + KMP skeleton ✅ مكتملة. Phase 6 (iOS entry point) 🔄 قيد التنفيذ الآن — سُحب مبكراً. Phase 5 (Shared feature screens) ⏳ التالى، يبدأ بـ Train. Phase 7 (camera/ML) ⬜ مؤجّل.
+
 ### Phase 0 - تأسيس فرع التحول
 
 الهدف: تجهيز فرع جديد للتحول الصحيح، بحيث نستطيع تغيير البنية والواجهة بحرية مع الحفاظ على build/test checkpoints.
@@ -608,6 +644,10 @@ iosMain:
 - KMP structure يبدأ مبكراً حتى لو بقيت بعض الشاشات Android-only مؤقتاً.
 - الشاشات الجديدة تبنى بـ `Pose*` components وليس XML.
 - التطبيق الحالي مرجع للسلوك والـ APIs، وليس قيداً على UI أو الملفات.
+- (مُنفَّذ) KMP `androidx.lifecycle.ViewModel` كحامل حالة مشترك، بدل Controller أو Android-only ViewModel.
+- (مُنفَّذ) iOS targets + CI على macOS من البداية — "iOS-ready بالـ build وليس بالاتفاق".
+- (مُنفَّذ) ربط الـ features بالـ APIs القديمة عبر debug bridge (app يحقن fetcher)، بدل إجبار الـ feature على معرفة Retrofit.
+- (مُنفَّذ) الهوية الجديدة `Movit*` بدل `Pose*` في الموديولات الجديدة.
 
 ## قرارات تؤجل حتى تتضح حدودها
 
@@ -616,6 +656,8 @@ iosMain:
 - لا نحذف Retrofit/Gson إلا بعد أن يثبت Ktor/kotlinx.serialization أول feature end-to-end.
 - لا نعيد تسمية package/applicationId إلا عندما يكون الاسم التجاري النهائي واضحاً.
 - لا ننقل `TrainingActivity` إلى Compose قبل فصل engine/state/adapters.
+- (محدَّث) Koin/DI مؤجّل حتى أول repository حقيقى يحتاج Ktor client مشترك.
+- (محدَّث) Ktor/serialization على iOS مؤجّل؛ البيانات الحقيقية حالياً عبر Android bridge فقط، وiOS على fake.
 
 ## قائمة مصادر تم الاعتماد عليها
 

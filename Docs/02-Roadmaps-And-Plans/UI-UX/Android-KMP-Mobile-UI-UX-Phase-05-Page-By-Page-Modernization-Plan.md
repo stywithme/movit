@@ -1,6 +1,6 @@
 # Android / KMP Mobile UI/UX - Phase 05 Page-by-Page Modernization + Train Page Plan
 
-آخر تحديث: 2026-06-08 (مراجعة post-Phase-04: ViewModel + iOS targets + API bridge)
+آخر تحديث: 2026-06-08 (post-Phase-04: ViewModel + iOS targets + API bridge؛ ثم CI أخضر + Home bridge + iOS entry point قيد التنفيذ)
 
 ## تعريف المرحلة
 
@@ -118,12 +118,13 @@ Profile
 - `:feature:home:testDebugUnitTest` ناجح.
 - `releaseRuntimeClasspath` نظيف من pilot dependencies.
 - `:app:testDebugUnitTest` إن فشل، يكون نفس TensorFlowLite failures القديمة فقط.
-- **Post-review fixes مغلقة:**
-  - `Movit*ViewModel` (ليس Controller) في Home/Explore/Shell.
-  - iOS targets: `iosArm64` + `iosSimulatorArm64` في موديولات Compose؛ `iosX64` فقط في `:shared`.
-  - CI macOS: `.github/workflows/movit-kmp-ios.yml`.
-  - Explore API bridge عبر `MovitExploreApiBridge` (debug pilot).
-  - theme boundary tests في `androidUnitTest` (ليس `commonTest` + `java.io.File`).
+- **Post-review fixes مغلقة ومتحقَّق منها:**
+  - `Movit*ViewModel` (ليس Controller) في Home/Explore/Shell. ✅
+  - iOS targets: `iosArm64` + `iosSimulatorArm64` في موديولات Compose؛ `iosX64` فقط في `:shared`. ✅
+  - CI macOS `.github/workflows/movit-kmp-ios.yml` — **أخضر** (يكمبّل commonMain لـ iOS + يربط framework الـ shell). ✅
+  - API bridge عبر debug pilot لـ **Explore و Home** (`/api/mobile/explore` + `/api/mobile/home`) — النمط متحقَّق إنه يتعمّم على شاشتين وعقدين بيانات. ✅
+  - theme boundary tests في `androidUnitTest`. ✅
+- **iOS entry point (`iosApp/`) قيد التنفيذ** كتحقّق ثالث (render proof) قبل/بالتوازى مع Train. Train يبنى على foundation متحقَّق على المنصتين، ويتبع نفس نمط bridge الخاص بـ Home.
 
 ## خارج نطاق هذه المرحلة
 
