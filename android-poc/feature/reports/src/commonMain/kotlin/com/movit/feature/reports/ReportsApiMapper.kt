@@ -58,6 +58,9 @@ object ReportsApiMapper {
                 )
             }
 
+        val formScores = trends?.formScoreByWeek.orEmpty()
+        val improvementRate = computeImprovementRate(formScores)
+
         val volumeValues = trends?.volumeByWeek.orEmpty()
         val volumeLabels = volumeValues.indices.map { index -> strings.weekShort(index + 1) }
 
@@ -78,7 +81,8 @@ object ReportsApiMapper {
             periodLabel = dashboard.period?.replaceFirstChar { it.uppercase() }
                 ?: strings.periodDefault,
             kpis = kpis,
-            formScorePoints = trends?.formScoreByWeek.orEmpty(),
+            formScorePoints = formScores,
+            improvementRatePercent = improvementRate,
             weeklyBarValues = trends?.attendanceByWeek.orEmpty().map { it.toFloat() },
             weeklyBarLabels = trends?.attendanceByWeek.orEmpty().indices.map { index ->
                 strings.weekShort(index + 1)
@@ -104,5 +108,13 @@ object ReportsApiMapper {
             title = type.replace('_', ' ').replaceFirstChar { it.uppercase() },
             message = message,
         )
+    }
+
+    internal fun computeImprovementRate(formScores: List<Float>): Float? {
+        if (formScores.size < 2) return null
+        val first = formScores.first()
+        if (first == 0f) return null
+        val last = formScores.last()
+        return ((last - first) / first) * 100f
     }
 }

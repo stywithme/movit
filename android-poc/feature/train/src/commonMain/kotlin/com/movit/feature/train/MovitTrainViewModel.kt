@@ -2,6 +2,8 @@ package com.movit.feature.train
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.movit.core.data.MovitData
+import com.movit.resources.strings.TrainStrings
 import com.movit.shared.AppResult
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,11 +31,14 @@ class MovitTrainViewModel(
         _state.update { it.copy(isLoading = true, errorMessage = null) }
         when (val result = repository.getTrainDashboard()) {
             is AppResult.Success -> {
+                val dashboard = result.value
+                val weekIndex = resolveWeekIndex(dashboard)
                 _state.update {
                     it.copy(
                         isLoading = false,
-                        dashboard = result.value,
+                        dashboard = dashboard,
                         errorMessage = null,
+                        selectedWeekIndex = weekIndex,
                     )
                 }
             }
@@ -51,6 +56,8 @@ class MovitTrainViewModel(
     fun onEvent(event: MovitTrainEvent) {
         when (event) {
             MovitTrainEvent.RetryClicked -> Unit
+            MovitTrainEvent.PreviousWeekClicked -> navigateWeek(-1)
+            MovitTrainEvent.NextWeekClicked -> navigateWeek(+1)
             MovitTrainEvent.StartWorkoutClicked -> {
                 val launchTarget = _state.value.dashboard
                     ?.today
@@ -71,21 +78,65 @@ class MovitTrainViewModel(
                     _effects.tryEmit(MovitTrainEffect.OpenSessionPreview)
                 }
             }
-            MovitTrainEvent.ExploreProgramsClicked -> {
-                _effects.tryEmit(MovitTrainEffect.OpenExplore)
+            MovitTrainEvent.ExploreProgramsClicked,
+            MovitTrainEvent.WhatsNextClicked,
+            -> {
+                _effects.tryEmit(MovitTrainEffect.OpenProgramList)
             }
-            MovitTrainEvent.ViewReportClicked -> {
-                _effects.tryEmit(MovitTrainEffect.OpenReports)
+            MovitTrainEvent.ViewReportClicked,
+            MovitTrainEvent.ViewJourneyClicked,
+            -> {
+                val program = _state.value.dashboard?.program
+                if (program != null && program.id.isNotBlank()) {
+                    _effects.tryEmit(
+                        MovitTrainEffect.OpenWeeklyReport(
+                            programId = program.id,
+                            weekNumber = program.weekNumber,
+                        ),
+                    )
+                } else {
+                    _effects.tryEmit(MovitTrainEffect.OpenReports)
+                }
+            }
+            is MovitTrainEvent.StartProgramClicked -> {
+                _effects.tryEmit(
+                    MovitTrainEffect.OpenProgramWeekPlan(
+                        programId = event.programId,
+                        weekNumber = 1,
+                    ),
+                )
             }
             is MovitTrainEvent.QuickActionClicked -> {
                 when (event.actionId) {
                     "explore" -> _effects.tryEmit(MovitTrainEffect.OpenExplore)
                     "reports" -> _effects.tryEmit(MovitTrainEffect.OpenReports)
-                    else -> _effects.tryEmit(
-                        MovitTrainEffect.ShowMessage("Training preferences arrive in a later phase."),
-                    )
+                    else -> viewModelScope.launch {
+                        val language = if (MovitData.isInstalled) {
+                            MovitData.requirePlatform().preferredLanguage()
+                        } else {
+                            "en"
+                        }
+                        val message = TrainStrings.load(language).prefsLater
+                        _effects.emit(MovitTrainEffect.ShowMessage(message))
+                    }
                 }
             }
         }
+    }
+
+    private fun navigateWeek(delta: Int) {
+        val dashboard = _state.value.dashboard ?: return
+        val weeks = dashboard.weekOptions.ifEmpty { listOf(dashboard.week) }
+        if (weeks.size <= 1) return
+        val nextIndex = (_state.value.selectedWeekIndex + delta).coerceIn(0, weeks.lastIndex)
+        if (nextIndex != _state.value.selectedWeekIndex) {
+            _state.update { it.copy(selectedWeekIndex = nextIndex) }
+        }
+    }
+
+    private fun resolveWeekIndex(dashboard: TrainDashboardUi): Int {
+        val weeks = dashboard.weekOptions.ifEmpty { listOf(dashboard.week) }
+        val currentIndex = weeks.indexOfFirst { it.title == dashboard.week.title }
+        return if (currentIndex >= 0) currentIndex else 0
     }
 }

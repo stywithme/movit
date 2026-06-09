@@ -1,120 +1,175 @@
 package com.movit.feature.library
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.components.MovitButton
 import com.movit.designsystem.components.MovitButtonVariant
-import com.movit.designsystem.components.MovitCard
-import com.movit.designsystem.components.MovitCardVariant
 import com.movit.designsystem.components.MovitErrorState
 import com.movit.designsystem.components.MovitInnerPageHeader
 import com.movit.designsystem.components.MovitLoadingState
-import com.movit.designsystem.components.MovitProgressBar
 import com.movit.designsystem.components.MovitSectionHeader
 import com.movit.designsystem.components.MovitSegmentedControl
-import com.movit.designsystem.components.MovitStatTileData
-import com.movit.designsystem.components.MovitStatTileRow
-import com.movit.designsystem.components.MovitTag
-import com.movit.designsystem.components.MovitTagVariant
-import com.movit.designsystem.movitColors
+import com.movit.feature.library.components.ProgramCopyCard
+import com.movit.feature.library.components.ProgramDetailCardsSection
+import com.movit.feature.library.components.ProgramEditPanel
+import com.movit.feature.library.components.ProgramHeroSection
+import com.movit.feature.library.components.ProgramStartDock
+import com.movit.feature.library.components.ProgramStatGrid
+import com.movit.feature.library.components.ProgramWeekCard
+import com.movit.feature.library.components.ProgramWeekStrip
+import com.movit.resources.movitText
 
 @Composable
 fun ProgramDetailScreen(
     state: ProgramDetailUiState,
     onBack: () -> Unit,
     onTabSelected: (ProgramDetailTab) -> Unit,
+    onWeekSelected: (Int) -> Unit,
     onStartProgram: () -> Unit,
+    onEditReasonSelected: (ProgramEditReason) -> Unit,
+    onEditScopeSelected: (ProgramEditScope) -> Unit,
+    onWeeklyTargetChange: (Int) -> Unit,
+    onPauseCalendarToggle: () -> Unit,
+    onSaveEdit: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val program = state.program
-    Column(modifier = modifier.fillMaxSize()) {
-        MovitInnerPageHeader(
-            onBack = onBack,
-            backLabel = "Explore",
-            actionLabel = if (state.selectedTab == ProgramDetailTab.Overview) "Edit" else "Done",
-            actionIcon = Icons.Default.Edit,
-            onAction = {
-                onTabSelected(
-                    if (state.selectedTab == ProgramDetailTab.Overview) {
-                        ProgramDetailTab.Edit
+    val isOverview = state.selectedTab == ProgramDetailTab.Overview
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            MovitInnerPageHeader(
+                onBack = onBack,
+                backLabel = movitText("program_back"),
+                actionLabel = when {
+                    isOverview -> movitText("program_customize")
+                    else -> movitText("program_save")
+                },
+                actionIcon = if (isOverview) Icons.Default.Edit else Icons.Default.Save,
+                onAction = {
+                    if (isOverview) {
+                        onTabSelected(ProgramDetailTab.Edit)
                     } else {
-                        ProgramDetailTab.Overview
-                    },
-                )
-            },
-            modifier = Modifier.padding(horizontal = MovitSpacing.lg, vertical = MovitSpacing.sm),
-        )
+                        onSaveEdit()
+                    }
+                },
+                modifier = Modifier.padding(horizontal = MovitSpacing.lg, vertical = MovitSpacing.sm),
+            )
+        },
+        bottomBar = {
+            when {
+                isOverview && state.nextSession != null -> {
+                    ProgramStartDock(
+                        title = state.nextSession.title,
+                        subtitle = state.nextSession.subtitle,
+                        ctaLabel = movitText(
+                            if (state.enrollment.isEnrolled) "program_start_next" else "program_start",
+                        ),
+                        onStart = onStartProgram,
+                        modifier = Modifier.padding(MovitSpacing.lg),
+                    )
+                }
+                !isOverview -> {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(MovitSpacing.lg),
+                        horizontalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
+                    ) {
+                        MovitButton(
+                            text = movitText("program_cancel"),
+                            onClick = { onTabSelected(ProgramDetailTab.Overview) },
+                            variant = MovitButtonVariant.Outlined,
+                            modifier = Modifier.weight(1f),
+                        )
+                        MovitButton(
+                            text = movitText("program_save_copy"),
+                            onClick = onSaveEdit,
+                            variant = MovitButtonVariant.Filled,
+                            leadingIcon = Icons.Default.Save,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+                isOverview && !state.enrollment.isEnrolled -> {
+                    MovitButton(
+                        text = movitText("program_start"),
+                        onClick = onStartProgram,
+                        variant = MovitButtonVariant.Filled,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(MovitSpacing.lg),
+                    )
+                }
+            }
+        },
+    ) { padding ->
         when {
-            state.isLoading -> MovitLoadingState(message = "Loading program…")
+            state.isLoading -> MovitLoadingState(message = movitText("program_loading"))
             state.errorMessage != null -> MovitErrorState(message = state.errorMessage, onRetry = onRetry)
-            program != null -> {
+            else -> {
                 Column(
                     modifier = Modifier
-                        .weight(1f)
+                        .fillMaxSize()
+                        .padding(padding)
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = MovitSpacing.lg),
                     verticalArrangement = Arrangement.spacedBy(MovitSpacing.lg),
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(180.dp)
-                            .background(MaterialTheme.colorScheme.primaryContainer),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = program.title.take(1).uppercase(),
-                            style = MaterialTheme.typography.displaySmall,
-                            fontWeight = FontWeight.W800,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        )
-                    }
-                    Column(verticalArrangement = Arrangement.spacedBy(MovitSpacing.xs)) {
-                        program.metadata.firstOrNull()?.let {
-                            MovitTag(text = it, variant = MovitTagVariant.Blue)
-                        }
-                        Text(
-                            text = program.title,
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.W800,
-                        )
-                        Text(
-                            text = program.subtitle,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.movitColors.textSecondary,
-                        )
-                    }
+                    ProgramHeroSection(
+                        title = state.title,
+                        description = state.description,
+                        kickers = state.kickers,
+                        imageUrl = state.imageUrl,
+                    )
                     MovitSegmentedControl(
-                        options = listOf("Overview", "Edit"),
-                        selectedIndex = if (state.selectedTab == ProgramDetailTab.Overview) 0 else 1,
+                        options = listOf(
+                            movitText("program_tab_overview"),
+                            movitText("program_tab_edit"),
+                        ),
+                        selectedIndex = if (isOverview) 0 else 1,
                         onOptionSelected = { index ->
                             onTabSelected(if (index == 0) ProgramDetailTab.Overview else ProgramDetailTab.Edit)
                         },
                     )
-                    if (state.selectedTab == ProgramDetailTab.Overview) {
-                        ProgramOverviewPanel(state = state, onStartProgram = onStartProgram)
+                    ProgramStatGrid(stats = state.stats)
+                    if (state.enrollment.isEnrolled) {
+                        ProgramCopyCard(
+                            enrollment = state.enrollment,
+                            onEditCopy = { onTabSelected(ProgramDetailTab.Edit) },
+                            onResumeWeek = onStartProgram,
+                        )
+                    }
+                    if (isOverview) {
+                        ProgramOverviewContent(
+                            state = state,
+                            onWeekSelected = onWeekSelected,
+                        )
                     } else {
-                        ProgramEditPanel()
+                        ProgramEditPanel(
+                            edit = state.edit,
+                            onReasonSelected = onEditReasonSelected,
+                            onScopeSelected = onEditScopeSelected,
+                            onWeeklyTargetChange = onWeeklyTargetChange,
+                            onPauseToggle = onPauseCalendarToggle,
+                            onSave = onSaveEdit,
+                        )
                     }
                 }
             }
@@ -123,84 +178,33 @@ fun ProgramDetailScreen(
 }
 
 @Composable
-private fun ProgramOverviewPanel(
+private fun ProgramOverviewContent(
     state: ProgramDetailUiState,
-    onStartProgram: () -> Unit,
+    onWeekSelected: (Int) -> Unit,
 ) {
-    val program = state.program ?: return
-    MovitStatTileRow(
-        stats = listOf(
-            MovitStatTileData(program.metadata.getOrNull(0) ?: "4 weeks", "Duration"),
-            MovitStatTileData("3 / week", "Frequency"),
-            MovitStatTileData(program.metadata.getOrNull(1) ?: "Beginner", "Level"),
-        ),
+    MovitSectionHeader(
+        title = movitText("program_journey_title"),
+        subtitle = movitText("program_journey_sub"),
+        actionLabel = movitText("program_weekly_report"),
+        onActionClick = {},
     )
-    MovitSectionHeader(title = "Your journey", subtitle = "Week by week")
-    state.weeks.forEach { week ->
-        MovitCard(
-            variant = if (week.isActive) MovitCardVariant.Outlined else MovitCardVariant.Filled,
-        ) {
-            Column(modifier = Modifier.padding(MovitSpacing.md)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text(text = week.label, fontWeight = FontWeight.W800)
-                    if (week.isActive) {
-                        MovitTag(text = "Active", variant = MovitTagVariant.Lime)
-                    }
-                }
-                Text(
-                    text = week.subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.movitColors.textSecondary,
-                )
-                if (week.progressPercent > 0) {
-                    MovitProgressBar(
-                        progressPercent = week.progressPercent,
-                        modifier = Modifier.padding(top = MovitSpacing.sm),
-                    )
-                }
-            }
-        }
-    }
-    MovitButton(
-        text = "Start program",
-        onClick = onStartProgram,
-        variant = MovitButtonVariant.Filled,
-        modifier = Modifier.fillMaxWidth(),
+    ProgramWeekStrip(
+        weeks = state.weeks,
+        selectedWeekNumber = state.selectedWeekNumber,
+        onWeekSelected = onWeekSelected,
     )
-}
-
-@Composable
-private fun ProgramEditPanel() {
-    MovitCard(variant = MovitCardVariant.Filled) {
-        Column(
-            modifier = Modifier.padding(MovitSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
-        ) {
-            Text(
-                text = "Customize your plan",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.W800,
-            )
-            Text(
-                text = "Adjust training days, swap exercises, or pause the program. Changes sync when you save.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.movitColors.textSecondary,
-            )
-        }
+    val selectedWeek = state.weeks.firstOrNull { it.weekNumber == state.selectedWeekNumber }
+        ?: state.weeks.firstOrNull()
+    if (selectedWeek != null) {
+        ProgramWeekCard(week = selectedWeek)
     }
-    MovitSectionHeader(title = "Quick settings")
-    MovitCard(variant = MovitCardVariant.Outlined) {
-        Column(modifier = Modifier.padding(MovitSpacing.lg)) {
-            Text("Training days per week", fontWeight = FontWeight.W700)
-            Text(
-                "3 days",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.movitColors.textSecondary,
-                modifier = Modifier.padding(top = MovitSpacing.xs),
-            )
-        }
-    }
+    state.weeks
+        .filter { it.weekNumber != selectedWeek?.weekNumber && !it.isCurrent }
+        .take(1)
+        .forEach { week -> ProgramWeekCard(week = week) }
+    MovitSectionHeader(
+        title = movitText("program_details_title"),
+        subtitle = movitText("program_details_sub"),
+    )
+    ProgramDetailCardsSection(cards = state.detailCards)
 }

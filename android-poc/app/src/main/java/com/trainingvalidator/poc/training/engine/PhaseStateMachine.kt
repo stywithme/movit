@@ -1,6 +1,6 @@
 package com.trainingvalidator.poc.training.engine
 
-import android.util.Log
+import com.movit.core.training.engine.PhaseStateMachine as KmpPhaseStateMachine
 import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.training.engine.policy.TimingPolicy
 import com.trainingvalidator.poc.training.models.CountingMethod
@@ -8,671 +8,86 @@ import com.trainingvalidator.poc.training.models.RepCountingConfig
 import com.trainingvalidator.poc.training.models.TrackedJoint
 
 /**
- * PhaseStateMachine - Manages exercise phases using STATE-BASED ranges
- * 
- * Phase determination uses the OUTERMOST bounds of StateRanges to define zones.
- * Per-joint quality (PERFECT/NORMAL/PAD/WARNING/DANGER) is handled by [com.trainingvalidator.poc.training.engine.evaluation.JointEvaluator].
- * 
- * Zone Layout (using StateRanges):
- * 
- *   180° ─────────────────────────
- *        │ Outside Range          │
- *   ─────┼────────────────────────┤ upRange.getEffectiveMax() (or danger.max)
- *        │                        │
- *        │  ✅ UP STATE           │
- *        │  (Start Position)      │
- *        │                        │
- *   ─────┼────────────────────────┤ upRange.getEffectiveMin() (pad/normal/perfect.min)
- *        │                        │
- *        │  🔄 TRANSITION         │
- *        │  (Moving)              │
- *        │                        │
- *   ─────┼────────────────────────┤ downRange.getEffectiveMax() (pad/normal/perfect.max)
- *        │                        │
- *        │  ✅ DOWN STATE         │
- *        │  (Target Position)     │
- *        │                        │
- *   ─────┼────────────────────────┤ downRange.getEffectiveMin() (or danger.min)
- *        │ Outside Range          │
- *     0° ─────────────────────────
- * 
- * NOTE: Difficulty level has been REMOVED. All users get the same phase thresholds.
- * Per-rep quality scoring is handled by [RepCounter] from [JointState] / [com.trainingvalidator.poc.training.engine.evaluation.JointEval].
+ * PhaseStateMachine - Manages exercise phases using STATE-BASED ranges.
+ * Delegates to KMP [com.movit.core.training.engine.PhaseStateMachine].
  */
 class PhaseStateMachine(
-    private val countingMethod: CountingMethod,
-    private val primaryJoints: List<TrackedJoint>,
-    private val repCountingConfig: RepCountingConfig? = null,
-    private val numberOfPhases: Int = 4,
-    private val timeProvider: () -> Long = { System.currentTimeMillis() },
-    /**
-     * Phase boundary buffer (°). Default matches legacy [SettingsManager] until all call sites pass [com.trainingvalidator.poc.training.engine.policy.StabilityPolicy.phaseHysteresisDegrees].
-     */
+    countingMethod: CountingMethod,
+    primaryJoints: List<TrackedJoint>,
+    repCountingConfig: RepCountingConfig? = null,
+    numberOfPhases: Int = 4,
+    timeProvider: () -> Long = { System.currentTimeMillis() },
     phaseHysteresisDegrees: Double = SettingsManager.getHysteresis(),
-    private val timingPolicy: TimingPolicy = TimingPolicy.default()
+    timingPolicy: TimingPolicy = TimingPolicy.default(),
 ) {
-    
-    companion object {
-        private const val TAG = "PhaseStateMachine"
-    }
-    
-    // ==================== Configurable Thresholds ====================
-    
-    /**
-     * Hysteresis buffer (prevents flickering at boundaries)
-     */
-    private val hysteresis: Double = phaseHysteresisDegrees
-    
-    private val minRepIntervalMs: Long = timingPolicy.minRepIntervalFor(repCountingConfig)
+    private val core = KmpPhaseStateMachine(
+        countingMethod = countingMethod.toKmp(),
+        primaryJoints = primaryJoints.map { TrackedJointPhaseAdapter(it) },
+        timing = buildPhaseTimingConfig(repCountingConfig, numberOfPhases, timingPolicy),
+        numberOfPhases = numberOfPhases,
+        timeProvider = timeProvider,
+        phaseHysteresisDegrees = phaseHysteresisDegrees,
+    )
 
-    private val maxRepIntervalMs: Long = timingPolicy.maxRepIntervalFor(repCountingConfig)
+    val currentPhase: Phase
+        get() = core.currentPhase.toApp()
 
-    private val minPhaseDurationMs: Long =
-        timingPolicy.minPhaseDurationFor(repCountingConfig, numberOfPhases)
-    
-    /**
-     * Current phase of the exercise
-     */
-    var currentPhase: Phase = Phase.IDLE
-        private set
-    
-    /**
-     * Previous phase (for transition detection)
-     */
-    var previousPhase: Phase = Phase.IDLE
-        private set
-    
-    /**
-     * Timestamp when entered current phase
-     * Initialize to 0 - will be set properly on first update()
-     */
-    private var phaseEntryTime: Long = 0L
-    
-    /**
-     * Phase timings for current rep (for analytics)
-     */
-    private val phaseTimings = mutableMapOf<Phase, Long>()
-    
-    /**
-     * Listener for phase changes
-     */
+    val previousPhase: Phase
+        get() = core.previousPhase.toApp()
+
     var onPhaseChanged: ((Phase, Phase) -> Unit)? = null
-    
-    /**
-     * Listener for rep completion
-     */
-    var onRepCompleted: (() -> Unit)? = null
+        set(value) {
+            field = value
+            core.onPhaseChanged = value?.let { callback ->
+                { previous, current -> callback(previous.toApp(), current.toApp()) }
+            }
+        }
 
-    /**
-     * Listener when a rep attempt did not complete (partial path or timing out of range).
-     */
+    var onRepCompleted: (() -> Unit)?
+        get() = core.onRepCompleted
+        set(value) {
+            core.onRepCompleted = value
+        }
+
     var onRepIncomplete: ((RepIncompleteReason) -> Unit)? = null
-    
-    /** Primary joints with up/down ranges (rep counting uses these for UP_DOWN strict mode). */
-    private val upDownPrimaryJoints: List<TrackedJoint> =
-        primaryJoints.filter { it.hasStateUpDownRanges() }
-    
-    /** Primary joints with hold range only (HOLD strict mode). */
-    private val holdPrimaryJoints: List<TrackedJoint> =
-        primaryJoints.filter { it.hasStateHoldRange() }
-    
-    // Calculated thresholds aggregated across primary joints' StateRanges (debug + legacy fallback)
-    private val upRangeMin: Double
-    private val upRangeMax: Double
-    private val downRangeMin: Double
-    private val downRangeMax: Double
-    
-    /**
-     * Flag to prevent counting the same rep multiple times
-     * Reset when starting a new descent (leaving UP range)
-     */
-    private var repCountedThisCycle = false
-
-    /** Wall-clock when the trainee left START toward DOWN (full-rep movement timer). */
-    private var repMovementStartTime: Long = 0L
-    
-    init {
-        // Aggregate thresholds for logging and legacy fallback when no per-joint ranges exist.
-        val upDownJoints = upDownPrimaryJoints
-        val holdRangeJoints = holdPrimaryJoints
-
-        if (upDownJoints.isNotEmpty()) {
-            upRangeMin = upDownJoints.map { it.getStateUpRange().effectiveMin }.average()
-            upRangeMax = upDownJoints.map { it.getStateUpRange().outermostMax }.average()
-            downRangeMin = upDownJoints.map { it.getStateDownRange().outermostMin }.average()
-            downRangeMax = upDownJoints.map { it.getStateDownRange().effectiveMax }.average()
-        } else if (holdRangeJoints.isNotEmpty()) {
-            upRangeMin = holdRangeJoints.map { it.getStateHoldRange().effectiveMin }.average()
-            upRangeMax = holdRangeJoints.map { it.getStateHoldRange().outermostMax }.average()
-            downRangeMin = holdRangeJoints.map { it.getStateHoldRange().outermostMin }.average()
-            downRangeMax = holdRangeJoints.map { it.getStateHoldRange().effectiveMax }.average()
-        } else {
-            // Fallback defaults
-            upRangeMin = 120.0
-            upRangeMax = 180.0
-            downRangeMin = 0.0
-            downRangeMax = 80.0
-        }
-        
-        Log.d(TAG, "PhaseStateMachine initialized (STATE-BASED):")
-        Log.d(TAG, "  Method: $countingMethod")
-        Log.d(TAG, "  upRange: $upRangeMin - $upRangeMax")
-        Log.d(TAG, "  downRange: $downRangeMin - $downRangeMax")
-        Log.d(TAG, "  Transition Zone: $downRangeMax - $upRangeMin")
-        Log.d(TAG, "  Settings (configurable):")
-        Log.d(TAG, "    Hysteresis: $hysteresis°")
-        Log.d(TAG, "    Min Rep Interval: ${minRepIntervalMs}ms")
-        Log.d(TAG, "    Max Rep Interval: ${maxRepIntervalMs}ms")
-        Log.d(TAG, "    Min Phase Duration: ${minPhaseDurationMs}ms")
-    }
-    
-    /**
-     * Update the state machine with new angles
-     * 
-     * NOTE: Expects pre-smoothed angles from AngleSmoother (via TrainingEngine)
-     * This ensures consistency with [JointEvaluator] which uses the same smoothed angles.
-     * 
-     * For multi-primary UP_DOWN exercises, each joint uses its own StateRanges thresholds
-     * (strict all-must-complete). Transitions require every primary joint to satisfy the
-     * same phase predicate with joint-specific bounds (avoids averaged-threshold drift when
-     * ranges differ, e.g. elbow vs knee).
-     * 
-     * @param primaryAngles Map of primary joint codes to their current (smoothed) angles
-     * @return Current phase after update
-     */
-    fun update(primaryAngles: Map<String, Double>): Phase {
-        if (primaryAngles.isEmpty() || primaryJoints.isEmpty()) {
-            return currentPhase
-        }
-        
-        val nextPhase = when (countingMethod) {
-            CountingMethod.UP_DOWN -> {
-                if (upDownPrimaryJoints.isNotEmpty()) {
-                    updateUpDownStrict(upDownPrimaryJoints, primaryAngles)
-                } else {
-                    val angleValues = primaryAngles.values
-                    if (angleValues.isEmpty()) return currentPhase
-                    updateUpDownLegacy(angleValues.min(), angleValues.max())
-                }
-            }
-            CountingMethod.HOLD -> {
-                if (holdPrimaryJoints.isNotEmpty()) {
-                    updateHoldStrict(holdPrimaryJoints, primaryAngles)
-                } else {
-                    val angleValues = primaryAngles.values
-                    if (angleValues.isEmpty()) return currentPhase
-                    updateHoldLegacy(angleValues.min(), angleValues.max())
-                }
+        set(value) {
+            field = value
+            core.onRepIncomplete = value?.let { callback ->
+                { reason -> callback(reason.toApp()) }
             }
         }
-        
-        // Handle phase transition
-        if (nextPhase != currentPhase) {
-            handlePhaseTransition(nextPhase)
-        }
-        
-        return currentPhase
-    }
-    
-    // --- Per-joint bounds (match init aggregation: up effectiveMin/outermostMax, down outermostMin/effectiveMax) ---
-    
-    private fun jointInUpRange(joint: TrackedJoint, angle: Double, exiting: Boolean): Boolean {
-        val up = joint.getStateUpRange()
-        val minBound = if (exiting) up.effectiveMin - hysteresis else up.effectiveMin
-        val maxBound = up.outermostMax + hysteresis
-        return angle in minBound..maxBound
-    }
-    
-    private fun jointInDownRange(joint: TrackedJoint, angle: Double, exiting: Boolean): Boolean {
-        val down = joint.getStateDownRange()
-        val minBound = down.outermostMin - hysteresis
-        val maxBound = if (exiting) down.effectiveMax + hysteresis else down.effectiveMax
-        return angle in minBound..maxBound
-    }
-    
-    private fun jointInHoldRange(joint: TrackedJoint, angle: Double, exiting: Boolean): Boolean {
-        val hold = joint.getStateHoldRange()
-        val minBound = hold.outermostMin - hysteresis
-        val maxBound = if (exiting) hold.effectiveMax + hysteresis else hold.effectiveMax
-        return angle in minBound..maxBound
-    }
-    
-    private fun jointHasLeftUpRange(joint: TrackedJoint, angle: Double): Boolean {
-        return angle < joint.getStateUpRange().effectiveMin - hysteresis
-    }
-    
-    private fun jointHasEnteredDownRange(joint: TrackedJoint, angle: Double): Boolean {
-        return angle <= joint.getStateDownRange().effectiveMax
-    }
-    
-    private fun jointHasLeftDownRange(joint: TrackedJoint, angle: Double): Boolean {
-        return angle > joint.getStateDownRange().effectiveMax + hysteresis
-    }
-    
-    private fun jointHasEnteredUpRange(joint: TrackedJoint, angle: Double): Boolean {
-        return angle >= joint.getStateUpRange().effectiveMin
-    }
-    
-    /**
-     * UP_DOWN with per-joint thresholds: every primary with up/down must satisfy the transition.
-     */
-    private fun updateUpDownStrict(joints: List<TrackedJoint>, primaryAngles: Map<String, Double>): Phase {
-        // Only evaluate transitions against joints visible this frame. When a paired joint
-        // is intentionally skipped (e.g. Any-Side occlusion), its absence must NOT block the
-        // phase transition — the visible side decides.
-        val visibleJoints = joints.filter { primaryAngles[it.joint] != null }
-        if (visibleJoints.isEmpty()) return currentPhase
-        fun angleOf(j: TrackedJoint): Double = primaryAngles.getValue(j.joint)
 
-        return when (currentPhase) {
-            Phase.IDLE -> {
-                if (visibleJoints.all { jointInUpRange(it, angleOf(it), exiting = false) }) {
-                    Log.d(TAG, "Entered UP range (strict per joint)")
-                    Phase.START
-                } else {
-                    Phase.IDLE
-                }
-            }
+    fun update(primaryAngles: Map<String, Double>): Phase =
+        core.update(primaryAngles).toApp()
 
-            Phase.START -> {
-                if (visibleJoints.all { jointHasLeftUpRange(it, angleOf(it)) }) {
-                    Log.d(TAG, "Left UP range, starting descent (strict per joint)")
-                    repCountedThisCycle = false
-                    repMovementStartTime = timeProvider()
-                    Phase.DOWN
-                } else {
-                    Phase.START
-                }
-            }
+    fun getPhaseTimings(): Map<Phase, Long> =
+        core.getPhaseTimings().mapKeys { it.key.toApp() }
 
-            Phase.DOWN -> {
-                when {
-                    visibleJoints.all { jointHasEnteredDownRange(it, angleOf(it)) } -> {
-                        Log.d(TAG, "Entered DOWN range (strict per joint)")
-                        Phase.BOTTOM
-                    }
-                    visibleJoints.all { jointInUpRange(it, angleOf(it), exiting = false) } -> {
-                        Log.d(TAG, "Returned to UP without reaching DOWN (strict per joint)")
-                        Phase.START
-                    }
-                    else -> Phase.DOWN
-                }
-            }
-
-            Phase.BOTTOM -> {
-                if (visibleJoints.all { jointHasLeftDownRange(it, angleOf(it)) }) {
-                    Log.d(TAG, "Left DOWN range, ascending (strict per joint)")
-                    Phase.UP
-                } else {
-                    Phase.BOTTOM
-                }
-            }
-
-            Phase.UP -> {
-                when {
-                    visibleJoints.all { jointHasEnteredUpRange(it, angleOf(it)) } -> {
-                        Log.d(TAG, "★ Requesting REP completion - Entered UP range (strict per joint)")
-                        Phase.START
-                    }
-                    visibleJoints.all { jointInDownRange(it, angleOf(it), exiting = false) } -> {
-                        Log.d(TAG, "Returned to DOWN range (strict per joint)")
-                        Phase.BOTTOM
-                    }
-                    else -> Phase.UP
-                }
-            }
-
-            else -> currentPhase
-        }
-    }
-    
-    /**
-     * HOLD with per-joint hold ranges: all must enter; any leaving exits COUNT.
-     */
-    private fun updateHoldStrict(joints: List<TrackedJoint>, primaryAngles: Map<String, Double>): Phase {
-        // Only consider joints visible this frame. Skipped joints (Any-Side + partner
-        // visible) must not block HOLD entry nor drop the user out of COUNT.
-        val visibleJoints = joints.filter { primaryAngles[it.joint] != null }
-        if (visibleJoints.isEmpty()) return currentPhase
-        fun angleOf(j: TrackedJoint): Double = primaryAngles.getValue(j.joint)
-
-        return when (currentPhase) {
-            Phase.IDLE -> {
-                if (visibleJoints.all { jointInHoldRange(it, angleOf(it), exiting = false) }) {
-                    Log.d(TAG, "Entered HOLD zone (strict per joint)")
-                    Phase.COUNT
-                } else {
-                    Phase.IDLE
-                }
-            }
-
-            Phase.COUNT -> {
-                val anyLeft = visibleJoints.any { !jointInHoldRange(it, angleOf(it), exiting = true) }
-                if (anyLeft) {
-                    Log.d(TAG, "Left HOLD zone (strict per joint)")
-                    Phase.IDLE
-                } else {
-                    Phase.COUNT
-                }
-            }
-
-            else -> currentPhase
-        }
-    }
-    
-    /**
-     * Check if angle is in UP range (with hysteresis for exiting)
-     */
-    private fun isInUpRange(angle: Double, exiting: Boolean = false): Boolean {
-        val min = if (exiting) upRangeMin - hysteresis else upRangeMin
-        val max = upRangeMax + hysteresis
-        return angle >= min && angle <= max
-    }
-    
-    /**
-     * Check if angle is in DOWN range (with hysteresis for exiting)
-     */
-    private fun isInDownRange(angle: Double, exiting: Boolean = false): Boolean {
-        val min = downRangeMin - hysteresis
-        val max = if (exiting) downRangeMax + hysteresis else downRangeMax
-        return angle >= min && angle <= max
-    }
-    
-    /**
-     * Check if angle has left UP range (going down)
-     */
-    private fun hasLeftUpRange(angle: Double): Boolean {
-        return angle < upRangeMin - hysteresis
-    }
-    
-    /**
-     * Check if angle has entered DOWN range
-     */
-    private fun hasEnteredDownRange(angle: Double): Boolean {
-        return angle <= downRangeMax
-    }
-    
-    /**
-     * Check if angle has left DOWN range (going up)
-     */
-    private fun hasLeftDownRange(angle: Double): Boolean {
-        return angle > downRangeMax + hysteresis
-    }
-    
-    /**
-     * Check if angle has entered UP range
-     */
-    private fun hasEnteredUpRange(angle: Double): Boolean {
-        return angle >= upRangeMin
-    }
-    
-    /**
-     * Legacy UP_DOWN path when no joint has state up/down ranges (uses aggregated thresholds + min/max).
-     */
-    private fun updateUpDownLegacy(minAngle: Double, maxAngle: Double): Phase {
-        return when (currentPhase) {
-            Phase.IDLE -> {
-                // ALL joints must be in UP range → min must be high enough
-                if (isInUpRange(minAngle)) {
-                    Log.d(TAG, "Entered UP range: min=$minAngle max=$maxAngle (${upRangeMin}-${upRangeMax})")
-                    Phase.START
-                } else {
-                    Phase.IDLE
-                }
-            }
-            
-            Phase.START -> {
-                // ALL joints must have left UP range → max (last to leave) must be below threshold
-                if (hasLeftUpRange(maxAngle)) {
-                    Log.d(TAG, "Left UP range, starting descent: min=$minAngle max=$maxAngle")
-                    repCountedThisCycle = false
-                    repMovementStartTime = timeProvider()
-                    Phase.DOWN
-                } else {
-                    Phase.START
-                }
-            }
-            
-            Phase.DOWN -> {
-                when {
-                    // ALL joints must have entered DOWN range → max (highest) must be low enough
-                    hasEnteredDownRange(maxAngle) -> {
-                        Log.d(TAG, "Entered DOWN range: min=$minAngle max=$maxAngle (${downRangeMin}-${downRangeMax})")
-                        Phase.BOTTOM
-                    }
-                    // ALL joints returned to UP range (incomplete rep)
-                    isInUpRange(minAngle) -> {
-                        Log.d(TAG, "Returned to UP without reaching DOWN: min=$minAngle max=$maxAngle")
-                        Phase.START
-                    }
-                    else -> Phase.DOWN
-                }
-            }
-            
-            Phase.BOTTOM -> {
-                // ALL joints must have left DOWN range → min (last to leave) must be above threshold
-                if (hasLeftDownRange(minAngle)) {
-                    Log.d(TAG, "Left DOWN range, ascending: min=$minAngle max=$maxAngle")
-                    Phase.UP
-                } else {
-                    Phase.BOTTOM
-                }
-            }
-            
-            Phase.UP -> {
-                when {
-                    // ALL joints must have entered UP range → min (lowest) must be high enough
-                    hasEnteredUpRange(minAngle) -> {
-                        Log.d(TAG, "★ Requesting REP completion - Entered UP range: min=$minAngle max=$maxAngle")
-                        Phase.START
-                    }
-                    // ALL joints returned to DOWN range
-                    isInDownRange(maxAngle) -> {
-                        Log.d(TAG, "Returned to DOWN range: min=$minAngle max=$maxAngle")
-                        Phase.BOTTOM
-                    }
-                    else -> Phase.UP
-                }
-            }
-            
-            else -> currentPhase
-        }
-    }
-    
-    
-    /**
-     * Legacy HOLD path when no joint has a hold range (uses aggregated thresholds + min/max).
-     */
-    private fun updateHoldLegacy(minAngle: Double, maxAngle: Double): Phase {
-        return when (currentPhase) {
-            Phase.IDLE -> {
-                // ALL joints must be in hold zone → max must be below upper bound, min above lower
-                if (isInDownRange(minAngle) && isInDownRange(maxAngle)) {
-                    Log.d(TAG, "Entered HOLD zone: min=$minAngle max=$maxAngle")
-                    Phase.COUNT
-                } else {
-                    Phase.IDLE
-                }
-            }
-            
-            Phase.COUNT -> {
-                // Exit if ANY joint leaves the hold zone
-                if (!isInDownRange(minAngle, exiting = true) || !isInDownRange(maxAngle, exiting = true)) {
-                    Log.d(TAG, "Left HOLD zone: min=$minAngle max=$maxAngle")
-                    Phase.IDLE
-                } else {
-                    Phase.COUNT
-                }
-            }
-            
-            else -> currentPhase
-        }
-    }
-    
-    /**
-     * Handle phase transition
-     * 
-     * This is where rep completion is actually triggered, AFTER confirming:
-     * 1. Minimum phase duration has passed
-     * 2. Rep hasn't been counted this cycle
-     * 3. Cooldown period has passed since last rep
-     */
-    private fun handlePhaseTransition(nextPhase: Phase) {
-        val now = timeProvider()
-        
-        // If phaseEntryTime not yet set, allow transition (first frame scenario)
-        val phaseDuration = if (phaseEntryTime > 0L) now - phaseEntryTime else minPhaseDurationMs
-
-        val isRepCompletionTransition = currentPhase == Phase.UP && nextPhase == Phase.START
-        val isPartialDepthAbort = currentPhase == Phase.DOWN && nextPhase == Phase.START
-        val isPartialReturnAbort = currentPhase == Phase.UP && nextPhase == Phase.BOTTOM
-        
-        // Allow completion transition through so min/max rep window can classify speed
-        if (!isRepCompletionTransition && phaseDuration < minPhaseDurationMs) {
-            Log.d(TAG, "Phase transition rejected - too fast (${phaseDuration}ms < ${minPhaseDurationMs}ms)")
-            return
-        }
-        
-        // Record timing
-        phaseTimings[currentPhase] = phaseDuration
-        
-        // Update phases
-        previousPhase = currentPhase
-        currentPhase = nextPhase
-        phaseEntryTime = now
-        
-        Log.d(TAG, "Phase: $previousPhase → $currentPhase")
-        
-        when {
-            isPartialDepthAbort -> {
-                if (!repCountedThisCycle) {
-                    Log.d(TAG, "Rep incomplete: returned to START without reaching target depth")
-                    repMovementStartTime = 0L
-                    onRepIncomplete?.invoke(RepIncompleteReason.NO_TARGET_DEPTH)
-                }
-            }
-            isPartialReturnAbort -> {
-                if (!repCountedThisCycle) {
-                    Log.d(TAG, "Rep incomplete: returned to BOTTOM without full return to START")
-                    onRepIncomplete?.invoke(RepIncompleteReason.NO_FULL_RETURN)
-                }
-            }
-            isRepCompletionTransition -> {
-                when {
-                    repCountedThisCycle -> {
-                        Log.w(TAG, "Rep already counted this cycle - ignoring")
-                    }
-                    else -> {
-                        val movementMs = if (repMovementStartTime > 0L) {
-                            now - repMovementStartTime
-                        } else {
-                            minRepIntervalMs
-                        }
-                        when {
-                            movementMs < minRepIntervalMs -> {
-                                markRepCycleHandled()
-                                Log.d(TAG, "Rep incomplete: too fast (${movementMs}ms < ${minRepIntervalMs}ms)")
-                                onRepIncomplete?.invoke(RepIncompleteReason.TOO_FAST)
-                            }
-                            movementMs > maxRepIntervalMs -> {
-                                markRepCycleHandled()
-                                Log.d(TAG, "Rep incomplete: too slow (${movementMs}ms > ${maxRepIntervalMs}ms)")
-                                onRepIncomplete?.invoke(RepIncompleteReason.TOO_SLOW)
-                            }
-                            else -> {
-                                markRepCycleHandled()
-                                Log.d(TAG, "★ REP COMPLETED! (validated, ${movementMs}ms)")
-                                onRepCompleted?.invoke()
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
-        // Notify listener
-        onPhaseChanged?.invoke(previousPhase, currentPhase)
-    }
-
-    private fun markRepCycleHandled() {
-        repCountedThisCycle = true
-        repMovementStartTime = 0L
-    }
-    
-    /**
-     * Get phase timings for current rep
-     */
-    fun getPhaseTimings(): Map<Phase, Long> {
-        return phaseTimings.toMap()
-    }
-    
-    /**
-     * Clear phase timings (call after rep is recorded)
-     */
     fun clearTimings() {
-        phaseTimings.clear()
+        core.clearTimings()
     }
-    
-    /**
-     * Reset state machine to IDLE
-     */
+
     fun reset() {
-        previousPhase = currentPhase
-        currentPhase = Phase.IDLE
-        phaseTimings.clear()
-        phaseEntryTime = 0L  // Will be set properly on first update()
-        repCountedThisCycle = false
-        repMovementStartTime = 0L
+        core.reset()
     }
-    
-    /**
-     * Check if a rep was just completed
-     */
-    fun wasRepJustCompleted(): Boolean {
-        return (previousPhase == Phase.UP && currentPhase == Phase.START)
-    }
-    
-    /**
-     * Get current zone info for debugging
-     */
-    fun getZoneInfo(angle: Double): String {
-        return when {
-            angle > upRangeMax -> "Above UP Range"
-            angle >= upRangeMin -> "UP Zone"
-            angle > downRangeMax -> "Transition"
-            angle >= downRangeMin -> "DOWN Zone"
-            else -> "Below DOWN Range"
-        }
-    }
+
+    fun wasRepJustCompleted(): Boolean = core.wasRepJustCompleted()
+
+    fun getZoneInfo(angle: Double): String = core.getZoneInfo(angle)
 }
 
-/**
- * Why a rep attempt did not count as a completed rep (UP_DOWN exercises).
- */
 enum class RepIncompleteReason {
-    /** DOWN → START without reaching target depth (Up → Transition → Up). */
     NO_TARGET_DEPTH,
-    /** UP → BOTTOM without returning fully to start (Down → Transition → Down mid-cycle). */
     NO_FULL_RETURN,
-    /** Full cycle completed faster than [RepCountingConfig.minRepIntervalMs]. */
     TOO_FAST,
-    /** Full cycle exceeded [RepCountingConfig.maxRepIntervalMs]. */
-    TOO_SLOW
+    TOO_SLOW,
 }
 
-/**
- * Phase enum - All possible phases across counting methods
- */
 enum class Phase {
-    // Common
-    IDLE,       // Waiting for user to get in position
-    START,      // In starting position (ready to begin)
-    
-    // UP_DOWN specific
-    DOWN,       // Moving towards target (going down)
-    BOTTOM,     // At target position (bottom)
-    UP,         // Returning to start (going up)
-    
-    // HOLD specific
-    COUNT       // In hold zone (timer running)
+    IDLE,
+    START,
+    DOWN,
+    BOTTOM,
+    UP,
+    COUNT,
 }

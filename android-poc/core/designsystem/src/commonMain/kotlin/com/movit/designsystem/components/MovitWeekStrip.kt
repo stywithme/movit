@@ -49,6 +49,8 @@ fun MovitWeekStrip(
     modifier: Modifier = Modifier,
     onPreviousWeek: (() -> Unit)? = null,
     onNextWeek: (() -> Unit)? = null,
+    previousWeekContentDescription: String? = null,
+    nextWeekContentDescription: String? = null,
     showLegend: Boolean = true,
 ) {
     MovitCard(modifier = modifier, variant = MovitCardVariant.Elevated) {
@@ -62,11 +64,27 @@ fun MovitWeekStrip(
                 fontWeight = FontWeight.W700,
                 modifier = Modifier.weight(1f),
             )
-            IconButton(onClick = { onPreviousWeek?.invoke() }, modifier = Modifier.size(30.dp)) {
-                Icon(Icons.Default.ChevronLeft, contentDescription = null, modifier = Modifier.size(15.dp))
+            IconButton(
+                onClick = { onPreviousWeek?.invoke() },
+                modifier = Modifier.size(30.dp),
+                enabled = onPreviousWeek != null,
+            ) {
+                Icon(
+                    Icons.Default.ChevronLeft,
+                    contentDescription = previousWeekContentDescription,
+                    modifier = Modifier.size(15.dp),
+                )
             }
-            IconButton(onClick = { onNextWeek?.invoke() }, modifier = Modifier.size(30.dp)) {
-                Icon(Icons.Default.ChevronRight, contentDescription = null, modifier = Modifier.size(15.dp))
+            IconButton(
+                onClick = { onNextWeek?.invoke() },
+                modifier = Modifier.size(30.dp),
+                enabled = onNextWeek != null,
+            ) {
+                Icon(
+                    Icons.Default.ChevronRight,
+                    contentDescription = nextWeekContentDescription,
+                    modifier = Modifier.size(15.dp),
+                )
             }
         }
 

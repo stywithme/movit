@@ -17,9 +17,9 @@ class DefaultReportDetailRepository : ReportDetailRepository {
         }
     }
 
-    private fun buildFromSlug(reportId: String): ReportDetailUi? {
+    private suspend fun buildFromSlug(reportId: String): ReportDetailUi? {
         val name = reportId.replace('-', ' ').replaceFirstChar { it.uppercase() }
-        return ReportDetailPreviewData.squat.copy(
+        return ReportDetailPreviewData.squat().copy(
             id = reportId,
             exerciseName = name,
             formScore = 80,

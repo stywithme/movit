@@ -7,7 +7,12 @@ data class ExploreItemUi(
     val type: ExploreItemType,
     val imageUrl: String? = null,
     val badge: String? = null,
+    val focusLabel: String? = null,
     val metadata: List<String> = emptyList(),
+    val tags: List<String> = emptyList(),
+    val levelNumber: Int? = null,
+    val durationMinutes: Int? = null,
+    val categoryCode: String? = null,
 )
 
 enum class ExploreItemType {

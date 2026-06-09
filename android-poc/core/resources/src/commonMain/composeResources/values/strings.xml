@@ -108,6 +108,16 @@
     <string name="home_min_total">%1$d min</string>
     <string name="home_report_reps">%1$d reps</string>
     <string name="home_today_caps">TODAY</string>
+    <string name="home_weekly_overview">Weekly overview</string>
+    <string name="home_weekly_completion">Week progress</string>
+    <string name="home_active_minutes">Active minutes</string>
+    <string name="home_timeline_summary">%1$d completed · %2$d active · %3$d upcoming</string>
+    <string name="home_a11y_level_card">Open level profile</string>
+    <string name="home_a11y_explore_action">Explore workouts and exercises</string>
+    <string name="home_a11y_reports_action">Open training reports</string>
+    <string name="home_a11y_start_workout">Start today\'s workout</string>
+    <string name="home_a11y_view_program">View active program</string>
+    <string name="home_a11y_body_scan">Start body scan assessment</string>
 
     <!-- Train -->
     <string name="train_title">Train</string>
@@ -222,6 +232,10 @@
     <string name="reports_fatigue_moderate">Moderate</string>
     <string name="reports_period_default">Last 30 days</string>
     <string name="reports_week_short">W%1$d</string>
+    <string name="reports_improvement_rate">Improvement rate</string>
+    <string name="reports_improvement_since_week_one">%1$s%% since Week 1</string>
+    <string name="reports_attendance_trend">Weekly attendance</string>
+    <string name="reports_loading_sub">Pull down to refresh anytime.</string>
     <string name="reports_athlete_fallback">Athlete</string>
 
     <!-- Explore -->
@@ -253,6 +267,40 @@
     <string name="explore_item_program">Program</string>
     <string name="explore_load_error">Unable to load explore content.</string>
     <string name="explore_muscles_count">%1$d muscles</string>
+    <string name="explore_workout_intro">Choose a ready session by goal, muscle group, level or time. This is the fastest path for users who know what they want to train today.</string>
+    <string name="explore_filter_button">Filter library</string>
+    <string name="explore_workout_filter_beginner">Beginner</string>
+    <string name="explore_workout_filter_intermediate">Intermediate</string>
+    <string name="explore_workout_filter_advanced">Advanced</string>
+    <string name="explore_workout_filter_short">Under 20 min</string>
+    <string name="explore_results_summary">%1$d workouts • %2$d exercises</string>
+
+    <!-- Library (05 Exercises / 06 Workouts) -->
+    <string name="library_back_explore">Explore</string>
+    <string name="library_items_count">%1$d items</string>
+    <string name="library_loading_exercises">Loading exercises…</string>
+    <string name="library_loading_workouts">Loading workouts…</string>
+    <string name="library_search_exercises">Search exercises, muscles, category…</string>
+    <string name="library_search_workouts">Search muscle, workout, time…</string>
+    <string name="library_result_exercises">Showing %1$d of %2$d exercises</string>
+    <string name="library_result_workouts">Showing %1$d of %2$d workouts</string>
+    <string name="library_see_more_exercises">See more exercises</string>
+    <string name="library_see_more_workouts">See more workouts</string>
+    <string name="library_no_results">No results</string>
+    <string name="library_try_filter">Try a different search or filter.</string>
+    <string name="library_clear_filters">Clear filters</string>
+    <string name="library_filter_button">Filter</string>
+    <string name="library_filter_sheet_title">Filter library</string>
+    <string name="library_filter_all">All</string>
+    <string name="library_filter_lower_body">Lower body</string>
+    <string name="library_filter_legs">Legs</string>
+    <string name="library_filter_core">Core</string>
+    <string name="library_filter_mobility">Mobility</string>
+    <string name="library_filter_equipment">Equipment</string>
+    <string name="library_filter_chest">Chest</string>
+    <string name="library_filter_under_20">Under 20 min</string>
+    <string name="library_featured_workout">Best for legs</string>
+    <string name="library_load_error">Unable to load library content.</string>
 
     <!-- Train components (UI) -->
     <string name="train_day_complete">Day complete!</string>
@@ -298,6 +346,12 @@
     <string name="train_readiness_sub">How prepared you are today</string>
     <string name="train_program_complete_banner">Program complete!</string>
     <string name="train_program_complete_summary">%1$s · %2$s · %3$s</string>
+    <string name="train_start_program">Start program</string>
+    <string name="train_view_journey">View your journey</string>
+    <string name="train_week_previous">Previous week</string>
+    <string name="train_week_next">Next week</string>
+    <string name="train_form_trend_scope">Last 7 sessions · achievement</string>
+    <string name="train_form_trend_delta">+%1$d%% vs last week</string>
 
     <!-- Report detail -->
     <string name="report_detail_loading">Loading report…</string>
@@ -327,6 +381,25 @@
     <string name="report_detail_form_dropped">Form dropped %1$d%% from set 1 to set %2$d.</string>
     <string name="report_detail_form_steady">Form held steady across sets.</string>
     <string name="report_detail_not_found">Report not found.</string>
+    <string name="report_detail_joints_unavailable">Joint breakdown will appear here when your session includes tracked joints.</string>
+    <string name="report_detail_page_a11y">%1$s, page %2$d of %3$d</string>
+    <string name="report_detail_form_score_a11y">Form score %1$d out of 100</string>
+    <string name="report_detail_joint_score_a11y">%1$s, score %2$d percent</string>
+    <string name="report_detail_set_score_a11y">%1$s, form score %2$d percent</string>
+    <string name="report_detail_fatigue_a11y">Fatigue %1$s, index %2$d percent</string>
+    <string name="report_detail_rep_compare_a11y">%1$s, score %2$d</string>
+    <string name="report_detail_form_by_set_a11y">Form by set chart</string>
+    <string name="report_detail_preview_personal_best">Personal best</string>
+    <string name="report_detail_preview_insight_title">Excellent depth consistency</string>
+    <string name="report_detail_preview_insight_message">Hip crease stayed below knee line on 95% of reps.</string>
+    <string name="report_detail_preview_joint_knees">Knees</string>
+    <string name="report_detail_preview_joint_hips">Hips</string>
+    <string name="report_detail_preview_joint_spine">Spine</string>
+    <string name="report_detail_preview_tip1_title">Brace your core earlier</string>
+    <string name="report_detail_preview_tip1_message">On the descent, engage core 0.5s before hip hinge to protect lumbar spine.</string>
+    <string name="report_detail_preview_tip2_title">Keep knees tracking toes</string>
+    <string name="report_detail_preview_tip2_message">Slight inward drift on set 4 — focus on pushing knees out.</string>
+    <string name="report_detail_preview_fatigue_message">Form dropped 6% from set 1 to set 4 — within normal range.</string>
 
     <!-- Workout session -->
     <string name="session_back">Back</string>
@@ -376,6 +449,117 @@
     <string name="session_no_enrollment">No active program enrollment.</string>
     <string name="session_workout_not_in_plan">Workout not found in your plan.</string>
 
+    <!-- Program detail (07) -->
+    <string name="program_back">Explore</string>
+    <string name="program_customize">Customize</string>
+    <string name="program_save">Save</string>
+    <string name="program_loading">Loading program…</string>
+    <string name="program_tab_overview">Overview</string>
+    <string name="program_tab_edit">Customize copy</string>
+    <string name="program_copy_title">Your personal copy</string>
+    <string name="program_copy_body">Changes are saved to your program customizations. The original template stays clean and your schedule can sync back.</string>
+    <string name="program_active_plan">Active plan</string>
+    <string name="program_custom_edits">%1$d custom edits</string>
+    <string name="program_edit_copy">Edit copy</string>
+    <string name="program_resume_week">Resume week 1</string>
+    <string name="program_journey_title">Program structure</string>
+    <string name="program_journey_sub">Journey</string>
+    <string name="program_weekly_report">Weekly report</string>
+    <string name="program_current">Current</string>
+    <string name="program_preview">Preview</string>
+    <string name="program_done">Done</string>
+    <string name="program_next">Next</string>
+    <string name="program_details_title">What you get</string>
+    <string name="program_details_sub">Details</string>
+    <string name="program_start">Start program</string>
+    <string name="program_start_next">Start next session</string>
+    <string name="program_cancel">Cancel</string>
+    <string name="program_save_copy">Save my copy</string>
+    <string name="program_edit_customize">Customize</string>
+    <string name="program_edit_why_title">Why change this plan?</string>
+    <string name="program_edit_note">Programs are connected objects. Start with the reason, then edit the smallest safe scope.</string>
+    <string name="program_save_toast">Saved to your personal program copy.</string>
+    <string name="program_reason_schedule">Schedule changed</string>
+    <string name="program_reason_equipment">Equipment missing</string>
+    <string name="program_reason_intensity">Too easy / hard</string>
+    <string name="program_reason_injury">Injury / discomfort</string>
+    <string name="program_scope_title">Choose where the edit applies</string>
+    <string name="program_scope_sub">Scope</string>
+    <string name="program_scope_plan">Plan settings</string>
+    <string name="program_scope_week">Week calendar</string>
+    <string name="program_scope_day">Day sessions</string>
+    <string name="program_scope_exercise">Exercise targets</string>
+    <string name="program_impact_editing">Editing</string>
+    <string name="program_impact_plan">Effective plan impact</string>
+    <string name="program_impact_user_copy">Only this user copy</string>
+    <string name="program_impact_template">Original template</string>
+    <string name="program_impact_unchanged">Unchanged</string>
+    <string name="program_setting_start_date">Start date</string>
+    <string name="program_setting_start_date_sub">Used with paused days to resolve current week and day.</string>
+    <string name="program_setting_weekly">Weekly session target</string>
+    <string name="program_setting_weekly_sub">Affects expectation and calendar pacing, not exercise content.</string>
+    <string name="program_setting_pause">Pause calendar</string>
+    <string name="program_setting_pause_sub">Keep progress and customizations, stop date-based advancement.</string>
+    <string name="program_paused">Paused</string>
+    <string name="program_active">Active</string>
+    <string name="program_not_found">Program not found.</string>
+
+    <string name="session_sets_reps">%1$d × %2$d</string>
+    <string name="session_sets_duration">%1$d × %2$ds</string>
+    <string name="session_sets_only">%1$d sets</string>
+    <string name="session_rest_between">%1$ds rest</string>
+    <string name="session_weight_kg">%1$s kg</string>
+    <string name="session_rest_block">Rest · %1$s</string>
+    <string name="session_a11y_swap">Swap exercise</string>
+    <string name="session_a11y_edit">Edit exercise details</string>
+    <string name="session_a11y_delete">Delete exercise</string>
+    <string name="session_a11y_reorder">Reorder exercise</string>
+    <string name="session_a11y_exercise_thumb">%1$s thumbnail</string>
+    <string name="session_add_title">Add exercise</string>
+    <string name="session_add_subtitle">Pick an exercise to append</string>
+    <string name="session_edit_rest_title">Edit rest</string>
+    <string name="session_add_rest_confirm">Add rest</string>
+    <string name="session_alternatives">Alternatives</string>
+    <string name="session_bodyweight">Bodyweight</string>
+    <string name="session_weighted">Weighted</string>
+
+    <!-- Prepare & rest (03) -->
+    <string name="prepare_back">Back</string>
+    <string name="prepare_title">Prepare Workout</string>
+    <string name="prepare_rest_title">Rest Interval</string>
+    <string name="prepare_loading">Loading exercise…</string>
+    <string name="prepare_not_found">Exercise not found.</string>
+    <string name="prepare_up_next">Up Next Exercise</string>
+    <string name="prepare_looping_preview">Looping Preview</string>
+    <string name="prepare_camera_setup">Camera Setup Guide</string>
+    <string name="prepare_instructions">Instructions</string>
+    <string name="prepare_target_muscles">Target Muscles</string>
+    <string name="prepare_stat_sets">Sets</string>
+    <string name="prepare_stat_reps">Reps</string>
+    <string name="prepare_stat_duration">Duration</string>
+    <string name="prepare_stat_rest">Rest</string>
+    <string name="prepare_add_rest">+15</string>
+    <string name="prepare_skip_rest">Skip</string>
+    <string name="prepare_training_bridge_unavailable">Camera training is not available on this device yet.</string>
+
+    <!-- Workout flow (16) -->
+    <string name="workout_flow_back">Back</string>
+    <string name="workout_flow_customize_title">Customize workout</string>
+    <string name="workout_flow_run_title">Workout run</string>
+    <string name="workout_flow_loading">Loading workout…</string>
+    <string name="workout_flow_customize_meta">%1$d exercises · ~%2$d min estimated</string>
+    <string name="workout_flow_exercises">Exercises</string>
+    <string name="workout_flow_rest_between_sets">Rest between sets</string>
+    <string name="workout_flow_rest_seconds">%1$ds</string>
+    <string name="workout_flow_dock_summary">%1$d exercises · %2$ds rest</string>
+    <string name="workout_flow_exercise_of">EXERCISE %1$d OF %2$d</string>
+    <string name="workout_flow_set_reps">Set %1$d of %2$d · %3$d reps</string>
+    <string name="workout_flow_set_hold">Set %1$d of %2$d · %3$ds</string>
+    <string name="workout_flow_done">Done</string>
+    <string name="workout_flow_now">Now</string>
+    <string name="workout_flow_previous_form">Previous: %1$d%% form</string>
+    <string name="workout_flow_start_exercise">Start exercise</string>
+
     <!-- Auth (10) -->
     <string name="auth_app_name">WayToFix</string>
     <string name="auth_tagline">AI-powered form coaching</string>
@@ -407,6 +591,14 @@
     <string name="auth_reset_password">Reset password</string>
     <string name="auth_reset_sub">Enter your email and we\'ll send a reset link.</string>
     <string name="auth_send_reset">Send reset link</string>
+    <string name="auth_reset_sent">Password reset link sent!</string>
+    <string name="auth_reset_sent_sub">Check your email for the reset link.</string>
+    <string name="auth_back_to_sign_in">Back to Sign In</string>
+    <string name="auth_google_unavailable">Google Sign-In is not available in this build yet.</string>
+    <string name="auth_logo_content_desc">WayToFix app logo</string>
+    <string name="auth_intro_icon_desc">Intro illustration</string>
+    <string name="auth_forgot_success_icon_desc">Email sent</string>
+    <string name="auth_intro_page_indicator">Intro page %1$d of %2$d</string>
 
     <!-- Profile (11) -->
     <string name="profile_loading">Loading profile…</string>
@@ -441,6 +633,16 @@
     <string name="profile_restore_purchases">Restore purchases</string>
     <string name="profile_sub_annual">Annual plan</string>
     <string name="profile_sub_annual_sub">$79.99 / year · save 33%</string>
+    <string name="profile_account">Account</string>
+    <string name="profile_edit_profile">Edit profile</string>
+    <string name="profile_appearance_light">Light</string>
+    <string name="profile_appearance_dark">Dark</string>
+    <string name="profile_appearance_system">System</string>
+    <string name="profile_cancel">Cancel</string>
+    <string name="profile_logout_confirm_title">Sign out?</string>
+    <string name="profile_logout_confirm_message">You will need to sign in again to sync workouts and reports.</string>
+    <string name="profile_avatar_cd">Profile photo</string>
+    <string name="profile_edit_avatar_cd">Edit profile photo</string>
 
     <!-- Onboarding (12) -->
     <string name="onboarding_step_label">Step %1$d of %2$d</string>
@@ -500,27 +702,56 @@
 
     <!-- Assessment (13) -->
     <string name="assessment_health_check">Health check</string>
+    <string name="assessment_results_title">Assessment results</string>
     <string name="assessment_parq_title">PAR-Q+ screening</string>
     <string name="assessment_parq_sub">Answer honestly. If you answer Yes to any question, consult a physician before training.</string>
+    <string name="assessment_parq_physician_warning">Consult a physician before training if you answered Yes to any question.</string>
+    <string name="assessment_parq_progress">%1$d of %2$d answered</string>
     <string name="assessment_parq_heart">Has a doctor ever said you have a heart condition?</string>
     <string name="assessment_parq_chest_pain">Do you feel pain in your chest during physical activity?</string>
     <string name="assessment_parq_dizziness">Do you lose balance because of dizziness or lose consciousness?</string>
+    <string name="assessment_parq_bone_joint">Do you have a bone or joint problem that could be worsened by exercise?</string>
+    <string name="assessment_parq_medication">Are you currently prescribed medication for blood pressure or heart condition?</string>
+    <string name="assessment_parq_other_reason">Is there any other reason you should not participate in physical activity?</string>
+    <string name="assessment_parq_pregnancy">Are you pregnant or have you given birth in the last 6 months?</string>
     <string name="assessment_no">No</string>
     <string name="assessment_yes">Yes</string>
     <string name="assessment_continue_scan">Continue to body scan</string>
     <string name="assessment_body_scan">Body scan</string>
     <string name="assessment_body_scan_sub">Stand in frame · 3 movements · ~5 min</string>
+    <string name="assessment_scan_hint">%1$s · Movement %2$d of %3$d</string>
+    <string name="assessment_movement_forward_fold">Forward fold</string>
+    <string name="assessment_movement_overhead_squat">Overhead squat</string>
+    <string name="assessment_movement_single_leg_balance">Single-leg balance</string>
     <string name="assessment_hold_position">Hold position</string>
+    <string name="assessment_camera_active">Camera active</string>
+    <string name="assessment_camera_active_sub">Analyzing joint angles in real time</string>
     <string name="assessment_camera_placeholder">Camera preview</string>
     <string name="assessment_camera_placeholder_sub">Live pose analysis opens in a later phase.</string>
     <string name="assessment_view_results">View results</string>
     <string name="assessment_body_score">BODY SCORE</string>
+    <string name="assessment_domain_scores">Assessment domains</string>
+    <string name="assessment_domain_mobility">Mobility</string>
+    <string name="assessment_domain_control">Control</string>
+    <string name="assessment_domain_symmetry">Symmetry</string>
+    <string name="assessment_domain_safety">Safety</string>
     <string name="assessment_region_scores">Region scores</string>
     <string name="assessment_region_hips">Hips</string>
+    <string name="assessment_region_hip">Hip</string>
     <string name="assessment_region_shoulders">Shoulders</string>
+    <string name="assessment_region_shoulder">Shoulder</string>
     <string name="assessment_region_spine">Spine</string>
     <string name="assessment_region_knees">Knees</string>
+    <string name="assessment_region_knee">Knee</string>
     <string name="assessment_insights">Insights</string>
+    <string name="assessment_insight_shoulder_title">Limited shoulder flexion</string>
+    <string name="assessment_insight_shoulder_message">May affect overhead pressing. Consider mobility work before heavy loads.</string>
+    <string name="assessment_insight_hip_title">Good hip hinge pattern</string>
+    <string name="assessment_insight_hip_message">Deadlift and squat patterns look solid. Ready for progressive loading.</string>
+    <string name="assessment_insight_limiting_title">%1$s needs attention</string>
+    <string name="assessment_insight_limiting_message">Gap of %1$d levels before progression.</string>
+    <string name="assessment_insight_region_limit_title">Limited %1$s mobility</string>
+    <string name="assessment_insight_region_limit_message">Region score %1$d — consider mobility work.</string>
     <string name="assessment_browse_programs">Browse programs</string>
     <string name="assessment_go_home">Go to Home</string>
 
@@ -539,6 +770,24 @@
     <string name="level_plan_title">Your training plan</string>
     <string name="level_plan_sub">Personalized path based on your level &amp; goals</string>
     <string name="level_browse_programs">Browse recommended programs</string>
+    <string name="level_plan_empty">No active training plan yet. Browse programs to get started.</string>
+    <string name="level_phase_completed">Completed</string>
+    <string name="level_phase_in_progress">In progress</string>
+    <string name="level_phase_upcoming">Upcoming</string>
+    <string name="level_phase_weeks">%1$s · %2$d weeks</string>
+    <string name="level_phase_week_progress">Week %1$d of %2$d</string>
+    <string name="level_reassessment_next">Next reassessment after Week %1$d</string>
+    <string name="level_reassessment_scheduled">Scheduled for %1$s</string>
+    <string name="level_reassessment_soon">in 2 weeks</string>
+    <string name="level_unlocks_after_progression">Unlocks after progression check</string>
+    <string name="level_domain_mobility">Mobility</string>
+    <string name="level_domain_stability">Stability</string>
+    <string name="level_domain_strength">Strength</string>
+    <string name="level_domain_control">Control</string>
+    <string name="level_domain_symmetry">Symmetry</string>
+    <string name="level_domain_safety">Safety</string>
+    <string name="level_body_score_ring_a11y">Body score %1$d out of 100</string>
+    <string name="level_domain_score_a11y">%1$s score %2$d percent</string>
 
     <!-- Shell (Pre-06) -->
     <string name="shell_report_share_coming_soon">Share report — coming soon.</string>

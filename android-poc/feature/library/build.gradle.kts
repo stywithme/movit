@@ -33,9 +33,15 @@ kotlin {
             implementation(libs.jetbrains.lifecycle.viewmodel.compose)
             implementation(libs.jetbrains.lifecycle.runtime.compose)
         }
+        androidMain.dependencies {
+            implementation("io.coil-kt:coil-compose:${libs.versions.coil.get()}")
+        }
         commonTest.dependencies {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.core)
+        }
+        androidMain.dependencies {
+            implementation("io.coil-kt:coil-compose:${libs.versions.coil.get()}")
         }
     }
 }

@@ -15,6 +15,7 @@ data class HomeLevelCardUi(
 data class HomeAlertUi(
     val title: String,
     val message: String,
+    val type: String = "",
 )
 
 data class HomeActiveProgramUi(
@@ -22,6 +23,7 @@ data class HomeActiveProgramUi(
     val title: String,
     val subtitle: String,
     val actionLabel: String,
+    val showViewAction: Boolean = true,
 )
 
 data class HomeJourneyRowUi(
@@ -45,6 +47,8 @@ data class HomeTrainingPlanUi(
     val exerciseCountLabel: String,
     val statusLabel: String,
     val primaryActionLabel: String = "Start workout",
+    val showPrimaryAction: Boolean = true,
+    val opensAssessment: Boolean = false,
 )
 
 data class HomeProgressUi(

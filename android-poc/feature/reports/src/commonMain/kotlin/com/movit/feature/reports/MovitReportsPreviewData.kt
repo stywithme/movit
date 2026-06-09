@@ -23,6 +23,7 @@ object MovitReportsPreviewData {
             title = "Form improving",
             message = "+6% average form score over 4 weeks.",
         ),
+        improvementRatePercent = 6f,
         volumeBarValues = listOf(35f, 48f, 65f, 88f),
         volumeBarLabels = listOf("Jan", "Feb", "Mar", "Apr"),
         fatigueIndex = ReportFatigueUi(

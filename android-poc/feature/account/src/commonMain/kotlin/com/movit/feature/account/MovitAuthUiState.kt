@@ -18,4 +18,5 @@ data class MovitAuthUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val infoMessage: String? = null,
+    val forgotPasswordSent: Boolean = false,
 )

@@ -33,7 +33,8 @@ fun MovitReportsRoute(
         state = state,
         onEvent = { event ->
             when (event) {
-                MovitReportsEvent.RetryClicked -> scope.launch { viewModel.load() }
+                MovitReportsEvent.RetryClicked -> scope.launch { viewModel.load(isRefresh = false) }
+                MovitReportsEvent.RefreshRequested -> scope.launch { viewModel.load(isRefresh = true) }
                 else -> viewModel.onEvent(event)
             }
         },

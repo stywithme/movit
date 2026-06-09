@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -36,6 +37,7 @@ fun MovitHeroCard(
     ctaLabel: String,
     onCtaClick: () -> Unit,
     modifier: Modifier = Modifier,
+    imageUrl: String? = null,
     showPlayFab: Boolean = false,
 ) {
     val movit = MaterialTheme.movitColors
@@ -45,22 +47,39 @@ fun MovitHeroCard(
         modifier = modifier
             .fillMaxWidth()
             .height(256.dp)
-            .clip(shape)
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.primary,
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
-                    ),
-                ),
-            )
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(movit.inkVeil05, movit.inkVeil78),
-                ),
-            )
-            .padding(MovitSpacing.lg),
+            .clip(shape),
     ) {
+        if (!imageUrl.isNullOrBlank()) {
+            MovitRemoteImage(
+                imageUrl = imageUrl,
+                contentDescription = title,
+                placeholderLabel = title.take(1).uppercase(),
+                modifier = Modifier.matchParentSize(),
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primary,
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
+                            ),
+                        ),
+                    ),
+            )
+        }
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(movit.inkVeil05, movit.inkVeil78),
+                    ),
+                )
+                .padding(MovitSpacing.lg),
+        ) {
         if (showPlayFab) {
             Surface(
                 modifier = Modifier
@@ -133,6 +152,7 @@ fun MovitHeroCard(
                     }
                 }
             }
+        }
         }
     }
 }

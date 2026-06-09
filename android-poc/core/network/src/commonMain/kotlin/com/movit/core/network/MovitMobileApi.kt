@@ -6,7 +6,9 @@ import com.movit.core.network.dto.ExploreApiResponse
 import com.movit.core.network.dto.ForgotPasswordRequestDto
 import com.movit.core.network.dto.HomeApiResponse
 import com.movit.core.network.dto.EffectivePlanApiResponse
+import com.movit.core.network.dto.ActivePlanApiResponse
 import com.movit.core.network.dto.LevelProfileApiResponse
+import com.movit.core.network.dto.ReassessmentListApiResponse
 import com.movit.core.network.dto.LoginRequestDto
 import com.movit.core.network.dto.LogoutRequestDto
 import com.movit.core.network.dto.MetricsApiResponse
@@ -229,6 +231,26 @@ class MovitMobileApi(
             error("Level profile request failed (${response.status.value})")
         }
         response.body<LevelProfileApiResponse>()
+    }
+
+    suspend fun fetchActivePlan(authorization: String): Result<ActivePlanApiResponse> = runCatching {
+        val response = client.get(base("api/mobile/plan")) {
+            header("Authorization", authorization)
+        }
+        if (!response.status.isSuccess()) {
+            error("Active plan request failed (${response.status.value})")
+        }
+        response.body<ActivePlanApiResponse>()
+    }
+
+    suspend fun fetchUpcomingReassessments(authorization: String): Result<ReassessmentListApiResponse> = runCatching {
+        val response = client.get(base("api/mobile/reassessment/upcoming")) {
+            header("Authorization", authorization)
+        }
+        if (!response.status.isSuccess()) {
+            error("Reassessment request failed (${response.status.value})")
+        }
+        response.body<ReassessmentListApiResponse>()
     }
 
     suspend fun putTrainingProfile(

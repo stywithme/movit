@@ -10,7 +10,9 @@ import com.movit.core.network.dto.LogoutRequestDto
 import com.movit.core.network.dto.RegisterRequestDto
 import com.movit.core.network.dto.TrainingProfilePutRequest
 import com.movit.core.network.dto.UpdateSettingsRequestDto
+import com.movit.core.network.dto.ActivePlanDto
 import com.movit.core.network.dto.LevelProfileDetailDto
+import com.movit.core.network.dto.ReassessmentDto
 import com.movit.core.network.dto.UserPublicDto
 import com.movit.shared.AppResult
 
@@ -139,5 +141,30 @@ class AccountSyncRepository(
         }
         val data = response.data ?: return AppResult.Failure("Level profile response was empty.")
         return AppResult.Success(data)
+    }
+
+    suspend fun fetchActivePlan(): AppResult<ActivePlanDto> {
+        val auth = platform().authHeader()
+            ?: return AppResult.Failure("Sign in to load your training plan.")
+        val response = api.fetchActivePlan(auth).getOrElse { error ->
+            return AppResult.Failure(error.message ?: "Active plan request failed.")
+        }
+        if (!response.success) {
+            return AppResult.Failure(response.error ?: "Active plan request failed.")
+        }
+        val data = response.data ?: return AppResult.Failure("Active plan response was empty.")
+        return AppResult.Success(data)
+    }
+
+    suspend fun fetchUpcomingReassessments(): AppResult<List<ReassessmentDto>> {
+        val auth = platform().authHeader()
+            ?: return AppResult.Failure("Sign in to load reassessments.")
+        val response = api.fetchUpcomingReassessments(auth).getOrElse { error ->
+            return AppResult.Failure(error.message ?: "Reassessment request failed.")
+        }
+        if (!response.success) {
+            return AppResult.Failure(response.error ?: "Reassessment request failed.")
+        }
+        return AppResult.Success(response.data.orEmpty())
     }
 }

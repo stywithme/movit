@@ -7,6 +7,27 @@
 3. مقارنة تنفيذ KMP في `feature/`* و `core/designsystem`
 4. تصنيف: **مطابق / جزئي / placeholder / غائب**
 
+### **Scorecards قابلة للقياس (Pre-06 WS-E — 2026-06-09)**
+
+> التفاصيل الكاملة (تفصيل الأوزان، checklists، فجوات محددة): **[`Page-Scorecards.md`](Page-Scorecards.md)**
+
+| **#** | **الصفحة** | **Scorecard %** | Functional | Visual | DS | i18n | A11y | Tests | iOS |
+| ------ | ---------- | --------------- | ---------- | ------ | -- | ---- | ---- | ----- | --- |
+| 08 | Home | **91%** | 96% | 88% | 95% | 95% | 75% | 90% | ✅ |
+| 01 | Train | **72%** | 72% | 60% | 93% | 87% | 20% | 80% | ✅ |
+| 04 | Explore | **75%** | 80% | 65% | 93% | 87% | 20% | 70% | ✅ |
+| 09 | Reports | **85%** | 88% | 82% | 93% | 100% | 30% | 80% | ✅ |
+| 17 | Report detail | **89%** | 92% | 82% | 93% | 87% | 50% | 75% | ✅ |
+| 02 | Session | **48%** | 32% | 40% | 87% | 47% | 25% | 70% | ✅ |
+| 05–06 | Library | **78%** | 85% | 78% | 93% | 88% | 55% | 55% | ✅ |
+| 10 | Auth | **76%** | 76% | 75% | 93% | 93% | 30% | 50% | ✅ |
+| 11 | Profile | **70%** | 68% | 72% | 93% | 93% | 30% | 50% | ✅ |
+| 12 | Onboarding | **74%** | 80% | 70% | 93% | 93% | 20% | 50% | ✅ |
+| 13 | Assessment | **55%** | 56% | 55% | 87% | 80% | 25% | 0% | ✅ |
+| 14 | Level | **68%** | 72% | 68% | 93% | 87% | 35% | 55% | ✅ |
+
+**أوزان المجالات:** Functional 25% · Visual 20% · DS 15% · i18n/RTL 15% · A11y 10% · Tests 10% · iOS 5%.
+
 ---
 
 ## **خريطة التدفقات (من** `_nav-pages.html`**)**
@@ -36,20 +57,20 @@
 | **04** | Explore        | `ExploreFragment`                                      | `MovitExploreScreen`        | ~70% جزئي   | ✅ `MovitExploreApiBridge` |
 | **05** | Exercises      | `ExerciseListActivity`                                 | `ExercisesLibraryScreen`    | ~60% جزئي   | غير مباشر                 |
 | **06** | Workouts       | `WorkoutListActivity`                                  | `WorkoutsLibraryScreen`     | ~55% جزئي   | غير مباشر                 |
-| **07** | Program detail | `ProgramDetailActivity`                                | `ProgramDetailScreen`       | ~45% جزئي   | غير مباشر                 |
-| **08** | Home           | `HomeFragment`                                         | `MovitHomeScreen`           | ~75% جزئي   | ✅ `MovitHomeApiBridge`    |
-| **09** | Reports        | `HistoryFragment` + 3 tabs                             | `MovitReportsScreen`        | ~70% جزئي   | ✅ `MovitReportsApiBridge` |
-| **10** | Auth           | `Splash/SignIn/SignUp`                                 | **غائب**                    | 0%          | لا                        |
-| **11** | Profile        | `ProfileActivity`                                      | **غائب** (يفتح Components!) | 0%          | لا                        |
-| **12** | Onboarding     | `ProfileOnboardingActivity` (7 خطوات)                  | **غائب**                    | 0%          | لا                        |
-| **13** | Assessment     | `PreScreening` → `AssessmentSession`                   | **غائب**                    | 0%          | لا                        |
-| **14** | Level & plan   | `LevelProfileActivity` + `PlanOverviewActivity`        | **غائب**                    | 0%          | لا                        |
+| **07** | Program detail | `ProgramDetailActivity`                                | `ProgramDetailScreen`       | **~72%**    | `WorkoutSessionRoute`     |
+| **08** | Home           | `HomeFragment`                                         | `MovitHomeScreen`           | ~91% scorecard | ✅ `MovitHomeApiBridge`    |
+| **09** | Reports        | `HistoryFragment` + 3 tabs                             | `MovitReportsScreen`        | ~85% scorecard | ✅ `MovitReportsApiBridge` |
+| **10** | Auth           | `Splash/SignIn/SignUp`                                 | `MovitAuthScreen` (`feature:account`) | ~76% scorecard | ✅ Ktor auth API |
+| **11** | Profile        | `ProfileActivity`                                      | `MovitProfileScreen` (تبويب Account) | ~70% scorecard | ✅ session read |
+| **12** | Onboarding     | `ProfileOnboardingActivity` (7 خطوات)                  | `MovitOnboardingScreen`     | ~74% scorecard | ✅ training-profile PUT |
+| **13** | Assessment     | `PreScreening` → `AssessmentSession`                   | `MovitAssessmentScreen` (بدون كاميرا) | ~55% scorecard | preview/fake |
+| **14** | Level & plan   | `LevelProfileActivity` + `PlanOverviewActivity`        | `MovitLevelScreen`          | ~58% scorecard | ✅ / fake fallback |
 | **15** | Program flow   | `ProgramList/Day/WeeklyReport`                         | **غائب** كتدفق              | ~15%        | غير مباشر                 |
 | **16** | Workout flow   | `WorkoutCustomize` → `WorkoutRun` → `TrainingActivity` | **جزئي جداً**               | ~20%        | لا                        |
-| **17** | Report detail  | `WorkoutReportActivity`                                | `ReportDetailScreen`        | ~85% جزئي   | preview + slug fallback   |
+| **17** | Report detail  | `WorkoutReportActivity`                                | `ReportDetailScreen`        | ~92% scorecard | ✅ metrics API + a11y + visual polish |
 
 
-**الخلاصة:** لا صفحة KMP مطابقة **تماماً** بعد. الأقرب: **08 Home** و **04 Explore** و **09 Reports**. الأبعد: **10–14** و **17**.
+**الخلاصة:** لا صفحة KMP مطابقة **تماماً** بعد. **الأعلى scorecard:** Report detail (89%) · Reports (85%) · Home (79%). **الأدنى:** Session (48%) · Library (55%) · Assessment (55%). Account 10–14: **أول إصدار KMP** (55–76%) — ليست «غائبة».
 
 ---
 
@@ -84,31 +105,34 @@
 - **KMP:** أقسام Recommended / Workouts / Exercises / Programs
 - **فجوات:** زر Filter، muscle-strip، workout-intro، focus pills، **صور الوسائط**، chips فرعية للتمارين
 
-**08 — Home** (حالات: scan-only / alert / empty / active…)
+**08 — Home** (حالات: scan-only / alert / empty / active…) — **scorecard 91%**
 
 - **Legacy:** `HomeRepository` → `/api/mobile/home`، trainMode، level، journey
-- **KMP:** أقسام مطابقة تقريباً
-- **فجوات:** hero progress مثبت 0%، quick actions بدون icon-box، recent activity styling، Level card لا يفتح 14
+- **KMP:** `MovitHomeScreen` — تحية + metrics + level + alert + program + today + journey + activity + quick actions
+- **مغلق:** Level → `MovitInnerRoute.LevelProfile` · hero progress من API · icon-box quick actions · مكوّنات `components/` موصولة · a11y على CTAs الرئيسية
+- **فجوات متبقية:** RTL visual QA · dark mode QA · pull-to-refresh · report detail من activity rows
 
 **09 — Reports** (3 tabs: Overview / Exercises / Trends)
 
-- **Legacy:** `ReportsHubViewModel` + locked Pro state
-- **KMP:** 3 تبويبات + charts
-- **فجوات:** tabs pill بدل underline، لا pull-to-refresh، **لا navigation لـ 17 Report detail**
+- **Legacy:** `ReportsHubViewModel` + `SwipeRefreshLayout` + TabLayout underline
+- **KMP:** `MovitUnderlineTabRow` + `PullToRefreshBox` + charts + navigation → 17
+- **فجوات:** upsell Pro كامل، A11y charts متقدمة
 
 ---
 
 ### **Auth & Onboarding**
 
-**10 — Auth** (Splash / Intro / Sign in / Sign up / Forgot)
+**10 — Auth** (Splash / Intro / Sign in / Sign up / Forgot) — **scorecard 76%**
 
 - **Legacy:** `SplashActivity` → `OnboardingActivity` → `SignIn/SignUp` + `ApiClient.authApi`
-- **KMP:** **لا شيء**
+- **KMP:** `MovitAuthScreen` — تدفق كامل + `POST login|register` عبر `feature:account`
+- **فجوات:** Google stub؛ `SignUpClicked` handler فارغ؛ a11y intro icons
 
-**12 — Profile onboarding** (7 خطوات)
+**12 — Profile onboarding** (7 خطوات) — **scorecard 74%**
 
 - **Legacy:** `ProfileOnboardingActivity` + 7 fragments → `putTrainingProfile`
-- **KMP:** **لا شيء**
+- **KMP:** `MovitOnboardingScreen` — 7 خطوات + `PUT training-profile`
+- **فجوات:** validation أعمق؛ a11y
 
 ---
 
@@ -141,11 +165,11 @@
 - **KMP:** جزء customize في Session + Prepare جزئي
 - **فجوات:** لا customize screen منفصلة، **لا workout run sequencer**، **لا camera overlay**
 
-**17 — Report detail** (4 صفحات: Overview / Form / Fatigue / Tips)
+**17 — Report detail** (4 صفحات: Overview / Form / Fatigue / Tips) — **scorecard 92%**
 
 - **Legacy:** `WorkoutReportActivity` + `ReportViewModel` + 8+ fragments
-- **KMP:** `InnerPlaceholderScreen` فقط
-- **فجوات:** **كل المحتوى غائب** — hero score، joint analysis، best/worst rep، fatigue index، tips، share، dots navigation
+- **KMP:** `ReportDetailScreen` — 4 صفحات + API metrics + a11y
+- **فجوات:** Share/Export coming soon (shell message)؛ joints من backend غير متوفرة بعد
 
 ---
 
@@ -154,14 +178,15 @@
 **05 — Exercises** | **06 — Workouts**
 
 - **Legacy:** grid/list كامل مع صور وبادجات
-- **KMP:** بحث + chips + grid/list
-- **فجوات:** صور، badge keys (Beginner/Equipment)، filter button، tag عدد العناصر، wide media layout في 06
+- **KMP:** بحث + chips + grid/list + filter sheet + i18n + empty state + صور (Android)
+- **فجوات متبقية:** iOS image loader KMP؛ A11y كامل؛ Prepare/Program detail i18n
 
-**07 — Program detail** (Overview / Edit)
+**07 — Program detail** (Overview / Edit) — **scorecard ~72%**
 
-- **Legacy:** `ProgramDetailActivity` + weeks accordion + enroll CTA
-- **KMP:** Overview بسيط + Edit panel نصي
-- **فجوات:** Edit tab في النموذج **أعمق بكثير** (week strip، day timeline، reason cards، toggles، drag sessions)
+- **Legacy:** `ProgramDetailActivity` + weeks accordion + enroll CTA + pause/resume
+- **KMP:** `ProgramDetailScreen` — hero، stat grid 2×2، tabs، week strip، day timeline، copy card، edit (reason/scope/settings)، dock CTA → `WorkoutSessionKeys`
+- **Page-Spec:** [`Page-Specs/Program-Detail-Page-Spec.md`](Page-Specs/Program-Detail-Page-Spec.md)
+- **فجوات:** enroll API حقيقي، weekly report (15)، drag/reorder جلسات، محرر معاملات تمرين، صورة hero من الشبكة
 
 **15 — Program flow** (list / week / weekly report)
 
@@ -173,21 +198,21 @@
 
 ### **Assessment & Level**
 
-**13 — Assessment** | **14 — Level & plan**
+**13 — Assessment** — **scorecard 55%** | **14 — Level & plan** — **scorecard 68%**
 
 - **Legacy:** PAR-Q → body scan → results؛ `LevelProfileActivity` + `PlanOverviewActivity`
-- **KMP:** Home فيه CTA "Body scan" لكن **لا شاشات**
-- **فجوات:** التدفق بالكامل خارج KMP
+- **KMP:** `MovitAssessmentScreen` (PAR-Q + placeholder كاميرا) · `MovitLevelScreen` (Profile/Plan)
+- **فجوات:** لا كاميرا/ML؛ Assessment بدون VM tests؛ Level: celebration + recommended programs row
 
 ---
 
 ### **Account**
 
-**11 — Profile**
+**11 — Profile** — **scorecard 70%**
 
 - **Legacy:** `ProfileActivity` — avatar، Pro، settings، training profile، logout
-- **KMP:** النقر على البروفايل يفتح **Components catalog** — خطأ واضح
-- **فجوات:** الصفحة بالكامل
+- **KMP:** `MovitProfileScreen` — تبويب Account (إعدادات، Pro، logout، روابط)
+- **فجوات:** Language/Appearance `onClick = null`؛ Haptic معطّل؛ a11y
 
 ---
 
@@ -199,7 +224,7 @@
 | 02-session = `TrainingActivity` | 02 = `ProgramWorkoutActivity` (builder) |
 | 03-prepare = كل التدريب         | 03 = pre-workout + rest timer فقط       |
 | 16 = نفس 02                     | 16 = customize + run + camera           |
-| Profile → Components            | Profile → `11-profile.html`             |
+| ~~Profile → Components~~      | ✅ Profile → `MovitProfileScreen` (2026-06-09) |
 
 
 ---
@@ -212,11 +237,11 @@
 
   2. 02 Session (sheets + API ProgramWorkout)
 
-  3. 03 Prepare/Rest (حالتان + ربط TrainingActivity legacy)
+  3. ~~03 Prepare/Rest~~ ✅ حالتان + ربط `LegacyTrainingLauncher` (مؤقت ثابت)
 
-  4. 07 Program Edit tab
+  4. ~~07 Program detail~~ ✅ hero + tabs + weeks + edit shell + session start
 
-  5. 09 → 17 navigation
+  ~~5. 09 → 17 navigation~~ ✅ (2026-06-09)
 
 المرحلة B — تحسين التبويبات
 

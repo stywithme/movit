@@ -56,6 +56,7 @@ fun MovitTrainScreen(
                 }
                 dashboard != null -> {
                     TrainDashboardContent(
+                        state = state,
                         dashboard = dashboard,
                         onEvent = onEvent,
                     )
@@ -67,6 +68,7 @@ fun MovitTrainScreen(
 
 @Composable
 private fun TrainDashboardContent(
+    state: MovitTrainUiState,
     dashboard: TrainDashboardUi,
     onEvent: (MovitTrainEvent) -> Unit,
 ) {
@@ -91,16 +93,29 @@ private fun TrainDashboardContent(
         TrainNoPlanSection(
             programs = dashboard.featuredPrograms,
             onExplorePrograms = { onEvent(MovitTrainEvent.ExploreProgramsClicked) },
+            onStartProgram = { onEvent(MovitTrainEvent.StartProgramClicked(it)) },
         )
     }
 
-    if (dashboard.week.days.isNotEmpty() && dashboard.status != TrainDashboardStatus.NoPlan) {
-        TrainWeekPreview(week = dashboard.week)
+    val weekOptions = dashboard.weekOptions.ifEmpty { listOf(dashboard.week) }
+    val selectedWeek = weekOptions.getOrElse(state.selectedWeekIndex) { dashboard.week }
+        .takeIf { dashboard.week.days.isNotEmpty() }
+
+    if (selectedWeek != null && dashboard.status != TrainDashboardStatus.NoPlan) {
+        TrainWeekPreview(
+            week = selectedWeek,
+            canGoPrevious = state.selectedWeekIndex > 0,
+            canGoNext = state.selectedWeekIndex < weekOptions.lastIndex,
+            onPreviousWeek = { onEvent(MovitTrainEvent.PreviousWeekClicked) },
+            onNextWeek = { onEvent(MovitTrainEvent.NextWeekClicked) },
+        )
     }
 
     TrainTodayCard(
         dashboard = dashboard,
         onPrimaryAction = onPrimaryAction,
+        onViewJourney = { onEvent(MovitTrainEvent.ViewJourneyClicked) },
+        onWhatsNext = { onEvent(MovitTrainEvent.WhatsNextClicked) },
     )
 
     if (shouldShowReadiness(dashboard.status)) {

@@ -2,6 +2,19 @@ package com.movit.feature.train
 
 object MovitTrainPreviewData {
 
+    val week1 = TrainWeekPreviewUi(
+        title = "June · Week 1",
+        days = listOf(
+            TrainWeekDayUi("Mon", "1", TrainWeekDayState.Done),
+            TrainWeekDayUi("Tue", "2", TrainWeekDayState.Done),
+            TrainWeekDayUi("Wed", "3", TrainWeekDayState.Done),
+            TrainWeekDayUi("Thu", "4", TrainWeekDayState.Done),
+            TrainWeekDayUi("Fri", "5", TrainWeekDayState.Done),
+            TrainWeekDayUi("Sat", "6", TrainWeekDayState.Rest),
+            TrainWeekDayUi("Sun", "7", TrainWeekDayState.Done),
+        ),
+    )
+
     val week = TrainWeekPreviewUi(
         title = "June · Week 2",
         days = listOf(
@@ -15,7 +28,25 @@ object MovitTrainPreviewData {
         ),
     )
 
+    val week3 = TrainWeekPreviewUi(
+        title = "June · Week 3",
+        days = listOf(
+            TrainWeekDayUi("Mon", "1", TrainWeekDayState.Planned),
+            TrainWeekDayUi("Tue", "2", TrainWeekDayState.Planned),
+            TrainWeekDayUi("Wed", "3", TrainWeekDayState.Planned),
+            TrainWeekDayUi("Thu", "4", TrainWeekDayState.Planned),
+            TrainWeekDayUi("Fri", "5", TrainWeekDayState.Planned),
+            TrainWeekDayUi("Sat", "6", TrainWeekDayState.Rest),
+            TrainWeekDayUi("Sun", "7", TrainWeekDayState.Planned),
+        ),
+    )
+
+    val weekOptions = listOf(week1, week, week3)
+
     val program = TrainProgramUi(
+        id = "prog-full-body",
+        slug = "full-body-4-week",
+        weekNumber = 2,
         name = "Full Body 4-Week Challenge",
         positionLabel = "Week 2 of 4 · Day 3",
         levelLabel = "Beginner",
@@ -39,6 +70,7 @@ object MovitTrainPreviewData {
                 durationLabel = "~22 min",
                 exerciseCountLabel = "5 exercises",
                 actionLabel = "Start session",
+                thumbnailUrl = "https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&w=200&q=70",
                 items = listOf(
                     TrainWorkoutItemUi("EX", "Squat", "3 sets · 12 reps"),
                     TrainWorkoutItemUi("REST", "Rest", "60 sec", isRest = true),
@@ -52,6 +84,7 @@ object MovitTrainPreviewData {
                 durationLabel = "~12 min",
                 exerciseCountLabel = "4 exercises",
                 actionLabel = "Start session",
+                thumbnailUrl = "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=200&q=70",
                 items = listOf(
                     TrainWorkoutItemUi("EX", "Hip opener", "2 sets · 30 sec"),
                     TrainWorkoutItemUi("EX", "Ankle rocks", "2 sets · 12 reps"),
@@ -71,12 +104,37 @@ object MovitTrainPreviewData {
 
     val report = TrainReportSummaryUi(
         title = "Program report",
-        insight = "Form score is up 5% versus last week.",
+        insight = "Accuracy is up 5% versus last week.",
         metrics = listOf(
             TrainMetricUi("Days", "12"),
             TrainMetricUi("Exercises", "86"),
             TrainMetricUi("Time", "6h"),
             TrainMetricUi("Accuracy", "85%"),
+        ),
+        trendChartPoints = listOf(0.58f, 0.52f, 0.40f, 0.44f, 0.30f, 0.26f, 0.18f),
+        trendDeltaPercent = 5,
+    )
+
+    val featuredPrograms = listOf(
+        TrainFeaturedProgramUi(
+            id = "mobility-starter",
+            title = "Mobility Starter",
+            subtitle = "A gentle 4-week plan to build safe, controlled movement and flexibility.",
+            badge = "★ Featured",
+            metadata = listOf("12 sessions", "3 / week"),
+            imageUrl = "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&q=70",
+            levelLabel = "Beginner",
+            durationWeeksLabel = "4 weeks",
+        ),
+        TrainFeaturedProgramUi(
+            id = "full-body-strength",
+            title = "Full Body Strength",
+            subtitle = "Build strength across all major muscle groups with guided form checks.",
+            badge = null,
+            metadata = listOf("24 sessions", "4 / week"),
+            imageUrl = "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=800&q=70",
+            levelLabel = "Intermediate",
+            durationWeeksLabel = "6 weeks",
         ),
     )
 
@@ -93,6 +151,7 @@ object MovitTrainPreviewData {
         program = program,
         today = todayWorkout,
         week = week,
+        weekOptions = weekOptions,
         readiness = readiness,
         report = report,
         quickActions = quickActions,
@@ -114,6 +173,7 @@ object MovitTrainPreviewData {
         ),
         report = null,
         quickActions = quickActions,
+        featuredPrograms = featuredPrograms,
     )
 
     val restDay = activePlan.copy(

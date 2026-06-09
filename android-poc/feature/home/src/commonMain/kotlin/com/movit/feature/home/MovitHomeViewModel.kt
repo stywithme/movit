@@ -75,12 +75,16 @@ class MovitHomeViewModel(
             MovitHomeEvent.RetryClicked -> Unit
             MovitHomeEvent.StartTodayPlanClicked -> _effects.tryEmit(MovitHomeEffect.OpenTrain)
             MovitHomeEvent.BodyScanClicked -> _effects.tryEmit(MovitHomeEffect.OpenAssessment)
+            MovitHomeEvent.LevelCardClicked -> _effects.tryEmit(MovitHomeEffect.OpenLevel)
             MovitHomeEvent.ExploreClicked,
             MovitHomeEvent.BrowseProgramsClicked,
             -> _effects.tryEmit(MovitHomeEffect.OpenExplore)
             MovitHomeEvent.ReportsClicked -> _effects.tryEmit(MovitHomeEffect.OpenReports)
             MovitHomeEvent.ProfileClicked -> _effects.tryEmit(MovitHomeEffect.OpenProfile)
             MovitHomeEvent.ViewProgramClicked -> _effects.tryEmit(MovitHomeEffect.OpenTrain)
+            MovitHomeEvent.ViewPlanClicked -> _effects.tryEmit(MovitHomeEffect.OpenLevel)
+            is MovitHomeEvent.AlertClicked -> handleAlert(event.type)
+            is MovitHomeEvent.JourneyRowClicked -> handleJourneyRow(event.rowId)
             is MovitHomeEvent.QuickActionClicked -> {
                 when (event.actionId) {
                     "train" -> _effects.tryEmit(MovitHomeEffect.OpenTrain)
@@ -99,6 +103,22 @@ class MovitHomeViewModel(
                     }
                 }
             }
+        }
+    }
+
+    private fun handleAlert(type: String) {
+        when (type) {
+            "reassessment_due" -> _effects.tryEmit(MovitHomeEffect.OpenAssessment)
+            "progression_applied" -> _effects.tryEmit(MovitHomeEffect.OpenTrain)
+            else -> Unit
+        }
+    }
+
+    private fun handleJourneyRow(rowId: String) {
+        when (rowId) {
+            "reassessment" -> _effects.tryEmit(MovitHomeEffect.OpenAssessment)
+            "timeline" -> _effects.tryEmit(MovitHomeEffect.OpenLevel)
+            else -> _effects.tryEmit(MovitHomeEffect.OpenTrain)
         }
     }
 }

@@ -34,6 +34,7 @@ object MovitHomePreviewData {
     val alert = HomeAlertUi(
         title = "Training plan adjusted",
         message = "2 exercises updated based on your last session performance.",
+        type = "progression_applied",
     )
 
     val activeProgram = HomeActiveProgramUi(

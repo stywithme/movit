@@ -53,7 +53,19 @@ class ReportsApiMapperTest {
             assertEquals(1, ui.exercises.size)
             assertEquals("squat", ui.exercises.first().id)
             assertEquals(3, ui.formScorePoints.size)
+            assertEquals(7.69f, ui.improvementRatePercent!!, 0.1f)
         }
+    }
+
+    @Test
+    fun computeImprovementRate_returnsNullForSinglePoint() {
+        assertEquals(null, ReportsApiMapper.computeImprovementRate(listOf(80f)))
+    }
+
+    @Test
+    fun computeImprovementRate_calculatesDelta() {
+        val rate = ReportsApiMapper.computeImprovementRate(listOf(80f, 88f))
+        assertEquals(10f, rate!!, 0.01f)
     }
 
     @Test

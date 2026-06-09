@@ -4,7 +4,8 @@ data class MovitOnboardingUiState(
     val step: Int = OnboardingData.STEP_AGE_GENDER,
     val data: OnboardingData = OnboardingData(),
     val isSubmitting: Boolean = false,
-    val errorMessage: String? = null,
+    val validationErrorKey: String? = null,
+    val submitErrorMessage: String? = null,
 ) {
     val canContinue: Boolean
         get() = data.isStepValid(step) && !isSubmitting

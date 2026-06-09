@@ -28,7 +28,12 @@ class SharedWorkoutSessionRepository(
         val userProgramId = platform.activeUserProgramId()
             ?: return AppResult.Failure(strings.noEnrollment)
         val explore = MovitData.explore.readCached()
-        val (exerciseBySlug, exerciseById) = WorkoutSessionApiMapper.buildExerciseCatalog(explore, language)
+        val imageResolver: (String) -> String? = { slug -> platform.exerciseImageUrl(slug) }
+        val (exerciseBySlug, exerciseById) = WorkoutSessionApiMapper.buildExerciseCatalog(
+            explore,
+            language,
+            imageResolver,
+        )
 
         val planResult = MovitData.workoutSession.syncEffectivePlan(
             userProgramId = userProgramId,
@@ -106,7 +111,12 @@ class SharedWorkoutSessionRepository(
 
         val language = platform.preferredLanguage()
         val explore = MovitData.explore.readCached()
-        val (exerciseBySlug, _) = WorkoutSessionApiMapper.buildExerciseCatalog(explore, language)
+        val imageResolver: (String) -> String? = { slug -> platform.exerciseImageUrl(slug) }
+        val (exerciseBySlug, _) = WorkoutSessionApiMapper.buildExerciseCatalog(
+            explore,
+            language,
+            imageResolver,
+        )
         val request = WorkoutSessionSaveEncoder.encodeDayUpdate(session, plan, exerciseBySlug)
         return MovitData.workoutSession.saveDayCustomizations(
             userProgramId = userProgramId,
@@ -128,7 +138,12 @@ class SharedWorkoutSessionRepository(
         val language = platform.preferredLanguage()
         val strings = SessionStrings.load(language)
         val explore = MovitData.explore.readCached()
-        val (exerciseBySlug, _) = WorkoutSessionApiMapper.buildExerciseCatalog(explore, language)
+        val imageResolver: (String) -> String? = { slug -> platform.exerciseImageUrl(slug) }
+        val (exerciseBySlug, _) = WorkoutSessionApiMapper.buildExerciseCatalog(
+            explore,
+            language,
+            imageResolver,
+        )
 
         return when (
             val result = MovitData.workoutSession.fetchSubstitutionCandidates(replacingSlug)
@@ -146,5 +161,22 @@ class SharedWorkoutSessionRepository(
             }
             is AppResult.Failure -> fallback.findSwapCandidates(query, replacingSlug)
         }
+    }
+
+    override suspend fun findAddExerciseCandidates(query: String): List<SessionSwapCandidateUi> {
+        if (!MovitData.isInstalled) {
+            return fallback.findAddExerciseCandidates(query)
+        }
+        val platform = MovitData.requirePlatform()
+        val language = platform.preferredLanguage()
+        val explore = MovitData.explore.readCached()
+        val imageResolver: (String) -> String? = { slug -> platform.exerciseImageUrl(slug) }
+        val mapped = WorkoutSessionApiMapper.listExerciseCandidates(
+            explore = explore,
+            language = language,
+            query = query,
+            imageUrlForSlug = imageResolver,
+        )
+        return mapped.ifEmpty { fallback.findAddExerciseCandidates(query) }
     }
 }

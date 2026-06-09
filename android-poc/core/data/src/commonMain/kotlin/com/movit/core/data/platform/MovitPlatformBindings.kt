@@ -2,8 +2,8 @@ package com.movit.core.data.platform
 
 /**
  * Platform hooks for auth, API base URL, and offline cache.
- * Android delegates to legacy AuthManager / ApiConfig / SharedPreferences.
- * iOS uses NSUserDefaults with the same logical keys where possible.
+ * Android delegates to legacy AuthManager (EncryptedSharedPreferences for tokens).
+ * iOS uses Keychain for tokens and NSUserDefaults for non-sensitive profile metadata.
  */
 interface MovitPlatformBindings {
     fun apiBaseUrl(): String
@@ -19,6 +19,9 @@ interface MovitPlatformBindings {
 
     /** Active enrollment id for effective-plan and customization APIs. */
     fun activeUserProgramId(): String? = null
+
+    /** Exercise thumbnail from legacy local cache (Android) when explore DTO has no image. */
+    fun exerciseImageUrl(slug: String): String? = null
 
     fun userEmail(): String? = null
 
@@ -49,4 +52,18 @@ interface MovitPlatformBindings {
         voiceFeedback: Boolean? = null,
         notifications: Boolean? = null,
     ) {}
+
+    /** Persisted appearance mode: `light`, `dark`, or `system`. */
+    fun themeMode(): String = MovitThemeModeStorage.SYSTEM
+
+    fun setThemeMode(mode: String) {}
+
+    /** Applies locale immediately (Android: AppCompatDelegate; iOS: UserDefaults). */
+    fun applyPreferredLanguage(languageCode: String) {}
+}
+
+object MovitThemeModeStorage {
+    const val LIGHT = "light"
+    const val DARK = "dark"
+    const val SYSTEM = "system"
 }

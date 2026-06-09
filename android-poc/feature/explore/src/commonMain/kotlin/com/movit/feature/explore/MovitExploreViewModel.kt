@@ -69,14 +69,46 @@ class MovitExploreViewModel(
                 _state.update { it.copy(selectedFilter = event.filter) }
                 publishFiltered()
             }
+            is MovitExploreEvent.WorkoutFilterSelected -> {
+                _state.update { it.copy(selectedWorkoutFilter = event.filter) }
+                publishFiltered()
+            }
+            is MovitExploreEvent.ExerciseCategorySelected -> {
+                _state.update { it.copy(selectedExerciseCategory = event.categoryCode) }
+                publishFiltered()
+            }
+            MovitExploreEvent.FilterButtonClicked -> {
+                _state.update { it.copy(secondaryFiltersVisible = !it.secondaryFiltersVisible) }
+            }
             is MovitExploreEvent.ItemClicked -> {
-                _effects.tryEmit(MovitExploreEffect.NavigateToItem(event.id, event.type))
+                when (event.type) {
+                    ExploreItemType.Workout ->
+                        _effects.tryEmit(MovitExploreEffect.OpenWorkoutSession(event.id))
+                    ExploreItemType.Exercise ->
+                        _effects.tryEmit(MovitExploreEffect.OpenExercisePrepare(event.id))
+                    ExploreItemType.Program ->
+                        _effects.tryEmit(MovitExploreEffect.OpenProgramDetail(event.id))
+                }
             }
             MovitExploreEvent.SeeAllExercisesClicked -> {
-                _effects.tryEmit(MovitExploreEffect.OpenExercisesLibrary)
+                _state.update {
+                    it.copy(
+                        selectedFilter = ExploreFilter.Exercises,
+                        selectedExerciseCategory = null,
+                        scrollToExercises = true,
+                    )
+                }
+                publishFiltered()
             }
             MovitExploreEvent.SeeAllWorkoutsClicked -> {
-                _effects.tryEmit(MovitExploreEffect.OpenWorkoutsLibrary)
+                _state.update {
+                    it.copy(
+                        selectedFilter = ExploreFilter.Workouts,
+                        selectedWorkoutFilter = ExploreWorkoutFilter.All,
+                        scrollToWorkouts = true,
+                    )
+                }
+                publishFiltered()
             }
             MovitExploreEvent.OpenFeaturedProgramClicked -> {
                 val programId = cachedPrograms.firstOrNull()?.id
@@ -84,6 +116,12 @@ class MovitExploreViewModel(
                 if (programId != null) {
                     _effects.tryEmit(MovitExploreEffect.OpenProgramDetail(programId))
                 }
+            }
+            MovitExploreEvent.ScrollToExercisesHandled -> {
+                _state.update { it.copy(scrollToExercises = false) }
+            }
+            MovitExploreEvent.ScrollToWorkoutsHandled -> {
+                _state.update { it.copy(scrollToWorkouts = false) }
             }
             MovitExploreEvent.RetryClicked,
             MovitExploreEvent.RefreshRequested,
@@ -93,12 +131,32 @@ class MovitExploreViewModel(
 
     private fun publishFiltered() {
         val current = _state.value
+        val categoryChips = ExploreContentFilter.buildExerciseCategoryChips(cachedExercises)
+        val selectedCategory = current.selectedExerciseCategory?.takeIf { code ->
+            categoryChips.any { it.code.equals(code, ignoreCase = true) }
+        }
+        val filteredWorkouts = ExploreContentFilter.filterItems(
+            items = cachedWorkouts,
+            query = current.query,
+            filter = current.selectedFilter,
+            workoutFilter = current.selectedWorkoutFilter,
+        )
+        val filteredExercises = ExploreContentFilter.filterItems(
+            items = cachedExercises,
+            query = current.query,
+            filter = current.selectedFilter,
+            exerciseCategoryCode = selectedCategory,
+        )
         _state.update {
             it.copy(
                 featured = ExploreContentFilter.filterItems(cachedFeatured, current.query, current.selectedFilter),
-                workouts = ExploreContentFilter.filterItems(cachedWorkouts, current.query, current.selectedFilter),
-                exercises = ExploreContentFilter.filterItems(cachedExercises, current.query, current.selectedFilter),
+                workouts = filteredWorkouts,
+                exercises = filteredExercises,
                 programs = ExploreContentFilter.filterItems(cachedPrograms, current.query, current.selectedFilter),
+                exerciseCategoryChips = categoryChips,
+                selectedExerciseCategory = selectedCategory,
+                filteredWorkoutCount = filteredWorkouts.size,
+                filteredExerciseCount = filteredExercises.size,
             )
         }
     }

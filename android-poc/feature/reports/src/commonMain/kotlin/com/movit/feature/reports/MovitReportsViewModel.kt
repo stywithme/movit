@@ -22,17 +22,24 @@ class MovitReportsViewModel(
     val effects: SharedFlow<MovitReportsEffect> = _effects.asSharedFlow()
 
     fun loadInitial() {
-        viewModelScope.launch { load() }
+        viewModelScope.launch { load(isRefresh = false) }
     }
 
-    suspend fun load() {
-        _state.update { it.copy(isLoading = true, errorMessage = null) }
+    suspend fun load(isRefresh: Boolean = false) {
+        _state.update {
+            it.copy(
+                isLoading = !isRefresh && it.dashboard == null,
+                isRefreshing = isRefresh,
+                errorMessage = null,
+            )
+        }
         when (val result = repository.getReportsDashboard()) {
             is AppResult.Success -> {
                 val dashboard = result.value
                 _state.update {
                     it.copy(
                         isLoading = false,
+                        isRefreshing = false,
                         dashboard = dashboard,
                         errorMessage = if (dashboard.hubState == ReportsHubState.Error) {
                             dashboard.errorMessage
@@ -46,6 +53,7 @@ class MovitReportsViewModel(
                 _state.update {
                     it.copy(
                         isLoading = false,
+                        isRefreshing = false,
                         dashboard = ReportsDashboardUi(
                             hubState = ReportsHubState.Error,
                             errorMessage = result.message,

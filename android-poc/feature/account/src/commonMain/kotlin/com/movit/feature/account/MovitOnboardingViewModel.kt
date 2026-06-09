@@ -25,6 +25,7 @@ class MovitOnboardingViewModel(
         when (event) {
             MovitOnboardingEvent.BackClicked -> goBack()
             MovitOnboardingEvent.ContinueClicked -> goForward()
+            MovitOnboardingEvent.RetrySubmitClicked -> submit()
             is MovitOnboardingEvent.AgeChanged -> {
                 val age = event.value.toIntOrNull()
                 updateData { it.copy(ageYears = age) }
@@ -42,7 +43,7 @@ class MovitOnboardingViewModel(
                 updateData {
                     it.copy(
                         resistanceExperience = event.value,
-                        targetDaysPerWeek = it.targetDaysPerWeek ?: 3,
+                        targetDaysPerWeek = it.targetDaysPerWeek ?: OnboardingData.DEFAULT_DAYS_PER_WEEK,
                     )
                 }
             }
@@ -60,7 +61,9 @@ class MovitOnboardingViewModel(
                 }
             }
             is MovitOnboardingEvent.LocationSelected -> {
-                updateData { it.copy(trainingLocation = event.value) }
+                updateData { current ->
+                    current.copy(trainingLocation = event.value).withHomeLocationDefaults()
+                }
             }
             is MovitOnboardingEvent.EquipmentToggled -> {
                 updateData { current ->
@@ -77,40 +80,74 @@ class MovitOnboardingViewModel(
 
     private fun goBack() {
         val step = _state.value.step
-        if (step > OnboardingData.STEP_AGE_GENDER) {
-            _state.update { it.copy(step = step - 1, errorMessage = null) }
+        if (step > OnboardingData.STEP_AGE_GENDER && !_state.value.isSubmitting) {
+            _state.update {
+                it.copy(
+                    step = step - 1,
+                    validationErrorKey = null,
+                    submitErrorMessage = null,
+                )
+            }
         }
     }
 
     private fun goForward() {
         val current = _state.value
-        if (!current.data.isStepValid(current.step)) {
-            _state.update { it.copy(errorMessage = "Complete this step to continue.") }
+        if (current.isSubmitting) return
+
+        val data = current.data.withDefaultsForStep(current.step)
+        if (data != current.data) {
+            _state.update { it.copy(data = data) }
+        }
+
+        val errorKey = data.stepErrorKey(current.step)
+        if (errorKey != null) {
+            _state.update { it.copy(validationErrorKey = errorKey) }
             return
         }
+
         if (current.step == OnboardingData.STEP_SUMMARY) {
             submit()
             return
         }
-        _state.update { it.copy(step = current.step + 1, errorMessage = null) }
+
+        val nextStep = current.step + 1
+        _state.update {
+            it.copy(
+                step = nextStep,
+                data = data.withDefaultsForStep(nextStep),
+                validationErrorKey = null,
+                submitErrorMessage = null,
+            )
+        }
     }
 
     private fun submit() {
+        val data = _state.value.data
+        if (!data.isStepValid(OnboardingData.STEP_SUMMARY)) {
+            _state.update {
+                it.copy(validationErrorKey = data.stepErrorKey(OnboardingData.STEP_SUMMARY))
+            }
+            return
+        }
+
         viewModelScope.launch {
-            _state.update { it.copy(isSubmitting = true, errorMessage = null) }
-            when (val result = repository.putTrainingProfile(_state.value.data)) {
+            _state.update { it.copy(isSubmitting = true, submitErrorMessage = null) }
+            when (val result = repository.putTrainingProfile(data)) {
                 is AppResult.Success -> {
                     _state.update { it.copy(isSubmitting = false) }
                     _effects.tryEmit(MovitOnboardingEffect.Completed)
                 }
                 is AppResult.Failure -> {
-                    _state.update { it.copy(isSubmitting = false, errorMessage = result.message) }
+                    _state.update {
+                        it.copy(isSubmitting = false, submitErrorMessage = result.message)
+                    }
                 }
             }
         }
     }
 
     private inline fun updateData(block: (OnboardingData) -> OnboardingData) {
-        _state.update { it.copy(data = block(it.data), errorMessage = null) }
+        _state.update { it.copy(data = block(it.data), validationErrorKey = null) }
     }
 }

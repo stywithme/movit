@@ -4,7 +4,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.window.ComposeUIViewController
 import com.movit.core.data.MovitData
 import com.movit.core.data.platform.IosMovitPlatform
-import com.movit.designsystem.MovitTheme
 import platform.UIKit.UIViewController
 
 /**
@@ -18,7 +17,5 @@ fun MainViewController(): UIViewController = ComposeUIViewController(
 ) {
     val platform = remember { IosMovitPlatform() }
     remember { MovitData.install(platform) }
-    MovitTheme {
-        MovitAppShellRoute()
-    }
+    MovitAppShellRoute()
 }

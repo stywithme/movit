@@ -51,9 +51,13 @@ fun WorkoutSessionSheets(
     onDismiss: () -> Unit,
     onSwapQueryChange: (String) -> Unit,
     onSwapCandidateSelected: (String) -> Unit,
+    onAddExerciseQueryChange: (String) -> Unit,
+    onAddExerciseCandidateSelected: (String) -> Unit,
     onEditDraftChange: ((ExerciseEditDraft) -> ExerciseEditDraft) -> Unit,
     onSaveEditDetails: () -> Unit,
     onSwitchEditToSwap: () -> Unit,
+    onRestDurationChange: (Int) -> Unit,
+    onSaveRestEdit: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     when (activeSheet) {
@@ -86,6 +90,28 @@ fun WorkoutSessionSheets(
                     onChangeExercise = onSwitchEditToSwap,
                 )
             }
+        }
+        is SessionSheet.AddExercise -> ModalBottomSheet(
+            onDismissRequest = onDismiss,
+            sheetState = sheetState,
+        ) {
+            AddExerciseSheetContent(
+                sheet = activeSheet,
+                onDismiss = onDismiss,
+                onQueryChange = onAddExerciseQueryChange,
+                onCandidateSelected = onAddExerciseCandidateSelected,
+            )
+        }
+        is SessionSheet.EditRest -> ModalBottomSheet(
+            onDismissRequest = onDismiss,
+            sheetState = sheetState,
+        ) {
+            EditRestSheetContent(
+                sheet = activeSheet,
+                onDismiss = onDismiss,
+                onDurationChange = onRestDurationChange,
+                onSave = onSaveRestEdit,
+            )
         }
         null -> Unit
     }
@@ -165,19 +191,13 @@ private fun SwapCandidateRow(
             horizontalArrangement = Arrangement.spacedBy(MovitSpacing.md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(
-                modifier = Modifier
-                    .size(52.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = candidate.name.firstOrNull()?.uppercase() ?: "?",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.W800,
-                )
-            }
+            SessionExerciseThumbnail(
+                index = 0,
+                imageUrl = candidate.imageUrl,
+                name = candidate.name,
+                showIndex = false,
+                modifier = Modifier.size(52.dp),
+            )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = candidate.name,
@@ -303,6 +323,108 @@ private fun EditDetailsSheetContent(
             maxValue = 300,
             onDecrement = { onDraftChange { it.copy(restSeconds = (it.restSeconds - 5).coerceAtLeast(0)) } },
             onIncrement = { onDraftChange { it.copy(restSeconds = (it.restSeconds + 5).coerceAtMost(300)) } },
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
+        ) {
+            MovitButton(
+                text = movitText("session_cancel"),
+                onClick = onDismiss,
+                variant = MovitButtonVariant.Outlined,
+                modifier = Modifier.weight(1f),
+            )
+            MovitButton(
+                text = movitText("session_save"),
+                onClick = onSave,
+                variant = MovitButtonVariant.Filled,
+                leadingIcon = Icons.Default.Check,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun AddExerciseSheetContent(
+    sheet: SessionSheet.AddExercise,
+    onDismiss: () -> Unit,
+    onQueryChange: (String) -> Unit,
+    onCandidateSelected: (String) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = MovitSpacing.lg)
+            .padding(bottom = MovitSpacing.xl),
+        verticalArrangement = Arrangement.spacedBy(MovitSpacing.md),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Top,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = movitText("session_add_title"),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.W800,
+                )
+                Text(
+                    text = movitText("session_add_subtitle"),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.movitColors.textSecondary,
+                )
+            }
+            IconButton(onClick = onDismiss) {
+                Icon(Icons.Default.Close, contentDescription = movitText("session_close"))
+            }
+        }
+        MovitSearchBar(
+            query = sheet.query,
+            onQueryChange = onQueryChange,
+            placeholder = movitText("session_search_placeholder"),
+        )
+        if (sheet.isLoadingCandidates) {
+            MovitLoadingState(message = movitText("session_finding_alternatives"))
+        } else {
+            sheet.candidates.forEach { candidate ->
+                SwapCandidateRow(
+                    candidate = candidate,
+                    onClick = { onCandidateSelected(candidate.slug) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun EditRestSheetContent(
+    sheet: SessionSheet.EditRest,
+    onDismiss: () -> Unit,
+    onDurationChange: (Int) -> Unit,
+    onSave: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = MovitSpacing.lg)
+            .padding(bottom = MovitSpacing.xl),
+        verticalArrangement = Arrangement.spacedBy(MovitSpacing.md),
+    ) {
+        Text(
+            text = movitText("session_edit_rest_title"),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.W800,
+        )
+        EditStepperRow(
+            title = movitText("session_rest_title"),
+            subtitle = movitText("session_rest_sub"),
+            value = sheet.durationSeconds,
+            minValue = 5,
+            maxValue = 600,
+            onDecrement = { onDurationChange((sheet.durationSeconds - 5).coerceAtLeast(5)) },
+            onIncrement = { onDurationChange((sheet.durationSeconds + 5).coerceAtMost(600)) },
         )
         Row(
             modifier = Modifier.fillMaxWidth(),

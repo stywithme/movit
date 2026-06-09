@@ -17,9 +17,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Scanner
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -27,6 +31,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -40,6 +48,7 @@ import com.movit.designsystem.components.MovitFilterChip
 import com.movit.designsystem.components.MovitInsightCard
 import com.movit.designsystem.components.MovitInsightVariant
 import com.movit.designsystem.components.MovitMetricTile
+import com.movit.designsystem.components.MovitProgressBar
 import com.movit.designsystem.movitColors
 import com.movit.resources.movitText
 
@@ -57,6 +66,7 @@ fun MovitAssessmentScreen(
             .padding(MovitSpacing.lg),
         verticalArrangement = Arrangement.spacedBy(MovitSpacing.lg),
     ) {
+        AssessmentHeader(state = state, onEvent = onEvent)
         when (state.phase) {
             AssessmentPhase.PreScreening -> PreScreeningContent(state, onEvent)
             AssessmentPhase.BodyScan -> BodyScanContent(state, onEvent)
@@ -66,27 +76,68 @@ fun MovitAssessmentScreen(
 }
 
 @Composable
+private fun AssessmentHeader(
+    state: MovitAssessmentUiState,
+    onEvent: (MovitAssessmentEvent) -> Unit,
+) {
+    val title = when (state.phase) {
+        AssessmentPhase.PreScreening -> movitText("assessment_health_check")
+        AssessmentPhase.BodyScan -> movitText("assessment_body_scan")
+        AssessmentPhase.Results -> movitText("assessment_results_title")
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = { onEvent(MovitAssessmentEvent.BackClicked) }) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = movitText("profile_back"),
+            )
+        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.W800,
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = MovitSpacing.sm),
+            textAlign = TextAlign.Center,
+        )
+        Box(modifier = Modifier.size(48.dp))
+    }
+}
+
+@Composable
 private fun PreScreeningContent(
     state: MovitAssessmentUiState,
     onEvent: (MovitAssessmentEvent) -> Unit,
 ) {
-    Text(
-        text = movitText("assessment_health_check"),
-        style = MaterialTheme.typography.titleLarge,
-        fontWeight = FontWeight.W800,
-    )
     MovitInsightCard(
         title = movitText("assessment_parq_title"),
         message = movitText("assessment_parq_sub"),
         icon = Icons.Default.Warning,
         variant = MovitInsightVariant.Warning,
     )
+    MovitProgressBar(
+        progressPercent = state.parqProgressPercent,
+        modifier = Modifier.fillMaxWidth(),
+    )
+    Text(
+        text = movitText(
+            "assessment_parq_progress",
+            state.parqAnswers.size,
+            FakeAssessmentPreviewData.parqQuestions.size,
+        ),
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.movitColors.textTertiary,
+    )
     FakeAssessmentPreviewData.parqQuestions.forEachIndexed { index, key ->
         val answer = state.parqAnswers[index]
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = MovitSpacing.md),
+                .padding(vertical = MovitSpacing.sm),
         ) {
             Text(
                 text = movitText(key),
@@ -110,6 +161,12 @@ private fun PreScreeningContent(
                     modifier = Modifier.weight(1f),
                 )
             }
+            if (index < FakeAssessmentPreviewData.parqQuestions.lastIndex) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(top = MovitSpacing.md),
+                    color = MaterialTheme.movitColors.divider,
+                )
+            }
         }
     }
     MovitButton(
@@ -125,11 +182,6 @@ private fun BodyScanContent(
     onEvent: (MovitAssessmentEvent) -> Unit,
 ) {
     Text(
-        text = movitText("assessment_body_scan"),
-        style = MaterialTheme.typography.headlineSmall,
-        fontWeight = FontWeight.W800,
-    )
-    Text(
         text = movitText("assessment_body_scan_sub"),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.movitColors.textSecondary,
@@ -143,14 +195,28 @@ private fun BodyScanContent(
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            val frameColor = MaterialTheme.movitColors.onInkVeil55
             Box(
                 modifier = Modifier
                     .size(width = 180.dp, height = 280.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(MaterialTheme.movitColors.onInkVeil16),
+                    .drawBehind {
+                        drawRoundRect(
+                            color = frameColor,
+                            style = Stroke(
+                                width = 2.dp.toPx(),
+                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(16f, 12f)),
+                            ),
+                            cornerRadius = CornerRadius(24.dp.toPx()),
+                        )
+                    },
             )
             Text(
-                text = state.scanMovementLabel,
+                text = movitText(
+                    "assessment_scan_hint",
+                    movitText(state.scanMovementKey),
+                    state.scanMovementNumber,
+                    state.scanMovementTotal,
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.movitColors.onInk,
                 textAlign = TextAlign.Center,
@@ -183,29 +249,37 @@ private fun BodyScanContent(
                     .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center,
             ) {
-                androidx.compose.material3.Icon(
+                Icon(
                     imageVector = Icons.Default.Scanner,
-                    contentDescription = null,
+                    contentDescription = movitText("assessment_camera_active"),
                     tint = MaterialTheme.colorScheme.primary,
                 )
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = movitText("assessment_camera_placeholder"), fontWeight = FontWeight.W700)
+                Text(text = movitText("assessment_camera_active"), fontWeight = FontWeight.W700)
                 Text(
-                    text = movitText("assessment_camera_placeholder_sub"),
+                    text = movitText("assessment_camera_active_sub"),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.movitColors.textSecondary,
                 )
             }
-            CircularProgressIndicator(
-                progress = { state.scanProgressPercent / 100f },
-                modifier = Modifier.size(52.dp),
-            )
+            Box(contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(
+                    progress = { state.scanProgressPercent / 100f },
+                    modifier = Modifier.size(52.dp),
+                )
+                Text(
+                    text = "${state.scanProgressPercent}%",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.W700,
+                )
+            }
         }
     }
     MovitButton(
         text = movitText("assessment_view_results"),
         onClick = { onEvent(MovitAssessmentEvent.CompleteBodyScan) },
+        enabled = !state.isLoadingResults,
         modifier = Modifier.fillMaxWidth(),
     )
 }
@@ -215,6 +289,17 @@ private fun ResultsContent(
     state: MovitAssessmentUiState,
     onEvent: (MovitAssessmentEvent) -> Unit,
 ) {
+    if (state.isLoadingResults) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = MovitSpacing.xxl),
+            contentAlignment = Alignment.Center,
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
     val results = state.results
     MovitDashboardHero(
         eyebrow = movitText("assessment_body_score"),
@@ -223,6 +308,25 @@ private fun ResultsContent(
         progressPercent = results.bodyScore,
         inkStyle = false,
     )
+    if (results.domains.isNotEmpty()) {
+        Text(
+            text = movitText("assessment_domain_scores"),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.W800,
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(MovitSpacing.md),
+            verticalArrangement = Arrangement.spacedBy(MovitSpacing.md),
+        ) {
+            results.domains.forEach { domain ->
+                MovitMetricTile(
+                    label = movitText("assessment_domain_${domain.domainKey}"),
+                    value = domain.score.toString(),
+                    modifier = Modifier.fillMaxWidth(0.48f),
+                )
+            }
+        }
+    }
     Text(
         text = movitText("assessment_region_scores"),
         style = MaterialTheme.typography.titleMedium,
@@ -243,9 +347,12 @@ private fun ResultsContent(
     )
     results.insights.forEach { insight ->
         MovitCard {
-            Text(text = insight.title, fontWeight = FontWeight.W700)
             Text(
-                text = insight.message,
+                text = movitText(insight.titleKey, *insight.titleArgs.toTypedArray()),
+                fontWeight = FontWeight.W700,
+            )
+            Text(
+                text = movitText(insight.messageKey, *insight.messageArgs.toTypedArray()),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.movitColors.textSecondary,
                 modifier = Modifier.padding(top = MovitSpacing.xs),

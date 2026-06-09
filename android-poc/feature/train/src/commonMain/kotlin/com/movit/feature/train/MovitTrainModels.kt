@@ -22,6 +22,9 @@ data class TrainFeaturedProgramUi(
     val subtitle: String,
     val badge: String?,
     val metadata: List<String>,
+    val imageUrl: String? = null,
+    val levelLabel: String? = null,
+    val durationWeeksLabel: String? = null,
 )
 
 data class TrainDashboardUi(
@@ -31,6 +34,7 @@ data class TrainDashboardUi(
     val program: TrainProgramUi?,
     val today: TrainTodayWorkoutUi?,
     val week: TrainWeekPreviewUi,
+    val weekOptions: List<TrainWeekPreviewUi> = emptyList(),
     val readiness: TrainReadinessUi,
     val report: TrainReportSummaryUi?,
     val quickActions: List<TrainQuickActionUi>,
@@ -38,6 +42,9 @@ data class TrainDashboardUi(
 )
 
 data class TrainProgramUi(
+    val id: String = "",
+    val slug: String = "",
+    val weekNumber: Int = 1,
     val name: String,
     val positionLabel: String,
     val levelLabel: String,
@@ -66,6 +73,7 @@ data class TrainWorkoutSessionUi(
     val isCompleted: Boolean = false,
     val launchTarget: TrainWorkoutLaunchUi? = null,
     val items: List<TrainWorkoutItemUi> = emptyList(),
+    val thumbnailUrl: String? = null,
 )
 
 data class TrainWorkoutLaunchUi(
@@ -106,6 +114,8 @@ data class TrainReportSummaryUi(
     val title: String,
     val insight: String,
     val metrics: List<TrainMetricUi>,
+    val trendChartPoints: List<Float> = emptyList(),
+    val trendDeltaPercent: Int? = null,
 )
 
 data class TrainMetricUi(

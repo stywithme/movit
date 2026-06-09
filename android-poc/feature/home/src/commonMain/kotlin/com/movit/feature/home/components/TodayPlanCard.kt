@@ -4,76 +4,81 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.components.MovitButton
+import com.movit.designsystem.components.MovitButtonVariant
 import com.movit.designsystem.components.MovitCard
 import com.movit.designsystem.components.MovitCardVariant
-import com.movit.designsystem.components.MovitEmptyState
 import com.movit.designsystem.components.MovitSectionHeader
+import com.movit.designsystem.movitColors
 import com.movit.feature.home.HomeTrainingPlanUi
+import com.movit.resources.movitText
 
 @Composable
 fun TodayPlanCard(
-    todayPlan: HomeTrainingPlanUi?,
+    todayPlan: HomeTrainingPlanUi,
     onStartPlan: () -> Unit,
-    onExplore: () -> Unit,
     modifier: Modifier = Modifier,
+    showPrimaryAction: Boolean = true,
 ) {
+    val startA11y = movitText("home_a11y_start_workout")
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
     ) {
         MovitSectionHeader(
-            title = "Today's plan",
-            subtitle = "Today",
+            title = movitText("home_todays_plan"),
+            subtitle = movitText("home_today"),
         )
-
-        if (todayPlan == null) {
-            MovitEmptyState(
-                title = "No workout scheduled",
-                message = "Browse programs and workouts to build your plan.",
-                actionLabel = "Explore",
-                onActionClick = onExplore,
-            )
-        } else {
-            MovitCard(
-                modifier = Modifier.fillMaxWidth(),
-                variant = MovitCardVariant.Filled,
+        MovitCard(variant = MovitCardVariant.Outlined) {
+            Column(
+                modifier = Modifier.padding(MovitSpacing.lg),
+                verticalArrangement = Arrangement.spacedBy(MovitSpacing.md),
             ) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
-                ) {
-                    Text(
-                        text = todayPlan.subtitle.uppercase(),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Text(
-                        text = todayPlan.title,
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Text(
-                        text = "${todayPlan.exerciseCountLabel} · ${todayPlan.durationLabel}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = todayPlan.statusLabel,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = MovitSpacing.xs),
-                    )
+                Text(
+                    text = todayPlan.label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.movitColors.textSecondary,
+                    fontWeight = FontWeight.W700,
+                )
+                Text(
+                    text = todayPlan.title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.W800,
+                )
+                Text(
+                    text = todayPlan.subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.movitColors.textSecondary,
+                )
+                if (showPrimaryAction) {
                     MovitButton(
-                        text = "Start workout",
+                        text = todayPlan.primaryActionLabel,
                         onClick = onStartPlan,
-                        modifier = Modifier.fillMaxWidth(),
+                        variant = MovitButtonVariant.Filled,
+                        leadingIcon = Icons.Default.PlayArrow,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .semantics { contentDescription = startA11y },
                     )
                 }
+                Text(
+                    text = todayPlan.statusLabel,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.movitColors.textSecondary,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                )
             }
         }
     }

@@ -2,7 +2,6 @@ package com.movit.feature.library
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.movit.feature.explore.ExploreContentFilter
 import com.movit.feature.explore.ExploreItemUi
 import com.movit.shared.AppResult
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,21 +10,19 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class LibraryListKind {
-    Exercises,
-    Workouts,
-}
-
 data class LibraryListUiState(
     val kind: LibraryListKind,
     val isLoading: Boolean = false,
     val query: String = "",
-    val selectedChip: String = "All",
-    val chips: List<String> = emptyList(),
+    val selectedFilter: LibraryFilterChip = LibraryFilterChip.All,
+    val filters: List<LibraryFilterChip> = emptyList(),
+    val accentFilter: LibraryFilterChip = LibraryFilterChip.All,
     val items: List<ExploreItemUi> = emptyList(),
     val totalCount: Int = 0,
     val visibleCount: Int = 0,
     val showAll: Boolean = false,
+    val isFilteredEmpty: Boolean = false,
+    val filterSheetVisible: Boolean = false,
     val errorMessage: String? = null,
 )
 
@@ -33,7 +30,14 @@ class LibraryListViewModel(
     private val kind: LibraryListKind,
     private val repository: LibraryRepository = defaultLibraryRepository(),
 ) : ViewModel() {
-    private val _state = MutableStateFlow(LibraryListUiState(kind = kind, isLoading = true))
+    private val _state = MutableStateFlow(
+        LibraryListUiState(
+            kind = kind,
+            isLoading = true,
+            filters = LibraryFilterChip.defaults(kind),
+            accentFilter = LibraryFilterChip.accent(kind),
+        ),
+    )
     val state: StateFlow<LibraryListUiState> = _state.asStateFlow()
 
     private var allItems: List<ExploreItemUi> = emptyList()
@@ -50,12 +54,12 @@ class LibraryListViewModel(
                     LibraryListKind.Exercises -> result.value.exercises
                     LibraryListKind.Workouts -> result.value.workouts
                 }
-                val chips = buildChips(allItems)
                 _state.update {
                     it.copy(
                         isLoading = false,
-                        chips = chips,
-                        selectedChip = chips.firstOrNull() ?: "All",
+                        filters = LibraryFilterChip.defaults(kind),
+                        accentFilter = LibraryFilterChip.accent(kind),
+                        selectedFilter = LibraryFilterChip.All,
                     )
                 }
                 publishFiltered()
@@ -73,8 +77,8 @@ class LibraryListViewModel(
         publishFiltered()
     }
 
-    fun onChipSelected(chip: String) {
-        _state.update { it.copy(selectedChip = chip) }
+    fun onFilterSelected(filter: LibraryFilterChip) {
+        _state.update { it.copy(selectedFilter = filter, filterSheetVisible = false) }
         publishFiltered()
     }
 
@@ -83,46 +87,45 @@ class LibraryListViewModel(
         publishFiltered()
     }
 
+    fun onFilterClick() {
+        _state.update { it.copy(filterSheetVisible = true) }
+    }
+
+    fun onDismissFilterSheet() {
+        _state.update { it.copy(filterSheetVisible = false) }
+    }
+
+    fun onClearFilters() {
+        _state.update {
+            it.copy(
+                query = "",
+                selectedFilter = LibraryFilterChip.All,
+                filterSheetVisible = false,
+            )
+        }
+        publishFiltered()
+    }
+
     private fun publishFiltered() {
         val current = _state.value
-        val filtered = allItems
-            .asSequence()
-            .filter { matchesChip(it, current.selectedChip) }
-            .filter { ExploreContentFilter.matchesQuery(it, current.query) }
-            .toList()
+        val filtered = LibraryFilterLogic.filterItems(
+            items = allItems,
+            kind = kind,
+            chip = current.selectedFilter,
+            query = current.query,
+        )
         val limit = if (current.showAll) filtered.size else minOf(filtered.size, DEFAULT_VISIBLE)
         _state.update {
             it.copy(
                 items = filtered.take(limit),
                 totalCount = allItems.size,
                 visibleCount = filtered.size,
+                isFilteredEmpty = filtered.isEmpty() && allItems.isNotEmpty(),
             )
         }
     }
 
-    private fun buildChips(items: List<ExploreItemUi>): List<String> {
-        val base = when (kind) {
-            LibraryListKind.Exercises -> listOf("All", "Lower body", "Core", "Mobility", "Equipment")
-            LibraryListKind.Workouts -> listOf("All", "Legs", "Core", "Chest", "Mobility", "Under 20 min")
-        }
-        return base
-    }
-
-    private fun matchesChip(item: ExploreItemUi, chip: String): Boolean {
-        if (chip == "All") return true
-        val haystack = (item.title + " " + item.subtitle + " " + item.metadata.joinToString()).lowercase()
-        return when (chip) {
-            "Lower body", "Legs" -> haystack.contains("leg") || haystack.contains("squat") || haystack.contains("lunge")
-            "Core" -> haystack.contains("core")
-            "Mobility" -> haystack.contains("mobil") || haystack.contains("recovery")
-            "Chest" -> haystack.contains("chest") || haystack.contains("push")
-            "Equipment" -> haystack.contains("dumbbell") || haystack.contains("barbell") || haystack.contains("weight")
-            "Under 20 min" -> item.metadata.any { it.contains("18") || it.contains("12") || it.contains("15") }
-            else -> true
-        }
-    }
-
     companion object {
-        private const val DEFAULT_VISIBLE = 6
+        const val DEFAULT_VISIBLE = 6
     }
 }

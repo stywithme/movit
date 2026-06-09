@@ -1,6 +1,7 @@
 package com.movit.feature.account
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +24,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.movit.designsystem.MovitSpacing
@@ -37,6 +40,8 @@ import com.movit.designsystem.components.MovitListCard
 import com.movit.designsystem.components.MovitListRow
 import com.movit.designsystem.components.MovitLoadingState
 import com.movit.designsystem.components.MovitScaffold
+import com.movit.designsystem.components.MovitTag
+import com.movit.designsystem.components.MovitTagVariant
 import com.movit.designsystem.movitColors
 import com.movit.resources.movitText
 
@@ -46,6 +51,36 @@ fun MovitProfileScreen(
     onEvent: (MovitProfileEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    when (state.activePicker) {
+        ProfilePicker.Language -> {
+            val profile = state.profile
+            if (profile != null) {
+                ProfileLanguagePickerDialog(
+                    selectedLanguageCode = profile.languageCode,
+                    onLanguageSelected = { onEvent(MovitProfileEvent.LanguageSelected(it)) },
+                    onDismiss = { onEvent(MovitProfileEvent.PickerDismissed) },
+                )
+            }
+        }
+        ProfilePicker.Appearance -> {
+            val profile = state.profile
+            if (profile != null) {
+                ProfileAppearancePickerDialog(
+                    selectedThemeMode = profile.themeMode,
+                    onThemeModeSelected = { onEvent(MovitProfileEvent.AppearanceSelected(it)) },
+                    onDismiss = { onEvent(MovitProfileEvent.PickerDismissed) },
+                )
+            }
+        }
+        ProfilePicker.LogoutConfirm -> {
+            ProfileLogoutConfirmDialog(
+                onConfirm = { onEvent(MovitProfileEvent.LogoutConfirmed) },
+                onDismiss = { onEvent(MovitProfileEvent.LogoutDismissed) },
+            )
+        }
+        null -> Unit
+    }
+
     MovitScaffold(
         modifier = modifier,
         title = movitText("profile_title"),
@@ -91,19 +126,19 @@ private fun ProfileContent(
     profile: ProfileUi,
     onEvent: (MovitProfileEvent) -> Unit,
 ) {
-    ProfileHero(profile = profile)
+    ProfileHero(profile = profile, onEvent = onEvent)
     ProCard(profile = profile, onEvent = onEvent)
     SettingsGroup(title = movitText("profile_preferences")) {
         MovitListRow(
             title = movitText("profile_language"),
-            trailingValue = profile.language,
-            onClick = null,
+            trailingValue = profileLanguageLabel(profile.languageCode),
+            onClick = { onEvent(MovitProfileEvent.LanguageClicked) },
         )
         MovitListRow(
             title = movitText("profile_appearance"),
             subtitle = movitText("profile_appearance_sub"),
-            trailingValue = profile.appearance,
-            onClick = null,
+            trailingValue = profileAppearanceLabel(profile.themeMode),
+            onClick = { onEvent(MovitProfileEvent.AppearanceClicked) },
         )
         MovitListRow(
             title = movitText("profile_audio_cues"),
@@ -125,8 +160,7 @@ private fun ProfileContent(
             trailing = {
                 Switch(
                     checked = profile.hapticEnabled,
-                    onCheckedChange = { },
-                    enabled = false,
+                    onCheckedChange = { onEvent(MovitProfileEvent.HapticChanged(it)) },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
                         checkedTrackColor = MaterialTheme.colorScheme.primary,
@@ -135,7 +169,11 @@ private fun ProfileContent(
             },
         )
     }
-    SettingsGroup(title = movitText("profile_training")) {
+    SettingsGroup(title = movitText("profile_account")) {
+        MovitListRow(
+            title = movitText("profile_edit_profile"),
+            onClick = { onEvent(MovitProfileEvent.EditProfileClicked) },
+        )
         MovitListRow(
             title = movitText("profile_training_profile"),
             subtitle = profile.trainingProfileSummary,
@@ -151,18 +189,36 @@ private fun ProfileContent(
             subtitle = movitText("profile_level_plan_sub"),
             onClick = { onEvent(MovitProfileEvent.LevelClicked) },
         )
+        SignOutRow(onClick = { onEvent(MovitProfileEvent.LogoutClicked) })
     }
-    SettingsGroup(title = movitText("profile_support")) {
-        MovitListRow(
-            title = movitText("profile_sign_out"),
-            showChevron = false,
-            onClick = { onEvent(MovitProfileEvent.LogoutClicked) },
+}
+
+@Composable
+private fun SignOutRow(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = MovitSpacing.lg, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = movitText("profile_sign_out"),
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.W700,
+            color = MaterialTheme.colorScheme.error,
         )
     }
 }
 
 @Composable
-private fun ProfileHero(profile: ProfileUi) {
+private fun ProfileHero(
+    profile: ProfileUi,
+    onEvent: (MovitProfileEvent) -> Unit,
+) {
+    val avatarCd = movitText("profile_avatar_cd")
+    val editCd = movitText("profile_edit_avatar_cd")
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -172,7 +228,8 @@ private fun ProfileHero(profile: ProfileUi) {
                 modifier = Modifier
                     .size(96.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .semantics { contentDescription = avatarCd },
                 contentAlignment = Alignment.Center,
             ) {
                 androidx.compose.material3.Icon(
@@ -187,7 +244,9 @@ private fun ProfileHero(profile: ProfileUi) {
                     .align(Alignment.BottomEnd)
                     .size(32.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
+                    .background(MaterialTheme.colorScheme.primary)
+                    .clickable { onEvent(MovitProfileEvent.EditProfileClicked) }
+                    .semantics { contentDescription = editCd },
                 contentAlignment = Alignment.Center,
             ) {
                 androidx.compose.material3.Icon(
@@ -219,11 +278,9 @@ private fun ProCard(
 ) {
     MovitCard(variant = MovitCardVariant.Filled) {
         if (profile.isPro) {
-            Text(
+            MovitTag(
                 text = movitText("profile_pro_badge"),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.W800,
-                color = MaterialTheme.movitColors.limeDeep,
+                variant = MovitTagVariant.Gold,
             )
             Text(
                 text = profile.subscriptionLabel,
@@ -231,12 +288,14 @@ private fun ProCard(
                 fontWeight = FontWeight.W800,
                 modifier = Modifier.padding(top = MovitSpacing.xs),
             )
-            Text(
-                text = profile.subscriptionRenewal.orEmpty(),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.movitColors.textSecondary,
-                modifier = Modifier.padding(top = MovitSpacing.xs),
-            )
+            profile.subscriptionRenewal?.let { renewal ->
+                Text(
+                    text = renewal,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.movitColors.textSecondary,
+                    modifier = Modifier.padding(top = MovitSpacing.xs),
+                )
+            }
             MovitButton(
                 text = movitText("profile_manage_subscription"),
                 onClick = { onEvent(MovitProfileEvent.ManageSubscriptionClicked) },

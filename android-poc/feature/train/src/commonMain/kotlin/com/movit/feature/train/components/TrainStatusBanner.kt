@@ -82,14 +82,21 @@ fun TrainStatusBanner(
             }
         }
         dashboard.status == TrainDashboardStatus.NoPlan -> {
-            MovitAccentBlock(
-                modifier = modifier,
-                title = movitText("train_browse_programs"),
-                subtitle = movitText("train_browse_pick_sub"),
-                variant = MovitAccentVariant.Lime,
-                glyphIcon = Icons.Default.Explore,
-                onClick = onExplorePrograms,
-            )
+            Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(MovitSpacing.xs)) {
+                Text(
+                    text = movitText("train_get_started"),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.movitColors.limeDeep,
+                    fontWeight = FontWeight.W700,
+                )
+                MovitAccentBlock(
+                    title = movitText("train_browse_programs"),
+                    subtitle = movitText("train_browse_pick_sub"),
+                    variant = MovitAccentVariant.Lime,
+                    glyphIcon = Icons.Default.Explore,
+                    onClick = onExplorePrograms,
+                )
+            }
         }
         else -> {
             MovitBanner(

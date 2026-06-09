@@ -9,8 +9,8 @@ data class ProfileUi(
     val isPro: Boolean,
     val subscriptionLabel: String,
     val subscriptionRenewal: String?,
-    val language: String,
-    val appearance: String,
+    val languageCode: String,
+    val themeMode: String,
     val audioCuesEnabled: Boolean,
     val hapticEnabled: Boolean,
     val trainingProfileSummary: String,
@@ -26,11 +26,12 @@ interface ProfileRepository {
     suspend fun loadProfile(): AppResult<ProfileUi>
     suspend fun logout(): AppResult<Unit>
     suspend fun updateSettings(update: ProfileSettingsUpdate): AppResult<ProfileUi>
+    suspend fun setThemeMode(mode: String): AppResult<ProfileUi>
 }
 
 class FakeProfileRepository(
     private val signedIn: Boolean = true,
-    private val profile: ProfileUi = FakeProfilePreviewData.signedIn,
+    private var profile: ProfileUi = FakeProfilePreviewData.signedIn,
     private val shouldFail: Boolean = false,
 ) : ProfileRepository {
 
@@ -53,12 +54,18 @@ class FakeProfileRepository(
 
     override suspend fun updateSettings(update: ProfileSettingsUpdate): AppResult<ProfileUi> {
         if (!signedIn) return AppResult.Failure("Sign in to update settings.")
-        return AppResult.Success(
-            profile.copy(
-                language = update.preferredLanguage ?: profile.language,
-                audioCuesEnabled = update.voiceFeedback ?: profile.audioCuesEnabled,
-            ),
+        profile = profile.copy(
+            languageCode = update.preferredLanguage ?: profile.languageCode,
+            audioCuesEnabled = update.voiceFeedback ?: profile.audioCuesEnabled,
+            hapticEnabled = update.notifications ?: profile.hapticEnabled,
         )
+        return AppResult.Success(profile)
+    }
+
+    override suspend fun setThemeMode(mode: String): AppResult<ProfileUi> {
+        if (!signedIn) return AppResult.Failure("Sign in to update settings.")
+        profile = profile.copy(themeMode = mode)
+        return AppResult.Success(profile)
     }
 }
 
@@ -70,8 +77,8 @@ object FakeProfilePreviewData {
         isPro = false,
         subscriptionLabel = "Free",
         subscriptionRenewal = null,
-        language = "English",
-        appearance = "System",
+        languageCode = "en",
+        themeMode = "system",
         audioCuesEnabled = true,
         hapticEnabled = true,
         trainingProfileSummary = "Strength · 3 days · Home",

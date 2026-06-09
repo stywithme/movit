@@ -1,8 +1,8 @@
 package com.movit.feature.home
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -12,14 +12,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.components.MovitAccentBlock
 import com.movit.designsystem.components.MovitAccentVariant
@@ -28,9 +28,9 @@ import com.movit.designsystem.components.MovitButtonSize
 import com.movit.designsystem.components.MovitButtonVariant
 import com.movit.designsystem.components.MovitCard
 import com.movit.designsystem.components.MovitCardVariant
-import com.movit.designsystem.components.MovitDashboardHero
 import com.movit.designsystem.components.MovitEmptyState
 import com.movit.designsystem.components.MovitErrorState
+import com.movit.designsystem.components.MovitIconBoxVariant
 import com.movit.designsystem.components.MovitInsightCard
 import com.movit.designsystem.components.MovitInsightVariant
 import com.movit.designsystem.components.MovitListGroup
@@ -43,6 +43,12 @@ import com.movit.designsystem.components.MovitStatTileRow
 import com.movit.designsystem.components.MovitTag
 import com.movit.designsystem.components.MovitTagVariant
 import com.movit.designsystem.movitColors
+import com.movit.feature.home.components.HomeHeroSummary
+import com.movit.feature.home.components.HomeLevelCard
+import com.movit.feature.home.components.HomeProgressSection
+import com.movit.feature.home.components.HomeQuickActions
+import com.movit.feature.home.components.HomeReportPreview
+import com.movit.feature.home.components.TodayPlanCard
 import com.movit.resources.movitText
 
 @Composable
@@ -76,12 +82,11 @@ fun MovitHomeScreen(
                     )
                 }
                 else -> {
-                    MovitDashboardHero(
-                        eyebrow = state.greetingEyebrow,
-                        title = state.greetingTitle,
-                        subtitle = state.greetingSubtitle,
-                        progressPercent = 0,
-                        inkStyle = true,
+                    HomeHeroSummary(
+                        greetingEyebrow = state.greetingEyebrow,
+                        greetingTitle = state.greetingTitle,
+                        greetingSubtitle = state.greetingSubtitle,
+                        progress = state.progress,
                     )
 
                     if (state.metricTiles.isNotEmpty()) {
@@ -93,14 +98,9 @@ fun MovitHomeScreen(
                     }
 
                     state.levelCard?.let { level ->
-                        MovitDashboardHero(
-                            eyebrow = level.eyebrow,
-                            title = level.title,
-                            subtitle = level.subtitle,
-                            progressPercent = level.progressPercent,
-                            inkStyle = false,
-                            onActionClick = { onEvent(MovitHomeEvent.QuickActionClicked("level")) },
-                            actionLabel = movitText("home_view_level"),
+                        HomeLevelCard(
+                            level = level,
+                            onClick = { onEvent(MovitHomeEvent.LevelCardClicked) },
                         )
                     }
 
@@ -110,6 +110,9 @@ fun MovitHomeScreen(
                             message = alert.message,
                             icon = Icons.Default.Warning,
                             variant = MovitInsightVariant.Warning,
+                            modifier = Modifier.clickable {
+                                onEvent(MovitHomeEvent.AlertClicked(alert.type))
+                            },
                         )
                     } ?: state.insightMessage?.let { message ->
                         MovitInsightCard(
@@ -117,94 +120,41 @@ fun MovitHomeScreen(
                             message = message,
                             icon = Icons.Default.Warning,
                             variant = MovitInsightVariant.Warning,
+                            modifier = Modifier.clickable {
+                                onEvent(MovitHomeEvent.AlertClicked("progression_applied"))
+                            },
                         )
                     }
 
                     state.activeProgram?.let { program ->
-                        MovitSectionHeader(
-                            title = movitText("home_active_program"),
-                            subtitle = movitText("home_program"),
+                        HomeActiveProgramSection(
+                            program = program,
+                            onViewProgram = { onEvent(MovitHomeEvent.ViewProgramClicked) },
                         )
-                        MovitCard(variant = MovitCardVariant.Outlined) {
-                            Column(
-                                modifier = Modifier.padding(MovitSpacing.lg),
-                                verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
-                            ) {
-                                Text(
-                                    text = program.label,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.movitColors.textSecondary,
-                                    fontWeight = FontWeight.W700,
-                                )
-                                Text(
-                                    text = program.title,
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.W800,
-                                )
-                                Text(
-                                    text = program.subtitle,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.movitColors.textSecondary,
-                                )
-                                MovitButton(
-                                    text = program.actionLabel,
-                                    onClick = { onEvent(MovitHomeEvent.ViewProgramClicked) },
-                                    variant = MovitButtonVariant.Outlined,
-                                    size = MovitButtonSize.Small,
-                                )
-                            }
-                        }
                     }
 
                     state.todayPlan?.let { plan ->
-                        MovitSectionHeader(
-                            title = movitText("home_todays_plan"),
-                            subtitle = movitText("home_today"),
+                        TodayPlanCard(
+                            todayPlan = plan,
+                            onStartPlan = {
+                                if (plan.opensAssessment) {
+                                    onEvent(MovitHomeEvent.BodyScanClicked)
+                                } else {
+                                    onEvent(MovitHomeEvent.StartTodayPlanClicked)
+                                }
+                            },
+                            showPrimaryAction = plan.showPrimaryAction,
                         )
-                        MovitCard(variant = MovitCardVariant.Outlined) {
-                            Column(
-                                modifier = Modifier.padding(MovitSpacing.lg),
-                                verticalArrangement = Arrangement.spacedBy(MovitSpacing.md),
-                            ) {
-                                Text(
-                                    text = plan.label,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.movitColors.textSecondary,
-                                    fontWeight = FontWeight.W700,
-                                )
-                                Text(
-                                    text = plan.title,
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.W800,
-                                )
-                                Text(
-                                    text = plan.subtitle,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.movitColors.textSecondary,
-                                )
-                                MovitButton(
-                                    text = plan.primaryActionLabel,
-                                    onClick = { onEvent(MovitHomeEvent.StartTodayPlanClicked) },
-                                    variant = MovitButtonVariant.Filled,
-                                    leadingIcon = Icons.Default.PlayArrow,
-                                )
-                                Text(
-                                    text = plan.statusLabel,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.movitColors.textSecondary,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    textAlign = TextAlign.Center,
-                                )
-                            }
-                        }
                     }
 
                     if (state.showBodyScanCta) {
+                        val scanA11y = movitText("home_a11y_body_scan")
                         MovitAccentBlock(
                             title = movitText("home_body_scan"),
                             subtitle = movitText("home_body_scan_subtitle"),
                             variant = MovitAccentVariant.Lime,
                             onClick = { onEvent(MovitHomeEvent.BodyScanClicked) },
+                            modifier = Modifier.semantics { contentDescription = scanA11y },
                             trailing = {
                                 MovitButton(
                                     text = movitText("home_start_scan"),
@@ -225,12 +175,16 @@ fun MovitHomeScreen(
                         )
                     }
 
+                    state.progress?.let { progress ->
+                        HomeProgressSection(progress = progress)
+                    }
+
                     if (state.journeyRows.isNotEmpty()) {
                         MovitSectionHeader(
                             title = movitText("home_your_journey"),
                             subtitle = movitText("home_progress"),
                             actionLabel = movitText("home_view_plan"),
-                            onActionClick = { onEvent(MovitHomeEvent.ViewProgramClicked) },
+                            onActionClick = { onEvent(MovitHomeEvent.ViewPlanClicked) },
                         )
                         MovitListGroup(
                             rows = state.journeyRows.map { row ->
@@ -243,16 +197,28 @@ fun MovitHomeScreen(
                                         } else {
                                             Icons.Default.CalendarMonth
                                         },
+                                        iconVariant = if (row.id == "timeline") {
+                                            MovitIconBoxVariant.Lime
+                                        } else {
+                                            MovitIconBoxVariant.Primary
+                                        },
                                         trailing = row.tag?.let {
                                             {
                                                 MovitTag(text = it, variant = MovitTagVariant.Coral)
                                             }
                                         },
                                         showChevron = true,
-                                        onClick = { onEvent(MovitHomeEvent.ViewProgramClicked) },
+                                        onClick = { onEvent(MovitHomeEvent.JourneyRowClicked(row.id)) },
                                     )
                                 }
                             },
+                        )
+                    }
+
+                    state.reportPreview?.let { preview ->
+                        HomeReportPreview(
+                            reportPreview = preview,
+                            onOpenReports = { onEvent(MovitHomeEvent.ReportsClicked) },
                         )
                     }
 
@@ -275,33 +241,55 @@ fun MovitHomeScreen(
                         }
                     }
 
-                    if (state.quickActions.isNotEmpty()) {
-                        MovitSectionHeader(title = movitText("home_quick_actions"))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
-                        ) {
-                            state.quickActions.take(2).forEach { action ->
-                                MovitCard(
-                                    modifier = Modifier.weight(1f),
-                                    variant = MovitCardVariant.Outlined,
-                                    onClick = { onEvent(MovitHomeEvent.QuickActionClicked(action.id)) },
-                                ) {
-                                    Column(
-                                        modifier = Modifier.padding(MovitSpacing.md),
-                                        verticalArrangement = Arrangement.spacedBy(MovitSpacing.xs),
-                                    ) {
-                                        Text(
-                                            text = action.label,
-                                            style = MaterialTheme.typography.titleSmall,
-                                            fontWeight = FontWeight.W700,
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    HomeQuickActions(
+                        actions = state.quickActions,
+                        onActionClick = { onEvent(MovitHomeEvent.QuickActionClicked(it)) },
+                    )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeActiveProgramSection(
+    program: HomeActiveProgramUi,
+    onViewProgram: () -> Unit,
+) {
+    val viewProgramA11y = movitText("home_a11y_view_program")
+    MovitSectionHeader(
+        title = movitText("home_active_program"),
+        subtitle = movitText("home_program"),
+    )
+    MovitCard(variant = MovitCardVariant.Outlined) {
+        Column(
+            modifier = Modifier.padding(MovitSpacing.lg),
+            verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
+        ) {
+            Text(
+                text = program.label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.movitColors.textSecondary,
+                fontWeight = FontWeight.W700,
+            )
+            Text(
+                text = program.title,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.W800,
+            )
+            Text(
+                text = program.subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.movitColors.textSecondary,
+            )
+            if (program.showViewAction) {
+                MovitButton(
+                    text = program.actionLabel,
+                    onClick = onViewProgram,
+                    variant = MovitButtonVariant.Outlined,
+                    size = MovitButtonSize.Small,
+                    modifier = Modifier.semantics { contentDescription = viewProgramA11y },
+                )
             }
         }
     }

@@ -85,5 +85,6 @@ data class ExploreExerciseDto(
     val categoryCode: String? = null,
     val categoryName: LocalizedNameDto? = null,
     val musclesCount: Int = 0,
+    val imageUrl: String? = null,
     val updatedAt: String = "",
 )

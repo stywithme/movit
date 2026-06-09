@@ -37,6 +37,8 @@ kotlin {
         commonTest.dependencies {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.core)
+            implementation(project(":core:network"))
+            implementation(project(":core:resources"))
         }
         androidUnitTest.dependencies {
             implementation(kotlin("test"))

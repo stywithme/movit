@@ -1,9 +1,12 @@
 package com.movit.designsystem.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -20,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -47,6 +51,8 @@ fun MovitSessionCard(
     actionLabel: String = "Start session",
     onActionClick: (() -> Unit)? = null,
     footerNote: String? = null,
+    thumbnailUrl: String? = null,
+    thumbnailLabel: String? = null,
     itemTrailing: (@Composable (index: Int, item: MovitSessionItem) -> Unit)? = null,
 ) {
     val movit = MaterialTheme.movitColors
@@ -59,11 +65,18 @@ fun MovitSessionCard(
                 .padding(MovitSpacing.lg),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Surface(
-                modifier = Modifier.size(9.dp),
-                shape = CircleShape,
-                color = if (isCompleted) movit.success else movit.textQuaternary,
-            ) {}
+            if (thumbnailUrl != null || thumbnailLabel != null) {
+                SessionThumbnail(
+                    label = thumbnailLabel ?: title.take(1).uppercase(),
+                    imageUrl = thumbnailUrl,
+                )
+            } else {
+                Surface(
+                    modifier = Modifier.size(9.dp),
+                    shape = CircleShape,
+                    color = if (isCompleted) movit.success else movit.textQuaternary,
+                ) {}
+            }
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -126,6 +139,35 @@ fun MovitSessionCard(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun SessionThumbnail(
+    label: String,
+    imageUrl: String?,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .size(48.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.primaryContainer),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.W800,
+            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.35f),
+            modifier = Modifier.align(Alignment.Center),
+        )
+        if (!imageUrl.isNullOrBlank()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+            )
         }
     }
 }

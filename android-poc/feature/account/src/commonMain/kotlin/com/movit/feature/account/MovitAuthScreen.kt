@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.MonitorHeart
@@ -34,6 +35,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -88,7 +91,7 @@ private fun AuthSplashPanel() {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = Icons.Default.FitnessCenter,
-                    contentDescription = null,
+                    contentDescription = movitText("auth_logo_content_desc"),
                     tint = MaterialTheme.colorScheme.onPrimary,
                 )
             }
@@ -151,7 +154,7 @@ private fun AuthIntroPanel(
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = icon,
-                    contentDescription = null,
+                    contentDescription = movitText("auth_intro_icon_desc"),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(40.dp),
                 )
@@ -171,7 +174,15 @@ private fun AuthIntroPanel(
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = MovitSpacing.sm),
         )
-        IntroDots(activeIndex = page, count = MovitAuthViewModel.INTRO_PAGE_COUNT)
+        IntroDots(
+            activeIndex = page,
+            count = MovitAuthViewModel.INTRO_PAGE_COUNT,
+            pageIndicatorDescription = movitText(
+                "auth_intro_page_indicator",
+                page + 1,
+                MovitAuthViewModel.INTRO_PAGE_COUNT,
+            ),
+        )
         MovitButton(
             text = movitText("auth_continue"),
             onClick = onContinue,
@@ -189,9 +200,15 @@ private fun AuthIntroPanel(
 }
 
 @Composable
-private fun IntroDots(activeIndex: Int, count: Int) {
+private fun IntroDots(
+    activeIndex: Int,
+    count: Int,
+    pageIndicatorDescription: String,
+) {
     Row(
-        modifier = Modifier.padding(top = MovitSpacing.xl),
+        modifier = Modifier
+            .padding(top = MovitSpacing.xl)
+            .semantics { contentDescription = pageIndicatorDescription },
         horizontalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
     ) {
         repeat(count) { index ->
@@ -222,7 +239,7 @@ private fun AuthLogoHeader(title: String, subtitle: String) {
         Box(contentAlignment = Alignment.Center) {
             Icon(
                 imageVector = Icons.Default.FitnessCenter,
-                contentDescription = null,
+                contentDescription = movitText("auth_logo_content_desc"),
                 tint = MaterialTheme.colorScheme.onPrimary,
             )
         }
@@ -300,7 +317,8 @@ private fun AuthSignInPanel(
         AuthDivider()
         MovitButton(
             text = movitText("auth_google"),
-            onClick = { onEvent(MovitAuthEvent.SignInClicked) },
+            onClick = { onEvent(MovitAuthEvent.GoogleSignInClicked) },
+            enabled = !state.isLoading,
             variant = MovitButtonVariant.Outlined,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -365,32 +383,86 @@ private fun AuthForgotPanel(
 ) {
     AuthFormScaffold(errorMessage = state.errorMessage) {
         Row(modifier = Modifier.fillMaxWidth()) {
-            TextButton(onClick = { onEvent(MovitAuthEvent.BackFromForgotClicked) }) {
+            TextButton(
+                onClick = { onEvent(MovitAuthEvent.BackFromForgotClicked) },
+                enabled = !state.isLoading,
+            ) {
                 Text(text = movitText("auth_back"))
             }
         }
+        if (state.forgotPasswordSent) {
+            AuthForgotSuccessPanel(onBackToSignIn = { onEvent(MovitAuthEvent.BackFromForgotClicked) })
+        } else {
+            Text(
+                text = movitText("auth_reset_password"),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.W800,
+            )
+            Text(
+                text = movitText("auth_reset_sub"),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.movitColors.textSecondary,
+                modifier = Modifier.padding(top = MovitSpacing.xs),
+            )
+            AuthTextField(
+                label = movitText("auth_email"),
+                value = state.email,
+                onValueChange = { onEvent(MovitAuthEvent.EmailChanged(it)) },
+                keyboardType = KeyboardType.Email,
+                modifier = Modifier.padding(top = MovitSpacing.xl),
+            )
+            MovitButton(
+                text = movitText("auth_send_reset"),
+                onClick = { onEvent(MovitAuthEvent.ForgotSubmitClicked) },
+                enabled = !state.isLoading,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = MovitSpacing.xl),
+            )
+        }
+    }
+}
+
+@Composable
+private fun AuthForgotSuccessPanel(onBackToSignIn: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = MovitSpacing.xl),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Surface(
+            modifier = Modifier.size(64.dp),
+            shape = RoundedCornerShape(MovitRadius.xl),
+            color = MaterialTheme.colorScheme.primaryContainer,
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Default.Email,
+                    contentDescription = movitText("auth_forgot_success_icon_desc"),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(32.dp),
+                )
+            }
+        }
         Text(
-            text = movitText("auth_reset_password"),
-            style = MaterialTheme.typography.headlineSmall,
+            text = movitText("auth_reset_sent"),
+            style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.W800,
+            color = MaterialTheme.colorScheme.primary,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = MovitSpacing.lg),
         )
         Text(
-            text = movitText("auth_reset_sub"),
+            text = movitText("auth_reset_sent_sub"),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.movitColors.textSecondary,
-            modifier = Modifier.padding(top = MovitSpacing.xs),
-        )
-        AuthTextField(
-            label = movitText("auth_email"),
-            value = state.email,
-            onValueChange = { onEvent(MovitAuthEvent.EmailChanged(it)) },
-            keyboardType = KeyboardType.Email,
-            modifier = Modifier.padding(top = MovitSpacing.xl),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = MovitSpacing.sm),
         )
         MovitButton(
-            text = movitText("auth_send_reset"),
-            onClick = { onEvent(MovitAuthEvent.ForgotSubmitClicked) },
-            enabled = !state.isLoading,
+            text = movitText("auth_back_to_sign_in"),
+            onClick = onBackToSignIn,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = MovitSpacing.xl),

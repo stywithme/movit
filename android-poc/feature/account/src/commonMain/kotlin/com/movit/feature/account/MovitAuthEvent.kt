@@ -6,6 +6,7 @@ sealed interface MovitAuthEvent {
     data object IntroSkipClicked : MovitAuthEvent
     data object SignInClicked : MovitAuthEvent
     data object SignUpClicked : MovitAuthEvent
+    data object GoogleSignInClicked : MovitAuthEvent
     data object CreateAccountClicked : MovitAuthEvent
     data object ForgotPasswordLinkClicked : MovitAuthEvent
     data object ForgotSubmitClicked : MovitAuthEvent

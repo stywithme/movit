@@ -6,6 +6,7 @@ import com.movit.core.network.dto.HomeStatsDto
 import com.movit.core.network.dto.TrainActiveProgramDto
 import com.movit.core.network.dto.TrainModeDto
 import com.movit.core.network.dto.TrainTodayWorkoutDto
+import com.movit.core.network.dto.RecentWorkoutDto
 import com.movit.core.network.dto.WeekProgressDto
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
@@ -65,6 +66,54 @@ class TrainApiMapperTest {
 
             assertEquals(TrainDashboardStatus.CompletedToday, dashboard.status)
             assertEquals(strings.viewReport, dashboard.today?.primaryActionLabel)
+        }
+    }
+
+    @Test
+    fun mapsWeekOptionsForActiveProgram() {
+        runBlocking {
+            val strings = TrainStrings.load("en")
+            val data = HomeDataDto(
+                trainMode = TrainModeDto(
+                    status = "active",
+                    activeProgram = TrainActiveProgramDto(
+                        id = "prog-1",
+                        name = mapOf("en" to "Full Body Plan"),
+                        weekNumber = 2,
+                        dayNumber = 3,
+                        totalWeeks = 4,
+                        weekProgress = WeekProgressDto(completed = 2, total = 5),
+                    ),
+                ),
+            )
+
+            val dashboard = TrainApiMapper.map(data, language = "en", strings = strings)
+
+            assertEquals(4, dashboard.weekOptions.size)
+            assertEquals("Week 2", dashboard.weekOptions[1].title)
+        }
+    }
+
+    @Test
+    fun mapsReportTrendDelta() {
+        runBlocking {
+            val strings = TrainStrings.load("en")
+            val data = HomeDataDto(
+                trainMode = TrainModeDto(status = "active"),
+                stats = HomeStatsDto(avgFormScore = 85f, streak = 2),
+                recentWorkouts = listOf(
+                    RecentWorkoutDto(
+                        formScore = 80,
+                        totalReps = 120,
+                        exerciseName = mapOf("en" to "Squat"),
+                    ),
+                ),
+            )
+
+            val dashboard = TrainApiMapper.map(data, language = "en", strings = strings)
+
+            assertNotNull(dashboard.report?.trendDeltaPercent)
+            assertTrue(dashboard.report?.trendChartPoints?.isNotEmpty() == true)
         }
     }
 

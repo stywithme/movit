@@ -20,14 +20,25 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.ui.unit.sp
+import kotlin.math.roundToInt
+import com.movit.designsystem.MovitRadius
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.components.MovitBarChart
 import com.movit.designsystem.components.MovitBarChartItem
@@ -159,23 +170,30 @@ private fun ReportPageDots(
             horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
             ReportDetailPage.entries.forEachIndexed { index, page ->
-                val label = when (page) {
-                    ReportDetailPage.Overview -> movitText("report_detail_page_overview")
-                    ReportDetailPage.Form -> movitText("report_detail_page_form")
-                    ReportDetailPage.Fatigue -> movitText("report_detail_page_fatigue")
-                    ReportDetailPage.Tips -> movitText("report_detail_page_tips")
-                }
+                val label = pageLabel(page)
+                val selected = index == selectedIndex
+                val tabDescription = movitText(
+                    "report_detail_page_a11y",
+                    label,
+                    index + 1,
+                    pageCount,
+                )
                 Text(
                     text = label,
                     style = MaterialTheme.typography.labelSmall,
-                    fontWeight = if (index == selectedIndex) FontWeight.W800 else FontWeight.W500,
-                    color = if (index == selectedIndex) {
+                    fontWeight = if (selected) FontWeight.W800 else FontWeight.W500,
+                    color = if (selected) {
                         MaterialTheme.colorScheme.primary
                     } else {
-                        MaterialTheme.movitColors.textTertiary
+                        movit.textTertiary
                     },
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
+                        .semantics {
+                            role = Role.Tab
+                            this.selected = selected
+                            contentDescription = tabDescription
+                        }
                         .clickable { onPageSelected(index) }
                         .padding(horizontal = MovitSpacing.xs, vertical = MovitSpacing.xs),
                     textAlign = TextAlign.Center,
@@ -186,15 +204,29 @@ private fun ReportPageDots(
 }
 
 @Composable
+private fun pageLabel(page: ReportDetailPage): String = when (page) {
+    ReportDetailPage.Overview -> movitText("report_detail_page_overview")
+    ReportDetailPage.Form -> movitText("report_detail_page_form")
+    ReportDetailPage.Fatigue -> movitText("report_detail_page_fatigue")
+    ReportDetailPage.Tips -> movitText("report_detail_page_tips")
+}
+
+@Composable
 private fun ReportOverviewPage(report: ReportDetailUi) {
     val movit = MaterialTheme.movitColors
+    val scoreDescription = movitText("report_detail_form_score_a11y", report.formScore)
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(MovitSpacing.lg),
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics(mergeDescendants = true) {
+                    heading()
+                    contentDescription = scoreDescription
+                },
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
@@ -205,7 +237,7 @@ private fun ReportOverviewPage(report: ReportDetailUi) {
             )
             Text(
                 text = report.formScore.toString(),
-                style = MaterialTheme.typography.displayLarge,
+                style = MaterialTheme.typography.displayLarge.copy(fontSize = 56.sp),
                 fontWeight = FontWeight.W800,
                 color = movit.success,
             )
@@ -231,16 +263,26 @@ private fun ReportOverviewPage(report: ReportDetailUi) {
 
 @Composable
 private fun ReportFormPage(report: ReportDetailUi) {
-    val movit = MaterialTheme.movitColors
     Column(verticalArrangement = Arrangement.spacedBy(MovitSpacing.lg)) {
         MovitSectionHeader(title = movitText("report_detail_joint_analysis"))
-        MovitCard(variant = MovitCardVariant.Filled) {
-            Column(
-                modifier = Modifier.padding(MovitSpacing.md),
-                verticalArrangement = Arrangement.spacedBy(MovitSpacing.md),
-            ) {
-                report.joints.forEach { joint ->
-                    JointScoreRow(joint = joint)
+        if (report.joints.isEmpty()) {
+            MovitCard(variant = MovitCardVariant.Filled) {
+                Text(
+                    text = movitText("report_detail_joints_unavailable"),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = movit.textSecondary,
+                    modifier = Modifier.padding(MovitSpacing.md),
+                )
+            }
+        } else {
+            MovitCard(variant = MovitCardVariant.Filled) {
+                Column(
+                    modifier = Modifier.padding(MovitSpacing.md),
+                    verticalArrangement = Arrangement.spacedBy(MovitSpacing.md),
+                ) {
+                    report.joints.forEach { joint ->
+                        JointScoreRow(joint = joint)
+                    }
                 }
             }
         }
@@ -250,31 +292,49 @@ private fun ReportFormPage(report: ReportDetailUi) {
             horizontalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
         ) {
             report.repCompare.forEach { compare ->
-                MovitCard(
-                    modifier = Modifier.weight(1f),
-                    variant = MovitCardVariant.Filled,
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(MovitSpacing.md),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text(
-                            text = compare.label,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = movit.textSecondary,
-                        )
-                        Text(
-                            text = compare.score.toString(),
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.W800,
-                            color = if (compare.isBest) movit.success else MaterialTheme.colorScheme.tertiary,
-                            modifier = Modifier.padding(top = MovitSpacing.xs),
-                        )
-                    }
-                }
+                RepCompareCard(compare = compare)
             }
+        }
+    }
+}
+
+@Composable
+private fun RowScope.RepCompareCard(compare: ReportRepCompareUi) {
+    val movit = MaterialTheme.movitColors
+    val background = if (compare.isBest) movit.successTint else movit.coralTint
+    val scoreColor = if (compare.isBest) movit.success else MaterialTheme.colorScheme.tertiary
+    val compareDescription = movitText(
+        "report_detail_rep_compare_a11y",
+        compare.label,
+        compare.score,
+    )
+    Surface(
+        modifier = Modifier
+            .weight(1f)
+            .semantics(mergeDescendants = true) {
+                contentDescription = compareDescription
+            },
+        shape = RoundedCornerShape(MovitRadius.xl),
+        color = background,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(MovitSpacing.md),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = compare.label,
+                style = MaterialTheme.typography.labelSmall,
+                color = movit.textSecondary,
+            )
+            Text(
+                text = compare.score.toString(),
+                style = MaterialTheme.typography.headlineMedium.copy(fontSize = 28.sp),
+                fontWeight = FontWeight.W800,
+                color = scoreColor,
+                modifier = Modifier.padding(top = MovitSpacing.xs),
+            )
         }
     }
 }
@@ -282,13 +342,22 @@ private fun ReportFormPage(report: ReportDetailUi) {
 @Composable
 private fun JointScoreRow(joint: ReportJointScoreUi) {
     val movit = MaterialTheme.movitColors
+    val jointDescription = movitText(
+        "report_detail_joint_score_a11y",
+        joint.label,
+        joint.scorePercent,
+    )
     val barColor = when (joint.tone) {
         ReportScoreTone.Success -> movit.success
         ReportScoreTone.Primary -> MaterialTheme.colorScheme.primary
         ReportScoreTone.Warning -> movit.warning
     }
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                contentDescription = jointDescription
+            },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
     ) {
@@ -315,10 +384,21 @@ private fun JointScoreRow(joint: ReportJointScoreUi) {
 @Composable
 private fun ReportFatiguePage(report: ReportDetailUi) {
     val movit = MaterialTheme.movitColors
+    val fatigueDescription = movitText(
+        "report_detail_fatigue_a11y",
+        report.fatigueTitle,
+        report.fatigueProgressPercent,
+    )
     Column(verticalArrangement = Arrangement.spacedBy(MovitSpacing.lg)) {
         MovitSectionHeader(title = movitText("report_detail_control_fatigue"))
         MovitCard(variant = MovitCardVariant.Filled) {
-            Column(modifier = Modifier.padding(MovitSpacing.lg)) {
+            Column(
+                modifier = Modifier
+                    .padding(MovitSpacing.lg)
+                    .semantics(mergeDescendants = true) {
+                        contentDescription = fatigueDescription
+                    },
+            ) {
                 Text(
                     text = report.fatigueLabel,
                     style = MaterialTheme.typography.labelSmall,
@@ -327,7 +407,7 @@ private fun ReportFatiguePage(report: ReportDetailUi) {
                 )
                 Text(
                     text = report.fatigueTitle,
-                    style = MaterialTheme.typography.headlineMedium,
+                    style = MaterialTheme.typography.headlineMedium.copy(fontSize = 32.sp),
                     fontWeight = FontWeight.W800,
                     color = MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier.padding(top = MovitSpacing.xs),
@@ -352,17 +432,35 @@ private fun ReportFatiguePage(report: ReportDetailUi) {
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.W800,
                 )
+                val chartItems = report.formBySetValues.mapIndexed { index, value ->
+                    val label = report.formBySetLabels.getOrElse(index) {
+                        movitText("report_detail_set_short", index + 1)
+                    }
+                    MovitBarChartItem(
+                        value = value,
+                        label = label,
+                        highlighted = value == report.formBySetValues.maxOrNull(),
+                    )
+                }
+                val chartDescription = buildString {
+                    append(movitText("report_detail_form_by_set_a11y"))
+                    append(": ")
+                    append(
+                        chartItems.joinToString(", ") { item ->
+                            movitText(
+                                "report_detail_set_score_a11y",
+                                item.label,
+                                item.value.roundToInt(),
+                            )
+                        },
+                    )
+                }
                 MovitBarChart(
-                    items = report.formBySetValues.mapIndexed { index, value ->
-                        MovitBarChartItem(
-                            value = value,
-                            label = report.formBySetLabels.getOrElse(index) {
-                                movitText("report_detail_set_short", index + 1)
-                            },
-                            highlighted = value == report.formBySetValues.maxOrNull(),
-                        )
-                    },
-                    modifier = Modifier.padding(top = MovitSpacing.md),
+                    items = chartItems,
+                    modifier = Modifier
+                        .padding(top = MovitSpacing.md)
+                        .semantics { contentDescription = chartDescription },
+                    highlightColor = movit.success,
                 )
             }
         }

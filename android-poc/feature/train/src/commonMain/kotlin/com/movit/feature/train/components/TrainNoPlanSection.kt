@@ -6,24 +6,23 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.movit.designsystem.MovitSpacing
+import com.movit.designsystem.components.MovitButton
+import com.movit.designsystem.components.MovitButtonVariant
 import com.movit.designsystem.components.MovitMediaCard
-import com.movit.designsystem.components.MovitSectionHeader
+import com.movit.feature.train.TrainFeaturedProgramUi
 import com.movit.resources.movitText
 
 @Composable
 fun TrainNoPlanSection(
-    programs: List<com.movit.feature.train.TrainFeaturedProgramUi>,
+    programs: List<TrainFeaturedProgramUi>,
     onExplorePrograms: () -> Unit,
+    onStartProgram: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(MovitSpacing.md),
     ) {
-        MovitSectionHeader(
-            title = movitText("train_featured_programs"),
-            subtitle = movitText("train_featured_subtitle"),
-        )
         if (programs.isEmpty()) {
             MovitMediaCard(
                 title = movitText("train_browse_programs"),
@@ -32,14 +31,17 @@ fun TrainNoPlanSection(
                 metadata = movitText("train_browse_metadata").split(" · "),
                 onClick = onExplorePrograms,
             )
+            MovitButton(
+                text = movitText("train_start_program"),
+                onClick = onExplorePrograms,
+                variant = MovitButtonVariant.Filled,
+                modifier = Modifier.fillMaxWidth(),
+            )
         } else {
             programs.forEach { program ->
-                MovitMediaCard(
-                    title = program.title,
-                    subtitle = program.subtitle,
-                    badge = program.badge,
-                    metadata = program.metadata,
-                    onClick = onExplorePrograms,
+                TrainFeaturedProgramCard(
+                    program = program,
+                    onStartProgram = { onStartProgram(program.id) },
                 )
             }
         }

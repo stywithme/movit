@@ -106,6 +106,9 @@ data class HomeStrings(
     suspend fun reportReps(reps: Int): String =
         localizedString(language, "home_report_reps", reps)
 
+    suspend fun timelineSummary(completed: Int, active: Int, upcoming: Int): String =
+        localizedString(language, "home_timeline_summary", completed, active, upcoming)
+
     companion object {
         suspend fun load(language: String): HomeStrings = HomeStrings(
             language = language,

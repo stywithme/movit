@@ -16,7 +16,12 @@ class SharedProfileRepository(
             return AppResult.Failure("Sign in to load your profile.")
         }
         return when (val result = MovitData.account.fetchProfile()) {
-            is AppResult.Success -> AppResult.Success(ProfileApiMapper.map(result.value))
+            is AppResult.Success -> AppResult.Success(
+                ProfileApiMapper.map(
+                    user = result.value,
+                    themeMode = platform.themeMode(),
+                ),
+            )
             is AppResult.Failure -> fallback.loadProfile()
         }
     }
@@ -32,6 +37,7 @@ class SharedProfileRepository(
         if (!MovitData.isInstalled) {
             return fallback.updateSettings(update)
         }
+        val platform = MovitData.requirePlatform()
         return when (
             val result = MovitData.account.updateSettings(
                 preferredLanguage = update.preferredLanguage,
@@ -39,8 +45,25 @@ class SharedProfileRepository(
                 notifications = update.notifications,
             )
         ) {
-            is AppResult.Success -> AppResult.Success(ProfileApiMapper.map(result.value))
+            is AppResult.Success -> {
+                update.preferredLanguage?.let(platform::applyPreferredLanguage)
+                AppResult.Success(
+                    ProfileApiMapper.map(
+                        user = result.value,
+                        themeMode = platform.themeMode(),
+                    ),
+                )
+            }
             is AppResult.Failure -> AppResult.Failure(result.message)
         }
+    }
+
+    override suspend fun setThemeMode(mode: String): AppResult<ProfileUi> {
+        if (!MovitData.isInstalled) {
+            return fallback.setThemeMode(mode)
+        }
+        val platform = MovitData.requirePlatform()
+        platform.setThemeMode(mode)
+        return loadProfile()
     }
 }

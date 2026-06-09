@@ -14,6 +14,7 @@ data class ExerciseCatalogEntry(
     val serverId: String,
     val name: String,
     val category: String,
+    val imageUrl: String? = null,
 )
 
 object WorkoutSessionApiMapper {
@@ -21,17 +22,50 @@ object WorkoutSessionApiMapper {
     fun buildExerciseCatalog(
         explore: ExploreDataDto?,
         language: String,
+        imageUrlForSlug: (String) -> String? = { null },
     ): Pair<Map<String, ExerciseCatalogEntry>, Map<String, ExerciseCatalogEntry>> {
         val bySlug = mutableMapOf<String, ExerciseCatalogEntry>()
         val byId = mutableMapOf<String, ExerciseCatalogEntry>()
         explore?.exercises.orEmpty().forEach { exercise ->
-            val entry = exercise.toCatalogEntry(language)
+            val entry = exercise.toCatalogEntry(language, imageUrlForSlug)
             bySlug[entry.slug] = entry
             if (entry.serverId.isNotBlank()) {
                 byId[entry.serverId] = entry
             }
         }
         return bySlug to byId
+    }
+
+    fun listExerciseCandidates(
+        explore: ExploreDataDto?,
+        language: String,
+        query: String,
+        excludingSlug: String? = null,
+        imageUrlForSlug: (String) -> String? = { null },
+        limit: Int = 24,
+    ): List<SessionSwapCandidateUi> {
+        val (bySlug, _) = buildExerciseCatalog(explore, language, imageUrlForSlug)
+        return bySlug.values
+            .asSequence()
+            .filter { it.slug.isNotBlank() && it.slug != excludingSlug }
+            .filter { entry ->
+                if (query.isBlank()) true
+                else {
+                    entry.name.contains(query, ignoreCase = true) ||
+                        entry.slug.contains(query, ignoreCase = true) ||
+                        entry.category.contains(query, ignoreCase = true)
+                }
+            }
+            .take(limit)
+            .map { entry ->
+                SessionSwapCandidateUi(
+                    slug = entry.slug,
+                    name = entry.name,
+                    subtitle = entry.category,
+                    imageUrl = entry.imageUrl,
+                )
+            }
+            .toList()
     }
 
     suspend fun mapSession(
@@ -182,6 +216,7 @@ object WorkoutSessionApiMapper {
             index = index,
             name = catalog?.name ?: slug.ifBlank { strings.exerciseFallback },
             category = catalog?.category.orEmpty(),
+            imageUrl = catalog?.imageUrl,
             sets = sets,
             reps = reps,
             durationSeconds = durationSeconds,
@@ -201,14 +236,19 @@ object WorkoutSessionApiMapper {
         else -> "OTHER"
     }
 
-    private fun ExploreExerciseDto.toCatalogEntry(language: String): ExerciseCatalogEntry {
+    private fun ExploreExerciseDto.toCatalogEntry(
+        language: String,
+        imageUrlForSlug: (String) -> String?,
+    ): ExerciseCatalogEntry {
+        val resolvedSlug = slug.ifBlank { id }
         val category = categoryName?.localized(language)?.takeIf { it.isNotBlank() }
             ?: categoryCode.orEmpty()
         return ExerciseCatalogEntry(
-            slug = slug.ifBlank { id },
+            slug = resolvedSlug,
             serverId = id,
             name = name.localized(language).ifBlank { slug },
             category = category,
+            imageUrl = imageUrlForSlug(resolvedSlug),
         )
     }
 

@@ -48,6 +48,7 @@ data class ReportsDashboardUi(
     val weeklyBarLabels: List<String> = emptyList(),
     val exercises: List<ReportExerciseUi> = emptyList(),
     val trendInsight: ReportInsightUi? = null,
+    val improvementRatePercent: Float? = null,
     val volumeBarValues: List<Float> = emptyList(),
     val volumeBarLabels: List<String> = emptyList(),
     val fatigueIndex: ReportFatigueUi? = null,

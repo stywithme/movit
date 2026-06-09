@@ -96,6 +96,34 @@ class MovitAppShellStateTest {
     }
 
     @Test
+    fun exploreOpenWorkoutSession_pushesWorkoutSessionInnerRoute() {
+        val viewModel = MovitAppShellViewModel()
+        viewModel.onEvent(
+            MovitAppShellEvent.ExploreEffectReceived(
+                MovitExploreEffect.OpenWorkoutSession("workout-lower-body"),
+            ),
+        )
+        assertEquals(
+            MovitInnerRoute.WorkoutSession("workout-lower-body"),
+            viewModel.state.value.currentInnerRoute,
+        )
+    }
+
+    @Test
+    fun exploreOpenExercisePrepare_pushesExercisePrepareInnerRoute() {
+        val viewModel = MovitAppShellViewModel()
+        viewModel.onEvent(
+            MovitAppShellEvent.ExploreEffectReceived(
+                MovitExploreEffect.OpenExercisePrepare("ex-squat"),
+            ),
+        )
+        assertEquals(
+            MovitInnerRoute.ExercisePrepare("ex-squat"),
+            viewModel.state.value.currentInnerRoute,
+        )
+    }
+
+    @Test
     fun reportsOpenReportDetail_pushesInnerRoute() {
         val viewModel = MovitAppShellViewModel()
         viewModel.onEvent(

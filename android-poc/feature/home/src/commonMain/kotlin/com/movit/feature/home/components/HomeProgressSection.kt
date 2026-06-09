@@ -11,6 +11,7 @@ import com.movit.designsystem.components.MovitStatTileData
 import com.movit.designsystem.components.MovitStatTileRow
 import com.movit.feature.home.HomeProgressUi
 import com.movit.feature.home.HomeSummaryCalculator
+import com.movit.resources.movitText
 
 @Composable
 fun HomeProgressSection(
@@ -22,8 +23,8 @@ fun HomeProgressSection(
         verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
     ) {
         MovitSectionHeader(
-            title = "Your progress",
-            subtitle = "Journey",
+            title = movitText("home_weekly_overview"),
+            subtitle = movitText("home_progress"),
         )
         MovitStatTileRow(
             stats = listOf(
@@ -31,15 +32,15 @@ fun HomeProgressSection(
                     value = HomeSummaryCalculator.weeklyCompletionLabel(
                         progress.weeklyCompletionPercent,
                     ),
-                    label = "This week",
+                    label = movitText("home_weekly_completion"),
                 ),
                 MovitStatTileData(
                     value = progress.formScoreLabel,
-                    label = "Form avg",
+                    label = movitText("home_metric_form_avg"),
                 ),
                 MovitStatTileData(
                     value = progress.streakDays.toString(),
-                    label = "Day streak",
+                    label = movitText("home_metric_streak"),
                 ),
             ),
         )
@@ -47,7 +48,7 @@ fun HomeProgressSection(
             stats = listOf(
                 MovitStatTileData(
                     value = progress.activeMinutesLabel,
-                    label = "Active minutes",
+                    label = movitText("home_active_minutes"),
                 ),
             ),
         )

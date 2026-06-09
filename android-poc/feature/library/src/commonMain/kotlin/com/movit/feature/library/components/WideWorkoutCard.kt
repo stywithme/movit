@@ -1,8 +1,6 @@
 package com.movit.feature.library.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,14 +13,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.components.MovitCard
 import com.movit.designsystem.components.MovitCardVariant
 import com.movit.designsystem.components.MovitTag
-import com.movit.designsystem.components.MovitTagVariant
 import com.movit.designsystem.movitColors
 import com.movit.feature.explore.ExploreItemUi
+import com.movit.feature.library.resolveLibraryBadge
 
 @Composable
 fun WideWorkoutCard(
@@ -30,7 +29,11 @@ fun WideWorkoutCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     featured: Boolean = false,
+    imageContentDescription: String? = null,
+    featuredLabel: String? = null,
 ) {
+    val focusBadge = item.resolveLibraryBadge(featured = featured)
+    val levelTag = item.metadata.lastOrNull()
     MovitCard(
         modifier = modifier.fillMaxWidth(),
         variant = MovitCardVariant.Filled,
@@ -41,28 +44,26 @@ fun WideWorkoutCard(
             horizontalArrangement = Arrangement.spacedBy(MovitSpacing.md),
             verticalAlignment = Alignment.Top,
         ) {
-            Box(
+            LibraryMediaImage(
+                imageUrl = item.imageUrl,
+                contentDescription = imageContentDescription ?: item.title,
+                fallbackLabel = item.title.take(1).uppercase(),
                 modifier = Modifier
                     .width(96.dp)
-                    .height(96.dp)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = item.title.take(1).uppercase(),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.W800,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-            }
+                    .height(96.dp),
+            )
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(MovitSpacing.xs),
             ) {
-                if (featured || item.badge != null) {
+                focusBadge?.let {
                     MovitTag(
-                        text = item.badge ?: "Featured",
-                        variant = if (featured) MovitTagVariant.Lime else MovitTagVariant.Blue,
+                        text = when {
+                            featured && featuredLabel != null -> featuredLabel
+                            item.focusLabel != null -> item.focusLabel
+                            else -> it.text
+                        },
+                        variant = it.variant,
                     )
                 }
                 Row(
@@ -74,22 +75,32 @@ fun WideWorkoutCard(
                         text = item.title,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.W800,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),
                     )
-                    item.metadata.lastOrNull()?.let {
-                        MovitTag(text = it, variant = MovitTagVariant.Blue)
+                    levelTag?.let {
+                        MovitTag(text = it, variant = com.movit.designsystem.components.MovitTagVariant.Blue)
                     }
                 }
                 Text(
                     text = item.subtitle,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.movitColors.textSecondary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                 )
-                Text(
-                    text = item.metadata.joinToString(" · "),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.movitColors.textSecondary,
-                )
+                if (item.metadata.isNotEmpty()) {
+                    Text(
+                        text = item.metadata.dropLast(1).joinToString(" · ").ifBlank {
+                            item.metadata.joinToString(" · ")
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.movitColors.textSecondary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
     }

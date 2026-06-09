@@ -64,6 +64,14 @@ class WorkoutSessionViewModel(
         openEditSheet(exerciseId)
     }
 
+    fun onRestClick(restId: String) {
+        if (!_state.value.isEditMode) return
+        val rest = findRest(restId) ?: return
+        _state.update {
+            it.copy(activeSheet = SessionSheet.EditRest(restId = restId, durationSeconds = rest.durationSeconds))
+        }
+    }
+
     fun openSwapSheet(exerciseId: String) {
         val exercise = findExercise(exerciseId) ?: return
         _state.update {
@@ -80,12 +88,38 @@ class WorkoutSessionViewModel(
         viewModelScope.launch { refreshSwapCandidates(exerciseId, "") }
     }
 
+    fun openAddExerciseSheet() {
+        val sectionRole = _state.value.session
+            ?.sections
+            ?.lastOrNull { it.phaseRole == "MAIN" }
+            ?.phaseRole
+            ?: _state.value.session?.sections?.lastOrNull()?.phaseRole
+            ?: "MAIN"
+        _state.update {
+            it.copy(
+                activeSheet = SessionSheet.AddExercise(
+                    sectionPhaseRole = sectionRole,
+                    isLoadingCandidates = true,
+                ),
+            )
+        }
+        viewModelScope.launch { refreshAddCandidates("") }
+    }
+
     fun onSwapQueryChange(query: String) {
         val sheet = _state.value.activeSheet as? SessionSheet.Swap ?: return
         _state.update {
             it.copy(activeSheet = sheet.copy(query = query, isLoadingCandidates = true))
         }
         viewModelScope.launch { refreshSwapCandidates(sheet.exerciseId, query) }
+    }
+
+    fun onAddExerciseQueryChange(query: String) {
+        val sheet = _state.value.activeSheet as? SessionSheet.AddExercise ?: return
+        _state.update {
+            it.copy(activeSheet = sheet.copy(query = query, isLoadingCandidates = true))
+        }
+        viewModelScope.launch { refreshAddCandidates(query) }
     }
 
     fun selectSwapCandidate(slug: String) {
@@ -101,6 +135,7 @@ class WorkoutSessionViewModel(
                                     exerciseSlug = slug,
                                     name = candidate.name,
                                     category = candidate.subtitle.substringBefore(" ·").ifBlank { block.category },
+                                    imageUrl = candidate.imageUrl ?: block.imageUrl,
                                 )
                             } else {
                                 block
@@ -109,6 +144,37 @@ class WorkoutSessionViewModel(
                     )
                 },
             ).recalculated()
+        }
+        dismissSheet()
+    }
+
+    fun selectAddExerciseCandidate(slug: String) {
+        val sheet = _state.value.activeSheet as? SessionSheet.AddExercise ?: return
+        val candidate = sheet.candidates.firstOrNull { it.slug == slug } ?: return
+        val newId = "ex-new-${Random.nextLong()}"
+        updateSession { session ->
+            val sectionIndex = session.sections.indexOfLast { it.phaseRole == sheet.sectionPhaseRole }
+                .takeIf { it >= 0 } ?: session.sections.lastIndex
+            if (sectionIndex < 0) return@updateSession session
+            val section = session.sections[sectionIndex]
+            val nextIndex = section.items.count { it is WorkoutSessionBlockUi.Exercise } + 1
+            val newExercise = WorkoutSessionBlockUi.Exercise(
+                id = newId,
+                exerciseSlug = slug,
+                index = nextIndex,
+                name = candidate.name,
+                category = candidate.subtitle,
+                imageUrl = candidate.imageUrl,
+                sets = 3,
+                reps = 12,
+                restSeconds = 60,
+                setsLabel = "3 × 12",
+                restLabel = "60s rest",
+                phaseRole = section.phaseRole,
+            )
+            val updatedSections = session.sections.toMutableList()
+            updatedSections[sectionIndex] = section.copy(items = section.items + newExercise)
+            session.copy(sections = updatedSections).recalculated()
         }
         dismissSheet()
     }
@@ -138,6 +204,13 @@ class WorkoutSessionViewModel(
         }
     }
 
+    fun updateRestDuration(seconds: Int) {
+        val sheet = _state.value.activeSheet as? SessionSheet.EditRest ?: return
+        _state.update {
+            it.copy(activeSheet = sheet.copy(durationSeconds = seconds.coerceAtLeast(5)))
+        }
+    }
+
     fun saveEditDetails() {
         val sheet = _state.value.activeSheet as? SessionSheet.EditDetails ?: return
         updateSession { session ->
@@ -164,24 +237,62 @@ class WorkoutSessionViewModel(
         dismissSheet()
     }
 
-    fun deleteExercise(exerciseId: String) {
+    fun saveRestEdit() {
+        val sheet = _state.value.activeSheet as? SessionSheet.EditRest ?: return
         updateSession { session ->
             session.copy(
                 sections = session.sections.map { section ->
                     section.copy(
-                        items = section.items.filterNot {
-                            it is WorkoutSessionBlockUi.Exercise && it.id == exerciseId
+                        items = section.items.map { block ->
+                            if (block is WorkoutSessionBlockUi.Rest && block.id == sheet.restId) {
+                                block.copy(
+                                    durationSeconds = sheet.durationSeconds,
+                                    durationLabel = WorkoutSessionFormatting.restDurationLabel(sheet.durationSeconds),
+                                )
+                            } else {
+                                block
+                            }
                         },
                     )
-                }.map { section ->
-                    reindexSection(section)
+                },
+            )
+        }
+        dismissSheet()
+    }
+
+    fun deleteExercise(exerciseId: String) {
+        deleteBlock(exerciseId)
+    }
+
+    fun deleteBlock(blockId: String) {
+        updateSession { session ->
+            session.copy(
+                sections = session.sections.map { section ->
+                    reindexSection(
+                        section.copy(items = section.items.filterNot { it.id == blockId }),
+                    )
                 },
             ).recalculated()
         }
-        if ((_state.value.activeSheet as? SessionSheet.Swap)?.exerciseId == exerciseId ||
-            (_state.value.activeSheet as? SessionSheet.EditDetails)?.exerciseId == exerciseId
-        ) {
-            dismissSheet()
+        dismissSheetIfTargeting(blockId)
+    }
+
+    fun moveBlock(sectionPhaseRole: String, blockId: String, delta: Int) {
+        if (delta == 0) return
+        updateSession { session ->
+            val sectionIndex = session.sections.indexOfFirst { it.phaseRole == sectionPhaseRole }
+            if (sectionIndex < 0) return@updateSession session
+            val section = session.sections[sectionIndex]
+            val fromIndex = section.items.indexOfFirst { it.id == blockId }
+            if (fromIndex < 0) return@updateSession session
+            val toIndex = (fromIndex + delta).coerceIn(0, section.items.lastIndex)
+            if (fromIndex == toIndex) return@updateSession session
+            val items = section.items.toMutableList()
+            val moved = items.removeAt(fromIndex)
+            items.add(toIndex, moved)
+            val updatedSections = session.sections.toMutableList()
+            updatedSections[sectionIndex] = reindexSection(section.copy(items = items))
+            session.copy(sections = updatedSections).recalculated()
         }
     }
 
@@ -190,6 +301,7 @@ class WorkoutSessionViewModel(
         updateSession { session ->
             val mainIndex = session.sections.indexOfLast { it.phaseRole == "MAIN" }
                 .takeIf { it >= 0 } ?: session.sections.lastIndex
+            if (mainIndex < 0) return@updateSession session
             val updatedSections = session.sections.toMutableList()
             val target = updatedSections[mainIndex]
             updatedSections[mainIndex] = target.copy(
@@ -228,6 +340,20 @@ class WorkoutSessionViewModel(
         }
     }
 
+    private suspend fun refreshAddCandidates(query: String) {
+        val candidates = repository.findAddExerciseCandidates(query)
+        _state.update { state ->
+            val current = state.activeSheet as? SessionSheet.AddExercise ?: return@update state
+            state.copy(
+                activeSheet = current.copy(
+                    query = query,
+                    candidates = candidates,
+                    isLoadingCandidates = false,
+                ),
+            )
+        }
+    }
+
     private suspend fun persistSession() {
         val session = _state.value.session ?: return
         if (session.context == null) return
@@ -253,6 +379,23 @@ class WorkoutSessionViewModel(
             ?.flatMap { it.items }
             ?.filterIsInstance<WorkoutSessionBlockUi.Exercise>()
             ?.firstOrNull { it.id == exerciseId }
+    }
+
+    private fun findRest(restId: String): WorkoutSessionBlockUi.Rest? {
+        return _state.value.session
+            ?.sections
+            ?.flatMap { it.items }
+            ?.filterIsInstance<WorkoutSessionBlockUi.Rest>()
+            ?.firstOrNull { it.id == restId }
+    }
+
+    private fun dismissSheetIfTargeting(blockId: String) {
+        when (val sheet = _state.value.activeSheet) {
+            is SessionSheet.Swap -> if (sheet.exerciseId == blockId) dismissSheet()
+            is SessionSheet.EditDetails -> if (sheet.exerciseId == blockId) dismissSheet()
+            is SessionSheet.EditRest -> if (sheet.restId == blockId) dismissSheet()
+            else -> Unit
+        }
     }
 
     private fun reindexSection(section: WorkoutSessionSectionUi): WorkoutSessionSectionUi {

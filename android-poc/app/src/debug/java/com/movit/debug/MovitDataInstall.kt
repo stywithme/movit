@@ -1,12 +1,16 @@
 package com.movit.debug
 
 import android.content.Context
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import com.movit.core.data.MovitData
 import com.movit.core.data.platform.AuthSessionSnapshot
 import com.movit.core.data.platform.MovitPlatformBindings
 import com.trainingvalidator.poc.network.ApiConfig
 import com.trainingvalidator.poc.storage.AuthManager
+import com.trainingvalidator.poc.storage.ExerciseRepository
 import com.trainingvalidator.poc.storage.ProgramRepository
+import com.trainingvalidator.poc.ui.theme.AppThemeManager
 
 object MovitDataInstall {
 
@@ -19,7 +23,7 @@ object MovitDataInstall {
                 override fun authHeader(): String? = AuthManager.getAuthHeader(appContext)
 
                 override fun preferredLanguage(): String =
-                    appContext.resources.configuration.locales[0]?.language ?: "en"
+                    AuthManager.getLanguage(appContext)
 
                 override fun userDisplayName(fallback: String): String =
                     AuthManager.getUserName(appContext, fallback)
@@ -48,6 +52,9 @@ object MovitDataInstall {
                         .getActiveUserProgramExport()
                         ?.takeIf { it.isActive }
                         ?.id
+
+                override fun exerciseImageUrl(slug: String): String? =
+                    ExerciseRepository.getInstance(appContext).getExercise(slug)?.imageUrl
 
                 override fun userEmail(): String? =
                     AuthManager.getUserEmail(appContext).takeIf { it.isNotBlank() }
@@ -119,6 +126,19 @@ object MovitDataInstall {
                         preferredLanguage = preferredLanguage,
                         voiceFeedback = voiceFeedback,
                         notifications = notifications,
+                    )
+                }
+
+                override fun themeMode(): String = AppThemeManager.getMode(appContext)
+
+                override fun setThemeMode(mode: String) {
+                    AppThemeManager.setMode(appContext, mode)
+                }
+
+                override fun applyPreferredLanguage(languageCode: String) {
+                    val localeTag = if (languageCode.lowercase() == "ar") "ar" else "en"
+                    AppCompatDelegate.setApplicationLocales(
+                        LocaleListCompat.forLanguageTags(localeTag),
                     )
                 }
             },

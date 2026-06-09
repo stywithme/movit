@@ -1,17 +1,25 @@
 package com.movit.core.data.platform
 
+import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSUserDefaults
+import platform.posix.time
 
+@OptIn(ExperimentalForeignApi::class)
 class IosMovitPlatform(
     private val defaults: NSUserDefaults = NSUserDefaults.standardUserDefaults,
     private val baseUrl: String = DEFAULT_BASE_URL,
+    private val secureSession: SecureSessionStore = IosKeychainSecureSessionStore(),
 ) : MovitPlatformBindings {
+
+    init {
+        migrateLegacyTokensFromDefaults()
+    }
 
     override fun apiBaseUrl(): String =
         defaults.stringForKey(KEY_API_BASE_URL)?.takeIf { it.isNotBlank() } ?: baseUrl
 
     override fun authHeader(): String? {
-        val token = defaults.stringForKey(KEY_ACCESS_TOKEN)?.takeIf { it.isNotBlank() } ?: return null
+        val token = secureSession.readAccessToken() ?: return null
         return if (token.startsWith("Bearer ")) token else "Bearer $token"
     }
 
@@ -43,8 +51,7 @@ class IosMovitPlatform(
     override fun userAvatarUrl(): String? =
         defaults.stringForKey(KEY_AVATAR_URL)?.takeIf { it.isNotBlank() }
 
-    override fun refreshToken(): String? =
-        defaults.stringForKey(KEY_REFRESH_TOKEN)?.takeIf { it.isNotBlank() }
+    override fun refreshToken(): String? = secureSession.readRefreshToken()
 
     override fun isOnboardingCompleted(): Boolean =
         defaults.boolForKey(KEY_ONBOARDING_COMPLETED)
@@ -65,8 +72,18 @@ class IosMovitPlatform(
         defaults.boolForKey(KEY_NOTIFICATIONS)
 
     override fun persistAuthSession(snapshot: AuthSessionSnapshot) {
-        defaults.setObject(snapshot.accessToken, KEY_ACCESS_TOKEN)
-        defaults.setObject(snapshot.refreshToken, KEY_REFRESH_TOKEN)
+        val expiresAt = if (snapshot.expiresInSeconds > 0) {
+            time(null) * 1000L + snapshot.expiresInSeconds * 1000L
+        } else {
+            secureSession.readExpiresAtEpochMs()
+        }
+        secureSession.saveTokens(
+            SecureAuthTokens(
+                accessToken = snapshot.accessToken,
+                refreshToken = snapshot.refreshToken,
+                expiresAtEpochMs = expiresAt,
+            ),
+        )
         defaults.setObject(snapshot.name, KEY_USER_NAME)
         defaults.setObject(snapshot.email, KEY_USER_EMAIL)
         snapshot.avatarUrl?.let { defaults.setObject(it, KEY_AVATAR_URL) }
@@ -78,11 +95,12 @@ class IosMovitPlatform(
         snapshot.subscriptionExpiry?.let { defaults.setObject(it, KEY_SUBSCRIPTION_EXPIRY) }
         defaults.setBool(snapshot.voiceFeedback, KEY_VOICE_FEEDBACK)
         defaults.setBool(snapshot.notifications, KEY_NOTIFICATIONS)
+        clearLegacyTokenKeysFromDefaults()
     }
 
     override fun clearAuthSession() {
-        defaults.removeObjectForKey(KEY_ACCESS_TOKEN)
-        defaults.removeObjectForKey(KEY_REFRESH_TOKEN)
+        secureSession.clearTokens()
+        clearLegacyTokenKeysFromDefaults()
         defaults.removeObjectForKey(KEY_USER_EMAIL)
         defaults.removeObjectForKey(KEY_AVATAR_URL)
         defaults.removeObjectForKey(KEY_SUBSCRIPTION_EXPIRY)
@@ -104,13 +122,44 @@ class IosMovitPlatform(
         notifications?.let { defaults.setBool(it, KEY_NOTIFICATIONS) }
     }
 
+    override fun themeMode(): String =
+        defaults.stringForKey(KEY_THEME_MODE)?.takeIf { it.isNotBlank() }
+            ?: MovitThemeModeStorage.SYSTEM
+
+    override fun setThemeMode(mode: String) {
+        val normalized = when (mode.lowercase()) {
+            MovitThemeModeStorage.LIGHT -> MovitThemeModeStorage.LIGHT
+            MovitThemeModeStorage.DARK -> MovitThemeModeStorage.DARK
+            else -> MovitThemeModeStorage.SYSTEM
+        }
+        defaults.setObject(normalized, KEY_THEME_MODE)
+    }
+
+    override fun applyPreferredLanguage(languageCode: String) {
+        defaults.setObject(languageCode, KEY_LANGUAGE)
+    }
+
+    private fun migrateLegacyTokensFromDefaults() {
+        migrateLegacyTokensToSecureStore(
+            secure = secureSession,
+            readLegacyAccessToken = { defaults.stringForKey(LegacyAuthTokenKeys.ACCESS_TOKEN) },
+            readLegacyRefreshToken = { defaults.stringForKey(LegacyAuthTokenKeys.REFRESH_TOKEN) },
+            readLegacyExpiresAt = { 0L },
+            clearLegacyTokenKeys = { clearLegacyTokenKeysFromDefaults() },
+        )
+    }
+
+    private fun clearLegacyTokenKeysFromDefaults() {
+        defaults.removeObjectForKey(LegacyAuthTokenKeys.ACCESS_TOKEN)
+        defaults.removeObjectForKey(LegacyAuthTokenKeys.REFRESH_TOKEN)
+        defaults.removeObjectForKey(LegacyAuthTokenKeys.TOKEN_EXPIRES_AT)
+    }
+
     private fun cacheKey(store: String, key: String): String = "movit_cache_${store}_$key"
 
     companion object {
         const val DEFAULT_BASE_URL = "https://back.mongz.online/"
         private const val KEY_API_BASE_URL = "movit_api_base_url"
-        private const val KEY_ACCESS_TOKEN = "access_token"
-        private const val KEY_REFRESH_TOKEN = "refresh_token"
         private const val KEY_USER_NAME = "user_name"
         private const val KEY_USER_EMAIL = "user_email"
         private const val KEY_AVATAR_URL = "avatar_url"
@@ -123,5 +172,6 @@ class IosMovitPlatform(
         private const val KEY_SUBSCRIPTION_EXPIRY = "subscription_expiry"
         private const val KEY_VOICE_FEEDBACK = "voice_feedback_enabled"
         private const val KEY_NOTIFICATIONS = "notifications_enabled"
+        private const val KEY_THEME_MODE = "theme_mode"
     }
 }

@@ -1,6 +1,7 @@
 package com.movit.feature.shell
 
 import androidx.lifecycle.ViewModel
+import com.movit.core.data.MovitData
 import com.movit.feature.account.MovitAssessmentEffect
 import com.movit.feature.account.MovitAuthEffect
 import com.movit.feature.account.MovitLevelEffect
@@ -22,6 +23,13 @@ import kotlinx.coroutines.flow.update
 class MovitAppShellViewModel : ViewModel() {
     private val _state = MutableStateFlow(MovitAppShellState())
     val state: StateFlow<MovitAppShellState> = _state.asStateFlow()
+
+    init {
+        if (MovitData.isInstalled) {
+            val platform = MovitData.requirePlatform()
+            _state.update { it.copy(themeMode = platform.themeMode()) }
+        }
+    }
 
     private val _effects = MutableSharedFlow<MovitAppShellEffect>(extraBufferCapacity = 1)
     val effects: SharedFlow<MovitAppShellEffect> = _effects.asSharedFlow()
@@ -105,6 +113,12 @@ class MovitAppShellViewModel : ViewModel() {
                 popAllInner()
                 pushInner(MovitInnerRoute.Auth)
             }
+            is MovitProfileEffect.LanguageChanged -> {
+                _state.update { it.copy(localeRevision = it.localeRevision + 1) }
+            }
+            is MovitProfileEffect.ThemeModeChanged -> {
+                _state.update { it.copy(themeMode = effect.themeMode) }
+            }
             is MovitProfileEffect.ShowMessage -> {
                 _effects.tryEmit(MovitAppShellEffect.ShowMessage(effect.message))
             }
@@ -144,8 +158,8 @@ class MovitAppShellViewModel : ViewModel() {
                 popAllInner()
                 navigateTo(MovitAppDestination.Home)
             }
-            is MovitAssessmentEffect.ShowMessage -> {
-                _effects.tryEmit(MovitAppShellEffect.ShowMessage(effect.message))
+            is MovitAssessmentEffect.ShowLocalizedMessage -> {
+                _effects.tryEmit(MovitAppShellEffect.ShowLocalizedMessage(effect.key))
             }
         }
     }
@@ -180,6 +194,19 @@ class MovitAppShellViewModel : ViewModel() {
 
     private fun handleTrainEffect(effect: MovitTrainEffect) {
         when (effect) {
+            MovitTrainEffect.OpenProgramList -> pushInner(MovitInnerRoute.ProgramList)
+            is MovitTrainEffect.OpenProgramWeekPlan -> pushInner(
+                MovitInnerRoute.ProgramWeekPlan(
+                    programId = effect.programId,
+                    weekNumber = effect.weekNumber,
+                ),
+            )
+            is MovitTrainEffect.OpenWeeklyReport -> pushInner(
+                MovitInnerRoute.WeeklyReport(
+                    programId = effect.programId,
+                    weekNumber = effect.weekNumber,
+                ),
+            )
             MovitTrainEffect.OpenExplore -> navigateTo(MovitAppDestination.Explore)
             MovitTrainEffect.OpenReports -> navigateTo(MovitAppDestination.Reports)
             is MovitTrainEffect.OpenProgramWorkout -> {

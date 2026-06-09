@@ -4,7 +4,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.movit.designsystem.MovitTheme
 import com.movit.feature.shell.MovitAppShellRoute
 
 /**
@@ -18,9 +17,7 @@ class MovitShellPilotActivity : ComponentActivity() {
         MovitDataInstall.install(applicationContext)
         enableEdgeToEdge()
         setContent {
-            MovitTheme {
-                MovitAppShellRoute()
-            }
+            MovitAppShellRoute()
         }
     }
 }

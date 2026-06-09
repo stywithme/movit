@@ -50,7 +50,9 @@ class MovitLevelViewModel(
 
     fun onEvent(event: MovitLevelEvent) {
         when (event) {
-            MovitLevelEvent.RetryClicked -> Unit
+            MovitLevelEvent.RetryClicked -> {
+                viewModelScope.launch { load() }
+            }
             is MovitLevelEvent.TabSelected -> {
                 _state.update { it.copy(selectedTab = event.tab) }
             }

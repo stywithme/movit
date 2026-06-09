@@ -44,15 +44,23 @@ fun WorkoutSessionScreen(
     onSwapExercise: (String) -> Unit,
     onEditExercise: (String) -> Unit,
     onDeleteExercise: (String) -> Unit,
+    onAddExercise: () -> Unit,
     onAddRest: () -> Unit,
     onStartWorkout: () -> Unit,
     onRetry: () -> Unit,
     onDismissSheet: () -> Unit,
     onSwapQueryChange: (String) -> Unit,
     onSwapCandidateSelected: (String) -> Unit,
+    onAddExerciseQueryChange: (String) -> Unit,
+    onAddExerciseCandidateSelected: (String) -> Unit,
     onEditDraftChange: ((ExerciseEditDraft) -> ExerciseEditDraft) -> Unit,
     onSaveEditDetails: () -> Unit,
     onSwitchEditToSwap: () -> Unit,
+    onRestClick: (String) -> Unit,
+    onDeleteBlock: (String) -> Unit,
+    onMoveBlock: (sectionPhaseRole: String, blockId: String, delta: Int) -> Unit,
+    onRestDurationChange: (Int) -> Unit,
+    onSaveRestEdit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val session = state.session
@@ -86,7 +94,7 @@ fun WorkoutSessionScreen(
                 ) {
                     MovitButton(
                         text = movitText("session_add_exercise"),
-                        onClick = {},
+                        onClick = onAddExercise,
                         variant = MovitButtonVariant.Outlined,
                         modifier = Modifier.weight(1f),
                     )
@@ -145,7 +153,7 @@ fun WorkoutSessionScreen(
                             title = section.title,
                             subtitle = section.items.count { it is WorkoutSessionBlockUi.Exercise }.toString(),
                         )
-                        section.items.forEach { block ->
+                        section.items.forEachIndexed { blockIndex, block ->
                             when (block) {
                                 is WorkoutSessionBlockUi.Exercise -> SessionExerciseCard(
                                     exercise = block,
@@ -154,8 +162,33 @@ fun WorkoutSessionScreen(
                                     onSwap = { onSwapExercise(block.id) },
                                     onEdit = { onEditExercise(block.id) },
                                     onDelete = { onDeleteExercise(block.id) },
+                                    onMoveUp = {
+                                        if (blockIndex > 0) {
+                                            onMoveBlock(section.phaseRole, block.id, -1)
+                                        }
+                                    },
+                                    onMoveDown = {
+                                        if (blockIndex < section.items.lastIndex) {
+                                            onMoveBlock(section.phaseRole, block.id, 1)
+                                        }
+                                    },
                                 )
-                                is WorkoutSessionBlockUi.Rest -> SessionRestBlock(rest = block)
+                                is WorkoutSessionBlockUi.Rest -> SessionRestBlock(
+                                    rest = block,
+                                    isEditMode = state.isEditMode,
+                                    onClick = { onRestClick(block.id) },
+                                    onDelete = { onDeleteBlock(block.id) },
+                                    onMoveUp = {
+                                        if (blockIndex > 0) {
+                                            onMoveBlock(section.phaseRole, block.id, -1)
+                                        }
+                                    },
+                                    onMoveDown = {
+                                        if (blockIndex < section.items.lastIndex) {
+                                            onMoveBlock(section.phaseRole, block.id, 1)
+                                        }
+                                    },
+                                )
                             }
                         }
                     }
@@ -169,9 +202,13 @@ fun WorkoutSessionScreen(
         onDismiss = onDismissSheet,
         onSwapQueryChange = onSwapQueryChange,
         onSwapCandidateSelected = onSwapCandidateSelected,
+        onAddExerciseQueryChange = onAddExerciseQueryChange,
+        onAddExerciseCandidateSelected = onAddExerciseCandidateSelected,
         onEditDraftChange = onEditDraftChange,
         onSaveEditDetails = onSaveEditDetails,
         onSwitchEditToSwap = onSwitchEditToSwap,
+        onRestDurationChange = onRestDurationChange,
+        onSaveRestEdit = onSaveRestEdit,
     )
 }
 

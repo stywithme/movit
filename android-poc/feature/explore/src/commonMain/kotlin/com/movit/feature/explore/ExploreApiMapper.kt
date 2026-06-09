@@ -31,19 +31,25 @@ private suspend fun ExploreWorkoutDto.toExploreItemUi(
     language: String,
     strings: ExploreStrings,
 ): ExploreItemUi {
-    val duration = estimatedDurationMin?.let { strings.minEst(it) }
+    val duration = estimatedDurationMin
+    val levelLabel = level?.name?.display(language)
     val metadata = buildList {
         add(strings.exercisesCount(exerciseCount))
-        duration?.let { add(it) }
-        level?.name?.display(language)?.let { add(it) }
+        duration?.let { add(strings.minEst(it)) }
+        levelLabel?.let { add(it) }
     }
+    val focus = metadata.lastOrNull { it != strings.exercisesCount(exerciseCount) }
     return ExploreItemUi(
         id = slug,
         title = name.display(language),
         subtitle = strings.itemWorkout,
         type = ExploreItemType.Workout,
         imageUrl = coverImageUrl,
+        badge = levelLabel,
+        focusLabel = focus?.takeIf { it != levelLabel } ?: levelLabel,
         metadata = metadata,
+        levelNumber = level?.number,
+        durationMinutes = duration,
     )
 }
 
@@ -51,16 +57,21 @@ private suspend fun ExploreExerciseDto.toExploreItemUi(
     language: String,
     strings: ExploreStrings,
 ): ExploreItemUi {
+    val categoryLabel = categoryName?.display(language) ?: categoryCode
     val metadata = buildList {
-        categoryName?.display(language)?.let { add(it) }
+        categoryLabel?.let { add(it) }
         if (musclesCount > 0) add(strings.musclesCount(musclesCount))
     }
     return ExploreItemUi(
         id = slug,
         title = name.display(language),
-        subtitle = categoryCode ?: strings.itemExercise,
+        subtitle = categoryLabel ?: strings.itemExercise,
         type = ExploreItemType.Exercise,
+        imageUrl = imageUrl,
+        badge = categoryLabel,
         metadata = metadata,
+        tags = metadata,
+        categoryCode = categoryCode,
     )
 }
 

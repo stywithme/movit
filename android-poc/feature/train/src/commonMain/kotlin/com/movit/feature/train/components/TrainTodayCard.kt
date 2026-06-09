@@ -1,20 +1,32 @@
 package com.movit.feature.train.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bedtime
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.components.MovitBanner
 import com.movit.designsystem.components.MovitBannerVariant
@@ -43,6 +55,8 @@ fun TrainTodayCard(
     dashboard: TrainDashboardUi,
     onPrimaryAction: () -> Unit,
     modifier: Modifier = Modifier,
+    onViewJourney: (() -> Unit)? = null,
+    onWhatsNext: (() -> Unit)? = null,
 ) {
     val today = dashboard.today ?: noPlanWorkout()
     Column(
@@ -59,7 +73,11 @@ fun TrainTodayCard(
                 RestDayCard(today = today, onPrimaryAction = onPrimaryAction)
             }
             dashboard.status == TrainDashboardStatus.ProgramComplete -> {
-                ProgramCompleteCard(today = today, onPrimaryAction = onPrimaryAction)
+                ProgramCompleteCard(
+                    today = today,
+                    onViewJourney = onViewJourney ?: onPrimaryAction,
+                    onWhatsNext = onWhatsNext ?: onPrimaryAction,
+                )
             }
             today.sessions.isEmpty() -> {
                 TodayStateCard(
@@ -113,6 +131,8 @@ private fun SessionList(
                     expandedIndex = if (expandedIndex == index) -1 else index
                 },
                 isCompleted = session.isCompleted,
+                thumbnailUrl = session.thumbnailUrl,
+                thumbnailLabel = session.title.take(1).uppercase(),
                 actionLabel = session.actionLabel,
                 onActionClick = if (!session.isCompleted) onPrimaryAction else null,
                 footerNote = if (session.isCompleted) {
@@ -178,29 +198,60 @@ private fun RestDayCard(
 @Composable
 private fun ProgramCompleteCard(
     today: TrainTodayWorkoutUi,
-    onPrimaryAction: () -> Unit,
+    onViewJourney: () -> Unit,
+    onWhatsNext: () -> Unit,
 ) {
-    MovitBanner(
-        title = movitText("train_program_complete_banner"),
-        message = movitText(
-            "train_program_complete_summary",
-            today.subtitle,
-            today.durationLabel,
-            today.exerciseCountLabel,
-        ),
-        variant = MovitBannerVariant.Complete,
-    )
-    MovitButton(
-        text = today.primaryActionLabel,
-        onClick = onPrimaryAction,
-        modifier = Modifier.fillMaxWidth(),
-    )
-    MovitButton(
-        text = movitText("train_whats_next"),
-        onClick = onPrimaryAction,
-        variant = MovitButtonVariant.Outlined,
-        modifier = Modifier.fillMaxWidth(),
-    )
+    MovitCard(variant = MovitCardVariant.Elevated) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(MovitSpacing.md),
+        ) {
+            Surface(
+                modifier = Modifier.size(88.dp),
+                shape = CircleShape,
+                color = MaterialTheme.movitColors.limeTint,
+                border = BorderStroke(3.dp, MaterialTheme.movitColors.success),
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {
+                    MovitIconBox(
+                        icon = Icons.Default.EmojiEvents,
+                        variant = MovitIconBoxVariant.Lime,
+                        modifier = Modifier.size(64.dp),
+                    )
+                }
+            }
+            Text(
+                text = movitText("train_program_complete_banner"),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.W800,
+                color = MaterialTheme.movitColors.success,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = movitText(
+                    "train_program_complete_summary",
+                    today.subtitle,
+                    today.durationLabel,
+                    today.exerciseCountLabel,
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.movitColors.textSecondary,
+                textAlign = TextAlign.Center,
+            )
+            MovitButton(
+                text = movitText("train_view_journey"),
+                onClick = onViewJourney,
+                variant = MovitButtonVariant.Outlined,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            MovitButton(
+                text = movitText("train_whats_next"),
+                onClick = onWhatsNext,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
 }
 
 @Composable

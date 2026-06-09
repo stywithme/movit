@@ -7,6 +7,7 @@ data class SessionSwapCandidateUi(
     val name: String,
     val subtitle: String,
     val badge: String? = null,
+    val imageUrl: String? = null,
 )
 
 interface WorkoutSessionRepository {
@@ -16,6 +17,8 @@ interface WorkoutSessionRepository {
         query: String,
         replacingSlug: String,
     ): List<SessionSwapCandidateUi>
+
+    suspend fun findAddExerciseCandidates(query: String): List<SessionSwapCandidateUi>
 }
 
 class DefaultWorkoutSessionRepository(
@@ -43,6 +46,9 @@ class DefaultWorkoutSessionRepository(
         query: String,
         replacingSlug: String,
     ): List<SessionSwapCandidateUi> = SessionSwapPreviewData.candidates(query, replacingSlug)
+
+    override suspend fun findAddExerciseCandidates(query: String): List<SessionSwapCandidateUi> =
+        SessionSwapPreviewData.candidates(query, replacingSlug = "")
 
     private suspend fun buildExploreFallback(workoutId: String): AppResult<WorkoutSessionUi> {
         val item = libraryRepository.findItem(workoutId)

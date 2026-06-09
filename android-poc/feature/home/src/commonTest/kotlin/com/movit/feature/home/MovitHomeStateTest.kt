@@ -109,4 +109,53 @@ class MovitHomeStateTest {
         viewModel.onEvent(MovitHomeEvent.ProfileClicked)
         assertEquals(MovitHomeEffect.OpenProfile, effectDeferred.await())
     }
+
+    @Test
+    fun levelCardClicked_emitsOpenLevel() = runBlocking {
+        val viewModel = MovitHomeViewModel()
+        val effectDeferred = async {
+            withTimeout(5_000) {
+                viewModel.effects.first()
+            }
+        }
+        yield()
+        viewModel.onEvent(MovitHomeEvent.LevelCardClicked)
+        assertEquals(MovitHomeEffect.OpenLevel, effectDeferred.await())
+    }
+
+    @Test
+    fun viewPlanClicked_emitsOpenLevel() = runBlocking {
+        val viewModel = MovitHomeViewModel()
+        val effectDeferred = async {
+            withTimeout(5_000) {
+                viewModel.effects.first()
+            }
+        }
+        yield()
+        viewModel.onEvent(MovitHomeEvent.ViewPlanClicked)
+        assertEquals(MovitHomeEffect.OpenLevel, effectDeferred.await())
+    }
+
+    @Test
+    fun alertProgressionClicked_emitsOpenTrain() = runBlocking {
+        val viewModel = MovitHomeViewModel()
+        val effectDeferred = async {
+            withTimeout(5_000) {
+                viewModel.effects.first()
+            }
+        }
+        yield()
+        viewModel.onEvent(MovitHomeEvent.AlertClicked("progression_applied"))
+        assertEquals(MovitHomeEffect.OpenTrain, effectDeferred.await())
+    }
+
+    @Test
+    fun successfulLoad_heroProgressReflectsApi() {
+        runBlocking {
+            val viewModel = MovitHomeViewModel()
+            viewModel.load()
+            val state = viewModel.state.value
+            assertEquals(71, state.progress?.weeklyCompletionPercent)
+        }
+    }
 }

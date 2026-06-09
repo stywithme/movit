@@ -1,6 +1,8 @@
 package com.movit.feature.explore
 
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -43,6 +45,41 @@ class MovitExploreStateTest {
     }
 
     @Test
+    fun workoutFilter_beginner_matchesLowLevelWorkouts() {
+        val filtered = ExploreContentFilter.filterItems(
+            items = MovitExplorePreviewData.workouts,
+            query = "",
+            filter = ExploreFilter.All,
+            workoutFilter = ExploreWorkoutFilter.Beginner,
+        )
+        assertTrue(filtered.isNotEmpty())
+        assertTrue(filtered.all { (it.levelNumber ?: 0) in 1..2 })
+    }
+
+    @Test
+    fun workoutFilter_short_matchesUnderTwentyMinutes() {
+        val filtered = ExploreContentFilter.filterItems(
+            items = MovitExplorePreviewData.workouts,
+            query = "",
+            filter = ExploreFilter.All,
+            workoutFilter = ExploreWorkoutFilter.Short,
+        )
+        assertTrue(filtered.all { (it.durationMinutes ?: 0) <= 20 })
+    }
+
+    @Test
+    fun exerciseCategory_filtersByCategoryCode() {
+        val filtered = ExploreContentFilter.filterItems(
+            items = MovitExplorePreviewData.exerciseOnly,
+            query = "",
+            filter = ExploreFilter.Exercises,
+            exerciseCategoryCode = "core",
+        )
+        assertEquals(1, filtered.size)
+        assertEquals("ex-plank", filtered.first().id)
+    }
+
+    @Test
     fun viewModel_queryChanged_updatesFilteredExercises() {
         runBlocking {
             val viewModel = MovitExploreViewModel(FakeExploreRepository())
@@ -64,6 +101,50 @@ class MovitExploreStateTest {
             viewModel.load(isRefresh = false)
             viewModel.onEvent(MovitExploreEvent.FilterSelected(ExploreFilter.Programs))
             assertTrue(viewModel.state.value.programs.all { it.type == ExploreItemType.Program })
+        }
+    }
+
+    @Test
+    fun viewModel_seeAllWorkouts_focusesWorkoutsFilter() {
+        runBlocking {
+            val viewModel = MovitExploreViewModel(FakeExploreRepository())
+            viewModel.load(isRefresh = false)
+            viewModel.onEvent(MovitExploreEvent.SeeAllWorkoutsClicked)
+            val state = viewModel.state.value
+            assertEquals(ExploreFilter.Workouts, state.selectedFilter)
+            assertEquals(ExploreWorkoutFilter.All, state.selectedWorkoutFilter)
+            assertTrue(state.scrollToWorkouts)
+        }
+    }
+
+    @Test
+    fun viewModel_itemClicked_emitsWorkoutSessionEffect() {
+        runBlocking {
+            val viewModel = MovitExploreViewModel(FakeExploreRepository())
+            viewModel.onEvent(MovitExploreEvent.ItemClicked("workout-lower-body", ExploreItemType.Workout))
+            val effect = withTimeout(1_000) { viewModel.effects.first() }
+            assertEquals(MovitExploreEffect.OpenWorkoutSession("workout-lower-body"), effect)
+        }
+    }
+
+    @Test
+    fun viewModel_itemClicked_emitsExercisePrepareEffect() {
+        runBlocking {
+            val viewModel = MovitExploreViewModel(FakeExploreRepository())
+            viewModel.onEvent(MovitExploreEvent.ItemClicked("ex-squat", ExploreItemType.Exercise))
+            val effect = withTimeout(1_000) { viewModel.effects.first() }
+            assertEquals(MovitExploreEffect.OpenExercisePrepare("ex-squat"), effect)
+        }
+    }
+
+    @Test
+    fun viewModel_filterButton_togglesSecondaryFilters() {
+        runBlocking {
+            val viewModel = MovitExploreViewModel(FakeExploreRepository())
+            viewModel.load(isRefresh = false)
+            assertTrue(viewModel.state.value.secondaryFiltersVisible)
+            viewModel.onEvent(MovitExploreEvent.FilterButtonClicked)
+            assertFalse(viewModel.state.value.secondaryFiltersVisible)
         }
     }
 

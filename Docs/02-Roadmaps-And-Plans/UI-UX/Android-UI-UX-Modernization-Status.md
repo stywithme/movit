@@ -25,11 +25,11 @@
 
 **ما لم يُنجز بعد (توقعات واقعية):**
 
-- Auth / Onboarding / Assessment / Level — **غائبة في KMP** (0%).
-- **Profile/Account:** شاشة إعدادات حقيقية في Shell (WS-B) — **ليست تدفق auth كامل**.
+- Auth / Onboarding / Assessment / Level — **أول إصدار KMP** في `feature:account` (scorecards 55–76%) — ليست 0%.
+- **Profile/Account:** `MovitProfileScreen` (~70% scorecard) — Language/Appearance/Haptic غير فعّالة بعد.
 - تدريب حي بالكاميرا وML — **لم يُنقل** (مقصود تأجيله).
 - iOS يحتاج مزامنة مفاتيح تسجيل الدخول (`access_token`, `is_pro`, `active_user_program_id`) مع تطبيق iOS الأصلي.
-- **بوابة launcher (WS-G):** Movit shell ما زال debug-only — لم يُحوَّل إلى نقطة دخول الإصدار.
+- **بوابة launcher (WS-C / Pre-06):** Movit shell ما زال debug-only — قرار مكتوب في [Launcher Gate](Android-KMP-Mobile-UI-UX-Launcher-Gate.md)؛ flip بعد 15/16 مفضل. Pre-06 **مغلقة** — [تقرير الإكمال](Android-KMP-Mobile-UI-UX-Phase-Pre-06-Completion-Report.md).
 
 ---
 
@@ -42,22 +42,27 @@
 | **HTML Prototypes** (`prototypes/`) | ✅ محدّثة (Premium v7) | مرجع بصري لـ 18 صفحة؛ ليست التطبيق الفعلي |
 | **Design System** (`core:designsystem`) | ✅ ~70 مكوّن Movit* | ألوان، typography، motion، كتالوج debug |
 | **App Shell** (`feature:shell`) | ✅ 5 تبويبات + مسارات داخلية | Home · Train · Explore · Reports · **Profile** + Session · Report detail · Library |
-| **Home** | ~80% | شاشة KMP + API + **نصوص ar/en** (`core:resources`) |
-| **Explore** | ~75% | شاشة KMP + sync + **نصوص ar/en** |
-| **Train** | ~72% | 5 حالات + **مكوّنات UI الثانوية مُوحَّدة**؛ فجوات UX (أسبوع، thumbnails) |
-| **Reports** | ~78% | 3 تبويبات + Pro gate + **Report Detail مُوحَّد** |
-| **Report Detail** | ~90% | UI + API + **نصوص شاشة/mapper** من موارد مشتركة |
-| **Session (02)** | ~48% | تحرير يوم، swap، حفظ + **نصوص شاشة/sheets/mapper**؛ بدون كاميرا |
-| **Library** (05–07) | ~55% | قوائم من Explore cache؛ ليست صفحات مستقلة كاملة |
-| **Auth–Onboarding–Assessment** (10–14) | 0% | غائبة في KMP |
-| **Profile/Account** (11) | ~25% | `MovitProfileRoute` — إعدادات/لغة/Pro؛ بدون auth |
+| **Home** | **79%** | شاشة KMP + API + scorecard WS-E — فجوات hero/level link |
+| **Explore** | **75%** | شاشة KMP + sync — فجوات media/filter |
+| **Train** | **72%** | 5 حالات + scorecard — فجوات week nav، thumbnails |
+| **Reports** | **78%** | 3 تبويبات + Pro gate + Report Detail |
+| **Report Detail** | **92%** | UI + API + a11y — Share/Export placeholder |
+| **Session (02)** | **48%** | تحرير جزئي — Prepare/onStart فارغ |
+| **Library** (05–07) | **55%** | قوائم من Explore cache — i18n hardcoded |
+| **Auth** (10) | **76%** | `MovitAuthScreen` — Google stub |
+| **Profile** (11) | **70%** | `MovitProfileScreen` — settings جزئية |
+| **Onboarding** (12) | **74%** | 7 خطوات + training-profile API |
+| **Assessment** (13) | **55%** | PAR-Q + placeholder كاميرا |
+| **Level** (14) | **58%** | Profile/Plan — fake/hardcoded phases |
+
+مرجع scorecards: [`Page-Scorecards.md`](Page-Scorecards.md) · [`Sync-App-Pages.md`](Sync-App-Pages.md).
 
 **نقطة الدخول للمعاينة:**
 
 - Android: `MovitShellPilotActivity` (debug فقط — ليس launcher).
 - iOS: `iosApp` → `MainViewController()` → نفس Shell.
 
-مرجع تفصيلي صفحة بصفحة: [`Sync-App-Pages.md`](Sync-App-Pages.md).
+مرجع تفصيلي صفحة بصفحة: [`Sync-App-Pages.md`](Sync-App-Pages.md) · scorecards: [`Page-Scorecards.md`](Page-Scorecards.md).
 
 ### API — طبقة البيانات المشتركة
 
@@ -139,7 +144,8 @@ android-poc/
 │   ├── train/              # MovitTrainScreen
 │   ├── explore/            # MovitExploreScreen
 │   ├── reports/            # MovitReportsScreen + ReportDetailScreen
-│   └── library/            # Session, Prepare, Library, Program detail
+│   ├── library/            # Session, Prepare, Library, Program detail
+│   └── account/            # Auth, Profile, Onboarding, Assessment, Level
 └── iosApp/                 # Xcode host → MainViewController
 ```
 
@@ -204,7 +210,7 @@ android-poc/
 
 - Session KMP: بدون thumbnails من API (Explore exercises بلا `imageUrl`).
 - SQLDelight غير مُضاف — الكاش JSON في preferences.
-- Auth / Onboarding / Assessment — غائبة في KMP.
+- Auth / Onboarding / Assessment — أول إصدار KMP (~55–76% scorecard)؛ كاميرا/ML مؤجلة.
 - بيانات معاينة Report Detail (`ReportDetailPreviewData`) ما زالت إنجليزية ثابتة للتطوير.
 - نصوص ديناميكية من API (أسماء تمارين، رسائل insights) تبقى كما يرسلها الخادم — لم تُترجم في العميل.
 

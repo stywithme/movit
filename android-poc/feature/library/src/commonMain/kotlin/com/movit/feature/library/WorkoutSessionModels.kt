@@ -76,6 +76,18 @@ sealed interface SessionSheet {
         val exerciseId: String,
         val draft: ExerciseEditDraft,
     ) : SessionSheet
+
+    data class AddExercise(
+        val sectionPhaseRole: String,
+        val query: String = "",
+        val candidates: List<SessionSwapCandidateUi> = emptyList(),
+        val isLoadingCandidates: Boolean = false,
+    ) : SessionSheet
+
+    data class EditRest(
+        val restId: String,
+        val durationSeconds: Int,
+    ) : SessionSheet
 }
 
 object WorkoutSessionFormatting {

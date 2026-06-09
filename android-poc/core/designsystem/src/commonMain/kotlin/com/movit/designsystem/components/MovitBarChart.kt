@@ -30,9 +30,11 @@ fun MovitBarChart(
     items: List<MovitBarChartItem>,
     modifier: Modifier = Modifier,
     chartHeight: androidx.compose.ui.unit.Dp = 110.dp,
+    highlightColor: androidx.compose.ui.graphics.Color? = null,
 ) {
     val movit = MaterialTheme.movitColors
     val max = items.maxOfOrNull { it.value }?.coerceAtLeast(1f) ?: 1f
+    val barHighlight = highlightColor ?: MaterialTheme.colorScheme.secondary
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm)) {
         Row(
@@ -55,7 +57,7 @@ fun MovitBarChart(
                             .fillMaxWidth()
                             .height((chartHeight.value * fraction).dp.coerceAtLeast(8.dp)),
                         shape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp, bottomStart = 4.dp, bottomEnd = 4.dp),
-                        color = if (item.highlighted) MaterialTheme.colorScheme.secondary else movit.surface2,
+                        color = if (item.highlighted) barHighlight else movit.surface2,
                     ) {}
                 }
             }

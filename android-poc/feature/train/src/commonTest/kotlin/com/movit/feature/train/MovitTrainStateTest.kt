@@ -95,6 +95,42 @@ class MovitTrainStateTest {
     }
 
     @Test
+    fun weekNavigation_updatesSelectedIndex() = runBlocking {
+        val viewModel = MovitTrainViewModel()
+        viewModel.load()
+        val initialIndex = viewModel.state.value.selectedWeekIndex
+        viewModel.onEvent(MovitTrainEvent.NextWeekClicked)
+        assertEquals(initialIndex + 1, viewModel.state.value.selectedWeekIndex)
+        viewModel.onEvent(MovitTrainEvent.PreviousWeekClicked)
+        assertEquals(initialIndex, viewModel.state.value.selectedWeekIndex)
+    }
+
+    @Test
+    fun weekNavigation_clampsAtBounds() = runBlocking {
+        val viewModel = MovitTrainViewModel()
+        viewModel.load()
+        repeat(10) { viewModel.onEvent(MovitTrainEvent.PreviousWeekClicked) }
+        assertEquals(0, viewModel.state.value.selectedWeekIndex)
+        val lastIndex = viewModel.state.value.dashboard
+            ?.weekOptions
+            ?.lastIndex
+            ?: 0
+        repeat(10) { viewModel.onEvent(MovitTrainEvent.NextWeekClicked) }
+        assertEquals(lastIndex, viewModel.state.value.selectedWeekIndex)
+    }
+
+    @Test
+    fun noPlan_includesFeaturedPrograms() = runBlocking {
+        val viewModel = MovitTrainViewModel(
+            repository = FakeTrainRepository(MovitTrainPreviewData.noPlan),
+        )
+        viewModel.load()
+        val programs = viewModel.state.value.dashboard?.featuredPrograms.orEmpty()
+        assertTrue(programs.isNotEmpty())
+        assertNotNull(programs.first().imageUrl)
+    }
+
+    @Test
     fun viewReport_emitsOpenReports() = runBlocking {
         val viewModel = MovitTrainViewModel()
         val effectDeferred = async {

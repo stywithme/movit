@@ -1,6 +1,8 @@
 # Android / KMP Mobile UI/UX Professional Plan
 
-آخر تحديث: 2026-06-09 (post Phase Pre-05 + دفعة Account في Phase 05)
+آخر تحديث: 2026-06-09 (post Pre-06 CLOSED + دفعة Account في Phase 05)
+
+> **Phase Pre-06 مغلقة (2026-06-09):** [`Android-KMP-Mobile-UI-UX-Phase-Pre-06-Completion-Report.md`](Android-KMP-Mobile-UI-UX-Phase-Pre-06-Completion-Report.md) — navigation/back · training-engine · secure session · launcher gate · scorecards · visual QA.
 
 > **قرار محدِّث (2026-06-09): انتقال كامل بلا حلول وسط ولا حلول انتقالية.** أُغلقت بوابة Pre-05 (جسور، Koin، iOS compile، نصوص مشتركة) ثم اُستكملت **دفعة الحساب والتقييم** في Phase 05 — التفاصيل في قسم «ملخص تنفيذي للمدير» أدناه وفي [`Phase-05`](Android-KMP-Mobile-UI-UX-Phase-05-Page-By-Page-Modernization-Plan.md).
 
@@ -12,11 +14,11 @@
 
 | الصفحة | Prototype | الحالة في KMP | ملاحظة للمدير |
 |--------|-----------|---------------|----------------|
-| **10 Auth** | `10-auth.html` | ✅ ~85% | Splash · Intro · Sign in/up · Forgot — API Ktor + حفظ جلسة على Android/iOS |
-| **11 Profile** | `11-profile.html` | ✅ ~80% | Hero · Pro/Free · إعدادات · اشتراك · تسجيل خروج — تبويب Profile الحقيقي |
-| **12 Onboarding** | `12-profile-onboarding.html` | ✅ ~75% | معالج 7 خطوات · `PUT /api/mobile/training-profile` |
-| **13 Assessment** | `13-assessment.html` | ✅ ~70% | PAR-Q · Body scan (UI فقط) · Results — **بدون كاميرا** (مقصود Phase 07) |
-| **14 Level & Plan** | `14-level-plan.html` | ✅ ~75% | Level profile · Plan overview · `GET /api/mobile/level-profile` |
+| **10 Auth** | `10-auth.html` | ✅ **76%** | Splash · Intro · Sign in/up · Forgot — API Ktor + جلسة آمنة (WS-D) — تفصيل: [`Page-Scorecards.md`](Page-Scorecards.md) |
+| **11 Profile** | `11-profile.html` | ✅ **70%** | Hero · Pro/Free · إعدادات · اشتراك · تسجيل خروج — تبويب Profile |
+| **12 Onboarding** | `12-profile-onboarding.html` | ✅ **74%** | معالج 7 خطوات · `PUT /api/mobile/training-profile` |
+| **13 Assessment** | `13-assessment.html` | ✅ **55%** | PAR-Q · Body scan (UI فقط) — **بدون كاميرا** (Phase 07) |
+| **14 Level & Plan** | `14-level-plan.html` | ✅ **58%** | Level profile · Plan overview · `GET /api/mobile/level-profile` |
 
 ### البنية التقنية (باختصار)
 
@@ -38,8 +40,10 @@ feature:home  → Body scan → Assessment · بطاقة المستوى → Leve
 | الأمر | النتيجة |
 |-------|---------|
 | `:app:assembleDebug` | ✅ |
-| `:feature:account:testDebugUnitTest` | ✅ (8) |
-| `:feature:shell:testDebugUnitTest` | ✅ (15) |
+| `:feature:account:testDebugUnitTest` | ✅ (11) |
+| `:feature:shell:testDebugUnitTest` | ✅ (20) |
+| `:core:training-engine:testDebugUnitTest` | ✅ (18) |
+| `:core:data:testDebugUnitTest` | ✅ (17) |
 | `:feature:shell:compileKotlinIosSimulatorArm64` | ✅ |
 
 ### كيف يُعرض للمدير اليوم؟
@@ -54,7 +58,7 @@ feature:home  → Body scan → Assessment · بطاقة المستوى → Leve
 |-------|--------|
 | Google Sign-In | يحتاج جسر Android/iOS (Credentials) — الزر UI فقط حالياً |
 | كاميرا Assessment الحية | Phase 07 (camera/ML) |
-| Launcher production | Shell ما زال debug-only (WS-G) |
+| Launcher production | Shell ما زال debug-only (WS-C — [Launcher Gate](Android-KMP-Mobile-UI-UX-Launcher-Gate.md)) |
 | مطابقة بصرية 100% مع prototypes | فجوات UX ثانوية (صور، animations) |
 
 ### المراجع التفصيلية
@@ -600,11 +604,11 @@ sealed interface ExploreEffect {
 | 1 | Train dashboard | ✅ ~72% |
 | 2 | Reports + Report Detail | ✅ ~78–90% |
 | 3 | Session (02) | ✅ ~48% (بدون كاميرا) |
-| 4 | **Auth (10)** | ✅ ~85% |
-| 5 | **Profile (11)** | ✅ ~80% |
-| 6 | **Onboarding (12)** | ✅ ~75% |
-| 7 | **Assessment (13)** | ✅ ~70% (UI؛ بدون كاميرا) |
-| 8 | **Level & Plan (14)** | ✅ ~75% |
+| 4 | **Auth (10)** | ✅ **76%** (scorecard) |
+| 5 | **Profile (11)** | ✅ **70%** |
+| 6 | **Onboarding (12)** | ✅ **74%** |
+| 7 | **Assessment (13)** | ✅ **55%** (UI؛ بدون كاميرا) |
+| 8 | **Level & Plan (14)** | ✅ **58%** |
 | 9 | Program flow (15) | ⬜ لم يُنفَّذ |
 | 10 | Workout flow (16) | ⬜ جزئي |
 | 11 | Library media/filters (05–07) | 🔄 ~55% |

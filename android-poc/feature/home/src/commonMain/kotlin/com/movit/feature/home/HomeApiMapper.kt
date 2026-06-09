@@ -74,13 +74,17 @@ object HomeApiMapper {
             HomeActiveProgramUi(
                 label = strings.currentPlan,
                 title = it.name.localized(language).ifBlank { strings.activeProgramFallback },
-                subtitle = strings.programWeekSubtitle(
-                    week = it.weekNumber,
-                    totalWeeks = it.totalWeeks,
-                    completed = it.weekProgress.completed,
-                    total = it.weekProgress.total,
-                ),
+                subtitle = when (status) {
+                    "program_complete" -> strings.programComplete
+                    else -> strings.programWeekSubtitle(
+                        week = it.weekNumber,
+                        totalWeeks = it.totalWeeks,
+                        completed = it.weekProgress.completed,
+                        total = it.weekProgress.total,
+                    )
+                },
                 actionLabel = strings.viewProgram,
+                showViewAction = status != "program_complete",
             )
         }
 
@@ -88,7 +92,7 @@ object HomeApiMapper {
         val showBodyScanCta = status == "no_assessment"
         val showNoProgramEmpty = status == "no_plan" || (status == null && program == null && workout == null)
 
-        val journeyRows = buildJourneyRows(trainMode, strings)
+        val journeyRows = buildJourneyRows(trainMode, language, strings)
 
         val recentActivities = data.recentWorkouts.orEmpty().take(3).mapIndexed { index, recent ->
             val name = recent.exerciseName.localized(language)
@@ -173,6 +177,7 @@ private suspend fun buildTodayPlan(
                     else -> strings.readyToStart
                 },
                 primaryActionLabel = strings.startWorkout,
+                showPrimaryAction = !it.isCompleted,
             )
         }
         "rest_day" -> HomeTrainingPlanUi(
@@ -183,6 +188,7 @@ private suspend fun buildTodayPlan(
             exerciseCountLabel = strings.noWorkout,
             statusLabel = strings.takeItEasy,
             primaryActionLabel = strings.viewTrain,
+            showPrimaryAction = false,
         )
         "program_complete" -> HomeTrainingPlanUi(
             label = strings.yourPlanLabel,
@@ -192,6 +198,17 @@ private suspend fun buildTodayPlan(
             exerciseCountLabel = strings.complete,
             statusLabel = strings.greatWork,
             primaryActionLabel = strings.startReassessment,
+            opensAssessment = true,
+        )
+        "reassessment_due" -> HomeTrainingPlanUi(
+            label = strings.yourPlanLabel,
+            title = strings.reassessmentDue,
+            subtitle = strings.greetingReassessment,
+            durationLabel = strings.dash,
+            exerciseCountLabel = strings.assessment,
+            statusLabel = strings.soon,
+            primaryActionLabel = strings.startReassessment,
+            opensAssessment = true,
         )
         "no_assessment" -> HomeTrainingPlanUi(
             label = strings.yourPlanLabel,
@@ -201,6 +218,7 @@ private suspend fun buildTodayPlan(
             exerciseCountLabel = strings.assessment,
             statusLabel = strings.requiredBeforePlan,
             primaryActionLabel = strings.startScan,
+            opensAssessment = true,
         )
         else -> null
     }
@@ -208,15 +226,23 @@ private suspend fun buildTodayPlan(
 
 private suspend fun buildJourneyRows(
     trainMode: TrainModeDto?,
+    @Suppress("UNUSED_PARAMETER") language: String,
     strings: HomeStrings,
 ): List<HomeJourneyRowUi> {
-    if (trainMode?.status != "active" && trainMode?.status != "rest_day") return emptyList()
+    val status = trainMode?.status ?: return emptyList()
+    if (status != "active" && status != "rest_day") return emptyList()
     val program = trainMode.activeProgram ?: return emptyList()
+    val completedWeeks = (program.weekNumber - 1).coerceAtLeast(0)
+    val upcomingWeeks = (program.totalWeeks - program.weekNumber).coerceAtLeast(0)
     val rows = mutableListOf(
         HomeJourneyRowUi(
             id = "timeline",
             title = strings.planTimeline,
-            subtitle = strings.weekInProgress(program.weekNumber, program.totalWeeks),
+            subtitle = strings.timelineSummary(
+                completed = completedWeeks,
+                active = 1,
+                upcoming = upcomingWeeks,
+            ),
         ),
     )
     trainMode.nextReassessment?.let { next ->
@@ -233,6 +259,7 @@ private suspend fun buildJourneyRows(
 private fun HomeAlertDto.toHomeAlert(language: String): HomeAlertUi = HomeAlertUi(
     title = if (language == "ar") titleAr.ifBlank { titleEn } else titleEn.ifBlank { titleAr },
     message = if (language == "ar") messageAr.ifBlank { messageEn } else messageEn.ifBlank { messageAr },
+    type = type,
 )
 
 private fun greetingEyebrowFor(strings: HomeStrings): String = when (currentLocalHour()) {

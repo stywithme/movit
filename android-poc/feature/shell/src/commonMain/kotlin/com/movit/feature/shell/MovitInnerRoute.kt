@@ -7,9 +7,17 @@ package com.movit.feature.shell
 sealed interface MovitInnerRoute {
     data object ExercisesLibrary : MovitInnerRoute
     data object WorkoutsLibrary : MovitInnerRoute
+    data object ProgramList : MovitInnerRoute
+    data class ProgramWeekPlan(val programId: String, val weekNumber: Int = 1) : MovitInnerRoute
+    data class WeeklyReport(val programId: String, val weekNumber: Int = 1) : MovitInnerRoute
     data class ProgramDetail(val programId: String) : MovitInnerRoute
     data class WorkoutSession(val workoutId: String) : MovitInnerRoute
-    data class ExercisePrepare(val exerciseId: String) : MovitInnerRoute
+    data class WorkoutCustomize(val workoutId: String) : MovitInnerRoute
+    data class WorkoutRun(val workoutId: String) : MovitInnerRoute
+    data class ExercisePrepare(
+        val exerciseId: String,
+        val workoutId: String? = null,
+    ) : MovitInnerRoute
     data class ReportDetail(val reportId: String) : MovitInnerRoute
     data object Auth : MovitInnerRoute
     data object ProfileOnboarding : MovitInnerRoute

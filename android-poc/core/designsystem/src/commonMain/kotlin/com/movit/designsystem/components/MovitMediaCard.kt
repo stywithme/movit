@@ -28,6 +28,8 @@ fun MovitMediaCard(
     modifier: Modifier = Modifier,
     metadata: List<String> = emptyList(),
     badge: String? = null,
+    focusLabel: String? = null,
+    imageUrl: String? = null,
     imageLabel: String? = null,
     enabled: Boolean = true,
     isLoading: Boolean = false,
@@ -53,8 +55,10 @@ fun MovitMediaCard(
             horizontalArrangement = Arrangement.spacedBy(MovitSpacing.md),
             verticalAlignment = Alignment.Top,
         ) {
-            MovitMediaPlaceholder(
-                label = imageLabel ?: title.take(1).uppercase(),
+            MovitRemoteImage(
+                imageUrl = imageUrl,
+                contentDescription = title,
+                placeholderLabel = imageLabel ?: title.take(1).uppercase(),
                 modifier = Modifier
                     .width(96.dp)
                     .height(96.dp),
@@ -63,6 +67,22 @@ fun MovitMediaCard(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(MovitSpacing.xs),
             ) {
+                focusLabel?.let {
+                    Surface(
+                        shape = MaterialTheme.shapes.small,
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                    ) {
+                        Text(
+                            text = it,
+                            modifier = Modifier.padding(
+                                horizontal = MovitSpacing.sm,
+                                vertical = MovitSpacing.xs,
+                            ),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                    }
+                }
                 badge?.let {
                     Surface(
                         shape = MaterialTheme.shapes.small,

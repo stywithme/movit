@@ -37,7 +37,14 @@
         <!-- AUTH FLOW -->
         <!-- ═══════════════════════════════════════════════════ -->
         
-        <!-- Splash Screen - LAUNCHER -->
+        <!-- Movit KMP shell — production launcher target (Pre-06 WS-C); no LAUNCHER until flip -->
+        <activity
+            android:name="com.movit.MovitMainActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix" />
+
+        <!-- Splash Screen - LAUNCHER (legacy production entry) -->
         <activity
             android:name=".ui.auth.SplashActivity"
             android:exported="true"

@@ -1,6 +1,9 @@
 package com.trainingvalidator.poc.storage
 
 import android.content.Context
+import com.movit.core.data.platform.AndroidSecureSessionStore
+import com.movit.core.data.platform.LegacyAuthTokenKeys
+import com.movit.core.data.platform.SecureAuthTokens
 import com.trainingvalidator.poc.network.AuthData
 import com.trainingvalidator.poc.network.UserPublic
 
@@ -14,9 +17,6 @@ object AuthManager {
     private const val PREFS_NAME = "app_prefs"
 
     private const val KEY_IS_LOGGED_IN = "is_logged_in"
-    private const val KEY_ACCESS_TOKEN = "access_token"
-    private const val KEY_REFRESH_TOKEN = "refresh_token"
-    private const val KEY_TOKEN_EXPIRES_AT = "token_expires_at"
 
     private const val KEY_USER_ID = "user_id"
     private const val KEY_USER_NAME = "user_name"
@@ -38,12 +38,27 @@ object AuthManager {
     private fun prefs(context: Context) =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
+    @Volatile
+    private var cachedSecureStore: AndroidSecureSessionStore? = null
+
+    private fun secureStore(context: Context): AndroidSecureSessionStore {
+        val appContext = context.applicationContext
+        return cachedSecureStore ?: synchronized(this) {
+            cachedSecureStore ?: AndroidSecureSessionStore(appContext).also { cachedSecureStore = it }
+        }
+    }
+
     fun saveAuthData(context: Context, data: AuthData) {
+        val expiresAt = System.currentTimeMillis() + data.tokens.expiresIn * 1000L
+        secureStore(context).saveTokens(
+            SecureAuthTokens(
+                accessToken = data.tokens.accessToken,
+                refreshToken = data.tokens.refreshToken,
+                expiresAtEpochMs = expiresAt,
+            ),
+        )
         val editor = prefs(context).edit()
         editor.putBoolean(KEY_IS_LOGGED_IN, true)
-        editor.putString(KEY_ACCESS_TOKEN, data.tokens.accessToken)
-        editor.putString(KEY_REFRESH_TOKEN, data.tokens.refreshToken)
-        editor.putLong(KEY_TOKEN_EXPIRES_AT, System.currentTimeMillis() + data.tokens.expiresIn * 1000L)
         editor.putString(KEY_USER_ID, data.user.id)
         editor.putString(KEY_USER_NAME, data.user.name)
         editor.putString(KEY_USER_EMAIL, data.user.email)
@@ -87,9 +102,9 @@ object AuthManager {
         editor.apply()
     }
 
-    fun getAccessToken(context: Context): String? = prefs(context).getString(KEY_ACCESS_TOKEN, null)
+    fun getAccessToken(context: Context): String? = secureStore(context).readAccessToken()
 
-    fun getRefreshToken(context: Context): String? = prefs(context).getString(KEY_REFRESH_TOKEN, null)
+    fun getRefreshToken(context: Context): String? = secureStore(context).readRefreshToken()
 
     fun getAuthHeader(context: Context): String? {
         val token = getAccessToken(context) ?: return null
@@ -157,11 +172,12 @@ object AuthManager {
     }
 
     fun clearAuthData(context: Context) {
+        secureStore(context).clearTokens()
         val editor = prefs(context).edit()
         editor.putBoolean(KEY_IS_LOGGED_IN, false)
-        editor.remove(KEY_ACCESS_TOKEN)
-        editor.remove(KEY_REFRESH_TOKEN)
-        editor.remove(KEY_TOKEN_EXPIRES_AT)
+        editor.remove(LegacyAuthTokenKeys.ACCESS_TOKEN)
+        editor.remove(LegacyAuthTokenKeys.REFRESH_TOKEN)
+        editor.remove(LegacyAuthTokenKeys.TOKEN_EXPIRES_AT)
         editor.remove(KEY_USER_ID)
         editor.remove(KEY_USER_NAME)
         editor.remove(KEY_USER_EMAIL)
@@ -182,7 +198,7 @@ object AuthManager {
      * Get token expiration timestamp
      */
     fun getTokenExpiresAt(context: Context): Long =
-        prefs(context).getLong(KEY_TOKEN_EXPIRES_AT, 0)
+        secureStore(context).readExpiresAtEpochMs()
     
     /**
      * Check if token should be refreshed (after 20 hours)
@@ -211,10 +227,12 @@ object AuthManager {
      * Save new tokens after refresh
      */
     fun saveNewTokens(context: Context, accessToken: String, refreshToken: String, expiresInSeconds: Long) {
-        val editor = prefs(context).edit()
-        editor.putString(KEY_ACCESS_TOKEN, accessToken)
-        editor.putString(KEY_REFRESH_TOKEN, refreshToken)
-        editor.putLong(KEY_TOKEN_EXPIRES_AT, System.currentTimeMillis() + expiresInSeconds * 1000L)
-        editor.apply()
+        secureStore(context).saveTokens(
+            SecureAuthTokens(
+                accessToken = accessToken,
+                refreshToken = refreshToken,
+                expiresAtEpochMs = System.currentTimeMillis() + expiresInSeconds * 1000L,
+            ),
+        )
     }
 }

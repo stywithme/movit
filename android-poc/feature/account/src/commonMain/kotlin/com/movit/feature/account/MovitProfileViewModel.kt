@@ -56,16 +56,13 @@ class MovitProfileViewModel(
         when (event) {
             MovitProfileEvent.RetryClicked -> Unit
             MovitProfileEvent.SignInClicked -> _effects.tryEmit(MovitProfileEffect.OpenAuth)
-            MovitProfileEvent.ViewPlansClicked -> {
-                _state.update { it.copy(showSubscription = true) }
-                _effects.tryEmit(MovitProfileEffect.OpenSubscription)
-            }
-            MovitProfileEvent.ManageSubscriptionClicked -> {
-                _state.update { it.copy(showSubscription = true) }
-                _effects.tryEmit(MovitProfileEffect.OpenSubscription)
-            }
+            MovitProfileEvent.ViewPlansClicked -> openSubscription()
+            MovitProfileEvent.ManageSubscriptionClicked -> openSubscription()
             MovitProfileEvent.CloseSubscriptionClicked -> {
                 _state.update { it.copy(showSubscription = false) }
+            }
+            MovitProfileEvent.EditProfileClicked -> {
+                _effects.tryEmit(MovitProfileEffect.ShowMessage("Edit profile coming soon."))
             }
             MovitProfileEvent.TrainingProfileClicked -> {
                 _effects.tryEmit(MovitProfileEffect.OpenOnboarding)
@@ -76,9 +73,34 @@ class MovitProfileViewModel(
             MovitProfileEvent.LevelClicked -> {
                 _effects.tryEmit(MovitProfileEffect.OpenLevel)
             }
-            MovitProfileEvent.LogoutClicked -> logout()
+            MovitProfileEvent.LanguageClicked -> {
+                _state.update { it.copy(activePicker = ProfilePicker.Language) }
+            }
+            MovitProfileEvent.AppearanceClicked -> {
+                _state.update { it.copy(activePicker = ProfilePicker.Appearance) }
+            }
+            MovitProfileEvent.LogoutClicked -> {
+                _state.update { it.copy(activePicker = ProfilePicker.LogoutConfirm) }
+            }
+            MovitProfileEvent.LogoutConfirmed -> {
+                _state.update { it.copy(activePicker = null) }
+                logout()
+            }
+            MovitProfileEvent.LogoutDismissed,
+            MovitProfileEvent.PickerDismissed,
+            -> {
+                _state.update { it.copy(activePicker = null) }
+            }
+            is MovitProfileEvent.LanguageSelected -> selectLanguage(event.languageCode)
+            is MovitProfileEvent.AppearanceSelected -> selectAppearance(event.themeMode)
             is MovitProfileEvent.AudioCuesChanged -> toggleAudioCues(event.enabled)
+            is MovitProfileEvent.HapticChanged -> toggleHaptic(event.enabled)
         }
+    }
+
+    private fun openSubscription() {
+        _state.update { it.copy(showSubscription = true) }
+        _effects.tryEmit(MovitProfileEffect.OpenSubscription)
     }
 
     private fun logout() {
@@ -102,9 +124,62 @@ class MovitProfileViewModel(
         }
     }
 
+    private fun selectLanguage(languageCode: String) {
+        viewModelScope.launch {
+            _state.update { it.copy(activePicker = null) }
+            when (
+                val result = repository.updateSettings(
+                    ProfileSettingsUpdate(preferredLanguage = languageCode),
+                )
+            ) {
+                is AppResult.Success -> {
+                    _state.update { current ->
+                        current.copy(profile = result.value)
+                    }
+                    _effects.tryEmit(MovitProfileEffect.LanguageChanged(languageCode))
+                }
+                is AppResult.Failure -> {
+                    _effects.tryEmit(MovitProfileEffect.ShowMessage(result.message))
+                }
+            }
+        }
+    }
+
+    private fun selectAppearance(themeMode: String) {
+        viewModelScope.launch {
+            _state.update { it.copy(activePicker = null) }
+            when (val result = repository.setThemeMode(themeMode)) {
+                is AppResult.Success -> {
+                    _state.update { current ->
+                        current.copy(profile = result.value)
+                    }
+                    _effects.tryEmit(MovitProfileEffect.ThemeModeChanged(themeMode))
+                }
+                is AppResult.Failure -> {
+                    _effects.tryEmit(MovitProfileEffect.ShowMessage(result.message))
+                }
+            }
+        }
+    }
+
     private fun toggleAudioCues(enabled: Boolean) {
         viewModelScope.launch {
             when (val result = repository.updateSettings(ProfileSettingsUpdate(voiceFeedback = enabled))) {
+                is AppResult.Success -> {
+                    _state.update { current ->
+                        current.copy(profile = result.value)
+                    }
+                }
+                is AppResult.Failure -> {
+                    _effects.tryEmit(MovitProfileEffect.ShowMessage(result.message))
+                }
+            }
+        }
+    }
+
+    private fun toggleHaptic(enabled: Boolean) {
+        viewModelScope.launch {
+            when (val result = repository.updateSettings(ProfileSettingsUpdate(notifications = enabled))) {
                 is AppResult.Success -> {
                     _state.update { current ->
                         current.copy(profile = result.value)

@@ -1,24 +1,28 @@
 package com.movit.feature.account
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.movit.designsystem.MovitSpacing
@@ -139,8 +143,11 @@ private fun LevelProfileContent(
 
 @Composable
 private fun LevelRing(score: Int) {
+    val ringDescription = movitText("level_body_score_ring_a11y", score)
     Box(
-        modifier = Modifier.size(140.dp),
+        modifier = Modifier
+            .size(140.dp)
+            .semantics { contentDescription = ringDescription },
         contentAlignment = Alignment.Center,
     ) {
         val track = MaterialTheme.movitColors.surface2
@@ -180,10 +187,12 @@ private fun LevelRing(score: Int) {
 
 @Composable
 private fun DomainRow(domain: LevelDomainUi) {
+    val rowDescription = movitText("level_domain_score_a11y", domain.name, domain.score)
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = MovitSpacing.md),
+            .padding(vertical = MovitSpacing.md)
+            .semantics { contentDescription = rowDescription },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(MovitSpacing.md),
     ) {
@@ -219,8 +228,18 @@ private fun PlanOverviewContent(
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.movitColors.textSecondary,
     )
-    profile.planPhases.forEach { phase ->
-        PlanPhaseCard(phase = phase)
+    if (profile.planPhases.isEmpty()) {
+        MovitCard {
+            Text(
+                text = movitText("level_plan_empty"),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.movitColors.textSecondary,
+            )
+        }
+    } else {
+        profile.planPhases.forEach { phase ->
+            PlanPhaseCard(phase = phase)
+        }
     }
     MovitButton(
         text = movitText("level_browse_programs"),
@@ -232,8 +251,24 @@ private fun PlanOverviewContent(
 
 @Composable
 private fun PlanPhaseCard(phase: PlanPhaseUi) {
+    val dotColor = when (phase.status) {
+        PlanPhaseStatus.Done -> MaterialTheme.movitColors.success
+        PlanPhaseStatus.Active -> MaterialTheme.colorScheme.primary
+        PlanPhaseStatus.Upcoming -> MaterialTheme.movitColors.surface2
+    }
     MovitCard {
-        Text(text = phase.title, fontWeight = FontWeight.W800)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(MovitSpacing.md),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(12.dp)
+                    .clip(CircleShape)
+                    .background(dotColor),
+            )
+            Text(text = phase.title, fontWeight = FontWeight.W800)
+        }
         Text(
             text = phase.subtitle,
             style = MaterialTheme.typography.bodySmall,

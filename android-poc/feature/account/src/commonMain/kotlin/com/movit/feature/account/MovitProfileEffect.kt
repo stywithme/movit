@@ -7,5 +7,7 @@ sealed interface MovitProfileEffect {
     data object OpenAssessment : MovitProfileEffect
     data object OpenLevel : MovitProfileEffect
     data object LoggedOut : MovitProfileEffect
+    data class LanguageChanged(val languageCode: String) : MovitProfileEffect
+    data class ThemeModeChanged(val themeMode: String) : MovitProfileEffect
     data class ShowMessage(val message: String) : MovitProfileEffect
 }

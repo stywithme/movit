@@ -15,6 +15,9 @@ val apiPort = apiProps.getProperty("api.port", "4000")
 val apiPhysicalIp = apiProps.getProperty("api.physical_device_ip", "192.168.1.18")
 val apiServerUrl = apiProps.getProperty("api.server_url", "https://back.mongz.online/")
 
+val movitShellLauncherEnabled =
+    providers.gradleProperty("movit.shell.launcher.enabled").orNull?.toBoolean() ?: false
+
 android {
     namespace = "com.trainingvalidator.poc"
     compileSdk = 36
@@ -32,6 +35,11 @@ android {
         buildConfigField("int", "API_PORT", apiPort)
         buildConfigField("String", "API_PHYSICAL_IP", "\"$apiPhysicalIp\"")
         buildConfigField("String", "API_SERVER_URL", "\"$apiServerUrl\"")
+        buildConfigField(
+            "boolean",
+            "MOVIT_SHELL_LAUNCHER_ENABLED",
+            movitShellLauncherEnabled.toString(),
+        )
     }
 
     buildTypes {
@@ -82,20 +90,44 @@ kotlin {
 val litertVersion = "1.4.0"
 
 dependencies {
-    // Movit pilot modules — debug-only (Phase 03 release hygiene)
-    debugImplementation(project(":shared"))
-    debugImplementation(project(":core:network"))
-    debugImplementation(project(":core:data"))
-    debugImplementation(project(":core:designsystem"))
-    debugImplementation(project(":feature:explore"))
-    debugImplementation(project(":feature:home"))
-    debugImplementation(project(":feature:train"))
-    debugImplementation(project(":feature:library"))
-    debugImplementation(project(":feature:reports"))
-    debugImplementation(project(":feature:account"))
-    debugImplementation(project(":feature:shell"))
-    debugImplementation(libs.androidx.activity.compose)
-    debugImplementation(libs.compose.ui.tooling)
+    // Secure auth tokens (EncryptedSharedPreferences) — production path via AuthManager
+    implementation(project(":core:data"))
+
+    // Movit KMP modules — debug-only until launcher flip (Pre-06 WS-C / Launcher Gate doc)
+    val movitShellDeps: org.gradle.kotlin.dsl.DependencyHandlerScope.() -> Unit = {
+        add("implementation", project(":shared"))
+        add("implementation", project(":core:network"))
+        add("implementation", project(":core:data"))
+        add("implementation", project(":core:designsystem"))
+        add("implementation", project(":feature:explore"))
+        add("implementation", project(":feature:home"))
+        add("implementation", project(":feature:train"))
+        add("implementation", project(":feature:library"))
+        add("implementation", project(":feature:reports"))
+        add("implementation", project(":feature:account"))
+        add("implementation", project(":feature:shell"))
+        add("implementation", libs.androidx.activity.compose)
+    }
+    if (movitShellLauncherEnabled) {
+        movitShellDeps()
+        debugImplementation(libs.compose.ui.tooling)
+    } else {
+        debugImplementation(project(":shared"))
+        debugImplementation(project(":core:network"))
+        debugImplementation(project(":core:data"))
+        debugImplementation(project(":core:designsystem"))
+        debugImplementation(project(":feature:explore"))
+        debugImplementation(project(":feature:home"))
+        debugImplementation(project(":feature:train"))
+        debugImplementation(project(":feature:library"))
+        debugImplementation(project(":feature:reports"))
+        debugImplementation(project(":feature:account"))
+        debugImplementation(project(":feature:shell"))
+        debugImplementation(libs.androidx.activity.compose)
+        debugImplementation(libs.compose.ui.tooling)
+    }
+
+    implementation(project(":core:training-engine"))
 
     // Core Android — March 2026
     implementation("androidx.core:core-ktx:1.17.0")

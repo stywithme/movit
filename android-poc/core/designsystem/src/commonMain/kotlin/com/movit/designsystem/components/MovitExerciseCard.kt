@@ -23,6 +23,7 @@ fun MovitExerciseCard(
     modifier: Modifier = Modifier,
     badge: String? = null,
     metadata: List<String> = emptyList(),
+    imageUrl: String? = null,
     imageLabel: String? = null,
     enabled: Boolean = true,
     isLoading: Boolean = false,
@@ -45,8 +46,10 @@ fun MovitExerciseCard(
         enabled = enabled,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm)) {
-            MovitMediaPlaceholder(
-                label = imageLabel ?: title.take(1).uppercase(),
+            MovitRemoteImage(
+                imageUrl = imageUrl,
+                contentDescription = title,
+                placeholderLabel = imageLabel ?: title.take(1).uppercase(),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(120.dp),

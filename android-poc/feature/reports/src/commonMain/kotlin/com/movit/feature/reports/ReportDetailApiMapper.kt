@@ -1,6 +1,7 @@
 package com.movit.feature.reports
 
 import com.movit.core.network.dto.ExerciseMetricsSummaryDto
+import com.movit.core.network.dto.JointMetricsDto
 import com.movit.core.network.dto.MetricsApiResponse
 import com.movit.core.network.dto.ReportInsightDto
 import com.movit.core.network.dto.SetMetricsDto
@@ -49,7 +50,7 @@ object ReportDetailApiMapper {
             durationLabel = ReportsFormatting.formatDuration(summary.totalDurationMs ?: 0L),
             overviewInsightTitle = overviewInsight?.toTitle() ?: strings.sessionOverview,
             overviewInsightMessage = overviewInsight?.message ?: strings.avgForm(formScore),
-            joints = emptyList(),
+            joints = mapJoints(summary.jointBreakdown),
             repCompare = repCompare,
             fatigueLabel = strings.fatigueLabel,
             fatigueTitle = fatigueTitle,
@@ -59,6 +60,26 @@ object ReportDetailApiMapper {
             formBySetLabels = formLabels,
             tips = tips,
         )
+    }
+
+    internal fun mapJoints(breakdown: List<JointMetricsDto>?): List<ReportJointScoreUi> {
+        return breakdown.orEmpty().mapNotNull { joint ->
+            val score = joint.score.roundToInt().coerceIn(0, 100)
+            val label = joint.jointName.takeIf { it.isNotBlank() }
+                ?: joint.jointCode.replace('_', ' ').replaceFirstChar { it.uppercase() }
+            if (label.isBlank()) return@mapNotNull null
+            ReportJointScoreUi(
+                label = label,
+                scorePercent = score,
+                tone = toneForScore(score),
+            )
+        }
+    }
+
+    private fun toneForScore(score: Int): ReportScoreTone = when {
+        score >= 90 -> ReportScoreTone.Success
+        score >= 75 -> ReportScoreTone.Primary
+        else -> ReportScoreTone.Warning
     }
 
     private suspend fun buildRepCompare(

@@ -3,6 +3,7 @@ package com.movit.feature.account
 sealed interface MovitOnboardingEvent {
     data object BackClicked : MovitOnboardingEvent
     data object ContinueClicked : MovitOnboardingEvent
+    data object RetrySubmitClicked : MovitOnboardingEvent
     data class AgeChanged(val value: String) : MovitOnboardingEvent
     data class SexSelected(val value: String) : MovitOnboardingEvent
     data class HeightChanged(val value: String) : MovitOnboardingEvent

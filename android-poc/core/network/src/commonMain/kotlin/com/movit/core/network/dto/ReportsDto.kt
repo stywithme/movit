@@ -66,6 +66,13 @@ data class MetricsApiResponse(
 )
 
 @Serializable
+data class JointMetricsDto(
+    val jointCode: String = "",
+    val jointName: String = "",
+    val score: Float = 0f,
+)
+
+@Serializable
 data class ExerciseMetricsSummaryDto(
     val exerciseSlug: String? = null,
     val exerciseName: String? = null,
@@ -78,6 +85,7 @@ data class ExerciseMetricsSummaryDto(
     val bestSetNumber: Int? = null,
     val dropOffRate: Float? = null,
     val formRating: String? = null,
+    val jointBreakdown: List<JointMetricsDto>? = null,
     val sets: List<SetMetricsDto>? = null,
 )
 

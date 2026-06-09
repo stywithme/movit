@@ -23,7 +23,7 @@ class MovitReportsStateTest {
     fun successfulLoad_populatesDashboard() {
         runBlocking {
             val viewModel = MovitReportsViewModel()
-            viewModel.load()
+            viewModel.load(isRefresh = false)
             val state = viewModel.state.value
             assertEquals(false, state.isLoading)
             assertNull(state.errorMessage)
@@ -38,7 +38,7 @@ class MovitReportsStateTest {
             val viewModel = MovitReportsViewModel(
                 repository = FakeReportsRepository(shouldFail = true),
             )
-            viewModel.load()
+            viewModel.load(isRefresh = false)
             assertEquals("Unable to load reports.", viewModel.state.value.errorMessage)
         }
     }
@@ -57,6 +57,22 @@ class MovitReportsStateTest {
             MovitReportsEffect.OpenReportDetail("barbell-squat"),
             effectDeferred.await(),
         )
+    }
+
+    @Test
+    fun refreshLoad_setsRefreshingThenClears() = runBlocking {
+        val viewModel = MovitReportsViewModel()
+        viewModel.load(isRefresh = false)
+        viewModel.load(isRefresh = true)
+        assertEquals(false, viewModel.state.value.isRefreshing)
+        assertEquals(ReportsHubState.Success, viewModel.state.value.dashboard?.hubState)
+    }
+
+    @Test
+    fun tabSelected_updatesSelectedTab() {
+        val viewModel = MovitReportsViewModel()
+        viewModel.onEvent(MovitReportsEvent.TabSelected(ReportsTab.Trends))
+        assertEquals(ReportsTab.Trends, viewModel.state.value.selectedTab)
     }
 
     @Test
