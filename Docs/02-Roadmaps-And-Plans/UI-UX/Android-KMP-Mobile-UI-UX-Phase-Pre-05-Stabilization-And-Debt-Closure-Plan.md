@@ -47,7 +47,7 @@ Phase 05 (page-by-page) أنتجت شاشات حقيقية شغّالة (Home/Ex
 - ✅ `:app:assembleDebug` + اختبارات (data/shell/library/reports/train/home/explore) — **BUILD SUCCESSFUL**.
 - ✅ `:core:data:compileKotlinIosSimulatorArm64` — **أخضر**.
 - ✅ `:feature:shell:compileKotlinIosSimulatorArm64` (سطح iOS كامل: network/data/resources/كل الفيتشرز/shell) — **أخضر**.
-- ⏳ يتبقّى **iOS framework link + Simulator render** على macOS CI (اللينك يحتاج Mac، غير متاح على Windows) — يُحسم بإعادة push.
+- ⏳ **iOS framework link** (`linkDebugFrameworkIosSimulatorArm64`) — يحتاج macOS؛ **الكود مرفوع** (`58f403fc fix CI` على `origin/codex/kmp-mobile-foundation`) — macOS CI هو المرجع النهائى لهذه البوابة.
 
 الملفات المعدَّلة في هذا الإصلاح: `gradle/libs.versions.toml`, `core/data/.../MovitData.kt`, `feature/shell/.../MovitInnerRoute.kt`, `feature/shell/.../MovitInnerHost.kt`, `feature/library/build.gradle.kts`.
 

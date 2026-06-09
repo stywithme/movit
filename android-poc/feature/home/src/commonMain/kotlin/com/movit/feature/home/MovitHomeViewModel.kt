@@ -73,9 +73,8 @@ class MovitHomeViewModel(
     fun onEvent(event: MovitHomeEvent) {
         when (event) {
             MovitHomeEvent.RetryClicked -> Unit
-            MovitHomeEvent.StartTodayPlanClicked,
-            MovitHomeEvent.BodyScanClicked,
-            -> _effects.tryEmit(MovitHomeEffect.OpenTrain)
+            MovitHomeEvent.StartTodayPlanClicked -> _effects.tryEmit(MovitHomeEffect.OpenTrain)
+            MovitHomeEvent.BodyScanClicked -> _effects.tryEmit(MovitHomeEffect.OpenAssessment)
             MovitHomeEvent.ExploreClicked,
             MovitHomeEvent.BrowseProgramsClicked,
             -> _effects.tryEmit(MovitHomeEffect.OpenExplore)
@@ -88,6 +87,7 @@ class MovitHomeViewModel(
                     "explore" -> _effects.tryEmit(MovitHomeEffect.OpenExplore)
                     "reports" -> _effects.tryEmit(MovitHomeEffect.OpenReports)
                     "profile" -> _effects.tryEmit(MovitHomeEffect.OpenProfile)
+                    "level" -> _effects.tryEmit(MovitHomeEffect.OpenLevel)
                     else -> viewModelScope.launch {
                         val language = if (MovitData.isInstalled) {
                             MovitData.requirePlatform().preferredLanguage()

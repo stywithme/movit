@@ -2,6 +2,10 @@ package com.movit.feature.shell
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.movit.feature.account.MovitAssessmentRoute
+import com.movit.feature.account.MovitAuthRoute
+import com.movit.feature.account.MovitLevelRoute
+import com.movit.feature.account.MovitOnboardingRoute
 import com.movit.feature.library.ExercisePrepareRoute
 import com.movit.feature.library.ExercisesLibraryRoute
 import com.movit.feature.library.ProgramDetailRoute
@@ -15,6 +19,7 @@ fun MovitInnerHost(
     route: MovitInnerRoute,
     onBack: () -> Unit,
     onNavigate: (MovitInnerRoute) -> Unit,
+    onShellEvent: (MovitAppShellEvent) -> Unit = {},
     onShellEffect: (MovitAppShellEffect) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -71,6 +76,30 @@ fun MovitInnerHost(
                     }
                     onShellEffect(MovitAppShellEffect.ShowMessage(message))
                 },
+                modifier = modifier,
+            )
+        }
+        MovitInnerRoute.Auth -> {
+            MovitAuthRoute(
+                onEffect = { onShellEvent(MovitAppShellEvent.AuthEffectReceived(it)) },
+                modifier = modifier,
+            )
+        }
+        MovitInnerRoute.ProfileOnboarding -> {
+            MovitOnboardingRoute(
+                onEffect = { onShellEvent(MovitAppShellEvent.OnboardingEffectReceived(it)) },
+                modifier = modifier,
+            )
+        }
+        MovitInnerRoute.Assessment -> {
+            MovitAssessmentRoute(
+                onEffect = { onShellEvent(MovitAppShellEvent.AssessmentEffectReceived(it)) },
+                modifier = modifier,
+            )
+        }
+        MovitInnerRoute.LevelProfile -> {
+            MovitLevelRoute(
+                onEffect = { onShellEvent(MovitAppShellEvent.LevelEffectReceived(it)) },
                 modifier = modifier,
             )
         }

@@ -18,6 +18,8 @@ import com.movit.feature.home.MovitHomeRoute
 import com.movit.feature.home.MovitHomeViewModel
 import com.movit.feature.reports.MovitReportsRoute
 import com.movit.feature.reports.MovitReportsViewModel
+import com.movit.feature.account.MovitProfileRoute
+import com.movit.feature.account.MovitProfileViewModel
 import com.movit.feature.train.MovitTrainEffect
 import com.movit.feature.train.MovitTrainRoute
 import com.movit.feature.train.MovitTrainViewModel
@@ -30,6 +32,7 @@ fun MovitAppShell(
     trainViewModel: MovitTrainViewModel,
     exploreViewModel: MovitExploreViewModel,
     reportsViewModel: MovitReportsViewModel,
+    profileViewModel: MovitProfileViewModel,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     onTrainEffect: (MovitTrainEffect) -> Boolean = { false },
@@ -66,6 +69,7 @@ fun MovitAppShell(
                     route = innerRoute,
                     onBack = { onEvent(MovitAppShellEvent.InnerRoutePopped) },
                     onNavigate = { onEvent(MovitAppShellEvent.InnerRoutePushed(it)) },
+                    onShellEvent = onEvent,
                     onShellEffect = onShellEffect,
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -97,7 +101,11 @@ fun MovitAppShell(
                     )
                 }
                 MovitAppDestination.Profile -> {
-                    MovitProfileRoute(modifier = Modifier.fillMaxSize())
+                    MovitProfileRoute(
+                        viewModel = profileViewModel,
+                        modifier = Modifier.fillMaxSize(),
+                        onEffect = { onEvent(MovitAppShellEvent.ProfileEffectReceived(it)) },
+                    )
                 }
                 MovitAppDestination.Reports -> {
                     MovitReportsRoute(

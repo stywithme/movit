@@ -11,4 +11,8 @@ sealed interface MovitInnerRoute {
     data class WorkoutSession(val workoutId: String) : MovitInnerRoute
     data class ExercisePrepare(val exerciseId: String) : MovitInnerRoute
     data class ReportDetail(val reportId: String) : MovitInnerRoute
+    data object Auth : MovitInnerRoute
+    data object ProfileOnboarding : MovitInnerRoute
+    data object Assessment : MovitInnerRoute
+    data object LevelProfile : MovitInnerRoute
 }

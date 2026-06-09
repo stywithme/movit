@@ -64,6 +64,10 @@ tasks.named("preBuild") {
     dependsOn(generateMovitEnglishStrings)
 }
 
+tasks.matching { it.name.startsWith("compileKotlin") }.configureEach {
+    dependsOn(generateMovitEnglishStrings)
+}
+
 android {
     namespace = "com.movit.resources"
     compileSdk = libs.versions.compile.sdk.get().toInt()

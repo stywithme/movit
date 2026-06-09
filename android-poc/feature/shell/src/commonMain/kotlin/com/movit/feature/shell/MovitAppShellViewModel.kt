@@ -1,6 +1,11 @@
 package com.movit.feature.shell
 
 import androidx.lifecycle.ViewModel
+import com.movit.feature.account.MovitAssessmentEffect
+import com.movit.feature.account.MovitAuthEffect
+import com.movit.feature.account.MovitLevelEffect
+import com.movit.feature.account.MovitOnboardingEffect
+import com.movit.feature.account.MovitProfileEffect
 import com.movit.feature.explore.ExploreItemType
 import com.movit.feature.explore.MovitExploreEffect
 import com.movit.feature.home.MovitHomeEffect
@@ -48,6 +53,11 @@ class MovitAppShellViewModel : ViewModel() {
             is MovitAppShellEvent.HeaderUserNameUpdated -> {
                 _state.update { it.copy(headerUserName = event.userName) }
             }
+            is MovitAppShellEvent.ProfileEffectReceived -> handleProfileEffect(event.effect)
+            is MovitAppShellEvent.AuthEffectReceived -> handleAuthEffect(event.effect)
+            is MovitAppShellEvent.OnboardingEffectReceived -> handleOnboardingEffect(event.effect)
+            is MovitAppShellEvent.AssessmentEffectReceived -> handleAssessmentEffect(event.effect)
+            is MovitAppShellEvent.LevelEffectReceived -> handleLevelEffect(event.effect)
         }
     }
 
@@ -57,7 +67,78 @@ class MovitAppShellViewModel : ViewModel() {
             MovitHomeEffect.OpenExplore -> navigateTo(MovitAppDestination.Explore)
             MovitHomeEffect.OpenReports -> navigateTo(MovitAppDestination.Reports)
             MovitHomeEffect.OpenProfile -> navigateTo(MovitAppDestination.Profile)
+            MovitHomeEffect.OpenAssessment -> pushInner(MovitInnerRoute.Assessment)
+            MovitHomeEffect.OpenLevel -> pushInner(MovitInnerRoute.LevelProfile)
             is MovitHomeEffect.ShowMessage -> {
+                _effects.tryEmit(MovitAppShellEffect.ShowMessage(effect.message))
+            }
+        }
+    }
+
+    private fun handleProfileEffect(effect: MovitProfileEffect) {
+        when (effect) {
+            MovitProfileEffect.OpenAuth -> pushInner(MovitInnerRoute.Auth)
+            MovitProfileEffect.OpenOnboarding -> pushInner(MovitInnerRoute.ProfileOnboarding)
+            MovitProfileEffect.OpenAssessment -> pushInner(MovitInnerRoute.Assessment)
+            MovitProfileEffect.OpenLevel -> pushInner(MovitInnerRoute.LevelProfile)
+            MovitProfileEffect.OpenSubscription -> Unit
+            MovitProfileEffect.LoggedOut -> {
+                popAllInner()
+                pushInner(MovitInnerRoute.Auth)
+            }
+            is MovitProfileEffect.ShowMessage -> {
+                _effects.tryEmit(MovitAppShellEffect.ShowMessage(effect.message))
+            }
+        }
+    }
+
+    private fun handleAuthEffect(effect: MovitAuthEffect) {
+        when (effect) {
+            MovitAuthEffect.OpenShell -> popInner()
+            MovitAuthEffect.OpenOnboarding -> {
+                popInner()
+                pushInner(MovitInnerRoute.ProfileOnboarding)
+            }
+            is MovitAuthEffect.ShowMessage -> {
+                _effects.tryEmit(MovitAppShellEffect.ShowMessage(effect.message))
+            }
+        }
+    }
+
+    private fun handleOnboardingEffect(effect: MovitOnboardingEffect) {
+        when (effect) {
+            MovitOnboardingEffect.Completed -> popInner()
+            is MovitOnboardingEffect.ShowMessage -> {
+                _effects.tryEmit(MovitAppShellEffect.ShowMessage(effect.message))
+            }
+        }
+    }
+
+    private fun handleAssessmentEffect(effect: MovitAssessmentEffect) {
+        when (effect) {
+            MovitAssessmentEffect.NavigateBack -> popInner()
+            MovitAssessmentEffect.OpenExplore -> {
+                popAllInner()
+                navigateTo(MovitAppDestination.Explore)
+            }
+            MovitAssessmentEffect.OpenHome -> {
+                popAllInner()
+                navigateTo(MovitAppDestination.Home)
+            }
+            is MovitAssessmentEffect.ShowMessage -> {
+                _effects.tryEmit(MovitAppShellEffect.ShowMessage(effect.message))
+            }
+        }
+    }
+
+    private fun handleLevelEffect(effect: MovitLevelEffect) {
+        when (effect) {
+            MovitLevelEffect.OpenAssessment -> pushInner(MovitInnerRoute.Assessment)
+            MovitLevelEffect.OpenExplore -> {
+                popAllInner()
+                navigateTo(MovitAppDestination.Explore)
+            }
+            is MovitLevelEffect.ShowMessage -> {
                 _effects.tryEmit(MovitAppShellEffect.ShowMessage(effect.message))
             }
         }
@@ -67,9 +148,7 @@ class MovitAppShellViewModel : ViewModel() {
         when (effect) {
             MovitReportsEffect.OpenTrain -> navigateTo(MovitAppDestination.Train)
             MovitReportsEffect.OpenUpgrade -> {
-                _effects.tryEmit(
-                    MovitAppShellEffect.ShowMessage("Subscription upgrade opens from Profile."),
-                )
+                navigateTo(MovitAppDestination.Profile)
             }
             is MovitReportsEffect.OpenReportDetail -> {
                 pushInner(MovitInnerRoute.ReportDetail(effect.reportId))
@@ -136,6 +215,10 @@ class MovitAppShellViewModel : ViewModel() {
         _state.update {
             if (it.innerStack.isEmpty()) it else it.copy(innerStack = it.innerStack.dropLast(1))
         }
+    }
+
+    private fun popAllInner() {
+        _state.update { it.copy(innerStack = emptyList()) }
     }
 
     private fun navigateTo(destination: MovitAppDestination) {

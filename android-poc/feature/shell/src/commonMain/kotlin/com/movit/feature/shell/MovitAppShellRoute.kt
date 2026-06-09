@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.movit.core.data.MovitData
 import com.movit.resources.MovitLocaleProvider
+import com.movit.feature.account.MovitProfileViewModel
 import com.movit.feature.explore.MovitExploreViewModel
 import com.movit.feature.home.MovitHomeViewModel
 import com.movit.feature.reports.MovitReportsViewModel
@@ -25,6 +26,7 @@ fun MovitAppShellRoute(
     trainViewModel: MovitTrainViewModel = viewModel { MovitTrainViewModel() },
     exploreViewModel: MovitExploreViewModel = viewModel { MovitExploreViewModel() },
     reportsViewModel: MovitReportsViewModel = viewModel { MovitReportsViewModel() },
+    profileViewModel: MovitProfileViewModel = viewModel { MovitProfileViewModel() },
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     onTrainEffect: (MovitTrainEffect) -> Boolean = { false },
 ) {
@@ -41,6 +43,7 @@ fun MovitAppShellRoute(
             trainViewModel = trainViewModel,
             exploreViewModel = exploreViewModel,
             reportsViewModel = reportsViewModel,
+            profileViewModel = profileViewModel,
             modifier = modifier,
             snackbarHostState = snackbarHostState,
             onTrainEffect = onTrainEffect,
@@ -55,6 +58,7 @@ private fun MovitAppShellRouteContent(
     trainViewModel: MovitTrainViewModel,
     exploreViewModel: MovitExploreViewModel,
     reportsViewModel: MovitReportsViewModel,
+    profileViewModel: MovitProfileViewModel,
     modifier: Modifier,
     snackbarHostState: SnackbarHostState,
     onTrainEffect: (MovitTrainEffect) -> Boolean,
@@ -78,6 +82,7 @@ private fun MovitAppShellRouteContent(
         trainViewModel = trainViewModel,
         exploreViewModel = exploreViewModel,
         reportsViewModel = reportsViewModel,
+        profileViewModel = profileViewModel,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
         onTrainEffect = onTrainEffect,

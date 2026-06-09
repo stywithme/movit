@@ -92,6 +92,7 @@ dependencies {
     debugImplementation(project(":feature:train"))
     debugImplementation(project(":feature:library"))
     debugImplementation(project(":feature:reports"))
+    debugImplementation(project(":feature:account"))
     debugImplementation(project(":feature:shell"))
     debugImplementation(libs.androidx.activity.compose)
     debugImplementation(libs.compose.ui.tooling)

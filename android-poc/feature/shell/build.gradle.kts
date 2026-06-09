@@ -32,6 +32,7 @@ kotlin {
             implementation(project(":feature:train"))
             implementation(project(":feature:reports"))
             implementation(project(":feature:library"))
+            implementation(project(":feature:account"))
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)

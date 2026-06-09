@@ -1,5 +1,10 @@
 package com.movit.feature.shell
 
+import com.movit.feature.account.MovitAssessmentEffect
+import com.movit.feature.account.MovitAuthEffect
+import com.movit.feature.account.MovitLevelEffect
+import com.movit.feature.account.MovitOnboardingEffect
+import com.movit.feature.account.MovitProfileEffect
 import com.movit.feature.explore.MovitExploreEffect
 import com.movit.feature.home.MovitHomeEffect
 import com.movit.feature.reports.MovitReportsEffect
@@ -15,4 +20,9 @@ sealed interface MovitAppShellEvent {
     data class TrainEffectReceived(val effect: MovitTrainEffect) : MovitAppShellEvent
     data class ReportsEffectReceived(val effect: MovitReportsEffect) : MovitAppShellEvent
     data class HeaderUserNameUpdated(val userName: String) : MovitAppShellEvent
+    data class ProfileEffectReceived(val effect: MovitProfileEffect) : MovitAppShellEvent
+    data class AuthEffectReceived(val effect: MovitAuthEffect) : MovitAppShellEvent
+    data class OnboardingEffectReceived(val effect: MovitOnboardingEffect) : MovitAppShellEvent
+    data class AssessmentEffectReceived(val effect: MovitAssessmentEffect) : MovitAppShellEvent
+    data class LevelEffectReceived(val effect: MovitLevelEffect) : MovitAppShellEvent
 }

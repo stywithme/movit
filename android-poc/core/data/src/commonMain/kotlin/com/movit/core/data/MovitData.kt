@@ -2,6 +2,7 @@ package com.movit.core.data
 
 import com.movit.core.data.di.movitDataModule
 import com.movit.core.data.platform.MovitPlatformBindings
+import com.movit.core.data.repository.AccountSyncRepository
 import com.movit.core.data.repository.ExploreSyncRepository
 import com.movit.core.data.repository.HomeSyncRepository
 import com.movit.core.data.repository.ReportsSyncRepository
@@ -41,6 +42,7 @@ object MovitData {
     val home: HomeSyncRepository get() = koin().get()
     val reports: ReportsSyncRepository get() = koin().get()
     val workoutSession: WorkoutSessionSyncRepository get() = koin().get()
+    val account: AccountSyncRepository get() = koin().get()
 
     private fun koin(): Koin = koinApp?.koin
         ?: error("MovitData.install() was not called.")

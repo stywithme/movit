@@ -1,6 +1,7 @@
 package com.movit.core.data.di
 
 import com.movit.core.data.platform.MovitPlatformBindings
+import com.movit.core.data.repository.AccountSyncRepository
 import com.movit.core.data.repository.ExploreSyncRepository
 import com.movit.core.data.repository.HomeSyncRepository
 import com.movit.core.data.repository.ReportsSyncRepository
@@ -21,4 +22,5 @@ fun movitDataModule(platform: MovitPlatformBindings): Module = module {
     single { HomeSyncRepository(api = get(), platform = { get() }) }
     single { ReportsSyncRepository(api = get(), platform = { get() }) }
     single { WorkoutSessionSyncRepository(api = get(), platform = { get() }) }
+    single { AccountSyncRepository(api = get(), platform = { get() }) }
 }

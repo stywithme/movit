@@ -1,8 +1,9 @@
 package com.movit.feature.shell
 
+import com.movit.feature.account.MovitProfileEffect
 import com.movit.feature.explore.MovitExploreEffect
-import com.movit.feature.reports.MovitReportsEffect
 import com.movit.feature.home.MovitHomeEffect
+import com.movit.feature.reports.MovitReportsEffect
 import com.movit.feature.train.MovitTrainEffect
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -106,6 +107,27 @@ class MovitAppShellStateTest {
             MovitInnerRoute.ReportDetail("barbell-squat"),
             viewModel.state.value.currentInnerRoute,
         )
+    }
+
+    @Test
+    fun homeOpenAssessment_pushesAssessmentInnerRoute() {
+        val viewModel = MovitAppShellViewModel()
+        viewModel.onEvent(MovitAppShellEvent.HomeEffectReceived(MovitHomeEffect.OpenAssessment))
+        assertEquals(MovitInnerRoute.Assessment, viewModel.state.value.currentInnerRoute)
+    }
+
+    @Test
+    fun homeOpenLevel_pushesLevelInnerRoute() {
+        val viewModel = MovitAppShellViewModel()
+        viewModel.onEvent(MovitAppShellEvent.HomeEffectReceived(MovitHomeEffect.OpenLevel))
+        assertEquals(MovitInnerRoute.LevelProfile, viewModel.state.value.currentInnerRoute)
+    }
+
+    @Test
+    fun profileOpenAuth_pushesAuthInnerRoute() {
+        val viewModel = MovitAppShellViewModel()
+        viewModel.onEvent(MovitAppShellEvent.ProfileEffectReceived(MovitProfileEffect.OpenAuth))
+        assertEquals(MovitInnerRoute.Auth, viewModel.state.value.currentInnerRoute)
     }
 
     @Test

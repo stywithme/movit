@@ -19,4 +19,34 @@ interface MovitPlatformBindings {
 
     /** Active enrollment id for effective-plan and customization APIs. */
     fun activeUserProgramId(): String? = null
+
+    fun userEmail(): String? = null
+
+    fun userAvatarUrl(): String? = null
+
+    fun refreshToken(): String? = null
+
+    fun isOnboardingCompleted(): Boolean = true
+
+    fun totalWorkouts(): Int = 0
+
+    fun totalMinutes(): Int = 0
+
+    fun subscriptionExpiry(): String? = null
+
+    fun voiceFeedbackEnabled(): Boolean = true
+
+    fun notificationsEnabled(): Boolean = true
+
+    fun persistAuthSession(snapshot: AuthSessionSnapshot) {}
+
+    fun clearAuthSession() {}
+
+    fun setOnboardingCompleted(completed: Boolean) {}
+
+    fun updateUserSettings(
+        preferredLanguage: String? = null,
+        voiceFeedback: Boolean? = null,
+        notifications: Boolean? = null,
+    ) {}
 }

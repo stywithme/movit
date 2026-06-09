@@ -99,7 +99,7 @@ fun MovitHomeScreen(
                             subtitle = level.subtitle,
                             progressPercent = level.progressPercent,
                             inkStyle = false,
-                            onActionClick = { onEvent(MovitHomeEvent.ProfileClicked) },
+                            onActionClick = { onEvent(MovitHomeEvent.QuickActionClicked("level")) },
                             actionLabel = movitText("home_view_level"),
                         )
                     }
