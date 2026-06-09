@@ -9,7 +9,9 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.backhandler.BackHandler
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.components.MovitFloatingNavBar
 import com.movit.feature.explore.MovitExploreRoute
@@ -24,6 +26,7 @@ import com.movit.feature.train.MovitTrainEffect
 import com.movit.feature.train.MovitTrainRoute
 import com.movit.feature.train.MovitTrainViewModel
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun MovitAppShell(
     state: MovitAppShellState,
@@ -39,6 +42,10 @@ fun MovitAppShell(
     onShellEffect: (MovitAppShellEffect) -> Unit = {},
 ) {
     val innerRoute = state.currentInnerRoute
+    val interceptSystemBack = innerRoute != null || state.selectedDestination != MovitAppDestination.Home
+    BackHandler(enabled = interceptSystemBack) {
+        onEvent(MovitAppShellEvent.BackPressed)
+    }
     Scaffold(
         modifier = modifier.fillMaxSize(),
         bottomBar = {

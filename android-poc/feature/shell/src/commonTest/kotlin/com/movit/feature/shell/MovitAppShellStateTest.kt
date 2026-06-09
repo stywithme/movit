@@ -131,6 +131,40 @@ class MovitAppShellStateTest {
     }
 
     @Test
+    fun backPressed_withInnerRoute_popsStack() {
+        val viewModel = MovitAppShellViewModel()
+        viewModel.onEvent(MovitAppShellEvent.HomeEffectReceived(MovitHomeEffect.OpenAssessment))
+        assertEquals(MovitInnerRoute.Assessment, viewModel.state.value.currentInnerRoute)
+        assertEquals(true, viewModel.handleSystemBack())
+        assertEquals(null, viewModel.state.value.currentInnerRoute)
+    }
+
+    @Test
+    fun backPressed_onTrainTab_navigatesToHome() {
+        val viewModel = MovitAppShellViewModel()
+        viewModel.onEvent(MovitAppShellEvent.DestinationSelected(MovitAppDestination.Train))
+        assertEquals(true, viewModel.handleSystemBack())
+        assertEquals(MovitAppDestination.Home, viewModel.state.value.selectedDestination)
+        assertEquals(null, viewModel.state.value.currentInnerRoute)
+    }
+
+    @Test
+    fun backPressed_onHomeWithEmptyStack_isNotConsumed() {
+        val viewModel = MovitAppShellViewModel()
+        assertEquals(false, viewModel.handleSystemBack())
+        assertEquals(MovitAppDestination.Home, viewModel.state.value.selectedDestination)
+    }
+
+    @Test
+    fun tabSwitch_preservesInnerStackWhenPresent() {
+        val viewModel = MovitAppShellViewModel()
+        viewModel.onEvent(MovitAppShellEvent.HomeEffectReceived(MovitHomeEffect.OpenLevel))
+        viewModel.onEvent(MovitAppShellEvent.DestinationSelected(MovitAppDestination.Train))
+        assertEquals(MovitInnerRoute.LevelProfile, viewModel.state.value.currentInnerRoute)
+        assertEquals(MovitAppDestination.Train, viewModel.state.value.selectedDestination)
+    }
+
+    @Test
     fun innerRoutePopped_removesTopRoute() {
         val viewModel = MovitAppShellViewModel()
         viewModel.onEvent(MovitAppShellEvent.InnerRoutePushed(MovitInnerRoute.ExercisesLibrary))

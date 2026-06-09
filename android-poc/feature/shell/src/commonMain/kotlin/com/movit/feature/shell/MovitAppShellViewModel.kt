@@ -30,8 +30,27 @@ class MovitAppShellViewModel : ViewModel() {
         _effects.tryEmit(effect)
     }
 
+    /**
+     * Handles system back. Returns true when the event was consumed (do not finish the activity).
+     */
+    fun handleSystemBack(): Boolean {
+        val current = _state.value
+        return when {
+            current.innerStack.isNotEmpty() -> {
+                popInner()
+                true
+            }
+            current.selectedDestination != MovitAppDestination.Home -> {
+                navigateTo(MovitAppDestination.Home)
+                true
+            }
+            else -> false
+        }
+    }
+
     fun onEvent(event: MovitAppShellEvent) {
         when (event) {
+            MovitAppShellEvent.BackPressed -> handleSystemBack()
             is MovitAppShellEvent.DestinationSelected -> {
                 _state.update { it.copy(selectedDestination = event.destination) }
             }

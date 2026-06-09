@@ -516,4 +516,6 @@ internal val movitEnglishStrings: Map<String, String> = mapOf(
     "level_plan_title" to "Your training plan",
     "level_plan_sub" to "Personalized path based on your level &amp; goals",
     "level_browse_programs" to "Browse recommended programs",
+    "shell_report_share_coming_soon" to "Share report — coming soon.",
+    "shell_report_export_coming_soon" to "Export report — coming soon.",
 )

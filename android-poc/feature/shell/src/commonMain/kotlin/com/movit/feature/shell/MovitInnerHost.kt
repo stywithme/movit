@@ -51,8 +51,8 @@ fun MovitInnerHost(
                 workoutId = route.workoutId,
                 onBack = onBack,
                 onExerciseClick = { onNavigate(MovitInnerRoute.ExercisePrepare(it)) },
-                onStartWorkout = {
-                    onNavigate(MovitInnerRoute.ExercisePrepare("ex-squat-warm"))
+                onStartWorkout = { exerciseId ->
+                    onNavigate(MovitInnerRoute.ExercisePrepare(exerciseId))
                 },
                 modifier = modifier,
             )
@@ -61,7 +61,7 @@ fun MovitInnerHost(
             ExercisePrepareRoute(
                 exerciseId = route.exerciseId,
                 onBack = onBack,
-                onStart = { /* training flow opens from legacy activity later */ },
+                onStart = { /* Phase 07: legacy TrainingActivity */ },
                 modifier = modifier,
             )
         }
@@ -70,11 +70,11 @@ fun MovitInnerHost(
                 reportId = route.reportId,
                 onBack = onBack,
                 onEffect = { effect ->
-                    val message = when (effect) {
-                        ReportDetailEffect.ShareRequested -> "Share report — coming soon."
-                        ReportDetailEffect.ExportRequested -> "Export report — coming soon."
+                    val key = when (effect) {
+                        ReportDetailEffect.ShareRequested -> "shell_report_share_coming_soon"
+                        ReportDetailEffect.ExportRequested -> "shell_report_export_coming_soon"
                     }
-                    onShellEffect(MovitAppShellEffect.ShowMessage(message))
+                    onShellEffect(MovitAppShellEffect.ShowLocalizedMessage(key))
                 },
                 modifier = modifier,
             )

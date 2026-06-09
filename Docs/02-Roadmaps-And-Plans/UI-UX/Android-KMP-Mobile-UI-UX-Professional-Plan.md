@@ -1,8 +1,67 @@
 # Android / KMP Mobile UI/UX Professional Plan
 
-آخر تحديث: 2026-06-09
+آخر تحديث: 2026-06-09 (post Phase Pre-05 + دفعة Account في Phase 05)
 
-> **قرار محدِّث (2026-06-09): انتقال كامل بلا حلول وسط ولا حلول انتقالية.** أى جسر مؤقت أو fallback للقديم أو تجاوز منصّة يُغلق، لا يُؤجَّل. الديون التي كانت "تُتبَّع" (iOS P1/P2/P3، الجسور، Koin) أصبحت **مجدولة للإغلاق** في [`Phase Pre-05`](Android-KMP-Mobile-UI-UX-Phase-Pre-05-Stabilization-And-Debt-Closure-Plan.md) قبل استكمال شاشات Phase 05.
+> **قرار محدِّث (2026-06-09): انتقال كامل بلا حلول وسط ولا حلول انتقالية.** أُغلقت بوابة Pre-05 (جسور، Koin، iOS compile، نصوص مشتركة) ثم اُستكملت **دفعة الحساب والتقييم** في Phase 05 — التفاصيل في قسم «ملخص تنفيذي للمدير» أدناه وفي [`Phase-05`](Android-KMP-Mobile-UI-UX-Phase-05-Page-By-Page-Modernization-Plan.md).
+
+## ملخص تنفيذي للمدير (2026-06-09)
+
+### ماذا أنجزنا في هذه الدفعة؟
+
+بعد إغلاق **Phase Pre-05** (تثبيت الأساس بدون جسور Retrofit مؤقتة)، نُفِّذت **أول دفعة كاملة من تدفقات الحساب والتقييم** في مسار KMP — الصفحات 10–14 من الـ prototypes — داخل موديول جديد `:feature:account`، مع ربطها بـ Shell وHome.
+
+| الصفحة | Prototype | الحالة في KMP | ملاحظة للمدير |
+|--------|-----------|---------------|----------------|
+| **10 Auth** | `10-auth.html` | ✅ ~85% | Splash · Intro · Sign in/up · Forgot — API Ktor + حفظ جلسة على Android/iOS |
+| **11 Profile** | `11-profile.html` | ✅ ~80% | Hero · Pro/Free · إعدادات · اشتراك · تسجيل خروج — تبويب Profile الحقيقي |
+| **12 Onboarding** | `12-profile-onboarding.html` | ✅ ~75% | معالج 7 خطوات · `PUT /api/mobile/training-profile` |
+| **13 Assessment** | `13-assessment.html` | ✅ ~70% | PAR-Q · Body scan (UI فقط) · Results — **بدون كاميرا** (مقصود Phase 07) |
+| **14 Level & Plan** | `14-level-plan.html` | ✅ ~75% | Level profile · Plan overview · `GET /api/mobile/level-profile` |
+
+### البنية التقنية (باختصار)
+
+```text
+feature:account (جديد)
+  ├── Auth / Profile / Onboarding / Assessment / Level
+  └── UDF: ViewModel + State / Event / Effect + Movit* UI
+
+core:network  → login, register, profile, training-profile, level-profile (Ktor)
+core:data     → AccountSyncRepository + MovitData.account
+core:resources → نصوص ar/en لكل الشاشات الجديدة (~120 مفتاح)
+
+feature:shell → مسارات داخلية: Auth, Onboarding, Assessment, LevelProfile
+feature:home  → Body scan → Assessment · بطاقة المستوى → Level
+```
+
+### التحقق (Build & Tests)
+
+| الأمر | النتيجة |
+|-------|---------|
+| `:app:assembleDebug` | ✅ |
+| `:feature:account:testDebugUnitTest` | ✅ (8) |
+| `:feature:shell:testDebugUnitTest` | ✅ (15) |
+| `:feature:shell:compileKotlinIosSimulatorArm64` | ✅ |
+
+### كيف يُعرض للمدير اليوم؟
+
+- **Android (فريق التطوير):** `MovitShellPilotActivity` — debug فقط، ليس launcher الإنتاج.
+- **iOS:** `iosApp` → نفس Shell؛ يحتاج `MovitData.install` + مفاتيح `access_token` إن أُريدت بيانات حقيقية.
+- **تدفقات تجريبية:** Account → Sign in · Home → Start scan · Home → View level · Account → Training profile / Body assessment.
+
+### ما لم يُنجز بعد (متعمد أو لاحقاً)
+
+| البند | السبب |
+|-------|--------|
+| Google Sign-In | يحتاج جسر Android/iOS (Credentials) — الزر UI فقط حالياً |
+| كاميرا Assessment الحية | Phase 07 (camera/ML) |
+| Launcher production | Shell ما زال debug-only (WS-G) |
+| مطابقة بصرية 100% مع prototypes | فجوات UX ثانوية (صور، animations) |
+
+### المراجع التفصيلية
+
+- حالة صفحة بصفحة: [`Android-UI-UX-Modernization-Status.md`](Android-UI-UX-Modernization-Status.md)
+- خطة Phase 05 (Train + Account): [`Android-KMP-Mobile-UI-UX-Phase-05-Page-By-Page-Modernization-Plan.md`](Android-KMP-Mobile-UI-UX-Phase-05-Page-By-Page-Modernization-Plan.md)
+- Pre-05 (مغلقة): [`Android-KMP-Mobile-UI-UX-Phase-Pre-05-Stabilization-And-Debt-Closure-Plan.md`](Android-KMP-Mobile-UI-UX-Phase-Pre-05-Stabilization-And-Debt-Closure-Plan.md)
 
 ## الهدف
 
@@ -31,19 +90,19 @@
 
 هذا يتماشى مع دليل JetBrains الرسمي للهجرة التدريجية من Android إلى KMP، لكن تفسير التدرج هنا عملي: كل خطوة يجب أن تبني وتجرب وتثبت القرار التالي. لا نتمسك بـ View/XML أو single-module لأنهما موجودان حالياً فقط.
 
-## حالة التنفيذ الفعلية (تحديث 2026-06-08)
+## حالة التنفيذ الفعلية (تحديث 2026-06-09)
 
-تم تنفيذ Phase 01→04 بالكامل، إغلاق ملاحظات مراجعة System Designer، واكتمال التحقّقات الثلاثة (آخرها iOS render proof على Xcode). الحالة الحقيقية على فرع `codex/kmp-mobile-foundation`:
+تم تنفيذ Phase 01→04 بالكامل، **Phase Pre-05** (إغلاق ديون الأساس)، ودفعة **Phase 05** (Train + Reports + Session + **Account 10–14**). اكتمال التحقّقات الثلاثة (آخرها iOS render proof على Xcode) + iOS compile لـ shell بعد Account.
 
 ### مبنيّ ومتحقَّق منه
 
-- **موديولات KMP:** `:shared`, `:core:designsystem`, `:core:network`, `:core:data`, `:feature:{explore,home,train,reports,library,shell}`.
-- **طبقة بيانات مشتركة (Ktor):** `core:network` (`MovitMobileApi` + DTOs) + `core:data` (`MovitData` + sync repositories + `MovitPlatformBindings`) — تخدم التبويبات الأربعة + Report Detail + Workout Session على Android/iOS من نفس المصدر.
+- **موديولات KMP:** `:shared`, `:core:designsystem`, `:core:network`, `:core:data`, `:core:resources`, `:feature:{explore,home,train,reports,library,account,shell}`.
+- **طبقة بيانات مشتركة (Ktor):** `core:network` (`MovitMobileApi` + DTOs) + `core:data` (`MovitData` + sync repositories + `MovitPlatformBindings`) — تخدم التبويبات الأربعة + Report Detail + Workout Session + **Auth / training-profile / level-profile** على Android/iOS من نفس المصدر.
 - **`commonMain` نظيف 100%** من أى `android.*` / `java.*` — تحقّق آلي.
 - **UDF لكل feature:** `State / Event / Effect / ViewModel / Route / Screen`، باستخدام KMP `androidx.lifecycle.ViewModel` (لا Controller، لا Android-only ViewModel).
 - **Design System كمصدر حقيقة واحد:** `MovitTheme` + tokens؛ الـ palette الوحيدة بها hex؛ Light/Dark؛ `error` مميّز عن `tertiary`؛ line-heights مناسبة للعربى.
 - **iOS مفروض بالـ build:** كل الموديولات بها `iosArm64 + iosSimulatorArm64` (`iosX64` في `:shared` فقط)، وCI على macOS (`.github/workflows/movit-kmp-ios.yml`) يكمبّل `commonMain` لـ iOS عند كل push على `android-poc/**` — **أخضر**.
-- **بيانات حقيقية عبر debug bridge:** `Explore` و`Home` يقرآن `/api/mobile/explore` و`/api/mobile/home` عبر نمط bridge (app/debug يحقن fetcher يربط Retrofit القديم؛ fallback آمن لبيانات fake). iOS يبقى على fake حتى Ktor.
+- **بيانات حقيقية عبر MovitData (بدون جسور Retrofit):** Explore · Home · Train · Reports · Session · Report Detail · **Account (login, profile, onboarding, level)** — `MovitDataInstall` على Android debug · `IosMovitPlatform` على iOS.
 - **Release hygiene:** كل موديولات Movit `debugImplementation`؛ الـ launcher القديم لم يُلمس؛ `releaseRuntimeClasspath` نظيف.
 - **Tests:** خضراء عبر كل الموديولات.
 
@@ -53,9 +112,9 @@
 - التفاصيل الكاملة (البيئة + 6 مشاكل وحلولها) في `Android-KMP-iOS-Xcode-Mac-Validation-Report.md`.
 - بهذا اكتملت التحقّقات الثلاثة: iOS **يكمبّل** (CI) + النمط **يتعمّم** (Home bridge) + Compose **يَرسُم** على iOS (هذا التقرير).
 
-### ديون iOS معروفة — **مجدولة للإغلاق في Pre-05/WS-E** (لم تعد "تُتبَّع" بلا تاريخ)
+### ديون iOS معروفة — **Pre-05 أُغلقت جزئياً؛ P1/P2/P3 ما زالت مفتوحة للإنتاج**
 
-ظهرت أثناء render proof وتم تجاوزها مؤقتاً. تحت قرار الانتقال الكامل، تُحَل نهائياً في Pre-05 **قبل** استكمال Phase 05، لا تُحمَل كـ debt دائم:
+ظهرت أثناء render proof. **أُغلق:** iOS compile كامل عبر shell (بما فيه `:feature:account`) · Koin multiplatform-safe · حذف الجسور. **ما زال مفتوحاً لإصدار iOS نهائي:**
 
 - **(P1) deployment target = iOS 18.5:** ناتج عن Kotlin/Native prebuilt deps (مثل `libicu`) المبنية لـ 18.5 على toolchain الخاص بـ Xcode 26 الجديد جداً — **ليست أرضية إنتاج مقبولة** (تستثني تقريباً كل الأجهزة). تُحسم باختيار توليفة Kotlin/Xcode مستقرة وضبط هدف منطقى (iOS 15/16). أرضية 18.5 للإثبات فقط.
 - **(P2) فقدان lifecycle-awareness:** تم استبدال `collectAsStateWithLifecycle()` بـ `collectAsState()` في الـ routes المشتركة (Shell/Home/Explore) لتجاوز crash على iOS — وهو تراجع عن أفضل ممارسة على **Android أيضاً**. يُستعاد لاحقاً عبر ضبط `LifecycleOwner` على iOS أو تجميع state بـ `expect/actual`.
@@ -64,8 +123,8 @@
 
 ### مؤجَّل عمداً (بـ trigger واضح)
 
-- **Koin/DI:** ~~حتى أول repository حقيقى يحتاج Ktor client مشترك~~ **— الـ trigger تحقّق:** `core:data` هو هذا الـ repository. لذا اعتماد Koin انتقل من "مؤجّل" إلى **مجدول في Pre-05/WS-F** (يستبدل singleton `MovitData`).
-- ~~**Ktor/serialization على iOS مؤجّل**~~ **— مُنفَّذ:** iOS يستخدم الآن نفس الطبقة المشتركة (`Darwin` engine + `IosMovitPlatform`)، ولم يعد على bridge/fake عند توفّر credentials.
+- **Koin/DI:** ✅ **مُنفَّذ (Pre-05/WS-F)** — `MovitData` عبر `KoinApplication` بدون `GlobalContext` (آمن على iOS).
+- **Ktor/serialization على iOS:** ✅ **مُنفَّذ** — Darwin + `IosMovitPlatform`؛ Account APIs على نفس المسار.
 - **`TrainingActivity` / camera / MediaPipe / LiteRT / ONNX:** Phase 7، خلف حدود `expect/actual`. (لكن **المحرك العددى الخالص** غير المرتبط بالكاميرا يُنقل لـ `commonMain` كأول خطوة في حدود Phase 7.)
 
 ### تطابق الترقيم
@@ -75,7 +134,7 @@
 - `Phase 01 Foundation` = Phase 0 + Phase 1 هنا.
 - `Phase 02/03/04` = feature pilots (Explore/Shell/Home) ضمن Phase 2 + Phase 4 هنا.
 - **iOS entry point (Phase 6 هنا) سُحب مبكراً** لأن الأساس أثبت نفسه أسرع من المتوقع — اكتمل كـ render proof قبل توسيع الشاشات.
-- `Phase 05 Train` = بداية Phase 5 هنا (Shared feature screens).
+- `Phase 05` = Shared feature screens page-by-page: Train · Reports · Session · **Account (Auth/Profile/Onboarding/Assessment/Level)**.
 
 ## قراءة وضع legacy الأصلي
 
@@ -445,7 +504,7 @@ sealed interface ExploreEffect {
 
 ## خطة الهجرة
 
-> حالة التنفيذ (انظر "حالة التنفيذ الفعلية" أعلاه): Phase 0→4 + Design System + KMP skeleton ✅ مكتملة. Phase 6 (iOS entry point) ✅ render proof على Xcode. Phase 5 (Shared feature screens) 🔄 **جارٍ** — أُنجز منه Train/Reports/Report Detail/Session + طبقة بيانات مشتركة. **⛔ بوابة [Phase Pre-05](Android-KMP-Mobile-UI-UX-Phase-Pre-05-Stabilization-And-Debt-Closure-Plan.md): إغلاق ديون الأساس (جسور + iOS P1/P2/P3 + i18n + Profile + اختبارات sync + Koin) قبل إضافة شاشات Phase 05 المتبقية.** Phase 7 (camera/ML) ⬜ مؤجّل.
+> حالة التنفيذ (انظر "حالة التنفيذ الفعلية" و«ملخص تنفيذي للمدير» أعلاه): Phase 0→4 ✅ · Pre-05 ✅ · Phase 6 (iOS entry) ✅ render proof. **Phase 5 🔄 جارٍ** — مكتمل: Train · Reports · Report Detail · Session · **Account 10–14** (`:feature:account`). متبقّي Phase 05: فجوات UX (Train week nav، Library صور، Program flow 15، Workout flow 16، …). Phase 7 (camera/ML) ⬜ مؤجّل.
 
 ### Phase 0 - تأسيس فرع التحول
 
@@ -534,17 +593,24 @@ sealed interface ExploreEffect {
 
 ### Phase 5 - Shared feature screens
 
-الواقع الحالي: `Explore`, `Home`, و`shell` أصبحوا pilots مشتركين ومربوطين بالـ debug bridge على Android، وظهروا داخل iOS shell ببيانات fake. لذلك ترتيب Phase 5 العملي من هذه النقطة:
+الواقع الحالي (2026-06-09): التبويبات الرئيسية + Session + Report Detail + **تدفقات الحساب والتقييم** تعمل في KMP عبر `MovitData` على Android debug وiOS (عند credentials).
 
-1. `Train dashboard` — أول صفحة page-by-page بعد اكتمال Phase 04 وiOS render proof.
-2. `Reports Overview` — dashboard/state/charts بدون session live.
-3. `Profile / Account shell` — إعدادات وهوية المستخدم بدون قرارات auth عميقة.
-4. `Program plan/day` — خطة اليوم والبرنامج، بدون camera.
-5. `Level Profile` — تفكيك UI programmatic وتحويله لنمط Movit.
-6. `Assessment` — قبل الجلسات الحية، مع state واضح.
-7. `Training session/camera` — لا يبدأ إلا بعد حدود Phase 7.
+| # | الصفحة | الحالة |
+|---|--------|--------|
+| 1 | Train dashboard | ✅ ~72% |
+| 2 | Reports + Report Detail | ✅ ~78–90% |
+| 3 | Session (02) | ✅ ~48% (بدون كاميرا) |
+| 4 | **Auth (10)** | ✅ ~85% |
+| 5 | **Profile (11)** | ✅ ~80% |
+| 6 | **Onboarding (12)** | ✅ ~75% |
+| 7 | **Assessment (13)** | ✅ ~70% (UI؛ بدون كاميرا) |
+| 8 | **Level & Plan (14)** | ✅ ~75% |
+| 9 | Program flow (15) | ⬜ لم يُنفَّذ |
+| 10 | Workout flow (16) | ⬜ جزئي |
+| 11 | Library media/filters (05–07) | 🔄 ~55% |
+| 12 | Training session/camera | ⬜ Phase 7 |
 
-السبب: نبدأ بالشاشات التي تعتمد على lists/cards/state ونؤجل الشاشات ذات camera/overlay/ML.
+السبب في الترتيب: lists/cards/state أولاً؛ camera/overlay/ML لاحقاً.
 
 ### Phase 6 - iOS entry point (تم سحبه مبكراً واكتمل كـ render proof)
 
@@ -555,7 +621,7 @@ sealed interface ExploreEffect {
 - **تم:** ربط navigation الأساسي بصرياً على Simulator.
 - **تم:** إثبات XcodeGen + Xcode build/run على iPhone 17 Simulator.
 - **لم يتم بعد:** تشغيل shared DI؛ ما زال مؤجلاً حتى Ktor/repository مشترك.
-- **لم يتم بعد:** auth/session وبيانات حقيقية على iOS.
+- **جزئي:** Auth/Account UI على iOS؛ حفظ جلسة عبر `UserDefaults` عند `persistAuthSession` — **لا** تدفق Google native بعد.
 - **لم يتم بعد:** platform adapters:
   - secure storage
   - network engine

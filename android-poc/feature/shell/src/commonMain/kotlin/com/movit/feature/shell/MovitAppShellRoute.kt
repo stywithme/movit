@@ -9,7 +9,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.movit.core.data.MovitData
+import com.movit.resources.LocalMovitLanguage
 import com.movit.resources.MovitLocaleProvider
+import com.movit.resources.localizedString
 import com.movit.feature.account.MovitProfileViewModel
 import com.movit.feature.explore.MovitExploreViewModel
 import com.movit.feature.home.MovitHomeViewModel
@@ -64,12 +66,16 @@ private fun MovitAppShellRouteContent(
     onTrainEffect: (MovitTrainEffect) -> Boolean,
 ) {
     val state by shellViewModel.state.collectAsStateWithLifecycle()
+    val language = LocalMovitLanguage.current
 
-    LaunchedEffect(shellViewModel, snackbarHostState) {
+    LaunchedEffect(shellViewModel, snackbarHostState, language) {
         shellViewModel.effects.collectLatest { effect ->
             when (effect) {
                 is MovitAppShellEffect.ShowMessage -> {
                     snackbarHostState.showSnackbar(effect.message)
+                }
+                is MovitAppShellEffect.ShowLocalizedMessage -> {
+                    snackbarHostState.showSnackbar(localizedString(language, effect.key))
                 }
             }
         }

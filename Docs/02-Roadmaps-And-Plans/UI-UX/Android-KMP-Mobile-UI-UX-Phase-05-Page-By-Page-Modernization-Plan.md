@@ -1,8 +1,46 @@
 # Android / KMP Mobile UI/UX - Phase 05 Page-by-Page Modernization + Train Page Plan
 
-آخر تحديث: 2026-06-08 (post-Phase-04 مكتملة: ViewModels + iOS targets + API bridge + CI أخضر + Home bridge + iOS render proof ناجح؛ Phase 05 يبدأ بـ Train)
+آخر تحديث: 2026-06-09 (post Pre-05 + Train/Reports/Session + **Account 10–14**)
 
-> **⛔ تحديث 2026-06-09 — بوابة قبل استكمال Phase 05:** أُنجز من Phase 05 (Train/Reports/Session) لكن الأساس يحمل ديوناً انتقالية. **لا تُضاف شاشات Phase 05 جديدة (Reports المتبقّي/Profile/Assessment/Level) قبل اجتياز** [`Phase Pre-05`](Android-KMP-Mobile-UI-UX-Phase-Pre-05-Stabilization-And-Debt-Closure-Plan.md): حذف الجسور، Profile حقيقى، نصوص مشتركة، اختبار sync repos، إغلاق iOS P1/P2/P3، واعتماد Koin. القرار: **انتقال كامل بلا حلول وسط.**
+> **✅ تحديث 2026-06-09 — بوابة Pre-05:** اجتُيزت [`Phase Pre-05`](Android-KMP-Mobile-UI-UX-Phase-Pre-05-Stabilization-And-Debt-Closure-Plan.md) (جسور مُغلقة · Koin · iOS compile · نصوص مشتركة). **اُستكملت دفعة Account** (صفحات 10–14) — التفاصيل في «ملخص للمدير» و«حالة تنفيذ 2026-06-09» أدناه.
+
+## ملخص للمدير — ما أُنجز في Phase 05 حتى الآن
+
+### نظرة سريعة
+
+| المجموعة | الصفحات | الحالة | موديول KMP |
+|----------|---------|--------|------------|
+| تبويبات رئيسية | 01 Train · 04 Explore · 08 Home · 09 Reports | 🔄 72–80% | `feature:train` · `explore` · `home` · `reports` |
+| تدفق تدريب | 02 Session · 17 Report detail | 🔄 48–90% | `feature:library` · `feature:reports` |
+| **حساب وتقييم** | **10 Auth · 11 Profile · 12 Onboarding · 13 Assessment · 14 Level** | **✅ أول إصدار** | **`feature:account` (جديد)** |
+| مكتبة وبرامج | 05–07 · 15–16 | ⬜ جزئي | `feature:library` |
+
+### دفعة Account (10–14) — ما يُعرض على المدير
+
+1. **Auth (10):** شاشات Splash → Intro → تسجيل دخول/إنشاء حساب → نسيت كلمة المرور. تسجيل حقيقي عبر `POST /api/mobile/auth/login|register` عند تشغيل `MovitDataInstall`.
+2. **Profile (11):** تبويب Account كامل (لم يعد placeholder). بطاقة Pro، إعدادات، روابط للتدريب والتقييم، تسجيل خروج.
+3. **Onboarding (12):** معالج 7 خطوات بعد التسجيل → `PUT /api/mobile/training-profile`.
+4. **Assessment (13):** PAR-Q + واجهة body scan (بدون كاميرا حية) + نتائج تجريبية.
+5. **Level & Plan (14):** ملف المستوى + خطة التدريب من `GET /api/mobile/level-profile` (أو بيانات تجريبية).
+
+**التنقل:** Home → Start scan → Assessment · Home → View level → Level · Profile → Sign in / Onboarding / Assessment / Level.
+
+**المعاينة:** `MovitShellPilotActivity` (Android debug) · `iosApp` (Xcode).
+
+### التحقق التقني
+
+```text
+:app:assembleDebug                              ✅
+:feature:account:testDebugUnitTest              ✅ (8)
+:feature:shell:testDebugUnitTest                ✅ (15)
+:feature:shell:compileKotlinIosSimulatorArm64   ✅
+```
+
+### خارج النطاق (متعمد)
+
+- Google Sign-In (زر UI فقط)
+- كاميرا Assessment / تدريب حي (Phase 07)
+- Shell كـ launcher إنتاج (ما زال debug-only)
 
 ## تعريف المرحلة
 
@@ -1056,7 +1094,7 @@ xcodegen
 
 ## معايير القبول
 
-## حالة تنفيذ 2026-06-08
+## حالة تنفيذ 2026-06-08 (Train pilot)
 
 - تم إنشاء `Train-Page-Modernization-Spec.md`.
 - تم إنشاء `:feature:train` كـ KMP Compose feature مستقل.
@@ -1065,8 +1103,79 @@ xcodegen
 - تم تأجيل camera/session/ML كما هو محدد في نطاق Phase 05.
 - تم التحقق من عدم إدخال raw colors داخل commonMain الخاص بـ Train.
 - تم تشغيل `:feature:train:testDebugUnitTest`, `:feature:shell:testDebugUnitTest`, و`:app:assembleDebug` بنجاح.
-- تم فحص `releaseRuntimeClasspath` ولم تظهر موديولات pilot (`feature:train`, `feature:shell`, `feature:home`, `feature:explore`, `core:designsystem`) ضمن release runtime.
-- تم تشغيل `:feature:shell:linkDebugFrameworkIosSimulatorArm64` من Windows بنجاح؛ مهمة الربط نفسها بقيت host-specific/skipped، لكن Kotlin iOS simulator compilation مرّت. ما زال Xcode Simulator visual smoke على Mac مطلوباً قبل اعتبار Train مقبولاً بصرياً على iOS.
+- تم فحص `releaseRuntimeClasspath` ولم تظهر موديولات pilot ضمن release runtime.
+- تم تشغيل `:feature:shell:linkDebugFrameworkIosSimulatorArm64` بنجاح.
+
+## حالة تنفيذ 2026-06-09 (Account + API + Shell)
+
+### 1. طبقة البيانات (`core:network` + `core:data`)
+
+| Endpoint | الاستخدام |
+|----------|-----------|
+| `POST /api/mobile/auth/login` | تسجيل الدخول |
+| `POST /api/mobile/auth/register` | إنشاء حساب |
+| `POST /api/mobile/auth/forgot-password` | نسيت كلمة المرور |
+| `POST /api/mobile/auth/logout` | تسجيل الخروج |
+| `GET /api/mobile/auth/profile` | تحميل الملف |
+| `PATCH /api/mobile/auth/settings` | لغة · صوت · إشعارات |
+| `PUT /api/mobile/training-profile` | Onboarding (7 خطوات) |
+| `GET /api/mobile/level-profile` | Level & Plan |
+
+- `AccountSyncRepository` + `MovitData.account`
+- توسيع `MovitPlatformBindings`: `persistAuthSession`, `clearAuthSession`, `setOnboardingCompleted`, `userEmail`, `refreshToken`, …
+- Android: `MovitDataInstall` → `AuthManager`
+- iOS: `IosMovitPlatform` → `UserDefaults` (نفس المفاتيح المنطقية)
+
+### 2. موديول `:feature:account` (جديد)
+
+```text
+feature/account/src/commonMain/kotlin/com/movit/feature/account/
+  Auth*          — MovitAuthScreen/Route/ViewModel + SharedAuthRepository + Fake
+  Profile*       — MovitProfileScreen/Route/ViewModel + MovitSubscriptionScreen
+  Onboarding*    — MovitOnboardingScreen (7 steps) + SharedOnboardingRepository
+  Assessment*    — PAR-Q · BodyScan placeholder · Results (FakeAssessmentPreviewData)
+  Level*         — MovitLevelScreen (Level profile + Plan tabs) + SharedLevelRepository
+```
+
+- نمط UDF موحّد: `State / Event / Effect / ViewModel / Route / Screen`
+- لا `MovitTheme` داخل الشاشات
+- نصوص `ar/en` في `core:resources` (~120 مفتاح جديد)
+- اختبارات: `MovitAuthViewModelTest`, `MovitOnboardingViewModelTest`, `MovitProfileViewModelTest`
+
+### 3. ربط Shell وHome
+
+**`MovitInnerRoute` جديد:**
+
+- `Auth` · `ProfileOnboarding` · `Assessment` · `LevelProfile`
+
+**`MovitAppShellViewModel` — effects:**
+
+| المصدر | Effect | النتيجة |
+|--------|--------|---------|
+| Profile | `OpenAuth` | push Auth |
+| Profile | `OpenOnboarding` | push Onboarding |
+| Profile | `OpenAssessment` / `OpenLevel` | push المسار |
+| Auth | `OpenShell` / `OpenOnboarding` | pop أو onboarding |
+| Home | `OpenAssessment` / `OpenLevel` | push من Body scan / Level card |
+| Assessment | `OpenExplore` / `OpenHome` | popAll + tab |
+
+- تبويب **Profile** يستخدم `MovitProfileRoute` من `feature:account` (حُذف placeholder القديم من shell)
+- `MovitProfileViewModel` مُمرَّر من `MovitAppShellRoute`
+
+### 4. Gradle
+
+- `settings.gradle.kts`: `include(":feature:account")`
+- `feature:shell` + `app` (debug): `implementation(project(":feature:account"))`
+- إصلاح `core:resources`: `compileKotlin*` يعتمد على `generateMovitEnglishStrings`
+
+### 5. ما تبقى في Phase 05 (بعد Account)
+
+- فجوات UX: Train week nav · thumbnails · program complete hero
+- Library: صور · فلاتر · badges (05–07)
+- Program flow (15) · Workout run UI (16) — بدون كاميرا في 16 حتى Phase 07
+- Page specs لبقية الصفحات في `Docs/.../Page-Specs/`
+- Google Sign-In bridge
+- Visual QA على Mac لشاشات Account
 
 Phase 05 لا تعتبر مكتملة إلا إذا:
 
@@ -1107,10 +1216,10 @@ Phase 05 لا تعتبر مكتملة إلا إذا:
 - لا تقفز إلى session/camera في Phase 05.
 - لا ننسخ legacy UI؛ نستخلص السلوك ونبني تجربة أفضل.
 - كل صفحة تبدأ بمواصفة قبل التنفيذ.
-- لا ننتقل لـ Reports أو Profile قبل قبول Train.
+- Train وReports وAccount (10–14) مُنفَّذة؛ التالي حسب `Sync-App-Pages.md`: Program flow · Library media · فجوات Train.
 - `Train` يجب أن يشعر كجزء طبيعي من Home وExplore، لا كجزيرة تصميمية جديدة.
 - **لا تراجع لـ Controller pattern** — ViewModel + `viewModelScope` إلزامي.
 - **iOS:** `iosArm64` + `iosSimulatorArm64` في `feature:train`؛ لا `iosX64` في أي موديول Compose.
 - **iOS runtime:** التزم بنمط `collectAsState()` وViewModels الممررة من iOS entry point إلى أن تُغلق ديون P1/P2/P3 في الخطة الأساسية.
-- **API:** bridge عبر `app/debug` فقط؛ الـ feature يبقى مستقلاً عن Retrofit.
-- **DI/Koin:** ما زال مؤجلاً حتى أول repository حقيقي يحتاج Ktor client مشترك.
+- **API:** `MovitData` + Ktor — **لا جسور Retrofit** (Pre-05 مغلقة).
+- **DI/Koin:** ✅ `MovitData` عبر Koin (Pre-05/WS-F).

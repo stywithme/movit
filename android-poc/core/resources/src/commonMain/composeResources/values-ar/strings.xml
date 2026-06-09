@@ -525,4 +525,8 @@
     <string name="level_plan_title">خطة التدريب</string>
     <string name="level_plan_sub">مسار مخصص حسب مستواك وأهدافك</string>
     <string name="level_browse_programs">تصفح البرامج الموصى بها</string>
+
+    <!-- Shell (Pre-06) -->
+    <string name="shell_report_share_coming_soon">مشاركة التقرير — قريباً.</string>
+    <string name="shell_report_export_coming_soon">تصدير التقرير — قريباً.</string>
 </resources>

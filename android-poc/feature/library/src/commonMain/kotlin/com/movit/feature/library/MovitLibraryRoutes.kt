@@ -79,7 +79,7 @@ fun WorkoutSessionRoute(
     workoutId: String,
     onBack: () -> Unit,
     onExerciseClick: (String) -> Unit,
-    onStartWorkout: () -> Unit,
+    onStartWorkout: (exerciseId: String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: WorkoutSessionViewModel = viewModel { WorkoutSessionViewModel(workoutId) },
 ) {
@@ -95,7 +95,9 @@ fun WorkoutSessionRoute(
         onEditExercise = viewModel::openEditSheet,
         onDeleteExercise = viewModel::deleteExercise,
         onAddRest = viewModel::addRestBlock,
-        onStartWorkout = onStartWorkout,
+        onStartWorkout = {
+            state.session?.firstExerciseSlug()?.let(onStartWorkout)
+        },
         onRetry = { scope.launch { viewModel.load() } },
         onDismissSheet = viewModel::dismissSheet,
         onSwapQueryChange = viewModel::onSwapQueryChange,

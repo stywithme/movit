@@ -539,4 +539,8 @@
     <string name="level_plan_title">Your training plan</string>
     <string name="level_plan_sub">Personalized path based on your level &amp; goals</string>
     <string name="level_browse_programs">Browse recommended programs</string>
+
+    <!-- Shell (Pre-06) -->
+    <string name="shell_report_share_coming_soon">Share report — coming soon.</string>
+    <string name="shell_report_export_coming_soon">Export report — coming soon.</string>
 </resources>

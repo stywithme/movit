@@ -11,6 +11,8 @@ import com.movit.feature.reports.MovitReportsEffect
 import com.movit.feature.train.MovitTrainEffect
 
 sealed interface MovitAppShellEvent {
+    /** System back (Android hardware/gesture). Handled by [MovitAppShellViewModel.handleSystemBack]. */
+    data object BackPressed : MovitAppShellEvent
     data class DestinationSelected(val destination: MovitAppDestination) : MovitAppShellEvent
     data class InnerRoutePushed(val route: MovitInnerRoute) : MovitAppShellEvent
     data object InnerRoutePopped : MovitAppShellEvent
