@@ -19,6 +19,9 @@ kotlin {
         commonMain.dependencies {
             implementation(project(":shared"))
             implementation(project(":core:designsystem"))
+            implementation(project(":core:network"))
+            implementation(project(":core:data"))
+            implementation(project(":core:resources"))
             implementation(project(":feature:explore"))
             implementation(compose.runtime)
             implementation(compose.foundation)

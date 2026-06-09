@@ -1,6 +1,8 @@
 # Android UI/UX Modernization Status
 
-آخر تحديث: 2026-06-09 (تنفيذ Phase Pre-05 WS-A→WS-F + استكمال WS-C لنصوص Train/Reports/Session/Report Detail)
+آخر تحديث: 2026-06-09 (تنفيذ Phase Pre-05 WS-A→WS-F + استكمال WS-C؛ ثم **تحقق مستقل بالبناء** كشف وأصلح 4 أخطاء كانت تكسر iOS compile — التفاصيل في قسم "تحقق مستقل" بخطة Pre-05)
+
+> **🔧 تصحيح 2026-06-09 (post-verification):** بناء Android الأخضر لم يكن يثبت iOS. التحقق بـ `compileKotlinIosSimulatorArm64` كشف: (1) `MovitData` كان يستخدم `GlobalContext` (JVM-only) فيكسر iOS — وهو سبب فشل macOS CI؛ (2) Koin رُفع 4.0.3→4.2.1 لـ Kotlin 2.3؛ (3) `when` غير شامل في `MovitInnerHost` (routes ميتة)؛ (4) `feature:library` ناقصها deps على core:data/network/resources. **كلها أُصلحت وتم التحقق:** Android assemble + tests أخضر، وiOS compile (كامل عبر shell) أخضر. يتبقّى link على macOS CI بإعادة push.
 
 > **⚠️ بوابة قبل استكمال Phase 05:** بعد مراجعة الكود تبيّن وجود بقايا انتقالية وديون أساس تتعارض مع قرار **الانتقال الكامل بلا حلول وسط**. تم إنشاء [`Android-KMP-Mobile-UI-UX-Phase-Pre-05-Stabilization-And-Debt-Closure-Plan.md`](Android-KMP-Mobile-UI-UX-Phase-Pre-05-Stabilization-And-Debt-Closure-Plan.md) — **يجب إغلاق Pre-05 قبل إضافة أى شاشة جديدة** (Auth/Profile/Onboarding/Assessment). تصحيحات هذا المستند مدرجة أدناه.
 

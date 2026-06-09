@@ -31,6 +31,28 @@ Phase 05 (page-by-page) أنتجت شاشات حقيقية شغّالة (Home/Ex
 | منطق المحرك الخالص | ما زال Android-only (خارج Pre-05) | `app/src/main/java/com/trainingvalidator/poc/` |
 | اختبارات sync repos | **✅** فروع fallback/auth مُغطّاة | `core/data/src/commonTest/` |
 
+## تحقق مستقل (2026-06-09) — أخطاء كانت تكسر iOS/Android واكتُشفت ثم أُصلحت
+
+التحقق بالبناء الفعلى (وليس بالمستند) كشف أن WS-E/WS-F **لم تكن مكتملة فعلياً** رغم تعليمها ✅؛ بناء Android كان يمر لأن compile كثير كان `UP-TO-DATE` يخفى الحالة الحقيقية. الأخطاء والإصلاحات:
+
+| # | الخطأ | الأثر | الإصلاح |
+|---|------|------|---------|
+| 1 | `MovitData` يستخدم `org.koin.core.context.GlobalContext` — وهو **JVM-only، لا يُحَل على Kotlin/Native** | `:core:data:compileKotlinIosSimulatorArm64` يفشل ⇒ إطار iOS كله مكسور (هذا هو فشل macOS CI) | إعادة كتابة `MovitData` ليحتفظ بمرجع `KoinApplication` من `startKoin` ويقرأ `.koin` (سطح متعدد المنصّات) — بلا `GlobalContext` |
+| 2 | Koin **4.0.3** مع Kotlin **2.3.0** (عدم تطابق ABI) | مخاطرة klib كامنة | رفع Koin إلى **4.2.1** (النسخة المبنية لـ Kotlin 2.3.x، "ABI restoration") |
+| 3 | `when (route)` في `MovitInnerHost` غير شامل — 3 `MovitInnerRoute` ميتة (`ProgramFlow`/`LevelPlan`/`Profile`) + `InnerPlaceholderScreen` غير مستخدم | `:feature:shell:compileKotlinIosSimulatorArm64` يفشل | حذف الـ routes الميتة الثلاثة (غير قابلة للوصول) + الـ placeholder الميت ⇒ `when` شامل |
+| 4 | `feature:library` يستورد `core.data`/`core.network`/`resources` لكن **لا يعرّفها كـ dependencies** (كان يتسرّبها transitively عبر `:feature:explore`) | `:feature:library:compileDebugKotlinAndroid` يفشل | إضافة `:core:data` + `:core:network` + `:core:resources` صراحةً (مطابقة لباقى الموديولات) |
+
+**نتيجة التحقق بعد الإصلاح:**
+
+- ✅ `:app:assembleDebug` + اختبارات (data/shell/library/reports/train/home/explore) — **BUILD SUCCESSFUL**.
+- ✅ `:core:data:compileKotlinIosSimulatorArm64` — **أخضر**.
+- ✅ `:feature:shell:compileKotlinIosSimulatorArm64` (سطح iOS كامل: network/data/resources/كل الفيتشرز/shell) — **أخضر**.
+- ⏳ يتبقّى **iOS framework link + Simulator render** على macOS CI (اللينك يحتاج Mac، غير متاح على Windows) — يُحسم بإعادة push.
+
+الملفات المعدَّلة في هذا الإصلاح: `gradle/libs.versions.toml`, `core/data/.../MovitData.kt`, `feature/shell/.../MovitInnerRoute.kt`, `feature/shell/.../MovitInnerHost.kt`, `feature/library/build.gradle.kts`.
+
+**درس:** بناء Android الأخضر **لا يثبت** iOS؛ و`UP-TO-DATE` يخفى أخطاء حقيقية. أى ادعاء "iOS مكتمل" يجب أن يستند إلى `compileKotlinIosSimulatorArm64` فعلى (محلياً) + CI أخضر (link).
+
 ## مراجعة الرأي المتخصص — نقاط الاتفاق والخلاف
 
 المراجعة المتخصصة دقيقة وصحيحة في أغلبها. نقاط التعديل/الخلاف التي حُسمت بالكود:
