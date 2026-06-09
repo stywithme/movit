@@ -1,8 +1,4 @@
 package com.movit.feature.home
 
-/**
- * Platform-provided default [HomeRepository].
- * Android may bridge to Retrofit via [com.movit.feature.home.remote.HomeContentFetcherBridge].
- * iOS uses fake data until Ktor integration lands.
- */
+/** Platform-provided default [HomeRepository] backed by the shared Ktor data layer. */
 expect fun defaultHomeRepository(): HomeRepository

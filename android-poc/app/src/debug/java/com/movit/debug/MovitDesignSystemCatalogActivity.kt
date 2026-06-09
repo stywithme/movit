@@ -4,7 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.movit.designsystem.catalog.MovitComponentCatalogScreen
+import com.movit.designsystem.catalog.MovitComponentsTabScreen
 
 /**
  * Debug-only host for visual QA of the Movit Design System.
@@ -17,7 +17,7 @@ class MovitDesignSystemCatalogActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             // Catalog applies MovitTheme internally (supports light/dark toggle).
-            MovitComponentCatalogScreen()
+            MovitComponentsTabScreen()
         }
     }
 }

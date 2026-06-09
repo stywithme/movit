@@ -54,9 +54,17 @@ object MovitExplorePreviewData {
         ),
     )
 
+    val workouts: List<ExploreItemUi> = exercises.filter { it.type == ExploreItemType.Workout }
+
+    val exerciseOnly: List<ExploreItemUi> = exercises.filter { it.type == ExploreItemType.Exercise }
+
+    val programs: List<ExploreItemUi> = exercises.filter { it.type == ExploreItemType.Program }
+
     val content: ExploreContent = ExploreContent(
         featured = featured,
-        exercises = exercises,
+        workouts = workouts,
+        exercises = exerciseOnly,
+        programs = programs,
     )
 
     /** Arabic sample block for RTL/catalog previews */

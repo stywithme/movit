@@ -32,6 +32,33 @@ object MovitTrainPreviewData {
         exerciseCountLabel = "5 exercises",
         focusLabel = "Strength + control",
         primaryActionLabel = "Start workout",
+        sessions = listOf(
+            TrainWorkoutSessionUi(
+                title = "Lower Body Strength",
+                subtitle = "5 exercises",
+                durationLabel = "~22 min",
+                exerciseCountLabel = "5 exercises",
+                actionLabel = "Start session",
+                items = listOf(
+                    TrainWorkoutItemUi("EX", "Squat", "3 sets · 12 reps"),
+                    TrainWorkoutItemUi("REST", "Rest", "60 sec", isRest = true),
+                    TrainWorkoutItemUi("EX", "Lunge", "3 sets · 10 reps"),
+                    TrainWorkoutItemUi("EX", "Glute bridge", "3 sets · 14 reps"),
+                ),
+            ),
+            TrainWorkoutSessionUi(
+                title = "Mobility Flow",
+                subtitle = "4 exercises",
+                durationLabel = "~12 min",
+                exerciseCountLabel = "4 exercises",
+                actionLabel = "Start session",
+                items = listOf(
+                    TrainWorkoutItemUi("EX", "Hip opener", "2 sets · 30 sec"),
+                    TrainWorkoutItemUi("EX", "Ankle rocks", "2 sets · 12 reps"),
+                    TrainWorkoutItemUi("REST", "Breathing reset", "45 sec", isRest = true),
+                ),
+            ),
+        ),
     )
 
     val readiness = TrainReadinessUi(
@@ -119,6 +146,12 @@ object MovitTrainPreviewData {
             exerciseCountLabel = "9 exercises",
             focusLabel = "88% form score",
             primaryActionLabel = "View report",
+            sessions = todayWorkout.sessions.map { session ->
+                session.copy(
+                    isCompleted = true,
+                    actionLabel = "View summary",
+                )
+            },
         ),
         readiness = readiness.copy(
             title = "Strong finish",

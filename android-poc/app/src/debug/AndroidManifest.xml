@@ -28,9 +28,16 @@
 
         <activity
             android:name="com.movit.debug.MovitShellPilotActivity"
-            android:exported="false"
+            android:exported="true"
+            android:label="Movit KMP Shell"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
+            android:theme="@style/Theme.WayToFix">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>

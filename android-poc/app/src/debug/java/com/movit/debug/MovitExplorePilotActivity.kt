@@ -16,13 +16,13 @@ class MovitExplorePilotActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        MovitExploreApiBridge.install(applicationContext)
+        MovitDataInstall.install(applicationContext)
         enableEdgeToEdge()
         setContent {
             MovitTheme {
                 MovitExploreRoute(
-                    onNavigateToExercise = { id ->
-                        Toast.makeText(this, "Navigate: $id", Toast.LENGTH_SHORT).show()
+                    onEffect = { effect ->
+                        Toast.makeText(this, effect.toString(), Toast.LENGTH_SHORT).show()
                     },
                 )
             }

@@ -1,0 +1,84 @@
+package com.movit.feature.library
+
+import com.movit.shared.AppResult
+
+data class SessionSwapCandidateUi(
+    val slug: String,
+    val name: String,
+    val subtitle: String,
+    val badge: String? = null,
+)
+
+interface WorkoutSessionRepository {
+    suspend fun loadSession(workoutId: String): AppResult<WorkoutSessionUi>
+    suspend fun saveSession(session: WorkoutSessionUi): AppResult<Unit>
+    suspend fun findSwapCandidates(
+        query: String,
+        replacingSlug: String,
+    ): List<SessionSwapCandidateUi>
+}
+
+class DefaultWorkoutSessionRepository(
+    private val libraryRepository: LibraryRepository = defaultLibraryRepository(),
+) : WorkoutSessionRepository {
+    override suspend fun loadSession(workoutId: String): AppResult<WorkoutSessionUi> {
+        return when {
+            workoutId == "preview" -> AppResult.Success(WorkoutSessionPreviewData.preview)
+            WorkoutSessionKeys.parse(workoutId) != null -> {
+                AppResult.Failure("Session bridge not installed.")
+            }
+            else -> buildExploreFallback(workoutId)
+        }
+    }
+
+    override suspend fun saveSession(session: WorkoutSessionUi): AppResult<Unit> {
+        return if (session.context != null) {
+            AppResult.Failure("Session bridge not installed.")
+        } else {
+            AppResult.Success(Unit)
+        }
+    }
+
+    override suspend fun findSwapCandidates(
+        query: String,
+        replacingSlug: String,
+    ): List<SessionSwapCandidateUi> = SessionSwapPreviewData.candidates(query, replacingSlug)
+
+    private suspend fun buildExploreFallback(workoutId: String): AppResult<WorkoutSessionUi> {
+        val item = libraryRepository.findItem(workoutId)
+            ?: return AppResult.Failure("Workout not found.")
+        return AppResult.Success(
+            WorkoutSessionUi(
+                id = item.id,
+                title = item.title,
+                subtitle = item.subtitle,
+                exerciseCount = 1,
+                durationLabel = item.metadata.firstOrNull { it.contains("min") } ?: "~30m",
+                setCount = 3,
+                sections = listOf(
+                    WorkoutSessionSectionUi(
+                        title = "Main workout",
+                        phaseRole = "MAIN",
+                        items = listOf(
+                            WorkoutSessionBlockUi.Exercise(
+                                id = item.id,
+                                exerciseSlug = item.id,
+                                index = 1,
+                                name = item.title,
+                                category = item.subtitle,
+                                setsLabel = "3 × 12",
+                                sets = 3,
+                                reps = 12,
+                                restLabel = "60s rest",
+                                restSeconds = 60,
+                                phaseRole = "MAIN",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+}
+
+expect fun defaultWorkoutSessionRepository(): WorkoutSessionRepository

@@ -83,6 +83,7 @@ class TrainFragment : Fragment() {
     private var expandedPlannedWorkoutIndex = 0
     private var isFirstLoad = true
     private var cachedProgramMetrics: MetricsResponse? = null
+    private var resolvingActiveProgramId: String? = null
 
     // -----------------------------------------------------------
     // Lifecycle
@@ -236,20 +237,56 @@ class TrainFragment : Fragment() {
             "program_complete" -> {
                 val program = trainMode.activeProgram?.id?.let { programRepo.getProgramById(it) }
                 if (program != null) showProgramComplete(program)
-                else showBrowseState(
-                    title = getString(R.string.pg_complete_title),
-                    subtitle = getString(R.string.pg_complete_subtitle),
-                )
+                else resolveAndRenderActiveProgram(trainMode)
             }
             "active", "rest_day" -> {
                 val program = trainMode.activeProgram?.id?.let { programRepo.getProgramById(it) }
                 if (program != null) showActiveProgramState(program, trainMode)
-                else showBrowseState(
-                    title = getString(R.string.home_plan_generating_title),
-                    subtitle = getString(R.string.home_plan_generating_subtitle),
-                )
+                else resolveAndRenderActiveProgram(trainMode)
             }
             else -> showBrowseState()
+        }
+    }
+
+    private fun resolveAndRenderActiveProgram(trainMode: TrainModeData) {
+        val programId = trainMode.activeProgram?.id
+        if (programId.isNullOrBlank()) {
+            showBrowseState(
+                title = getString(R.string.home_plan_generating_title),
+                subtitle = getString(R.string.home_plan_generating_subtitle),
+                showProgramList = false,
+            )
+            return
+        }
+
+        showBrowseState(
+            title = getString(R.string.loading_plan),
+            subtitle = getString(R.string.home_plan_generating_subtitle),
+            showProgramList = false,
+        )
+
+        if (resolvingActiveProgramId == programId) return
+        resolvingActiveProgramId = programId
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            val program = withContext(Dispatchers.IO) {
+                programRepo.getOrFetchProgramById(programId)
+            }
+
+            if (_binding == null) return@launch
+            resolvingActiveProgramId = null
+
+            if (program != null) {
+                showActiveProgramState(program, trainMode)
+                fetchUnifiedMetrics(program)
+            } else {
+                Log.w(TAG, "Active trainMode program is not available after sync: id=$programId")
+                showBrowseState(
+                    title = getString(R.string.home_plan_generating_title),
+                    subtitle = getString(R.string.home_plan_generating_subtitle),
+                    showProgramList = false,
+                )
+            }
         }
     }
 
@@ -305,8 +342,8 @@ class TrainFragment : Fragment() {
      * Fetch program-level metrics from the unified reports endpoint.
      * Updates sparkline, program grade, and comparison data.
      */
-    private fun fetchUnifiedMetrics() {
-        val activeProgram = programRepo.getActiveProgram() ?: return
+    private fun fetchUnifiedMetrics(activeProgramOverride: ProgramConfig? = null) {
+        val activeProgram = activeProgramOverride ?: programRepo.getActiveProgram() ?: return
         val programId = activeProgram.id
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -335,6 +372,7 @@ class TrainFragment : Fragment() {
     private fun showBrowseState(
         title: String? = null,
         subtitle: String? = null,
+        showProgramList: Boolean = true,
     ) {
         binding.layoutNoProgramState.visibility = View.VISIBLE
         binding.layoutActiveProgramState.visibility = View.GONE
@@ -346,10 +384,16 @@ class TrainFragment : Fragment() {
         titleTv?.text = title ?: getString(R.string.pg_browse_title)
         subtitleTv?.text = subtitle ?: getString(R.string.pg_browse_subtitle)
 
-        val allPrograms = programRepo.getAllPrograms()
         val rv = binding.rvProgramList
-        rv.layoutManager = LinearLayoutManager(requireContext())
-        rv.adapter = ProgramBrowseAdapter(allPrograms)
+        if (showProgramList) {
+            val allPrograms = programRepo.getAllPrograms()
+            rv.visibility = View.VISIBLE
+            rv.layoutManager = LinearLayoutManager(requireContext())
+            rv.adapter = ProgramBrowseAdapter(allPrograms)
+        } else {
+            rv.visibility = View.GONE
+            rv.adapter = null
+        }
     }
 
     // -----------------------------------------------------------

@@ -1,6 +1,158 @@
 # Android UI/UX Modernization Status
 
-آخر تحديث: 2026-06-08
+آخر تحديث: 2026-06-09 (تنفيذ Phase Pre-05 WS-A→WS-F + استكمال WS-C لنصوص Train/Reports/Session/Report Detail)
+
+> **⚠️ بوابة قبل استكمال Phase 05:** بعد مراجعة الكود تبيّن وجود بقايا انتقالية وديون أساس تتعارض مع قرار **الانتقال الكامل بلا حلول وسط**. تم إنشاء [`Android-KMP-Mobile-UI-UX-Phase-Pre-05-Stabilization-And-Debt-Closure-Plan.md`](Android-KMP-Mobile-UI-UX-Phase-Pre-05-Stabilization-And-Debt-Closure-Plan.md) — **يجب إغلاق Pre-05 قبل إضافة أى شاشة جديدة** (Auth/Profile/Onboarding/Assessment). تصحيحات هذا المستند مدرجة أدناه.
+
+## ملخص تنفيذي للمدير
+
+هذا المستند يجمع **حالتين متوازيتين** في مشروع `android-poc`:
+
+| المسار | الوصف | من يستخدمه اليوم؟ |
+|--------|--------|-------------------|
+| **Legacy Android (XML)** | التطبيق الأصلي — launcher، كاميرا، تدريب حي، ML | المستخدم النهائي عبر APK الرسمي |
+| **Movit KMP (Compose)** | التطبيق الجديد المشترك Android + iOS — Design System، Shell، تبويبات رئيسية | فريق التطوير عبر **MovitShellPilotActivity** (debug) و**iosApp** (Xcode) |
+
+**الإنجاز الأهم مؤخراً:** اكتمال **طبقة البيانات المشتركة** (`core:network` + `core:data`) بحيث التبويبات الرئيسية + Session + Report Detail تقرأ من **نفس API** على Android وiOS — بدون الاعتماد على bridges مؤقتة داخل `app/debug`.
+
+**ما يعنيه ذلك عملياً:**
+
+- واجهة KMP أصبحت **قابلة للعرض على iOS** ببيانات حقيقية (عند توفر تسجيل الدخول).
+- Android debug shell لم يعد يعتمد على `Movit*ApiBridge` للتبويبات الرئيسية.
+- Legacy app ما زال يعمل بشكل مستقل؛ النقل تدريجي وليس استبدالاً فورياً.
+
+**ما لم يُنجز بعد (توقعات واقعية):**
+
+- Auth / Onboarding / Assessment / Level — **غائبة في KMP** (0%).
+- **Profile/Account:** شاشة إعدادات حقيقية في Shell (WS-B) — **ليست تدفق auth كامل**.
+- تدريب حي بالكاميرا وML — **لم يُنقل** (مقصود تأجيله).
+- iOS يحتاج مزامنة مفاتيح تسجيل الدخول (`access_token`, `is_pro`, `active_user_program_id`) مع تطبيق iOS الأصلي.
+- **بوابة launcher (WS-G):** Movit shell ما زال debug-only — لم يُحوَّل إلى نقطة دخول الإصدار.
+
+---
+
+## لقطة سريعة — UI / UX / API / iOS
+
+### UI / UX (مسار KMP + Prototypes)
+
+| المنطقة | الحالة | ملاحظة للمدير |
+|---------|--------|----------------|
+| **HTML Prototypes** (`prototypes/`) | ✅ محدّثة (Premium v7) | مرجع بصري لـ 18 صفحة؛ ليست التطبيق الفعلي |
+| **Design System** (`core:designsystem`) | ✅ ~70 مكوّن Movit* | ألوان، typography، motion، كتالوج debug |
+| **App Shell** (`feature:shell`) | ✅ 5 تبويبات + مسارات داخلية | Home · Train · Explore · Reports · **Profile** + Session · Report detail · Library |
+| **Home** | ~80% | شاشة KMP + API + **نصوص ar/en** (`core:resources`) |
+| **Explore** | ~75% | شاشة KMP + sync + **نصوص ar/en** |
+| **Train** | ~72% | 5 حالات + **مكوّنات UI الثانوية مُوحَّدة**؛ فجوات UX (أسبوع، thumbnails) |
+| **Reports** | ~78% | 3 تبويبات + Pro gate + **Report Detail مُوحَّد** |
+| **Report Detail** | ~90% | UI + API + **نصوص شاشة/mapper** من موارد مشتركة |
+| **Session (02)** | ~48% | تحرير يوم، swap، حفظ + **نصوص شاشة/sheets/mapper**؛ بدون كاميرا |
+| **Library** (05–07) | ~55% | قوائم من Explore cache؛ ليست صفحات مستقلة كاملة |
+| **Auth–Onboarding–Assessment** (10–14) | 0% | غائبة في KMP |
+| **Profile/Account** (11) | ~25% | `MovitProfileRoute` — إعدادات/لغة/Pro؛ بدون auth |
+
+**نقطة الدخول للمعاينة:**
+
+- Android: `MovitShellPilotActivity` (debug فقط — ليس launcher).
+- iOS: `iosApp` → `MainViewController()` → نفس Shell.
+
+مرجع تفصيلي صفحة بصفحة: [`Sync-App-Pages.md`](Sync-App-Pages.md).
+
+### API — طبقة البيانات المشتركة
+
+```
+Compose Screen / ViewModel
+        ↓
+Shared*Repository (في feature:*)
+        ↓
+MovitData (core:data) — MovitData.install(platform)
+        ↓
+MovitMobileApi (core:network / Ktor 3)
+        ↓
+MovitPlatformBindings
+   ├── Android: MovitDataInstall → AuthManager, ApiConfig, SharedPreferences
+   └── iOS: IosMovitPlatform → NSUserDefaults
+```
+
+| الميزة | Repository مشترك | Endpoint(s) | كاش |
+|--------|------------------|-------------|-----|
+| **Explore** | `SharedExploreRepository` | `GET /api/mobile/explore` | `explore_cache` |
+| **Home** | `SharedHomeRepository` | `GET /api/mobile/home` | `home_cache` |
+| **Train** | `SharedTrainRepository` | نفس home API (مشتق من `trainMode`) | يعيد استخدام home |
+| **Reports** | `SharedReportsRepository` | `GET /api/mobile/reports/dashboard` | `reports_cache` |
+| **Report Detail** | `SharedReportDetailRepository` | `GET /api/mobile/reports/metrics?scope=exercise` | per-exercise |
+| **Workout Session** | `SharedWorkoutSessionRepository` | `GET .../effective-plan`, `PUT .../user-programs/{id}`, `GET .../substitutions` | `session_cache` |
+
+**سياسات مشتركة:**
+
+- **Offline-first:** عرض الكاش فوراً، ثم sync في الخلفية.
+- **Auth:** بدون token → رسالة واضحة أو كاش قديم إن وُجد.
+- **Pro:** Reports تتطلب `isProUser()` (Android: `AuthManager`؛ iOS: `is_pro` في UserDefaults).
+- **Session:** يتطلب `activeUserProgramId()` (Android: `ProgramRepository`؛ iOS: `active_user_program_id`).
+
+**ملفات التثبيت:**
+
+- Android: `MovitDataInstall.install()` في `MovitShellPilotActivity`.
+- iOS: `MovitData.install(IosMovitPlatform())` في `MainViewController.kt`.
+
+**Bridges القديمة:** **✅ مُغلقة (Pre-05 / WS-A، 2026-06-09).** حُذفت ملفات `*ApiBridge` و`Remote*Repository`/`*FetcherBridge`؛ `MovitShellPilotActivity` يثبّت `MovitDataInstall` فقط. مسار بيانات واحد: `MovitData` + `Shared*Repository`.
+
+### iOS
+
+| البند | الحالة |
+|-------|--------|
+| **Compose Multiplatform على Simulator** | ✅ `linkDebugFrameworkIosSimulatorArm64` ينجح |
+| **CI macOS** | ✅ workflow `movit-kmp-ios.yml` |
+| **عرض Shell كامل** | ✅ Home · Train · Explore · Reports من `commonMain` |
+| **بيانات حقيقية** | ✅ عند `MovitData.install` + token + (للتقارير) Pro + (للجلسة) user program id |
+| **بيانات وهمية** | fallback `Fake*Repository` / preview عند غياب التثبيت أو فشل الشبكة |
+| **Auth native** | ⏳ لم يُبنَ تدفق تسجيل دخول iOS؛ المفاتيح جاهزة في `IosMovitPlatform` |
+| **Base URL افتراضي** | `https://back.mongz.online/` |
+
+**مفاتيح UserDefaults المتوقعة على iOS:**
+
+| المفتاح | الاستخدام |
+|---------|-----------|
+| `access_token` | Authorization header |
+| `is_pro` | فتح Reports |
+| `active_user_program_id` | تحميل/حفظ Workout Session |
+| `user_name` | تحية Home |
+| `app_language` | `ar` / `en` |
+
+---
+
+## هيكل الموديولات الحالي (KMP)
+
+```
+android-poc/
+├── app/                    # Legacy + debug pilot (MovitShellPilotActivity)
+├── shared/                 # AppResult ومساعدات مشتركة
+├── core/
+│   ├── designsystem/       # MovitTheme + ~70 مكوّن UI
+│   ├── resources/          # composeResources ar/en + MovitLocale + movitText + *Strings loaders
+│   ├── network/            # Ktor + DTOs + MovitMobileApi
+│   └── data/               # MovitData (Koin) + sync repositories + platform bindings
+├── feature/
+│   ├── shell/              # MovitAppShell — تنقل + 4 tabs
+│   ├── home/               # MovitHomeScreen
+│   ├── train/              # MovitTrainScreen
+│   ├── explore/            # MovitExploreScreen
+│   ├── reports/            # MovitReportsScreen + ReportDetailScreen
+│   └── library/            # Session, Prepare, Library, Program detail
+└── iosApp/                 # Xcode host → MainViewController
+```
+
+**Phases المكتملة (مرجع الخطة):**
+
+| Phase | المحتوى | الحالة |
+|-------|---------|--------|
+| 01 | Foundation — KMP, DS, Gradle | ✅ |
+| 02 | Explore pilot | ✅ |
+| 03 | App Shell + تنقل | ✅ |
+| 04 | Home dashboard | ✅ |
+| 05 | صفحة بصفحة (Train → Reports → Session…) | 🔄 جارٍ — التبويبات الرئيسية + Session + Report detail على API مشترك |
+| — | طبقة بيانات مشتركة | ✅ Explore · Home · Train · Reports · Session |
+
+---
 
 ## الهدف
 
@@ -32,23 +184,29 @@
 الخطة لم تعد مجرد تنظيف XML داخل `:app`. هذا المستند بدأ كمتابعة لمسار Android legacy UI/prototypes، لكن الحالة الحالية أصبحت مقسومة إلى مسارين واضحين:
 
 - **مسار legacy Android/XML:** يحتفظ بالـ launcher والشاشات القديمة، ويُستخدم كمرجع سلوك وبيانات أثناء النقل.
-- **مسار KMP/Compose الجديد:** أصبح المسار الرئيسي للتوسع. Phase 01→04 اكتملت، وتم بناء Design System وموديولات Home/Explore/Shell، وربط debug API bridge، وإثبات iOS من Xcode.
+- **مسار KMP/Compose الجديد:** المسار الرئيسي للتوسع. Phases 01→04 مكتملة؛ Phase 05 جارٍ. Design System + Shell + Train/Reports/Session + **طبقة بيانات مشتركة (Ktor)** + إثبات iOS.
 
 التحويل ما زال تدريجياً، لكن الأولوية الآن ليست تجميل كل XML قديم أولاً؛ الأولوية هي نقل الشاشات صفحة بصفحة إلى KMP/Compose عندما يكون ذلك أوضح وأكثر قابلية للمشاركة بين Android وiOS.
 
-## تحديث 2026-06-08: اكتمال Phase 04 ونجاح iOS render proof
+## تحديث 2026-06-08: Phase 01→05 + طبقة البيانات المشتركة + iOS
 
-وصل مسار KMP إلى نقطة تحقق مهمة:
+وصل مسار KMP إلى نقطة نضج أعلى من مجرد «إثبات العرض»:
 
-- Phase 01→04 مكتملة على فرع `codex/kmp-mobile-foundation`.
-- الموديولات المشتركة الحالية: `:shared`, `:core:designsystem`, `:feature:home`, `:feature:explore`, `:feature:shell`.
-- `Home` و`Explore` أصبحا features مشتركة داخل shell مع ViewModel/UDF، وليسا مجرد XML legacy.
-- debug bridge أثبت نمطه على `/api/mobile/explore` و`/api/mobile/home` على Android، مع fallback آمن.
-- CI macOS الخاص بـ KMP/iOS أخضر.
-- `iosApp/` اشتغل من Xcode ورسم Movit shell على iOS Simulator بنجاح.
-- الديون المؤقتة المعروفة قبل إنتاج iOS: target 18.5، استخدام `collectAsState()` بدلاً من lifecycle-aware collection في routes المشتركة، وتمرير ViewModels على iOS عبر `remember`.
+- **Phases 01→04** مكتملة؛ **Phase 05** جارٍ (Train · Reports · Session على API مشترك).
+- الموديولات: `:shared`, `:core:designsystem`, `:core:network`, `:core:data`, `:feature:{home,explore,train,reports,library,shell}`.
+- **طبقة بيانات مشتركة** (Ktor + repositories) تغطي التبويبات الأربعة + Report Detail + Workout Session.
+- **iOS:** Shell كامل + بيانات API عند توفر credentials؛ CI macOS أخضر.
+- **Android debug:** `MovitShellPilotActivity` يثبّت `MovitDataInstall` فقط — bridges القديمة لم تعد مطلوبة للتبويبات.
 
-بناءً على ذلك، المرحلة التالية الرسمية هي **Phase 05: Train dashboard / Today Training Overview** داخل KMP shell، وليس نقل `TrainingActivity` أو camera/session/ML.
+ديون تقنية معروفة (لا تمنع العرض التجريبي):
+
+- Session KMP: بدون thumbnails من API (Explore exercises بلا `imageUrl`).
+- SQLDelight غير مُضاف — الكاش JSON في preferences.
+- Auth / Onboarding / Assessment — غائبة في KMP.
+- بيانات معاينة Report Detail (`ReportDetailPreviewData`) ما زالت إنجليزية ثابتة للتطوير.
+- نصوص ديناميكية من API (أسماء تمارين، رسائل insights) تبقى كما يرسلها الخادم — لم تُترجم في العميل.
+
+المرحلة التالية المنطقية: **صفحات غائبة (10–14)** أو **تلميع UX Train/Session** حسب أولوية المنتج — وليس نقل `TrainingActivity`/camera/ML.
 
 ## تحديث 2026-06-08: HTML Prototypes / Premium UI Refresh
 
@@ -380,44 +538,21 @@
 
 ## المرحلة 3: ما لم ينفذ بعد
 
-### Train
+### Train / Explore / Reports / Session (مسار KMP)
 
-لم يبدأ بعد.
+| الصفحة | KMP UI | بيانات API مشتركة | فجوات UX الرئيسية |
+|--------|--------|-------------------|-------------------|
+| **Train** | ✅ `MovitTrainScreen` | ✅ `SharedTrainRepository` | تنقل أسبوع، hero No-plan، thumbnails جلسات |
+| **Explore** | ✅ `MovitExploreScreen` | ✅ `SharedExploreRepository` | بطاقات أفقية، تفاصيل برنامج |
+| **Reports** | ✅ `MovitReportsScreen` | ✅ `SharedReportsRepository` | delta اتجاهات، تفاصيل charts |
+| **Report Detail** | ✅ `ReportDetailScreen` | ✅ `SharedReportDetailRepository` | joints من API غير متوفرة بعد |
+| **Session** | ✅ `WorkoutSessionScreen` | ✅ `SharedWorkoutSessionRepository` | Prepare، workout flow، كاميرا |
 
-المطلوب:
+**Legacy XML** (`fragment_train`, `fragment_explore`, `fragment_history`): ما زال موجوداً للـ launcher ولم يُحدَّث بنفس موجة Premium — التحديث البصري الحالي يركز على KMP.
 
-- مراجعة `fragment_train.xml` و`TrainFragment`.
-- إزالة hardcoded colors/textSize.
-- تحويل cards إلى MaterialCardView/styles.
-- الحفاظ على كل IDs.
-- جعل الشاشة متوافقة مع النمط المرجعي:
-  - Hero/CTA واضح.
-  - exercise/program cards نظيفة.
-  - quick actions مختصرة.
-  - empty/loading states موحدة.
+### Train (Legacy XML فقط)
 
-### Explore
-
-لم يبدأ بعد.
-
-المطلوب:
-
-- مراجعة `fragment_explore.xml` و`ExploreFragment`.
-- توحيد exercise/workout/program cards.
-- تطبيق `ListCard` أو styles مكافئة.
-- تحسين filters/chips.
-- دعم light/dark بالكامل.
-
-### Reports
-
-لم يبدأ بعد.
-
-المطلوب:
-
-- مراجعة `fragment_history.xml`, reports fragments, report cards.
-- توحيد report palette مع tokens.
-- إزالة `report_*` المنفصلة تدريجياً أو جعلها aliases للـ system tokens.
-- تحويل charts/cards إلى نمط clean dashboard.
+لم يُحدَّث `fragment_train.xml` في موجة Premium. KMP Train هو المسار النشط للتطوير.
 
 ### Program Session
 
@@ -462,13 +597,13 @@
 
 ### ما تم تنفيذه ضمن مسار KMP
 
-- تم إنشاء بنية موديولات KMP بدلاً من الاعتماد على `:app` فقط.
-- تم نقل نمط الشاشات الجديدة إلى `Route / Screen / ViewModel / UiState / Event / Effect`.
-- تم اعتماد KMP `androidx.lifecycle.ViewModel` بدلاً من Controller أو Android-only ViewModel في Home/Explore/Shell.
-- تم فصل مصادر البيانات الجديدة عبر repository contracts وdebug bridge بدلاً من استدعاء Retrofit مباشرة داخل feature.
-- تم الحفاظ على debug bridge داخل `app/debug` حتى لا تعتمد موديولات features على `:app`.
-- تم تثبيت boundary واضح: iOS يستخدم fake data حتى قرار Ktor/repository مشترك.
-- تم إبقاء shell الجديد debug-only، لذلك لم يتلوث `releaseRuntimeClasspath`.
+- بنية موديولات KMP: `core:{designsystem,network,data}` + `feature:*` + `shell`.
+- نمط شاشات: `Route / Screen / ViewModel / UiState / Event / Effect`.
+- KMP `androidx.lifecycle.ViewModel` في كل التبويبات الرئيسية.
+- **طبقة بيانات مشتركة:** `MovitData` + `Shared*Repository` + Ktor — Android وiOS من نفس المصدر.
+- `MovitPlatformBindings` يعزل Auth، base URL، كاش، Pro، active user program.
+- اختبارات وحدة: Explore merge، Train/Reports/Session mappers، shell state.
+- Shell debug-only — `releaseRuntimeClasspath` للـ legacy لم يتأثر.
 
 ### ما يزال ديناً داخل legacy Android
 
@@ -481,7 +616,7 @@
 - `ProgramSessionActivity` ما زالت كبيرة وتخلط UI + API + sync + state.
 - `TrainingViewModel` ما زال ثقيلاً ويحتوي مسؤوليات كثيرة.
 - بعض Activities تستدعي `ApiClient` مباشرة.
-- لا يوجد DI مشترك بعد؛ Koin/Ktor مؤجلان حتى أول repository حقيقي مشترك.
+- لا يوجد DI framework (Koin/Hilt) في KMP — `MovitData.install()` singleton كافٍ حالياً.
 - بعض شاشات UI لا تزال programmatic.
 - ما زال هناك تكرار في cards والـ layouts خارج المكونات المشتركة.
 
@@ -521,10 +656,17 @@ cd android-poc
 ./gradlew --console=plain :feature:shell:testDebugUnitTest
 ```
 
-بعد تعديلات KMP أو iOS entry point، أضف:
+بعد تعديلات KMP أو iOS entry point:
 
-```bash
-./gradlew --console=plain :feature:shell:linkDebugFrameworkIosSimulatorArm64
+```powershell
+cd android-poc
+.\gradlew :app:assembleDebug :feature:shell:linkDebugFrameworkIosSimulatorArm64 :feature:train:testDebugUnitTest :feature:reports:testDebugUnitTest :feature:library:testDebugUnitTest :core:data:testDebugUnitTest
+```
+
+تشغيل Shell على Android (debug):
+
+```text
+adb shell am start -n com.trainingvalidator.poc/com.movit.debug.MovitShellPilotActivity
 ```
 
 Android Studio ما زال مفيداً للمراجعة البصرية وتشغيل المحاكي:
@@ -546,14 +688,24 @@ Android Studio ما زال مفيداً للمراجعة البصرية وتشغ
 
 ## الأولوية التالية
 
-1. مراجعة Train على Mac/Xcode Simulator بعد الربط الجديد:
-   - `:feature:shell:linkDebugFrameworkIosSimulatorArm64`
-   - `xcodegen`
-   - Xcode Simulator render check.
-2. مراجعة Train بصرياً على Android debug shell، خصوصاً light/dark وfont scaling.
-3. قبول Train أو تسجيل تعديلات UX صغيرة قبل الانتقال للصفحة التالية.
-4. بعد قبول Train، الانتقال إلى `Reports Overview` ثم `Profile / Account shell`.
-5. إبقاء `Program Session`, `Assessment`, و`Training session/camera` مؤجلة حتى لا تختلط Phase 05 مع camera/ML.
+**أولاً — [Phase Pre-05](Android-KMP-Mobile-UI-UX-Phase-Pre-05-Stabilization-And-Debt-Closure-Plan.md):**
+
+| WS | الحالة | ملاحظة |
+|----|--------|--------|
+| WS-A جسور | ✅ | صفر `ApiBridge`/`FetcherBridge` في الكود |
+| WS-B Profile | ✅ | تبويب Account + `MovitProfileRoute`؛ Components debug-only |
+| WS-C نصوص | ✅ | `:core:resources` + تغطية التبويبات الرئيسية + Train UI + Report Detail + Session |
+| WS-D اختبارات sync | ✅ | `core:data` unit tests لفروع fallback/auth |
+| WS-E iOS | ✅ | deployment 16.0 · `collectAsStateWithLifecycle` · `ViewModelStoreOwner` |
+| WS-F Koin | ✅ | `MovitData.install` → `startKoin`؛ repos عبر DI |
+| WS-G launcher | ⏳ | معيار مكتوب — التنفيذ الإنتاجي لم يبدأ |
+
+**ثانياً — استكمال Phase 05 (مسموح بعد Pre-05 ما عدا WS-G):**
+
+- **صفحات غائبة:** Auth (10) → Profile (11) → Onboarding (12) → Assessment/Level حسب أولوية المنتج.
+- **مزامنة iOS auth:** كتابة `access_token`, `is_pro`, `active_user_program_id` عند تسجيل الدخول في تطبيق iOS.
+- **تلميع UX Train/Session** حسب [`Sync-App-Pages.md`](Sync-App-Pages.md) (أسبوع، thumbnails، Prepare flow).
+- **إبقاء camera/ML/TrainingActivity** مؤجلة لـ Phase 7 — لكن **المحرك العددى الخالص** (`OneEuroFilter`/`AngleCalculator`/score calculators) يُنقل لـ `commonMain` كأول خطوة في حدود Phase 7.
 
 ## Checklist
 
@@ -579,9 +731,25 @@ Android Studio ما زال مفيداً للمراجعة البصرية وتشغ
 - [x] إنشاء KMP foundation وموديولات `shared`, `core:designsystem`, `feature:home`, `feature:explore`, `feature:shell`.
 - [x] اعتماد `MovitTheme` و`Movit*` naming في الموديولات الجديدة.
 - [x] تحويل Home/Explore إلى ViewModel + UDF داخل KMP shell.
-- [x] إثبات debug API bridge على Home وExplore.
+- [x] إثبات debug API bridge على Home وExplore (استُبدل لاحقاً بطبقة مشتركة).
 - [x] CI macOS/iOS أخضر.
 - [x] iOS render proof من Xcode ناجح.
+- [x] `core:network` — Ktor 3 + DTOs + `MovitMobileApi`.
+- [x] `core:data` — `MovitData`, sync repositories, platform bindings.
+- [x] `SharedHomeRepository` + `SharedExploreRepository` (Android + iOS).
+- [x] `SharedTrainRepository` — Train من home API.
+- [x] `SharedReportsRepository` + `SharedReportDetailRepository`.
+- [x] `SharedWorkoutSessionRepository` — effective plan + save + substitutions.
+- [x] إزالة استدعاء `Movit*ApiBridge` من `MovitShellPilotActivity` (Pre-05 / WS-A).
+- [x] `:core:resources` — نصوص ar/en + `MovitLocaleProvider` + `movitText`/`localizedString`.
+- [x] نقل نصوص Home/Explore/Train/Reports/Shell (nav/profile) إلى موارد مشتركة.
+- [x] نقل نصوص مكوّنات Train الثانوية + Report Detail + Workout Session.
+- [x] `ReportDetailStrings` + `SessionStrings` + `generateMovitEnglishStrings` Gradle task.
+- [x] Profile route حقيقية (`MovitProfileRoute`) بدل placeholder Components.
+- [x] Koin في `MovitData` (Pre-05 / WS-F).
+- [x] iOS P1/P2/P3 (Pre-05 / WS-E).
+- [x] اختبارات sync repos (Pre-05 / WS-D).
+- [ ] بوابة launcher WS-G — Movit shell كـ entry point إنتاجي.
 - [ ] Build نهائي بعد تحويل `Home`.
 - [ ] مراجعة light/dark بصرياً على Android.
 - [ ] مراجعة prototypes بصرياً يدوياً في المتصفح بعد آخر إصلاحات Premium.
@@ -591,13 +759,95 @@ Android Studio ما زال مفيداً للمراجعة البصرية وتشغ
 - [x] تشغيل اختبارات Train وShell بعد الربط.
 - [x] تشغيل Android debug assemble بعد ربط Train.
 - [x] فحص release runtime بعد ربط Train.
-- [ ] iOS smoke بعد ربط Train.
-- [ ] تحويل `Reports Overview`.
-- [ ] تحويل `Profile / Account shell`.
+- [x] iOS link بعد Train + Reports + Session.
+- [x] `Reports Overview` — KMP UI + API مشترك.
+- [x] `Workout Session` — KMP UI + API مشترك (بدون كاميرا).
+- [ ] iOS smoke يدوي ببيانات حقيقية (token + pro + user program).
+- [x] تحويل `Profile / Account shell` (هيكل أدنى — `MovitProfileRoute`؛ بدون auth).
 - [ ] تحويل `Program Session` بعد فصل منطقها.
 - [ ] تحويل `Level Profile`.
 - [ ] تنظيف Assessment UI.
-- [ ] نقل API calls إلى repositories/use cases.
+- [x] نقل API للتبويبات الرئيسية + Session + Report detail إلى repositories مشتركة (KMP).
+- [ ] نقل بقية legacy Activities إلى repositories (Program Session، Training، …).
 - [ ] تفكيك `ProgramSessionActivity`.
 - [ ] تخفيف `TrainingViewModel`.
-- [ ] إدخال DI أو factory منظم لاحقاً.
+- [x] إدخال DI (Koin في `MovitData` — Pre-05 / WS-F).
+
+---
+
+## سجل التنفيذ — 2026-06-09 (Phase Pre-05 + استكمال WS-C)
+
+### ما تم إنجازه
+
+**WS-A — حذف الجسور الانتقالية**
+- حذف ملفات `Movit*ApiBridge` من `app/src/debug`.
+- حذف `Remote*Repository` و`*FetcherBridge` من `androidMain` في train/reports/library.
+- `MovitShellPilotActivity` يثبّت `MovitDataInstall` فقط.
+- تحقق: `rg "ApiBridge|FetcherBridge"` ⇒ صفر نتائج.
+
+**WS-B — Profile حقيقي**
+- إضافة `Profile` إلى `MovitAppDestination` وإزالة `Components` من التبويبات الرئيسية.
+- `MovitProfileRoute` — إعدادات، لغة، حالة Pro من `MovitPlatformBindings`.
+- `MovitComponentsRoute` أصبح debug-only.
+
+**WS-C — نظام نصوص مشترك (الجزء الأول ثم الاستكمال)**
+- موديول جديد `:core:resources` مع `composeResources/values/strings.xml` و`values-ar/strings.xml`.
+- `MovitLocaleProvider` + `LocalMovitLanguage` + `movitText()` / `localizedString()`.
+- loaders: `HomeStrings`, `ExploreStrings`, `TrainStrings`, `ReportsStrings`, `ReportDetailStrings`, `SessionStrings`.
+- نقل نصوص التبويبات الرئيسية + shell (nav/profile).
+- **استكمال لاحق:** مكوّنات Train الثانوية (`TrainTodayCard`, `TrainStatusBanner`, `TrainNoPlanSection`, `TrainQuickActions`, `TrainReportSection`, `TrainReadinessCard`).
+- **استكمال لاحق:** `ReportDetailScreen` + mapper + repository؛ `WorkoutSessionScreen` + sheets + mapper + repository.
+- إضافة `implementation(project(":core:resources"))` إلى `:feature:library`.
+- مهمة Gradle `generateMovitEnglishStrings` تولّد `MovitEnglishStrings.kt` للاختبارات.
+
+**WS-D — اختبارات sync repos**
+- تغطية فروع fallback/auth في `HomeSyncRepository`, `ReportsSyncRepository`, `WorkoutSessionSyncRepository` عبر MockEngine.
+
+**WS-E — إغلاق ديون iOS**
+- `iosApp/project.yml`: deployment target **16.0** (كان 18.5).
+- كل الـ routes تستخدم `collectAsStateWithLifecycle()` بدل `collectAsState()`.
+- `MainViewController` يوفّر `ViewModelStoreOwner` حقيقي.
+
+**WS-F — Koin**
+- `MovitData.install()` يستدعي `startKoin`؛ repositories تُحل عبر DI بدل singleton مباشر.
+
+**التحقق**
+```powershell
+.\gradlew.bat :app:assembleDebug :feature:train:testDebugUnitTest :feature:reports:testDebugUnitTest :feature:library:testDebugUnitTest
+```
+→ BUILD SUCCESSFUL
+
+### قرارات معمارية
+
+| القرار | السبب |
+|--------|-------|
+| `movitString("key")` عبر `Res.allStringResources` بدل `Res.string.*` المباشر | Compose Resources يقسّم accessors (`String0`/`String1`/`String2`) ولا تُحل مراجع `home_*` في `commonMain` حتى داخل `:core:resources` |
+| `MovitEnglishStrings.kt` مُولَّد من Gradle | unit tests في JVM بدون Android context تحتاج fallback إنجليزي (تجنب `MissingResourceException` / `getSystem not mocked`) |
+| `:core:resources` لا يعتمد على `:core:data` | اللغة في UI عبر `MovitLocaleProvider`؛ في repositories عبر `suspend` + `localizedString(language, key)` |
+| Profile هيكل أدنى بدون auth | يغلق فجوة التنقل دون توسيع النطاق لـ Auth flow كامل في Pre-05 |
+| Koin وليس Hilt | الحفاظ على KMP مشترك بين Android وiOS |
+
+### مشكلات واجهتنا وكيف حُلَّت
+
+**1. `Unresolved reference` لـ `Res.string.home_*` في feature modules**
+- **السبب:** accessors المُولَّدة تُقسَّم حسب عدد المعاملات؛ مفاتيح الشاشات الرئيسية في `String0` لا تُصدَّر بشكل يُحلّ في `commonMain` عند compile feature modules.
+- **محاولات فاشلة:** نقل `*Strings` loaders إلى `:core:resources` مع `Res.string`؛ `kotlin.srcDir` لمجلد accessors؛ `generateResClass = always` في كل feature؛ `api(project(":core:resources"))`.
+- **الحل:** lookup ديناميكي `movitString("key")` + overload `movitText("key")` للـ Composables + `localizedString(language, "key", …)` للـ mappers.
+
+**2. فشل unit tests بسبب موارد Compose على JVM**
+- **السبب:** `stringResource()` يحتاج Android context غير متوفر في `testDebugUnitTest`.
+- **الحل:** `MovitEnglishStrings` كخريطة fallback + مهمة Gradle تولّدها من `strings.xml` الإنجليزي.
+
+**3. تنسيق قوالب `%1$d` / `%1$s` في commonMain**
+- **الحل:** `formatMovitTemplate` في `:core:resources`؛ escape `$` في الملف المُولَّد لتجنب أخطاء Kotlin string templates.
+
+**4. مسار بيانات مزدوج (bridges + Shared repos)**
+- **الحل:** حذف كامل للجسور (WS-A) — مسار واحد فقط.
+
+### ما لم يُنجز في هذه الجلسة
+
+- **WS-G:** بوابة launcher — المعيار مكتوب؛ `MovitShellPilotActivity` ما زال debug-only.
+- **Auth / Onboarding / Assessment / Level** — خارج نطاق Pre-05.
+- **iOS smoke يدوي** ببيانات حقيقية (token + pro + user program).
+- بيانات معاينة `ReportDetailPreviewData` ما زالت إنجليزية ثابتة.
+- نصوص ديناميكية من API (أسماء تمارين، insights) — تبقى كما يرسلها الخادم.

@@ -5,138 +5,132 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Stars
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import com.movit.designsystem.MovitSpacing
-import com.movit.designsystem.components.MovitCard
-import com.movit.designsystem.components.MovitProgressBar
+import com.movit.designsystem.components.MovitAccentBlock
+import com.movit.designsystem.components.MovitAccentVariant
+import com.movit.designsystem.components.MovitBanner
+import com.movit.designsystem.components.MovitBannerVariant
+import com.movit.designsystem.components.MovitDashboardHero
+import com.movit.designsystem.components.MovitMetricItem
+import com.movit.designsystem.components.MovitMetricRow
+import com.movit.designsystem.components.MovitTag
+import com.movit.designsystem.components.MovitTagVariant
+import com.movit.designsystem.movitColors
 import com.movit.feature.train.TrainDashboardStatus
 import com.movit.feature.train.TrainDashboardUi
+import com.movit.resources.movitText
 
 @Composable
 fun TrainStatusBanner(
     dashboard: TrainDashboardUi,
     modifier: Modifier = Modifier,
+    onExplorePrograms: (() -> Unit)? = null,
 ) {
     val program = dashboard.program
-    MovitCard(modifier = modifier.fillMaxWidth()) {
-        Column(verticalArrangement = Arrangement.spacedBy(MovitSpacing.md)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Top,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(MovitSpacing.xs),
-                ) {
-                    Text(
-                        text = program?.name ?: statusTitle(dashboard.status),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Text(
-                        text = program?.positionLabel ?: statusSubtitle(dashboard.status),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                StatusPill(status = dashboard.status, label = program?.levelLabel ?: statusPill(dashboard.status))
-            }
-
-            if (program != null) {
-                MovitProgressBar(
+    when {
+        program != null -> {
+            Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(MovitSpacing.md)) {
+                MovitDashboardHero(
+                    eyebrow = heroEyebrow(dashboard.status),
+                    title = program.name,
+                    subtitle = program.positionLabel,
                     progressPercent = program.progressPercent,
-                    label = "${program.progressPercent}% complete",
+                    inkStyle = true,
+                )
+                MovitMetricRow(
+                    items = listOf(
+                        MovitMetricItem(program.daysTrainedLabel, movitText("train_metric_days"), MaterialTheme.colorScheme.primary),
+                        MovitMetricItem(program.streakLabel, movitText("train_metric_streak"), MaterialTheme.colorScheme.tertiary),
+                        MovitMetricItem(program.gradeLabel, movitText("train_metric_grade"), MaterialTheme.movitColors.limeDeep),
+                    ),
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        text = program.daysTrainedLabel,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    MovitTag(
+                        text = program.levelLabel,
+                        variant = MovitTagVariant.Blue,
+                        icon = Icons.Default.Stars,
                     )
-                    Text(
-                        text = program.streakLabel,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.secondary,
-                    )
-                    Text(
-                        text = program.gradeLabel,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        MovitTag(
+                            text = program.streakLabel,
+                            variant = MovitTagVariant.Coral,
+                            icon = Icons.Default.LocalFireDepartment,
+                        )
+                        Text(
+                            text = "${program.progressPercent}%",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.W800,
+                            modifier = Modifier.padding(start = MovitSpacing.md),
+                        )
+                    }
                 }
             }
+        }
+        dashboard.status == TrainDashboardStatus.NoPlan -> {
+            MovitAccentBlock(
+                modifier = modifier,
+                title = movitText("train_browse_programs"),
+                subtitle = movitText("train_browse_pick_sub"),
+                variant = MovitAccentVariant.Lime,
+                glyphIcon = Icons.Default.Explore,
+                onClick = onExplorePrograms,
+            )
+        }
+        else -> {
+            MovitBanner(
+                modifier = modifier,
+                title = statusTitle(dashboard.status),
+                message = statusSubtitle(dashboard.status),
+                variant = when (dashboard.status) {
+                    TrainDashboardStatus.CompletedToday,
+                    TrainDashboardStatus.ProgramComplete,
+                    -> MovitBannerVariant.Complete
+                    TrainDashboardStatus.RestDay -> MovitBannerVariant.Success
+                    else -> MovitBannerVariant.Default
+                },
+            )
         }
     }
 }
 
 @Composable
-private fun StatusPill(
-    status: TrainDashboardStatus,
-    label: String,
-) {
-    val container = when (status) {
-        TrainDashboardStatus.ActivePlan -> MaterialTheme.colorScheme.primaryContainer
-        TrainDashboardStatus.NoPlan -> MaterialTheme.colorScheme.secondaryContainer
-        TrainDashboardStatus.RestDay -> MaterialTheme.colorScheme.surfaceVariant
-        TrainDashboardStatus.CompletedToday,
-        TrainDashboardStatus.ProgramComplete,
-        -> MaterialTheme.colorScheme.tertiaryContainer
-    }
-    val content = when (status) {
-        TrainDashboardStatus.ActivePlan -> MaterialTheme.colorScheme.onPrimaryContainer
-        TrainDashboardStatus.NoPlan -> MaterialTheme.colorScheme.onSecondaryContainer
-        TrainDashboardStatus.RestDay -> MaterialTheme.colorScheme.onSurfaceVariant
-        TrainDashboardStatus.CompletedToday,
-        TrainDashboardStatus.ProgramComplete,
-        -> MaterialTheme.colorScheme.onTertiaryContainer
-    }
-
-    Surface(
-        color = container,
-        contentColor = content,
-        shape = MaterialTheme.shapes.medium,
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            modifier = Modifier.padding(
-                horizontal = MovitSpacing.sm,
-                vertical = MovitSpacing.xs,
-            ),
-        )
-    }
+private fun heroEyebrow(status: TrainDashboardStatus): String = when (status) {
+    TrainDashboardStatus.ActivePlan -> movitText("train_active_program")
+    TrainDashboardStatus.NoPlan -> movitText("train_get_started")
+    TrainDashboardStatus.RestDay -> movitText("train_recovery_day")
+    TrainDashboardStatus.CompletedToday -> movitText("train_today_complete")
+    TrainDashboardStatus.ProgramComplete -> movitText("train_program_complete")
 }
 
+@Composable
 private fun statusTitle(status: TrainDashboardStatus): String = when (status) {
-    TrainDashboardStatus.ActivePlan -> "Active program"
-    TrainDashboardStatus.NoPlan -> "No active program"
-    TrainDashboardStatus.RestDay -> "Rest day"
-    TrainDashboardStatus.CompletedToday -> "Day complete"
-    TrainDashboardStatus.ProgramComplete -> "Program complete"
+    TrainDashboardStatus.ActivePlan -> movitText("train_active_program")
+    TrainDashboardStatus.NoPlan -> movitText("train_browse_programs")
+    TrainDashboardStatus.RestDay -> movitText("train_rest_day_label")
+    TrainDashboardStatus.CompletedToday -> movitText("train_day_complete_short")
+    TrainDashboardStatus.ProgramComplete -> movitText("train_program_complete")
 }
 
+@Composable
 private fun statusSubtitle(status: TrainDashboardStatus): String = when (status) {
-    TrainDashboardStatus.ActivePlan -> "Your plan is ready."
-    TrainDashboardStatus.NoPlan -> "Choose a guided program."
-    TrainDashboardStatus.RestDay -> "Recovery is scheduled today."
-    TrainDashboardStatus.CompletedToday -> "Training is complete for today."
-    TrainDashboardStatus.ProgramComplete -> "Review your journey and choose next steps."
-}
-
-private fun statusPill(status: TrainDashboardStatus): String = when (status) {
-    TrainDashboardStatus.ActivePlan -> "Ready"
-    TrainDashboardStatus.NoPlan -> "Start"
-    TrainDashboardStatus.RestDay -> "Recover"
-    TrainDashboardStatus.CompletedToday -> "Done"
-    TrainDashboardStatus.ProgramComplete -> "Complete"
+    TrainDashboardStatus.ActivePlan -> movitText("train_status_plan_ready")
+    TrainDashboardStatus.NoPlan -> movitText("train_status_pick_plan")
+    TrainDashboardStatus.RestDay -> movitText("train_status_recovery_part")
+    TrainDashboardStatus.CompletedToday -> movitText("train_status_training_complete")
+    TrainDashboardStatus.ProgramComplete -> movitText("train_status_program_review")
 }

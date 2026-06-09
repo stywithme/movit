@@ -2,27 +2,27 @@ package com.movit.feature.train
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.movit.designsystem.MovitSpacing
-import com.movit.designsystem.components.MovitCard
+import com.movit.designsystem.components.MovitButton
+import com.movit.designsystem.components.MovitButtonVariant
 import com.movit.designsystem.components.MovitErrorState
 import com.movit.designsystem.components.MovitLoadingState
 import com.movit.designsystem.components.MovitScaffold
-import com.movit.designsystem.components.MovitSectionHeader
+import com.movit.feature.train.components.TrainNoPlanSection
 import com.movit.feature.train.components.TrainQuickActions
 import com.movit.feature.train.components.TrainReadinessCard
+import com.movit.feature.train.components.TrainReportSection
 import com.movit.feature.train.components.TrainStatusBanner
 import com.movit.feature.train.components.TrainTodayCard
 import com.movit.feature.train.components.TrainWeekPreview
+import com.movit.resources.movitText
 
 @Composable
 fun MovitTrainScreen(
@@ -33,8 +33,8 @@ fun MovitTrainScreen(
     val dashboard = state.dashboard
     MovitScaffold(
         modifier = modifier,
-        title = dashboard?.title ?: "Train",
-        subtitle = dashboard?.subtitle ?: "Your program and today's plan.",
+        title = movitText("train_title"),
+        subtitle = dashboard?.subtitle ?: movitText("train_dest_subtitle"),
     ) { padding ->
         Column(
             modifier = Modifier
@@ -46,7 +46,7 @@ fun MovitTrainScreen(
         ) {
             when {
                 state.isLoading && dashboard == null -> {
-                    MovitLoadingState(message = "Loading your training plan…")
+                    MovitLoadingState(message = movitText("train_loading"))
                 }
                 state.errorMessage != null -> {
                     MovitErrorState(
@@ -55,44 +55,9 @@ fun MovitTrainScreen(
                     )
                 }
                 dashboard != null -> {
-                    TrainStatusBanner(dashboard = dashboard)
-                    TrainTodayCard(
+                    TrainDashboardContent(
                         dashboard = dashboard,
-                        onPrimaryAction = {
-                            when (dashboard.status) {
-                                TrainDashboardStatus.ActivePlan -> {
-                                    onEvent(MovitTrainEvent.StartWorkoutClicked)
-                                }
-                                TrainDashboardStatus.NoPlan,
-                                TrainDashboardStatus.RestDay,
-                                -> {
-                                    onEvent(MovitTrainEvent.ExploreProgramsClicked)
-                                }
-                                TrainDashboardStatus.CompletedToday,
-                                TrainDashboardStatus.ProgramComplete,
-                                -> {
-                                    onEvent(MovitTrainEvent.ViewReportClicked)
-                                }
-                            }
-                        },
-                    )
-
-                    if (dashboard.week.days.isNotEmpty()) {
-                        TrainWeekPreview(week = dashboard.week)
-                    }
-
-                    TrainReadinessCard(readiness = dashboard.readiness)
-
-                    dashboard.report?.let { report ->
-                        TrainReportCard(
-                            report = report,
-                            onViewReport = { onEvent(MovitTrainEvent.ViewReportClicked) },
-                        )
-                    }
-
-                    TrainQuickActions(
-                        actions = dashboard.quickActions,
-                        onActionClick = { onEvent(MovitTrainEvent.QuickActionClicked(it)) },
+                        onEvent = onEvent,
                     )
                 }
             }
@@ -101,44 +66,78 @@ fun MovitTrainScreen(
 }
 
 @Composable
-private fun TrainReportCard(
-    report: TrainReportSummaryUi,
-    onViewReport: () -> Unit,
-    modifier: Modifier = Modifier,
+private fun TrainDashboardContent(
+    dashboard: TrainDashboardUi,
+    onEvent: (MovitTrainEvent) -> Unit,
 ) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
-    ) {
-        MovitSectionHeader(
-            title = report.title,
-            subtitle = report.insight,
-            actionLabel = "Open",
-            onActionClick = onViewReport,
-        )
-        MovitCard(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(MovitSpacing.md),
-            ) {
-                report.metrics.take(4).forEach { metric ->
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(MovitSpacing.xs),
-                    ) {
-                        Text(
-                            text = metric.value,
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                        Text(
-                            text = metric.label,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
+    val onPrimaryAction: () -> Unit = {
+        when (dashboard.status) {
+            TrainDashboardStatus.ActivePlan -> onEvent(MovitTrainEvent.StartWorkoutClicked)
+            TrainDashboardStatus.NoPlan,
+            TrainDashboardStatus.RestDay,
+            -> onEvent(MovitTrainEvent.ExploreProgramsClicked)
+            TrainDashboardStatus.CompletedToday,
+            TrainDashboardStatus.ProgramComplete,
+            -> onEvent(MovitTrainEvent.ViewReportClicked)
         }
     }
+
+    TrainStatusBanner(
+        dashboard = dashboard,
+        onExplorePrograms = { onEvent(MovitTrainEvent.ExploreProgramsClicked) },
+    )
+
+    if (dashboard.status == TrainDashboardStatus.NoPlan) {
+        TrainNoPlanSection(
+            programs = dashboard.featuredPrograms,
+            onExplorePrograms = { onEvent(MovitTrainEvent.ExploreProgramsClicked) },
+        )
+    }
+
+    if (dashboard.week.days.isNotEmpty() && dashboard.status != TrainDashboardStatus.NoPlan) {
+        TrainWeekPreview(week = dashboard.week)
+    }
+
+    TrainTodayCard(
+        dashboard = dashboard,
+        onPrimaryAction = onPrimaryAction,
+    )
+
+    if (shouldShowReadiness(dashboard.status)) {
+        TrainReadinessCard(readiness = dashboard.readiness)
+    }
+
+    if (shouldShowReport(dashboard)) {
+        dashboard.report?.let { report ->
+            TrainReportSection(
+                report = report,
+                onViewReport = { onEvent(MovitTrainEvent.ViewReportClicked) },
+            )
+        }
+    }
+
+    TrainQuickActions(
+        actions = dashboard.quickActions,
+        onActionClick = { onEvent(MovitTrainEvent.QuickActionClicked(it)) },
+    )
+
+    if (dashboard.program != null && dashboard.status != TrainDashboardStatus.ProgramComplete) {
+        MovitButton(
+            text = movitText("train_browse_programs"),
+            onClick = { onEvent(MovitTrainEvent.ExploreProgramsClicked) },
+            variant = MovitButtonVariant.Text,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
 }
+
+private fun shouldShowReadiness(status: TrainDashboardStatus): Boolean = when (status) {
+    TrainDashboardStatus.ActivePlan,
+    TrainDashboardStatus.RestDay,
+    TrainDashboardStatus.NoPlan,
+    -> true
+    else -> false
+}
+
+private fun shouldShowReport(dashboard: TrainDashboardUi): Boolean =
+    dashboard.report != null && dashboard.program != null && dashboard.status != TrainDashboardStatus.NoPlan

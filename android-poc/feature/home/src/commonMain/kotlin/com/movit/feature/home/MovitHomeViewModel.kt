@@ -2,6 +2,8 @@ package com.movit.feature.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.movit.core.data.MovitData
+import com.movit.resources.strings.HomeStrings
 import com.movit.shared.AppResult
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,9 +35,19 @@ class MovitHomeViewModel(
                 _state.update {
                     it.copy(
                         isLoading = false,
+                        userName = dashboard.userName,
+                        greetingEyebrow = dashboard.greetingEyebrow,
                         greetingTitle = dashboard.greetingTitle,
                         greetingSubtitle = dashboard.greetingSubtitle,
+                        metricTiles = dashboard.metricTiles,
+                        levelCard = dashboard.levelCard,
+                        alert = dashboard.alert,
+                        activeProgram = dashboard.activeProgram,
                         todayPlan = dashboard.todayPlan,
+                        showBodyScanCta = dashboard.showBodyScanCta,
+                        showNoProgramEmpty = dashboard.showNoProgramEmpty,
+                        journeyRows = dashboard.journeyRows,
+                        recentActivities = dashboard.recentActivities,
                         progress = dashboard.progress.copy(
                             weeklyCompletionPercent = HomeSummaryCalculator.clampPercent(
                                 dashboard.progress.weeklyCompletionPercent,
@@ -61,27 +73,30 @@ class MovitHomeViewModel(
     fun onEvent(event: MovitHomeEvent) {
         when (event) {
             MovitHomeEvent.RetryClicked -> Unit
-            MovitHomeEvent.StartTodayPlanClicked -> {
-                _effects.tryEmit(MovitHomeEffect.OpenTrain)
-            }
-            MovitHomeEvent.ExploreClicked -> {
-                _effects.tryEmit(MovitHomeEffect.OpenExplore)
-            }
-            MovitHomeEvent.ReportsClicked -> {
-                _effects.tryEmit(MovitHomeEffect.OpenReports)
-            }
-            MovitHomeEvent.ProfileClicked -> {
-                _effects.tryEmit(MovitHomeEffect.OpenProfile)
-            }
+            MovitHomeEvent.StartTodayPlanClicked,
+            MovitHomeEvent.BodyScanClicked,
+            -> _effects.tryEmit(MovitHomeEffect.OpenTrain)
+            MovitHomeEvent.ExploreClicked,
+            MovitHomeEvent.BrowseProgramsClicked,
+            -> _effects.tryEmit(MovitHomeEffect.OpenExplore)
+            MovitHomeEvent.ReportsClicked -> _effects.tryEmit(MovitHomeEffect.OpenReports)
+            MovitHomeEvent.ProfileClicked -> _effects.tryEmit(MovitHomeEffect.OpenProfile)
+            MovitHomeEvent.ViewProgramClicked -> _effects.tryEmit(MovitHomeEffect.OpenTrain)
             is MovitHomeEvent.QuickActionClicked -> {
                 when (event.actionId) {
                     "train" -> _effects.tryEmit(MovitHomeEffect.OpenTrain)
                     "explore" -> _effects.tryEmit(MovitHomeEffect.OpenExplore)
                     "reports" -> _effects.tryEmit(MovitHomeEffect.OpenReports)
                     "profile" -> _effects.tryEmit(MovitHomeEffect.OpenProfile)
-                    else -> _effects.tryEmit(
-                        MovitHomeEffect.ShowMessage("Action not available yet."),
-                    )
+                    else -> viewModelScope.launch {
+                        val language = if (MovitData.isInstalled) {
+                            MovitData.requirePlatform().preferredLanguage()
+                        } else {
+                            "en"
+                        }
+                        val message = HomeStrings.load(language).actionUnavailable
+                        _effects.emit(MovitHomeEffect.ShowMessage(message))
+                    }
                 }
             }
         }

@@ -8,24 +8,18 @@ enum class MovitAppDestination(
     Train("train", "Train"),
     Explore("explore", "Explore"),
     Reports("reports", "Reports"),
-    Profile("profile", "Profile"),
+    Profile("profile", "Account"),
     ;
 
-    val placeholderTitle: String
-        get() = when (this) {
-            Home -> "Home"
-            Train -> "Train"
-            Explore -> "Explore"
-            Reports -> "Reports"
-            Profile -> "Profile"
-        }
+    val pageTitle: String
+        get() = label
 
-    val placeholderSubtitle: String
+    val pageSubtitle: String
         get() = when (this) {
             Home -> "Your daily training dashboard."
-            Train -> "Your training dashboard will live here."
+            Train -> "Your program and today's plan."
             Explore -> "Browse workouts, exercises and programs."
             Reports -> "Session history and performance insights."
-            Profile -> "Account, goals and preferences."
+            Profile -> "Account settings and subscription."
         }
 }

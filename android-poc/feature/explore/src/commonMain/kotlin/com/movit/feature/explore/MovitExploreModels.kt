@@ -16,11 +16,11 @@ enum class ExploreItemType {
     Program,
 }
 
-enum class ExploreFilter(val label: String) {
-    All("All"),
-    Exercises("Exercises"),
-    Workouts("Workouts"),
-    Programs("Programs"),
+enum class ExploreFilter {
+    All,
+    Exercises,
+    Workouts,
+    Programs,
     ;
 
     companion object {
@@ -30,5 +30,7 @@ enum class ExploreFilter(val label: String) {
 
 data class ExploreContent(
     val featured: List<ExploreItemUi>,
+    val workouts: List<ExploreItemUi>,
     val exercises: List<ExploreItemUi>,
+    val programs: List<ExploreItemUi>,
 )

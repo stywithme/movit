@@ -16,6 +16,14 @@ enum class TrainWeekDayState {
     Missed,
 }
 
+data class TrainFeaturedProgramUi(
+    val id: String,
+    val title: String,
+    val subtitle: String,
+    val badge: String?,
+    val metadata: List<String>,
+)
+
 data class TrainDashboardUi(
     val status: TrainDashboardStatus,
     val title: String,
@@ -26,6 +34,7 @@ data class TrainDashboardUi(
     val readiness: TrainReadinessUi,
     val report: TrainReportSummaryUi?,
     val quickActions: List<TrainQuickActionUi>,
+    val featuredPrograms: List<TrainFeaturedProgramUi> = emptyList(),
 )
 
 data class TrainProgramUi(
@@ -45,6 +54,33 @@ data class TrainTodayWorkoutUi(
     val exerciseCountLabel: String,
     val focusLabel: String,
     val primaryActionLabel: String,
+    val sessions: List<TrainWorkoutSessionUi> = emptyList(),
+)
+
+data class TrainWorkoutSessionUi(
+    val title: String,
+    val subtitle: String,
+    val durationLabel: String,
+    val exerciseCountLabel: String,
+    val actionLabel: String,
+    val isCompleted: Boolean = false,
+    val launchTarget: TrainWorkoutLaunchUi? = null,
+    val items: List<TrainWorkoutItemUi> = emptyList(),
+)
+
+data class TrainWorkoutLaunchUi(
+    val programSlug: String,
+    val programId: String,
+    val weekNumber: Int,
+    val dayNumber: Int,
+    val plannedWorkoutId: String,
+)
+
+data class TrainWorkoutItemUi(
+    val typeLabel: String,
+    val title: String,
+    val subtitle: String,
+    val isRest: Boolean = false,
 )
 
 data class TrainWeekPreviewUi(

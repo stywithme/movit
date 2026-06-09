@@ -24,15 +24,20 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
+            implementation(project(":core:resources"))
+            implementation(project(":core:data"))
             implementation(project(":core:designsystem"))
             implementation(project(":feature:explore"))
             implementation(project(":feature:home"))
             implementation(project(":feature:train"))
+            implementation(project(":feature:reports"))
+            implementation(project(":feature:library"))
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)
             implementation(compose.materialIconsExtended)
             implementation(compose.ui)
+            implementation(compose.components.resources)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.jetbrains.lifecycle.viewmodel)
             implementation(libs.jetbrains.lifecycle.viewmodel.compose)

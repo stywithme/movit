@@ -22,7 +22,9 @@ class MovitExploreViewModel(
     val effects: SharedFlow<MovitExploreEffect> = _effects.asSharedFlow()
 
     private var cachedFeatured: List<ExploreItemUi> = emptyList()
+    private var cachedWorkouts: List<ExploreItemUi> = emptyList()
     private var cachedExercises: List<ExploreItemUi> = emptyList()
+    private var cachedPrograms: List<ExploreItemUi> = emptyList()
 
     fun loadInitial() {
         viewModelScope.launch { load(isRefresh = false) }
@@ -39,7 +41,9 @@ class MovitExploreViewModel(
         when (val result = repository.getExploreContent()) {
             is AppResult.Success -> {
                 cachedFeatured = result.value.featured
+                cachedWorkouts = result.value.workouts
                 cachedExercises = result.value.exercises
+                cachedPrograms = result.value.programs
                 publishFiltered()
                 _state.update { it.copy(isLoading = false, isRefreshing = false) }
             }
@@ -66,7 +70,20 @@ class MovitExploreViewModel(
                 publishFiltered()
             }
             is MovitExploreEvent.ItemClicked -> {
-                _effects.tryEmit(MovitExploreEffect.NavigateToExercise(event.id))
+                _effects.tryEmit(MovitExploreEffect.NavigateToItem(event.id, event.type))
+            }
+            MovitExploreEvent.SeeAllExercisesClicked -> {
+                _effects.tryEmit(MovitExploreEffect.OpenExercisesLibrary)
+            }
+            MovitExploreEvent.SeeAllWorkoutsClicked -> {
+                _effects.tryEmit(MovitExploreEffect.OpenWorkoutsLibrary)
+            }
+            MovitExploreEvent.OpenFeaturedProgramClicked -> {
+                val programId = cachedPrograms.firstOrNull()?.id
+                    ?: cachedFeatured.firstOrNull { it.type == ExploreItemType.Program }?.id
+                if (programId != null) {
+                    _effects.tryEmit(MovitExploreEffect.OpenProgramDetail(programId))
+                }
             }
             MovitExploreEvent.RetryClicked,
             MovitExploreEvent.RefreshRequested,
@@ -78,16 +95,10 @@ class MovitExploreViewModel(
         val current = _state.value
         _state.update {
             it.copy(
-                featured = ExploreContentFilter.filterItems(
-                    cachedFeatured,
-                    current.query,
-                    current.selectedFilter,
-                ),
-                exercises = ExploreContentFilter.filterItems(
-                    cachedExercises,
-                    current.query,
-                    current.selectedFilter,
-                ),
+                featured = ExploreContentFilter.filterItems(cachedFeatured, current.query, current.selectedFilter),
+                workouts = ExploreContentFilter.filterItems(cachedWorkouts, current.query, current.selectedFilter),
+                exercises = ExploreContentFilter.filterItems(cachedExercises, current.query, current.selectedFilter),
+                programs = ExploreContentFilter.filterItems(cachedPrograms, current.query, current.selectedFilter),
             )
         }
     }

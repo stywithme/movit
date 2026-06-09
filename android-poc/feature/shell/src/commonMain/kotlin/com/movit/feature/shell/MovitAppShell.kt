@@ -8,11 +8,17 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.movit.designsystem.MovitSpacing
+import com.movit.designsystem.components.MovitFloatingNavBar
 import com.movit.feature.explore.MovitExploreRoute
 import com.movit.feature.explore.MovitExploreViewModel
 import com.movit.feature.home.MovitHomeRoute
 import com.movit.feature.home.MovitHomeViewModel
+import com.movit.feature.reports.MovitReportsRoute
+import com.movit.feature.reports.MovitReportsViewModel
+import com.movit.feature.train.MovitTrainEffect
 import com.movit.feature.train.MovitTrainRoute
 import com.movit.feature.train.MovitTrainViewModel
 
@@ -23,17 +29,30 @@ fun MovitAppShell(
     homeViewModel: MovitHomeViewModel,
     trainViewModel: MovitTrainViewModel,
     exploreViewModel: MovitExploreViewModel,
+    reportsViewModel: MovitReportsViewModel,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    onTrainEffect: (MovitTrainEffect) -> Boolean = { false },
+    onShellEffect: (MovitAppShellEffect) -> Unit = {},
 ) {
+    val innerRoute = state.currentInnerRoute
     Scaffold(
         modifier = modifier.fillMaxSize(),
         bottomBar = {
-            MovitNavigationBar(
-                destinations = MovitAppDestination.entries,
-                selectedDestination = state.selectedDestination,
-                onDestinationSelected = { onEvent(MovitAppShellEvent.DestinationSelected(it)) },
-            )
+            if (innerRoute == null) {
+                Box(
+                    modifier = Modifier.padding(bottom = MovitSpacing.md),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    MovitFloatingNavBar(
+                        selected = state.selectedDestination.toFloatingNav(),
+                        destinations = MovitShellFloatingDestinations,
+                        onDestinationSelected = { destination ->
+                            onEvent(MovitAppShellEvent.DestinationSelected(destination.toAppDestination()))
+                        },
+                    )
+                }
+            }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
@@ -42,34 +61,50 @@ fun MovitAppShell(
                 .padding(padding)
                 .fillMaxSize(),
         ) {
-            when (state.selectedDestination) {
+            if (innerRoute != null) {
+                MovitInnerHost(
+                    route = innerRoute,
+                    onBack = { onEvent(MovitAppShellEvent.InnerRoutePopped) },
+                    onNavigate = { onEvent(MovitAppShellEvent.InnerRoutePushed(it)) },
+                    onShellEffect = onShellEffect,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else when (state.selectedDestination) {
                 MovitAppDestination.Home -> {
                     MovitHomeRoute(
                         viewModel = homeViewModel,
                         modifier = Modifier.fillMaxSize(),
                         onEffect = { onEvent(MovitAppShellEvent.HomeEffectReceived(it)) },
+                        onUserNameUpdated = { onEvent(MovitAppShellEvent.HeaderUserNameUpdated(it)) },
                     )
                 }
                 MovitAppDestination.Train -> {
                     MovitTrainRoute(
                         viewModel = trainViewModel,
                         modifier = Modifier.fillMaxSize(),
-                        onEffect = { onEvent(MovitAppShellEvent.TrainEffectReceived(it)) },
+                        onEffect = { effect ->
+                            if (!onTrainEffect(effect)) {
+                                onEvent(MovitAppShellEvent.TrainEffectReceived(effect))
+                            }
+                        },
                     )
                 }
                 MovitAppDestination.Explore -> {
                     MovitExploreRoute(
                         viewModel = exploreViewModel,
                         modifier = Modifier.fillMaxSize(),
-                        onNavigateToExercise = { id ->
-                            onEvent(MovitAppShellEvent.ExploreItemSelected(id))
-                        },
+                        onEffect = { onEvent(MovitAppShellEvent.ExploreEffectReceived(it)) },
                     )
                 }
-                else -> {
-                    MovitPlaceholderScreen(
-                        destination = state.selectedDestination,
+                MovitAppDestination.Profile -> {
+                    MovitProfileRoute(modifier = Modifier.fillMaxSize())
+                }
+                MovitAppDestination.Reports -> {
+                    MovitReportsRoute(
+                        viewModel = reportsViewModel,
+                        userName = state.headerUserName,
                         modifier = Modifier.fillMaxSize(),
+                        onEffect = { onEvent(MovitAppShellEvent.ReportsEffectReceived(it)) },
                     )
                 }
             }

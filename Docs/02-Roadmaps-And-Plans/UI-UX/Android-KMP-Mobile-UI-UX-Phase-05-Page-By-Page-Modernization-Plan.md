@@ -2,6 +2,8 @@
 
 آخر تحديث: 2026-06-08 (post-Phase-04 مكتملة: ViewModels + iOS targets + API bridge + CI أخضر + Home bridge + iOS render proof ناجح؛ Phase 05 يبدأ بـ Train)
 
+> **⛔ تحديث 2026-06-09 — بوابة قبل استكمال Phase 05:** أُنجز من Phase 05 (Train/Reports/Session) لكن الأساس يحمل ديوناً انتقالية. **لا تُضاف شاشات Phase 05 جديدة (Reports المتبقّي/Profile/Assessment/Level) قبل اجتياز** [`Phase Pre-05`](Android-KMP-Mobile-UI-UX-Phase-Pre-05-Stabilization-And-Debt-Closure-Plan.md): حذف الجسور، Profile حقيقى، نصوص مشتركة، اختبار sync repos، إغلاق iOS P1/P2/P3، واعتماد Koin. القرار: **انتقال كامل بلا حلول وسط.**
+
 ## تعريف المرحلة
 
 هذه المرحلة تنقلنا من بناء features منفصلة (`Home`, `Explore`, `Shell`) إلى طريقة عمل منظمة لتحديث التطبيق كله صفحة بصفحة. الهدف ليس فقط بناء صفحة جديدة، بل تثبيت منهج احترافي يراجع الصفحة الحالية، يفهم سلوكها الحقيقي، يحدد تجربة المستخدم المثالية، يضع تصوراً بصرياً مطابقاً لهوية `Movit` وMaterial 3، ثم ينفذها ويغلقها قبل الانتقال للصفحة التالية.

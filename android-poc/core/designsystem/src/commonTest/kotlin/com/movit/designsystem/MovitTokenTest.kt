@@ -18,10 +18,10 @@ class MovitTokenTest {
 
     @Test
     fun radiusScale_matchesPrototype() {
-        assertEquals(8, MovitRadius.sm.value.toInt())
-        assertEquals(12, MovitRadius.md.value.toInt())
-        assertEquals(18, MovitRadius.lg.value.toInt())
-        assertEquals(24, MovitRadius.xl.value.toInt())
+        assertEquals(12, MovitRadius.sm.value.toInt())
+        assertEquals(16, MovitRadius.md.value.toInt())
+        assertEquals(20, MovitRadius.lg.value.toInt())
+        assertEquals(26, MovitRadius.xl.value.toInt())
         assertEquals(999, MovitRadius.full.value.toInt())
     }
 

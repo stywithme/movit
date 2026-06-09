@@ -14,12 +14,12 @@ fun MovitPlaceholderScreen(
 ) {
     MovitScaffold(
         modifier = modifier,
-        title = destination.placeholderTitle,
-        subtitle = destination.placeholderSubtitle,
+        title = destination.pageTitle,
+        subtitle = destination.pageSubtitle,
     ) { padding ->
         MovitPlaceholderState(
-            title = destination.placeholderTitle,
-            subtitle = destination.placeholderSubtitle,
+            title = destination.pageTitle,
+            subtitle = destination.pageSubtitle,
             statusLabel = "Coming soon",
             actionLabel = "Notify me",
             onActionClick = null,

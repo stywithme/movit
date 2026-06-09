@@ -1,15 +1,11 @@
 package com.movit.feature.shell
 
+import com.movit.feature.explore.MovitExploreEffect
+import com.movit.feature.reports.MovitReportsEffect
 import com.movit.feature.home.MovitHomeEffect
 import com.movit.feature.train.MovitTrainEffect
-import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
-import kotlinx.coroutines.yield
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class MovitAppShellStateTest {
 
@@ -42,18 +38,20 @@ class MovitAppShellStateTest {
     }
 
     @Test
-    fun exploreItemSelected_emitsEffect() = runBlocking {
+    fun exploreItemSelected_pushesExercisePrepareInnerRoute() {
         val viewModel = MovitAppShellViewModel()
-        val effectDeferred = async {
-            withTimeout(5_000) {
-                viewModel.effects.first()
-            }
-        }
-        yield()
         viewModel.onEvent(MovitAppShellEvent.ExploreItemSelected("ex-squat"))
-        val effect = effectDeferred.await()
-        assertTrue(effect is MovitAppShellEffect.ShowMessage)
-        assertEquals("Opening ex-squat…", effect.message)
+        assertEquals(
+            MovitInnerRoute.ExercisePrepare("ex-squat"),
+            viewModel.state.value.currentInnerRoute,
+        )
+    }
+
+    @Test
+    fun homeOpenProfile_changesDestination() {
+        val viewModel = MovitAppShellViewModel()
+        viewModel.onEvent(MovitAppShellEvent.HomeEffectReceived(MovitHomeEffect.OpenProfile))
+        assertEquals(MovitAppDestination.Profile, viewModel.state.value.selectedDestination)
     }
 
     @Test
@@ -78,20 +76,44 @@ class MovitAppShellStateTest {
     }
 
     @Test
-    fun trainOpenSessionPreview_emitsPlaceholderMessage() = runBlocking {
+    fun trainOpenSessionPreview_pushesWorkoutSessionInnerRoute() {
         val viewModel = MovitAppShellViewModel()
-        val effectDeferred = async {
-            withTimeout(5_000) {
-                viewModel.effects.first()
-            }
-        }
-        yield()
         viewModel.onEvent(MovitAppShellEvent.TrainEffectReceived(MovitTrainEffect.OpenSessionPreview))
-        val effect = effectDeferred.await()
-        assertTrue(effect is MovitAppShellEffect.ShowMessage)
         assertEquals(
-            "Session flow starts in a later phase.",
-            effect.message,
+            MovitInnerRoute.WorkoutSession("preview"),
+            viewModel.state.value.currentInnerRoute,
         )
+    }
+
+    @Test
+    fun exploreOpenExercisesLibrary_pushesInnerRoute() {
+        val viewModel = MovitAppShellViewModel()
+        viewModel.onEvent(
+            MovitAppShellEvent.ExploreEffectReceived(MovitExploreEffect.OpenExercisesLibrary),
+        )
+        assertEquals(MovitInnerRoute.ExercisesLibrary, viewModel.state.value.currentInnerRoute)
+    }
+
+    @Test
+    fun reportsOpenReportDetail_pushesInnerRoute() {
+        val viewModel = MovitAppShellViewModel()
+        viewModel.onEvent(
+            MovitAppShellEvent.ReportsEffectReceived(
+                MovitReportsEffect.OpenReportDetail("barbell-squat"),
+            ),
+        )
+        assertEquals(
+            MovitInnerRoute.ReportDetail("barbell-squat"),
+            viewModel.state.value.currentInnerRoute,
+        )
+    }
+
+    @Test
+    fun innerRoutePopped_removesTopRoute() {
+        val viewModel = MovitAppShellViewModel()
+        viewModel.onEvent(MovitAppShellEvent.InnerRoutePushed(MovitInnerRoute.ExercisesLibrary))
+        viewModel.onEvent(MovitAppShellEvent.InnerRoutePushed(MovitInnerRoute.WorkoutsLibrary))
+        viewModel.onEvent(MovitAppShellEvent.InnerRoutePopped)
+        assertEquals(MovitInnerRoute.ExercisesLibrary, viewModel.state.value.currentInnerRoute)
     }
 }

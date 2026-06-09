@@ -1,0 +1,62 @@
+// AGP 9 migration: replace android.library with android.kmp.library when upgrading.
+plugins {
+    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.compose.multiplatform)
+    alias(libs.plugins.kotlin.compose)
+}
+
+kotlin {
+    androidTarget {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
+    }
+    iosArm64()
+    iosSimulatorArm64()
+
+    sourceSets {
+        commonMain.dependencies {
+            implementation(project(":shared"))
+            implementation(project(":core:data"))
+            implementation(project(":core:network"))
+            implementation(project(":core:designsystem"))
+            implementation(project(":core:resources"))
+            implementation(compose.components.resources)
+            implementation(compose.runtime)
+            implementation(compose.foundation)
+            implementation(compose.material3)
+            implementation(compose.materialIconsExtended)
+            implementation(compose.ui)
+            implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.jetbrains.lifecycle.viewmodel)
+            implementation(libs.jetbrains.lifecycle.viewmodel.compose)
+            implementation(libs.jetbrains.lifecycle.runtime.compose)
+        }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+            implementation(libs.kotlinx.coroutines.core)
+        }
+        androidUnitTest.dependencies {
+            implementation(kotlin("test"))
+        }
+    }
+}
+
+android {
+    namespace = "com.movit.feature.reports"
+    compileSdk = libs.versions.compile.sdk.get().toInt()
+
+    defaultConfig {
+        minSdk = libs.versions.min.sdk.get().toInt()
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
+}

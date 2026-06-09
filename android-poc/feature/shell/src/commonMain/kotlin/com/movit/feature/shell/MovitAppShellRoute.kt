@@ -3,13 +3,17 @@ package com.movit.feature.shell
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.movit.core.data.MovitData
+import com.movit.resources.MovitLocaleProvider
 import com.movit.feature.explore.MovitExploreViewModel
 import com.movit.feature.home.MovitHomeViewModel
+import com.movit.feature.reports.MovitReportsViewModel
+import com.movit.feature.train.MovitTrainEffect
 import com.movit.feature.train.MovitTrainViewModel
 import kotlinx.coroutines.flow.collectLatest
 
@@ -20,9 +24,42 @@ fun MovitAppShellRoute(
     homeViewModel: MovitHomeViewModel = viewModel { MovitHomeViewModel() },
     trainViewModel: MovitTrainViewModel = viewModel { MovitTrainViewModel() },
     exploreViewModel: MovitExploreViewModel = viewModel { MovitExploreViewModel() },
+    reportsViewModel: MovitReportsViewModel = viewModel { MovitReportsViewModel() },
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    onTrainEffect: (MovitTrainEffect) -> Boolean = { false },
 ) {
-    val state by shellViewModel.state.collectAsState()
+    val language = if (MovitData.isInstalled) {
+        MovitData.requirePlatform().preferredLanguage()
+    } else {
+        "en"
+    }
+
+    MovitLocaleProvider(languageCode = language) {
+        MovitAppShellRouteContent(
+            shellViewModel = shellViewModel,
+            homeViewModel = homeViewModel,
+            trainViewModel = trainViewModel,
+            exploreViewModel = exploreViewModel,
+            reportsViewModel = reportsViewModel,
+            modifier = modifier,
+            snackbarHostState = snackbarHostState,
+            onTrainEffect = onTrainEffect,
+        )
+    }
+}
+
+@Composable
+private fun MovitAppShellRouteContent(
+    shellViewModel: MovitAppShellViewModel,
+    homeViewModel: MovitHomeViewModel,
+    trainViewModel: MovitTrainViewModel,
+    exploreViewModel: MovitExploreViewModel,
+    reportsViewModel: MovitReportsViewModel,
+    modifier: Modifier,
+    snackbarHostState: SnackbarHostState,
+    onTrainEffect: (MovitTrainEffect) -> Boolean,
+) {
+    val state by shellViewModel.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(shellViewModel, snackbarHostState) {
         shellViewModel.effects.collectLatest { effect ->
@@ -40,7 +77,10 @@ fun MovitAppShellRoute(
         homeViewModel = homeViewModel,
         trainViewModel = trainViewModel,
         exploreViewModel = exploreViewModel,
+        reportsViewModel = reportsViewModel,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
+        onTrainEffect = onTrainEffect,
+        onShellEffect = shellViewModel::emitShellEffect,
     )
 }

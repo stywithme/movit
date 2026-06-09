@@ -4,8 +4,8 @@ name: iosApp
 options:
   bundleIdPrefix: com.movit
   deploymentTarget:
-    # Match Kotlin/Native prebuilt deps (e.g. libicu) — Xcode 26 SDK targets 18.5+.
-    iOS: "18.5"
+    # Production floor — Kotlin/Native + Compose Multiplatform 1.11 supports iOS 15+.
+    iOS: "16.0"
 targets:
   iosApp:
     type: application

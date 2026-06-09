@@ -5,10 +5,10 @@ import androidx.compose.material3.Shapes
 import androidx.compose.ui.unit.dp
 
 object MovitRadius {
-    val sm = 8.dp
-    val md = 12.dp
-    val lg = 18.dp
-    val xl = 24.dp
+    val sm = 12.dp
+    val md = 16.dp
+    val lg = 20.dp
+    val xl = 26.dp
     val full = 999.dp
 }
 

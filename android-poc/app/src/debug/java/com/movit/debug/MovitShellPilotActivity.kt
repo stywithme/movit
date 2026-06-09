@@ -9,14 +9,13 @@ import com.movit.feature.shell.MovitAppShellRoute
 
 /**
  * Debug-only root host for the Movit App Shell (Phase 03).
- * Not the launcher — open via adb for visual QA.
+ * Not the production launcher — open via adb for visual QA.
  */
 class MovitShellPilotActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        MovitExploreApiBridge.install(applicationContext)
-        MovitHomeApiBridge.install(applicationContext)
+        MovitDataInstall.install(applicationContext)
         enableEdgeToEdge()
         setContent {
             MovitTheme {

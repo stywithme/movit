@@ -2,21 +2,20 @@ package com.movit.feature.explore
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
-import androidx.compose.runtime.rememberCoroutineScope
 
 @Composable
 fun MovitExploreRoute(
     modifier: Modifier = Modifier,
     viewModel: MovitExploreViewModel = viewModel { MovitExploreViewModel() },
-    onNavigateToExercise: (String) -> Unit = {},
-    useRtlPreview: Boolean = false,
+    onEffect: (MovitExploreEffect) -> Unit = {},
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(viewModel) {
@@ -26,8 +25,10 @@ fun MovitExploreRoute(
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
-                is MovitExploreEffect.NavigateToExercise -> onNavigateToExercise(effect.id)
-                is MovitExploreEffect.ShowMessage -> Unit
+                is MovitExploreEffect.NavigateToExercise -> {
+                    onEffect(MovitExploreEffect.NavigateToItem(effect.id, ExploreItemType.Exercise))
+                }
+                else -> onEffect(effect)
             }
         }
     }
@@ -42,6 +43,5 @@ fun MovitExploreRoute(
             }
         },
         modifier = modifier,
-        useRtlPreview = useRtlPreview,
     )
 }

@@ -52,7 +52,24 @@ class MovitTrainViewModel(
         when (event) {
             MovitTrainEvent.RetryClicked -> Unit
             MovitTrainEvent.StartWorkoutClicked -> {
-                _effects.tryEmit(MovitTrainEffect.OpenSessionPreview)
+                val launchTarget = _state.value.dashboard
+                    ?.today
+                    ?.sessions
+                    .orEmpty()
+                    .firstOrNull { !it.isCompleted && it.launchTarget != null }
+                    ?.launchTarget
+                    ?: _state.value.dashboard
+                        ?.today
+                        ?.sessions
+                        .orEmpty()
+                        .firstOrNull { it.launchTarget != null }
+                        ?.launchTarget
+
+                if (launchTarget != null) {
+                    _effects.tryEmit(MovitTrainEffect.OpenProgramWorkout(launchTarget))
+                } else {
+                    _effects.tryEmit(MovitTrainEffect.OpenSessionPreview)
+                }
             }
             MovitTrainEvent.ExploreProgramsClicked -> {
                 _effects.tryEmit(MovitTrainEffect.OpenExplore)

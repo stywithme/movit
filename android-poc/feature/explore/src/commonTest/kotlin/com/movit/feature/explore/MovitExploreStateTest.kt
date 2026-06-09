@@ -50,7 +50,10 @@ class MovitExploreStateTest {
             viewModel.onEvent(MovitExploreEvent.QueryChanged("core"))
             val state = viewModel.state.value
             assertFalse(state.isEmpty)
-            assertTrue(state.exercises.any { it.title.contains("Core", ignoreCase = true) })
+            assertTrue(
+                state.workouts.any { it.title.contains("Core", ignoreCase = true) } ||
+                    state.exercises.any { it.title.contains("Core", ignoreCase = true) },
+            )
         }
     }
 
@@ -60,7 +63,7 @@ class MovitExploreStateTest {
             val viewModel = MovitExploreViewModel(FakeExploreRepository())
             viewModel.load(isRefresh = false)
             viewModel.onEvent(MovitExploreEvent.FilterSelected(ExploreFilter.Programs))
-            assertTrue(viewModel.state.value.exercises.all { it.type == ExploreItemType.Program })
+            assertTrue(viewModel.state.value.programs.all { it.type == ExploreItemType.Program })
         }
     }
 

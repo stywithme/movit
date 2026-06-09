@@ -3,6 +3,7 @@ package com.movit.feature.explore.components
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.movit.designsystem.components.MovitSearchBar
+import com.movit.resources.movitText
 
 @Composable
 fun ExploreSearchSection(
@@ -15,7 +16,7 @@ fun ExploreSearchSection(
         query = query,
         onQueryChange = onQueryChange,
         modifier = modifier,
-        placeholder = "Search workouts or exercises…",
+        placeholder = movitText("explore_search_placeholder"),
         enabled = enabled,
     )
 }

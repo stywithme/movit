@@ -17,8 +17,13 @@ dependencyResolutionManagement {
 rootProject.name = "Movit"
 include(":app")
 include(":shared")
+include(":core:resources")
 include(":core:designsystem")
+include(":core:network")
+include(":core:data")
 include(":feature:explore")
 include(":feature:home")
 include(":feature:train")
+include(":feature:reports")
+include(":feature:library")
 include(":feature:shell")

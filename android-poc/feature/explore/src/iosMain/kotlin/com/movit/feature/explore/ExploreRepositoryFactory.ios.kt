@@ -1,3 +1,3 @@
 package com.movit.feature.explore
 
-actual fun defaultExploreRepository(): ExploreRepository = FakeExploreRepository()
+actual fun defaultExploreRepository(): ExploreRepository = SharedExploreRepository()

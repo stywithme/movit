@@ -26,7 +26,7 @@ fun MovitMetricTile(
 
     MovitCard(
         modifier = modifier.fillMaxWidth(),
-        variant = MovitCardVariant.Filled,
+        variant = MovitCardVariant.Elevated,
         enabled = enabled,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(MovitSpacing.xs)) {

@@ -1,6 +1,8 @@
 # Android / KMP Mobile UI/UX Professional Plan
 
-آخر تحديث: 2026-06-08
+آخر تحديث: 2026-06-09
+
+> **قرار محدِّث (2026-06-09): انتقال كامل بلا حلول وسط ولا حلول انتقالية.** أى جسر مؤقت أو fallback للقديم أو تجاوز منصّة يُغلق، لا يُؤجَّل. الديون التي كانت "تُتبَّع" (iOS P1/P2/P3، الجسور، Koin) أصبحت **مجدولة للإغلاق** في [`Phase Pre-05`](Android-KMP-Mobile-UI-UX-Phase-Pre-05-Stabilization-And-Debt-Closure-Plan.md) قبل استكمال شاشات Phase 05.
 
 ## الهدف
 
@@ -35,7 +37,8 @@
 
 ### مبنيّ ومتحقَّق منه
 
-- **موديولات KMP:** `:shared`, `:core:designsystem`, `:feature:explore`, `:feature:home`, `:feature:shell`.
+- **موديولات KMP:** `:shared`, `:core:designsystem`, `:core:network`, `:core:data`, `:feature:{explore,home,train,reports,library,shell}`.
+- **طبقة بيانات مشتركة (Ktor):** `core:network` (`MovitMobileApi` + DTOs) + `core:data` (`MovitData` + sync repositories + `MovitPlatformBindings`) — تخدم التبويبات الأربعة + Report Detail + Workout Session على Android/iOS من نفس المصدر.
 - **`commonMain` نظيف 100%** من أى `android.*` / `java.*` — تحقّق آلي.
 - **UDF لكل feature:** `State / Event / Effect / ViewModel / Route / Screen`، باستخدام KMP `androidx.lifecycle.ViewModel` (لا Controller، لا Android-only ViewModel).
 - **Design System كمصدر حقيقة واحد:** `MovitTheme` + tokens؛ الـ palette الوحيدة بها hex؛ Light/Dark؛ `error` مميّز عن `tertiary`؛ line-heights مناسبة للعربى.
@@ -50,9 +53,9 @@
 - التفاصيل الكاملة (البيئة + 6 مشاكل وحلولها) في `Android-KMP-iOS-Xcode-Mac-Validation-Report.md`.
 - بهذا اكتملت التحقّقات الثلاثة: iOS **يكمبّل** (CI) + النمط **يتعمّم** (Home bridge) + Compose **يَرسُم** على iOS (هذا التقرير).
 
-### ديون iOS معروفة (تُتبَّع قبل إنتاج iOS)
+### ديون iOS معروفة — **مجدولة للإغلاق في Pre-05/WS-E** (لم تعد "تُتبَّع" بلا تاريخ)
 
-ظهرت أثناء render proof وتم تجاوزها مؤقتاً؛ ليست أعطالاً في الأساس لكنها **ليست قرارات نهائية**:
+ظهرت أثناء render proof وتم تجاوزها مؤقتاً. تحت قرار الانتقال الكامل، تُحَل نهائياً في Pre-05 **قبل** استكمال Phase 05، لا تُحمَل كـ debt دائم:
 
 - **(P1) deployment target = iOS 18.5:** ناتج عن Kotlin/Native prebuilt deps (مثل `libicu`) المبنية لـ 18.5 على toolchain الخاص بـ Xcode 26 الجديد جداً — **ليست أرضية إنتاج مقبولة** (تستثني تقريباً كل الأجهزة). تُحسم باختيار توليفة Kotlin/Xcode مستقرة وضبط هدف منطقى (iOS 15/16). أرضية 18.5 للإثبات فقط.
 - **(P2) فقدان lifecycle-awareness:** تم استبدال `collectAsStateWithLifecycle()` بـ `collectAsState()` في الـ routes المشتركة (Shell/Home/Explore) لتجاوز crash على iOS — وهو تراجع عن أفضل ممارسة على **Android أيضاً**. يُستعاد لاحقاً عبر ضبط `LifecycleOwner` على iOS أو تجميع state بـ `expect/actual`.
@@ -61,9 +64,9 @@
 
 ### مؤجَّل عمداً (بـ trigger واضح)
 
-- **Koin/DI:** حتى أول repository حقيقى يحتاج Ktor client مشترك.
-- **Ktor/serialization على iOS:** البيانات الحقيقية على iOS تنتظره؛ النمط الحالى bridge على Android فقط.
-- **`TrainingActivity` / camera / MediaPipe / LiteRT / ONNX:** Phase 7، خلف حدود `expect/actual`.
+- **Koin/DI:** ~~حتى أول repository حقيقى يحتاج Ktor client مشترك~~ **— الـ trigger تحقّق:** `core:data` هو هذا الـ repository. لذا اعتماد Koin انتقل من "مؤجّل" إلى **مجدول في Pre-05/WS-F** (يستبدل singleton `MovitData`).
+- ~~**Ktor/serialization على iOS مؤجّل**~~ **— مُنفَّذ:** iOS يستخدم الآن نفس الطبقة المشتركة (`Darwin` engine + `IosMovitPlatform`)، ولم يعد على bridge/fake عند توفّر credentials.
+- **`TrainingActivity` / camera / MediaPipe / LiteRT / ONNX:** Phase 7، خلف حدود `expect/actual`. (لكن **المحرك العددى الخالص** غير المرتبط بالكاميرا يُنقل لـ `commonMain` كأول خطوة في حدود Phase 7.)
 
 ### تطابق الترقيم
 
@@ -442,7 +445,7 @@ sealed interface ExploreEffect {
 
 ## خطة الهجرة
 
-> حالة التنفيذ (انظر "حالة التنفيذ الفعلية" أعلاه): Phase 0→4 + Design System + KMP skeleton ✅ مكتملة. Phase 6 (iOS entry point) ✅ سُحب مبكراً واكتمل كـ render proof على Xcode، مع ديون iOS مؤقتة P1/P2/P3. Phase 5 (Shared feature screens) ⏳ هو المسار التالي الآن، ويبدأ بـ Train. Phase 7 (camera/ML) ⬜ مؤجّل.
+> حالة التنفيذ (انظر "حالة التنفيذ الفعلية" أعلاه): Phase 0→4 + Design System + KMP skeleton ✅ مكتملة. Phase 6 (iOS entry point) ✅ render proof على Xcode. Phase 5 (Shared feature screens) 🔄 **جارٍ** — أُنجز منه Train/Reports/Report Detail/Session + طبقة بيانات مشتركة. **⛔ بوابة [Phase Pre-05](Android-KMP-Mobile-UI-UX-Phase-Pre-05-Stabilization-And-Debt-Closure-Plan.md): إغلاق ديون الأساس (جسور + iOS P1/P2/P3 + i18n + Profile + اختبارات sync + Koin) قبل إضافة شاشات Phase 05 المتبقية.** Phase 7 (camera/ML) ⬜ مؤجّل.
 
 ### Phase 0 - تأسيس فرع التحول
 
@@ -666,11 +669,11 @@ iosMain:
 
 - لا نقرر مشاركة camera UI قبل تجربة iOS فعلية.
 - لا نقرر Room vs SQLDelight إلا بعد حصر احتياج offline cache.
-- لا نحذف Retrofit/Gson إلا بعد أن يثبت Ktor/kotlinx.serialization أول feature end-to-end.
+- Retrofit/Gson يبقيان في legacy `:app` فقط. **جسور الـ Retrofit داخل موديولات Movit الجديدة (`*ApiBridge`/`Remote*Repository`) تُحذف في Pre-05/WS-A** — أثبت Ktor نفسه end-to-end على كل التبويبات.
 - لا نعيد تسمية package/applicationId إلا عندما يكون الاسم التجاري النهائي واضحاً.
 - لا ننقل `TrainingActivity` إلى Compose قبل فصل engine/state/adapters.
-- (محدَّث) Koin/DI مؤجّل حتى أول repository حقيقى يحتاج Ktor client مشترك.
-- (محدَّث) Ktor/serialization على iOS مؤجّل؛ البيانات الحقيقية حالياً عبر Android bridge فقط، وiOS على fake.
+- (محدَّث 2026-06-09) **Koin/DI لم يعد مؤجّلاً** — الـ trigger تحقّق؛ يُعتمد في Pre-05/WS-F.
+- (محدَّث 2026-06-09) **Ktor على iOS مُنفَّذ** — iOS على الطبقة المشتركة (Darwin)، لا fake عند توفّر credentials.
 
 ## قائمة مصادر تم الاعتماد عليها
 
