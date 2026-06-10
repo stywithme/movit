@@ -1,6 +1,6 @@
 package com.movit.feature.library
 
-import com.movit.feature.explore.ExploreContent
+import com.movit.core.model.ExploreContent
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals

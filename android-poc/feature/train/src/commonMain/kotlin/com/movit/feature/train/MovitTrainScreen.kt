@@ -50,7 +50,9 @@ fun MovitTrainScreen(
                 }
                 state.errorMessage != null -> {
                     MovitErrorState(
+                        title = movitText("common_error_title"),
                         message = state.errorMessage,
+                        actionLabel = movitText("common_retry"),
                         onRetry = { onEvent(MovitTrainEvent.RetryClicked) },
                     )
                 }

@@ -29,7 +29,7 @@ feature:account (جديد)
 
 core:network  → login, register, profile, training-profile, level-profile (Ktor)
 core:data     → AccountSyncRepository + MovitData.account
-core:resources → نصوص ar/en لكل الشاشات الجديدة (~120 مفتاح)
+core:resources → نصوص ar/en لكل الشاشات — العدد في [`generated/Docs-Stats-Snapshot.md`](generated/Docs-Stats-Snapshot.md)
 
 feature:shell → مسارات داخلية: Auth, Onboarding, Assessment, LevelProfile
 feature:home  → Body scan → Assessment · بطاقة المستوى → Level
@@ -108,7 +108,8 @@ feature:home  → Body scan → Assessment · بطاقة المستوى → Leve
 - **iOS مفروض بالـ build:** كل الموديولات بها `iosArm64 + iosSimulatorArm64` (`iosX64` في `:shared` فقط)، وCI على macOS (`.github/workflows/movit-kmp-ios.yml`) يكمبّل `commonMain` لـ iOS عند كل push على `android-poc/**` — **أخضر**.
 - **بيانات حقيقية عبر MovitData (بدون جسور Retrofit):** Explore · Home · Train · Reports · Session · Report Detail · **Account (login, profile, onboarding, level)** — `MovitDataInstall` على Android debug · `IosMovitPlatform` على iOS.
 - **Release hygiene:** كل موديولات Movit `debugImplementation`؛ الـ launcher القديم لم يُلمس؛ `releaseRuntimeClasspath` نظيف.
-- **Tests:** خضراء عبر كل الموديولات.
+- **Tests:** خضراء عبر كل الموديولات — أعداد KMP في [`generated/Docs-Stats-Snapshot.md`](generated/Docs-Stats-Snapshot.md) (`.\gradlew.bat docsStats`).
+- **نِسب الصفحات:** مصدر وحيد — [`Page-Scorecards.md`](Page-Scorecards.md).
 
 ### iOS entry point — متحقَّق (render proof نجح) ✅
 
@@ -116,13 +117,15 @@ feature:home  → Body scan → Assessment · بطاقة المستوى → Leve
 - التفاصيل الكاملة (البيئة + 6 مشاكل وحلولها) في `Android-KMP-iOS-Xcode-Mac-Validation-Report.md`.
 - بهذا اكتملت التحقّقات الثلاثة: iOS **يكمبّل** (CI) + النمط **يتعمّم** (Home bridge) + Compose **يَرسُم** على iOS (هذا التقرير).
 
-### ديون iOS معروفة — **Pre-05 أُغلقت جزئياً؛ P1/P2/P3 ما زالت مفتوحة للإنتاج**
+### ديون iOS — **Pre-05 / WS-E: P1/P2/P3 مُغلقة (2026-06-09)**
 
-ظهرت أثناء render proof. **أُغلق:** iOS compile كامل عبر shell (بما فيه `:feature:account`) · Koin multiplatform-safe · حذف الجسور. **ما زال مفتوحاً لإصدار iOS نهائي:**
+ظهرت أثناء render proof. **أُغلق في Pre-05/WS-E:**
 
-- **(P1) deployment target = iOS 18.5:** ناتج عن Kotlin/Native prebuilt deps (مثل `libicu`) المبنية لـ 18.5 على toolchain الخاص بـ Xcode 26 الجديد جداً — **ليست أرضية إنتاج مقبولة** (تستثني تقريباً كل الأجهزة). تُحسم باختيار توليفة Kotlin/Xcode مستقرة وضبط هدف منطقى (iOS 15/16). أرضية 18.5 للإثبات فقط.
-- **(P2) فقدان lifecycle-awareness:** تم استبدال `collectAsStateWithLifecycle()` بـ `collectAsState()` في الـ routes المشتركة (Shell/Home/Explore) لتجاوز crash على iOS — وهو تراجع عن أفضل ممارسة على **Android أيضاً**. يُستعاد لاحقاً عبر ضبط `LifecycleOwner` على iOS أو تجميع state بـ `expect/actual`.
-- **(P3) ViewModels على iOS عبر `remember`:** الـ entry point يمرر `remember { ViewModel() }` بدل `viewModel()`، فلا يوجد `ViewModelStoreOwner` حقيقى على iOS (لا `onCleared`). يُضبط لاحقاً عبر entry point يوفّر store owner. مرتبط بـ P2.
+- **(P1) deployment target:** ضُبط على iOS **16.0** (ليس 18.5 الإثباتي).
+- **(P2) lifecycle-awareness:** كل routes تستخدم `collectAsStateWithLifecycle()` — صفر `collectAsState()` في feature routes (انظر [`generated/Docs-Stats-Snapshot.md`](generated/Docs-Stats-Snapshot.md)).
+- **(P3) ViewModelStoreOwner:** iOS entry point يوفّر store owner حقيقياً.
+
+**ما زال مفتوحاً لإصدار iOS نهائي (خارج نطاق Pre-05):**
 - **(P4 — معلومة تشغيل) بيئة Mac:** JDK 17 + Android SDK + `DEVELOPER_DIR` لـ Xcode الكامل لازمة لربط الـ framework؛ ثبّتها في shell profile (التفاصيل في تقرير التحقق).
 
 ### مؤجَّل عمداً (بـ trigger واضح)
@@ -487,6 +490,8 @@ sealed interface ExploreEffect {
 - iOS engine: Darwin.
 - Retrofit/Gson يبقيان فقط في Android legacy إلى حين نقل الـ APIs.
 
+**قرار DTO (Pre-06.2 / WS-5):** `core:network` مع `kotlinx.serialization` هو **مصدر الحقيقة الوحيد** لعقود JSON المشتركة بين Android وiOS. نماذج Gson في `:app` legacy تبقى مؤقتاً لمسارات الكاميرا/التدريب القديمة، لكن أي API جديد أو مُعاد توصيله عبر KMP يُعرَّف مرة واحدة في `MovitMobileApi` + DTOs المشتركة؛ الـ legacy يستهلكها تدريجياً عبر جسور strangler (مثل `*ApiBridge`) حتى يُحذف التكرار. **لا** نُولِّد DTOs من مصدر ثالث مشترك في هذه المرحلة — التوليد المشترك يُؤجَّل حتى يثبت استقرار العقود؛ الاستثناء الوحيد لاحقاً هو حقول backend-only لا تصل للعميل.
+
 ### Storage
 
 - Preferences/settings: DataStore KMP أو abstraction فوق platform storage.
@@ -601,17 +606,7 @@ sealed interface ExploreEffect {
 
 | # | الصفحة | الحالة |
 |---|--------|--------|
-| 1 | Train dashboard | ✅ ~72% |
-| 2 | Reports + Report Detail | ✅ ~78–90% |
-| 3 | Session (02) | ✅ ~48% (بدون كاميرا) |
-| 4 | **Auth (10)** | ✅ **76%** (scorecard) |
-| 5 | **Profile (11)** | ✅ **70%** |
-| 6 | **Onboarding (12)** | ✅ **74%** |
-| 7 | **Assessment (13)** | ✅ **55%** (UI؛ بدون كاميرا) |
-| 8 | **Level & Plan (14)** | ✅ **58%** |
-| 9 | Program flow (15) | ⬜ لم يُنفَّذ |
-| 10 | Workout flow (16) | ⬜ جزئي |
-| 11 | Library media/filters (05–07) | 🔄 ~55% |
+| 1–11 | كل صفحات Phase 05 | ✅ منفَّذة جزئياً — **النِسب في [`Page-Scorecards.md`](Page-Scorecards.md) فقط** |
 | 12 | Training session/camera | ⬜ Phase 7 |
 
 السبب في الترتيب: lists/cards/state أولاً؛ camera/overlay/ML لاحقاً.

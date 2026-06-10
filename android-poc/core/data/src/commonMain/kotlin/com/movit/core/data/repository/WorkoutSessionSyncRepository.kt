@@ -41,7 +41,6 @@ class WorkoutSessionSyncRepository(
                 ?: AppResult.Failure("Sign in to load this workout session.")
 
         val response = api.fetchEffectivePlan(
-            authorization = auth,
             userProgramId = userProgramId,
             weekNumber = weekNumber,
             dayNumber = dayNumber,
@@ -79,7 +78,6 @@ class WorkoutSessionSyncRepository(
             ?: return AppResult.Failure("Sign in to save workout changes.")
 
         return api.updateUserProgramCustomizations(
-            authorization = auth,
             userProgramId = userProgramId,
             request = request,
         ).fold(
@@ -96,7 +94,6 @@ class WorkoutSessionSyncRepository(
             ?: return AppResult.Failure("Sign in to find swap options.")
 
         val response = api.fetchSubstitutionExercises(
-            authorization = auth,
             slug = replacingSlug,
         ).getOrElse { error ->
             return AppResult.Failure(error.message ?: "Substitution lookup failed.")

@@ -1,7 +1,7 @@
 package com.movit.feature.library
 
-import com.movit.feature.explore.ExploreContentFilter
-import com.movit.feature.explore.ExploreItemUi
+import com.movit.core.model.ExploreItemUi
+import com.movit.core.model.matchesExploreQuery
 
 object LibraryFilterLogic {
 
@@ -14,7 +14,7 @@ object LibraryFilterLogic {
         return items
             .asSequence()
             .filter { matchesChip(it, chip, kind) }
-            .filter { ExploreContentFilter.matchesQuery(it, query) }
+            .filter { it.matchesExploreQuery(query) }
             .toList()
     }
 

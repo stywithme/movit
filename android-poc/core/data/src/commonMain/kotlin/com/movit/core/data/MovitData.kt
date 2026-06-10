@@ -5,6 +5,7 @@ import com.movit.core.data.platform.MovitPlatformBindings
 import com.movit.core.data.repository.AccountSyncRepository
 import com.movit.core.data.repository.ExploreSyncRepository
 import com.movit.core.data.repository.HomeSyncRepository
+import com.movit.core.data.repository.PlanSyncRepository
 import com.movit.core.data.repository.ReportsSyncRepository
 import com.movit.core.data.repository.WorkoutSessionSyncRepository
 import org.koin.core.Koin
@@ -24,6 +25,9 @@ import org.koin.core.context.stopKoin
 object MovitData {
     private var koinApp: KoinApplication? = null
 
+    /** Invoked when refresh fails after 401; wire to shell auth gate. */
+    var onSessionExpired: (() -> Unit)? = null
+
     val isInstalled: Boolean
         get() = koinApp != null
 
@@ -31,15 +35,21 @@ object MovitData {
         if (koinApp != null) {
             stopKoin()
         }
+        onSessionExpired = null
         koinApp = startKoin {
             modules(movitDataModule(platform))
         }
+    }
+
+    internal fun notifySessionExpired() {
+        onSessionExpired?.invoke()
     }
 
     fun requirePlatform(): MovitPlatformBindings = koin().get()
 
     val explore: ExploreSyncRepository get() = koin().get()
     val home: HomeSyncRepository get() = koin().get()
+    val plan: PlanSyncRepository get() = koin().get()
     val reports: ReportsSyncRepository get() = koin().get()
     val workoutSession: WorkoutSessionSyncRepository get() = koin().get()
     val account: AccountSyncRepository get() = koin().get()

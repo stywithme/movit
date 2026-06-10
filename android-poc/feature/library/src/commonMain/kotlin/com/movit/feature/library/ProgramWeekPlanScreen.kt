@@ -56,7 +56,12 @@ fun ProgramWeekPlanScreen(
         )
         when {
             state.isLoading -> MovitLoadingState(message = movitText("program_flow_loading"))
-            state.errorMessage != null -> MovitErrorState(message = state.errorMessage, onRetry = onRetry)
+            state.errorMessage != null -> MovitErrorState(
+                title = movitText("common_error_title"),
+                message = state.errorMessage,
+                actionLabel = movitText("common_retry"),
+                onRetry = onRetry,
+            )
             weekPlan != null -> {
                 Column(
                     modifier = Modifier

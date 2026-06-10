@@ -8,12 +8,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.movit.designsystem.MovitElevation
 import com.movit.designsystem.MovitRadius
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.movitColors
+import com.movit.designsystem.movitShadow
 
 enum class MovitSegmentedStyle {
     Default,
@@ -43,7 +44,7 @@ fun MovitSegmentedControl(
             options.forEachIndexed { index, label ->
                 val selected = index == selectedIndex
                 val segmentModifier = if (selected && style == MovitSegmentedStyle.Default) {
-                    Modifier.shadow(4.dp, RoundedCornerShape(MovitRadius.full), ambientColor = movit.shadowSm, spotColor = movit.shadowSm)
+                    Modifier.movitShadow(MovitElevation.xs, RoundedCornerShape(MovitRadius.full), small = true)
                 } else {
                     Modifier
                 }

@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -48,6 +48,7 @@ fun MovitSessionCard(
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
     isCompleted: Boolean = false,
+    completedLabel: String? = null,
     actionLabel: String = "Start session",
     onActionClick: (() -> Unit)? = null,
     footerNote: String? = null,
@@ -61,7 +62,7 @@ fun MovitSessionCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickableWithoutRipple(onToggle)
+                .movitClickable(onClick = onToggle)
                 .padding(MovitSpacing.lg),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -97,11 +98,11 @@ fun MovitSessionCard(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            if (isCompleted) {
-                MovitTag(text = "Done", variant = MovitTagVariant.Lime)
+            if (isCompleted && completedLabel != null) {
+                MovitTag(text = completedLabel, variant = MovitTagVariant.Lime)
             }
             Icon(
-                imageVector = Icons.Default.ChevronRight,
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
                 tint = movit.textQuaternary,
                 modifier = Modifier

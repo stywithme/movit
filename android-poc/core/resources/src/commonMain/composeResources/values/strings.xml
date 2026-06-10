@@ -21,6 +21,14 @@
     <string name="dest_explore_subtitle">Browse workouts, exercises and programs.</string>
     <string name="dest_reports_subtitle">Session history and performance insights.</string>
 
+    <!-- Common / design system -->
+    <string name="common_error_title">Something went wrong</string>
+    <string name="common_retry">Retry</string>
+    <string name="ds_week_legend_done">Done</string>
+    <string name="ds_week_legend_today">Today</string>
+    <string name="ds_week_legend_missed">Missed</string>
+    <string name="ds_week_legend_rest">Rest</string>
+
     <!-- Home -->
     <string name="home_loading">Loading your dashboard…</string>
     <string name="home_view_level">View level</string>
@@ -658,6 +666,7 @@
     <string name="profile_sign_out">Sign out</string>
     <string name="profile_pro_badge">PRO ACTIVE</string>
     <string name="profile_manage_subscription">Manage subscription</string>
+    <string name="profile_subscription_ios_unavailable">In-app subscriptions are not available on iOS yet. Manage your plan on Android or the web.</string>
     <string name="profile_unlock_pro">Unlock Pro</string>
     <string name="profile_unlock_pro_sub">Advanced reports, program analytics, and unlimited body scans.</string>
     <string name="profile_view_plans">View plans</string>

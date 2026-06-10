@@ -3,6 +3,7 @@ package com.trainingvalidator.poc.training.engine
 import com.movit.core.training.engine.PhaseStateMachine as KmpPhaseStateMachine
 import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.training.engine.policy.TimingPolicy
+import com.trainingvalidator.poc.training.engine.policy.fromSettings
 import com.trainingvalidator.poc.training.models.CountingMethod
 import com.trainingvalidator.poc.training.models.RepCountingConfig
 import com.trainingvalidator.poc.training.models.TrackedJoint
@@ -18,7 +19,7 @@ class PhaseStateMachine(
     numberOfPhases: Int = 4,
     timeProvider: () -> Long = { System.currentTimeMillis() },
     phaseHysteresisDegrees: Double = SettingsManager.getHysteresis(),
-    timingPolicy: TimingPolicy = TimingPolicy.default(),
+    timingPolicy: TimingPolicy = fromSettings(),
 ) {
     private val core = KmpPhaseStateMachine(
         countingMethod = countingMethod.toKmp(),

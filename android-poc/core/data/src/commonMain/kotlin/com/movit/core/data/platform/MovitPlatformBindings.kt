@@ -20,6 +20,9 @@ interface MovitPlatformBindings {
     /** Active enrollment id for effective-plan and customization APIs. */
     fun activeUserProgramId(): String? = null
 
+    /** Persists the active user-program enrollment id (iOS NSUserDefaults; Android via legacy sync). */
+    fun setActiveUserProgramId(userProgramId: String?) {}
+
     /** Exercise thumbnail from legacy local cache (Android) when explore DTO has no image. */
     fun exerciseImageUrl(slug: String): String? = null
 
@@ -28,6 +31,13 @@ interface MovitPlatformBindings {
     fun userAvatarUrl(): String? = null
 
     fun refreshToken(): String? = null
+
+    fun readAccessTokenRaw(): String? =
+        authHeader()?.removePrefix("Bearer ")?.removePrefix("bearer ")?.trim()
+
+    fun tokenExpiresAtEpochMs(): Long = 0L
+
+    fun updateAuthTokens(accessToken: String, refreshToken: String, expiresAtEpochMs: Long) {}
 
     fun isOnboardingCompleted(): Boolean = true
 

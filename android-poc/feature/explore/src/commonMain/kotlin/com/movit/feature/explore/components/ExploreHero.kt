@@ -5,8 +5,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.movit.designsystem.components.MovitHeroCard
 import com.movit.designsystem.components.MovitSectionHeader
-import com.movit.feature.explore.ExploreItemType
-import com.movit.feature.explore.ExploreItemUi
+import com.movit.core.model.ExploreItemType
+import com.movit.core.model.ExploreItemUi
 import com.movit.resources.movitText
 
 @Composable

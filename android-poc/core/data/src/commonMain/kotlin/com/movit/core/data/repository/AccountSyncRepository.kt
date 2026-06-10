@@ -58,10 +58,9 @@ class AccountSyncRepository(
 
     suspend fun logout(): AppResult<Unit> {
         val bindings = platform()
-        val auth = bindings.authHeader()
         val refresh = bindings.refreshToken()
-        if (auth != null && refresh != null) {
-            api.logout(auth, LogoutRequestDto(refresh))
+        if (bindings.authHeader() != null && refresh != null) {
+            api.logout(LogoutRequestDto(refresh))
         }
         bindings.clearAuthSession()
         return AppResult.Success(Unit)
@@ -70,17 +69,19 @@ class AccountSyncRepository(
     suspend fun fetchProfile(): AppResult<UserPublicDto> {
         val auth = platform().authHeader()
             ?: return AppResult.Failure("Sign in to load your profile.")
-        val response = api.fetchAuthProfile(auth).getOrElse { error ->
+        val response = api.fetchAuthProfile().getOrElse { error ->
             return AppResult.Failure(error.message ?: "Profile request failed.")
         }
         if (!response.success) {
             return AppResult.Failure(response.error ?: "Profile request failed.")
         }
         val user = response.data ?: return AppResult.Failure("Profile response was empty.")
-        val refresh = platform().refreshToken().orEmpty()
-        platform().persistAuthSession(
+        val bindings = platform()
+        val refresh = bindings.refreshToken().orEmpty()
+        bindings.persistAuthSession(
             user.toSnapshot(
-                accessToken = auth.removePrefix("Bearer ").trim(),
+                accessToken = bindings.readAccessTokenRaw()
+                    ?: auth.removePrefix("Bearer ").trim(),
                 refreshToken = refresh,
                 expiresInSeconds = 0,
             ),
@@ -96,7 +97,6 @@ class AccountSyncRepository(
         val auth = platform().authHeader()
             ?: return AppResult.Failure("Sign in to update settings.")
         val response = api.updateAuthSettings(
-            auth,
             UpdateSettingsRequestDto(
                 preferredLanguage = preferredLanguage,
                 voiceFeedback = voiceFeedback,
@@ -120,7 +120,7 @@ class AccountSyncRepository(
     suspend fun putTrainingProfile(request: TrainingProfilePutRequest): AppResult<Unit> {
         val auth = platform().authHeader()
             ?: return AppResult.Failure("Sign in to save your training profile.")
-        val response = api.putTrainingProfile(auth, request).getOrElse { error ->
+        val response = api.putTrainingProfile(request).getOrElse { error ->
             return AppResult.Failure(error.message ?: "Training profile save failed.")
         }
         if (!response.success) {
@@ -133,7 +133,7 @@ class AccountSyncRepository(
     suspend fun fetchLevelProfile(): AppResult<LevelProfileDetailDto> {
         val auth = platform().authHeader()
             ?: return AppResult.Failure("Sign in to load your level profile.")
-        val response = api.fetchLevelProfile(auth).getOrElse { error ->
+        val response = api.fetchLevelProfile().getOrElse { error ->
             return AppResult.Failure(error.message ?: "Level profile request failed.")
         }
         if (!response.success) {
@@ -146,7 +146,7 @@ class AccountSyncRepository(
     suspend fun fetchActivePlan(): AppResult<ActivePlanDto> {
         val auth = platform().authHeader()
             ?: return AppResult.Failure("Sign in to load your training plan.")
-        val response = api.fetchActivePlan(auth).getOrElse { error ->
+        val response = api.fetchActivePlan().getOrElse { error ->
             return AppResult.Failure(error.message ?: "Active plan request failed.")
         }
         if (!response.success) {
@@ -159,7 +159,7 @@ class AccountSyncRepository(
     suspend fun fetchUpcomingReassessments(): AppResult<List<ReassessmentDto>> {
         val auth = platform().authHeader()
             ?: return AppResult.Failure("Sign in to load reassessments.")
-        val response = api.fetchUpcomingReassessments(auth).getOrElse { error ->
+        val response = api.fetchUpcomingReassessments().getOrElse { error ->
             return AppResult.Failure(error.message ?: "Reassessment request failed.")
         }
         if (!response.success) {

@@ -40,9 +40,47 @@ targets:
         basedOnDependencyAnalysis: false
         script: |
           set -e
-          export PATH="/opt/homebrew/opt/openjdk@17/bin:$PATH"
-          export JAVA_HOME="/opt/homebrew/opt/openjdk@17"
-          export ANDROID_HOME="/opt/homebrew/share/android-commandlinetools"
-          export DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer"
+          # --- Java (Temurin from CI, /usr/libexec/java_home, or Homebrew) ---
+          if [ -z "${JAVA_HOME:-}" ]; then
+            if command -v /usr/libexec/java_home >/dev/null 2>&1; then
+              export JAVA_HOME="$(/usr/libexec/java_home -v 17 2>/dev/null || /usr/libexec/java_home)"
+            elif command -v brew >/dev/null 2>&1; then
+              for formula in openjdk@17 openjdk java; do
+                prefix="$(brew --prefix "$formula" 2>/dev/null || true)"
+                if [ -n "$prefix" ] && [ -d "$prefix/libexec/openjdk.jdk/Contents/Home" ]; then
+                  export JAVA_HOME="$prefix/libexec/openjdk.jdk/Contents/Home"
+                  break
+                elif [ -n "$prefix" ] && [ -x "$prefix/bin/java" ]; then
+                  export JAVA_HOME="$prefix"
+                  break
+                fi
+              done
+            fi
+          fi
+          if [ -n "${JAVA_HOME:-}" ]; then
+            export PATH="$JAVA_HOME/bin:$PATH"
+          elif command -v java >/dev/null 2>&1; then
+            export JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v java)" 2>/dev/null || command -v java)")")"
+            export PATH="$JAVA_HOME/bin:$PATH"
+          else
+            echo "error: Java 17 not found. Install Temurin 17 or run: brew install openjdk@17" >&2
+            exit 1
+          fi
+          # --- Android SDK (optional; embed task may not need it on a pure iOS build) ---
+          if [ -z "${ANDROID_HOME:-}" ]; then
+            if command -v brew >/dev/null 2>&1; then
+              brew_sdk="$(brew --prefix android-commandlinetools 2>/dev/null || true)"
+              if [ -n "$brew_sdk" ] && [ -d "$brew_sdk" ]; then
+                export ANDROID_HOME="$brew_sdk"
+              fi
+            fi
+            if [ -z "${ANDROID_HOME:-}" ] && [ -d "$HOME/Library/Android/sdk" ]; then
+              export ANDROID_HOME="$HOME/Library/Android/sdk"
+            fi
+          fi
+          # --- Xcode ---
+          if [ -z "${DEVELOPER_DIR:-}" ] && [ -d "/Applications/Xcode.app/Contents/Developer" ]; then
+            export DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer"
+          fi
           cd "$SRCROOT/.."
           ./gradlew :feature:shell:embedAndSignAppleFrameworkForXcode

@@ -1,10 +1,8 @@
 package com.movit.feature.explore
 
+import com.movit.core.model.ExploreContent
+import com.movit.core.model.ExploreRepository
 import com.movit.shared.AppResult
-
-interface ExploreRepository {
-    suspend fun getExploreContent(): AppResult<ExploreContent>
-}
 
 class FakeExploreRepository(
     private val content: ExploreContent = MovitExplorePreviewData.content,

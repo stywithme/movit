@@ -2,7 +2,7 @@ package com.movit.feature.library
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.movit.feature.explore.ExploreItemUi
+import com.movit.core.model.ExploreItemUi
 import com.movit.shared.AppResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

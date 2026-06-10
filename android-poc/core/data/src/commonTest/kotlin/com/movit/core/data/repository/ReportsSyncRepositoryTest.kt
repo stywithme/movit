@@ -27,7 +27,7 @@ class ReportsSyncRepositoryTest {
                     ),
                 )
             }
-            val repo = ReportsSyncRepository(testMobileApi(engine), { platform })
+            val repo = ReportsSyncRepository(testMobileApi(engine, platform), { platform })
 
             val result = repo.syncDashboard()
 
@@ -47,7 +47,7 @@ class ReportsSyncRepositoryTest {
                 MovitJson.encodeToString(ReportsDashboardApiResponse.serializer(), cached),
             )
             val engine = MockEngine { respond("{}", HttpStatusCode.InternalServerError) }
-            val repo = ReportsSyncRepository(testMobileApi(engine), { platform })
+            val repo = ReportsSyncRepository(testMobileApi(engine, platform), { platform })
 
             val result = repo.syncDashboard()
 
@@ -60,7 +60,7 @@ class ReportsSyncRepositoryTest {
         runBlocking {
             val platform = FakeMovitPlatformBindings(auth = null, pro = true)
             val engine = MockEngine { respond("{}", HttpStatusCode.OK) }
-            val repo = ReportsSyncRepository(testMobileApi(engine), { platform })
+            val repo = ReportsSyncRepository(testMobileApi(engine, platform), { platform })
 
             val result = repo.syncDashboard()
 
@@ -80,7 +80,7 @@ class ReportsSyncRepositoryTest {
                 MovitJson.encodeToString(ReportsDashboardApiResponse.serializer(), cached),
             )
             val engine = MockEngine { respond("down", HttpStatusCode.BadGateway) }
-            val repo = ReportsSyncRepository(testMobileApi(engine), { platform })
+            val repo = ReportsSyncRepository(testMobileApi(engine, platform), { platform })
 
             val result = repo.syncDashboard()
 

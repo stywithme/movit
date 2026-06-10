@@ -3,6 +3,9 @@
 آخر تحديث: 2026-06-10 (تحقق Phase 05)  
 المرجع: [`Android-KMP-Mobile-UI-UX-Phase-Pre-06-Architecture-And-Production-Readiness-Plan.md`](Android-KMP-Mobile-UI-UX-Phase-Pre-06-Architecture-And-Production-Readiness-Plan.md) — WS-E
 
+> **مصدر النِسب الوحيد (canonical):** هذا الملف. [`Android-UI-UX-Modernization-Status.md`](Android-UI-UX-Modernization-Status.md) · [`Sync-App-Pages.md`](Sync-App-Pages.md) · [`Android-KMP-Mobile-UI-UX-Professional-Plan.md`](Android-KMP-Mobile-UI-UX-Professional-Plan.md) **تربط هنا** ولا تكرر النسب يدوياً.  
+> **أرقام الكود** (مفاتيح ar/en · اختبارات KMP · مكوّنات `Movit*`): [`generated/Docs-Stats-Snapshot.md`](generated/Docs-Stats-Snapshot.md) — `cd android-poc; .\gradlew.bat docsStats`
+
 ## المنهجية
 
 كل صفحة تُقيَّم بـ **7 مجالات** بأوزان ثابتة؛ النسبة النهائية = مجموع `(درجة المجال × الوزن)`.
@@ -23,7 +26,7 @@
 
 | البند | النتيجة |
 |-------|---------|
-| **Gradle** `:feature:library\|reports:testDebugUnitTest` (audit 15/16/17) | ✅ BUILD SUCCESSFUL (library 42) |
+| **Gradle** `:feature:library\|reports:testDebugUnitTest` (audit 15/16/17) | ✅ BUILD SUCCESSFUL — أعداد `@Test` في [`generated/Docs-Stats-Snapshot.md`](generated/Docs-Stats-Snapshot.md) |
 | **Gradle** `:feature:home\|train\|explore\|reports\|library\|account\|shell:testDebugUnitTest` | ✅ BUILD SUCCESSFUL |
 | **سبب فجوات قديمة في `Sync-App-Pages.md`** | تأخر توثيق أقسام التفصيل (ليست غياب تنفيذ) |
 | **فجوات مفتوحة (15/16/17)** | Program flow **fake API** · Share platform · joints API · Workout **camera/orchestration** · previous-form fake · persist customize |
@@ -816,6 +819,7 @@
 
 ## روابط
 
+- [`generated/Docs-Stats-Snapshot.md`](generated/Docs-Stats-Snapshot.md) — أرقام مولَّدة (i18n · tests · DS)
 - [`Sync-App-Pages.md`](Sync-App-Pages.md) — خريطة prototype ↔ legacy ↔ KMP
 - [`Android-UI-UX-Modernization-Status.md`](Android-UI-UX-Modernization-Status.md) — ملخص تنفيذي
 - [`Android-KMP-Mobile-UI-UX-Phase-05-Page-By-Page-Modernization-Plan.md`](Android-KMP-Mobile-UI-UX-Phase-05-Page-By-Page-Modernization-Plan.md)

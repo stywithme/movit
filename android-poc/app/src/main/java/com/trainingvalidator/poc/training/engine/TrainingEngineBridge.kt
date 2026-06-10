@@ -1,6 +1,7 @@
 package com.trainingvalidator.poc.training.engine
 
 import com.movit.core.training.engine.JointEvalInput
+import com.trainingvalidator.poc.training.engine.policy.toTimingOverrides
 import com.movit.core.training.engine.PhaseJointConfig
 import com.movit.core.training.engine.PhaseTimingConfig
 import com.trainingvalidator.poc.training.engine.evaluation.JointEval
@@ -199,7 +200,7 @@ internal fun buildPhaseTimingConfig(
     numberOfPhases: Int,
     timingPolicy: com.trainingvalidator.poc.training.engine.policy.TimingPolicy,
 ): PhaseTimingConfig = PhaseTimingConfig(
-    minRepIntervalMs = timingPolicy.minRepIntervalFor(repCountingConfig),
-    maxRepIntervalMs = timingPolicy.maxRepIntervalFor(repCountingConfig),
-    minPhaseDurationMs = timingPolicy.minPhaseDurationFor(repCountingConfig, numberOfPhases),
+    minRepIntervalMs = timingPolicy.minRepIntervalFor(repCountingConfig?.toTimingOverrides()),
+    maxRepIntervalMs = timingPolicy.maxRepIntervalFor(repCountingConfig?.toTimingOverrides()),
+    minPhaseDurationMs = timingPolicy.minPhaseDurationFor(repCountingConfig?.toTimingOverrides(), numberOfPhases),
 )

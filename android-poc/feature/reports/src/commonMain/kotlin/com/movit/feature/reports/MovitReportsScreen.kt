@@ -103,7 +103,9 @@ fun MovitReportsScreen(
                         }
                         state.errorMessage != null && dashboard?.hubState == ReportsHubState.Error -> {
                             MovitErrorState(
+                                title = movitText("common_error_title"),
                                 message = state.errorMessage,
+                                actionLabel = movitText("common_retry"),
                                 onRetry = { onEvent(MovitReportsEvent.RetryClicked) },
                             )
                         }
@@ -296,7 +298,7 @@ private fun ReportsTrendsPanel(dashboard: ReportsDashboardUi) {
         if (rate != 0f) {
             val signedRate = buildString {
                 if (rate > 0f) append('+')
-                append(String.format("%.1f", abs(rate)))
+                append(ReportsFormatting.formatOneDecimal(abs(rate)))
             }
             Text(
                 text = movitText("reports_improvement_since_week_one", signedRate),

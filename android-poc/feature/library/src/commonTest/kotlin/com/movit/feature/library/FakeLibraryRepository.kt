@@ -1,13 +1,11 @@
 package com.movit.feature.library
 
-import com.movit.feature.explore.ExploreContent
-import com.movit.feature.explore.ExploreItemType
-import com.movit.feature.explore.ExploreItemUi
-import com.movit.feature.explore.MovitExplorePreviewData
+import com.movit.core.model.ExploreContent
+import com.movit.core.model.ExploreItemUi
 import com.movit.shared.AppResult
 
 class FakeLibraryRepository(
-    private val content: ExploreContent = MovitExplorePreviewData.content,
+    private val content: ExploreContent = LibraryTestFixtures.sampleLibraryContent(LibraryListKind.Exercises),
     private val shouldFail: Boolean = false,
 ) : LibraryRepository {
 
@@ -24,24 +22,9 @@ class FakeLibraryRepository(
     }
 }
 
-internal fun sampleExerciseItems(): List<ExploreItemUi> =
-    MovitExplorePreviewData.exerciseOnly
+internal fun sampleExerciseItems(): List<ExploreItemUi> = LibraryTestFixtures.exercises
 
-internal fun sampleWorkoutItems(): List<ExploreItemUi> =
-    MovitExplorePreviewData.workouts
+internal fun sampleWorkoutItems(): List<ExploreItemUi> = LibraryTestFixtures.workouts
 
 internal fun sampleLibraryContent(kind: LibraryListKind): ExploreContent =
-    when (kind) {
-        LibraryListKind.Exercises -> ExploreContent(
-            featured = emptyList(),
-            workouts = emptyList(),
-            exercises = sampleExerciseItems(),
-            programs = emptyList(),
-        )
-        LibraryListKind.Workouts -> ExploreContent(
-            featured = emptyList(),
-            workouts = sampleWorkoutItems(),
-            exercises = emptyList(),
-            programs = emptyList(),
-        )
-    }
+    LibraryTestFixtures.sampleLibraryContent(kind)

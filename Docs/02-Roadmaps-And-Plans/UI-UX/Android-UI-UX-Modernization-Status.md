@@ -1,6 +1,6 @@
 # Android UI/UX Modernization Status
 
-آخر تحديث: 2026-06-09 (تنفيذ Phase Pre-05 WS-A→WS-F + استكمال WS-C؛ ثم **تحقق مستقل بالبناء** كشف وأصلح 4 أخطاء كانت تكسر iOS compile — التفاصيل في قسم "تحقق مستقل" بخطة Pre-05)
+آخر تحديث: 2026-06-10 (WS-7 docs sync · نِسب من [`Page-Scorecards.md`](Page-Scorecards.md) · أرقام كود من [`generated/Docs-Stats-Snapshot.md`](generated/Docs-Stats-Snapshot.md))
 
 > **🔧 تصحيح 2026-06-09 (post-verification):** بناء Android الأخضر لم يكن يثبت iOS. التحقق بـ `compileKotlinIosSimulatorArm64` كشف: (1) `MovitData` كان يستخدم `GlobalContext` (JVM-only) فيكسر iOS — وهو سبب فشل macOS CI؛ (2) Koin رُفع 4.0.3→4.2.1 لـ Kotlin 2.3؛ (3) `when` غير شامل في `MovitInnerHost` (routes ميتة)؛ (4) `feature:library` ناقصها deps على core:data/network/resources. **كلها أُصلحت وتم التحقق:** Android assemble + tests أخضر، وiOS compile (كامل عبر shell) أخضر. الكود مرفوع (`58f403fc fix CI`)؛ يتبقّى التحقق من نتيجة macOS CI (`linkDebugFrameworkIosSimulatorArm64`).
 
@@ -26,7 +26,7 @@
 **ما لم يُنجز بعد (توقعات واقعية):**
 
 - Auth / Onboarding / Assessment / Level — **أول إصدار KMP** في `feature:account` (scorecards 55–76%) — ليست 0%.
-- **Profile/Account:** `MovitProfileScreen` (~70% scorecard) — Language/Appearance/Haptic غير فعّالة بعد.
+- **Profile/Account:** `MovitProfileScreen` (**86%** في [`Page-Scorecards.md`](Page-Scorecards.md)) — Language/Appearance/Haptic غير فعّالة بعد.
 - تدريب حي بالكاميرا وML — **لم يُنقل** (مقصود تأجيله).
 - iOS يحتاج مزامنة مفاتيح تسجيل الدخول (`access_token`, `is_pro`, `active_user_program_id`) مع تطبيق iOS الأصلي.
 - **بوابة launcher (WS-C / Pre-06):** Movit shell ما زال debug-only — قرار مكتوب في [Launcher Gate](Android-KMP-Mobile-UI-UX-Launcher-Gate.md)؛ flip بعد 15/16 مفضل. Pre-06 **مغلقة** — [تقرير الإكمال](Android-KMP-Mobile-UI-UX-Phase-Pre-06-Completion-Report.md).
@@ -40,22 +40,11 @@
 | المنطقة | الحالة | ملاحظة للمدير |
 |---------|--------|----------------|
 | **HTML Prototypes** (`prototypes/`) | ✅ محدّثة (Premium v7) | مرجع بصري لـ 18 صفحة؛ ليست التطبيق الفعلي |
-| **Design System** (`core:designsystem`) | ✅ ~70 مكوّن Movit* | ألوان، typography، motion، كتالوج debug |
+| **Design System** (`core:designsystem`) | ✅ Movit* DS | ألوان، typography، motion، كتالوج debug — أرقام الملفات/المكوّنات في [`generated/Docs-Stats-Snapshot.md`](generated/Docs-Stats-Snapshot.md) |
 | **App Shell** (`feature:shell`) | ✅ 5 تبويبات + مسارات داخلية | Home · Train · Explore · Reports · **Profile** + Session · Report detail · Library |
-| **Home** | **79%** | شاشة KMP + API + scorecard WS-E — فجوات hero/level link |
-| **Explore** | **75%** | شاشة KMP + sync — فجوات media/filter |
-| **Train** | **72%** | 5 حالات + scorecard — فجوات week nav، thumbnails |
-| **Reports** | **78%** | 3 تبويبات + Pro gate + Report Detail |
-| **Report Detail** | **92%** | UI + API + a11y — Share/Export placeholder |
-| **Session (02)** | **48%** | تحرير جزئي — Prepare/onStart فارغ |
-| **Library** (05–07) | **55%** | قوائم من Explore cache — i18n hardcoded |
-| **Auth** (10) | **76%** | `MovitAuthScreen` — Google stub |
-| **Profile** (11) | **70%** | `MovitProfileScreen` — settings جزئية |
-| **Onboarding** (12) | **74%** | 7 خطوات + training-profile API |
-| **Assessment** (13) | **55%** | PAR-Q + placeholder كاميرا |
-| **Level** (14) | **58%** | Profile/Plan — fake/hardcoded phases |
+| **صفحات KMP (01–17)** | **66–92%** | نِسب كل صفحة في [`Page-Scorecards.md`](Page-Scorecards.md) فقط (مصدر وحيد) |
 
-مرجع scorecards: [`Page-Scorecards.md`](Page-Scorecards.md) · [`Sync-App-Pages.md`](Sync-App-Pages.md).
+> **لا تُقتبس النسب من هذا الجدول** — راجع [`Page-Scorecards.md`](Page-Scorecards.md) للتفصيل (مثلاً Home **92%** · Auth **85%** · Assessment **74%** · Workout flow **66%**). أرقام الاختبارات/المفاتيح: [`generated/Docs-Stats-Snapshot.md`](generated/Docs-Stats-Snapshot.md).
 
 **نقطة الدخول للمعاينة:**
 
@@ -134,7 +123,7 @@ android-poc/
 ├── app/                    # Legacy + debug pilot (MovitShellPilotActivity)
 ├── shared/                 # AppResult ومساعدات مشتركة
 ├── core/
-│   ├── designsystem/       # MovitTheme + ~70 مكوّن UI
+│   ├── designsystem/       # MovitTheme + Movit* components (انظر Docs-Stats-Snapshot)
 │   ├── resources/          # composeResources ar/en + MovitLocale + movitText + *Strings loaders
 │   ├── network/            # Ktor + DTOs + MovitMobileApi
 │   └── data/               # MovitData (Koin) + sync repositories + platform bindings
@@ -214,7 +203,7 @@ android-poc/
 - بيانات معاينة Report Detail (`ReportDetailPreviewData`) ما زالت إنجليزية ثابتة للتطوير.
 - نصوص ديناميكية من API (أسماء تمارين، رسائل insights) تبقى كما يرسلها الخادم — لم تُترجم في العميل.
 
-المرحلة التالية المنطقية: **صفحات غائبة (10–14)** أو **تلميع UX Train/Session** حسب أولوية المنتج — وليس نقل `TrainingActivity`/camera/ML.
+المرحلة التالية المنطقية: **تلميع UX** (Train/Session/Program flow/Workout) أو **Phase 07** (كاميرا/ML) — صفحات Account (10–14) **منفَّذة** (راجع [`Page-Scorecards.md`](Page-Scorecards.md)).
 
 ## تحديث 2026-06-08: HTML Prototypes / Premium UI Refresh
 
@@ -710,7 +699,7 @@ Android Studio ما زال مفيداً للمراجعة البصرية وتشغ
 
 **ثانياً — استكمال Phase 05 (مسموح بعد Pre-05 ما عدا WS-G):**
 
-- **صفحات غائبة:** Auth (10) → Profile (11) → Onboarding (12) → Assessment/Level حسب أولوية المنتج.
+- **Account (10–14):** منفَّذ في `feature:account` — النِسب في [`Page-Scorecards.md`](Page-Scorecards.md) (Auth **85%** · Assessment **74%** · Level **68%**).
 - **مزامنة iOS auth:** كتابة `access_token`, `is_pro`, `active_user_program_id` عند تسجيل الدخول في تطبيق iOS.
 - **تلميع UX Train/Session** حسب [`Sync-App-Pages.md`](Sync-App-Pages.md) (أسبوع، thumbnails، Prepare flow).
 - **إبقاء camera/ML/TrainingActivity** مؤجلة لـ Phase 7 — لكن **المحرك العددى الخالص** (`OneEuroFilter`/`AngleCalculator`/score calculators) يُنقل لـ `commonMain` كأول خطوة في حدود Phase 7.

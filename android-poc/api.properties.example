@@ -1,0 +1,5 @@
+# Optional API defaults for :app BuildConfig (copy to api.properties or override in local.properties).
+api.mode=local
+api.port=4000
+api.physical_device_ip=192.168.1.18
+api.server_url=https://back.mongz.online/

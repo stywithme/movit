@@ -56,7 +56,7 @@ fun MovitButton(
     val pillShape = RoundedCornerShape(MovitRadius.full)
     val height = when (size) {
         MovitButtonSize.Default -> 52.dp
-        MovitButtonSize.Small -> 42.dp
+        MovitButtonSize.Small -> MovitSpacing.minTouchTarget
     }
     val contentPadding = PaddingValues(
         horizontal = if (size == MovitButtonSize.Small) 18.dp else 22.dp,

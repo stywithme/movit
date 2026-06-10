@@ -1,6 +1,13 @@
 package com.trainingvalidator.poc.training.engine
 
 import android.util.Log
+import com.movit.core.training.visibility.VisibilityCheckResult as KmpVisibilityCheckResult
+import com.movit.core.training.visibility.VisibilityJointConfig
+import com.movit.core.training.visibility.VisibilityJointRole
+import com.movit.core.training.visibility.VisibilityMonitor as KmpVisibilityMonitor
+import com.movit.core.training.visibility.VisibilityState as KmpVisibilityState
+import com.movit.core.training.visibility.VisibilityStats as KmpVisibilityStats
+import com.movit.core.training.visibility.VisibilityTrackingMode
 import com.trainingvalidator.poc.analysis.SmoothedLandmark
 import com.trainingvalidator.poc.pose.BodyLandmarks
 import com.trainingvalidator.poc.pose.JointLandmarkMapping
@@ -14,136 +21,84 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * VisibilityMonitor - Tracks visibility of required joints and manages pause/resume
- * 
- * This component monitors the visibility of joints required for the current exercise.
- * When joints become invisible (user moves out of frame, occlusion, etc.), it:
- * 
- * 1. GRACE PERIOD (0 - graceDurationMs): Ignores brief invisibility
- * 2. WARNING (graceDurationMs - pauseAfterMs): Shows warning, continues training
- * 3. PAUSED (> pauseAfterMs): Pauses training, saves state
- * 4. RESUMING: When visible again, triggers countdown before resuming
- * 
- * This provides a smart, non-intrusive experience that:
- * - Ignores momentary visibility glitches
- * - Warns user before pausing
- * - Preserves rep count and state
- * - Provides smooth resume with countdown
+ * VisibilityMonitor - Tracks visibility of required joints and manages pause/resume.
+ * Delegates state machine to KMP [com.movit.core.training.visibility.VisibilityMonitor].
  */
 class VisibilityMonitor(
-    /** Primary + secondary joints from the active pose variant (visibility rules use roles + tracking mode). */
-    private val visibilityTrackedJoints: List<TrackedJoint>,
+    private val trackedJoints: List<TrackedJoint>,
     private val minVisibility: Float = 0.5f,
-    private val graceDurationMs: Long = 500,      // 0.5 seconds - ignore brief glitches
-    private val warningDurationMs: Long = 1500,   // 1.5 seconds before showing warning
-    private val pauseAfterMs: Long = 3000,        // 3 seconds total before pause
-    private val timeProvider: () -> Long = { System.currentTimeMillis() }
+    private val graceDurationMs: Long = 500,
+    private val warningDurationMs: Long = 1500,
+    private val pauseAfterMs: Long = 3000,
+    private val timeProvider: () -> Long = { System.currentTimeMillis() },
 ) {
     companion object {
         private const val TAG = "VisibilityMonitor"
     }
 
-    private data class LenientPair(val jointA: String, val jointB: String)
+    private val core = KmpVisibilityMonitor(
+        visibilityTrackedJoints = trackedJoints.map { it.toKmpVisibilityConfig() },
+        minVisibility = minVisibility,
+        graceDurationMs = graceDurationMs,
+        warningDurationMs = warningDurationMs,
+        pauseAfterMs = pauseAfterMs,
+        timeProvider = timeProvider,
+    )
 
-    private val primarySecondary: List<TrackedJoint> =
-        visibilityTrackedJoints.filter { it.role == JointRole.PRIMARY || it.role == JointRole.SECONDARY }
-
-    /**
-     * Exercise-level "Any-Side mode": if any primary or secondary joint was tagged
-     * `any_side`, the exercise is expected to work from a side view. All bilateral
-     * pairs in such an exercise are treated leniently (one-side-visible is enough),
-     * not only the individually-tagged ones — otherwise an untagged secondary pair
-     * such as hips or shoulders would block visibility the instant the far side is
-     * occluded.
-     */
-    private val isAnySideExercise: Boolean =
-        primarySecondary.any { it.trackingMode == TrackingMode.ANY_SIDE }
-
-    private val lenientPairs: List<LenientPair>
-    private val strictJointCodes: Set<String>
+    private val _state = MutableStateFlow(KmpVisibilityState.VISIBLE.toApp())
+    val state: StateFlow<VisibilityState> = _state.asStateFlow()
 
     init {
-        val strict = mutableSetOf<String>()
-        val lenient = mutableListOf<LenientPair>()
-        val seenLenientKeys = mutableSetOf<Pair<String, String>>()
-        for (j in primarySecondary) {
-            val p = j.pairedWith
-            if (p != null) {
-                val partner = primarySecondary.find { it.joint == p }
-                val bothAnySide = j.trackingMode == TrackingMode.ANY_SIDE &&
-                    partner != null && partner.trackingMode == TrackingMode.ANY_SIDE
-                val treatAsLenient = bothAnySide || (isAnySideExercise && partner != null)
-                if (treatAsLenient) {
-                    val a = minOf(j.joint, p)
-                    val b = maxOf(j.joint, p)
-                    val key = a to b
-                    if (seenLenientKeys.add(key)) {
-                        lenient.add(LenientPair(a, b))
-                    }
-                    continue
-                }
-            }
-            strict.add(j.joint)
-        }
-        strictJointCodes = strict
-        lenientPairs = lenient
+        syncStateFromCore()
     }
-    
-    // Current visibility state
-    private val _state = MutableStateFlow(VisibilityState.VISIBLE)
-    val state: StateFlow<VisibilityState> = _state.asStateFlow()
-    
-    // Tracking variables
-    private var invisibleStartTime: Long = 0L
-    private var lastVisibleRepCount: Int = 0
-    private var lastPhase: Phase = Phase.IDLE
-    
-    // Statistics
-    private var totalPauseCount: Int = 0
-    private var totalWarningCount: Int = 0
-    
-    /**
-     * Check visibility of required joints
-     * Should be called every frame during training
-     * 
-     * @param landmarks Current frame landmarks (NOT mirrored - raw from MediaPipe)
-     * @param currentRepCount Current rep count (to save on pause)
-     * @param currentPhase Current phase (to save on pause)
-     * @param isFrontCamera Whether using front camera (for landmark index mirroring)
-     * @return Result indicating what action to take
-     */
+
+    private fun syncStateFromCore() {
+        _state.value = core.state.toApp()
+    }
+
     fun checkVisibility(
         landmarks: List<SmoothedLandmark>,
         currentRepCount: Int,
         currentPhase: Phase,
-        isFrontCamera: Boolean = false
+        isFrontCamera: Boolean = false,
     ): VisibilityCheckResult {
         if (landmarks.size < 33) {
-            return handleInvisible(timeProvider(), currentRepCount, currentPhase)
+            val result = core.checkVisibility(
+                jointVisibilities = emptyMap(),
+                currentRepCount = currentRepCount,
+                currentPhase = currentPhase.toKmp(),
+            )
+            return mapResult(result)
         }
-        
-        // Check if all required joints are visible with sufficient confidence
-        // For front camera, we need to check mirrored indices since the image is mirrored
-        val visibilityDetails = checkJointVisibility(landmarks, isFrontCamera)
-        val allVisible = visibilityDetails.all { it.isVisible }
-        
-        val now = timeProvider()
-        
-        return if (allVisible) {
-            handleVisible(currentRepCount, currentPhase)
-        } else {
-            handleInvisible(now, currentRepCount, currentPhase, visibilityDetails)
+
+        val jointVisibilities = buildJointVisibilityMap(landmarks, isFrontCamera)
+        val result = core.checkVisibility(
+            jointVisibilities = jointVisibilities,
+            currentRepCount = currentRepCount,
+            currentPhase = currentPhase.toKmp(),
+        )
+        logTransition(result)
+        return mapResult(result)
+    }
+
+    private fun buildJointVisibilityMap(
+        landmarks: List<SmoothedLandmark>,
+        isFrontCamera: Boolean,
+    ): Map<String, Float> {
+        val codes = mutableSetOf<String>()
+        for (joint in trackedJoints) {
+            codes.add(joint.joint)
+            joint.pairedWith?.let { codes.add(it) }
+        }
+        return codes.associateWith { code ->
+            minVisibilityForJoint(code, landmarks, isFrontCamera)
         }
     }
-    
-    /**
-     * Minimum visibility across the three angle landmarks for [jointCode], using the same
-     * front-camera mirroring rules as the rest of the monitor.
-     */
+
     private fun minVisibilityForJoint(
         jointCode: String,
         landmarks: List<SmoothedLandmark>,
-        isFrontCamera: Boolean
+        isFrontCamera: Boolean,
     ): Float {
         val indices = JointLandmarkMapping.getLandmarksForAngle(jointCode)
         if (indices.isEmpty()) return 0f
@@ -157,179 +112,73 @@ class VisibilityMonitor(
         return minV
     }
 
-    /**
-     * Build per-joint visibility rows for messages, and mark lenient pairs as visible
-     * when **at least one** side has all three landmarks ≥ [minVisibility].
-     */
-    private fun checkJointVisibility(
-        landmarks: List<SmoothedLandmark>,
-        isFrontCamera: Boolean
-    ): List<JointVisibility> {
-        val details = mutableListOf<JointVisibility>()
-        for (code in strictJointCodes) {
-            val v = minVisibilityForJoint(code, landmarks, isFrontCamera)
-            details.add(
-                JointVisibility(
-                    jointName = code,
-                    visibility = v,
-                    isVisible = v >= minVisibility
-                )
-            )
-        }
-        for (pair in lenientPairs) {
-            val vA = minVisibilityForJoint(pair.jointA, landmarks, isFrontCamera)
-            val vB = minVisibilityForJoint(pair.jointB, landmarks, isFrontCamera)
-            val okA = vA >= minVisibility
-            val okB = vB >= minVisibility
-            val pairOk = okA || okB
-            details.add(JointVisibility(pair.jointA, vA, pairOk))
-            details.add(JointVisibility(pair.jointB, vB, pairOk))
-        }
-        return details
-    }
-    
-    /**
-     * Handle visible state - joints are visible
-     */
-    private fun handleVisible(repCount: Int, phase: Phase): VisibilityCheckResult {
-        return when (_state.value) {
-            VisibilityState.WARNING -> {
-                // Was in warning, joints visible again → back to normal
-                Log.d(TAG, "Joints visible again - cancelling warning")
-                _state.value = VisibilityState.VISIBLE
-                invisibleStartTime = 0L
-                VisibilityCheckResult.ContinueTraining
-            }
-            
-            VisibilityState.PAUSED -> {
-                // Was paused, joints visible → start resume countdown
+    private fun logTransition(result: KmpVisibilityCheckResult) {
+        when (result) {
+            is KmpVisibilityCheckResult.ShowWarning ->
+                Log.d(TAG, "Warning - joints invisible: ${result.invisibleJoints}")
+            is KmpVisibilityCheckResult.PauseTraining ->
+                Log.d(TAG, "Pausing training - saved rep ${result.savedRepCount}")
+            is KmpVisibilityCheckResult.StartResumeCountdown ->
                 Log.d(TAG, "Joints visible after pause - starting resume countdown")
-                _state.value = VisibilityState.RESUMING
+            KmpVisibilityCheckResult.ContinueTraining -> {
+                if (core.state == KmpVisibilityState.VISIBLE && _state.value == VisibilityState.WARNING) {
+                    Log.d(TAG, "Joints visible again - cancelling warning")
+                }
+            }
+            else -> Unit
+        }
+        syncStateFromCore()
+    }
+
+    private fun mapResult(result: KmpVisibilityCheckResult): VisibilityCheckResult =
+        when (result) {
+            KmpVisibilityCheckResult.ContinueTraining -> VisibilityCheckResult.ContinueTraining
+            KmpVisibilityCheckResult.ContinueCountdown -> VisibilityCheckResult.ContinueCountdown
+            is KmpVisibilityCheckResult.ShowWarning -> VisibilityCheckResult.ShowWarning(
+                message = createWarningMessage(result.invisibleJoints),
+                remainingBeforePause = result.remainingBeforePause,
+                invisibleJoints = result.invisibleJoints,
+            )
+            is KmpVisibilityCheckResult.PauseTraining -> VisibilityCheckResult.PauseTraining(
+                savedRepCount = result.savedRepCount,
+                savedPhase = result.savedPhase.toApp(),
+                message = createPauseMessage(result.invisibleJoints),
+            )
+            is KmpVisibilityCheckResult.StartResumeCountdown ->
                 VisibilityCheckResult.StartResumeCountdown(
-                    resumeFromRep = lastVisibleRepCount,
-                    resumeFromPhase = lastPhase
+                    resumeFromRep = result.resumeFromRep,
+                    resumeFromPhase = result.resumeFromPhase.toApp(),
                 )
-            }
-            
-            VisibilityState.RESUMING -> {
-                // In countdown, check if still visible
-                VisibilityCheckResult.ContinueCountdown
-            }
-            
-            VisibilityState.VISIBLE -> {
-                // Normal visible state - update saved values
-                lastVisibleRepCount = repCount
-                lastPhase = phase
-                VisibilityCheckResult.ContinueTraining
-            }
         }
-    }
-    
-    /**
-     * Handle invisible state - some joints not visible
-     */
-    private fun handleInvisible(
-        now: Long,
-        repCount: Int,
-        phase: Phase,
-        visibilityDetails: List<JointVisibility> = emptyList()
-    ): VisibilityCheckResult {
-        // If this is the start of invisibility, record the time and last good state
-        if (invisibleStartTime == 0L) {
-            invisibleStartTime = now
-            lastVisibleRepCount = repCount
-            lastPhase = phase
-            Log.d(TAG, "Joints became invisible - starting timer")
-        }
-        
-        val invisibleDuration = now - invisibleStartTime
-        
-        // Get invisible joints for message
-        val invisibleJoints = visibilityDetails
-            .filter { !it.isVisible }
-            .map { it.jointName }
-        
-        return when {
-            // PAUSE: Long enough invisibility → pause training
-            invisibleDuration >= pauseAfterMs -> {
-                if (_state.value != VisibilityState.PAUSED) {
-                    _state.value = VisibilityState.PAUSED
-                    totalPauseCount++
-                    Log.d(TAG, "Pausing training - joints invisible for ${invisibleDuration}ms")
-                }
-                
-                VisibilityCheckResult.PauseTraining(
-                    savedRepCount = lastVisibleRepCount,
-                    savedPhase = lastPhase,
-                    message = createPauseMessage(invisibleJoints)
-                )
-            }
-            
-            // WARNING: Show warning but continue
-            invisibleDuration >= warningDurationMs -> {
-                if (_state.value != VisibilityState.WARNING) {
-                    _state.value = VisibilityState.WARNING
-                    totalWarningCount++
-                    Log.d(TAG, "Warning - joints invisible for ${invisibleDuration}ms")
-                }
-                
-                val remainingBeforePause = pauseAfterMs - invisibleDuration
-                
-                VisibilityCheckResult.ShowWarning(
-                    message = createWarningMessage(invisibleJoints),
-                    remainingBeforePause = remainingBeforePause,
-                    invisibleJoints = invisibleJoints
-                )
-            }
-            
-            // GRACE: Brief invisibility within grace period → ignore
-            invisibleDuration < graceDurationMs -> {
-                VisibilityCheckResult.ContinueTraining
-            }
-            
-            // Between grace and warning - continue but track
-            else -> {
-                VisibilityCheckResult.ContinueTraining
-            }
-        }
-    }
-    
-    /**
-     * Create warning message based on invisible joints
-     */
+
     private fun createWarningMessage(invisibleJoints: List<String>): LocalizedText {
         val jointNamesEn = invisibleJoints.joinToString(", ") { formatJointName(it, "en") }
         val jointNamesAr = invisibleJoints.joinToString("، ") { formatJointName(it, "ar") }
         val t = SystemMessageRegistry.get(
             "visibility_joints_not_visible",
             "⚠️ {joints} غير مرئية",
-            "⚠️ {joints} not visible"
+            "⚠️ {joints} not visible",
         )
         return LocalizedText(
             ar = t.ar.replace("{joints}", jointNamesAr),
             en = t.en.replace("{joints}", jointNamesEn),
             audioAr = t.audioAr,
-            audioEn = t.audioEn
+            audioEn = t.audioEn,
         )
     }
-    
-    /**
-     * Create pause message
-     */
-    @Suppress("UNUSED_PARAMETER")
+
     private fun createPauseMessage(invisibleJoints: List<String>): LocalizedText {
+        @Suppress("UNUSED_PARAMETER")
+        val unused = invisibleJoints
         return SystemMessageRegistry.get(
             "visibility_pause_full_body",
             "⏸️ تأكد من ظهور جسمك بالكامل في الإطار",
-            "⏸️ Make sure your full body is visible in frame"
+            "⏸️ Make sure your full body is visible in frame",
         )
     }
-    
-    /**
-     * Format joint name for display
-     */
+
     private fun formatJointName(joint: String, language: String): String {
-        val key = "visibility_joint_${joint}"
+        val key = "visibility_joint_$joint"
         val nameMap = mapOf(
             "left_elbow" to Pair("الكوع الأيسر", "Left Elbow"),
             "right_elbow" to Pair("الكوع الأيمن", "Right Elbow"),
@@ -346,130 +195,95 @@ class VisibilityMonitor(
             "left_wrist" to Pair("المعصم الأيسر", "Left Wrist"),
             "right_wrist" to Pair("المعصم الأيمن", "Right Wrist"),
             "left_ankle" to Pair("الكاحل الأيسر", "Left Ankle"),
-            "right_ankle" to Pair("الكاحل الأيمن", "Right Ankle")
+            "right_ankle" to Pair("الكاحل الأيمن", "Right Ankle"),
         )
         val names = nameMap[joint] ?: Pair(joint, joint)
         val lt = SystemMessageRegistry.get(key, names.first, names.second)
         return lt.get(language)
     }
-    
-    /**
-     * Called when resume countdown finishes
-     * Resets visibility monitor to normal state
-     */
+
     fun onResumeCountdownComplete() {
-        _state.value = VisibilityState.VISIBLE
-        invisibleStartTime = 0L
+        core.onResumeCountdownComplete()
+        syncStateFromCore()
         Log.d(TAG, "Resume countdown complete - back to VISIBLE")
     }
-    
-    /**
-     * Check if currently in a paused state (PAUSED or RESUMING)
-     */
-    fun isPausedOrResuming(): Boolean {
-        return _state.value == VisibilityState.PAUSED || _state.value == VisibilityState.RESUMING
-    }
-    
-    /**
-     * Force reset to visible state (e.g., when training stops)
-     */
+
+    fun isPausedOrResuming(): Boolean = core.isPausedOrResuming()
+
     fun reset() {
-        _state.value = VisibilityState.VISIBLE
-        invisibleStartTime = 0L
-        lastVisibleRepCount = 0
-        lastPhase = Phase.IDLE
+        core.reset()
+        syncStateFromCore()
         Log.d(TAG, "VisibilityMonitor reset")
     }
-    
-    /**
-     * Get statistics about visibility events
-     */
-    fun getStats(): VisibilityStats {
-        return VisibilityStats(
-            totalPauseCount = totalPauseCount,
-            totalWarningCount = totalWarningCount
-        )
-    }
-    
-    /**
-     * Reset statistics (e.g., at start of a new exercise run)
-     */
-    fun resetStats() {
-        totalPauseCount = 0
-        totalWarningCount = 0
-    }
+
+    fun getStats(): VisibilityStats = core.getStats().toApp()
+
+    fun resetStats() = core.resetStats()
 }
 
-// ==================== State Enum ====================
-
-/**
- * Visibility states for the monitor
- */
 enum class VisibilityState {
-    VISIBLE,    // All required joints visible - normal training
-    WARNING,    // Some joints not visible - showing warning, still training
-    PAUSED,     // Training paused due to visibility - waiting for joints
-    RESUMING    // Joints visible again - countdown to resume
+    VISIBLE,
+    WARNING,
+    PAUSED,
+    RESUMING,
 }
 
-// ==================== Result Types ====================
-
-/**
- * Result of visibility check - tells TrainingEngine what to do
- */
 sealed class VisibilityCheckResult {
-    /**
-     * Continue training normally
-     */
-    object ContinueTraining : VisibilityCheckResult()
-    
-    /**
-     * Continue resume countdown (don't interrupt)
-     */
-    object ContinueCountdown : VisibilityCheckResult()
-    
-    /**
-     * Show warning to user but continue training
-     */
+    data object ContinueTraining : VisibilityCheckResult()
+
+    data object ContinueCountdown : VisibilityCheckResult()
+
     data class ShowWarning(
         val message: LocalizedText,
         val remainingBeforePause: Long,
-        val invisibleJoints: List<String>
+        val invisibleJoints: List<String>,
     ) : VisibilityCheckResult()
-    
-    /**
-     * Pause training and save state
-     */
+
     data class PauseTraining(
         val savedRepCount: Int,
         val savedPhase: Phase,
-        val message: LocalizedText
+        val message: LocalizedText,
     ) : VisibilityCheckResult()
-    
-    /**
-     * Start resume countdown (3-2-1)
-     */
+
     data class StartResumeCountdown(
         val resumeFromRep: Int,
-        val resumeFromPhase: Phase
+        val resumeFromPhase: Phase,
     ) : VisibilityCheckResult()
 }
 
-// ==================== Helper Data Classes ====================
-
-/**
- * Visibility info for a single joint
- */
 data class JointVisibility(
     val jointName: String,
     val visibility: Float,
-    val isVisible: Boolean
+    val isVisible: Boolean,
 )
 
-/**
- * Statistics about visibility events
- */
 data class VisibilityStats(
     val totalPauseCount: Int,
-    val totalWarningCount: Int
+    val totalWarningCount: Int,
+)
+
+private fun TrackedJoint.toKmpVisibilityConfig(): VisibilityJointConfig = VisibilityJointConfig(
+    joint = joint,
+    role = when (role) {
+        JointRole.PRIMARY -> VisibilityJointRole.PRIMARY
+        JointRole.SECONDARY -> VisibilityJointRole.SECONDARY
+        else -> VisibilityJointRole.SECONDARY
+    },
+    trackingMode = when (trackingMode) {
+        TrackingMode.ANY_SIDE -> VisibilityTrackingMode.ANY_SIDE
+        else -> VisibilityTrackingMode.BOTH_SIDES
+    },
+    pairedWith = pairedWith,
+)
+
+private fun KmpVisibilityState.toApp(): VisibilityState = when (this) {
+    KmpVisibilityState.VISIBLE -> VisibilityState.VISIBLE
+    KmpVisibilityState.WARNING -> VisibilityState.WARNING
+    KmpVisibilityState.PAUSED -> VisibilityState.PAUSED
+    KmpVisibilityState.RESUMING -> VisibilityState.RESUMING
+}
+
+private fun KmpVisibilityStats.toApp(): VisibilityStats = VisibilityStats(
+    totalPauseCount = totalPauseCount,
+    totalWarningCount = totalWarningCount,
 )

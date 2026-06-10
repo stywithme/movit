@@ -1,6 +1,5 @@
 package com.movit.feature.library
 
-import com.movit.feature.explore.MovitExplorePreviewData
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -8,8 +7,8 @@ import kotlin.test.assertTrue
 
 class LibraryFilterLogicTest {
 
-    private val exercises = MovitExplorePreviewData.exerciseOnly
-    private val workouts = MovitExplorePreviewData.workouts
+    private val exercises = LibraryTestFixtures.exercises
+    private val workouts = LibraryTestFixtures.workouts
 
     @Test
     fun coreFilter_matchesCoreWorkout() {

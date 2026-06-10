@@ -1,8 +1,6 @@
 package com.movit.designsystem.components
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.padding
@@ -13,16 +11,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.movit.designsystem.MovitElevation
 import com.movit.designsystem.MovitRadius
 import com.movit.designsystem.MovitSpacing
-import com.movit.designsystem.movitColors
+import com.movit.designsystem.movitShadow
 
 enum class MovitCardVariant {
     Elevated,
@@ -63,14 +60,9 @@ fun MovitCardSurface(
     shape: Shape = cardShape,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val movit = MaterialTheme.movitColors
     val alpha = if (enabled) 1f else 0.5f
     val clickableModifier = if (onClick != null && enabled) {
-        modifier.clickable(
-            interactionSource = remember { MutableInteractionSource() },
-            indication = null,
-            onClick = onClick,
-        )
+        modifier.movitClickable(onClick = onClick)
     } else {
         modifier
     }
@@ -114,12 +106,7 @@ fun MovitCardSurface(
         MovitCardVariant.Elevated -> Surface(
             modifier = clickableModifier
                 .alpha(alpha)
-                .shadow(
-                    elevation = 10.dp,
-                    shape = shape,
-                    ambientColor = movit.shadow,
-                    spotColor = movit.shadow,
-                ),
+                .movitShadow(elevation = MovitElevation.md, shape = shape),
             shape = shape,
             color = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface,

@@ -1,5 +1,7 @@
 package com.movit.feature.explore
 
+import com.movit.core.model.ExploreItemType
+
 sealed interface MovitExploreEvent {
     data class QueryChanged(val value: String) : MovitExploreEvent
     data class FilterSelected(val filter: ExploreFilter) : MovitExploreEvent

@@ -1,5 +1,9 @@
 package com.movit.feature.explore
 
+import com.movit.core.model.ExploreItemType
+import com.movit.core.model.ExploreItemUi
+import com.movit.core.model.matchesExploreQuery
+
 object ExploreContentFilter {
 
     fun filterItems(
@@ -14,7 +18,7 @@ object ExploreContentFilter {
             .filter { matchesFilter(it, filter) }
             .filter { ExploreWorkoutFilterLogic.matches(it, workoutFilter) }
             .filter { matchesExerciseCategory(it, exerciseCategoryCode) }
-            .filter { matchesQuery(it, query) }
+            .filter { it.matchesExploreQuery(query) }
             .toList()
     }
 
@@ -33,14 +37,7 @@ object ExploreContentFilter {
         return item.categoryCode.equals(selected, ignoreCase = true)
     }
 
-    fun matchesQuery(item: ExploreItemUi, query: String): Boolean {
-        if (query.isBlank()) return true
-        val needle = query.trim().lowercase()
-        return item.title.lowercase().contains(needle) ||
-            item.subtitle.lowercase().contains(needle) ||
-            item.metadata.any { it.lowercase().contains(needle) } ||
-            item.tags.any { it.lowercase().contains(needle) }
-    }
+    fun matchesQuery(item: ExploreItemUi, query: String): Boolean = item.matchesExploreQuery(query)
 
     fun buildExerciseCategoryChips(exercises: List<ExploreItemUi>): List<ExploreCategoryChip> {
         val grouped = exercises

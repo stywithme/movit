@@ -23,7 +23,7 @@ class HomeSyncRepository(
             ?: return cached?.let { AppResult.Success(it) }
                 ?: AppResult.Failure("Sign in to load your home dashboard.")
 
-        val response = api.fetchHome(auth).getOrElse { error ->
+        val response = api.fetchHome().getOrElse { error ->
             return cached?.let { AppResult.Success(it) }
                 ?: AppResult.Failure(error.message ?: "Home sync failed.")
         }

@@ -2,7 +2,9 @@ package com.movit.feature.library
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.movit.feature.explore.ExploreItemUi
+import com.movit.core.data.MovitData
+import com.movit.core.data.repository.PlanSyncRepository
+import com.movit.core.model.ExploreItemUi
 import com.movit.shared.AppResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -18,6 +20,7 @@ import kotlinx.coroutines.launch
 class ProgramDetailViewModel(
     private val programId: String,
     private val repository: LibraryRepository = defaultLibraryRepository(),
+    private val planSync: PlanSyncRepository? = if (MovitData.isInstalled) MovitData.plan else null,
 ) : ViewModel() {
     private val toastScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var loadedProgram: ExploreItemUi? = null
@@ -120,25 +123,42 @@ class ProgramDetailViewModel(
         super.onCleared()
     }
 
-    fun sessionKeyForStart(): String? {
+    suspend fun startProgramAndGetSessionKey(): String? {
         val program = loadedProgram ?: return null
         if (!enrollment.isEnrolled) {
-            enrollment = ProgramEnrollmentUi(
-                isEnrolled = true,
-                startedLabel = "Started today",
-                customEditsCount = 0,
-                syncLabel = "Synced today",
-            )
-            publish(program)
+            if (planSync != null) {
+                when (val result = planSync.enrollProgram(program.id)) {
+                    is AppResult.Success -> markEnrolled(program)
+                    is AppResult.Failure -> {
+                        _state.update { it.copy(errorMessage = result.message) }
+                        return null
+                    }
+                }
+            } else {
+                markEnrolled(program)
+            }
         }
-        return ProgramDetailPreviewData.nextSession(program.id)?.sessionWorkoutId
+        return sessionKeyForProgram(program)
+    }
+
+    private fun markEnrolled(program: ExploreItemUi) {
+        enrollment = ProgramEnrollmentUi(
+            isEnrolled = true,
+            startedLabel = "Started today",
+            customEditsCount = 0,
+            syncLabel = "Synced today",
+        )
+        publish(program)
+    }
+
+    private fun sessionKeyForProgram(program: ExploreItemUi): String =
+        ProgramDetailPreviewData.nextSession(program.id)?.sessionWorkoutId
             ?: WorkoutSessionKeys.encode(
                 programId = program.id,
                 weekNumber = 1,
                 dayNumber = 1,
                 plannedWorkoutId = "preview",
             )
-    }
 
     fun startCtaLabel(isEnrolled: Boolean): String =
         if (isEnrolled) "Start next session" else "Start program"

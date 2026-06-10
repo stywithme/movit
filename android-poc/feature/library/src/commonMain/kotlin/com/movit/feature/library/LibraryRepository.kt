@@ -1,10 +1,9 @@
 package com.movit.feature.library
 
-import com.movit.feature.explore.ExploreContent
-import com.movit.feature.explore.ExploreItemType
-import com.movit.feature.explore.ExploreItemUi
-import com.movit.feature.explore.ExploreRepository
-import com.movit.feature.explore.defaultExploreRepository
+import com.movit.core.data.repository.defaultExploreRepository
+import com.movit.core.model.ExploreContent
+import com.movit.core.model.ExploreItemUi
+import com.movit.core.model.ExploreRepository
 import com.movit.shared.AppResult
 
 interface LibraryRepository {

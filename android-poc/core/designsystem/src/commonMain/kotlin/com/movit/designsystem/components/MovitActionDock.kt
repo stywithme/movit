@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.movit.designsystem.MovitElevation
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.movitColors
 
@@ -51,7 +52,7 @@ fun MovitActionDock(
         shape = RoundedCornerShape(28.dp),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        shadowElevation = 12.dp,
+        shadowElevation = MovitElevation.lg,
     ) {
         Row(
             modifier = Modifier.padding(start = 20.dp, top = 12.dp, end = 16.dp, bottom = 12.dp),

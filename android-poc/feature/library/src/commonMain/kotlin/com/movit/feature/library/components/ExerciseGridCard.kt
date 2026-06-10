@@ -17,7 +17,7 @@ import com.movit.designsystem.components.MovitCard
 import com.movit.designsystem.components.MovitCardVariant
 import com.movit.designsystem.components.MovitTag
 import com.movit.designsystem.movitColors
-import com.movit.feature.explore.ExploreItemUi
+import com.movit.core.model.ExploreItemUi
 import com.movit.feature.library.resolveLibraryBadge
 
 @Composable

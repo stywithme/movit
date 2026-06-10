@@ -113,7 +113,12 @@ fun WorkoutSessionScreen(
     ) { padding ->
         when {
             state.isLoading -> MovitLoadingState(message = movitText("session_loading"))
-            state.errorMessage != null -> MovitErrorState(message = state.errorMessage, onRetry = onRetry)
+            state.errorMessage != null -> MovitErrorState(
+                title = movitText("common_error_title"),
+                message = state.errorMessage,
+                actionLabel = movitText("common_retry"),
+                onRetry = onRetry,
+            )
             session != null -> {
                 Column(
                     modifier = Modifier

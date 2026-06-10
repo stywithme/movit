@@ -1,5 +1,10 @@
 package com.movit.feature.explore
 
+import com.movit.core.model.ExploreContent
+import com.movit.core.model.ExploreItemType
+import com.movit.core.model.ExploreItemUi
+import com.movit.designsystem.components.MovitTagVariant
+
 object MovitExplorePreviewData {
 
     private const val IMG_SQUAT =
@@ -23,6 +28,7 @@ object MovitExplorePreviewData {
             type = ExploreItemType.Workout,
             imageUrl = IMG_SQUAT,
             badge = "Smart pick",
+            badgeVariant = MovitTagVariant.Lime,
             focusLabel = "Legs focus",
             metadata = listOf("6 exercises", "~24 min", "Legs focus"),
             levelNumber = 1,
@@ -38,6 +44,7 @@ object MovitExplorePreviewData {
             type = ExploreItemType.Exercise,
             imageUrl = IMG_SQUAT,
             badge = "Beginner safe",
+            badgeVariant = MovitTagVariant.Lime,
             metadata = listOf("Lower body", "3 muscle groups"),
             tags = listOf("Quads", "Glutes", "Core"),
             categoryCode = "lower_body",
@@ -49,6 +56,7 @@ object MovitExplorePreviewData {
             type = ExploreItemType.Workout,
             imageUrl = IMG_CORE,
             badge = "Short",
+            badgeVariant = MovitTagVariant.Blue,
             focusLabel = "Core focus",
             metadata = listOf("5 exercises", "~18 min", "Core"),
             levelNumber = 2,
@@ -69,6 +77,7 @@ object MovitExplorePreviewData {
             type = ExploreItemType.Exercise,
             imageUrl = IMG_LUNGE,
             badge = "Equipment",
+            badgeVariant = MovitTagVariant.Coral,
             metadata = listOf("Legs", "Balance"),
             tags = listOf("Legs", "Balance", "Strength"),
             categoryCode = "lower_body",
@@ -80,6 +89,7 @@ object MovitExplorePreviewData {
             type = ExploreItemType.Workout,
             imageUrl = IMG_FULL,
             badge = "Popular",
+            badgeVariant = MovitTagVariant.Lime,
             focusLabel = "Full body",
             metadata = listOf("8 exercises", "~35 min", "Strength"),
             levelNumber = 3,
@@ -92,6 +102,7 @@ object MovitExplorePreviewData {
             type = ExploreItemType.Exercise,
             imageUrl = IMG_CORE,
             badge = "Core",
+            badgeVariant = MovitTagVariant.Blue,
             metadata = listOf("Core", "2 muscle groups"),
             tags = listOf("Core", "Shoulders"),
             categoryCode = "core",
@@ -103,6 +114,7 @@ object MovitExplorePreviewData {
             type = ExploreItemType.Exercise,
             imageUrl = IMG_MOBILITY,
             badge = "Mobility",
+            badgeVariant = MovitTagVariant.Blue,
             metadata = listOf("Mobility", "Warm-up"),
             tags = listOf("Hips", "Warm-up"),
             categoryCode = "mobility",
@@ -117,6 +129,7 @@ object MovitExplorePreviewData {
             type = ExploreItemType.Workout,
             imageUrl = IMG_LEGS,
             badge = "Beginner",
+            badgeVariant = MovitTagVariant.Lime,
             focusLabel = "Best for legs",
             metadata = listOf("6 exercises", "~24 min", "Legs focus"),
             levelNumber = 1,
@@ -146,6 +159,7 @@ object MovitExplorePreviewData {
             type = ExploreItemType.Workout,
             imageUrl = IMG_SQUAT,
             badge = "مقترح",
+            badgeVariant = MovitTagVariant.Lime,
             focusLabel = "الأرجل",
             metadata = listOf("6 تمارين", "~24 دقيقة", "الأرجل"),
             levelNumber = 1,

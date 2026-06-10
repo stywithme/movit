@@ -34,6 +34,7 @@ import com.movit.designsystem.components.MovitCard
 import com.movit.designsystem.components.MovitCardVariant
 import com.movit.designsystem.components.MovitEmptyState
 import com.movit.designsystem.components.MovitErrorState
+import com.movit.resources.movitText
 import com.movit.designsystem.components.MovitExerciseCard
 import com.movit.designsystem.components.MovitFilterChip
 import com.movit.designsystem.components.MovitFilterRow
@@ -281,7 +282,9 @@ internal fun MovitCatalogStatesBlock() {
             }
             MovitCard(variant = MovitCardVariant.Elevated) {
                 MovitErrorState(
+                    title = movitText("common_error_title"),
                     message = "Unable to load library.",
+                    actionLabel = movitText("common_retry"),
                     onRetry = {},
                 )
             }

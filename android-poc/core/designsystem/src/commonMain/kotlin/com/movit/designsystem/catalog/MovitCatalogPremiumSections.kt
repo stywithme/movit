@@ -75,7 +75,9 @@ import com.movit.designsystem.components.MovitTimelineList
 import com.movit.designsystem.components.MovitWeekDay
 import com.movit.designsystem.components.MovitWeekDayState
 import com.movit.designsystem.components.MovitWeekStrip
+import com.movit.designsystem.components.MovitWeekStripLegend
 import com.movit.designsystem.movitColors
+import com.movit.resources.movitText
 
 @Composable
 fun MovitCatalogIconBoxSection() {
@@ -214,6 +216,12 @@ fun MovitCatalogWeekSessionSection() {
                 MovitWeekDay("Sat", "6", MovitWeekDayState.Rest),
                 MovitWeekDay("Sun", "7", MovitWeekDayState.Planned),
             ),
+            legend = MovitWeekStripLegend(
+                done = movitText("ds_week_legend_done"),
+                today = movitText("ds_week_legend_today"),
+                missed = movitText("ds_week_legend_missed"),
+                rest = movitText("ds_week_legend_rest"),
+            ),
         )
         val sets = remember { mutableStateListOf(3, 0, 3) }
         MovitSessionCard(
@@ -227,6 +235,7 @@ fun MovitCatalogWeekSessionSection() {
             expanded = true,
             onToggle = {},
             isCompleted = true,
+            completedLabel = movitText("session_done"),
             actionLabel = "Continue session",
             onActionClick = {},
             itemTrailing = { index, item ->

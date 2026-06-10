@@ -1,4 +1,5 @@
 pluginManagement {
+    includeBuild("build-logic")
     repositories {
         google()
         mavenCentral()
@@ -17,6 +18,7 @@ dependencyResolutionManagement {
 rootProject.name = "Movit"
 include(":app")
 include(":shared")
+include(":core:model")
 include(":core:resources")
 include(":core:designsystem")
 include(":core:network")

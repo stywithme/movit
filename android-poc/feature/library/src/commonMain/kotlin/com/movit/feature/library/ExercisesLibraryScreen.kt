@@ -67,7 +67,9 @@ fun ExercisesLibraryScreen(
             when {
                 state.isLoading -> MovitLoadingState(message = movitText("library_loading_exercises"))
                 state.errorMessage != null -> MovitErrorState(
+                    title = movitText("common_error_title"),
                     message = state.errorMessage,
+                    actionLabel = movitText("common_retry"),
                     onRetry = onRetry,
                 )
                 state.isFilteredEmpty -> {

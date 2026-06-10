@@ -28,7 +28,7 @@ class WorkoutSessionSyncRepositoryTest {
                     ),
                 )
             }
-            val repo = WorkoutSessionSyncRepository(testMobileApi(engine), { platform })
+            val repo = WorkoutSessionSyncRepository(testMobileApi(engine, platform), { platform })
 
             val result = repo.syncEffectivePlan(userProgramId = "up-1", weekNumber = 1, dayNumber = 1)
 
@@ -56,7 +56,7 @@ class WorkoutSessionSyncRepositoryTest {
                 MovitJson.encodeToString(EffectivePlanApiResponse.serializer(), cachedResponse),
             )
             val engine = MockEngine { respond("{}", HttpStatusCode.InternalServerError) }
-            val repo = WorkoutSessionSyncRepository(testMobileApi(engine), { platform })
+            val repo = WorkoutSessionSyncRepository(testMobileApi(engine, platform), { platform })
 
             val result = repo.syncEffectivePlan(userProgramId = "up-1", weekNumber = 1, dayNumber = 1)
 
@@ -69,7 +69,7 @@ class WorkoutSessionSyncRepositoryTest {
         runBlocking {
             val platform = FakeMovitPlatformBindings(auth = null)
             val engine = MockEngine { respond("{}", HttpStatusCode.OK) }
-            val repo = WorkoutSessionSyncRepository(testMobileApi(engine), { platform })
+            val repo = WorkoutSessionSyncRepository(testMobileApi(engine, platform), { platform })
 
             val result = repo.syncEffectivePlan(userProgramId = "up-1", weekNumber = 1, dayNumber = 1)
 
@@ -92,7 +92,7 @@ class WorkoutSessionSyncRepositoryTest {
                 MovitJson.encodeToString(EffectivePlanApiResponse.serializer(), cachedResponse),
             )
             val engine = MockEngine { respond("down", HttpStatusCode.ServiceUnavailable) }
-            val repo = WorkoutSessionSyncRepository(testMobileApi(engine), { platform })
+            val repo = WorkoutSessionSyncRepository(testMobileApi(engine, platform), { platform })
 
             val result = repo.syncEffectivePlan(userProgramId = "up-1", weekNumber = 1, dayNumber = 1)
 

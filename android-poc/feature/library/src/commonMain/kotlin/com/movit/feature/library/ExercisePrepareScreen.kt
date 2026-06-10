@@ -114,7 +114,9 @@ fun ExercisePrepareScreen(
         when {
             state.isLoading -> MovitLoadingState(message = movitText("prepare_loading"))
             state.errorMessage != null -> MovitErrorState(
+                title = movitText("common_error_title"),
                 message = movitText(state.errorMessage),
+                actionLabel = movitText("common_retry"),
                 onRetry = onRetry,
             )
             exercise != null -> {

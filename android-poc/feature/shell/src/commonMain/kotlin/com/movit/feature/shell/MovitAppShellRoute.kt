@@ -36,6 +36,13 @@ fun MovitAppShellRoute(
     onLaunchLegacyTraining: (MovitAppShellEffect.LaunchLegacyCameraTraining) -> Boolean = { false },
 ) {
     val shellState by shellViewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        if (MovitData.isInstalled) {
+            MovitData.plan.refreshActiveUserProgramId()
+        }
+    }
+
     val language = remember(shellState.localeRevision) {
         if (MovitData.isInstalled) {
             MovitData.requirePlatform().preferredLanguage()

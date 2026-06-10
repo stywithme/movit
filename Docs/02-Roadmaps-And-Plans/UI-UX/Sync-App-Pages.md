@@ -1,3 +1,5 @@
+> **نِسب الإكمال:** المصدر الوحيد [`Page-Scorecards.md`](Page-Scorecards.md). **أرقام الكود** (مفاتيح · اختبارات · DS): [`generated/Docs-Stats-Snapshot.md`](generated/Docs-Stats-Snapshot.md).
+
 ## **المنهجية المتبعة**
 
 لكل صفحة:
@@ -23,10 +25,10 @@
 | 16 | Workout flow | **66%** | 55% | 50% | 93% | 90% | 35% | 60% | ✅ |
 | 05–06 | Library | **78%** | 85% | 78% | 93% | 88% | 55% | 55% | ✅ |
 | 07 | Program detail | **72%** | 76% | 70% | 93% | 85% | 25% | 65% | ✅ |
-| 10 | Auth | **86%** | 86% | 78% | 93% | 96% | 75% | 78% | ✅ |
+| 10 | Auth | **85%** | 86% | 78% | 93% | 93% | 75% | 75% | ✅ |
 | 11 | Profile | **86%** | 88% | 85% | 93% | 93% | 65% | 78% | ✅ |
 | 12 | Onboarding | **85%** | 92% | 82% | 93% | 93% | 45% | 78% | ✅ |
-| 13 | Assessment | **75%** | 72% | 68% | 93% | 93% | 50% | 55% | ✅ |
+| 13 | Assessment | **74%** | 72% | 68% | 93% | 93% | 40% | 55% | ✅ |
 | 14 | Level | **68%** | 72% | 68% | 93% | 87% | 35% | 55% | ✅ |
 | 00 | Components | **~70%** | ~75% | ~68% | 95% | ~60% | ~40% | ~50% | ✅ |
 | 15 | Program flow | **77%** | 78% | 68% | 93% | 88% | 35% | 70% | ✅ |
@@ -36,7 +38,7 @@
 ### **تحقق Phase 05 (2026-06-10)**
 
 - **السبب الجذري لظهور «فجوات» في هذا الملف:** معظمها **تأخر توثيق** في أقسام «تفصيل صفحة بصفحة» (لا تزال تعكس حالة ما قبل 2026-06-09)، وليس غياب التنفيذ. التحقق أُجري بقراءة `android-poc/feature/*` و `MovitInnerHost.kt`.
-- **Gradle (تحقق 15/16/17):** `:feature:library:testDebugUnitTest` (42) · `:feature:reports:testDebugUnitTest` — **BUILD SUCCESSFUL** (2026-06-10).
+- **Gradle (تحقق 15/16/17):** `:feature:library:testDebugUnitTest` · `:feature:reports:testDebugUnitTest` — **BUILD SUCCESSFUL** (2026-06-10). أعداد `@Test`: [`generated/Docs-Stats-Snapshot.md`](generated/Docs-Stats-Snapshot.md).
 - **Gradle (7 موديولات feature):** `:feature:home|train|explore|reports|library|account|shell:testDebugUnitTest` — **BUILD SUCCESSFUL** (2026-06-10).
 - **تحقق 10–14 (2026-06-10):** `:feature:account:testDebugUnitTest` · `:feature:shell:testDebugUnitTest` — **BUILD SUCCESSFUL** بعد إصلاحات auth i18n · assessment a11y · shell onboarding routing tests.
 - **مؤجّل صراحةً لـ Phase 07:** كاميرا/pose · `TrainingActivity` workout-mode · `LegacyTrainingLauncher` كجسر مؤقت لـ Prepare/Explore/Run.
@@ -75,10 +77,10 @@
 | **07** | Program detail | `ProgramDetailActivity`                                | `ProgramDetailScreen`       | **~72%**    | `WorkoutSessionRoute`     |
 | **08** | Home           | `HomeFragment`                                         | `MovitHomeScreen`           | ~92% scorecard | ✅ `MovitHomeApiBridge`    |
 | **09** | Reports        | `HistoryFragment` + 3 tabs                             | `MovitReportsScreen`        | ~85% scorecard | ✅ `MovitReportsApiBridge` |
-| **10** | Auth           | `Splash/SignIn/SignUp`                                 | `MovitAuthScreen` (`feature:account`) | ~86% scorecard | ✅ Ktor auth API · `auth_error_*` i18n |
+| **10** | Auth           | `Splash/SignIn/SignUp`                                 | `MovitAuthScreen` (`feature:account`) | **85%** scorecard | ✅ Ktor auth API · `auth_error_*` i18n |
 | **11** | Profile        | `ProfileActivity`                                      | `MovitProfileScreen` (تبويب Account) | ~86% scorecard | ✅ session read |
 | **12** | Onboarding     | `ProfileOnboardingActivity` (7 خطوات)                  | `MovitOnboardingScreen`     | ~85% scorecard | ✅ training-profile PUT |
-| **13** | Assessment     | `PreScreening` → `AssessmentSession`                   | `MovitAssessmentScreen` (بدون كاميرا) | ~75% scorecard | PAR-Q×7 · API/fake · كاميرا **Phase 07** |
+| **13** | Assessment     | `PreScreening` → `AssessmentSession`                   | `MovitAssessmentScreen` (بدون كاميرا) | **74%** scorecard | PAR-Q×7 · API/fake · كاميرا **Phase 07** |
 | **14** | Level & plan   | `LevelProfileActivity` + `PlanOverviewActivity`        | `MovitLevelScreen`          | ~68% scorecard | ✅ / fake fallback |
 | **15** | Program flow   | `ProgramList/Day/WeeklyReport`                         | `ProgramList/WeekPlan/WeeklyReport` | ~77% scorecard | **preview/fake (مفتوح)** |
 | **16** | Workout flow   | `WorkoutCustomize` → `WorkoutRun` → `TrainingActivity` | `WorkoutCustomizeScreen` · `WorkoutRunScreen` | ~66% scorecard | **`LegacyTrainingLauncher` (مفتوح — Phase 07)** |

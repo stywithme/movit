@@ -1,5 +1,6 @@
 package com.movit.feature.explore
 
+import com.movit.core.model.ExploreItemType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue

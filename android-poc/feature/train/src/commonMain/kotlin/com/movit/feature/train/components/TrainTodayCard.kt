@@ -134,6 +134,7 @@ private fun SessionList(
                     expandedIndex = if (expandedIndex == index) -1 else index
                 },
                 isCompleted = session.isCompleted,
+                completedLabel = if (session.isCompleted) movitText("session_done") else null,
                 thumbnailUrl = session.thumbnailUrl,
                 thumbnailLabel = session.title.take(1).uppercase(),
                 actionLabel = session.actionLabel,

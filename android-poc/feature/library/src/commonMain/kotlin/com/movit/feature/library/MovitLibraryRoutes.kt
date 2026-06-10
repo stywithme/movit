@@ -76,7 +76,9 @@ fun ProgramDetailRoute(
         onTabSelected = viewModel::onTabSelected,
         onWeekSelected = viewModel::onWeekSelected,
         onStartProgram = {
-            viewModel.sessionKeyForStart()?.let(onStartSession)
+            scope.launch {
+                viewModel.startProgramAndGetSessionKey()?.let(onStartSession)
+            }
         },
         onEditReasonSelected = viewModel::onEditReasonSelected,
         onEditScopeSelected = viewModel::onEditScopeSelected,

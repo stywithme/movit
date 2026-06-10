@@ -121,7 +121,12 @@ fun ProgramDetailScreen(
     ) { padding ->
         when {
             state.isLoading -> MovitLoadingState(message = movitText("program_loading"))
-            state.errorMessage != null -> MovitErrorState(message = state.errorMessage, onRetry = onRetry)
+            state.errorMessage != null -> MovitErrorState(
+                title = movitText("common_error_title"),
+                message = state.errorMessage,
+                actionLabel = movitText("common_retry"),
+                onRetry = onRetry,
+            )
             else -> {
                 Column(
                     modifier = Modifier

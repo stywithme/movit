@@ -1,7 +1,7 @@
 package com.movit.feature.library
 
-import com.movit.feature.explore.ExploreItemType
-import com.movit.feature.explore.ExploreItemUi
+import com.movit.core.model.ExploreItemType
+import com.movit.core.model.ExploreItemUi
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull

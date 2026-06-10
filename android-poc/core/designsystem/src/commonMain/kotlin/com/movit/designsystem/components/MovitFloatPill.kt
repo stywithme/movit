@@ -20,15 +20,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.movit.designsystem.MovitElevation
 import com.movit.designsystem.MovitRadius
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.movitColors
+import com.movit.designsystem.movitShadow
 
 enum class MovitFloatPillVariant {
     /** Solid ink chip — default floating header control. */
@@ -75,7 +76,7 @@ fun MovitFloatPill(
     Surface(
         onClick = onClick,
         modifier = modifier
-            .shadow(elevation = 14.dp, shape = shape, ambientColor = movit.shadow, spotColor = movit.shadow)
+            .movitShadow(elevation = MovitElevation.xl, shape = shape)
             .then(if (iconOnly) Modifier.size(46.dp) else Modifier.height(46.dp).widthIn(min = 46.dp)),
         shape = shape,
         color = container,

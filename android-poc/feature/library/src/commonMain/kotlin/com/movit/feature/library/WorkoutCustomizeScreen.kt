@@ -70,7 +70,12 @@ fun WorkoutCustomizeScreen(
     ) { padding ->
         when {
             state.isLoading -> MovitLoadingState(message = movitText("workout_flow_loading"))
-            state.errorMessage != null -> MovitErrorState(message = state.errorMessage, onRetry = onRetry)
+            state.errorMessage != null -> MovitErrorState(
+                title = movitText("common_error_title"),
+                message = state.errorMessage,
+                actionLabel = movitText("common_retry"),
+                onRetry = onRetry,
+            )
             config != null -> {
                 Column(
                     modifier = Modifier

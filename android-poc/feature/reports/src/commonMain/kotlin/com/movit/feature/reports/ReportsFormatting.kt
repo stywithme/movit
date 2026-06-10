@@ -1,5 +1,8 @@
 package com.movit.feature.reports
 
+import kotlin.math.abs
+import kotlin.math.round
+
 internal object ReportsFormatting {
 
     fun formatReps(reps: Int): String {
@@ -17,6 +20,13 @@ internal object ReportsFormatting {
         } else {
             volume.toInt().toString()
         }
+    }
+
+    fun formatOneDecimal(value: Float): String {
+        val tenths = round(value * 10f).toInt()
+        val intPart = tenths / 10
+        val decPart = abs(tenths % 10)
+        return "$intPart.$decPart"
     }
 
     fun formatDuration(durationMs: Long): String {

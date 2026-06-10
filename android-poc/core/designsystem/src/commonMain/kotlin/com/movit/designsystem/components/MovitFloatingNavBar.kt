@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.movit.designsystem.MovitElevation
 import com.movit.designsystem.MovitRadius
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.movitColors
@@ -59,7 +60,7 @@ fun MovitFloatingNavBar(
         shape = RoundedCornerShape(MovitRadius.full),
         color = movit.ink,
         contentColor = movit.onInk,
-        shadowElevation = 16.dp,
+        shadowElevation = MovitElevation.xxl,
     ) {
         Row(
             modifier = Modifier.padding(horizontal = MovitSpacing.sm),

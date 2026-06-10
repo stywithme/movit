@@ -6,9 +6,11 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
-// Read API config from local.properties (like .env for Android)
+// Read API config from local.properties (machine-specific) with optional api.properties defaults.
 val localProps = rootProject.file("local.properties")
+val apiPropsFile = rootProject.file("api.properties")
 val apiProps = Properties()
+if (apiPropsFile.exists()) apiProps.load(apiPropsFile.inputStream())
 if (localProps.exists()) apiProps.load(localProps.inputStream())
 val apiMode = apiProps.getProperty("api.mode", "local")
 val apiPort = apiProps.getProperty("api.port", "4000")
@@ -20,12 +22,12 @@ val movitShellLauncherEnabled =
 
 android {
     namespace = "com.trainingvalidator.poc"
-    compileSdk = 36
+    compileSdk = libs.versions.compile.sdk.get().toInt()
 
     defaultConfig {
         applicationId = "com.trainingvalidator.poc"
-        minSdk = 24
-        targetSdk = 36
+        minSdk = libs.versions.min.sdk.get().toInt()
+        targetSdk = libs.versions.target.sdk.get().toInt()
         versionCode = 1
         versionName = "1.0-poc"
 
@@ -51,7 +53,7 @@ android {
             )
         }
     }
-    
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -85,9 +87,6 @@ kotlin {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }
-
-/** LiteRT artifacts — keep version in one place */
-val litertVersion = "1.4.0"
 
 dependencies {
     // Secure auth tokens (EncryptedSharedPreferences) — production path via AuthManager
@@ -129,31 +128,29 @@ dependencies {
 
     implementation(project(":core:training-engine"))
 
-    // Core Android — March 2026
-    implementation("androidx.core:core-ktx:1.17.0")
-    implementation("androidx.appcompat:appcompat:1.7.1")
-    implementation("com.google.android.material:material:1.13.0")
-    implementation("androidx.constraintlayout:constraintlayout:2.2.1")
-    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
-    implementation("androidx.exifinterface:exifinterface:1.3.7")
+    // Core Android
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.material)
+    implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.swiperefreshlayout)
+    implementation(libs.androidx.exifinterface)
 
-    // Lifecycle, Activity & Fragment — March 2026
-    implementation("androidx.activity:activity-ktx:1.12.4")
-    implementation("androidx.fragment:fragment-ktx:1.8.9")
-    val lifecycleVersion = "2.10.0"
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:$lifecycleVersion")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycleVersion")
-    implementation("androidx.lifecycle:lifecycle-process:$lifecycleVersion")
+    // Lifecycle, Activity & Fragment
+    implementation(libs.androidx.activity.ktx)
+    implementation(libs.androidx.fragment.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.process)
 
-    // CameraX — Feb 2026 stable
-    val cameraxVersion = "1.5.3"
-    implementation("androidx.camera:camera-core:$cameraxVersion")
-    implementation("androidx.camera:camera-camera2:$cameraxVersion")
-    implementation("androidx.camera:camera-lifecycle:$cameraxVersion")
-    implementation("androidx.camera:camera-view:$cameraxVersion")
+    // CameraX
+    implementation(libs.camera.core)
+    implementation(libs.camera.camera2)
+    implementation(libs.camera.lifecycle)
+    implementation(libs.camera.view)
 
-    // MediaPipe Pose Landmarker — Apr 2026 (0.10.33 ships 16KB-aligned native libs)
-    implementation("com.google.mediapipe:tasks-vision:0.10.33") {
+    // MediaPipe Pose Landmarker — excludes legacy TFLite (LiteRT below)
+    implementation(libs.mediapipe.tasks.vision) {
         exclude(group = "org.tensorflow", module = "tensorflow-lite")
         exclude(group = "org.tensorflow", module = "tensorflow-lite-api")
         exclude(group = "org.tensorflow", module = "tensorflow-lite-gpu")
@@ -161,69 +158,62 @@ dependencies {
         exclude(group = "com.google.ai.edge.litert", module = "litert-support-api")
     }
     // LiteRT replaces legacy TFLite — 16KB page-size aligned.
-    // Provides org.tensorflow.lite.* (Interpreter, etc.) for MediaPipe + Posture/Elbow MLP classifiers.
-    // Do NOT add org.tensorflow:tensorflow-lite alongside — duplicate classes at merge time.
-    // litert-support-api shares manifest namespace with litert-support (AGP warns / AGP 9 can fail);
-    // exclude the API artifact when pulled transitively — implementation stays in litert-support.
-    implementation("com.google.ai.edge.litert:litert:$litertVersion") {
+    implementation(libs.litert) {
         exclude(group = "com.google.ai.edge.litert", module = "litert-support-api")
     }
-    implementation("com.google.ai.edge.litert:litert-api:$litertVersion") {
+    implementation(libs.litert.api) {
         exclude(group = "com.google.ai.edge.litert", module = "litert-support-api")
     }
-    implementation("com.google.ai.edge.litert:litert-support:$litertVersion") {
+    implementation(libs.litert.support) {
         exclude(group = "com.google.ai.edge.litert", module = "litert-support-api")
     }
 
     // Portrait matting (MODNet / U²-Net ONNX) for report hero background effect
-    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.22.0")
+    implementation(libs.onnxruntime.android)
 
     // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    implementation(libs.kotlinx.coroutines.android)
 
     // JSON
-    implementation("com.google.code.gson:gson:2.13.2")
+    implementation(libs.gson)
 
     // Image Loading — Coil 2.x (View-based; Coil 3.x is Compose-only)
-    implementation("io.coil-kt:coil:2.7.0")
-    implementation("io.coil-kt:coil-gif:2.7.0")
+    implementation(libs.coil)
+    implementation(libs.coil.gif)
 
     // Networking — Retrofit 3 + OkHttp 4 (stable)
-    val retrofitVersion = "3.0.0"
-    val okhttpVersion = "4.12.0"
-    implementation("com.squareup.retrofit2:retrofit:$retrofitVersion")
-    implementation("com.squareup.retrofit2:converter-gson:$retrofitVersion")
-    implementation("com.squareup.okhttp3:okhttp:$okhttpVersion")
-    implementation("com.squareup.okhttp3:logging-interceptor:$okhttpVersion")
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging)
 
     // Subscriptions: MyFatoorah return URL (Custom Tabs) + Google Play Billing
-    implementation("androidx.browser:browser:1.8.0")
-    implementation("com.android.billingclient:billing-ktx:6.2.1")
+    implementation(libs.androidx.browser)
+    implementation(libs.billing.ktx)
 
     // Charts
-    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    implementation(libs.mpandroidchart)
 
     // ViewPager2
-    implementation("androidx.viewpager2:viewpager2:1.1.0")
+    implementation(libs.androidx.viewpager2)
 
     // CardView
-    implementation("androidx.cardview:cardview:1.0.0")
+    implementation(libs.androidx.cardview)
 
     // Google Sign-In / Credential Manager
-    implementation("androidx.credentials:credentials:1.5.0")
-    implementation("androidx.credentials:credentials-play-services-auth:1.5.0")
-    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
 
-    // Media3 (ExoPlayer) — Feb 2026 stable
-    val media3Version = "1.9.2"
-    implementation("androidx.media3:media3-exoplayer:$media3Version")
-    implementation("androidx.media3:media3-ui:$media3Version")
-    implementation("androidx.media3:media3-common:$media3Version")
+    // Media3 (ExoPlayer)
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
+    implementation(libs.androidx.media3.common)
 
     // Testing
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("org.robolectric:robolectric:4.16")
-    testImplementation("androidx.test:core:1.6.1")
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+    testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.espresso.core)
 }

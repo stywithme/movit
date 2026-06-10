@@ -12,7 +12,7 @@ on:
 
 jobs:
   ios-compile:
-    name: Compile KMP iOS targets
+    name: KMP iOS compile + link + tests
     runs-on: macos-14
     defaults:
       run:
@@ -21,6 +21,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -31,14 +36,78 @@ jobs:
       - name: Gradle cache
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Compile iOS targets
+      - name: Compile iOS device + simulator Kotlin
         run: |
           chmod +x ./gradlew
           ./gradlew --console=plain \
-            :shared:compileKotlinIosX64 \
-            :shared:compileKotlinIosSimulatorArm64 \
-            :core:designsystem:compileKotlinIosSimulatorArm64 \
-            :feature:explore:compileKotlinIosSimulatorArm64 \
-            :feature:home:compileKotlinIosSimulatorArm64 \
+            :feature:shell:compileKotlinIosArm64 \
             :feature:shell:compileKotlinIosSimulatorArm64 \
+            :core:data:compileKotlinIosArm64 \
+            :core:data:compileKotlinIosSimulatorArm64 \
+            :core:network:compileKotlinIosArm64 \
+            :core:network:compileKotlinIosSimulatorArm64 \
+            :feature:account:compileKotlinIosSimulatorArm64 \
+            :feature:library:compileKotlinIosSimulatorArm64 \
+            :feature:reports:compileKotlinIosSimulatorArm64
+
+      - name: Link MovitApp debug frameworks
+        run: |
+          ./gradlew --console=plain \
+            :feature:shell:linkDebugFrameworkIosArm64 \
             :feature:shell:linkDebugFrameworkIosSimulatorArm64
+
+      - name: Run KMP iOS simulator unit tests
+        run: |
+          ./gradlew --console=plain \
+            :shared:iosSimulatorArm64Test \
+            :core:data:iosSimulatorArm64Test \
+            :core:network:iosSimulatorArm64Test \
+            :core:resources:iosSimulatorArm64Test \
+            :feature:shell:iosSimulatorArm64Test \
+            :feature:account:iosSimulatorArm64Test \
+            :feature:library:iosSimulatorArm64Test
+
+  ios-xcodebuild:
+    name: Build iosApp (Xcode)
+    runs-on: macos-14
+    needs: ios-compile
+    defaults:
+      run:
+        working-directory: android-poc
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: android-poc/iosApp
+        run: xcodegen generate
+
+      - name: Build iosApp for iOS Simulator
+        working-directory: android-poc/iosApp
+        run: |
+          xcodebuild \
+            -project iosApp.xcodeproj \
+            -scheme iosApp \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+            CODE_SIGNING_ALLOWED=NO \
+            build

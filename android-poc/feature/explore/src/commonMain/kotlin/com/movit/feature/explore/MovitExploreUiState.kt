@@ -1,5 +1,7 @@
 package com.movit.feature.explore
 
+import com.movit.core.model.ExploreItemUi
+
 data class MovitExploreUiState(
     val isLoading: Boolean = false,
     val query: String = "",

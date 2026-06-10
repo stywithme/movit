@@ -27,11 +27,12 @@ import com.movit.designsystem.movitColors
 @Composable
 fun MovitAppHeader(
     modifier: Modifier = Modifier,
-    greeting: String = "Good morning",
-    userName: String = "Mahmoud",
+    greeting: String = "",
+    userName: String = "",
     pageTitle: String? = null,
     pageSubtitle: String? = null,
     showNotification: Boolean = true,
+    hasUnreadNotifications: Boolean = false,
     onNotificationClick: (() -> Unit)? = null,
     onProfileClick: (() -> Unit)? = null,
     actions: @Composable () -> Unit = {},
@@ -103,14 +104,16 @@ fun MovitAppHeader(
                 IconButton(onClick = { onNotificationClick?.invoke() }) {
                     Icon(Icons.Default.Notifications, contentDescription = "Notifications")
                 }
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(top = 10.dp, end = 10.dp)
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.tertiary),
-                )
+                if (hasUnreadNotifications) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(top = 10.dp, end = 10.dp)
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.tertiary),
+                    )
+                }
             }
         }
     }

@@ -1,8 +1,11 @@
 package com.trainingvalidator.poc.analysis
 
+import com.movit.core.training.geometry.JointAngleCalculator
+import com.movit.core.training.geometry.PosePoint2D
+import com.movit.core.training.geometry.PosePoint3D
 import com.trainingvalidator.poc.pose.BodyLandmarks
-import kotlin.math.atan2
 import kotlin.math.abs
+import kotlin.math.atan2
 
 /**
  * AngleCalculator - Calculates joint angles from pose landmarks
@@ -21,63 +24,22 @@ object AngleCalculator {
     private fun calculateAngleFromCoords(
         ax: Float, ay: Float,
         bx: Float, by: Float,
-        cx: Float, cy: Float
-    ): Double {
-        // Vector BA
-        val baX = ax - bx
-        val baY = ay - by
-        
-        // Vector BC
-        val bcX = cx - bx
-        val bcY = cy - by
-        
-        // Calculate angle using atan2
-        val angleA = atan2(baY.toDouble(), baX.toDouble())
-        val angleC = atan2(bcY.toDouble(), bcX.toDouble())
-        
-        var angle = Math.toDegrees(angleA - angleC)
-        
-        // Normalize to 0-180 range
-        angle = abs(angle)
-        if (angle > 180) {
-            angle = 360 - angle
-        }
-        
-        return angle
-    }
+        cx: Float, cy: Float,
+    ): Double = JointAngleCalculator.angleDegrees(
+        pointA = PosePoint2D(ax, ay),
+        pointB = PosePoint2D(bx, by),
+        pointC = PosePoint2D(cx, cy),
+    )
 
-    /**
-     * Calculate 3D angle between three points (in degrees)
-     */
     private fun calculateAngleFromCoords3D(
         ax: Float, ay: Float, az: Float,
         bx: Float, by: Float, bz: Float,
-        cx: Float, cy: Float, cz: Float
-    ): Double {
-        // Vector BA
-        val baX = ax - bx
-        val baY = ay - by
-        val baZ = az - bz
-        
-        // Vector BC
-        val bcX = cx - bx
-        val bcY = cy - by
-        val bcZ = cz - bz
-        
-        // Dot product
-        val dot = baX * bcX + baY * bcY + baZ * bcZ
-        
-        // Magnitudes
-        val magBA = kotlin.math.sqrt(baX * baX + baY * baY + baZ * baZ)
-        val magBC = kotlin.math.sqrt(bcX * bcX + bcY * bcY + bcZ * bcZ)
-        
-        if (magBA == 0f || magBC == 0f) return 0.0
-        
-        val cosAngle = dot / (magBA * magBC)
-        val angle = Math.toDegrees(kotlin.math.acos(cosAngle.coerceIn(-1f, 1f).toDouble()))
-        
-        return angle
-    }
+        cx: Float, cy: Float, cz: Float,
+    ): Double = JointAngleCalculator.angleDegrees3D(
+        pointA = PosePoint3D(ax, ay, az),
+        pointB = PosePoint3D(bx, by, bz),
+        pointC = PosePoint3D(cx, cy, cz),
+    )
 
     /**
      * Calculate angle from SmoothedLandmark (processed output)

@@ -29,7 +29,7 @@ class AccountSyncRepositorySecureSessionTest {
                     headers = headersOf(HttpHeaders.ContentType, "application/json"),
                 )
             }
-            val repository = AccountSyncRepository(testMobileApi(engine), { platform })
+            val repository = AccountSyncRepository(testMobileApi(engine, platform), { platform })
 
             platform.persistAuthSession(sampleSnapshot())
             assertEquals("access-1", secure.readAccessToken())
@@ -65,6 +65,18 @@ class AccountSyncRepositorySecureSessionTest {
             secure.readAccessToken()?.let { "Bearer $it" }
 
         override fun refreshToken(): String? = secure.readRefreshToken()
+
+        override fun tokenExpiresAtEpochMs(): Long = secure.readExpiresAtEpochMs()
+
+        override fun updateAuthTokens(accessToken: String, refreshToken: String, expiresAtEpochMs: Long) {
+            secure.saveTokens(
+                SecureAuthTokens(
+                    accessToken = accessToken,
+                    refreshToken = refreshToken,
+                    expiresAtEpochMs = expiresAtEpochMs,
+                ),
+            )
+        }
 
         override fun persistAuthSession(snapshot: AuthSessionSnapshot) {
             secure.saveTokens(

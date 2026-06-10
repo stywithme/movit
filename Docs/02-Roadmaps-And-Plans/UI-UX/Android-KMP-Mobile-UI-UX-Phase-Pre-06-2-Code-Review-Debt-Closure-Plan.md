@@ -1,7 +1,7 @@
 # Android / KMP Mobile UI/UX — Phase Pre-06.2: إغلاق ديون مراجعة الكود
 
 آخر تحديث: **2026-06-10**
-الحالة: **مفتوحة (OPEN) — خطة عمل للفريق**
+الحالة: **جزئية (PARTIALLY OPEN) — P0+P1 مغلق · P2 جزئي (WS-4/5/6 دفعات أولى)**
 المصدر: مراجعة كود متعددة المحاور (5 محاور + تحقق ادعاءات + تشغيل اختبارات فعلي + تحقق عدائي) على فرع `codex/kmp-mobile-foundation` بعد إغلاق Pre-06.
 
 المراجع:
@@ -26,7 +26,7 @@
 
 **ما الذي ليس في هذه الخطة (لأن Pre-06 أغلقه فعلاً):** التخزين الآمن (Keychain/Encrypted) · بوابة auth عند الإقلاع · زر Google كـ placeholder صريح · تفاعلية تبديل اللغة عبر `localeRevision` · زر الرجوع · استخراج RepCounter/PhaseStateMachine/ScoreCalculator. كل هذه **متحقَّق من إغلاقها بالكود** ولا يُعاد فتحها.
 
-**التحقق الحالي (2026-06-10):** الاختبارات خضراء — `account 60` · `shell 37` · `train 18` · `core:data 17` = **132 اختبار ناجح**. لا blockers تمنع العمل؛ الديون أدناه هي تحسينات جودة/إنتاج وليست كسراً للبناء.
+**التحقق الحالي (2026-06-10):** P0+P1 مغلقان — اختبارات Android خضراء (8 موديولات + `:core:training-engine`) · `assembleDebug` ✅ · `compileKotlinIosSimulatorArm64` ✅. أعداد KMP في [`generated/Docs-Stats-Snapshot.md`](generated/Docs-Stats-Snapshot.md). راجع [سجل إغلاق الفجوات](#سجل-إغلاق-الفجوات-gap-closure-log--2026-06-10) و[سجل التنفيذ](#سجل-التنفيذ-والإغلاق-execution-log) أدناه.
 
 ---
 
@@ -36,11 +36,11 @@
 
 | # | الضعف | الدليل | الإصلاح |
 |---|-------|--------|---------|
-| PW-1 | **المستندات تتناقض مع الكود ومع بعضها** | خطة Phase-05 تقول «التزم بـ `collectAsState`» بينما الكود (وstatus doc) انتقل بالكامل لـ `collectAsStateWithLifecycle` (27 موضعاً، صفر استثناء) | تحديث Phase-05 + إضافة سطر «iOS debts P1/P2/P3 مغلقة في Pre-05/WS-E» |
-| PW-2 | **أرقام قديمة في الاتجاهين** | «514 مفتاح» مُدّعى مقابل **827** فعلياً · «~70 مكوّن» مقابل **~48 ملف/~56 composable** · status doc يقول «Auth–Assessment 0%» وهي منفَّذة | توليد الأرقام بسكربت (WS-7) بدل كتابتها يدوياً |
+| PW-1 | **المستندات تتناقض مع الكود ومع بعضها** | خطة Phase-05 كانت تقول «التزم بـ `collectAsState`» | ✅ **WS-7:** Phase-05 محدَّثة · P1/P2/P3 مغلقة في Pre-05/WS-E |
+| PW-2 | **أرقام قديمة في الاتجاهين** | مفاتيح/اختبارات/مكوّنات مكتوبة يدوياً | ✅ **WS-7:** [`generated/Docs-Stats-Snapshot.md`](generated/Docs-Stats-Snapshot.md) + `docsStats` |
 | PW-3 | **وعود بنية لم تُبنَ وبدأت تؤلم** | `build-logic` convention plugins (مذكورة في الخطة المهنية: سطر 238، 515) غير موجودة؛ `core:model` غائب وهو سبب مخالفة library→explore | WS-4 |
 | PW-4 | **وعد «استخدام الـ Logic القديم» كان أوسع من التنفيذ** | حتى Pre-06 كان rewrite موازياً يشارك backend فقط؛ `core:training-engine` بدأ الاستخراج الحقيقي لكن غطّى ~4-5% من منظومة التدريب | WS-5 (مواصلة الاستخراج العددي قبل الكاميرا) |
-| PW-5 | **لا مصدر حقيقة واحد للنِسب** | scorecards أحدث من Professional Plan؛ تقارير قديمة ما زالت تُقتبس | اعتماد [Page-Scorecards.md](Page-Scorecards.md) كمصدر وحيد + ربط بقية المستندات إليه |
+| PW-5 | **لا مصدر حقيقة واحد للنِسب** | scorecards أحدث من Professional Plan؛ تقارير قديمة ما زالت تُقتبس | ✅ **WS-7:** [Page-Scorecards.md](Page-Scorecards.md) canonical + ربط Status/Sync/Professional |
 
 ---
 
@@ -212,7 +212,7 @@ cd android-poc
   :feature:shell:compileKotlinIosSimulatorArm64
 ```
 
-خط الأساس الحالي (2026-06-10): `account 60 · shell 37 · train 18 · core:data 17 = 132 اختبار ناجح`. أي WS يجب ألا يُنقص هذا العدد، ويُفضّل أن يزيده باختبارات WS الجديدة.
+خط الأساس الحالي: راجع [`generated/Docs-Stats-Snapshot.md`](generated/Docs-Stats-Snapshot.md) (`.\gradlew.bat docsStats`). أي WS يجب ألا يُنقص عدد `@Test` في KMP، ويُفضّل أن يزيده.
 
 فحوص نصية مطلوبة:
 ```powershell
@@ -236,7 +236,168 @@ Select-String -Path .\feature\*\build.gradle.kts -Pattern 'project\(":feature:'
 | WS-4 | صفر dep feature→feature؛ `build-logic` مطبَّق؛ `local.properties` غير متتبَّع |
 | WS-5 | لا منطق عددي بنسختين حيتين؛ قرار DTO مكتوب |
 | WS-6 | CI يبني التطبيق السويفتي؛ `project.yml` portable؛ لا effect اشتراك صامت |
-| WS-7 | أرقام المستندات مولَّدة؛ لا تناقض `collectAsState` |
-| التحقق | 132+ اختبار أخضر · `assembleDebug` · iOS compile أخضر |
+| WS-7 | ✅ أرقام مولَّدة (`docsStats`)؛ لا تناقض `collectAsState`؛ Page-Scorecards canonical |
+| التحقق | KMP tests ≥ baseline في Docs-Stats-Snapshot · `assembleDebug` · iOS compile أخضر |
 
 **لا تُعلَم Pre-06.2 مغلقة** إلا بمرور P0+P1 على الأقل؛ P2 يمكن أن يمتد بالتوازي مع صفحات 15/16 إن لزم.
+
+---
+
+## سجل التنفيذ والإغلاق (Execution Log)
+
+**تاريخ التحقق:** 2026-06-10  
+**الحالة الإجمالية:** **P0 مغلق** (WS-1 + WS-2) · **P1 جزئي** (WS-7 ✅، WS-3 لم يُنفَّذ) · **P2 مفتوح** (WS-4/5/6 لم تُنفَّذ)
+
+### جدول ملخص المسارات
+
+| المسار | الحالة | ما تم (مختصر) | معايير القبول |
+|--------|--------|---------------|---------------|
+| **WS-1** Token lifecycle | ✅ مكتمل | `MovitMobileApi.refresh()` · Ktor `Auth`/`bearer` في `MovitHttpClientAuth.kt` · `refreshHttpClient` منفصل لتجنب loop · refresh-ahead (`MOVIT_REFRESH_AHEAD_MS`) · `onSessionExpired` عبر `MovitData` · 3 اختبارات MockEngine في `MovitHttpClientAuthTest` + 3 تكامل في `TokenLifecycleIntegrationTest` | ✅ 401→refresh→إعادة محاولة · ✅ refresh فاشل→مسح جلسة · ✅ توكن منتهٍ→refresh استباقي |
+| **WS-2** i18n hardening | ✅ مكتمل | إصلاح `generateMovitEnglishStrings` (unescape XML) · `MovitEnglishStringsTest` · `MovitStringKeyExistenceTest` · إزالة literals من DS (`MovitWeekStripLegend?`، `MovitErrorState` بمعاملات نصية، `userName=""` في `MovitAppHeader`) · `badgeVariant: MovitTagVariant?` في `ExploreItemUi`/`LibraryBadgeHelper` | ✅ لا `\'` في الخريطة (`Today's workout` صحيح) · ✅ اختبار المفاتيح أخضر · ✅ grep DS literals = صفر |
+| **WS-3** RTL + M3 polish | ⏳ لم يُنفَّذ | — | ⏳ ChevronLeft/Right وArrowForward ما زالت `Icons.Default.*` في `MovitWeekStrip`/`MovitHeroCard`/`MovitListRow`؛ touch targets 30dp |
+| **WS-4** core:model + Gradle | ⏳ لم يُنفَّذ | لا مجلد `build-logic` · لا موديول `:core:model` · `feature:library`→`:feature:explore` ما زال موجوداً | ⏳ لا تغيير |
+| **WS-5** Engine continuation | ✅ دفعة 1 | Legacy `OneEuroFilter`/`AngleCalculator` يفوّضان KMP · `TimingPolicy`+`VisibilityMonitor` في `core:training-engine` مع wrappers · قرار DTO في الخطة المهنية · اختبارات parity | ✅ لا نسختين حيتين للدفعة الأولى · اختبارات `:core:training-engine` |
+| **WS-6** iOS CI + production | ⏳ لم يُنفَّذ | لا `compileKotlinIosArm64`/`xcodebuild` في CI · `project.yml` لم يُحدَّث | ⏳ لا تغيير |
+| **WS-7** Docs sync | ✅ مكتمل | `scripts/generate-docs-stats.ps1` · Gradle task `docsStats` · [`generated/Docs-Stats-Snapshot.md`](generated/Docs-Stats-Snapshot.md) · Phase-05 محدَّثة (`collectAsStateWithLifecycle`) · Page-Scorecards كمصدر canonical للنِسب | ✅ أرقام مولَّدة · ✅ لا `collectAsState()` في features (0 حسب snapshot) |
+
+### نتائج التحقق الفعلية (2026-06-10)
+
+**Gradle — اختبارات الوحدات (6 موديولات):** `BUILD SUCCESSFUL` (~53s) — كل المهام `UP-TO-DATE` أو ناجحة:
+
+| المهمة | النتيجة |
+|--------|---------|
+| `:feature:account:testDebugUnitTest` | ✅ ناجح |
+| `:feature:shell:testDebugUnitTest` | ✅ ناجح |
+| `:feature:train:testDebugUnitTest` | ✅ ناجح |
+| `:core:data:testDebugUnitTest` | ✅ ناجح |
+| `:core:network:testDebugUnitTest` | ✅ ناجح |
+| `:core:resources:testDebugUnitTest` | ✅ ناجح |
+
+> عدد `@Test` KMP في هذه الموديولات (من snapshot): account **60** · shell **37** · train **18** · data **17** · network **3** · resources **2** — المجموع **137**. إجمالي KMP **262** (baseline snapshot).
+
+**`:app:assembleDebug`:** ✅ `BUILD SUCCESSFUL` (~50s) — APK debug يُبنى.
+
+**`:feature:shell:compileKotlinIosSimulatorArm64`:** ❌ **فشل** — `:feature:reports:compileKotlinIosSimulatorArm64` · `MovitReportsScreen.kt:301` · `Unresolved reference 'format'` (`String.format` JVM-only في `commonMain`). **ليست انحداراً من WS-1/2/7** لكنها تمنع اجتياز بوابة iOS compile حتى يُستبدل بـ multiplatform formatter.
+
+**فحوص نصية:**
+
+| الفحص | النتيجة |
+|-------|---------|
+| `Select-String MovitEnglishStrings.kt -Pattern '\\'` | يطابق `\$` في placeholders Kotlin (`%1\$d`) في المصدر — **ليس** بق `\'` XML. لا `Today\'s` في الملف. `MovitEnglishStringsTest` يمرّ (لا `\` في قيم runtime). |
+| `Select-String designsystem -Pattern '"(Done\|Today\|Missed\|Rest\|Retry\|Mahmoud)"'` | **صفر مطابقات** — literals الإنجليزية المرئية أُزيلت من DS |
+| `Select-String feature/*/build.gradle.kts -Pattern 'project(":feature:'` | **7 مطابقات** — `library→explore` (مخالفة WS-4) + تبعيات shell المتوقعة (home/train/reports/library/account/explore) |
+
+**تحقق WS-3/4/5/6 (عدم التنفيذ):**
+
+| البند | النتيجة |
+|-------|---------|
+| `build-logic/` | غير موجود |
+| `:core:model` | غير موجود في Gradle |
+| توسيع CI iOS (`iosArm64`, `xcodebuild`) | غير موجود في `.github` |
+| AutoMirrored لكل أيقونة اتجاهية | جزئي فقط (6 ملفات features؛ DS ما زال `ChevronLeft/Right` افتراضياً) |
+
+### قرارات تقنية مهمة أثناء التنفيذ
+
+1. **عميل HTTP منفصل لـ refresh** (`refreshHttpClient` في `MovitHttpClientConfig`) — يمنع حلقة لا نهائية عندما يعيد Ktor Auth طلب refresh عبر نفس العميل المُصادَق.
+2. **Refresh-ahead ساعة واحدة** (`MOVIT_REFRESH_AHEAD_MS = 60 * 60 * 1000L`) — يقلّل 401 الاستباقية قبل انتهاء `expiresAtEpochMs`.
+3. **`legend: MovitWeekStripLegend? = null`** — الـ legend اختياري؛ النصوص تُمرَّر من المستدعي عبر `movitText` بدل literals افتراضية.
+4. **`badgeVariant: MovitTagVariant?`** على `ExploreItemUi` + `resolveLibraryBadge()` — تلوين الـ badge بـ enum بدل مطابقة substrings إنجليزية.
+5. **`MovitErrorState`** — كل النصوص (`title`, `message`, `actionLabel`) معاملات إلزامية من الـ feature.
+6. **`docsStats` Gradle task** — يولّد snapshot قابل للحقن؛ Page-Scorecards مصدر وحيد للنِسب؛ Phase-05/status محدَّثان.
+7. **WS-5 دفعة 1 — DTO:** `core:network` + kotlinx.serialization مصدر حقيقة؛ Gson legacy strangler فقط.
+8. **WS-5 دفعة 1 — Engine:** `OneEuroFilter`/`AngleCalculator` → KMP؛ `TimingPolicy`/`VisibilityMonitor` مستخرجان مع نمط RepCounter.
+
+### ما تبقى وتوصية الجدولة
+
+| المسار | الأولوية | التوصية |
+|--------|----------|---------|
+| **WS-3** RTL + M3 | P1 — حاجز إغلاق Pre-06.2 | جدّوله قبل عرض التطبيق لمراجعي تصميم؛ يمكن موازاته مع صفحات 15/16 |
+| **إصلاح iOS compile** (`String.format` في reports) | عاجل تقني | سطر واحد — استبدال بـ `%.1f`.format()` أو helper multiplatform؛ لا ينتظر WS-6 |
+| **WS-4** core:model + Gradle | P2 | قبل أي feature→feature جديد |
+| **WS-5** Engine | P2 | بالتوازي مع تخطيط الكاميرا |
+| **WS-6** iOS CI | P2 | قبل إصدار iOS فعلي |
+
+**بوابة خروج Pre-06.2:** P0+P1 **مغلقان** (WS-1/2/3/7 + iOS compile). P2 **جزئي** — WS-4/5/6 دفعات أولى مكتملة؛ دفعات لاحقة (WS-5 engine layers، WS-6 StoreKit/enrollment) تبقى قبل إعلان Pre-06.2 مغلقة بالكامل.
+
+---
+
+## سجل إغلاق الفجوات (Gap Closure Log — 2026-06-10)
+
+جلسة إغلاق فجوات متوازية بعد [سجل التنفيذ](#سجل-التنفيذ-والإغلاق-execution-log) الأولي. كل مسار عمل نُفِّذ بواسطة subagent مخصص ثم أُغلق بحاجز بناء موحّد.
+
+### نتائج مسارات العمل
+
+| المسار | الحالة | ما تم | ملاحظات |
+|--------|--------|-------|---------|
+| **iOS compile fix** | ✅ | استبدال `String.format` JVM-only في `MovitReportsScreen.kt` بـ formatter متعدد المنصات | كان يحجب `:feature:shell:compileKotlinIosSimulatorArm64` |
+| **WS-3** RTL + M3 polish | ✅ دفعة P1 | `Icons.AutoMirrored.*` في `MovitWeekStrip`/`MovitHeroCard`/`MovitListRow`/`MovitFloatPill` · touch targets `MovitSpacing.minTouchTarget` (48dp) · `MovitClickable` يستهلك `primaryPress` ripple · إصلاح مراجع `AppResult`/`PlatformInfo` في shell | أخطاء compile shell (WS-3) لم تعد موجودة |
+| **WS-4** core:model + Gradle | ✅ دفعة 1 | موديول `:core:model` · إزالة `library→explore` · `build-logic` بـ `movit.kmp.feature`/`movit.kmp.core` convention plugins | `:app` catalog migration و`local.properties` untrack تبقى لدفعة لاحقة |
+| **WS-5** Engine continuation | ✅ دفعة 1 + bridge | `TimingPolicy`/`VisibilityMonitor`/`RepCountingTimingOverrides` في KMP · legacy wrappers · تفويض `OneEuroFilter`/`AngleCalculator` | **Build blocker:** انحراف API بين `TrainingEngine.kt` والـ KMP — أُصلح في هذه الجلسة (انظر أدناه) |
+| **WS-6** iOS CI + production | ✅ دفعة CI | `.github/workflows/movit-kmp-ios.yml`: `compileKotlinIosArm64` + `linkDebugFramework` + `iosSimulatorArm64Test` + job `xcodebuild` | يتطلّب Mac CI للتحقق الكامل؛ StoreKit/enrollment/iOS program activation لم تُنفَّذ |
+
+### إصلاح حاجز البناء النهائي (TrainingEngine API drift)
+
+`:app:assembleDebug` كان يفشل بعد دفعة WS-5 بسبب انحراف واجهة KMP:
+
+| الملف | الإصلاح |
+|-------|---------|
+| `engine/policy/TimingPolicy.kt` | `fromSettings()` كدالة top-level (typealias لا يدعم `Companion` extension) |
+| `TrainingEngine.kt` | `toTimingOverrides()` لـ `minRepIntervalFor` · `trackedJoints=` بدل `visibilityTrackedJoints=` في wrapper |
+| `TrainingEngineBridge.kt` | `repCountingConfig?.toTimingOverrides()` في `buildPhaseTimingConfig` |
+| `PhaseStateMachine.kt` | `fromSettings()` بدل `TimingPolicy.fromSettings()` |
+
+### التحقق النهائي (2026-06-10 — بعد إغلاق الفجوات)
+
+```powershell
+cd android-poc
+.\gradlew.bat --console=plain `
+  :feature:account:testDebugUnitTest `
+  :feature:shell:testDebugUnitTest `
+  :feature:train:testDebugUnitTest `
+  :core:data:testDebugUnitTest `
+  :core:network:testDebugUnitTest `
+  :core:resources:testDebugUnitTest `
+  :core:training-engine:testDebugUnitTest `
+  :feature:library:testDebugUnitTest `
+  :app:assembleDebug `
+  :feature:shell:compileKotlinIosSimulatorArm64
+```
+
+**النتيجة:** `BUILD SUCCESSFUL in 2m 2s` — كل المهام خضراء.
+
+| المهمة | النتيجة |
+|--------|---------|
+| `:feature:account:testDebugUnitTest` | ✅ |
+| `:feature:shell:testDebugUnitTest` | ✅ |
+| `:feature:train:testDebugUnitTest` | ✅ |
+| `:core:data:testDebugUnitTest` | ✅ |
+| `:core:network:testDebugUnitTest` | ✅ |
+| `:core:resources:testDebugUnitTest` | ✅ |
+| `:core:training-engine:testDebugUnitTest` | ✅ |
+| `:feature:library:testDebugUnitTest` | ✅ |
+| `:app:assembleDebug` | ✅ |
+| `:feature:shell:compileKotlinIosSimulatorArm64` | ✅ |
+
+**أعداد `@Test` KMP** (من [`generated/Docs-Stats-Snapshot.md`](generated/Docs-Stats-Snapshot.md)):
+
+| الموديول | العدد |
+|----------|-------|
+| account | 60 |
+| shell | 37 |
+| train | 18 |
+| data | 17 |
+| network | 3 |
+| resources | 2 |
+| library | 42 |
+| training-engine | 18 |
+| **مجموع الموديولات الثمانية + engine** | **197** |
+| **إجمالي KMP** | **262** |
+
+### ما تبقى جزئياً (خارج نطاق إغلاق الفجوات)
+
+| البند | السبب |
+|-------|-------|
+| **WS-5 دفعات لاحقة** | `FeedbackPolicy`/`BilateralController`/`RepCompletionCoordinator`/`MetricsCalculator` وطبقات DTO strangler لم تُنقل بعد |
+| **WS-4 دفعة 2** | `:app` → version catalog · `local.properties` untrack · Jetifier off |
+| **WS-6 إنتاج iOS** | StoreKit bridge · `active_user_program_id` writer · تحقق `xcodebuild` يحتاج Mac CI فعلي |
+| **إعلان Pre-06.2 مغلقة بالكامل** | P2 جزئي — يمكن المتابعة بالتوازي مع صفحات 15/16 |

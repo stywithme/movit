@@ -2,26 +2,32 @@ package com.movit.core.network
 
 import com.movit.core.network.dto.AuthApiResponse
 import com.movit.core.network.dto.AuthDataDto
+import com.movit.core.network.dto.AuthTokensDto
 import com.movit.core.network.dto.ExploreApiResponse
 import com.movit.core.network.dto.ForgotPasswordRequestDto
 import com.movit.core.network.dto.HomeApiResponse
 import com.movit.core.network.dto.EffectivePlanApiResponse
 import com.movit.core.network.dto.ActivePlanApiResponse
+import com.movit.core.network.dto.EnrollProgramRequestDto
+import com.movit.core.network.dto.MobileSyncApiResponse
 import com.movit.core.network.dto.LevelProfileApiResponse
 import com.movit.core.network.dto.ReassessmentListApiResponse
 import com.movit.core.network.dto.LoginRequestDto
 import com.movit.core.network.dto.LogoutRequestDto
 import com.movit.core.network.dto.MetricsApiResponse
+import com.movit.core.network.dto.RefreshTokenRequestDto
 import com.movit.core.network.dto.RegisterRequestDto
 import com.movit.core.network.dto.ReportsDashboardApiResponse
 import com.movit.core.network.dto.SubstitutionExercisesApiResponse
 import com.movit.core.network.dto.TrainingProfileApiResponse
 import com.movit.core.network.dto.TrainingProfilePutRequest
 import com.movit.core.network.dto.UpdateSettingsRequestDto
+import com.movit.core.network.dto.UserProgramExportDto
 import com.movit.core.network.dto.UserProgramUpdateRequest
 import com.movit.core.network.dto.UserPublicDto
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
@@ -43,6 +49,10 @@ class MovitMobileApi(
         return "$root/$normalized"
     }
 
+    private fun HttpRequestBuilder.applyBearerAuthorization(authorization: String?) {
+        authorization?.let { header("Authorization", it) }
+    }
+
     suspend fun fetchExplore(
         authorization: String?,
         updatedAfter: String?,
@@ -59,9 +69,9 @@ class MovitMobileApi(
         response.body<ExploreApiResponse>()
     }
 
-    suspend fun fetchHome(authorization: String): Result<HomeApiResponse> = runCatching {
+    suspend fun fetchHome(authorization: String? = null): Result<HomeApiResponse> = runCatching {
         val response = client.get(base("api/mobile/home")) {
-            header("Authorization", authorization)
+            applyBearerAuthorization(authorization)
         }
         if (!response.status.isSuccess()) {
             error("Home request failed (${response.status.value})")
@@ -70,13 +80,13 @@ class MovitMobileApi(
     }
 
     suspend fun fetchReportsDashboard(
-        authorization: String,
         programId: String?,
         period: String,
         source: String,
+        authorization: String? = null,
     ): Result<ReportsDashboardApiResponse> = runCatching {
         val response = client.get(base("api/mobile/reports/dashboard")) {
-            header("Authorization", authorization)
+            applyBearerAuthorization(authorization)
             programId?.let { parameter("programId", it) }
             parameter("period", period)
             parameter("source", source)
@@ -88,12 +98,12 @@ class MovitMobileApi(
     }
 
     suspend fun fetchExerciseMetrics(
-        authorization: String,
         programId: String,
         exerciseSlug: String,
+        authorization: String? = null,
     ): Result<MetricsApiResponse> = runCatching {
         val response = client.get(base("api/mobile/reports/metrics")) {
-            header("Authorization", authorization)
+            applyBearerAuthorization(authorization)
             parameter("programId", programId)
             parameter("scope", "exercise")
             parameter("exerciseSlug", exerciseSlug)
@@ -106,13 +116,13 @@ class MovitMobileApi(
     }
 
     suspend fun fetchEffectivePlan(
-        authorization: String,
         userProgramId: String,
         weekNumber: Int,
         dayNumber: Int,
+        authorization: String? = null,
     ): Result<EffectivePlanApiResponse> = runCatching {
         val response = client.get(base("api/mobile/user-programs/$userProgramId/effective-plan")) {
-            header("Authorization", authorization)
+            applyBearerAuthorization(authorization)
             parameter("week", weekNumber)
             parameter("day", dayNumber)
         }
@@ -123,12 +133,12 @@ class MovitMobileApi(
     }
 
     suspend fun fetchSubstitutionExercises(
-        authorization: String,
         slug: String,
         limit: Int = 12,
+        authorization: String? = null,
     ): Result<SubstitutionExercisesApiResponse> = runCatching {
         val response = client.get(base("api/mobile/exercises/substitutions")) {
-            header("Authorization", authorization)
+            applyBearerAuthorization(authorization)
             parameter("slug", slug)
             parameter("limit", limit)
         }
@@ -139,12 +149,12 @@ class MovitMobileApi(
     }
 
     suspend fun updateUserProgramCustomizations(
-        authorization: String,
         userProgramId: String,
         request: UserProgramUpdateRequest,
+        authorization: String? = null,
     ): Result<Unit> = runCatching {
         val response = client.put(base("api/mobile/user-programs/$userProgramId")) {
-            header("Authorization", authorization)
+            applyBearerAuthorization(authorization)
             contentType(ContentType.Application.Json)
             setBody(request)
         }
@@ -186,9 +196,23 @@ class MovitMobileApi(
         response.body<AuthApiResponse<AuthDataDto>>()
     }
 
-    suspend fun logout(authorization: String, request: LogoutRequestDto): Result<AuthApiResponse<AuthDataDto>> = runCatching {
+    suspend fun refresh(refreshToken: String): Result<AuthApiResponse<AuthTokensDto>> = runCatching {
+        val response = client.post(base("api/mobile/auth/refresh")) {
+            contentType(ContentType.Application.Json)
+            setBody(RefreshTokenRequestDto(refreshToken))
+        }
+        if (!response.status.isSuccess()) {
+            error("Token refresh failed (${response.status.value})")
+        }
+        response.body<AuthApiResponse<AuthTokensDto>>()
+    }
+
+    suspend fun logout(
+        request: LogoutRequestDto,
+        authorization: String? = null,
+    ): Result<AuthApiResponse<AuthDataDto>> = runCatching {
         val response = client.post(base("api/mobile/auth/logout")) {
-            header("Authorization", authorization)
+            applyBearerAuthorization(authorization)
             contentType(ContentType.Application.Json)
             setBody(request)
         }
@@ -198,9 +222,9 @@ class MovitMobileApi(
         response.body<AuthApiResponse<AuthDataDto>>()
     }
 
-    suspend fun fetchAuthProfile(authorization: String): Result<AuthApiResponse<UserPublicDto>> = runCatching {
+    suspend fun fetchAuthProfile(authorization: String? = null): Result<AuthApiResponse<UserPublicDto>> = runCatching {
         val response = client.get(base("api/mobile/auth/profile")) {
-            header("Authorization", authorization)
+            applyBearerAuthorization(authorization)
         }
         if (!response.status.isSuccess()) {
             error("Profile request failed (${response.status.value})")
@@ -209,11 +233,11 @@ class MovitMobileApi(
     }
 
     suspend fun updateAuthSettings(
-        authorization: String,
         request: UpdateSettingsRequestDto,
+        authorization: String? = null,
     ): Result<AuthApiResponse<UserPublicDto>> = runCatching {
         val response = client.patch(base("api/mobile/auth/settings")) {
-            header("Authorization", authorization)
+            applyBearerAuthorization(authorization)
             contentType(ContentType.Application.Json)
             setBody(request)
         }
@@ -223,9 +247,9 @@ class MovitMobileApi(
         response.body<AuthApiResponse<UserPublicDto>>()
     }
 
-    suspend fun fetchLevelProfile(authorization: String): Result<LevelProfileApiResponse> = runCatching {
+    suspend fun fetchLevelProfile(authorization: String? = null): Result<LevelProfileApiResponse> = runCatching {
         val response = client.get(base("api/mobile/level-profile")) {
-            header("Authorization", authorization)
+            applyBearerAuthorization(authorization)
         }
         if (!response.status.isSuccess()) {
             error("Level profile request failed (${response.status.value})")
@@ -233,9 +257,9 @@ class MovitMobileApi(
         response.body<LevelProfileApiResponse>()
     }
 
-    suspend fun fetchActivePlan(authorization: String): Result<ActivePlanApiResponse> = runCatching {
+    suspend fun fetchActivePlan(authorization: String? = null): Result<ActivePlanApiResponse> = runCatching {
         val response = client.get(base("api/mobile/plan")) {
-            header("Authorization", authorization)
+            applyBearerAuthorization(authorization)
         }
         if (!response.status.isSuccess()) {
             error("Active plan request failed (${response.status.value})")
@@ -243,9 +267,44 @@ class MovitMobileApi(
         response.body<ActivePlanApiResponse>()
     }
 
-    suspend fun fetchUpcomingReassessments(authorization: String): Result<ReassessmentListApiResponse> = runCatching {
+    suspend fun enrollProgram(
+        programId: String,
+        authorization: String? = null,
+    ): Result<ActivePlanApiResponse> = runCatching {
+        val response = client.post(base("api/mobile/plan/enroll")) {
+            applyBearerAuthorization(authorization)
+            contentType(ContentType.Application.Json)
+            setBody(EnrollProgramRequestDto(programId))
+        }
+        if (!response.status.isSuccess()) {
+            error("Enrollment failed (${response.status.value})")
+        }
+        response.body<ActivePlanApiResponse>()
+    }
+
+    suspend fun fetchSyncUserPrograms(
+        forceRefresh: Boolean = false,
+        authorization: String? = null,
+    ): Result<List<UserProgramExportDto>> = runCatching {
+        val response = client.get(base("api/mobile/sync")) {
+            applyBearerAuthorization(authorization)
+            if (forceRefresh) {
+                parameter("forceRefresh", true)
+            }
+        }
+        if (!response.status.isSuccess()) {
+            error("Sync request failed (${response.status.value})")
+        }
+        val body = response.body<MobileSyncApiResponse>()
+        if (!body.success) {
+            error(body.error ?: "Sync request failed.")
+        }
+        body.data?.userPrograms.orEmpty()
+    }
+
+    suspend fun fetchUpcomingReassessments(authorization: String? = null): Result<ReassessmentListApiResponse> = runCatching {
         val response = client.get(base("api/mobile/reassessment/upcoming")) {
-            header("Authorization", authorization)
+            applyBearerAuthorization(authorization)
         }
         if (!response.status.isSuccess()) {
             error("Reassessment request failed (${response.status.value})")
@@ -254,11 +313,11 @@ class MovitMobileApi(
     }
 
     suspend fun putTrainingProfile(
-        authorization: String,
         request: TrainingProfilePutRequest,
+        authorization: String? = null,
     ): Result<TrainingProfileApiResponse> = runCatching {
         val response = client.put(base("api/mobile/training-profile")) {
-            header("Authorization", authorization)
+            applyBearerAuthorization(authorization)
             contentType(ContentType.Application.Json)
             setBody(request)
         }

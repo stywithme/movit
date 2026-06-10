@@ -45,6 +45,14 @@ class IosMovitPlatform(
     override fun activeUserProgramId(): String? =
         defaults.stringForKey(KEY_ACTIVE_USER_PROGRAM_ID)?.takeIf { it.isNotBlank() }
 
+    override fun setActiveUserProgramId(userProgramId: String?) {
+        if (userProgramId.isNullOrBlank()) {
+            defaults.removeObjectForKey(KEY_ACTIVE_USER_PROGRAM_ID)
+        } else {
+            defaults.setObject(userProgramId, KEY_ACTIVE_USER_PROGRAM_ID)
+        }
+    }
+
     override fun userEmail(): String? =
         defaults.stringForKey(KEY_USER_EMAIL)?.takeIf { it.isNotBlank() }
 
@@ -52,6 +60,18 @@ class IosMovitPlatform(
         defaults.stringForKey(KEY_AVATAR_URL)?.takeIf { it.isNotBlank() }
 
     override fun refreshToken(): String? = secureSession.readRefreshToken()
+
+    override fun tokenExpiresAtEpochMs(): Long = secureSession.readExpiresAtEpochMs()
+
+    override fun updateAuthTokens(accessToken: String, refreshToken: String, expiresAtEpochMs: Long) {
+        secureSession.saveTokens(
+            SecureAuthTokens(
+                accessToken = accessToken,
+                refreshToken = refreshToken,
+                expiresAtEpochMs = expiresAtEpochMs,
+            ),
+        )
+    }
 
     override fun isOnboardingCompleted(): Boolean =
         defaults.boolForKey(KEY_ONBOARDING_COMPLETED)
@@ -104,6 +124,7 @@ class IosMovitPlatform(
         defaults.removeObjectForKey(KEY_USER_EMAIL)
         defaults.removeObjectForKey(KEY_AVATAR_URL)
         defaults.removeObjectForKey(KEY_SUBSCRIPTION_EXPIRY)
+        defaults.removeObjectForKey(KEY_ACTIVE_USER_PROGRAM_ID)
         defaults.setBool(false, KEY_IS_PRO)
         defaults.setBool(false, KEY_ONBOARDING_COMPLETED)
     }

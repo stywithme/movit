@@ -43,6 +43,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.movit.designsystem.MovitElevation
 import com.movit.designsystem.MovitRadius
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.components.MovitButton
@@ -86,7 +87,7 @@ private fun AuthSplashPanel() {
             modifier = Modifier.size(64.dp),
             shape = RoundedCornerShape(20.dp),
             color = MaterialTheme.colorScheme.primary,
-            shadowElevation = 8.dp,
+            shadowElevation = MovitElevation.sm,
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
@@ -234,7 +235,7 @@ private fun AuthLogoHeader(title: String, subtitle: String) {
         modifier = Modifier.size(64.dp),
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.primary,
-        shadowElevation = 8.dp,
+        shadowElevation = MovitElevation.sm,
     ) {
         Box(contentAlignment = Alignment.Center) {
             Icon(

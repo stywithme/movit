@@ -20,6 +20,13 @@
     <string name="dest_explore_subtitle">تصفّح التمارين والبرامج.</string>
     <string name="dest_reports_subtitle">سجل الجلسات وتحليل الأداء.</string>
 
+    <string name="common_error_title">حدث خطأ ما</string>
+    <string name="common_retry">إعادة المحاولة</string>
+    <string name="ds_week_legend_done">تم</string>
+    <string name="ds_week_legend_today">اليوم</string>
+    <string name="ds_week_legend_missed">فائت</string>
+    <string name="ds_week_legend_rest">راحة</string>
+
     <string name="home_loading">جاري تحميل لوحتك…</string>
     <string name="home_view_level">عرض المستوى</string>
     <string name="home_plan_adjusted">تم تعديل خطة التدريب</string>
@@ -650,6 +657,7 @@
     <string name="profile_sign_out">تسجيل الخروج</string>
     <string name="profile_pro_badge">برو نشط</string>
     <string name="profile_manage_subscription">إدارة الاشتراك</string>
+    <string name="profile_subscription_ios_unavailable">الاشتراك داخل التطبيق غير متاح على iOS بعد. يمكنك إدارة خطتك من Android أو الويب.</string>
     <string name="profile_unlock_pro">فتح برو</string>
     <string name="profile_unlock_pro_sub">تقارير متقدمة وتحليلات البرامج وفحوصات جسم غير محدودة.</string>
     <string name="profile_view_plans">عرض الخطط</string>

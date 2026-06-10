@@ -44,6 +44,7 @@ import com.movit.designsystem.components.MovitTag
 import com.movit.designsystem.components.MovitTagVariant
 import com.movit.designsystem.movitColors
 import com.movit.resources.movitText
+import com.movit.shared.PlatformInfo
 
 @Composable
 fun MovitProfileScreen(
@@ -106,7 +107,9 @@ fun MovitProfileScreen(
                 }
                 state.errorMessage != null -> {
                     MovitErrorState(
+                        title = movitText("common_error_title"),
                         message = state.errorMessage,
+                        actionLabel = movitText("common_retry"),
                         onRetry = { onEvent(MovitProfileEvent.RetryClicked) },
                     )
                 }
@@ -296,13 +299,15 @@ private fun ProCard(
                     modifier = Modifier.padding(top = MovitSpacing.xs),
                 )
             }
-            MovitButton(
-                text = movitText("profile_manage_subscription"),
-                onClick = { onEvent(MovitProfileEvent.ManageSubscriptionClicked) },
-                variant = MovitButtonVariant.Outlined,
-                size = MovitButtonSize.Small,
-                modifier = Modifier.padding(top = MovitSpacing.md),
-            )
+            if (PlatformInfo.supportsInAppSubscription) {
+                MovitButton(
+                    text = movitText("profile_manage_subscription"),
+                    onClick = { onEvent(MovitProfileEvent.ManageSubscriptionClicked) },
+                    variant = MovitButtonVariant.Outlined,
+                    size = MovitButtonSize.Small,
+                    modifier = Modifier.padding(top = MovitSpacing.md),
+                )
+            }
         } else {
             Text(
                 text = movitText("profile_unlock_pro"),
@@ -315,13 +320,22 @@ private fun ProCard(
                 color = MaterialTheme.movitColors.textSecondary,
                 modifier = Modifier.padding(top = MovitSpacing.xs),
             )
-            MovitButton(
-                text = movitText("profile_view_plans"),
-                onClick = { onEvent(MovitProfileEvent.ViewPlansClicked) },
-                variant = MovitButtonVariant.Tonal,
-                size = MovitButtonSize.Small,
-                modifier = Modifier.padding(top = MovitSpacing.md),
-            )
+            if (PlatformInfo.supportsInAppSubscription) {
+                MovitButton(
+                    text = movitText("profile_view_plans"),
+                    onClick = { onEvent(MovitProfileEvent.ViewPlansClicked) },
+                    variant = MovitButtonVariant.Tonal,
+                    size = MovitButtonSize.Small,
+                    modifier = Modifier.padding(top = MovitSpacing.md),
+                )
+            } else {
+                Text(
+                    text = movitText("profile_subscription_ios_unavailable"),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.movitColors.textSecondary,
+                    modifier = Modifier.padding(top = MovitSpacing.md),
+                )
+            }
         }
     }
 }

@@ -1,8 +1,8 @@
 package com.movit.feature.library
 
-import com.movit.feature.explore.ExploreContent
-import com.movit.feature.explore.ExploreItemType
-import com.movit.feature.explore.ExploreItemUi
+import com.movit.core.model.ExploreContent
+import com.movit.core.model.ExploreItemType
+import com.movit.core.model.ExploreItemUi
 import com.movit.shared.AppResult
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -54,7 +54,7 @@ class ProgramDetailViewModelTest {
         )
         viewModel.load()
 
-        val key = viewModel.sessionKeyForStart()
+        val key = viewModel.startProgramAndGetSessionKey()
         assertNotNull(key)
         assertTrue(key.startsWith("session:"))
         assertTrue(viewModel.state.value.enrollment.isEnrolled)

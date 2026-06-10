@@ -11,7 +11,7 @@ open class FakeMovitPlatformBindings(
     private val pro: Boolean = true,
     private var language: String = "en",
     private var storedThemeMode: String = MovitThemeModeStorage.SYSTEM,
-    private val userProgramId: String? = "up-1",
+    private var userProgramId: String? = "up-1",
     private val secureSession: FakeSecureSessionStore = FakeSecureSessionStore(),
 ) : MovitPlatformBindings {
     private val cache = mutableMapOf<String, String>()
@@ -39,14 +39,35 @@ open class FakeMovitPlatformBindings(
 
     override fun activeUserProgramId(): String? = userProgramId
 
+    override fun setActiveUserProgramId(userProgramId: String?) {
+        this.userProgramId = userProgramId
+    }
+
     override fun refreshToken(): String? = secureSession.readRefreshToken()
 
+    override fun tokenExpiresAtEpochMs(): Long = secureSession.readExpiresAtEpochMs()
+
+    override fun updateAuthTokens(accessToken: String, refreshToken: String, expiresAtEpochMs: Long) {
+        secureSession.saveTokens(
+            SecureAuthTokens(
+                accessToken = accessToken,
+                refreshToken = refreshToken,
+                expiresAtEpochMs = expiresAtEpochMs,
+            ),
+        )
+    }
+
     override fun persistAuthSession(snapshot: AuthSessionSnapshot) {
+        val expiresAt = if (snapshot.expiresInSeconds > 0) {
+            System.currentTimeMillis() + snapshot.expiresInSeconds * 1000L
+        } else {
+            secureSession.readExpiresAtEpochMs()
+        }
         secureSession.saveTokens(
             SecureAuthTokens(
                 accessToken = snapshot.accessToken,
                 refreshToken = snapshot.refreshToken,
-                expiresAtEpochMs = snapshot.expiresInSeconds * 1000L,
+                expiresAtEpochMs = expiresAt,
             ),
         )
     }

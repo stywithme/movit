@@ -1,5 +1,7 @@
 package com.movit.feature.explore
 
+import com.movit.core.model.ExploreItemType
+
 sealed interface MovitExploreEffect {
     data object OpenExercisesLibrary : MovitExploreEffect
     data object OpenWorkoutsLibrary : MovitExploreEffect

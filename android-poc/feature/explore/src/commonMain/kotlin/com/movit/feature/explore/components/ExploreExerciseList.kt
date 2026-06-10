@@ -14,7 +14,7 @@ import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.components.MovitExerciseCard
 import com.movit.designsystem.components.MovitSectionHeader
 import com.movit.designsystem.movitColors
-import com.movit.feature.explore.ExploreItemUi
+import com.movit.core.model.ExploreItemUi
 import com.movit.resources.movitText
 
 @Composable

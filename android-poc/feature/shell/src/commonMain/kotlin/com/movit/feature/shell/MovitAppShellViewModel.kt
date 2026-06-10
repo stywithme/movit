@@ -10,11 +10,12 @@ import com.movit.feature.account.MovitAuthViewModel
 import com.movit.feature.account.MovitLevelEffect
 import com.movit.feature.account.MovitOnboardingEffect
 import com.movit.feature.account.MovitProfileEffect
-import com.movit.feature.explore.ExploreItemType
+import com.movit.core.model.ExploreItemType
 import com.movit.feature.explore.MovitExploreEffect
 import com.movit.feature.home.MovitHomeEffect
 import com.movit.feature.reports.MovitReportsEffect
 import com.movit.feature.train.MovitTrainEffect
+import com.movit.shared.PlatformInfo
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -29,6 +30,10 @@ class MovitAppShellViewModel : ViewModel() {
 
     init {
         if (MovitData.isInstalled) {
+            MovitData.onSessionExpired = {
+                popAllInner()
+                pushInner(MovitInnerRoute.Auth)
+            }
             val platform = MovitData.requirePlatform()
             val bootstrap = AuthBootstrapContext.fromMovitData()
             _state.update {
@@ -121,7 +126,16 @@ class MovitAppShellViewModel : ViewModel() {
             MovitProfileEffect.OpenOnboarding -> pushInner(MovitInnerRoute.ProfileOnboarding)
             MovitProfileEffect.OpenAssessment -> pushInner(MovitInnerRoute.Assessment)
             MovitProfileEffect.OpenLevel -> pushInner(MovitInnerRoute.LevelProfile)
-            MovitProfileEffect.OpenSubscription -> Unit
+            MovitProfileEffect.OpenSubscription -> {
+                if (!PlatformInfo.supportsInAppSubscription) {
+                    _effects.tryEmit(
+                        MovitAppShellEffect.ShowLocalizedMessage("profile_subscription_ios_unavailable"),
+                    )
+                }
+            }
+            is MovitProfileEffect.ShowLocalizedMessage -> {
+                _effects.tryEmit(MovitAppShellEffect.ShowLocalizedMessage(effect.key))
+            }
             MovitProfileEffect.LoggedOut -> {
                 popAllInner()
                 pushInner(MovitInnerRoute.Auth)

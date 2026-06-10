@@ -63,6 +63,19 @@ object MovitDataInstall {
 
                 override fun refreshToken(): String? = AuthManager.getRefreshToken(appContext)
 
+                override fun tokenExpiresAtEpochMs(): Long =
+                    AuthManager.getTokenExpiresAt(appContext)
+
+                override fun updateAuthTokens(
+                    accessToken: String,
+                    refreshToken: String,
+                    expiresAtEpochMs: Long,
+                ) {
+                    val expiresInSeconds = ((expiresAtEpochMs - System.currentTimeMillis()) / 1000L)
+                        .coerceAtLeast(0L)
+                    AuthManager.saveNewTokens(appContext, accessToken, refreshToken, expiresInSeconds)
+                }
+
                 override fun isOnboardingCompleted(): Boolean =
                     AuthManager.isOnboardingCompleted(appContext)
 

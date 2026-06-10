@@ -1,19 +1,16 @@
 plugins {
-    alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.compose.multiplatform)
-    alias(libs.plugins.kotlin.compose)
+    id("movit.kmp.feature")
+}
+
+movitKmp {
+    unitTestsReturnDefaultValues = true
+}
+
+android {
+    namespace = "com.movit.resources"
 }
 
 kotlin {
-    androidTarget {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-        }
-    }
-    iosArm64()
-    iosSimulatorArm64()
-
     sourceSets {
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -24,6 +21,9 @@ kotlin {
         }
         androidMain.dependencies {
             implementation(compose.ui)
+        }
+        androidUnitTest.dependencies {
+            implementation(kotlin("test"))
         }
     }
 }
@@ -48,7 +48,11 @@ val generateMovitEnglishStrings by tasks.registering {
             add("internal val movitEnglishStrings: Map<String, String> = mapOf(")
             entryRegex.findAll(xml).forEach { match ->
                 val name = match.groupValues[1]
-                val raw = match.groupValues[2]
+                val unescaped = match.groupValues[2]
+                    .replace("\\'", "'")
+                    .replace("\\\"", "\"")
+                    .replace("\\n", "\n")
+                val raw = unescaped
                     .replace("\\", "\\\\")
                     .replace("\"", "\\\"")
                     .replace("$", "\\$")
@@ -66,18 +70,4 @@ tasks.named("preBuild") {
 
 tasks.matching { it.name.startsWith("compileKotlin") }.configureEach {
     dependsOn(generateMovitEnglishStrings)
-}
-
-android {
-    namespace = "com.movit.resources"
-    compileSdk = libs.versions.compile.sdk.get().toInt()
-
-    defaultConfig {
-        minSdk = libs.versions.min.sdk.get().toInt()
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
 }

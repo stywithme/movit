@@ -2,6 +2,7 @@ package com.movit.feature.account
 
 import androidx.lifecycle.ViewModel
 import com.movit.shared.AppResult
+import com.movit.shared.PlatformInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -103,6 +104,10 @@ class MovitProfileViewModel(
     }
 
     private fun openSubscription() {
+        if (!PlatformInfo.supportsInAppSubscription) {
+            _effects.tryEmit(MovitProfileEffect.ShowLocalizedMessage("profile_subscription_ios_unavailable"))
+            return
+        }
         _state.update { it.copy(showSubscription = true) }
         _effects.tryEmit(MovitProfileEffect.OpenSubscription)
     }

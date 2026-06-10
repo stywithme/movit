@@ -1,21 +1,35 @@
 package com.movit.core.data.repository
 
+import com.movit.core.data.platform.PlatformMovitAuthTokenStore
+import com.movit.core.network.MovitHttpClientConfig
 import com.movit.core.network.MovitJson
 import com.movit.core.network.MovitMobileApi
+import com.movit.core.network.createMovitHttpClientWithEngine
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
-import io.ktor.client.engine.mock.respond
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
 
-internal fun testMobileApi(engine: MockEngine): MovitMobileApi {
-    val client = HttpClient(engine) {
-        expectSuccess = false
-        install(ContentNegotiation) {
-            json(MovitJson)
+internal fun testMobileApi(
+    engine: MockEngine,
+    platform: com.movit.core.data.platform.MovitPlatformBindings? = null,
+): MovitMobileApi {
+    val client = if (platform != null) {
+        val refreshClient = createMovitHttpClientWithEngine(engine)
+        createMovitHttpClientWithEngine(
+            engine = engine,
+            auth = MovitHttpClientConfig(
+                tokenStore = PlatformMovitAuthTokenStore { platform },
+                baseUrlProvider = { "https://test.movit.local" },
+                refreshHttpClient = refreshClient,
+            ),
+        )
+    } else {
+        HttpClient(engine) {
+            expectSuccess = false
+            install(ContentNegotiation) {
+                json(MovitJson)
+            }
         }
     }
     return MovitMobileApi(client) { "https://test.movit.local/" }

@@ -28,7 +28,7 @@ class HomeSyncRepositoryTest {
                     ),
                 )
             }
-            val repo = HomeSyncRepository(testMobileApi(engine), { platform })
+            val repo = HomeSyncRepository(testMobileApi(engine, platform), { platform })
 
             val result = repo.sync()
 
@@ -48,7 +48,7 @@ class HomeSyncRepositoryTest {
                 MovitJson.encodeToString(HomeDataDto.serializer(), cached),
             )
             val engine = MockEngine { respond("{}", HttpStatusCode.InternalServerError) }
-            val repo = HomeSyncRepository(testMobileApi(engine), { platform })
+            val repo = HomeSyncRepository(testMobileApi(engine, platform), { platform })
 
             val result = repo.sync()
 
@@ -61,7 +61,7 @@ class HomeSyncRepositoryTest {
         runBlocking {
             val platform = FakeMovitPlatformBindings(auth = null)
             val engine = MockEngine { respond("{}", HttpStatusCode.OK) }
-            val repo = HomeSyncRepository(testMobileApi(engine), { platform })
+            val repo = HomeSyncRepository(testMobileApi(engine, platform), { platform })
 
             val result = repo.sync()
 
@@ -81,7 +81,7 @@ class HomeSyncRepositoryTest {
                 MovitJson.encodeToString(HomeDataDto.serializer(), cached),
             )
             val engine = MockEngine { respond("Server error", HttpStatusCode.InternalServerError) }
-            val repo = HomeSyncRepository(testMobileApi(engine), { platform })
+            val repo = HomeSyncRepository(testMobileApi(engine, platform), { platform })
 
             val result = repo.sync()
 

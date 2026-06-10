@@ -21,6 +21,8 @@ import com.trainingvalidator.poc.training.engine.pipeline.FramePipelineExecutor
 import com.trainingvalidator.poc.training.engine.policy.FeedbackPolicy
 import com.trainingvalidator.poc.training.engine.policy.StabilityPolicy
 import com.trainingvalidator.poc.training.engine.policy.TimingPolicy
+import com.trainingvalidator.poc.training.engine.policy.fromSettings
+import com.trainingvalidator.poc.training.engine.policy.toTimingOverrides
 import com.trainingvalidator.poc.training.feedback.FeedbackEvent
 import com.trainingvalidator.poc.training.feedback.FeedbackPriority
 import com.trainingvalidator.poc.training.feedback.JointQualityContent
@@ -47,7 +49,7 @@ class TrainingEngine(
     private val targetRepsOverride: Int? = null,
     private val targetDurationMsOverride: Long? = null,
     private val stabilityPolicy: StabilityPolicy = StabilityPolicy.default(),
-    private val timingPolicy: TimingPolicy = TimingPolicy.default(),
+    private val timingPolicy: TimingPolicy = fromSettings(),
     private val tiltSource: AcquirableTiltSource? = null
 ) {
     
@@ -84,7 +86,7 @@ class TrainingEngine(
     )
     val bilateralSide: StateFlow<BilateralSide> = bilateral.side
 
-    private val minRepIntervalMs: Long = timingPolicy.minRepIntervalFor(repCountingConfig)
+    private val minRepIntervalMs: Long = timingPolicy.minRepIntervalFor(repCountingConfig.toTimingOverrides())
     
     private val trackedJoints: List<TrackedJoint> = poseVariant.trackedJoints
     private val trackedJointsByCode: Map<String, TrackedJoint> = trackedJoints.associateBy { it.joint }
@@ -177,7 +179,7 @@ class TrainingEngine(
     )
     
     private val visibilityMonitor: VisibilityMonitor = VisibilityMonitor(
-        visibilityTrackedJoints = poseVariant.trackedJoints
+        trackedJoints = poseVariant.trackedJoints
             .filter { it.role == JointRole.PRIMARY || it.role == JointRole.SECONDARY },
         minVisibility = timingPolicy.visibilityMinVisibility,
         graceDurationMs = timingPolicy.visibilityGraceDurationMs,

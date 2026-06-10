@@ -43,7 +43,6 @@ class ReportsSyncRepository(
         }
 
         val response = api.fetchReportsDashboard(
-            authorization = auth,
             programId = programId,
             period = period,
             source = source,
@@ -82,7 +81,6 @@ class ReportsSyncRepository(
         }
 
         val response = api.fetchExerciseMetrics(
-            authorization = auth,
             programId = programId,
             exerciseSlug = exerciseSlug,
         ).getOrElse { error ->

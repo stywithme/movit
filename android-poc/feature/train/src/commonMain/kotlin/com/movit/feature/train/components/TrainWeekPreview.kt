@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import com.movit.designsystem.components.MovitWeekDay
 import com.movit.designsystem.components.MovitWeekDayState
 import com.movit.designsystem.components.MovitWeekStrip
+import com.movit.designsystem.components.MovitWeekStripLegend
 import com.movit.feature.train.TrainWeekDayState
 import com.movit.feature.train.TrainWeekDayUi
 import com.movit.feature.train.TrainWeekPreviewUi
@@ -27,6 +28,12 @@ fun TrainWeekPreview(
         onNextWeek = onNextWeek.takeIf { canGoNext },
         previousWeekContentDescription = movitText("train_week_previous"),
         nextWeekContentDescription = movitText("train_week_next"),
+        legend = MovitWeekStripLegend(
+            done = movitText("ds_week_legend_done"),
+            today = movitText("ds_week_legend_today"),
+            missed = movitText("ds_week_legend_missed"),
+            rest = movitText("ds_week_legend_rest"),
+        ),
     )
 }
 

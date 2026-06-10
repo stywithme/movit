@@ -9,10 +9,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import com.movit.designsystem.movitColors
+import com.movit.designsystem.MovitElevation
+import com.movit.designsystem.movitShadow
 
 /**
  * Primary floating action button (prototype `.fab`): 58dp rounded-square, primary fill,
@@ -25,12 +25,11 @@ fun MovitFab(
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
 ) {
-    val movit = MaterialTheme.movitColors
     val shape = RoundedCornerShape(20.dp)
     Surface(
         onClick = onClick,
         modifier = modifier
-            .shadow(elevation = 16.dp, shape = shape, ambientColor = movit.shadow, spotColor = movit.shadow)
+            .movitShadow(elevation = MovitElevation.xxl, shape = shape)
             .size(58.dp),
         shape = shape,
         color = MaterialTheme.colorScheme.primary,

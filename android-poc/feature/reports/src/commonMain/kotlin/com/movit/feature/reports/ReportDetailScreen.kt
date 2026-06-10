@@ -80,7 +80,9 @@ fun ReportDetailScreen(
             when {
                 state.isLoading -> MovitLoadingState(message = movitText("report_detail_loading"))
                 state.errorMessage != null -> MovitErrorState(
+                    title = movitText("common_error_title"),
                     message = state.errorMessage,
+                    actionLabel = movitText("common_retry"),
                     onRetry = onRetry,
                 )
                 report != null -> {

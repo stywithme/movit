@@ -65,6 +65,11 @@ data class LogoutRequestDto(
 )
 
 @Serializable
+data class RefreshTokenRequestDto(
+    val refreshToken: String,
+)
+
+@Serializable
 data class UpdateSettingsRequestDto(
     val preferredLanguage: String? = null,
     val voiceFeedback: Boolean? = null,

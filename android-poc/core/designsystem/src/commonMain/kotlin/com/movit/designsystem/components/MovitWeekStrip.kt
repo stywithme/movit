@@ -11,8 +11,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.ChevronLeft
-import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -42,6 +42,13 @@ data class MovitWeekDay(
     val state: MovitWeekDayState,
 )
 
+data class MovitWeekStripLegend(
+    val done: String,
+    val today: String,
+    val missed: String,
+    val rest: String,
+)
+
 @Composable
 fun MovitWeekStrip(
     title: String,
@@ -51,7 +58,7 @@ fun MovitWeekStrip(
     onNextWeek: (() -> Unit)? = null,
     previousWeekContentDescription: String? = null,
     nextWeekContentDescription: String? = null,
-    showLegend: Boolean = true,
+    legend: MovitWeekStripLegend? = null,
 ) {
     MovitCard(modifier = modifier, variant = MovitCardVariant.Elevated) {
         Row(
@@ -66,24 +73,24 @@ fun MovitWeekStrip(
             )
             IconButton(
                 onClick = { onPreviousWeek?.invoke() },
-                modifier = Modifier.size(30.dp),
+                modifier = Modifier.size(MovitSpacing.minTouchTarget),
                 enabled = onPreviousWeek != null,
             ) {
                 Icon(
-                    Icons.Default.ChevronLeft,
+                    Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                     contentDescription = previousWeekContentDescription,
-                    modifier = Modifier.size(15.dp),
+                    modifier = Modifier.size(20.dp),
                 )
             }
             IconButton(
                 onClick = { onNextWeek?.invoke() },
-                modifier = Modifier.size(30.dp),
+                modifier = Modifier.size(MovitSpacing.minTouchTarget),
                 enabled = onNextWeek != null,
             ) {
                 Icon(
-                    Icons.Default.ChevronRight,
+                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = nextWeekContentDescription,
-                    modifier = Modifier.size(15.dp),
+                    modifier = Modifier.size(20.dp),
                 )
             }
         }
@@ -99,17 +106,17 @@ fun MovitWeekStrip(
             }
         }
 
-        if (showLegend) {
+        if (legend != null) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = MovitSpacing.lg),
                 horizontalArrangement = Arrangement.spacedBy(MovitSpacing.lg),
             ) {
-                WeekLegendDot("Done", MaterialTheme.colorScheme.secondary)
-                WeekLegendDot("Today", MaterialTheme.colorScheme.primary)
-                WeekLegendDot("Missed", MaterialTheme.colorScheme.tertiary)
-                WeekLegendDot("Rest", MaterialTheme.movitColors.textQuaternary)
+                WeekLegendDot(legend.done, MaterialTheme.colorScheme.secondary)
+                WeekLegendDot(legend.today, MaterialTheme.colorScheme.primary)
+                WeekLegendDot(legend.missed, MaterialTheme.colorScheme.tertiary)
+                WeekLegendDot(legend.rest, MaterialTheme.movitColors.textQuaternary)
             }
         }
     }

@@ -1,6 +1,8 @@
 package com.movit.feature.explore
 
 import androidx.compose.runtime.Composable
+import com.movit.core.model.ExploreItemType
+import com.movit.core.model.ExploreItemUi
 import com.movit.resources.movitText
 
 enum class ExploreWorkoutFilter {

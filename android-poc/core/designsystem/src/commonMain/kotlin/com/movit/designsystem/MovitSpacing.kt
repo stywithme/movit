@@ -10,4 +10,7 @@ object MovitSpacing {
     val lg: Dp = 16.dp
     val xl: Dp = 24.dp
     val xxl: Dp = 32.dp
+
+    /** Material minimum interactive target (48dp). */
+    val minTouchTarget: Dp = 48.dp
 }

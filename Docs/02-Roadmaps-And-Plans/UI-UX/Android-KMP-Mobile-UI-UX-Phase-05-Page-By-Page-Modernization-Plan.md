@@ -1,6 +1,6 @@
 # Android / KMP Mobile UI/UX - Phase 05 Page-by-Page Modernization + Train Page Plan
 
-آخر تحديث: 2026-06-09 (post Pre-05 + Train/Reports/Session + **Account 10–14**)
+آخر تحديث: 2026-06-10 (WS-7: `collectAsStateWithLifecycle` · Pre-05/WS-E P1–P3 مغلقة · نِسب في Page-Scorecards)
 
 > **✅ تحديث 2026-06-09 — بوابة Pre-05:** اجتُيزت [`Phase Pre-05`](Android-KMP-Mobile-UI-UX-Phase-Pre-05-Stabilization-And-Debt-Closure-Plan.md) (جسور مُغلقة · Koin · iOS compile · نصوص مشتركة). **اُستكملت دفعة Account** (صفحات 10–14) — التفاصيل في «ملخص للمدير» و«حالة تنفيذ 2026-06-09» أدناه.
 
@@ -10,8 +10,8 @@
 
 | المجموعة | الصفحات | الحالة | موديول KMP |
 |----------|---------|--------|------------|
-| تبويبات رئيسية | 01 Train · 04 Explore · 08 Home · 09 Reports | 🔄 72–80% | `feature:train` · `explore` · `home` · `reports` |
-| تدفق تدريب | 02 Session · 17 Report detail | 🔄 48–90% | `feature:library` · `feature:reports` |
+| تبويبات رئيسية | 01 Train · 04 Explore · 08 Home · 09 Reports | 🔄 scorecards | `feature:train` · `explore` · `home` · `reports` — نِسب في [`Page-Scorecards.md`](Page-Scorecards.md) |
+| تدفق تدريب | 02 Session · 17 Report detail | 🔄 scorecards | `feature:library` · `feature:reports` |
 | **حساب وتقييم** | **10 Auth · 11 Profile · 12 Onboarding · 13 Assessment · 14 Level** | **✅ أول إصدار** | **`feature:account` (جديد)** |
 | مكتبة وبرامج | 05–07 · 15–16 | ⬜ جزئي | `feature:library` |
 
@@ -165,7 +165,7 @@ Profile
   - API bridge عبر debug pilot لـ **Explore و Home** (`/api/mobile/explore` + `/api/mobile/home`) — النمط متحقَّق إنه يتعمّم على شاشتين وعقدين بيانات. ✅
   - theme boundary tests في `androidUnitTest`. ✅
 - **iOS entry point (`iosApp/`) — render proof نجح ✅** على Xcode/Simulator (تقرير `Android-KMP-iOS-Xcode-Mac-Validation-Report.md`)؛ التحقّقات الثلاثة اكتملت.
-- **معرفة لازمة لـ Train على iOS:** توجد ديون iOS متتبَّعة في الخطة الأساسية (deployment target 18.5، استبدال `collectAsStateWithLifecycle`→`collectAsState` في الـ routes المشتركة، ViewModels عبر `remember`). أى `MovitTrainRoute` جديد **يتبع نفس نمط routes الحالية الآمن على iOS** ولا يعيد إدخال `collectAsStateWithLifecycle` قبل حسم `LifecycleOwner` على iOS. ولا يفترض deployment target نهائى حتى تُحسم P1.
+- **iOS (Pre-05 / WS-E — مُغلق):** ديون iOS P1/P2/P3 (deployment target · `collectAsStateWithLifecycle` · `ViewModelStoreOwner`) **أُغلقت في Pre-05/WS-E**. كل routes المشتركة تستخدم `collectAsStateWithLifecycle()` — راجع [`generated/Docs-Stats-Snapshot.md`](generated/Docs-Stats-Snapshot.md). أي route جديد **يلتزم بنفس النمط**.
 
 ## خارج نطاق هذه المرحلة
 
@@ -444,13 +444,13 @@ Route pattern:
 fun MovitTrainRoute(
     viewModel: MovitTrainViewModel = viewModel { MovitTrainViewModel() },
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(viewModel) { viewModel.loadInitial() }
     // ...
 }
 ```
 
-ملاحظة iOS مهمة: استخدام `collectAsState()` هنا مقصود مؤقتاً، لأنه نفس النمط الذي نجّح `Shell/Home/Explore` على iOS أثناء render proof. لا نرجع إلى `collectAsStateWithLifecycle()` في routes المشتركة إلا بعد حل دين `LifecycleOwner` على iOS. على Android يمكن استعادة lifecycle-aware collection لاحقاً عبر abstraction مشتركة أو `expect/actual`.
+ملاحظة iOS (محدَّثة 2026-06-10): `collectAsStateWithLifecycle()` هو النمط المعتمد في كل routes بعد إغلاق Pre-05/WS-E (P1/P2/P3). لا تُعاد `collectAsState()` في `commonMain`.
 
 Shell يحتفظ بـ `trainViewModel` على مستوى `MovitAppShellRoute` (نفس نمط Home/Explore) ليبقى عبر تدوير الشاشة. على iOS، يمرر `MainViewController()` الـ ViewModels صراحة باستخدام `remember` إلى أن يتوفر `ViewModelStoreOwner` حقيقي.
 
@@ -1139,7 +1139,7 @@ feature/account/src/commonMain/kotlin/com/movit/feature/account/
 
 - نمط UDF موحّد: `State / Event / Effect / ViewModel / Route / Screen`
 - لا `MovitTheme` داخل الشاشات
-- نصوص `ar/en` في `core:resources` (~120 مفتاح جديد)
+- نصوص `ar/en` في `core:resources` (العدد الكلي: [`Docs-Stats-Snapshot.md`](generated/Docs-Stats-Snapshot.md))
 - اختبارات: `MovitAuthViewModelTest`, `MovitOnboardingViewModelTest`, `MovitProfileViewModelTest`
 
 ### 3. ربط Shell وHome
@@ -1220,6 +1220,6 @@ Phase 05 لا تعتبر مكتملة إلا إذا:
 - `Train` يجب أن يشعر كجزء طبيعي من Home وExplore، لا كجزيرة تصميمية جديدة.
 - **لا تراجع لـ Controller pattern** — ViewModel + `viewModelScope` إلزامي.
 - **iOS:** `iosArm64` + `iosSimulatorArm64` في `feature:train`؛ لا `iosX64` في أي موديول Compose.
-- **iOS runtime:** التزم بنمط `collectAsState()` وViewModels الممررة من iOS entry point إلى أن تُغلق ديون P1/P2/P3 في الخطة الأساسية.
+- **iOS runtime:** التزم بـ `collectAsStateWithLifecycle()` و`ViewModelStoreOwner` (Pre-05/WS-E — P1/P2/P3 مغلقة).
 - **API:** `MovitData` + Ktor — **لا جسور Retrofit** (Pre-05 مغلقة).
 - **DI/Koin:** ✅ `MovitData` عبر Koin (Pre-05/WS-F).

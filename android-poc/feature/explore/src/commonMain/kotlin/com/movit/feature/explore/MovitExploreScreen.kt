@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import com.movit.core.model.ExploreItemType
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.components.MovitEmptyState
 import com.movit.designsystem.components.MovitErrorState
@@ -110,7 +111,9 @@ fun MovitExploreScreen(
                 }
                 state.errorMessage != null -> {
                     MovitErrorState(
+                        title = movitText("common_error_title"),
                         message = state.errorMessage,
+                        actionLabel = movitText("common_retry"),
                         onRetry = { onEvent(MovitExploreEvent.RetryClicked) },
                     )
                 }

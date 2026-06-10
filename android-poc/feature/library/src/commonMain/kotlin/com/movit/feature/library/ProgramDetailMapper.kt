@@ -1,6 +1,6 @@
 package com.movit.feature.library
 
-import com.movit.feature.explore.ExploreItemUi
+import com.movit.core.model.ExploreItemUi
 
 internal object ProgramDetailMapper {
 
