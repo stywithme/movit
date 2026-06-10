@@ -24,15 +24,21 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-class MovitAppShellViewModel : ViewModel() {
+class MovitAppShellViewModel(
+    private val legacyAuthExitEnabled: Boolean = false,
+) : ViewModel() {
     private val _state = MutableStateFlow(MovitAppShellState())
     val state: StateFlow<MovitAppShellState> = _state.asStateFlow()
 
     init {
         if (MovitData.isInstalled) {
             MovitData.onSessionExpired = {
-                popAllInner()
-                pushInner(MovitInnerRoute.Auth)
+                if (legacyAuthExitEnabled) {
+                    _effects.tryEmit(MovitAppShellEffect.NavigateToLegacyAuth)
+                } else {
+                    popAllInner()
+                    pushInner(MovitInnerRoute.Auth)
+                }
             }
             val platform = MovitData.requirePlatform()
             val bootstrap = AuthBootstrapContext.fromMovitData()
@@ -139,8 +145,12 @@ class MovitAppShellViewModel : ViewModel() {
                 _effects.tryEmit(MovitAppShellEffect.ShowLocalizedMessage(effect.key))
             }
             MovitProfileEffect.LoggedOut -> {
-                popAllInner()
-                pushInner(MovitInnerRoute.Auth)
+                if (legacyAuthExitEnabled) {
+                    _effects.tryEmit(MovitAppShellEffect.NavigateToLegacyAuth)
+                } else {
+                    popAllInner()
+                    pushInner(MovitInnerRoute.Auth)
+                }
             }
             is MovitProfileEffect.LanguageChanged -> {
                 _state.update { it.copy(localeRevision = it.localeRevision + 1) }

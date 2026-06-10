@@ -35,6 +35,7 @@ fun MovitAppShellRoute(
     onTrainEffect: (MovitTrainEffect) -> Boolean = { false },
     onLaunchLegacyTraining: (MovitAppShellEffect.LaunchLegacyCameraTraining) -> Boolean = { false },
     onLaunchLegacySubscription: () -> Boolean = { false },
+    onNavigateToLegacyAuth: () -> Boolean = { false },
 ) {
     val shellState by shellViewModel.state.collectAsStateWithLifecycle()
 
@@ -66,6 +67,7 @@ fun MovitAppShellRoute(
                 onTrainEffect = onTrainEffect,
                 onLaunchLegacyTraining = onLaunchLegacyTraining,
                 onLaunchLegacySubscription = onLaunchLegacySubscription,
+                onNavigateToLegacyAuth = onNavigateToLegacyAuth,
             )
         }
     }
@@ -84,6 +86,7 @@ private fun MovitAppShellRouteContent(
     onTrainEffect: (MovitTrainEffect) -> Boolean,
     onLaunchLegacyTraining: (MovitAppShellEffect.LaunchLegacyCameraTraining) -> Boolean,
     onLaunchLegacySubscription: () -> Boolean,
+    onNavigateToLegacyAuth: () -> Boolean,
 ) {
     val state by shellViewModel.state.collectAsStateWithLifecycle()
     val language = LocalMovitLanguage.current
@@ -110,6 +113,9 @@ private fun MovitAppShellRouteContent(
                             localizedString(language, "profile_subscription_ios_unavailable"),
                         )
                     }
+                }
+                MovitAppShellEffect.NavigateToLegacyAuth -> {
+                    onNavigateToLegacyAuth()
                 }
             }
         }

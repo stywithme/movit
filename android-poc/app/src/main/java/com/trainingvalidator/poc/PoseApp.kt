@@ -15,6 +15,7 @@ import com.trainingvalidator.poc.network.ApiClient
 import com.trainingvalidator.poc.sensors.DeviceTiltProvider
 import com.trainingvalidator.poc.storage.SystemMessageStore
 import com.trainingvalidator.poc.training.engine.PostureMlpClassifier
+import com.movit.MovitMainActivity
 import com.trainingvalidator.poc.ui.main.MainContainerActivity
 import com.trainingvalidator.poc.ui.theme.AppThemeManager
 import kotlinx.coroutines.CoroutineScope
@@ -72,14 +73,14 @@ class PoseApp : Application(), ImageLoaderFactory {
     }
 
     /**
-     * Applies immersive fullscreen to every Activity except [MainContainerActivity]
-     * (which has its own BottomNavigationView and needs visible system bars).
+     * Applies immersive fullscreen to every Activity except shell home hosts
+     * ([MainContainerActivity], [MovitMainActivity]) which need visible system bars.
      * System bars auto-hide and reappear transiently on swipe.
      */
     private fun registerImmersiveMode() {
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-                if (activity is MainContainerActivity) return
+                if (activity is MainContainerActivity || activity is MovitMainActivity) return
                 WindowCompat.setDecorFitsSystemWindows(activity.window, false)
                 WindowInsetsControllerCompat(activity.window, activity.window.decorView).apply {
                     hide(WindowInsetsCompat.Type.systemBars())

@@ -6,6 +6,9 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+val movitShellLauncherEnabled =
+    providers.gradleProperty("movit.shell.launcher.enabled").orNull?.toBoolean() ?: false
+
 // Read API config from local.properties (machine-specific) with optional api.properties defaults.
 val localProps = rootProject.file("local.properties")
 val apiPropsFile = rootProject.file("api.properties")
@@ -16,9 +19,6 @@ val apiMode = apiProps.getProperty("api.mode", "local")
 val apiPort = apiProps.getProperty("api.port", "4000")
 val apiPhysicalIp = apiProps.getProperty("api.physical_device_ip", "192.168.1.18")
 val apiServerUrl = apiProps.getProperty("api.server_url", "https://back.mongz.online/")
-
-val movitShellLauncherEnabled =
-    providers.gradleProperty("movit.shell.launcher.enabled").orNull?.toBoolean() ?: false
 
 android {
     namespace = "com.trainingvalidator.poc"
@@ -46,7 +46,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -80,6 +81,15 @@ android {
             isIncludeAndroidResources = true
         }
     }
+
+    sourceSets {
+        if (movitShellLauncherEnabled) {
+            getByName("main").java.srcDir("src/movitShellEnabled/java")
+        } else {
+            getByName("main").java.srcDir("src/movitShellDisabled/java")
+            getByName("debug").java.srcDir("src/debugMovitHost/java")
+        }
+    }
 }
 
 kotlin {
@@ -92,38 +102,42 @@ dependencies {
     // Secure auth tokens (EncryptedSharedPreferences) — production path via AuthManager
     implementation(project(":core:data"))
 
-    // Movit KMP modules — debug-only until launcher flip (Pre-06 WS-C / Launcher Gate doc)
+    // Movit KMP modules — release classpath only when launcher flag is on (Phase 06 G-5).
+    // core:data stays implementation unconditionally (AuthManager / secure tokens in legacy path).
+    val movitShellProjects = listOf(
+        ":shared",
+        ":core:model",
+        ":core:resources",
+        ":core:network",
+        ":core:designsystem",
+        ":feature:explore",
+        ":feature:home",
+        ":feature:train",
+        ":feature:library",
+        ":feature:reports",
+        ":feature:account",
+        ":feature:shell",
+    )
     val movitShellDeps: org.gradle.kotlin.dsl.DependencyHandlerScope.() -> Unit = {
-        add("implementation", project(":shared"))
-        add("implementation", project(":core:network"))
-        add("implementation", project(":core:data"))
-        add("implementation", project(":core:designsystem"))
-        add("implementation", project(":feature:explore"))
-        add("implementation", project(":feature:home"))
-        add("implementation", project(":feature:train"))
-        add("implementation", project(":feature:library"))
-        add("implementation", project(":feature:reports"))
-        add("implementation", project(":feature:account"))
-        add("implementation", project(":feature:shell"))
+        movitShellProjects.forEach { path -> add("implementation", project(path)) }
         add("implementation", libs.androidx.activity.compose)
+        add("implementation", libs.jetbrains.lifecycle.viewmodel.compose)
+    }
+    val movitShellDebugDeps: org.gradle.kotlin.dsl.DependencyHandlerScope.() -> Unit = {
+        movitShellProjects.forEach { path -> add("debugImplementation", project(path)) }
+        add("debugImplementation", libs.androidx.activity.compose)
+        add("debugImplementation", libs.jetbrains.lifecycle.viewmodel.compose)
+        add("debugImplementation", libs.compose.ui.tooling)
     }
     if (movitShellLauncherEnabled) {
         movitShellDeps()
         debugImplementation(libs.compose.ui.tooling)
     } else {
-        debugImplementation(project(":shared"))
-        debugImplementation(project(":core:network"))
-        debugImplementation(project(":core:data"))
-        debugImplementation(project(":core:designsystem"))
-        debugImplementation(project(":feature:explore"))
-        debugImplementation(project(":feature:home"))
-        debugImplementation(project(":feature:train"))
-        debugImplementation(project(":feature:library"))
-        debugImplementation(project(":feature:reports"))
-        debugImplementation(project(":feature:account"))
-        debugImplementation(project(":feature:shell"))
-        debugImplementation(libs.androidx.activity.compose)
-        debugImplementation(libs.compose.ui.tooling)
+        movitShellDebugDeps()
+        // Satisfy Compose compiler on release without pulling Movit into releaseRuntimeClasspath.
+        releaseCompileOnly(
+            "org.jetbrains.compose.runtime:runtime:${libs.versions.compose.multiplatform.get()}",
+        )
     }
 
     implementation(project(":core:training-engine"))

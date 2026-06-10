@@ -14,7 +14,7 @@ import com.trainingvalidator.poc.network.GoogleSignInHelper
 import com.trainingvalidator.poc.network.LoginRequest
 import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.storage.UserDataCleaner
-import com.trainingvalidator.poc.ui.main.MainContainerActivity
+import com.movit.navigation.MovitPostLoginNavigator
 import com.trainingvalidator.poc.ui.onboarding.OnboardingGate
 import com.trainingvalidator.poc.ui.onboarding.ProfileOnboardingActivity
 import kotlinx.coroutines.Dispatchers
@@ -198,7 +198,7 @@ class SignInActivity : AppCompatActivity() {
     /** After a successful login, route to onboarding when the trainee profile is incomplete. */
     private suspend fun routeAfterAuth() {
         val next = if (OnboardingGate.isProfileComplete(this)) {
-            MainContainerActivity::class.java
+            MovitPostLoginNavigator.homeActivityClass()
         } else {
             ProfileOnboardingActivity::class.java
         }

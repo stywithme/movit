@@ -14,7 +14,7 @@ import com.trainingvalidator.poc.network.GoogleSignInHelper
 import com.trainingvalidator.poc.network.RegisterRequest
 import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.storage.UserDataCleaner
-import com.trainingvalidator.poc.ui.main.MainContainerActivity
+import com.movit.navigation.MovitPostLoginNavigator
 import com.trainingvalidator.poc.ui.onboarding.OnboardingGate
 import com.trainingvalidator.poc.ui.onboarding.ProfileOnboardingActivity
 import kotlinx.coroutines.Dispatchers
@@ -200,7 +200,7 @@ class SignUpActivity : AppCompatActivity() {
                     Toast.makeText(this@SignUpActivity, getString(R.string.success), Toast.LENGTH_SHORT).show()
                     // Google may sign in an existing user — only onboard if the profile is incomplete.
                     val next = if (OnboardingGate.isProfileComplete(this@SignUpActivity)) {
-                        MainContainerActivity::class.java
+                        MovitPostLoginNavigator.homeActivityClass()
                     } else {
                         ProfileOnboardingActivity::class.java
                     }

@@ -48,7 +48,7 @@ feature:home  → Body scan → Assessment · بطاقة المستوى → Leve
 
 ### كيف يُعرض للمدير اليوم؟
 
-- **Android (فريق التطوير):** `MovitShellPilotActivity` — debug فقط، ليس launcher الإنتاج.
+- **Android (فريق التطوير):** **Phase 06 CLOSED** — shell إنتاجي خلف `movit.shell.launcher.enabled=true` (استراتيجية B: auth قديم → `MovitMainActivity`)؛ `MovitShellPilotActivity` للـ QA في debug.
 - **iOS:** `iosApp` → نفس Shell؛ يحتاج `MovitData.install` + مفاتيح `access_token` إن أُريدت بيانات حقيقية.
 - **تدفقات تجريبية:** Account → Sign in · Home → Start scan · Home → View level · Account → Training profile / Body assessment.
 
@@ -58,7 +58,7 @@ feature:home  → Body scan → Assessment · بطاقة المستوى → Leve
 |-------|--------|
 | Google Sign-In | يحتاج جسر Android/iOS (Credentials) — الزر UI فقط حالياً |
 | كاميرا Assessment الحية | Phase 07 (camera/ML) |
-| Launcher production | Shell ما زال debug-only (WS-C — [Launcher Gate](Android-KMP-Mobile-UI-UX-Launcher-Gate.md)) |
+| Smoke release على جهاز | Phase 06 — مسار الإنتاج جاهز؛ smoke يدوي + لقطات قبل شحن تجريبي ([Phase 06](Android-KMP-Mobile-UI-UX-Phase-06-Production-Launcher-Plan.md)) |
 | مطابقة بصرية 100% مع prototypes | فجوات UX ثانوية (صور، animations) |
 
 ### المراجع التفصيلية
@@ -106,8 +106,8 @@ feature:home  → Body scan → Assessment · بطاقة المستوى → Leve
 - **UDF لكل feature:** `State / Event / Effect / ViewModel / Route / Screen`، باستخدام KMP `androidx.lifecycle.ViewModel` (لا Controller، لا Android-only ViewModel).
 - **Design System كمصدر حقيقة واحد:** `MovitTheme` + tokens؛ الـ palette الوحيدة بها hex؛ Light/Dark؛ `error` مميّز عن `tertiary`؛ line-heights مناسبة للعربى.
 - **iOS مفروض بالـ build:** كل الموديولات بها `iosArm64 + iosSimulatorArm64` (`iosX64` في `:shared` فقط)، وCI على macOS (`.github/workflows/movit-kmp-ios.yml`) يكمبّل `commonMain` لـ iOS عند كل push على `android-poc/**` — **أخضر**.
-- **بيانات حقيقية عبر MovitData (بدون جسور Retrofit):** Explore · Home · Train · Reports · Session · Report Detail · **Account (login, profile, onboarding, level)** — `MovitDataInstall` على Android debug · `IosMovitPlatform` على iOS.
-- **Release hygiene:** كل موديولات Movit `debugImplementation`؛ الـ launcher القديم لم يُلمس؛ `releaseRuntimeClasspath` نظيف.
+- **بيانات حقيقية عبر MovitData (بدون جسور Retrofit):** Explore · Home · Train · Reports · Session · Report Detail · **Account (login, profile, onboarding, level)** — `MovitDataInstall` في `app/src/main` · `IosMovitPlatform` على iOS.
+- **Release hygiene (Phase 06):** موديولات Movit `implementation` عند `movit.shell.launcher.enabled=true`؛ `debugImplementation` + classpath نظيف عند off؛ `SplashActivity` LAUNCHER ثابت؛ rollback بفلاج واحد.
 - **Tests:** خضراء عبر كل الموديولات — أعداد KMP في [`generated/Docs-Stats-Snapshot.md`](generated/Docs-Stats-Snapshot.md) (`.\gradlew.bat docsStats`).
 - **نِسب الصفحات:** مصدر وحيد — [`Page-Scorecards.md`](Page-Scorecards.md).
 

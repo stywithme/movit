@@ -20,7 +20,7 @@ import com.trainingvalidator.poc.network.RecommendedProgramData
 import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.training.models.LocalizedText
 import com.trainingvalidator.poc.ui.programs.ProgramListActivity
-import com.trainingvalidator.poc.ui.main.MainContainerActivity
+import com.movit.navigation.MovitPostLoginNavigator
 import com.trainingvalidator.poc.ui.utils.feedbackLanguageCode
 import com.trainingvalidator.poc.ui.utils.formatPlanProgramLevel
 import kotlinx.coroutines.Dispatchers
@@ -808,12 +808,11 @@ class AssessmentResultActivity : AppCompatActivity() {
      */
     private fun navigateToHome() {
         try {
-            val intent = Intent(this, MainContainerActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
-            }
-            startActivity(intent)
+            startActivity(
+                MovitPostLoginNavigator.createHomeIntent(this, clearTask = true),
+            )
         } catch (e: Exception) {
-            Log.w(TAG, "MainContainerActivity not available", e)
+            Log.w(TAG, "Post-login home not available", e)
         }
         finish()
     }

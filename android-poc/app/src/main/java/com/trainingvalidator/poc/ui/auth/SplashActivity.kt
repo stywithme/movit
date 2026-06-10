@@ -12,7 +12,7 @@ import androidx.lifecycle.lifecycleScope
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivitySplashBinding
 import com.trainingvalidator.poc.storage.AuthManager
-import com.trainingvalidator.poc.ui.main.MainContainerActivity
+import com.movit.navigation.MovitPostLoginNavigator
 import com.trainingvalidator.poc.ui.onboarding.OnboardingGate
 import com.trainingvalidator.poc.ui.onboarding.ProfileOnboardingActivity
 import kotlinx.coroutines.delay
@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
  * Shows the app logo with a loading animation, then navigates to:
  * - OnboardingActivity (if first launch)
  * - SignInActivity (if not logged in)
- * - MainContainerActivity (if logged in)
+ * - Movit shell or MainContainerActivity (if logged in; see MovitPostLoginNavigator)
  */
 @SuppressLint("CustomSplashScreen")
 class SplashActivity : AppCompatActivity() {
@@ -111,7 +111,7 @@ class SplashActivity : AppCompatActivity() {
                 !isLoggedIn || isTokenExpired -> SignInActivity::class.java
                 !OnboardingGate.isProfileComplete(this@SplashActivity) ->
                     ProfileOnboardingActivity::class.java
-                else -> MainContainerActivity::class.java
+                else -> MovitPostLoginNavigator.homeActivityClass()
             }
 
             startActivity(Intent(this@SplashActivity, nextActivity))

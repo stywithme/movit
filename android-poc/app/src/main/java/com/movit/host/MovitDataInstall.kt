@@ -1,4 +1,4 @@
-package com.movit.debug
+package com.movit.host
 
 import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
@@ -10,6 +10,7 @@ import com.trainingvalidator.poc.network.ApiConfig
 import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.storage.ExerciseRepository
 import com.trainingvalidator.poc.storage.ProgramRepository
+import com.trainingvalidator.poc.storage.UserDataCleaner
 import com.trainingvalidator.poc.ui.theme.AppThemeManager
 
 object MovitDataInstall {
@@ -122,6 +123,7 @@ object MovitDataInstall {
                 }
 
                 override fun clearAuthSession() {
+                    UserDataCleaner.clearAll(appContext)
                     AuthManager.clearAuthData(appContext)
                 }
 

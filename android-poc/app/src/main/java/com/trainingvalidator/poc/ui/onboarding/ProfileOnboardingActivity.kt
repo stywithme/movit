@@ -16,7 +16,7 @@ import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityProfileOnboardingBinding
 import com.trainingvalidator.poc.network.ApiClient
 import com.trainingvalidator.poc.storage.AuthManager
-import com.trainingvalidator.poc.ui.main.MainContainerActivity
+import com.movit.navigation.MovitPostLoginNavigator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -155,10 +155,7 @@ class ProfileOnboardingActivity : AppCompatActivity() {
     }
 
     private fun goToMain() {
-        startActivity(Intent(this, MainContainerActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        })
-        finish()
+        MovitPostLoginNavigator.navigateToHome(this, clearTask = true)
     }
 
     companion object {

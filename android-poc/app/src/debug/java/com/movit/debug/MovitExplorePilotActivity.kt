@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.movit.designsystem.MovitTheme
 import com.movit.feature.explore.MovitExploreRoute
+import com.movit.host.MovitDataInstall
 
 /**
  * Debug-only pilot host for the Movit Explore screen (Phase 02).
