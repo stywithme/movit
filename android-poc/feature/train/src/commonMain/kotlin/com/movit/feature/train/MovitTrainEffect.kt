@@ -4,6 +4,7 @@ sealed interface MovitTrainEffect {
     data object OpenSessionPreview : MovitTrainEffect
     data class OpenProgramWorkout(val target: TrainWorkoutLaunchUi) : MovitTrainEffect
     data object OpenProgramList : MovitTrainEffect
+    data object OpenAssessment : MovitTrainEffect
     data class OpenProgramWeekPlan(
         val programId: String,
         val weekNumber: Int,

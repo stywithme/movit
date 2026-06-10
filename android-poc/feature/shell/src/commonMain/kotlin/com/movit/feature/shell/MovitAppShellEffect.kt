@@ -9,4 +9,6 @@ sealed interface MovitAppShellEffect {
         val exerciseFileName: String,
         val poseVariant: Int = 0,
     ) : MovitAppShellEffect
+    /** Android handles via the existing legacy subscription screen while the KMP flow is rebuilt. */
+    data object LaunchLegacySubscription : MovitAppShellEffect
 }

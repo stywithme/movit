@@ -51,7 +51,9 @@ object TrainApiMapper {
         return when (trainMode?.status) {
             "program_complete" -> TrainDashboardStatus.ProgramComplete
             "rest_day" -> TrainDashboardStatus.RestDay
-            "no_assessment", "no_plan", "reassessment_due" -> TrainDashboardStatus.NoPlan
+            "no_assessment" -> TrainDashboardStatus.NoAssessment
+            "reassessment_due" -> TrainDashboardStatus.ReassessmentDue
+            "no_plan" -> TrainDashboardStatus.NoPlan
             "active" -> when {
                 todayWorkout?.isCompleted == true -> TrainDashboardStatus.CompletedToday
                 else -> TrainDashboardStatus.ActivePlan
@@ -99,14 +101,27 @@ object TrainApiMapper {
         strings: TrainStrings,
     ): TrainTodayWorkoutUi {
         when (status) {
-            TrainDashboardStatus.NoPlan -> {
+            TrainDashboardStatus.NoPlan,
+            TrainDashboardStatus.NoAssessment,
+            TrainDashboardStatus.ReassessmentDue,
+            -> {
+                val isReassessment = status == TrainDashboardStatus.ReassessmentDue
+                val isAssessment = status == TrainDashboardStatus.NoAssessment
                 return TrainTodayWorkoutUi(
-                    title = strings.noActiveProgram,
+                    title = when {
+                        isReassessment -> strings.reassessmentDue
+                        isAssessment -> strings.assessment
+                        else -> strings.noActiveProgram
+                    },
                     subtitle = subtitleFor(status, activeProgram, trainMode, language, strings),
                     durationLabel = strings.dash,
                     exerciseCountLabel = strings.zeroExercises,
-                    focusLabel = strings.focusProgram,
-                    primaryActionLabel = strings.explorePrograms,
+                    focusLabel = if (isAssessment || isReassessment) strings.assessment else strings.focusProgram,
+                    primaryActionLabel = when {
+                        isReassessment -> strings.startReassessment
+                        isAssessment -> strings.startBodyScan
+                        else -> strings.explorePrograms
+                    },
                 )
             }
             TrainDashboardStatus.ProgramComplete -> {
@@ -249,7 +264,14 @@ object TrainApiMapper {
         status: TrainDashboardStatus,
         strings: TrainStrings,
     ): List<TrainWeekPreviewUi> {
-        if (activeProgram == null || status == TrainDashboardStatus.NoPlan) return emptyList()
+        if (
+            activeProgram == null ||
+            status == TrainDashboardStatus.NoPlan ||
+            status == TrainDashboardStatus.NoAssessment ||
+            status == TrainDashboardStatus.ReassessmentDue
+        ) {
+            return emptyList()
+        }
         val totalWeeks = activeProgram.totalWeeks.coerceAtLeast(1)
         return (1..totalWeeks).map { weekNumber ->
             val preview = if (weekNumber == activeProgram.weekNumber) {
@@ -371,6 +393,8 @@ object TrainApiMapper {
         TrainDashboardStatus.CompletedToday -> strings.title
         TrainDashboardStatus.RestDay -> strings.statusRecovery
         TrainDashboardStatus.ProgramComplete -> strings.programComplete
+        TrainDashboardStatus.NoAssessment -> strings.assessment
+        TrainDashboardStatus.ReassessmentDue -> strings.reassessmentDue
         TrainDashboardStatus.NoPlan -> strings.findPlan
     }
 
@@ -388,6 +412,8 @@ object TrainApiMapper {
             if (name.isNotBlank()) strings.restInProgram(name) else strings.subtitleRest
         }
         TrainDashboardStatus.ProgramComplete -> strings.subtitleProgramComplete
+        TrainDashboardStatus.NoAssessment -> strings.subtitleNoAssessment
+        TrainDashboardStatus.ReassessmentDue -> strings.subtitleReassessment
         TrainDashboardStatus.NoPlan -> when (trainMode?.status) {
             "no_assessment" -> strings.subtitleNoAssessment
             "reassessment_due" -> strings.subtitleReassessment
@@ -400,6 +426,8 @@ object TrainApiMapper {
         TrainDashboardStatus.RestDay -> strings.readyMsgRest
         TrainDashboardStatus.CompletedToday -> strings.readyMsgComplete
         TrainDashboardStatus.ProgramComplete -> strings.readyMsgProgramDone
+        TrainDashboardStatus.NoAssessment,
+        TrainDashboardStatus.ReassessmentDue,
         TrainDashboardStatus.NoPlan -> strings.readyMsgNoPlan
     }
 
@@ -408,6 +436,8 @@ object TrainApiMapper {
         TrainDashboardStatus.RestDay -> strings.guideRest
         TrainDashboardStatus.CompletedToday -> strings.guideComplete
         TrainDashboardStatus.ProgramComplete -> strings.guideProgramDone
+        TrainDashboardStatus.NoAssessment,
+        TrainDashboardStatus.ReassessmentDue,
         TrainDashboardStatus.NoPlan -> strings.guideNoPlan
     }
 

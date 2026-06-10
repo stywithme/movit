@@ -34,6 +34,7 @@ fun MovitAppShellRoute(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     onTrainEffect: (MovitTrainEffect) -> Boolean = { false },
     onLaunchLegacyTraining: (MovitAppShellEffect.LaunchLegacyCameraTraining) -> Boolean = { false },
+    onLaunchLegacySubscription: () -> Boolean = { false },
 ) {
     val shellState by shellViewModel.state.collectAsStateWithLifecycle()
 
@@ -64,6 +65,7 @@ fun MovitAppShellRoute(
                 snackbarHostState = snackbarHostState,
                 onTrainEffect = onTrainEffect,
                 onLaunchLegacyTraining = onLaunchLegacyTraining,
+                onLaunchLegacySubscription = onLaunchLegacySubscription,
             )
         }
     }
@@ -81,6 +83,7 @@ private fun MovitAppShellRouteContent(
     snackbarHostState: SnackbarHostState,
     onTrainEffect: (MovitTrainEffect) -> Boolean,
     onLaunchLegacyTraining: (MovitAppShellEffect.LaunchLegacyCameraTraining) -> Boolean,
+    onLaunchLegacySubscription: () -> Boolean,
 ) {
     val state by shellViewModel.state.collectAsStateWithLifecycle()
     val language = LocalMovitLanguage.current
@@ -98,6 +101,13 @@ private fun MovitAppShellRouteContent(
                     if (!onLaunchLegacyTraining(effect)) {
                         snackbarHostState.showSnackbar(
                             localizedString(language, "prepare_training_bridge_unavailable"),
+                        )
+                    }
+                }
+                MovitAppShellEffect.LaunchLegacySubscription -> {
+                    if (!onLaunchLegacySubscription()) {
+                        snackbarHostState.showSnackbar(
+                            localizedString(language, "profile_subscription_ios_unavailable"),
                         )
                     }
                 }

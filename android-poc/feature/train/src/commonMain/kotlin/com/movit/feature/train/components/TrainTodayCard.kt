@@ -324,6 +324,9 @@ private fun parseSets(subtitle: String): Int {
 private fun sectionTitle(status: TrainDashboardStatus, today: TrainTodayWorkoutUi): String = when (status) {
     TrainDashboardStatus.ActivePlan -> movitText("train_section_today_named", today.subtitle)
     TrainDashboardStatus.NoPlan -> movitText("train_start_training")
+    TrainDashboardStatus.NoAssessment,
+    TrainDashboardStatus.ReassessmentDue,
+    -> movitText("home_assessment")
     TrainDashboardStatus.RestDay -> movitText("train_today_label")
     TrainDashboardStatus.CompletedToday -> movitText("train_section_today_named", today.subtitle)
     TrainDashboardStatus.ProgramComplete -> movitText("train_next_step")
@@ -333,6 +336,8 @@ private fun sectionTitle(status: TrainDashboardStatus, today: TrainTodayWorkoutU
 private fun sectionSubtitle(status: TrainDashboardStatus): String = when (status) {
     TrainDashboardStatus.ActivePlan -> movitText("train_section_review_session")
     TrainDashboardStatus.NoPlan -> movitText("train_section_pick_program")
+    TrainDashboardStatus.NoAssessment -> movitText("train_subtitle_no_assessment")
+    TrainDashboardStatus.ReassessmentDue -> movitText("train_subtitle_reassessment")
     TrainDashboardStatus.RestDay -> movitText("train_section_optional_light")
     TrainDashboardStatus.CompletedToday -> movitText("train_section_sessions_complete")
     TrainDashboardStatus.ProgramComplete -> movitText("train_section_journey_review")

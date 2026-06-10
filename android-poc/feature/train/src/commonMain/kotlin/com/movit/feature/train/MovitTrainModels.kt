@@ -3,6 +3,8 @@ package com.movit.feature.train
 enum class TrainDashboardStatus {
     ActivePlan,
     NoPlan,
+    NoAssessment,
+    ReassessmentDue,
     RestDay,
     CompletedToday,
     ProgramComplete,

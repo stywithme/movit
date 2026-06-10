@@ -127,7 +127,9 @@ class MovitAppShellViewModel : ViewModel() {
             MovitProfileEffect.OpenAssessment -> pushInner(MovitInnerRoute.Assessment)
             MovitProfileEffect.OpenLevel -> pushInner(MovitInnerRoute.LevelProfile)
             MovitProfileEffect.OpenSubscription -> {
-                if (!PlatformInfo.supportsInAppSubscription) {
+                if (PlatformInfo.supportsInAppSubscription) {
+                    _effects.tryEmit(MovitAppShellEffect.LaunchLegacySubscription)
+                } else {
                     _effects.tryEmit(
                         MovitAppShellEffect.ShowLocalizedMessage("profile_subscription_ios_unavailable"),
                     )
@@ -225,6 +227,7 @@ class MovitAppShellViewModel : ViewModel() {
     private fun handleTrainEffect(effect: MovitTrainEffect) {
         when (effect) {
             MovitTrainEffect.OpenProgramList -> pushInner(MovitInnerRoute.ProgramList)
+            MovitTrainEffect.OpenAssessment -> pushInner(MovitInnerRoute.Assessment)
             is MovitTrainEffect.OpenProgramWeekPlan -> pushInner(
                 MovitInnerRoute.ProgramWeekPlan(
                     programId = effect.programId,

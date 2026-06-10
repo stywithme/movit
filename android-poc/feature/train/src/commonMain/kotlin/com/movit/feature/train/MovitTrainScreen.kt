@@ -77,6 +77,9 @@ private fun TrainDashboardContent(
     val onPrimaryAction: () -> Unit = {
         when (dashboard.status) {
             TrainDashboardStatus.ActivePlan -> onEvent(MovitTrainEvent.StartWorkoutClicked)
+            TrainDashboardStatus.NoAssessment,
+            TrainDashboardStatus.ReassessmentDue,
+            -> onEvent(MovitTrainEvent.AssessmentClicked)
             TrainDashboardStatus.NoPlan,
             TrainDashboardStatus.RestDay,
             -> onEvent(MovitTrainEvent.ExploreProgramsClicked)
@@ -103,7 +106,7 @@ private fun TrainDashboardContent(
     val selectedWeek = weekOptions.getOrElse(state.selectedWeekIndex) { dashboard.week }
         .takeIf { dashboard.week.days.isNotEmpty() }
 
-    if (selectedWeek != null && dashboard.status != TrainDashboardStatus.NoPlan) {
+    if (selectedWeek != null && shouldShowWeek(dashboard.status)) {
         TrainWeekPreview(
             week = selectedWeek,
             canGoPrevious = state.selectedWeekIndex > 0,
@@ -152,9 +155,23 @@ private fun shouldShowReadiness(status: TrainDashboardStatus): Boolean = when (s
     TrainDashboardStatus.ActivePlan,
     TrainDashboardStatus.RestDay,
     TrainDashboardStatus.NoPlan,
+    TrainDashboardStatus.NoAssessment,
+    TrainDashboardStatus.ReassessmentDue,
     -> true
     else -> false
 }
 
+private fun shouldShowWeek(status: TrainDashboardStatus): Boolean = when (status) {
+    TrainDashboardStatus.NoPlan,
+    TrainDashboardStatus.NoAssessment,
+    TrainDashboardStatus.ReassessmentDue,
+    -> false
+    else -> true
+}
+
 private fun shouldShowReport(dashboard: TrainDashboardUi): Boolean =
-    dashboard.report != null && dashboard.program != null && dashboard.status != TrainDashboardStatus.NoPlan
+    dashboard.report != null &&
+        dashboard.program != null &&
+        dashboard.status != TrainDashboardStatus.NoPlan &&
+        dashboard.status != TrainDashboardStatus.NoAssessment &&
+        dashboard.status != TrainDashboardStatus.ReassessmentDue

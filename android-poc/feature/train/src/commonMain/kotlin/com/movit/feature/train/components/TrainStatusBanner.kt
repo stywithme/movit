@@ -119,6 +119,8 @@ fun TrainStatusBanner(
 private fun heroEyebrow(status: TrainDashboardStatus): String = when (status) {
     TrainDashboardStatus.ActivePlan -> movitText("train_active_program")
     TrainDashboardStatus.NoPlan -> movitText("train_get_started")
+    TrainDashboardStatus.NoAssessment -> movitText("home_assessment")
+    TrainDashboardStatus.ReassessmentDue -> movitText("home_reassessment_due")
     TrainDashboardStatus.RestDay -> movitText("train_recovery_day")
     TrainDashboardStatus.CompletedToday -> movitText("train_today_complete")
     TrainDashboardStatus.ProgramComplete -> movitText("train_program_complete")
@@ -128,6 +130,8 @@ private fun heroEyebrow(status: TrainDashboardStatus): String = when (status) {
 private fun statusTitle(status: TrainDashboardStatus): String = when (status) {
     TrainDashboardStatus.ActivePlan -> movitText("train_active_program")
     TrainDashboardStatus.NoPlan -> movitText("train_browse_programs")
+    TrainDashboardStatus.NoAssessment -> movitText("home_start_body_scan")
+    TrainDashboardStatus.ReassessmentDue -> movitText("home_start_reassessment")
     TrainDashboardStatus.RestDay -> movitText("train_rest_day_label")
     TrainDashboardStatus.CompletedToday -> movitText("train_day_complete_short")
     TrainDashboardStatus.ProgramComplete -> movitText("train_program_complete")
@@ -137,6 +141,8 @@ private fun statusTitle(status: TrainDashboardStatus): String = when (status) {
 private fun statusSubtitle(status: TrainDashboardStatus): String = when (status) {
     TrainDashboardStatus.ActivePlan -> movitText("train_status_plan_ready")
     TrainDashboardStatus.NoPlan -> movitText("train_status_pick_plan")
+    TrainDashboardStatus.NoAssessment -> movitText("train_subtitle_no_assessment")
+    TrainDashboardStatus.ReassessmentDue -> movitText("train_subtitle_reassessment")
     TrainDashboardStatus.RestDay -> movitText("train_status_recovery_part")
     TrainDashboardStatus.CompletedToday -> movitText("train_status_training_complete")
     TrainDashboardStatus.ProgramComplete -> movitText("train_status_program_review")

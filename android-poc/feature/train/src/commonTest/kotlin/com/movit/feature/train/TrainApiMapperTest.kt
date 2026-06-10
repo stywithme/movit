@@ -119,7 +119,7 @@ class TrainApiMapperTest {
     }
 
     @Test
-    fun mapsNoPlanStatus() {
+    fun mapsNoAssessmentStatus() {
         runBlocking {
             val strings = TrainStrings.load("en")
             val data = HomeDataDto(
@@ -128,8 +128,23 @@ class TrainApiMapperTest {
 
             val dashboard = TrainApiMapper.map(data, language = "en", strings = strings)
 
-            assertEquals(TrainDashboardStatus.NoPlan, dashboard.status)
-            assertEquals(strings.explorePrograms, dashboard.today?.primaryActionLabel)
+            assertEquals(TrainDashboardStatus.NoAssessment, dashboard.status)
+            assertEquals(strings.startBodyScan, dashboard.today?.primaryActionLabel)
+        }
+    }
+
+    @Test
+    fun mapsReassessmentDueStatus() {
+        runBlocking {
+            val strings = TrainStrings.load("en")
+            val data = HomeDataDto(
+                trainMode = TrainModeDto(status = "reassessment_due"),
+            )
+
+            val dashboard = TrainApiMapper.map(data, language = "en", strings = strings)
+
+            assertEquals(TrainDashboardStatus.ReassessmentDue, dashboard.status)
+            assertEquals(strings.startReassessment, dashboard.today?.primaryActionLabel)
         }
     }
 }

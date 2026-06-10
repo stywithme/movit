@@ -401,3 +401,42 @@ cd android-poc
 | **WS-4 دفعة 2** | `:app` → version catalog · `local.properties` untrack · Jetifier off |
 | **WS-6 إنتاج iOS** | StoreKit bridge · `active_user_program_id` writer · تحقق `xcodebuild` يحتاج Mac CI فعلي |
 | **إعلان Pre-06.2 مغلقة بالكامل** | P2 جزئي — يمكن المتابعة بالتوازي مع صفحات 15/16 |
+
+---
+
+## مراجعة تحقّق مستقلة (Independent Verification — 2026-06-10)
+
+> مراجعة لاحقة **لم تثق بسجلات التنفيذ أعلاه**، بل تحقّقت من كل مسار عمل **في الكود الفعلي** + **شغّلت البناء الكامل محلياً** (نفس منهج المراجعة التي ولّدت هذه الخطة). الخلاصة: **سجلات التنفيذ دقيقة** — كل ادعاءات WS-1→WS-7 صمدت أمام الفحص، مع ملاحظتين صغيرتين وبند نظافة واحد مهم.
+
+### نتيجة البناء المحلي (موثوق)
+
+```
+BUILD SUCCESSFUL in 3m 23s — 459 actionable tasks (exit 0)
+```
+
+10 مهام خضراء بما فيها `:feature:shell:compileKotlinIosSimulatorArm64` (التي كانت تفشل سابقاً بسبب `String.format`) — والبناء يشمل تعديلات شجرة العمل غير المرفوعة (انظر أدناه)، أي أن الشجرة الحالية تُكمبّل لـ Android **و** iOS.
+
+### تحقّق محور بمحور (من الكود، لا من السجل)
+
+| المسار | التحقق | الدليل المفحوص |
+|--------|--------|----------------|
+| **WS-1** | ✅ مؤكد | `MovitMobileApi.refresh()` (سطر 199 → `api/mobile/auth/refresh`) · `MovitHttpClientAuth.kt` + `MovitAuthTokenStore.kt` · اختبارات `MovitHttpClientAuthTest` + `TokenLifecycleIntegrationTest` موجودة وتمر |
+| **WS-2** | ✅ مؤكد (ملاحظة صغيرة) | لا `\'` في `MovitEnglishStrings.kt` (`"Today's workout"` صحيح) · `MovitStringKeyExistenceTest` + `MovitEnglishStringsTest` موجودان · literals DS أُزيلت **عدا** بند واحد ↓ |
+| **WS-3** | ✅ مؤكد | `Icons.AutoMirrored.*` في WeekStrip/HeroCard/ListRow · `MovitSpacing.minTouchTarget = 48.dp` مُطبَّق على أزرار الأسبوع · `MovitClickable` يستهلك `ripple(color = movit.primaryPress)` |
+| **WS-4** | ✅ دفعة 1 مؤكدة | `:core:model` موجود (ExploreModels/MovitTagVariant) · `build-logic` + `includeBuild` · `library→explore` **محذوف** · 13 موديولاً على `movit.kmp.*` · `local.properties` **لم يعد متتبَّعاً** (أفضل مما يدّعيه السجل) |
+| **WS-5** | ✅ دفعة 1 مؤكدة | legacy `OneEuroFilter`/`AngleCalculator` يفوّضان KMP (`import … as KmpOneEuroFilter` · `JointAngleCalculator.angleDegrees`) · `TimingPolicy`/`VisibilityMonitor`/`RepCountingTimingOverrides` في KMP |
+| **WS-6** | ✅ دفعة CI مؤكدة | workflow فيه `compileKotlinIosArm64` + `linkDebugFrameworkIosArm64` + `iosSimulatorArm64Test`×6 + **job `ios-xcodebuild` غير مشروط** (macos-15، xcodegen + `xcodebuild` للتطبيق السويفتي) — يفسّر «الأكشن أخضر» |
+| **WS-7** | ✅ مؤكد | Gradle task `docsStats` موجود · snapshot في المسار المرتبط · **صفر** `collectAsState()` عارٍ في feature routes |
+
+### ملاحظات المراجعة (لا blockers)
+
+| # | الملاحظة | الخطورة | الإجراء |
+|---|----------|---------|---------|
+| V-1 | **شجرة عمل غير مرفوعة:** 14 ملفاً (~107 إضافة) منطق حقيقي في train/shell — `OpenAssessment` · `AssessmentClicked` · `LaunchLegacySubscription` · `TrainApiMapper` (+42) · `MovitTrainScreen` (+21). **الأكشن الأخضر ركض على HEAD المرفوع، لا على هذه الشجرة.** | 🟡 نظافة | ارفعها عبر CI (أو ارجعها إن كانت تجريبية) قبل إعلان أي إغلاق — كي يغطّي الأخضر الكود الفعلي |
+| V-2 | **بقية literal في DS:** `MovitSessionCard` افتراضه `actionLabel = "Start session"` (إنجليزي)، ومستدعيه الوحيد `TrainTodayCard:128` لا يمرّر بديلاً → يظهر إنجليزياً على صفحة Train العربية. ادعاء «صفر literals» مبالغ قليلاً. | 🟢 منخفضة | سطر واحد: مرّر `movitText("…")` من `TrainTodayCard` — يُغلق WS-2 كاملاً |
+| V-3 | **تحذيرات Keychain:** 6× `This cast can never succeed` في `IosKeychainSecureSessionStore.kt` (كود أمني، Pre-06/WS-D لا Pre-06.2). يُكمبّل وله اختبارات، لكن casts الـ CFType تستحق فحصاً. | 🟢 متابعة | راجع cinterop casts عند لمس WS-6 |
+
+### الحكم
+
+سجلّا التنفيذ وإغلاق الفجوات **صادقان ودقيقان** (تباين عن المستندات القديمة التي بالغت). **P0+P1 مغلقان فعلاً** والبناء أخضر Android+iOS محلياً، ومتسق مع CI الأخضر. يتبقّى: بند نظافة V-1، وV-2 لإغلاق WS-2 100%، ثم دفعات P2 اللاحقة.
+

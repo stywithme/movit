@@ -83,6 +83,9 @@ class MovitTrainViewModel(
             -> {
                 _effects.tryEmit(MovitTrainEffect.OpenProgramList)
             }
+            MovitTrainEvent.AssessmentClicked -> {
+                _effects.tryEmit(MovitTrainEffect.OpenAssessment)
+            }
             MovitTrainEvent.ViewReportClicked,
             MovitTrainEvent.ViewJourneyClicked,
             -> {
