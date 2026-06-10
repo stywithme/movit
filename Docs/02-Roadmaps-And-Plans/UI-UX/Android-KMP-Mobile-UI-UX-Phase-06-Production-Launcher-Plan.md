@@ -279,8 +279,8 @@ adb shell am start -n com.trainingvalidator.poc/com.movit.debug.MovitShellPilotA
 | | |
 |---|---|
 | **الحالة** | ✅ |
-| **الملفات** | `app/src/movitShellEnabled/java/com/movit/host/MovitShellHost.kt` · `MovitMainActivity.kt` (enabled) · `app/src/movitShellDisabled/java/com/movit/MovitMainActivity.kt` (placeholder) · `app/src/debugMovitHost/` (pilot QA عند flag off) |
-| **القرارات** | host واحد `attachMovitShellHost` + `MovitAppShellHost`؛ pilot debug يعيد استخدام نفس المنطق |
+| **الملفات** | `app/src/movitShellHost/java/com/movit/host/MovitShellHost.kt` (مشترك) · `MovitMainActivity.kt` (enabled) · `app/src/movitShellDisabled/java/com/movit/MovitMainActivity.kt` (placeholder) · `MovitShellPilotActivity` (debug QA) |
+| **القرارات** | host واحد `attachMovitShellHost` + `MovitAppShellHost` في source set `movitShellHost`؛ pilot وproduction يستدعيان نفس الكود |
 | **التحقق** | عند flag on، `MovitMainActivity` يستضيف Compose shell + جسرا الكاميرا/الاشتراك |
 
 ### G-3 — بوابة auth (استراتيجية B)
@@ -370,7 +370,7 @@ adb shell am start -n com.trainingvalidator.poc/com.movit.debug.MovitShellPilotA
 | Phase 07 — كاميرا/ML KMP | `CameraFrameSource` + `PoseDetector` expect/actual |
 | G-7 iOS | native auth + token sync |
 | Deep links → shell | ما زالت legacy (`MovitPostLoginNavigator` doc) |
-| CI | إضافة job `assembleRelease` on/off + classpath gate |
+| CI | ~~إضافة job `assembleRelease` on/off + classpath gate~~ → **P6-3 ✅** |
 
 ---
 
@@ -395,11 +395,36 @@ adb shell am start -n com.trainingvalidator.poc/com.movit.debug.MovitShellPilotA
 
 | # | الملاحظة | الإجراء |
 |---|----------|---------|
-| P6-1 | **`MovitShellHost` مكرَّر** في `movitShellEnabled/host/` و`debugMovitHost/host/` — متطابق سلوكياً لكن **تباعد أسلوبياً** (أحدهما يستخرج `navigateToLegacyAuth`، الآخر يُضمّنه). خطر R2 تحقّق صغيراً. | وحِّد المصدر أو ضعه في source set يشمله الاثنان |
-| P6-2 | **ProGuard واسع جداً:** `-keep class com.movit.** { *; }` + `androidx.compose.** { *; }` + `kotlinx.coroutines.** { *; }` تعطّل shrink/obfuscate لكل كود KMP+Compose — **آمنة** لكن تكبّر APK وتلغي تعمية كودك (وCompose/coroutines يشحنان consumer rules أصلاً). | ضيّقها لاحقاً لأسطح الـ reflection فقط |
-| P6-3 | **R8 release path غير مُغطّى بـ CI** (الموجود iOS + assembleDebug). | أضِف job `assembleRelease` on/off — كما هو مدرج في «ما تبقى» |
-| P6-4 | smoke جهاز جزئي (الـ 5% الباقية) | شغّل release APK (flag on): دخول→shell→تسليم الكاميرا→logout |
+| P6-1 | ~~**`MovitShellHost` مكرَّر**~~ | ✅ **مُنفَّذ** — `src/movitShellHost/` مشترك |
+| P6-2 | ~~**ProGuard واسع جداً**~~ | ✅ **مُنفَّذ** — قواعد مضيّقة لأسطح reflection |
+| P6-3 | ~~**R8 release path غير مُغطّى بـ CI**~~ | ✅ **مُنفَّذ** — `movit-android-release.yml` |
+| P6-4 | smoke جهاز جزئي (الـ 5% الباقية) | 🔶 سكربت `scripts/phase06-smoke-adb.ps1` + تنفيذ يدوي على جهاز |
 
 ### الحكم
 
 **«CLOSED ~95%» تقدير صادق ودقيق.** البوابة محقَّقة بنياناً وبناءً: release يبني ويصغّر بنجاح بالحالتين، الـ classpath يبوّب الواجهة بإحكام، استراتيجية B مطبَّقة شاملةً، والاختبارات خضراء. الـ 5% الباقية = smoke جهاز فعلي على release. **بعد الـ commit + smoke الجهاز تُغلق Phase 06 بالكامل**، ويصبح الطريق ممهّداً لـ Phase 07 (كاميرا KMP).
+
+---
+
+## تحسينات مراجعة المدير P6-1..P6-4 (2026-06-10)
+
+| # | التحسين | الحالة | ما نُفّذ |
+|---|---------|--------|----------|
+| **P6-1** | توحيد `MovitShellHost` | ✅ | نقل إلى `app/src/movitShellHost/java/com/movit/host/MovitShellHost.kt`؛ `build.gradle.kts` يضمّه في `main` (flag on) أو `debug` (flag off)؛ حُذف النسختان من `movitShellEnabled/` و`debugMovitHost/`؛ `exitToLegacyAuthOnLogout` محفوظ |
+| **P6-2** | ضيّق ProGuard | ✅ | أُزيلت `-keep class com.movit.**` و`androidx.compose.**` و`kotlinx.coroutines.**` الشاملة؛ بقيت serialization DTOs + `$$serializer`، Ktor client/http/serialization/util، Koin core/dsl + `core.data.di/repository`، `@Composable com.movit.**` + `Movit*ViewModel` + `com.movit.host.**` |
+| **P6-3** | CI `assembleRelease` | ✅ | workflow جديد `.github/workflows/movit-android-release.yml` — ubuntu، JDK 17، Android SDK، Gradle cache؛ `assembleRelease` off ثم on؛ grep `releaseRuntimeClasspath` يتحقق من غياب/وجود `feature:shell` |
+| **P6-4** | smoke جهاز | 🔶 | سكربت مساعد `android-poc/scripts/phase06-smoke-adb.ps1` — يبني APK (اختياري) ويوثّق أوامر adb للـ checklist (install → Splash → shell → logout)؛ **التنفيذ اليدوي على جهاز ما زال مطلوباً** |
+
+### نتائج build بعد التحسينات (2026-06-10)
+
+| الأمر | النتيجة |
+|-------|---------|
+| `:app:compileDebugKotlin` + `:app:compileReleaseKotlin` (flag **off**) | ✅ BUILD SUCCESSFUL (~3m48s) |
+| `:app:assembleRelease` (flag **off**) | ✅ BUILD SUCCESSFUL (~9m) — R8 بالقواعد المضيّقة |
+| `:app:compileDebugKotlin` + `:app:compileReleaseKotlin` + `:app:assembleRelease` (flag **on**) | ✅ BUILD SUCCESSFUL (~11m) |
+
+### قرارات ProGuard (P6-2)
+
+- **أُزيل:** blanket keep لكل `com.movit.**` / `com.movit.designsystem.**` / `com.movit.feature.**` / `com.movit.resources.**` / `androidx.compose.**` / `kotlinx.coroutines.**` / `io.ktor.**` الكامل.
+- **بقي:** أسطح reflection فقط — serializers، Ktor client stack، Koin wiring، Composable entry points وViewModels وhost.
+- **التحقق:** `assembleRelease` ناجح بالحالتين بعد التضييق — لا `Missing class` من R8 في مرحلة البناء.

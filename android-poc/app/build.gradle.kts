@@ -83,11 +83,12 @@ android {
     }
 
     sourceSets {
+        val movitShellHostDir = "src/movitShellHost/java"
         if (movitShellLauncherEnabled) {
-            getByName("main").java.srcDir("src/movitShellEnabled/java")
+            getByName("main").java.srcDirs("src/movitShellEnabled/java", movitShellHostDir)
         } else {
             getByName("main").java.srcDir("src/movitShellDisabled/java")
-            getByName("debug").java.srcDir("src/debugMovitHost/java")
+            getByName("debug").java.srcDir(movitShellHostDir)
         }
     }
 }

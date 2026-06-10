@@ -9,6 +9,10 @@ import com.movit.legacy.LegacyTrainingLauncher
 import com.trainingvalidator.poc.ui.auth.SplashActivity
 import com.trainingvalidator.poc.ui.subscription.SubscriptionActivity
 
+/**
+ * Unified Movit shell host for production ([com.movit.MovitMainActivity]) and debug pilot
+ * ([com.movit.debug.MovitShellPilotActivity]).
+ */
 fun ComponentActivity.attachMovitShellHost(
     exitToLegacyAuthOnLogout: Boolean,
 ) {

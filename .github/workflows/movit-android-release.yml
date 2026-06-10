@@ -1,0 +1,70 @@
+name: Movit Android Release
+
+concurrency:
+  group: movit-android-release-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    paths:
+      - 'android-poc/**'
+      - '.github/workflows/movit-android-release.yml'
+  pull_request:
+    paths:
+      - 'android-poc/**'
+      - '.github/workflows/movit-android-release.yml'
+
+jobs:
+  assemble-release:
+    name: assembleRelease (flag off + on)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android-poc
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: assembleRelease (flag off — legacy)
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --console=plain :app:assembleRelease
+
+      - name: Verify releaseRuntimeClasspath excludes Movit shell (flag off)
+        run: |
+          ./gradlew --console=plain :app:dependencies --configuration releaseRuntimeClasspath \
+            | tee /tmp/release-classpath-off.txt
+          if grep -E 'feature:(shell|home|train|explore|library|reports|account)' /tmp/release-classpath-off.txt; then
+            echo "::error::releaseRuntimeClasspath (flag off) must not include feature:* Movit modules"
+            exit 1
+          fi
+          echo "OK: no feature:* in releaseRuntimeClasspath (flag off)"
+
+      - name: assembleRelease (flag on — Movit shell)
+        run: |
+          ./gradlew --console=plain \
+            -Pmovit.shell.launcher.enabled=true \
+            :app:assembleRelease
+
+      - name: Verify releaseRuntimeClasspath includes Movit shell (flag on)
+        run: |
+          ./gradlew --console=plain \
+            -Pmovit.shell.launcher.enabled=true \
+            :app:dependencies --configuration releaseRuntimeClasspath \
+            | tee /tmp/release-classpath-on.txt
+          grep -q 'feature:shell' /tmp/release-classpath-on.txt \
+            || (echo "::error::releaseRuntimeClasspath (flag on) must include feature:shell" && exit 1)
+          echo "OK: feature:shell present in releaseRuntimeClasspath (flag on)"
