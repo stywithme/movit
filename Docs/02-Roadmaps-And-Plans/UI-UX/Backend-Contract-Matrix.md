@@ -9,8 +9,11 @@
 | المصدر | العدد |
 |--------|------:|
 | Legacy Retrofit (`MobileSyncApi` + `AuthApi` + `SubscriptionApi` + `BookingApi`) | **67** |
-| KMP `MovitMobileApi` (`MobileApiContractRegistry.kmpCoveredEndpoints`) | **38** |
-| مغطّى من legacy في KMP | **36** (+ **1** KMP-only `GET programs/{id}` · + **1** KMP-only `POST workout-executions`) |
+| Legacy OkHttp (`WorkoutSyncService` — `POST workout-executions`) | **1** |
+| Legacy consumers (Retrofit + OkHttp · `allLegacyConsumerEndpoints`) | **68** |
+| KMP `MovitMobileApi` (`kmpCoveredEndpoints`) | **38** |
+| مغطّى من legacy في KMP (`kmpCovered` ∩ legacy consumers) | **37** |
+| KMP-only (ليس في أي legacy consumer · `kmpOnlyEndpoints`) | **1** — `GET programs/{id}` فقط |
 | متروك عمداً (ضمن deferred) | **12** |
 | مؤجَّل / phantom / parity قراءة | **31** (`deferredEndpoints` — يشمل pause/resume phantom) |
 
@@ -69,7 +72,7 @@
 | POST | `api/mobile/planned-workouts/{id}/start` | ✅ | ✅ `startPlannedWorkout` | ✅ | ✅ **أُضيف WS-1** |
 | POST | `api/mobile/planned-workouts/{id}/complete` | ✅ | ✅ `completePlannedWorkout` | ✅ | ✅ **أُضيف WS-1** |
 | POST | `api/mobile/planned-workouts/{id}/report` | ✅ | ✅ `reportPlannedWorkout` | ✅ | ✅ **أُضيف WS-1** (legacy compat) |
-| POST | `api/mobile/workout-executions` | ✅ OkHttp `WorkoutSyncService` | ✅ `uploadWorkoutExecution` | ✅ `WorkoutExecutionUploadRequestDto` | ✅ **P0** — تمرين مفرد + `executionMetrics` مطلوب |
+| POST | `api/mobile/workout-executions` | ✅ OkHttp `WorkoutSyncService` | ✅ `uploadWorkoutExecution` | ✅ `WorkoutExecutionUploadRequestDto` | ✅ **P0** — Outbox `WORKOUT_EXECUTION_UPLOAD` · legacy OkHttp في الإنتاج حتى ربط KMP |
 | POST | `api/mobile/workout-executions/explore` | ✅ | ✅ `uploadExploreWorkout` | ✅ | ✅ **أُضيف WS-1** |
 
 ### Plan & Programs
