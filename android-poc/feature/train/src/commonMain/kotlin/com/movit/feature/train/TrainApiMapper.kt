@@ -334,7 +334,7 @@ object TrainApiMapper {
             levelLabel?.let { add(it) }
         }
         return TrainFeaturedProgramUi(
-            id = slug.ifBlank { id },
+            id = id.ifBlank { slug },
             title = name.localized(language).ifBlank { strings.programFallback },
             subtitle = strings.guidedPlan(durationWeeks),
             badge = if (isFeatured) strings.featured else null,

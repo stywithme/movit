@@ -17,10 +17,10 @@ class PlanSyncRepository(
      */
     suspend fun enrollProgram(programId: String): AppResult<String> {
         val bindings = platform()
-        bindings.authHeader()
+        val auth = bindings.authHeader()
             ?: return AppResult.Failure("Sign in to enroll in a program.")
 
-        val enrollResponse = api.enrollProgram(programId).getOrElse { error ->
+        val enrollResponse = api.enrollProgram(programId, authorization = auth).getOrElse { error ->
             return AppResult.Failure(error.message ?: "Enrollment failed.")
         }
         if (!enrollResponse.success) {
@@ -29,7 +29,10 @@ class PlanSyncRepository(
 
         homeSync.sync()
 
-        val userPrograms = api.fetchSyncUserPrograms(forceRefresh = true).getOrElse { error ->
+        val userPrograms = api.fetchSyncUserPrograms(
+            forceRefresh = true,
+            authorization = auth,
+        ).getOrElse { error ->
             return AppResult.Failure(error.message ?: "Enrollment sync failed.")
         }
         val userProgramId = resolveActiveUserProgramId(userPrograms, programId)
@@ -44,11 +47,15 @@ class PlanSyncRepository(
     /** Hydrates [MovitPlatformBindings.activeUserProgramId] from the server when a session exists. */
     suspend fun refreshActiveUserProgramId(): AppResult<String?> {
         val bindings = platform()
-        if (bindings.authHeader() == null) {
+        val auth = bindings.authHeader()
+        if (auth == null) {
             return AppResult.Success(bindings.activeUserProgramId())
         }
 
-        val userPrograms = api.fetchSyncUserPrograms(forceRefresh = false).getOrElse {
+        val userPrograms = api.fetchSyncUserPrograms(
+            forceRefresh = false,
+            authorization = auth,
+        ).getOrElse {
             return AppResult.Success(bindings.activeUserProgramId())
         }
         val activeId = resolveActiveUserProgramId(userPrograms, programId = null)

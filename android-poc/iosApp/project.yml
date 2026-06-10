@@ -35,6 +35,10 @@ targets:
         LD_RUNPATH_SEARCH_PATHS:
           - "$(inherited)"
           - "@executable_path/Frameworks"
+        # Kotlin/Native no longer builds iosX64 in this project; keep Xcode's
+        # simulator build on arm64 so Compose resource sync does not request x86_64.
+        ONLY_ACTIVE_ARCH: YES
+        "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
     preBuildScripts:
       - name: "Build MovitApp Kotlin framework"
         basedOnDependencyAnalysis: false
@@ -81,6 +85,9 @@ targets:
           # --- Xcode ---
           if [ -z "${DEVELOPER_DIR:-}" ] && [ -d "/Applications/Xcode.app/Contents/Developer" ]; then
             export DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer"
+          fi
+          if [ "$SDK_NAME" = "iphonesimulator" ] || [[ "$SDK_NAME" == iphonesimulator* ]]; then
+            export ARCHS="arm64"
           fi
           cd "$SRCROOT/.."
           ./gradlew :feature:shell:embedAndSignAppleFrameworkForXcode

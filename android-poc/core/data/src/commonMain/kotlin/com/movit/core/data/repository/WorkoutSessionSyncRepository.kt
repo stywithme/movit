@@ -44,6 +44,7 @@ class WorkoutSessionSyncRepository(
             userProgramId = userProgramId,
             weekNumber = weekNumber,
             dayNumber = dayNumber,
+            authorization = auth,
         ).getOrElse { error ->
             return cached?.let { AppResult.Success(it) }
                 ?: AppResult.Failure(error.message ?: "Workout session sync failed.")
@@ -80,6 +81,7 @@ class WorkoutSessionSyncRepository(
         return api.updateUserProgramCustomizations(
             userProgramId = userProgramId,
             request = request,
+            authorization = auth,
         ).fold(
             onSuccess = { AppResult.Success(Unit) },
             onFailure = { error -> AppResult.Failure(error.message ?: "Failed to save workout changes.") },
@@ -95,6 +97,7 @@ class WorkoutSessionSyncRepository(
 
         val response = api.fetchSubstitutionExercises(
             slug = replacingSlug,
+            authorization = auth,
         ).getOrElse { error ->
             return AppResult.Failure(error.message ?: "Substitution lookup failed.")
         }

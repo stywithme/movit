@@ -90,7 +90,7 @@ private suspend fun ExploreProgramDto.toExploreItemUi(
         levelMin?.name?.display(language)?.let { add(it) }
     }
     return ExploreItemUi(
-        id = slug,
+        id = id.ifBlank { slug },
         title = name.display(language),
         subtitle = strings.itemProgram,
         type = ExploreItemType.Program,

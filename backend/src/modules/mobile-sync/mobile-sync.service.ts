@@ -115,8 +115,8 @@ export const mobileSyncService = {
       prisma.program.findMany({
         where: programWhere,
         include: {
-          levelMin: { select: { number: true } },
-          levelMax: { select: { number: true } },
+          levelMin: { select: { number: true, code: true, name: true } },
+          levelMax: { select: { number: true, code: true, name: true } },
         },
         orderBy: [
           { isFeatured: 'desc' },
@@ -157,6 +157,14 @@ export const mobileSyncService = {
                 },
               },
             },
+          },
+          media: {
+            where: {
+              isPrimary: true,
+              type: 'image',
+            },
+            orderBy: { sortOrder: 'asc' },
+            take: 1,
           },
         },
         orderBy: [
@@ -219,6 +227,20 @@ export const mobileSyncService = {
         name: toSyncLocalizedText(p.name as Record<string, unknown>),
         levelRangeMin: p.levelMin?.number ?? 0,
         levelRangeMax: p.levelMax?.number ?? 0,
+        levelMin: p.levelMin
+          ? {
+              number: p.levelMin.number,
+              code: p.levelMin.code,
+              name: toSyncLocalizedText(p.levelMin.name as Record<string, unknown>),
+            }
+          : null,
+        levelMax: p.levelMax
+          ? {
+              number: p.levelMax.number,
+              code: p.levelMax.code,
+              name: toSyncLocalizedText(p.levelMax.name as Record<string, unknown>),
+            }
+          : null,
         durationWeeks: p.durationWeeks,
         coverImageUrl: p.coverImageUrl,
         updatedAt: p.updatedAt.toISOString(),
@@ -249,6 +271,7 @@ export const mobileSyncService = {
         name: toSyncLocalizedText(e.name as Record<string, unknown>),
         categoryCode: e.category?.code ?? null,
         categoryName: e.category?.name ? toSyncLocalizedText(e.category.name as Record<string, unknown>) : null,
+        imageUrl: e.media[0]?.url ?? null,
         musclesCount: e.attributes.filter((a) => a.attributeValue?.attribute?.code === 'muscle').length,
         updatedAt: e.updatedAt.toISOString(),
       })),

@@ -15,7 +15,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -39,6 +38,7 @@ import com.movit.designsystem.components.MovitErrorState
 import com.movit.designsystem.components.MovitListCard
 import com.movit.designsystem.components.MovitListRow
 import com.movit.designsystem.components.MovitLoadingState
+import com.movit.designsystem.components.MovitRemoteImage
 import com.movit.designsystem.components.MovitScaffold
 import com.movit.designsystem.components.MovitTag
 import com.movit.designsystem.components.MovitTagVariant
@@ -227,21 +227,20 @@ private fun ProfileHero(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box {
-            Box(
+            val avatarFallback = profile.name
+                .trim()
+                .take(1)
+                .uppercase()
+                .ifBlank { "?" }
+            MovitRemoteImage(
+                imageUrl = profile.avatarUrl,
+                contentDescription = avatarCd,
+                placeholderLabel = avatarFallback,
                 modifier = Modifier
                     .size(96.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer)
                     .semantics { contentDescription = avatarCd },
-                contentAlignment = Alignment.Center,
-            ) {
-                androidx.compose.material3.Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(48.dp),
-                )
-            }
+            )
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)

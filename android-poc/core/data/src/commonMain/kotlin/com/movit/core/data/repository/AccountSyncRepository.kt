@@ -59,8 +59,9 @@ class AccountSyncRepository(
     suspend fun logout(): AppResult<Unit> {
         val bindings = platform()
         val refresh = bindings.refreshToken()
-        if (bindings.authHeader() != null && refresh != null) {
-            api.logout(LogoutRequestDto(refresh))
+        val auth = bindings.authHeader()
+        if (auth != null && refresh != null) {
+            api.logout(LogoutRequestDto(refresh), authorization = auth)
         }
         bindings.clearAuthSession()
         return AppResult.Success(Unit)
@@ -69,7 +70,7 @@ class AccountSyncRepository(
     suspend fun fetchProfile(): AppResult<UserPublicDto> {
         val auth = platform().authHeader()
             ?: return AppResult.Failure("Sign in to load your profile.")
-        val response = api.fetchAuthProfile().getOrElse { error ->
+        val response = api.fetchAuthProfile(auth).getOrElse { error ->
             return AppResult.Failure(error.message ?: "Profile request failed.")
         }
         if (!response.success) {
@@ -102,6 +103,7 @@ class AccountSyncRepository(
                 voiceFeedback = voiceFeedback,
                 notifications = notifications,
             ),
+            authorization = auth,
         ).getOrElse { error ->
             return AppResult.Failure(error.message ?: "Settings update failed.")
         }
@@ -120,7 +122,7 @@ class AccountSyncRepository(
     suspend fun putTrainingProfile(request: TrainingProfilePutRequest): AppResult<Unit> {
         val auth = platform().authHeader()
             ?: return AppResult.Failure("Sign in to save your training profile.")
-        val response = api.putTrainingProfile(request).getOrElse { error ->
+        val response = api.putTrainingProfile(request, authorization = auth).getOrElse { error ->
             return AppResult.Failure(error.message ?: "Training profile save failed.")
         }
         if (!response.success) {
@@ -133,7 +135,7 @@ class AccountSyncRepository(
     suspend fun fetchLevelProfile(): AppResult<LevelProfileDetailDto> {
         val auth = platform().authHeader()
             ?: return AppResult.Failure("Sign in to load your level profile.")
-        val response = api.fetchLevelProfile().getOrElse { error ->
+        val response = api.fetchLevelProfile(auth).getOrElse { error ->
             return AppResult.Failure(error.message ?: "Level profile request failed.")
         }
         if (!response.success) {
@@ -146,7 +148,7 @@ class AccountSyncRepository(
     suspend fun fetchActivePlan(): AppResult<ActivePlanDto> {
         val auth = platform().authHeader()
             ?: return AppResult.Failure("Sign in to load your training plan.")
-        val response = api.fetchActivePlan().getOrElse { error ->
+        val response = api.fetchActivePlan(auth).getOrElse { error ->
             return AppResult.Failure(error.message ?: "Active plan request failed.")
         }
         if (!response.success) {
@@ -159,7 +161,7 @@ class AccountSyncRepository(
     suspend fun fetchUpcomingReassessments(): AppResult<List<ReassessmentDto>> {
         val auth = platform().authHeader()
             ?: return AppResult.Failure("Sign in to load reassessments.")
-        val response = api.fetchUpcomingReassessments().getOrElse { error ->
+        val response = api.fetchUpcomingReassessments(auth).getOrElse { error ->
             return AppResult.Failure(error.message ?: "Reassessment request failed.")
         }
         if (!response.success) {

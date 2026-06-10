@@ -77,6 +77,16 @@ export interface ExploreProgramItem {
   name: LocalizedText;
   levelRangeMin: number;
   levelRangeMax: number;
+  levelMin?: {
+    number: number;
+    code: string;
+    name: LocalizedText;
+  } | null;
+  levelMax?: {
+    number: number;
+    code: string;
+    name: LocalizedText;
+  } | null;
   durationWeeks: number;
   coverImageUrl?: string | null;
   updatedAt: string;
@@ -105,6 +115,7 @@ export interface ExploreExerciseItem {
   name: LocalizedText;
   categoryCode?: string | null;
   categoryName?: LocalizedText | null;
+  imageUrl?: string | null;
   musclesCount: number;
   updatedAt: string;
 }

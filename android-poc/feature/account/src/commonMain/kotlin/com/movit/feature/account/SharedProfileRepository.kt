@@ -22,7 +22,7 @@ class SharedProfileRepository(
                     themeMode = platform.themeMode(),
                 ),
             )
-            is AppResult.Failure -> fallback.loadProfile()
+            is AppResult.Failure -> AppResult.Failure(result.message)
         }
     }
 

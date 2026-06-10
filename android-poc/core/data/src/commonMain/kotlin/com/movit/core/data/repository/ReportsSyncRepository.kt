@@ -46,6 +46,7 @@ class ReportsSyncRepository(
             programId = programId,
             period = period,
             source = source,
+            authorization = auth,
         ).getOrElse { error ->
             return cached?.let { AppResult.Success(it) }
                 ?: AppResult.Failure(error.message ?: "Reports sync failed.")
@@ -83,6 +84,7 @@ class ReportsSyncRepository(
         val response = api.fetchExerciseMetrics(
             programId = programId,
             exerciseSlug = exerciseSlug,
+            authorization = auth,
         ).getOrElse { error ->
             return cached?.let { AppResult.Success(it) }
                 ?: AppResult.Failure(error.message ?: "Exercise report sync failed.")
