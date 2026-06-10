@@ -4,6 +4,11 @@ import com.movit.core.network.dto.AuthApiResponse
 import com.movit.core.network.dto.AuthDataDto
 import com.movit.core.network.dto.AuthTokensDto
 import com.movit.core.network.dto.ExploreApiResponse
+import com.movit.core.network.dto.ExploreWorkoutApiResponse
+import com.movit.core.network.dto.ExploreWorkoutUploadRequestDto
+import com.movit.core.network.dto.WorkoutExecutionApiResponse
+import com.movit.core.network.dto.WorkoutExecutionUploadRequestDto
+import com.movit.core.network.dto.EntityAudioManifestApiResponse
 import com.movit.core.network.dto.ForgotPasswordRequestDto
 import com.movit.core.network.dto.HomeApiResponse
 import com.movit.core.network.dto.EffectivePlanApiResponse
@@ -15,12 +20,22 @@ import com.movit.core.network.dto.ReassessmentListApiResponse
 import com.movit.core.network.dto.LoginRequestDto
 import com.movit.core.network.dto.LogoutRequestDto
 import com.movit.core.network.dto.MetricsApiResponse
+import com.movit.core.network.dto.PlannedWorkoutApiResponse
+import com.movit.core.network.dto.PlannedWorkoutCompleteRequestDto
+import com.movit.core.network.dto.PlannedWorkoutStartRequestDto
+import com.movit.core.network.dto.PlanMutationResponse
 import com.movit.core.network.dto.ProgramExportApiResponse
 import com.movit.core.network.dto.ProgramProgressMetricsApiResponse
+import com.movit.core.network.dto.ProgressionMarkSeenRequest
+import com.movit.core.network.dto.ProgressionMarkSeenResponse
 import com.movit.core.network.dto.RefreshTokenRequestDto
+import com.movit.core.network.dto.UserExercisePreferenceUpsertRequest
+import com.movit.core.network.dto.UserProgramOverrideCreateRequest
+import com.movit.core.network.dto.UserProgramOverrideCreateResponse
 import com.movit.core.network.dto.RegisterRequestDto
 import com.movit.core.network.dto.ReportsDashboardApiResponse
 import com.movit.core.network.dto.SubstitutionExercisesApiResponse
+import com.movit.core.network.dto.TrainingConfigApiResponse
 import com.movit.core.network.dto.TrainingProfileApiResponse
 import com.movit.core.network.dto.TrainingProfilePutRequest
 import com.movit.core.network.dto.UpdateSettingsRequestDto
@@ -33,6 +48,7 @@ import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
+import io.ktor.client.request.delete
 import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.put
@@ -310,12 +326,14 @@ class MovitMobileApi(
         response.body<ActivePlanApiResponse>()
     }
 
-    suspend fun fetchSyncUserPrograms(
+    suspend fun fetchSync(
+        updatedAfter: String? = null,
         forceRefresh: Boolean = false,
         authorization: String? = null,
-    ): Result<List<UserProgramExportDto>> = runCatching {
+    ): Result<MobileSyncApiResponse> = runCatching {
         val response = client.get(base("api/mobile/sync")) {
             applyBearerAuthorization(authorization)
+            updatedAfter?.let { parameter("updatedAfter", it) }
             if (forceRefresh) {
                 parameter("forceRefresh", true)
             }
@@ -327,7 +345,145 @@ class MovitMobileApi(
         if (!body.success) {
             error(body.error ?: "Sync request failed.")
         }
-        body.data?.userPrograms.orEmpty()
+        body
+    }
+
+    suspend fun fetchSyncUserPrograms(
+        forceRefresh: Boolean = false,
+        authorization: String? = null,
+    ): Result<List<UserProgramExportDto>> = runCatching {
+        fetchSync(forceRefresh = forceRefresh, authorization = authorization).getOrThrow()
+            .data
+            ?.userPrograms
+            .orEmpty()
+    }
+
+    /** Alias for sync orchestration (WS-3) — returns full payload including meta + audio manifest. */
+    suspend fun fetchMobileSync(
+        updatedAfter: String? = null,
+        forceRefresh: Boolean = false,
+        authorization: String? = null,
+    ): Result<MobileSyncApiResponse> = fetchSync(
+        updatedAfter = updatedAfter,
+        forceRefresh = forceRefresh,
+        authorization = authorization,
+    )
+
+    suspend fun fetchWorkoutTrainingConfig(
+        workoutTemplateId: String,
+        authorization: String? = null,
+    ): Result<TrainingConfigApiResponse> = runCatching {
+        val response = client.get(base("api/mobile/workout-templates/$workoutTemplateId/training-config")) {
+            applyBearerAuthorization(authorization)
+        }
+        if (!response.status.isSuccess()) {
+            error("Training config request failed (${response.status.value})")
+        }
+        response.body<TrainingConfigApiResponse>()
+    }
+
+    suspend fun fetchWorkoutAudioManifest(
+        slug: String,
+        authorization: String? = null,
+    ): Result<EntityAudioManifestApiResponse> = runCatching {
+        val response = client.get(base("api/mobile/workout-templates/$slug/audio-manifest")) {
+            applyBearerAuthorization(authorization)
+        }
+        if (!response.status.isSuccess()) {
+            error("Workout audio manifest request failed (${response.status.value})")
+        }
+        response.body<EntityAudioManifestApiResponse>()
+    }
+
+    suspend fun fetchExerciseAudioManifest(
+        slug: String,
+        authorization: String? = null,
+    ): Result<EntityAudioManifestApiResponse> = runCatching {
+        val response = client.get(base("api/mobile/exercises/$slug/audio-manifest")) {
+            applyBearerAuthorization(authorization)
+        }
+        if (!response.status.isSuccess()) {
+            error("Exercise audio manifest request failed (${response.status.value})")
+        }
+        response.body<EntityAudioManifestApiResponse>()
+    }
+
+    suspend fun startPlannedWorkout(
+        workoutId: String,
+        request: PlannedWorkoutStartRequestDto,
+        authorization: String? = null,
+    ): Result<PlannedWorkoutApiResponse> = runCatching {
+        val response = client.post(base("api/mobile/planned-workouts/$workoutId/start")) {
+            applyBearerAuthorization(authorization)
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }
+        if (!response.status.isSuccess()) {
+            error("Planned workout start failed (${response.status.value})")
+        }
+        response.body<PlannedWorkoutApiResponse>()
+    }
+
+    suspend fun completePlannedWorkout(
+        workoutId: String,
+        request: PlannedWorkoutCompleteRequestDto,
+        authorization: String? = null,
+    ): Result<PlannedWorkoutApiResponse> = runCatching {
+        val response = client.post(base("api/mobile/planned-workouts/$workoutId/complete")) {
+            applyBearerAuthorization(authorization)
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }
+        if (!response.status.isSuccess()) {
+            error("Planned workout complete failed (${response.status.value})")
+        }
+        response.body<PlannedWorkoutApiResponse>()
+    }
+
+    suspend fun reportPlannedWorkout(
+        workoutId: String,
+        request: PlannedWorkoutCompleteRequestDto,
+        authorization: String? = null,
+    ): Result<PlannedWorkoutApiResponse> = runCatching {
+        val response = client.post(base("api/mobile/planned-workouts/$workoutId/report")) {
+            applyBearerAuthorization(authorization)
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }
+        if (!response.status.isSuccess()) {
+            error("Planned workout report failed (${response.status.value})")
+        }
+        response.body<PlannedWorkoutApiResponse>()
+    }
+
+    suspend fun uploadWorkoutExecution(
+        request: WorkoutExecutionUploadRequestDto,
+        authorization: String? = null,
+    ): Result<WorkoutExecutionApiResponse> = runCatching {
+        val response = client.post(base("api/mobile/workout-executions")) {
+            applyBearerAuthorization(authorization)
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }
+        if (!response.status.isSuccess()) {
+            error("Workout execution upload failed (${response.status.value})")
+        }
+        response.body<WorkoutExecutionApiResponse>()
+    }
+
+    suspend fun uploadExploreWorkout(
+        request: ExploreWorkoutUploadRequestDto,
+        authorization: String? = null,
+    ): Result<ExploreWorkoutApiResponse> = runCatching {
+        val response = client.post(base("api/mobile/workout-executions/explore")) {
+            applyBearerAuthorization(authorization)
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }
+        if (!response.status.isSuccess()) {
+            error("Explore workout upload failed (${response.status.value})")
+        }
+        response.body<ExploreWorkoutApiResponse>()
     }
 
     suspend fun fetchUpcomingReassessments(authorization: String? = null): Result<ReassessmentListApiResponse> = runCatching {
@@ -353,5 +509,88 @@ class MovitMobileApi(
             error("Training profile update failed (${response.status.value})")
         }
         response.body<TrainingProfileApiResponse>()
+    }
+
+    suspend fun completePlan(authorization: String? = null): Result<PlanMutationResponse> = runCatching {
+        val response = client.post(base("api/mobile/plan/complete")) {
+            applyBearerAuthorization(authorization)
+        }
+        if (!response.status.isSuccess()) {
+            error("Plan complete failed (${response.status.value})")
+        }
+        response.body<PlanMutationResponse>()
+    }
+
+    suspend fun upsertExercisePreference(
+        exerciseId: String,
+        request: UserExercisePreferenceUpsertRequest,
+        authorization: String? = null,
+    ): Result<Unit> = runCatching {
+        val response = client.put(base("api/mobile/exercise-preferences/$exerciseId")) {
+            applyBearerAuthorization(authorization)
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }
+        if (!response.status.isSuccess()) {
+            error("Exercise preference upsert failed (${response.status.value})")
+        }
+    }
+
+    suspend fun deleteExercisePreference(
+        exerciseId: String,
+        authorization: String? = null,
+    ): Result<Unit> = runCatching {
+        val response = client.delete(base("api/mobile/exercise-preferences/$exerciseId")) {
+            applyBearerAuthorization(authorization)
+        }
+        if (!response.status.isSuccess()) {
+            error("Exercise preference delete failed (${response.status.value})")
+        }
+    }
+
+    suspend fun createUserProgramOverride(
+        userProgramId: String,
+        request: UserProgramOverrideCreateRequest,
+        authorization: String? = null,
+    ): Result<UserProgramOverrideCreateResponse> = runCatching {
+        val response = client.post(base("api/mobile/user-programs/$userProgramId/overrides")) {
+            applyBearerAuthorization(authorization)
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }
+        if (!response.status.isSuccess()) {
+            error("User program override create failed (${response.status.value})")
+        }
+        response.body<UserProgramOverrideCreateResponse>()
+    }
+
+    suspend fun deleteUserProgramOverride(
+        userProgramId: String,
+        overrideId: String,
+        authorization: String? = null,
+    ): Result<Unit> = runCatching {
+        val response = client.delete(
+            base("api/mobile/user-programs/$userProgramId/overrides/$overrideId"),
+        ) {
+            applyBearerAuthorization(authorization)
+        }
+        if (!response.status.isSuccess()) {
+            error("User program override delete failed (${response.status.value})")
+        }
+    }
+
+    suspend fun markProgressionSeen(
+        request: ProgressionMarkSeenRequest,
+        authorization: String? = null,
+    ): Result<ProgressionMarkSeenResponse> = runCatching {
+        val response = client.post(base("api/mobile/progression/mark-seen")) {
+            applyBearerAuthorization(authorization)
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }
+        if (!response.status.isSuccess()) {
+            error("Progression mark-seen failed (${response.status.value})")
+        }
+        response.body<ProgressionMarkSeenResponse>()
     }
 }

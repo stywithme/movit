@@ -74,3 +74,8 @@ data class SubstitutionExerciseDto(
 data class UserProgramUpdateRequest(
     val customizations: Map<String, List<EffectivePlannedWorkoutDto>> = emptyMap(),
 )
+
+/** Backend expects customizations keyed as day_{weekNumber}_{dayNumber}. */
+object ProgramCustomizationKeys {
+    fun dayKey(weekNumber: Int, dayNumber: Int): String = "day_${weekNumber}_$dayNumber"
+}

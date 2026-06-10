@@ -1,0 +1,10 @@
+{
+  "success": true,
+  "data": {
+    "id": "pwr-001",
+    "plannedWorkoutId": "pw-001",
+    "weekNumber": 2,
+    "dayNumber": 3,
+    "status": "in_progress"
+  }
+}

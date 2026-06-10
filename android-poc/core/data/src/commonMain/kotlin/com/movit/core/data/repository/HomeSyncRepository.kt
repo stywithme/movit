@@ -1,48 +1,55 @@
 package com.movit.core.data.repository
 
+import com.movit.core.data.cache.MovitCachePolicy
+import com.movit.core.data.local.MovitLocalStore
 import com.movit.core.data.platform.MovitPlatformBindings
-import com.movit.core.network.MovitJson
 import com.movit.core.network.MovitMobileApi
+import com.movit.core.network.dto.HomeApiResponse
 import com.movit.core.network.dto.HomeDataDto
 import com.movit.shared.AppResult
 
 class HomeSyncRepository(
     private val api: MovitMobileApi,
     private val platform: () -> MovitPlatformBindings,
+    private val localStore: () -> MovitLocalStore,
 ) {
-    fun readCached(): HomeDataDto? {
-        val raw = platform().readCache(MovitCacheKeys.HOME_STORE, MovitCacheKeys.HOME_DATA)
-            ?: return null
-        return runCatching { MovitJson.decodeFromString<HomeDataDto>(raw) }.getOrNull()
-    }
+    fun readCached(): HomeDataDto? =
+        MovitCachePolicy.readJson(
+            localStore(),
+            MovitCacheKeys.HOME_STORE,
+            MovitCacheKeys.HOME_DATA,
+            HomeDataDto.serializer(),
+        )
 
     suspend fun sync(): AppResult<HomeDataDto> {
         val bindings = platform()
         val cached = readCached()
-        val auth = bindings.authHeader()
-            ?: return cached?.let { AppResult.Success(it) }
-                ?: AppResult.Failure("Sign in to load your home dashboard.")
 
-        val response = api.fetchHome(auth).getOrElse { error ->
-            return cached?.let { AppResult.Success(it) }
-                ?: AppResult.Failure(error.message ?: "Home sync failed.")
-        }
-
-        if (!response.success) {
-            return cached?.let { AppResult.Success(it) }
-                ?: AppResult.Failure(response.error ?: "Home sync failed.")
-        }
-
-        val incoming = response.data
-            ?: return cached?.let { AppResult.Success(it) }
-                ?: AppResult.Failure("Home response was empty.")
-
-        bindings.writeCache(
-            MovitCacheKeys.HOME_STORE,
-            MovitCacheKeys.HOME_DATA,
-            MovitJson.encodeToString(HomeDataDto.serializer(), incoming),
+        return MovitCachePolicy.syncWithFallback(
+            cached = cached,
+            authRequired = true,
+            hasAuth = bindings.authHeader() != null,
+            noAuthMessage = "Sign in to load your home dashboard.",
+            fetch = {
+                api.fetchHome(bindings.authHeader()).map { response ->
+                    if (!response.success || response.data == null) {
+                        error(response.error ?: "Home sync failed.")
+                    }
+                    response.data!!
+                }
+            },
+            isSuccess = { true },
+            errorMessage = { "Home sync failed." },
+            persist = { incoming ->
+                MovitCachePolicy.writeJson(
+                    localStore(),
+                    MovitCacheKeys.HOME_STORE,
+                    MovitCacheKeys.HOME_DATA,
+                    incoming,
+                    HomeDataDto.serializer(),
+                )
+            },
+            failureMessage = { it.message ?: "Home sync failed." },
         )
-
-        return AppResult.Success(incoming)
     }
 }

@@ -177,6 +177,7 @@ class TokenLifecycleIntegrationTest {
         return HomeSyncRepository(
             api = MovitMobileApi(client) { "https://test.movit.local" },
             platform = { platform },
+            localStore = { testLocalStore(platform) },
         )
     }
 }

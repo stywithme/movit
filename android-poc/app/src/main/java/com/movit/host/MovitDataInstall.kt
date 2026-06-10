@@ -4,8 +4,11 @@ import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import com.movit.core.data.MovitData
+import com.movit.core.data.local.MovitAndroidRuntime
+import com.movit.core.data.outbox.registerOutboxConnectivityReplay
 import com.movit.core.data.platform.AuthSessionSnapshot
 import com.movit.core.data.platform.MovitPlatformBindings
+import com.movit.core.data.platform.isMovitNetworkAvailable
 import com.trainingvalidator.poc.network.ApiConfig
 import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.storage.ExerciseRepository
@@ -17,8 +20,9 @@ object MovitDataInstall {
 
     fun install(context: Context) {
         val appContext = context.applicationContext
+        MovitAndroidRuntime.applicationContext = appContext
         MovitData.install(
-            object : MovitPlatformBindings {
+            platform = object : MovitPlatformBindings {
                 override fun apiBaseUrl(): String = ApiConfig.getEffectiveBaseUrl()
 
                 override fun authHeader(): String? = AuthManager.getAuthHeader(appContext)
@@ -156,7 +160,10 @@ object MovitDataInstall {
                         LocaleListCompat.forLanguageTags(localeTag),
                     )
                 }
+
+                override fun isNetworkAvailable(): Boolean = isMovitNetworkAvailable(appContext)
             },
         )
+        registerOutboxConnectivityReplay(appContext)
     }
 }

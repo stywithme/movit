@@ -1,0 +1,19 @@
+CREATE TABLE sync_metadata (
+    scope TEXT NOT NULL PRIMARY KEY,
+    version TEXT,
+    last_sync_at TEXT,
+    updated_at_epoch_ms INTEGER NOT NULL
+);
+
+selectByScope:
+SELECT *
+FROM sync_metadata
+WHERE scope = ?;
+
+upsert:
+INSERT OR REPLACE INTO sync_metadata(scope, version, last_sync_at, updated_at_epoch_ms)
+VALUES (?, ?, ?, ?);
+
+deleteByScope:
+DELETE FROM sync_metadata
+WHERE scope = ?;

@@ -70,6 +70,9 @@ interface MovitPlatformBindings {
 
     /** Applies locale immediately (Android: AppCompatDelegate; iOS: UserDefaults). */
     fun applyPreferredLanguage(languageCode: String) {}
+
+    /** When false, writes are queued in the outbox until [com.movit.core.data.outbox.OfflineWriteQueue.replayPending]. */
+    fun isNetworkAvailable(): Boolean = true
 }
 
 object MovitThemeModeStorage {

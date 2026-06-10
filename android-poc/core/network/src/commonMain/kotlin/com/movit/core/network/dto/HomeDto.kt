@@ -39,6 +39,21 @@ data class TrainModeDto(
     val dayType: String? = null,
     val isPaused: Boolean? = null,
     val nextReassessment: NextReassessmentDto? = null,
+    val isTrainingDay: Boolean? = null,
+    val catchUpSuggestion: CatchUpSuggestionDto? = null,
+)
+
+@Serializable
+data class CatchUpSuggestionDto(
+    val missedTrainingDays: Int = 0,
+    val message: String = "",
+    val missedSlots: List<MissedSlotDto> = emptyList(),
+)
+
+@Serializable
+data class MissedSlotDto(
+    val weekNumber: Int = 0,
+    val dayNumber: Int = 0,
 )
 
 @Serializable
@@ -69,6 +84,7 @@ data class TrainTodayWorkoutDto(
     val name: Map<String, String> = emptyMap(),
     val exerciseCount: Int = 0,
     val estimatedMinutes: Int? = null,
+    val workoutTemplateId: String? = null,
     val isCompleted: Boolean = false,
     val allWorkoutsCount: Int = 1,
     val completedWorkoutsCount: Int = 0,

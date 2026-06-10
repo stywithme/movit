@@ -19,6 +19,7 @@ class HomeSyncRepositoryTest {
     fun sync_withAuthAndSuccess_writesCacheAndReturnsData() {
         runBlocking {
             val platform = FakeMovitPlatformBindings()
+            val localStore = testLocalStore(platform)
             val engine = MockEngine {
                 respond(
                     content = """{"success":true,"data":{},"timestamp":"2026-06-09"}""",
@@ -28,12 +29,12 @@ class HomeSyncRepositoryTest {
                     ),
                 )
             }
-            val repo = HomeSyncRepository(testMobileApi(engine, platform), { platform })
+            val repo = HomeSyncRepository(testMobileApi(engine, platform), { platform }, { localStore })
 
             val result = repo.sync()
 
             assertTrue(result is AppResult.Success)
-            assertNotNull(platform.readCache(MovitCacheKeys.HOME_STORE, MovitCacheKeys.HOME_DATA))
+            assertNotNull(localStore.readString(MovitCacheKeys.HOME_STORE, MovitCacheKeys.HOME_DATA))
         }
     }
 
@@ -41,14 +42,15 @@ class HomeSyncRepositoryTest {
     fun sync_withoutAuth_returnsCachedWhenPresent() {
         runBlocking {
             val platform = FakeMovitPlatformBindings(auth = null)
+            val localStore = testLocalStore(platform)
             val cached = HomeDataDto()
-            platform.writeCache(
+            localStore.writeString(
                 MovitCacheKeys.HOME_STORE,
                 MovitCacheKeys.HOME_DATA,
                 MovitJson.encodeToString(HomeDataDto.serializer(), cached),
             )
             val engine = MockEngine { respond("{}", HttpStatusCode.InternalServerError) }
-            val repo = HomeSyncRepository(testMobileApi(engine, platform), { platform })
+            val repo = HomeSyncRepository(testMobileApi(engine, platform), { platform }, { localStore })
 
             val result = repo.sync()
 
@@ -60,8 +62,9 @@ class HomeSyncRepositoryTest {
     fun sync_withoutAuthAndNoCache_fails() {
         runBlocking {
             val platform = FakeMovitPlatformBindings(auth = null)
+            val localStore = testLocalStore(platform)
             val engine = MockEngine { respond("{}", HttpStatusCode.OK) }
-            val repo = HomeSyncRepository(testMobileApi(engine, platform), { platform })
+            val repo = HomeSyncRepository(testMobileApi(engine, platform), { platform }, { localStore })
 
             val result = repo.sync()
 
@@ -74,14 +77,15 @@ class HomeSyncRepositoryTest {
     fun sync_networkFailureWithCache_returnsCached() {
         runBlocking {
             val platform = FakeMovitPlatformBindings()
+            val localStore = testLocalStore(platform)
             val cached = HomeDataDto()
-            platform.writeCache(
+            localStore.writeString(
                 MovitCacheKeys.HOME_STORE,
                 MovitCacheKeys.HOME_DATA,
                 MovitJson.encodeToString(HomeDataDto.serializer(), cached),
             )
             val engine = MockEngine { respond("Server error", HttpStatusCode.InternalServerError) }
-            val repo = HomeSyncRepository(testMobileApi(engine, platform), { platform })
+            val repo = HomeSyncRepository(testMobileApi(engine, platform), { platform }, { localStore })
 
             val result = repo.sync()
 

@@ -1,0 +1,19 @@
+{
+  "success": true,
+  "data": {
+    "userPrograms": [
+      {
+        "id": "up-001",
+        "programId": "prog-001",
+        "isActive": true,
+        "weekNumber": 2,
+        "dayNumber": 3,
+        "status": "active",
+        "customizations": []
+      }
+    ],
+    "exercises": [],
+    "workouts": [],
+    "audioManifestVersion": "2026-06-10"
+  }
+}

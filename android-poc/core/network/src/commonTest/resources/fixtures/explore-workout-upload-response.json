@@ -1,0 +1,14 @@
+{
+  "success": true,
+  "data": {
+    "workoutGroupId": "grp-001",
+    "savedCount": 1,
+    "executions": [
+      {
+        "id": "exec-001",
+        "exerciseId": "bodyweight-squat",
+        "totalReps": 10
+      }
+    ]
+  }
+}

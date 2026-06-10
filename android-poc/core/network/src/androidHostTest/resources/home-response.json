@@ -1,0 +1,78 @@
+{
+  "success": true,
+  "timestamp": "2026-06-10T12:00:00.000Z",
+  "data": {
+    "user": {
+      "name": "Test User",
+      "avatarUrl": "https://cdn.example/avatar.png",
+      "level": 3,
+      "levelCode": "L3",
+      "bodyScore": 72.5,
+      "levelProgress": 45
+    },
+    "trainMode": {
+      "status": "active",
+      "activeProgram": {
+        "id": "up-001",
+        "name": { "en": "Strength Base", "ar": "أساس القوة" },
+        "weekNumber": 2,
+        "dayNumber": 3,
+        "totalWeeks": 8,
+        "weekProgress": { "completed": 2, "total": 4 }
+      },
+      "todayWorkout": {
+        "plannedWorkoutId": "pw-001",
+        "name": { "en": "Upper Body", "ar": "الجزء العلوي" },
+        "exerciseCount": 6,
+        "estimatedMinutes": 35,
+        "workoutTemplateId": "wt-001",
+        "isCompleted": false,
+        "allWorkoutsCount": 1,
+        "completedWorkoutsCount": 0
+      },
+      "dayType": "training",
+      "isPaused": false,
+      "isTrainingDay": true,
+      "catchUpSuggestion": {
+        "missedTrainingDays": 1,
+        "message": "You missed yesterday",
+        "missedSlots": [{ "weekNumber": 2, "dayNumber": 2 }]
+      },
+      "nextReassessment": {
+        "reason": "scheduled",
+        "scheduledDate": "2026-07-01"
+      }
+    },
+    "stats": {
+      "totalWorkoutExecutions": 42,
+      "avgFormScore": 85,
+      "streak": 5,
+      "thisWeekExecutions": 3,
+      "totalMinutes": 320
+    },
+    "recentWorkouts": [
+      {
+        "exerciseId": "ex-squat",
+        "exerciseName": { "en": "Squat", "ar": "قرفصاء" },
+        "formScore": 88,
+        "totalReps": 30,
+        "date": "2026-06-09"
+      }
+    ],
+    "alerts": [
+      {
+        "type": "info",
+        "titleAr": "تنبيه",
+        "titleEn": "Notice",
+        "messageAr": "رسالة",
+        "messageEn": "Message",
+        "actionRoute": "/train"
+      }
+    ],
+    "levelProfile": {
+      "overallLevel": 3,
+      "bodyScore": 72.5,
+      "levelInfo": { "name": { "en": "Intermediate", "ar": "متوسط" } }
+    }
+  }
+}

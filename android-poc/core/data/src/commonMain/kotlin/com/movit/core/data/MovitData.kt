@@ -1,14 +1,20 @@
 package com.movit.core.data
 
 import com.movit.core.data.di.movitDataModule
+import com.movit.core.data.local.DefaultMovitLocalStoreFactory
+import com.movit.core.data.local.MovitLocalStore
+import com.movit.core.data.local.MovitLocalStoreFactory
+import com.movit.core.data.outbox.OfflineWriteQueue
 import com.movit.core.data.platform.MovitPlatformBindings
 import com.movit.core.data.repository.AccountSyncRepository
 import com.movit.core.data.repository.ExploreSyncRepository
 import com.movit.core.data.repository.HomeSyncRepository
+import com.movit.core.data.repository.MobileWriteSyncRepository
 import com.movit.core.data.repository.PlanSyncRepository
 import com.movit.core.data.repository.ProgramFlowSyncRepository
 import com.movit.core.data.repository.ReportsSyncRepository
 import com.movit.core.data.repository.WorkoutSessionSyncRepository
+import com.movit.core.data.sync.MovitSyncOrchestrator
 import org.koin.core.Koin
 import org.koin.core.KoinApplication
 import org.koin.core.context.startKoin
@@ -32,13 +38,16 @@ object MovitData {
     val isInstalled: Boolean
         get() = koinApp != null
 
-    fun install(platform: MovitPlatformBindings) {
+    fun install(
+        platform: MovitPlatformBindings,
+        localStoreFactory: MovitLocalStoreFactory = DefaultMovitLocalStoreFactory,
+    ) {
         if (koinApp != null) {
             stopKoin()
         }
         onSessionExpired = null
         koinApp = startKoin {
-            modules(movitDataModule(platform))
+            modules(movitDataModule(platform, localStoreFactory))
         }
     }
 
@@ -48,13 +57,18 @@ object MovitData {
 
     fun requirePlatform(): MovitPlatformBindings = koin().get()
 
+    val localStore: MovitLocalStore get() = koin().get()
+
     val explore: ExploreSyncRepository get() = koin().get()
     val home: HomeSyncRepository get() = koin().get()
     val plan: PlanSyncRepository get() = koin().get()
     val programFlow: ProgramFlowSyncRepository get() = koin().get()
     val reports: ReportsSyncRepository get() = koin().get()
     val workoutSession: WorkoutSessionSyncRepository get() = koin().get()
+    val mobileWrites: MobileWriteSyncRepository get() = koin().get()
     val account: AccountSyncRepository get() = koin().get()
+    val offlineWrites: OfflineWriteQueue get() = koin().get()
+    val sync: MovitSyncOrchestrator get() = koin().get()
 
     private fun koin(): Koin = koinApp?.koin
         ?: error("MovitData.install() was not called.")

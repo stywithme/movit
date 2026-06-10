@@ -1,0 +1,54 @@
+{
+  "workoutGroupId": "grp-001",
+  "workoutTemplateId": "wt-001",
+  "isCustomized": false,
+  "context": "explore_workout",
+  "executions": [
+    {
+      "id": "exec-001",
+      "exerciseId": "bodyweight-squat",
+      "timestamp": 1700000000000,
+      "durationMs": 84000,
+      "totalReps": 10,
+      "countedReps": 9,
+      "invalidReps": 1,
+      "weightKg": null,
+      "weightUnit": "kg",
+      "repMetrics": [
+        {
+          "num": 1,
+          "durationMs": 2800,
+          "worstState": 1,
+          "score": 8.5,
+          "weightKg": null,
+          "side": null,
+          "metrics": {
+            "rom": 9.5,
+            "symmetry": 8.2,
+            "stability": 7.8,
+            "tempo": [1200, 400, 900],
+            "velocity": 45.0,
+            "formScore": 8.6,
+            "alignmentAccuracy": 9.0
+          }
+        }
+      ],
+      "executionMetrics": {
+        "avgRom": 9.2,
+        "avgSymmetry": 8.0,
+        "avgStability": 7.5,
+        "avgTempo": [1100, 350, 850],
+        "avgVelocity": 42.0,
+        "avgFormScore": 8.4,
+        "avgAlignmentAccuracy": 8.8,
+        "totalTUT": 8400,
+        "totalVolume": null,
+        "maxWeight": null,
+        "est1RM": null
+      },
+      "context": "explore_workout",
+      "workoutGroupId": "grp-001",
+      "workoutTemplateId": "wt-001"
+    }
+  ]
+}

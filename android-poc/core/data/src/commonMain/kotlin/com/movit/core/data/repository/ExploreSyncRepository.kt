@@ -1,7 +1,8 @@
 package com.movit.core.data.repository
 
+import com.movit.core.data.cache.MovitCachePolicy
+import com.movit.core.data.local.MovitLocalStore
 import com.movit.core.data.platform.MovitPlatformBindings
-import com.movit.core.network.MovitJson
 import com.movit.core.network.MovitMobileApi
 import com.movit.core.network.dto.ExploreDataDto
 import com.movit.shared.AppResult
@@ -9,17 +10,30 @@ import com.movit.shared.AppResult
 class ExploreSyncRepository(
     private val api: MovitMobileApi,
     private val platform: () -> MovitPlatformBindings,
+    private val localStore: () -> MovitLocalStore,
 ) {
-    fun readCached(): ExploreDataDto? {
-        val raw = platform().readCache(MovitCacheKeys.EXPLORE_STORE, MovitCacheKeys.EXPLORE_DATA)
-            ?: return null
-        return runCatching { MovitJson.decodeFromString<ExploreDataDto>(raw) }.getOrNull()
-    }
+    fun readCached(): ExploreDataDto? =
+        MovitCachePolicy.readJson(
+            localStore(),
+            MovitCacheKeys.EXPLORE_STORE,
+            MovitCacheKeys.EXPLORE_DATA,
+            ExploreDataDto.serializer(),
+        )
 
-    suspend fun sync(limit: Int = 50): AppResult<ExploreDataDto> {
+    suspend fun sync(limit: Int = 50): AppResult<ExploreDataDto> =
+        syncInternal(clearLastSync = false, limit = limit)
+
+    suspend fun syncFull(limit: Int = 50): AppResult<ExploreDataDto> =
+        syncInternal(clearLastSync = true, limit = limit)
+
+    private suspend fun syncInternal(clearLastSync: Boolean, limit: Int): AppResult<ExploreDataDto> {
         val bindings = platform()
+        val store = localStore()
         val cached = readCached()
-        val updatedAfter = bindings.readCache(MovitCacheKeys.EXPLORE_STORE, MovitCacheKeys.EXPLORE_LAST_SYNC)
+        if (clearLastSync) {
+            store.removeJsonCache(MovitCacheKeys.EXPLORE_STORE, MovitCacheKeys.EXPLORE_LAST_SYNC)
+        }
+        val updatedAfter = store.readJsonCache(MovitCacheKeys.EXPLORE_STORE, MovitCacheKeys.EXPLORE_LAST_SYNC)
 
         val response = api.fetchExplore(
             authorization = bindings.authHeader(),
@@ -30,25 +44,22 @@ class ExploreSyncRepository(
                 ?: AppResult.Failure(error.message ?: "Explore sync failed.")
         }
 
-        if (!response.success) {
+        if (!response.success || response.data == null) {
             return cached?.let { AppResult.Success(it) }
                 ?: AppResult.Failure(response.error ?: "Explore sync failed.")
         }
 
-        val incoming = response.data
-            ?: return cached?.let { AppResult.Success(it) }
-                ?: AppResult.Failure("Explore response was empty.")
-
-        val isFullSync = response.meta?.isFullSync == true || updatedAfter == null
-        val merged = mergeExploreData(cached, incoming, isFullSync)
-
-        bindings.writeCache(
+        val isFullSync = clearLastSync || response.meta?.isFullSync == true || updatedAfter == null
+        val merged = mergeExploreData(cached, response.data!!, isFullSync)
+        MovitCachePolicy.writeJson(
+            store,
             MovitCacheKeys.EXPLORE_STORE,
             MovitCacheKeys.EXPLORE_DATA,
-            MovitJson.encodeToString(ExploreDataDto.serializer(), merged),
+            merged,
+            ExploreDataDto.serializer(),
         )
         if (response.timestamp.isNotBlank()) {
-            bindings.writeCache(
+            store.writeJsonCache(
                 MovitCacheKeys.EXPLORE_STORE,
                 MovitCacheKeys.EXPLORE_LAST_SYNC,
                 response.timestamp,
@@ -57,5 +68,4 @@ class ExploreSyncRepository(
 
         return AppResult.Success(merged)
     }
-
 }

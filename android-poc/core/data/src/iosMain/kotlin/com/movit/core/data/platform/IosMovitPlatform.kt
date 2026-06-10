@@ -160,6 +160,11 @@ class IosMovitPlatform(
         defaults.setObject(languageCode, KEY_LANGUAGE)
     }
 
+    override fun isNetworkAvailable(): Boolean {
+        IosNetworkMonitor.ensureStarted()
+        return IosNetworkMonitor.isOnline
+    }
+
     private fun migrateLegacyTokensFromDefaults() {
         migrateLegacyTokensToSecureStore(
             secure = secureSession,

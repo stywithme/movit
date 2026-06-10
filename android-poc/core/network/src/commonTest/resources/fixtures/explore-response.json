@@ -1,0 +1,48 @@
+{
+  "success": true,
+  "timestamp": "2026-06-10T12:00:00.000Z",
+  "data": {
+    "levels": [],
+    "programs": [
+      {
+        "id": "prog-001",
+        "slug": "strength-base",
+        "name": { "en": "Strength Base", "ar": "أساس القوة" },
+        "durationWeeks": 8,
+        "coverImageUrl": "https://cdn.example/prog.jpg",
+        "updatedAt": "2026-06-01T00:00:00.000Z"
+      }
+    ],
+    "workoutTemplates": [
+      {
+        "id": "wt-001",
+        "slug": "quick-legs",
+        "name": { "en": "Quick Legs", "ar": "أرجل سريعة" },
+        "exerciseCount": 4,
+        "estimatedDurationMin": 20,
+        "updatedAt": "2026-06-01T00:00:00.000Z"
+      }
+    ],
+    "exercises": [
+      {
+        "id": "ex-001",
+        "slug": "bodyweight-squat",
+        "name": { "en": "Squat", "ar": "قرفصاء" },
+        "imageUrl": "https://cdn.example/squat.jpg",
+        "musclesCount": 2,
+        "updatedAt": "2026-06-01T00:00:00.000Z"
+      }
+    ],
+    "deletedProgramIds": [],
+    "deletedWorkoutTemplateIds": [],
+    "deletedExerciseIds": []
+  },
+  "meta": {
+    "isFullSync": true,
+    "serverVersion": "2026-06-10",
+    "levelsInResponse": 0,
+    "programsInResponse": 1,
+    "workoutTemplatesInResponse": 1,
+    "exercisesInResponse": 1
+  }
+}

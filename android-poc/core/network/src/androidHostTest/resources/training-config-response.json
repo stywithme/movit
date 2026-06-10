@@ -1,0 +1,12 @@
+{
+  "success": true,
+  "data": {
+    "workoutTemplateId": "wt-001",
+    "exercises": [
+      {
+        "slug": "bodyweight-squat",
+        "phases": []
+      }
+    ]
+  }
+}

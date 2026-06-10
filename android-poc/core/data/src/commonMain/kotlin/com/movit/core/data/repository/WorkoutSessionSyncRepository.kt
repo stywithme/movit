@@ -1,7 +1,8 @@
 package com.movit.core.data.repository
 
+import com.movit.core.data.cache.MovitCachePolicy
+import com.movit.core.data.local.MovitLocalStore
 import com.movit.core.data.platform.MovitPlatformBindings
-import com.movit.core.network.MovitJson
 import com.movit.core.network.MovitMobileApi
 import com.movit.core.network.dto.EffectivePlanApiResponse
 import com.movit.core.network.dto.EffectivePlanPayloadDto
@@ -13,20 +14,20 @@ import com.movit.shared.AppResult
 class WorkoutSessionSyncRepository(
     private val api: MovitMobileApi,
     private val platform: () -> MovitPlatformBindings,
+    private val localStore: () -> MovitLocalStore,
+    private val mobileWrites: MobileWriteSyncRepository,
 ) {
     fun readCachedEffectivePlan(
         userProgramId: String,
         weekNumber: Int,
         dayNumber: Int,
-    ): EffectivePlanPayloadDto? {
-        val raw = platform().readCache(
+    ): EffectivePlanPayloadDto? =
+        MovitCachePolicy.readJson(
+            localStore(),
             MovitCacheKeys.SESSION_STORE,
             MovitCacheKeys.effectivePlanKey(userProgramId, weekNumber, dayNumber),
-        ) ?: return null
-        return runCatching {
-            MovitJson.decodeFromString<EffectivePlanApiResponse>(raw).data
-        }.getOrNull()
-    }
+            EffectivePlanApiResponse.serializer(),
+        )?.data
 
     suspend fun syncEffectivePlan(
         userProgramId: String,
@@ -59,10 +60,12 @@ class WorkoutSessionSyncRepository(
             ?: return cached?.let { AppResult.Success(it) }
                 ?: AppResult.Failure("Effective plan response was empty.")
 
-        bindings.writeCache(
+        MovitCachePolicy.writeJson(
+            localStore(),
             MovitCacheKeys.SESSION_STORE,
             cacheKey,
-            MovitJson.encodeToString(EffectivePlanApiResponse.serializer(), response),
+            response,
+            EffectivePlanApiResponse.serializer(),
         )
 
         return AppResult.Success(payload)
@@ -73,20 +76,18 @@ class WorkoutSessionSyncRepository(
         weekNumber: Int,
         dayNumber: Int,
         request: UserProgramUpdateRequest,
-    ): AppResult<Unit> {
-        val bindings = platform()
-        val auth = bindings.authHeader()
-            ?: return AppResult.Failure("Sign in to save workout changes.")
-
-        return api.updateUserProgramCustomizations(
-            userProgramId = userProgramId,
-            request = request,
-            authorization = auth,
-        ).fold(
-            onSuccess = { AppResult.Success(Unit) },
-            onFailure = { error -> AppResult.Failure(error.message ?: "Failed to save workout changes.") },
-        )
-    }
+    ): AppResult<Unit> =
+        when (
+            val result = mobileWrites.saveDayCustomizations(
+                userProgramId = userProgramId,
+                weekNumber = weekNumber,
+                dayNumber = dayNumber,
+                request = request,
+            )
+        ) {
+            is AppResult.Success -> AppResult.Success(Unit)
+            is AppResult.Failure -> result
+        }
 
     suspend fun fetchSubstitutionCandidates(
         replacingSlug: String,

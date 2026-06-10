@@ -1,0 +1,71 @@
+package com.movit.core.data.local
+
+import com.movit.core.data.outbox.OutboxEntry
+import com.movit.core.data.outbox.OutboxStatus
+import com.movit.core.network.MovitClock
+
+/** Lightweight [MovitLocalStore] for unit tests — no SQL driver required. */
+class InMemoryMovitLocalStore : MovitLocalStore {
+    private val jsonCache = mutableMapOf<String, String>()
+    private val outbox = linkedMapOf<String, OutboxEntry>()
+    private val syncMetadata = mutableMapOf<String, SyncMetadata>()
+
+    override fun readJsonCache(store: String, key: String): String? =
+        jsonCache[cacheKey(store, key)]
+
+    override fun writeJsonCache(store: String, key: String, value: String) {
+        jsonCache[cacheKey(store, key)] = value
+    }
+
+    override fun removeJsonCache(store: String, key: String) {
+        jsonCache.remove(cacheKey(store, key))
+    }
+
+    override fun readSyncMetadata(scope: String): SyncMetadata? = syncMetadata[scope]
+
+    override fun writeSyncMetadata(scope: String, version: String?, lastSyncAt: String?) {
+        syncMetadata[scope] = SyncMetadata(
+            scope = scope,
+            version = version,
+            lastSyncAt = lastSyncAt,
+            updatedAtEpochMs = MovitClock.nowEpochMs(),
+        )
+    }
+
+    override fun removeSyncMetadata(scope: String) {
+        syncMetadata.remove(scope)
+    }
+
+    override suspend fun insertOutbox(entry: OutboxEntry) {
+        outbox[entry.id] = entry
+    }
+
+    override suspend fun getOutboxById(id: String): OutboxEntry? = outbox[id]
+
+    override suspend fun listPendingOutbox(): List<OutboxEntry> =
+        outbox.values
+            .filter { it.status == OutboxStatus.PENDING }
+            .sortedBy { it.createdAt }
+
+    override suspend fun recoverInFlightOutbox() {
+        outbox.entries.forEach { (id, entry) ->
+            if (entry.status == OutboxStatus.IN_FLIGHT) {
+                outbox[id] = entry.copy(status = OutboxStatus.PENDING)
+            }
+        }
+    }
+
+    override suspend fun updateOutboxStatus(id: String, status: OutboxStatus, attempts: Int) {
+        val existing = outbox[id] ?: return
+        outbox[id] = existing.copy(status = status, attempts = attempts)
+    }
+
+    override suspend fun deleteOutbox(id: String) {
+        outbox.remove(id)
+    }
+
+    override suspend fun countOutboxByStatus(status: OutboxStatus): Long =
+        outbox.values.count { it.status == status }.toLong()
+
+    private fun cacheKey(store: String, key: String): String = "$store::$key"
+}

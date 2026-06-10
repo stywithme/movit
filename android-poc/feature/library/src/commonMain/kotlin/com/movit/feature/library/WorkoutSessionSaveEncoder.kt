@@ -3,6 +3,7 @@ package com.movit.feature.library
 import com.movit.core.network.dto.EffectivePlanItemDto
 import com.movit.core.network.dto.EffectivePlanPayloadDto
 import com.movit.core.network.dto.EffectivePlannedWorkoutDto
+import com.movit.core.network.dto.ProgramCustomizationKeys
 import com.movit.core.network.dto.UserProgramUpdateRequest
 
 object WorkoutSessionSaveEncoder {
@@ -14,7 +15,7 @@ object WorkoutSessionSaveEncoder {
     ): UserProgramUpdateRequest {
         val context = session.context
             ?: error("Session context is required to save customizations.")
-        val dayKey = "day_${context.weekNumber}_${context.dayNumber}"
+        val dayKey = ProgramCustomizationKeys.dayKey(context.weekNumber, context.dayNumber)
         val updatedWorkouts = plan.plannedWorkouts.map { workout ->
             if (workout.id == context.plannedWorkoutId) {
                 val originalItems = workout.items.associateBy { it.id }

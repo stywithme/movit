@@ -18,6 +18,7 @@ class ReportsSyncRepositoryTest {
     fun syncDashboard_withAuthAndSuccess_writesCache() {
         runBlocking {
             val platform = FakeMovitPlatformBindings(pro = true)
+            val localStore = testLocalStore(platform)
             val engine = MockEngine {
                 respond(
                     content = """{"success":true}""",
@@ -27,12 +28,12 @@ class ReportsSyncRepositoryTest {
                     ),
                 )
             }
-            val repo = ReportsSyncRepository(testMobileApi(engine, platform), { platform })
+            val repo = ReportsSyncRepository(testMobileApi(engine, platform), { platform }, { localStore })
 
             val result = repo.syncDashboard()
 
             assertTrue(result is AppResult.Success)
-            assertNotNull(platform.readCache(MovitCacheKeys.REPORTS_STORE, MovitCacheKeys.REPORTS_DASHBOARD))
+            assertNotNull(localStore.readString(MovitCacheKeys.REPORTS_STORE, MovitCacheKeys.REPORTS_DASHBOARD))
         }
     }
 
@@ -40,14 +41,15 @@ class ReportsSyncRepositoryTest {
     fun syncDashboard_withoutAuth_returnsCachedWhenPresent() {
         runBlocking {
             val platform = FakeMovitPlatformBindings(auth = null, pro = true)
+            val localStore = testLocalStore(platform)
             val cached = ReportsDashboardApiResponse(success = true)
-            platform.writeCache(
+            localStore.writeString(
                 MovitCacheKeys.REPORTS_STORE,
                 MovitCacheKeys.REPORTS_DASHBOARD,
                 MovitJson.encodeToString(ReportsDashboardApiResponse.serializer(), cached),
             )
             val engine = MockEngine { respond("{}", HttpStatusCode.InternalServerError) }
-            val repo = ReportsSyncRepository(testMobileApi(engine, platform), { platform })
+            val repo = ReportsSyncRepository(testMobileApi(engine, platform), { platform }, { localStore })
 
             val result = repo.syncDashboard()
 
@@ -59,8 +61,9 @@ class ReportsSyncRepositoryTest {
     fun syncDashboard_withoutAuthAndNoCache_fails() {
         runBlocking {
             val platform = FakeMovitPlatformBindings(auth = null, pro = true)
+            val localStore = testLocalStore(platform)
             val engine = MockEngine { respond("{}", HttpStatusCode.OK) }
-            val repo = ReportsSyncRepository(testMobileApi(engine, platform), { platform })
+            val repo = ReportsSyncRepository(testMobileApi(engine, platform), { platform }, { localStore })
 
             val result = repo.syncDashboard()
 
@@ -73,14 +76,15 @@ class ReportsSyncRepositoryTest {
     fun syncDashboard_networkFailureWithCache_returnsCached() {
         runBlocking {
             val platform = FakeMovitPlatformBindings(pro = true)
+            val localStore = testLocalStore(platform)
             val cached = ReportsDashboardApiResponse(success = true)
-            platform.writeCache(
+            localStore.writeString(
                 MovitCacheKeys.REPORTS_STORE,
                 MovitCacheKeys.REPORTS_DASHBOARD,
                 MovitJson.encodeToString(ReportsDashboardApiResponse.serializer(), cached),
             )
             val engine = MockEngine { respond("down", HttpStatusCode.BadGateway) }
-            val repo = ReportsSyncRepository(testMobileApi(engine, platform), { platform })
+            val repo = ReportsSyncRepository(testMobileApi(engine, platform), { platform }, { localStore })
 
             val result = repo.syncDashboard()
 

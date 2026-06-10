@@ -1,10 +1,19 @@
 plugins {
     id("movit.kmp.core")
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.sqldelight)
 }
 
 android {
     namespace = "com.movit.core.data"
+}
+
+sqldelight {
+    databases {
+        create("MovitDatabase") {
+            packageName.set("com.movit.core.data.db")
+        }
+    }
 }
 
 kotlin {
@@ -18,6 +27,8 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.koin.core)
+            implementation(libs.sqldelight.runtime)
+            implementation(libs.sqldelight.coroutines)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
@@ -30,6 +41,10 @@ kotlin {
         }
         androidMain.dependencies {
             implementation(libs.androidx.security.crypto)
+            implementation(libs.sqldelight.android.driver)
+        }
+        iosMain.dependencies {
+            implementation(libs.sqldelight.native.driver)
         }
     }
 }

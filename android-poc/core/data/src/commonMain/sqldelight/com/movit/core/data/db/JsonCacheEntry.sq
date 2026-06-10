@@ -1,0 +1,27 @@
+CREATE TABLE json_cache_entry (
+    store TEXT NOT NULL,
+    cache_key TEXT NOT NULL,
+    json_payload TEXT NOT NULL,
+    updated_at_epoch_ms INTEGER NOT NULL,
+    PRIMARY KEY (store, cache_key)
+);
+
+CREATE INDEX json_cache_entry_store ON json_cache_entry(store);
+
+selectByStoreAndKey:
+SELECT json_payload
+FROM json_cache_entry
+WHERE store = ? AND cache_key = ?;
+
+upsert:
+INSERT OR REPLACE INTO json_cache_entry(store, cache_key, json_payload, updated_at_epoch_ms)
+VALUES (?, ?, ?, ?);
+
+deleteByStoreAndKey:
+DELETE FROM json_cache_entry
+WHERE store = ? AND cache_key = ?;
+
+selectAllByStore:
+SELECT cache_key, json_payload
+FROM json_cache_entry
+WHERE store = ?;

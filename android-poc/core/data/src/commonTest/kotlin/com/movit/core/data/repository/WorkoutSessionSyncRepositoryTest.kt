@@ -3,6 +3,9 @@ package com.movit.core.data.repository
 import com.movit.core.network.MovitJson
 import com.movit.core.network.dto.EffectivePlanApiResponse
 import com.movit.core.network.dto.EffectivePlanPayloadDto
+import com.movit.core.network.dto.EffectivePlannedWorkoutDto
+import com.movit.core.network.dto.ProgramCustomizationKeys
+import com.movit.core.network.dto.UserProgramUpdateRequest
 import com.movit.shared.AppResult
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -19,6 +22,7 @@ class WorkoutSessionSyncRepositoryTest {
     fun syncEffectivePlan_withAuthAndSuccess_writesCache() {
         runBlocking {
             val platform = FakeMovitPlatformBindings()
+            val localStore = testLocalStore(platform)
             val engine = MockEngine {
                 respond(
                     content = """{"success":true,"data":{"userProgramId":"up-1","weekNumber":1,"dayNumber":1}}""",
@@ -28,13 +32,13 @@ class WorkoutSessionSyncRepositoryTest {
                     ),
                 )
             }
-            val repo = WorkoutSessionSyncRepository(testMobileApi(engine, platform), { platform })
+            val repo = testWorkoutSessionRepository(engine, platform, localStore)
 
             val result = repo.syncEffectivePlan(userProgramId = "up-1", weekNumber = 1, dayNumber = 1)
 
             assertTrue(result is AppResult.Success)
             assertNotNull(
-                platform.readCache(
+                localStore.readString(
                     MovitCacheKeys.SESSION_STORE,
                     MovitCacheKeys.effectivePlanKey("up-1", 1, 1),
                 ),
@@ -46,17 +50,18 @@ class WorkoutSessionSyncRepositoryTest {
     fun syncEffectivePlan_withoutAuth_returnsCachedWhenPresent() {
         runBlocking {
             val platform = FakeMovitPlatformBindings(auth = null)
+            val localStore = testLocalStore(platform)
             val cachedResponse = EffectivePlanApiResponse(
                 success = true,
                 data = EffectivePlanPayloadDto(userProgramId = "up-1"),
             )
-            platform.writeCache(
+            localStore.writeString(
                 MovitCacheKeys.SESSION_STORE,
                 MovitCacheKeys.effectivePlanKey("up-1", 1, 1),
                 MovitJson.encodeToString(EffectivePlanApiResponse.serializer(), cachedResponse),
             )
             val engine = MockEngine { respond("{}", HttpStatusCode.InternalServerError) }
-            val repo = WorkoutSessionSyncRepository(testMobileApi(engine, platform), { platform })
+            val repo = testWorkoutSessionRepository(engine, platform, localStore)
 
             val result = repo.syncEffectivePlan(userProgramId = "up-1", weekNumber = 1, dayNumber = 1)
 
@@ -69,7 +74,7 @@ class WorkoutSessionSyncRepositoryTest {
         runBlocking {
             val platform = FakeMovitPlatformBindings(auth = null)
             val engine = MockEngine { respond("{}", HttpStatusCode.OK) }
-            val repo = WorkoutSessionSyncRepository(testMobileApi(engine, platform), { platform })
+            val repo = testWorkoutSessionRepository(engine, platform)
 
             val result = repo.syncEffectivePlan(userProgramId = "up-1", weekNumber = 1, dayNumber = 1)
 
@@ -79,20 +84,66 @@ class WorkoutSessionSyncRepositoryTest {
     }
 
     @Test
+    fun saveDayCustomizations_usesDayWeekDayKey_inCache() {
+        runBlocking {
+            val platform = FakeMovitPlatformBindings()
+            val localStore = testLocalStore(platform)
+            val baseResponse = EffectivePlanApiResponse(
+                success = true,
+                data = EffectivePlanPayloadDto(
+                    userProgramId = "up-1",
+                    weekNumber = 1,
+                    dayNumber = 1,
+                    plannedWorkouts = listOf(EffectivePlannedWorkoutDto(id = "pw-old")),
+                ),
+            )
+            localStore.writeString(
+                MovitCacheKeys.SESSION_STORE,
+                MovitCacheKeys.effectivePlanKey("up-1", 1, 1),
+                MovitJson.encodeToString(EffectivePlanApiResponse.serializer(), baseResponse),
+            )
+            val engine = MockEngine { respond("{}", HttpStatusCode.OK) }
+            val repo = testWorkoutSessionRepository(engine, platform, localStore)
+            val customized = listOf(EffectivePlannedWorkoutDto(id = "pw-new"))
+            val dayKey = ProgramCustomizationKeys.dayKey(weekNumber = 1, dayNumber = 1)
+
+            assertEquals("day_1_1", dayKey)
+
+            val result = repo.saveDayCustomizations(
+                userProgramId = "up-1",
+                weekNumber = 1,
+                dayNumber = 1,
+                request = UserProgramUpdateRequest(customizations = mapOf(dayKey to customized)),
+            )
+
+            assertTrue(result is AppResult.Success)
+            val cached = MovitJson.decodeFromString(
+                EffectivePlanApiResponse.serializer(),
+                localStore.readString(
+                    MovitCacheKeys.SESSION_STORE,
+                    MovitCacheKeys.effectivePlanKey("up-1", 1, 1),
+                )!!,
+            )
+            assertEquals("pw-new", cached.data?.plannedWorkouts?.singleOrNull()?.id)
+        }
+    }
+
+    @Test
     fun syncEffectivePlan_networkFailureWithCache_returnsCached() {
         runBlocking {
             val platform = FakeMovitPlatformBindings()
+            val localStore = testLocalStore(platform)
             val cachedResponse = EffectivePlanApiResponse(
                 success = true,
                 data = EffectivePlanPayloadDto(userProgramId = "up-1"),
             )
-            platform.writeCache(
+            localStore.writeString(
                 MovitCacheKeys.SESSION_STORE,
                 MovitCacheKeys.effectivePlanKey("up-1", 1, 1),
                 MovitJson.encodeToString(EffectivePlanApiResponse.serializer(), cachedResponse),
             )
             val engine = MockEngine { respond("down", HttpStatusCode.ServiceUnavailable) }
-            val repo = WorkoutSessionSyncRepository(testMobileApi(engine, platform), { platform })
+            val repo = testWorkoutSessionRepository(engine, platform, localStore)
 
             val result = repo.syncEffectivePlan(userProgramId = "up-1", weekNumber = 1, dayNumber = 1)
 

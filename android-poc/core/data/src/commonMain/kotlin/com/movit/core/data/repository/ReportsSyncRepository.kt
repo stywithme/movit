@@ -1,7 +1,8 @@
 package com.movit.core.data.repository
 
+import com.movit.core.data.cache.MovitCachePolicy
+import com.movit.core.data.local.MovitLocalStore
 import com.movit.core.data.platform.MovitPlatformBindings
-import com.movit.core.network.MovitJson
 import com.movit.core.network.MovitMobileApi
 import com.movit.core.network.dto.MetricsApiResponse
 import com.movit.core.network.dto.ReportsDashboardApiResponse
@@ -10,22 +11,23 @@ import com.movit.shared.AppResult
 class ReportsSyncRepository(
     private val api: MovitMobileApi,
     private val platform: () -> MovitPlatformBindings,
+    private val localStore: () -> MovitLocalStore,
 ) {
-    fun readCachedDashboard(): ReportsDashboardApiResponse? {
-        val raw = platform().readCache(MovitCacheKeys.REPORTS_STORE, MovitCacheKeys.REPORTS_DASHBOARD)
-            ?: return null
-        return runCatching {
-            MovitJson.decodeFromString<ReportsDashboardApiResponse>(raw)
-        }.getOrNull()
-    }
+    fun readCachedDashboard(): ReportsDashboardApiResponse? =
+        MovitCachePolicy.readJson(
+            localStore(),
+            MovitCacheKeys.REPORTS_STORE,
+            MovitCacheKeys.REPORTS_DASHBOARD,
+            ReportsDashboardApiResponse.serializer(),
+        )
 
-    fun readCachedExerciseMetrics(exerciseSlug: String): MetricsApiResponse? {
-        val raw = platform().readCache(
+    fun readCachedExerciseMetrics(exerciseSlug: String): MetricsApiResponse? =
+        MovitCachePolicy.readJson(
+            localStore(),
             MovitCacheKeys.REPORTS_STORE,
             MovitCacheKeys.reportsExerciseKey(exerciseSlug),
-        ) ?: return null
-        return runCatching { MovitJson.decodeFromString<MetricsApiResponse>(raw) }.getOrNull()
-    }
+            MetricsApiResponse.serializer(),
+        )
 
     suspend fun syncDashboard(
         programId: String? = null,
@@ -42,28 +44,32 @@ class ReportsSyncRepository(
             return AppResult.Failure("Reports require a Pro subscription.")
         }
 
-        val response = api.fetchReportsDashboard(
-            programId = programId,
-            period = period,
-            source = source,
-            authorization = auth,
-        ).getOrElse { error ->
-            return cached?.let { AppResult.Success(it) }
-                ?: AppResult.Failure(error.message ?: "Reports sync failed.")
-        }
-
-        if (!response.success) {
-            return cached?.let { AppResult.Success(it) }
-                ?: AppResult.Failure(response.error ?: "Reports sync failed.")
-        }
-
-        bindings.writeCache(
-            MovitCacheKeys.REPORTS_STORE,
-            MovitCacheKeys.REPORTS_DASHBOARD,
-            MovitJson.encodeToString(ReportsDashboardApiResponse.serializer(), response),
+        return MovitCachePolicy.syncWithFallback(
+            cached = cached,
+            authRequired = true,
+            hasAuth = auth != null,
+            noAuthMessage = "Sign in to load your reports.",
+            fetch = {
+                api.fetchReportsDashboard(
+                    programId = programId,
+                    period = period,
+                    source = source,
+                    authorization = auth,
+                )
+            },
+            isSuccess = { it.success },
+            errorMessage = { it.error ?: "Reports sync failed." },
+            persist = { response ->
+                MovitCachePolicy.writeJson(
+                    localStore(),
+                    MovitCacheKeys.REPORTS_STORE,
+                    MovitCacheKeys.REPORTS_DASHBOARD,
+                    response,
+                    ReportsDashboardApiResponse.serializer(),
+                )
+            },
+            failureMessage = { it.message ?: "Reports sync failed." },
         )
-
-        return AppResult.Success(response)
     }
 
     suspend fun syncExerciseMetrics(
@@ -81,26 +87,30 @@ class ReportsSyncRepository(
             return AppResult.Failure("Reports require a Pro subscription.")
         }
 
-        val response = api.fetchExerciseMetrics(
-            programId = programId,
-            exerciseSlug = exerciseSlug,
-            authorization = auth,
-        ).getOrElse { error ->
-            return cached?.let { AppResult.Success(it) }
-                ?: AppResult.Failure(error.message ?: "Exercise report sync failed.")
-        }
-
-        if (!response.success) {
-            return cached?.let { AppResult.Success(it) }
-                ?: AppResult.Failure(response.error ?: "Exercise report sync failed.")
-        }
-
-        bindings.writeCache(
-            MovitCacheKeys.REPORTS_STORE,
-            cacheKey,
-            MovitJson.encodeToString(MetricsApiResponse.serializer(), response),
+        return MovitCachePolicy.syncWithFallback(
+            cached = cached,
+            authRequired = true,
+            hasAuth = auth != null,
+            noAuthMessage = "Sign in to load report details.",
+            fetch = {
+                api.fetchExerciseMetrics(
+                    programId = programId,
+                    exerciseSlug = exerciseSlug,
+                    authorization = auth,
+                )
+            },
+            isSuccess = { it.success },
+            errorMessage = { it.error ?: "Exercise report sync failed." },
+            persist = { response ->
+                MovitCachePolicy.writeJson(
+                    localStore(),
+                    MovitCacheKeys.REPORTS_STORE,
+                    cacheKey,
+                    response,
+                    MetricsApiResponse.serializer(),
+                )
+            },
+            failureMessage = { it.message ?: "Exercise report sync failed." },
         )
-
-        return AppResult.Success(response)
     }
 }

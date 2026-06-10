@@ -1,0 +1,49 @@
+CREATE TABLE outbox_entry (
+    id TEXT NOT NULL PRIMARY KEY,
+    operation_type TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    idempotency_key TEXT NOT NULL,
+    created_at_epoch_ms INTEGER NOT NULL,
+    attempts INTEGER NOT NULL,
+    status TEXT NOT NULL,
+    last_error TEXT
+);
+
+CREATE INDEX outbox_entry_status_created ON outbox_entry(status, created_at_epoch_ms);
+
+insert:
+INSERT OR REPLACE INTO outbox_entry(
+    id, operation_type, payload_json, idempotency_key,
+    created_at_epoch_ms, attempts, status, last_error
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+selectPending:
+SELECT *
+FROM outbox_entry
+WHERE status = 'pending'
+ORDER BY created_at_epoch_ms ASC;
+
+recoverInFlight:
+UPDATE outbox_entry
+SET status = 'pending'
+WHERE status = 'in_flight';
+
+selectById:
+SELECT *
+FROM outbox_entry
+WHERE id = ?;
+
+selectByStatus:
+SELECT *
+FROM outbox_entry
+WHERE status = ?;
+
+updateStatus:
+UPDATE outbox_entry
+SET status = ?, attempts = ?, last_error = ?
+WHERE id = ?;
+
+deleteById:
+DELETE FROM outbox_entry
+WHERE id = ?;

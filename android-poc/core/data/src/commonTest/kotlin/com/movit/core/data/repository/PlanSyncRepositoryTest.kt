@@ -35,10 +35,11 @@ class PlanSyncRepositoryTest {
                 }
             }
             val api = testMobileApi(engine, platform)
+            val localStore = testLocalStore(platform)
             val repo = PlanSyncRepository(
                 api = api,
                 platform = { platform },
-                homeSync = HomeSyncRepository(api, { platform }),
+                homeSync = HomeSyncRepository(api, { platform }, { localStore }),
             )
 
             val result = repo.enrollProgram("prog-1")
@@ -60,10 +61,11 @@ class PlanSyncRepositoryTest {
                 )
             }
             val api = testMobileApi(engine, platform)
+            val localStore = testLocalStore(platform)
             val repo = PlanSyncRepository(
                 api = api,
                 platform = { platform },
-                homeSync = HomeSyncRepository(api, { platform }),
+                homeSync = HomeSyncRepository(api, { platform }, { localStore }),
             )
 
             val result = repo.refreshActiveUserProgramId()

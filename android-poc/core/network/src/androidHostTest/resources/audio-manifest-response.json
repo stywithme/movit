@@ -1,0 +1,20 @@
+{
+  "success": true,
+  "data": {
+    "entityType": "workout",
+    "slug": "quick-legs",
+    "timestamp": "2026-06-10T12:00:00.000Z",
+    "filesInManifest": 1,
+    "audioManifest": {
+      "baseUrl": "https://cdn.example/audio/",
+      "files": [
+        {
+          "filename": "intro.mp3",
+          "url": "intro.mp3",
+          "size": 1024,
+          "language": "en"
+        }
+      ]
+    }
+  }
+}
