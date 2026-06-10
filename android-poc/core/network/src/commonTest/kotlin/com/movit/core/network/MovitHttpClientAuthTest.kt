@@ -20,7 +20,7 @@ class MovitHttpClientAuthTest {
 
   @AfterTest
   fun resetClock() {
-    MovitClock.nowEpochMs = { System.currentTimeMillis() }
+    MovitClock.resetToPlatformClock()
   }
 
   @Test

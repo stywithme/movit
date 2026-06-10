@@ -5,6 +5,7 @@ import com.movit.core.data.platform.FakeSecureSessionStore
 import com.movit.core.data.platform.MovitPlatformBindings
 import com.movit.core.data.platform.MovitThemeModeStorage
 import com.movit.core.data.platform.SecureAuthTokens
+import com.movit.core.network.MovitClock
 
 open class FakeMovitPlatformBindings(
     private val auth: String? = "Bearer test-token",
@@ -59,7 +60,7 @@ open class FakeMovitPlatformBindings(
 
     override fun persistAuthSession(snapshot: AuthSessionSnapshot) {
         val expiresAt = if (snapshot.expiresInSeconds > 0) {
-            System.currentTimeMillis() + snapshot.expiresInSeconds * 1000L
+            MovitClock.nowEpochMs() + snapshot.expiresInSeconds * 1000L
         } else {
             secureSession.readExpiresAtEpochMs()
         }

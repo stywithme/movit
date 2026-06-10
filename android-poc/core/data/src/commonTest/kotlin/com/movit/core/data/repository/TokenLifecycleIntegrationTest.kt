@@ -27,7 +27,7 @@ class TokenLifecycleIntegrationTest {
 
     @AfterTest
     fun resetClock() {
-        MovitClock.nowEpochMs = { System.currentTimeMillis() }
+        MovitClock.resetToPlatformClock()
         MovitData.onSessionExpired = null
     }
 
