@@ -1,5 +1,9 @@
 name: Movit KMP iOS Compile
 
+concurrency:
+  group: movit-kmp-ios-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     paths:
@@ -37,25 +41,17 @@ jobs:
       - name: Gradle cache
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Compile iOS device + simulator Kotlin
+      - name: Compile iOS app entrypoint
         run: |
           chmod +x ./gradlew
           ./gradlew --console=plain \
             :feature:shell:compileKotlinIosArm64 \
-            :feature:shell:compileKotlinIosSimulatorArm64 \
-            :core:data:compileKotlinIosArm64 \
-            :core:data:compileKotlinIosSimulatorArm64 \
-            :core:network:compileKotlinIosArm64 \
-            :core:network:compileKotlinIosSimulatorArm64 \
-            :feature:account:compileKotlinIosSimulatorArm64 \
-            :feature:library:compileKotlinIosSimulatorArm64 \
-            :feature:reports:compileKotlinIosSimulatorArm64
+            :feature:shell:compileKotlinIosSimulatorArm64
 
-      - name: Link MovitApp debug frameworks
+      - name: Link MovitApp device framework
         run: |
           ./gradlew --console=plain \
-            :feature:shell:linkDebugFrameworkIosArm64 \
-            :feature:shell:linkDebugFrameworkIosSimulatorArm64
+            :feature:shell:linkDebugFrameworkIosArm64
 
       - name: Run KMP iOS simulator unit tests
         run: |
@@ -63,7 +59,6 @@ jobs:
             :shared:iosSimulatorArm64Test \
             :core:data:iosSimulatorArm64Test \
             :core:network:iosSimulatorArm64Test \
-            :core:resources:iosSimulatorArm64Test \
             :feature:shell:iosSimulatorArm64Test \
             :feature:account:iosSimulatorArm64Test \
             :feature:library:iosSimulatorArm64Test
@@ -109,6 +104,6 @@ jobs:
             -scheme iosApp \
             -configuration Debug \
             -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+            -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO \
             build
