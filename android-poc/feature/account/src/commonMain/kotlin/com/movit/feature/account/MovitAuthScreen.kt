@@ -484,7 +484,7 @@ private fun AuthFormScaffold(
     ) {
         if (errorMessage != null) {
             Text(
-                text = errorMessage,
+                text = resolveAuthErrorMessage(errorMessage),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier
@@ -578,4 +578,9 @@ private fun AuthFooterLink(
             Text(text = action, fontWeight = FontWeight.W700)
         }
     }
+}
+
+@Composable
+private fun resolveAuthErrorMessage(message: String): String {
+    return if (message.startsWith("auth_error_")) movitText(message) else message
 }

@@ -1,8 +1,11 @@
 package com.movit.feature.account
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.movit.shared.AppResult
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -15,6 +18,7 @@ import kotlinx.coroutines.launch
 class MovitLevelViewModel(
     private val repository: LevelRepository = defaultLevelRepository(),
 ) : ViewModel() {
+    private val workScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
     private val _state = MutableStateFlow(MovitLevelUiState(isLoading = true))
     val state: StateFlow<MovitLevelUiState> = _state.asStateFlow()
 
@@ -22,7 +26,7 @@ class MovitLevelViewModel(
     val effects: SharedFlow<MovitLevelEffect> = _effects.asSharedFlow()
 
     fun loadInitial() {
-        viewModelScope.launch { load() }
+        workScope.launch { load() }
     }
 
     suspend fun load() {
@@ -51,7 +55,7 @@ class MovitLevelViewModel(
     fun onEvent(event: MovitLevelEvent) {
         when (event) {
             MovitLevelEvent.RetryClicked -> {
-                viewModelScope.launch { load() }
+                workScope.launch { load() }
             }
             is MovitLevelEvent.TabSelected -> {
                 _state.update { it.copy(selectedTab = event.tab) }
@@ -63,5 +67,10 @@ class MovitLevelViewModel(
                 _effects.tryEmit(MovitLevelEffect.OpenExplore)
             }
         }
+    }
+
+    override fun onCleared() {
+        workScope.cancel()
+        super.onCleared()
     }
 }

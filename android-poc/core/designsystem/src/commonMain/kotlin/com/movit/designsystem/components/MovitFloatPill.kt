@@ -136,7 +136,7 @@ fun MovitInnerPageHeader(
             label = backLabel,
             icon = Icons.AutoMirrored.Filled.ArrowBack,
             variant = backVariant,
-            contentDescription = "Back",
+            contentDescription = backLabel ?: "Back",
         )
         if (title != null) {
             Text(
@@ -158,6 +158,7 @@ fun MovitInnerPageHeader(
                 label = actionLabel,
                 icon = actionIcon,
                 variant = if (onImage) MovitFloatPillVariant.Outline else actionVariant,
+                contentDescription = actionLabel,
             )
         }
     }

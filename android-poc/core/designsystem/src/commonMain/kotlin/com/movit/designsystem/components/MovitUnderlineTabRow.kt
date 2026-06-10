@@ -36,13 +36,13 @@ fun MovitUnderlineTabRow(
     Column(modifier = modifier.fillMaxWidth()) {
         Row(modifier = Modifier.fillMaxWidth()) {
             tabs.forEachIndexed { index, label ->
-                val selected = index == selectedIndex
+                val isSelected = index == selectedIndex
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .semantics {
                             role = Role.Tab
-                            selected = selected
+                            selected = isSelected
                         },
                     contentAlignment = Alignment.BottomCenter,
                 ) {
@@ -61,7 +61,7 @@ fun MovitUnderlineTabRow(
                                 text = label,
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.W700,
-                                color = if (selected) {
+                                color = if (isSelected) {
                                     MaterialTheme.colorScheme.primary
                                 } else {
                                     movit.textTertiary
@@ -74,7 +74,7 @@ fun MovitUnderlineTabRow(
                                     .height(3.dp),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                if (selected) {
+                                if (isSelected) {
                                     Surface(
                                         modifier = Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp),

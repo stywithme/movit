@@ -2,13 +2,9 @@ package com.movit.feature.library
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,13 +12,16 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.movit.designsystem.MovitRadius
 import com.movit.designsystem.MovitSpacing
+import com.movit.designsystem.components.MovitBarChart
+import com.movit.designsystem.components.MovitBarChartItem
 import com.movit.designsystem.components.MovitButton
 import com.movit.designsystem.components.MovitButtonVariant
 import com.movit.designsystem.components.MovitErrorState
@@ -62,7 +61,7 @@ fun WeeklyReportScreen(
                 ) {
                     WeeklyReportHero(report = report)
                     MovitStatTileRow(
-                        tiles = listOf(
+                        stats = listOf(
                             MovitStatTileData(
                                 value = report.sessionsCompleted.toString(),
                                 label = movitText("program_flow_metric_sessions"),
@@ -77,13 +76,26 @@ fun WeeklyReportScreen(
                             ),
                         ),
                     )
-                    Column(verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm)) {
+                    val chartA11y = movitText("program_flow_a11y_chart")
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
+                        modifier = Modifier.semantics { contentDescription = chartA11y },
+                    ) {
                         Text(
                             text = movitText("program_flow_daily_form"),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.W700,
                         )
-                        WeeklyFormChart(scores = report.dailyScores)
+                        MovitBarChart(
+                            items = report.dailyScores.map { day ->
+                                MovitBarChartItem(
+                                    value = day.scorePercent.toFloat().coerceAtLeast(0f),
+                                    label = day.label,
+                                    highlighted = day.scorePercent >= 80,
+                                )
+                            },
+                            highlightColor = MaterialTheme.colorScheme.primary,
+                        )
                     }
                     MovitButton(
                         text = movitText("program_flow_share_report"),
@@ -125,60 +137,6 @@ private fun WeeklyReportHero(report: WeeklyReportUi) {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSecondary,
         )
-    }
-}
-
-@Composable
-private fun WeeklyFormChart(scores: List<WeeklyReportDayScoreUi>) {
-    val maxBarHeight = 120.dp
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(MovitRadius.md))
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(MovitSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(maxBarHeight),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.Bottom,
-        ) {
-            scores.forEach { day ->
-                val fraction = day.scorePercent.coerceIn(0, 100) / 100f
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight(fraction.coerceAtLeast(0.08f))
-                        .padding(horizontal = 4.dp)
-                        .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
-                        .background(
-                            if (day.scorePercent >= 80) {
-                                MaterialTheme.colorScheme.primary
-                            } else if (day.scorePercent > 0) {
-                                MaterialTheme.movitColors.textTertiary
-                            } else {
-                                MaterialTheme.colorScheme.outline
-                            },
-                        ),
-                )
-            }
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-        ) {
-            scores.forEach { day ->
-                Text(
-                    text = day.label,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.movitColors.textSecondary,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
     }
 }
 

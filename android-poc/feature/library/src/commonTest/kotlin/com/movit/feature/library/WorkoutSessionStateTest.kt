@@ -24,6 +24,12 @@ class WorkoutSessionStateTest {
     }
 
     @Test
+    fun firstExerciseId_returnsWarmupExercise() {
+        val session = WorkoutSessionPreviewData.preview
+        assertEquals("ex-squat-warm", session.firstExerciseId())
+    }
+
+    @Test
     fun preview_loadsSections() {
         val viewModel = WorkoutSessionViewModel(
             workoutId = "preview",
@@ -61,5 +67,62 @@ class WorkoutSessionStateTest {
         assertEquals("4 × 8", exercise.setsLabel)
         assertEquals("50 kg", exercise.weightLabel)
         assertEquals("90s rest", exercise.restLabel)
+    }
+
+    @Test
+    fun deleteExercise_removesBlockAndRecalculates() {
+        val viewModel = WorkoutSessionViewModel(
+            workoutId = "preview",
+            repository = DefaultWorkoutSessionRepository(),
+        )
+        kotlinx.coroutines.runBlocking { viewModel.load() }
+        val before = viewModel.state.value.session?.exerciseCount ?: 0
+        viewModel.toggleEditMode()
+        viewModel.deleteExercise("ex-barbell-squat")
+        val after = viewModel.state.value.session?.exerciseCount ?: 0
+        assertEquals(before - 1, after)
+    }
+
+    @Test
+    fun moveBlock_reordersWithinSection() {
+        val viewModel = WorkoutSessionViewModel(
+            workoutId = "preview",
+            repository = DefaultWorkoutSessionRepository(),
+        )
+        kotlinx.coroutines.runBlocking { viewModel.load() }
+        viewModel.toggleEditMode()
+        val mainSection = viewModel.state.value.session?.sections
+            ?.first { it.phaseRole == "MAIN" }
+            ?: return
+        val firstId = mainSection.items.first().id
+        val secondId = mainSection.items[1].id
+        viewModel.moveBlock("MAIN", firstId, 1)
+        val reordered = viewModel.state.value.session?.sections
+            ?.first { it.phaseRole == "MAIN" }
+            ?.items
+            ?.map { it.id }
+        assertEquals(listOf(secondId, firstId), reordered?.take(2))
+    }
+
+    @Test
+    fun addRestBlock_appendsRestToMainSection() {
+        val viewModel = WorkoutSessionViewModel(
+            workoutId = "preview",
+            repository = DefaultWorkoutSessionRepository(),
+        )
+        kotlinx.coroutines.runBlocking { viewModel.load() }
+        viewModel.toggleEditMode()
+        val before = viewModel.state.value.session?.sections
+            ?.first { it.phaseRole == "MAIN" }
+            ?.items
+            ?.count { it is WorkoutSessionBlockUi.Rest }
+            ?: 0
+        viewModel.addRestBlock()
+        val after = viewModel.state.value.session?.sections
+            ?.first { it.phaseRole == "MAIN" }
+            ?.items
+            ?.count { it is WorkoutSessionBlockUi.Rest }
+            ?: 0
+        assertEquals(before + 1, after)
     }
 }

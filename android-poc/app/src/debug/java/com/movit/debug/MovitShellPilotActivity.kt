@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.movit.feature.shell.MovitAppShellRoute
+import com.movit.legacy.LegacyTrainingLauncher
 
 /**
  * Debug-only root host for the Movit App Shell (Phase 03).
@@ -17,7 +18,16 @@ class MovitShellPilotActivity : ComponentActivity() {
         MovitDataInstall.install(applicationContext)
         enableEdgeToEdge()
         setContent {
-            MovitAppShellRoute()
+            MovitAppShellRoute(
+                onLaunchLegacyTraining = { effect ->
+                    LegacyTrainingLauncher.startCameraExercise(
+                        context = this@MovitShellPilotActivity,
+                        exerciseFileName = effect.exerciseFileName,
+                        poseVariant = effect.poseVariant,
+                    )
+                    true
+                },
+            )
         }
     }
 }

@@ -9,8 +9,10 @@ import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -30,6 +32,7 @@ import com.movit.feature.explore.components.ExploreMuscleStrip
 import com.movit.feature.explore.components.ExploreSearchSection
 import com.movit.feature.explore.components.ExploreWorkoutIntro
 import com.movit.resources.movitText
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MovitExploreScreen(
     state: MovitExploreUiState,
@@ -37,6 +40,7 @@ fun MovitExploreScreen(
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
+    val canRefresh = state.errorMessage == null && !state.isLoading
     val workoutsRequester = remember { BringIntoViewRequester() }
     val exercisesRequester = remember { BringIntoViewRequester() }
     LaunchedEffect(state.scrollToWorkouts) {
@@ -57,14 +61,24 @@ fun MovitExploreScreen(
         title = movitText("explore_title"),
         subtitle = movitText("explore_subtitle"),
     ) { padding ->
-        Column(
+        PullToRefreshBox(
+            isRefreshing = state.isRefreshing,
+            onRefresh = {
+                if (canRefresh) {
+                    onEvent(MovitExploreEvent.RefreshRequested)
+                }
+            },
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(scrollState)
-                .padding(MovitSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(MovitSpacing.lg),
+                .padding(padding),
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(MovitSpacing.lg),
+                verticalArrangement = Arrangement.spacedBy(MovitSpacing.lg),
+            ) {
             ExploreSearchSection(
                 query = state.query,
                 onQueryChange = { onEvent(MovitExploreEvent.QueryChanged(it)) },
@@ -199,9 +213,9 @@ fun MovitExploreScreen(
                         MovitSectionHeader(
                             title = movitText("explore_guided_paths"),
                             subtitle = movitText("explore_programs"),
-                            actionLabel = movitText("explore_open"),
+                            actionLabel = movitText("explore_see_all"),
                             onActionClick = {
-                                onEvent(MovitExploreEvent.ItemClicked(program.id, ExploreItemType.Program))
+                                onEvent(MovitExploreEvent.SeeAllProgramsClicked)
                             },
                         )
                         MovitMediaCard(
@@ -217,6 +231,7 @@ fun MovitExploreScreen(
                         )
                     }
                 }
+            }
             }
         }
     }

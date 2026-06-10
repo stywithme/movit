@@ -1,9 +1,12 @@
 package com.movit.feature.account
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.movit.core.data.MovitData
 import com.movit.shared.AppResult
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,6 +22,7 @@ class MovitAuthViewModel(
     private val bootstrap: AuthBootstrapContext = AuthBootstrapContext.fromMovitData(),
     initialScreen: AuthScreen = AuthScreen.Splash,
 ) : ViewModel() {
+    private val workScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
     private val _state = MutableStateFlow(MovitAuthUiState(screen = initialScreen))
     val state: StateFlow<MovitAuthUiState> = _state.asStateFlow()
 
@@ -27,7 +31,7 @@ class MovitAuthViewModel(
 
     init {
         if (initialScreen == AuthScreen.Splash) {
-            viewModelScope.launch {
+            workScope.launch {
                 when (resolveBootstrapTarget(bootstrap)) {
                     AuthBootstrapTarget.ActiveSession -> emitPostAuthNavigation()
                     AuthBootstrapTarget.SignIn -> {
@@ -61,7 +65,7 @@ class MovitAuthViewModel(
             MovitAuthEvent.SignInClicked -> submitSignIn()
             MovitAuthEvent.SignUpClicked -> submitSignUp()
             MovitAuthEvent.GoogleSignInClicked -> {
-                _effects.tryEmit(MovitAuthEffect.ShowMessage(GOOGLE_SIGN_IN_STUB_MESSAGE))
+                _effects.tryEmit(MovitAuthEffect.ShowLocalizedMessage("auth_google_unavailable"))
             }
             MovitAuthEvent.CreateAccountClicked -> submitSignUp()
             MovitAuthEvent.ForgotPasswordLinkClicked -> {
@@ -123,7 +127,7 @@ class MovitAuthViewModel(
             _state.update { it.copy(errorMessage = validationError) }
             return
         }
-        viewModelScope.launch {
+        workScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
             when (val result = repository.login(email, password)) {
                 is AppResult.Success -> {
@@ -146,7 +150,7 @@ class MovitAuthViewModel(
             _state.update { it.copy(errorMessage = validationError) }
             return
         }
-        viewModelScope.launch {
+        workScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
             when (val result = repository.register(name, email, password)) {
                 is AppResult.Success -> {
@@ -167,7 +171,7 @@ class MovitAuthViewModel(
             _state.update { it.copy(errorMessage = validationError) }
             return
         }
-        viewModelScope.launch {
+        workScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
             when (val result = repository.forgotPassword(email)) {
                 is AppResult.Success -> {
@@ -178,7 +182,6 @@ class MovitAuthViewModel(
                             errorMessage = null,
                         )
                     }
-                    _effects.tryEmit(MovitAuthEffect.ShowMessage(FORGOT_PASSWORD_SUCCESS_MESSAGE))
                 }
                 is AppResult.Failure -> {
                     _state.update { it.copy(isLoading = false, errorMessage = result.message) }
@@ -197,15 +200,16 @@ class MovitAuthViewModel(
         }
     }
 
+    override fun onCleared() {
+        workScope.cancel()
+        super.onCleared()
+    }
+
     companion object {
         const val SPLASH_DELAY_MS = 1_800L
         const val INTRO_PAGE_COUNT = 3
         const val AUTH_PREFS_STORE = "movit_auth"
         const val AUTH_INTRO_SEEN_KEY = "intro_seen"
-        const val GOOGLE_SIGN_IN_STUB_MESSAGE =
-            "Google Sign-In is not available in this build yet."
-        const val FORGOT_PASSWORD_SUCCESS_MESSAGE = "Password reset link sent!"
-
         fun resolveBootstrapTarget(context: AuthBootstrapContext): AuthBootstrapTarget {
             if (context.hasActiveSession) return AuthBootstrapTarget.ActiveSession
             if (!context.movitDataInstalled || context.introSeen) {
@@ -221,22 +225,22 @@ class MovitAuthViewModel(
         }
 
         fun validateSignIn(email: String, password: String): String? {
-            if (email.isBlank()) return "Enter your email address."
-            if (!email.contains("@")) return "Enter a valid email address."
-            if (password.isBlank()) return "Enter your password."
+            if (email.isBlank()) return "auth_error_email_required"
+            if (!email.contains("@")) return "auth_error_email_invalid"
+            if (password.isBlank()) return "auth_error_password_required"
             return null
         }
 
         fun validateSignUp(name: String, email: String, password: String): String? {
-            if (name.isBlank()) return "Enter your full name."
-            if (email.isBlank() || !email.contains("@")) return "Enter a valid email address."
-            if (password.length < 8) return "Password must be at least 8 characters."
+            if (name.isBlank()) return "auth_error_name_required"
+            if (email.isBlank() || !email.contains("@")) return "auth_error_email_invalid"
+            if (password.length < 8) return "auth_error_password_short"
             return null
         }
 
         fun validateForgotPassword(email: String): String? {
-            if (email.isBlank()) return "Enter your email address."
-            if (!email.contains("@")) return "Enter a valid email address."
+            if (email.isBlank()) return "auth_error_email_required"
+            if (!email.contains("@")) return "auth_error_email_invalid"
             return null
         }
     }
@@ -271,9 +275,9 @@ data class AuthBootstrapContext(
             return AuthBootstrapContext(
                 movitDataInstalled = true,
                 hasActiveSession = !platform.authHeader().isNullOrBlank(),
-                introSeen = platform.readCache(AUTH_PREFS_STORE, AUTH_INTRO_SEEN_KEY) == "true",
+                introSeen = platform.readCache(MovitAuthViewModel.AUTH_PREFS_STORE, MovitAuthViewModel.AUTH_INTRO_SEEN_KEY) == "true",
                 onIntroSeen = {
-                    platform.writeCache(AUTH_PREFS_STORE, AUTH_INTRO_SEEN_KEY, "true")
+                    platform.writeCache(MovitAuthViewModel.AUTH_PREFS_STORE, MovitAuthViewModel.AUTH_INTRO_SEEN_KEY, "true")
                 },
             )
         }

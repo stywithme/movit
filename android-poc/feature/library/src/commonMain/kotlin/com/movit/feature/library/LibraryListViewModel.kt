@@ -16,7 +16,6 @@ data class LibraryListUiState(
     val query: String = "",
     val selectedFilter: LibraryFilterChip = LibraryFilterChip.All,
     val filters: List<LibraryFilterChip> = emptyList(),
-    val accentFilter: LibraryFilterChip = LibraryFilterChip.All,
     val items: List<ExploreItemUi> = emptyList(),
     val totalCount: Int = 0,
     val visibleCount: Int = 0,
@@ -35,7 +34,6 @@ class LibraryListViewModel(
             kind = kind,
             isLoading = true,
             filters = LibraryFilterChip.defaults(kind),
-            accentFilter = LibraryFilterChip.accent(kind),
         ),
     )
     val state: StateFlow<LibraryListUiState> = _state.asStateFlow()
@@ -58,7 +56,6 @@ class LibraryListViewModel(
                     it.copy(
                         isLoading = false,
                         filters = LibraryFilterChip.defaults(kind),
-                        accentFilter = LibraryFilterChip.accent(kind),
                         selectedFilter = LibraryFilterChip.All,
                     )
                 }

@@ -23,6 +23,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.movit.designsystem.MovitSpacing
@@ -90,7 +92,14 @@ fun WorkoutRunScreen(
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.W800,
                     )
-                    MovitProgressBar(progressPercent = state.progressPercent)
+                    val progressA11y = movitText(
+                        "workout_flow_a11y_progress",
+                        state.progressPercent,
+                    )
+                    MovitProgressBar(
+                        progressPercent = state.progressPercent,
+                        modifier = Modifier.semantics { contentDescription = progressA11y },
+                    )
                     Text(
                         text = if (current.reps != null) {
                             movitText(
@@ -150,8 +159,16 @@ private fun WorkoutRunSequenceRow(
     val movit = MaterialTheme.movitColors
     val isActive = item.status == WorkoutRunExerciseStatus.Active
     val isDone = item.status == WorkoutRunExerciseStatus.Done
+    val statusLabel = when (item.status) {
+        WorkoutRunExerciseStatus.Done -> movitText("workout_flow_done")
+        WorkoutRunExerciseStatus.Active -> movitText("workout_flow_now")
+        WorkoutRunExerciseStatus.Pending -> movitText("workout_flow_a11y_pending")
+    }
+    val rowDescription = movitText("workout_flow_a11y_sequence", item.name, statusLabel)
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics { contentDescription = rowDescription },
         shape = RoundedCornerShape(12.dp),
         color = when {
             isActive -> movit.primaryTint

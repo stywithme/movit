@@ -1,8 +1,10 @@
 package com.movit.feature.explore
 
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.yield
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -121,9 +123,12 @@ class MovitExploreStateTest {
     fun viewModel_itemClicked_emitsWorkoutSessionEffect() {
         runBlocking {
             val viewModel = MovitExploreViewModel(FakeExploreRepository())
+            val effectDeferred = async {
+                withTimeout(5_000) { viewModel.effects.first() }
+            }
+            yield()
             viewModel.onEvent(MovitExploreEvent.ItemClicked("workout-lower-body", ExploreItemType.Workout))
-            val effect = withTimeout(1_000) { viewModel.effects.first() }
-            assertEquals(MovitExploreEffect.OpenWorkoutSession("workout-lower-body"), effect)
+            assertEquals(MovitExploreEffect.OpenWorkoutSession("workout-lower-body"), effectDeferred.await())
         }
     }
 
@@ -131,9 +136,12 @@ class MovitExploreStateTest {
     fun viewModel_itemClicked_emitsExercisePrepareEffect() {
         runBlocking {
             val viewModel = MovitExploreViewModel(FakeExploreRepository())
+            val effectDeferred = async {
+                withTimeout(5_000) { viewModel.effects.first() }
+            }
+            yield()
             viewModel.onEvent(MovitExploreEvent.ItemClicked("ex-squat", ExploreItemType.Exercise))
-            val effect = withTimeout(1_000) { viewModel.effects.first() }
-            assertEquals(MovitExploreEffect.OpenExercisePrepare("ex-squat"), effect)
+            assertEquals(MovitExploreEffect.OpenExercisePrepare("ex-squat"), effectDeferred.await())
         }
     }
 
@@ -145,6 +153,19 @@ class MovitExploreStateTest {
             assertTrue(viewModel.state.value.secondaryFiltersVisible)
             viewModel.onEvent(MovitExploreEvent.FilterButtonClicked)
             assertFalse(viewModel.state.value.secondaryFiltersVisible)
+        }
+    }
+
+    @Test
+    fun viewModel_refresh_loadsWithoutBlockingInitialSpinner() {
+        runBlocking {
+            val viewModel = MovitExploreViewModel(FakeExploreRepository())
+            viewModel.load(isRefresh = false)
+            assertFalse(viewModel.state.value.isRefreshing)
+            viewModel.load(isRefresh = true)
+            assertFalse(viewModel.state.value.isRefreshing)
+            assertFalse(viewModel.state.value.isLoading)
+            assertTrue(viewModel.state.value.workouts.isNotEmpty())
         }
     }
 

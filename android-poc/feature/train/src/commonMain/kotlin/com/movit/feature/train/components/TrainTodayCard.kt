@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -24,6 +25,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -162,6 +165,7 @@ private fun RestDayCard(
     today: TrainTodayWorkoutUi,
     onPrimaryAction: () -> Unit,
 ) {
+    val exploreLightA11y = movitText("train_a11y_explore_light")
     MovitCard(variant = MovitCardVariant.Elevated) {
         MovitIconBox(
             icon = Icons.Default.Bedtime,
@@ -190,7 +194,8 @@ private fun RestDayCard(
             variant = MovitButtonVariant.Outlined,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = MovitSpacing.md),
+                .padding(top = MovitSpacing.md)
+                .semantics { contentDescription = exploreLightA11y },
         )
     }
 }
@@ -201,6 +206,8 @@ private fun ProgramCompleteCard(
     onViewJourney: () -> Unit,
     onWhatsNext: () -> Unit,
 ) {
+    val viewJourneyA11y = movitText("train_a11y_view_journey")
+    val whatsNextA11y = movitText("train_a11y_whats_next")
     MovitCard(variant = MovitCardVariant.Elevated) {
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -213,7 +220,7 @@ private fun ProgramCompleteCard(
                 color = MaterialTheme.movitColors.limeTint,
                 border = BorderStroke(3.dp, MaterialTheme.movitColors.success),
             ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     MovitIconBox(
                         icon = Icons.Default.EmojiEvents,
                         variant = MovitIconBoxVariant.Lime,
@@ -243,12 +250,16 @@ private fun ProgramCompleteCard(
                 text = movitText("train_view_journey"),
                 onClick = onViewJourney,
                 variant = MovitButtonVariant.Outlined,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics { contentDescription = viewJourneyA11y },
             )
             MovitButton(
                 text = movitText("train_whats_next"),
                 onClick = onWhatsNext,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics { contentDescription = whatsNextA11y },
             )
         }
     }
@@ -259,6 +270,7 @@ private fun TodayStateCard(
     today: TrainTodayWorkoutUi,
     onPrimaryAction: () -> Unit,
 ) {
+    val startWorkoutA11y = movitText("train_a11y_start_workout")
     MovitCard(modifier = Modifier.fillMaxWidth(), variant = MovitCardVariant.Elevated) {
         MovitIconBox(
             icon = Icons.Default.FitnessCenter,
@@ -288,7 +300,8 @@ private fun TodayStateCard(
             onClick = onPrimaryAction,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = MovitSpacing.md),
+                .padding(top = MovitSpacing.md)
+                .semantics { contentDescription = startWorkoutA11y },
             leadingIcon = Icons.Default.PlayArrow,
         )
     }

@@ -1,5 +1,10 @@
 package com.movit.feature.library
 
+enum class LibraryListKind {
+    Exercises,
+    Workouts,
+}
+
 enum class LibraryFilterChip {
     All,
     LowerBody,

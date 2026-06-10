@@ -4,7 +4,6 @@ import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 class ReportDetailStateTest {
 
@@ -29,7 +28,7 @@ class ReportDetailStateTest {
     fun previewData_isLocalizedForArabic() = runBlocking {
         val report = ReportDetailPreviewData.forId("preview", language = "ar")
         assertNotNull(report)
-        assertTrue(report.joints.first().label.contains("رك") || report.joints.first().label.isNotBlank())
-        assertEquals("92", report.formScore.toString())
+        assertEquals("الركبتان", report.joints.first().label)
+        assertEquals("أفضل إنجاز شخصي", report.badgeLabel)
     }
 }

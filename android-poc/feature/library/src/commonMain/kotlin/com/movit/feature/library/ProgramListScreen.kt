@@ -65,6 +65,8 @@ fun ProgramListScreen(
                             subtitle = program.description,
                             metadata = metadata,
                             badge = program.badge ?: program.levelLabel.takeIf { !program.isActive },
+                            imageUrl = program.imageUrl,
+                            imageLabel = program.title.take(1),
                             modifier = Modifier.fillMaxWidth(),
                             onClick = { onProgramClick(program.id) },
                         )

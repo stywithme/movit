@@ -4,6 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.movit.feature.explore.ExploreItemUi
 import com.movit.shared.AppResult
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,6 +19,7 @@ class ProgramDetailViewModel(
     private val programId: String,
     private val repository: LibraryRepository = defaultLibraryRepository(),
 ) : ViewModel() {
+    private val toastScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var loadedProgram: ExploreItemUi? = null
     private var enrollment = ProgramEnrollmentUi(isEnrolled = false)
     private var selectedWeekNumber = 1
@@ -102,11 +108,16 @@ class ProgramDetailViewModel(
             syncLabel = "Synced today",
         )
         loadedProgram?.let { publish(it) }
-        viewModelScope.launch {
-            kotlinx.coroutines.delay(2_500)
+        toastScope.launch {
+            delay(2_500)
             editState = editState.copy(showSaveToast = false)
             loadedProgram?.let { publish(it) }
         }
+    }
+
+    override fun onCleared() {
+        toastScope.cancel()
+        super.onCleared()
     }
 
     fun sessionKeyForStart(): String? {

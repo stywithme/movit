@@ -1,8 +1,11 @@
 package com.movit.feature.account
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.movit.shared.AppResult
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -16,6 +19,7 @@ class MovitAssessmentViewModel(
     private val repository: AssessmentRepository = defaultAssessmentRepository(),
     private val language: String = "en",
 ) : ViewModel() {
+    private val workScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
     private val _state = MutableStateFlow(MovitAssessmentUiState())
     val state: StateFlow<MovitAssessmentUiState> = _state.asStateFlow()
 
@@ -60,7 +64,7 @@ class MovitAssessmentViewModel(
     }
 
     private fun loadResults() {
-        viewModelScope.launch {
+        workScope.launch {
             _state.update { it.copy(isLoadingResults = true) }
             val results = when (val result = repository.fetchLastResults(language)) {
                 is AppResult.Success -> result.value
@@ -74,5 +78,10 @@ class MovitAssessmentViewModel(
                 )
             }
         }
+    }
+
+    override fun onCleared() {
+        workScope.cancel()
+        super.onCleared()
     }
 }

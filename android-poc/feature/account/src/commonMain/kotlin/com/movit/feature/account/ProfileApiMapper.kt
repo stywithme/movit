@@ -37,7 +37,7 @@ object ProfileApiMapper {
             "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
         )
         val month = parts[1].toIntOrNull()?.let { monthNames.getOrNull(it - 1) } ?: parts[1]
-        val day = parts[2].toIntOrNull() ?: parts[2].toInt()
+        val day = parts[2].toIntOrNull() ?: return iso
         return "$month $day, ${parts[0]}"
     }
 }

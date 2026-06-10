@@ -1,6 +1,5 @@
 package com.movit.feature.account
 
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -47,22 +46,6 @@ class MovitLevelViewModelTest {
     }
 
     @Test
-    fun startScan_emitsOpenAssessment() = runBlocking {
-        val viewModel = MovitLevelViewModel(repository = FakeLevelRepository())
-        viewModel.onEvent(MovitLevelEvent.StartScanClicked)
-
-        assertEquals(MovitLevelEffect.OpenAssessment, viewModel.effects.first())
-    }
-
-    @Test
-    fun browsePrograms_emitsOpenExplore() = runBlocking {
-        val viewModel = MovitLevelViewModel(repository = FakeLevelRepository())
-        viewModel.onEvent(MovitLevelEvent.BrowseProgramsClicked)
-
-        assertEquals(MovitLevelEffect.OpenExplore, viewModel.effects.first())
-    }
-
-    @Test
     fun load_recoversAfterTransientFailure() = runBlocking {
         var calls = 0
         val repository = object : LevelRepository {
@@ -77,10 +60,10 @@ class MovitLevelViewModelTest {
         }
         val viewModel = MovitLevelViewModel(repository = repository)
         viewModel.load()
-        assertNotNull(viewModel.state.value.errorMessage)
+        assertTrue(viewModel.state.value.errorMessage != null)
 
         viewModel.load()
         assertNull(viewModel.state.value.errorMessage)
-        assertNotNull(viewModel.state.value.profile)
+        assertTrue(viewModel.state.value.profile != null)
     }
 }

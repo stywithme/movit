@@ -78,7 +78,7 @@ object TrainApiMapper {
 
         return TrainProgramUi(
             id = active.id,
-            slug = active.slug,
+            slug = active.id,
             weekNumber = active.weekNumber,
             name = active.name.localized(language).ifBlank { strings.activeProgram },
             positionLabel = strings.weekDayPosition(active.weekNumber, totalWeeks, active.dayNumber),
@@ -297,7 +297,7 @@ object TrainApiMapper {
         strings: TrainStrings,
     ): TrainReportSummaryUi? {
         val recent = data.recentWorkouts?.firstOrNull() ?: return null
-        val avgForm = data.stats?.avgFormScore?.roundToInt() ?: recent.formScore
+        val avgForm = data.stats?.avgFormScore ?: recent.formScore
         val delta = ((avgForm - recent.formScore).coerceAtLeast(0)).coerceAtMost(15)
         return TrainReportSummaryUi(
             title = strings.latestReport,

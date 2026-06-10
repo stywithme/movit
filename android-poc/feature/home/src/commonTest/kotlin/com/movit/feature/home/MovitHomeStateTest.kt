@@ -150,6 +150,32 @@ class MovitHomeStateTest {
     }
 
     @Test
+    fun recentActivityClicked_emitsOpenReportDetail() = runBlocking {
+        val viewModel = MovitHomeViewModel()
+        val effectDeferred = async {
+            withTimeout(5_000) {
+                viewModel.effects.first()
+            }
+        }
+        yield()
+        viewModel.onEvent(MovitHomeEvent.RecentActivityClicked("barbell-squat"))
+        assertEquals(MovitHomeEffect.OpenReportDetail("barbell-squat"), effectDeferred.await())
+    }
+
+    @Test
+    fun recentActivityClicked_blankId_fallsBackToReports() = runBlocking {
+        val viewModel = MovitHomeViewModel()
+        val effectDeferred = async {
+            withTimeout(5_000) {
+                viewModel.effects.first()
+            }
+        }
+        yield()
+        viewModel.onEvent(MovitHomeEvent.RecentActivityClicked(""))
+        assertEquals(MovitHomeEffect.OpenReports, effectDeferred.await())
+    }
+
+    @Test
     fun successfulLoad_heroProgressReflectsApi() {
         runBlocking {
             val viewModel = MovitHomeViewModel()

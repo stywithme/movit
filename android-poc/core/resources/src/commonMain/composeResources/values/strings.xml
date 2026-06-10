@@ -352,6 +352,13 @@
     <string name="train_week_next">Next week</string>
     <string name="train_form_trend_scope">Last 7 sessions · achievement</string>
     <string name="train_form_trend_delta">+%1$d%% vs last week</string>
+    <string name="train_a11y_start_workout">Start today\'s workout</string>
+    <string name="train_a11y_explore_light">Explore a light workout</string>
+    <string name="train_a11y_view_journey">View your program journey</string>
+    <string name="train_a11y_whats_next">See what to do next</string>
+    <string name="train_a11y_form_trend_chart">Form score trend for last 7 sessions</string>
+    <string name="train_a11y_start_program">Start %1$s program</string>
+    <string name="train_a11y_preferences">Open training preferences</string>
 
     <!-- Report detail -->
     <string name="report_detail_loading">Loading report…</string>
@@ -515,6 +522,7 @@
     <string name="session_a11y_delete">Delete exercise</string>
     <string name="session_a11y_reorder">Reorder exercise</string>
     <string name="session_a11y_exercise_thumb">%1$s thumbnail</string>
+    <string name="session_a11y_start_workout">Start workout session</string>
     <string name="session_add_title">Add exercise</string>
     <string name="session_add_subtitle">Pick an exercise to append</string>
     <string name="session_edit_rest_title">Edit rest</string>
@@ -559,6 +567,33 @@
     <string name="workout_flow_now">Now</string>
     <string name="workout_flow_previous_form">Previous: %1$d%% form</string>
     <string name="workout_flow_start_exercise">Start exercise</string>
+    <string name="workout_flow_a11y_sequence">%1$s, %2$s</string>
+    <string name="workout_flow_a11y_pending">Upcoming</string>
+    <string name="workout_flow_a11y_progress">Workout progress %1$d percent</string>
+
+    <!-- Program flow (15) -->
+    <string name="program_flow_list_title">Programs</string>
+    <string name="program_flow_loading">Loading programs…</string>
+    <string name="program_flow_empty_title">No programs yet</string>
+    <string name="program_flow_empty_message">Check your connection and try again.</string>
+    <string name="program_flow_weeks_days">%1$d weeks · %2$d days/week</string>
+    <string name="program_flow_week_title">Week %1$d</string>
+    <string name="program_flow_open_today">Open today\'s session</string>
+    <string name="program_flow_view_week_report">View week report</string>
+    <string name="program_flow_week_report_title">Week %1$d report</string>
+    <string name="program_flow_week_report_fallback">Weekly report</string>
+    <string name="program_flow_metric_sessions">Sessions</string>
+    <string name="program_flow_metric_form">Avg form</string>
+    <string name="program_flow_metric_reps">Reps</string>
+    <string name="program_flow_daily_form">Daily form scores</string>
+    <string name="program_flow_share_report">Share report</string>
+    <string name="program_flow_share_coming_soon">Share report is coming soon.</string>
+    <string name="program_flow_status_done">Completed</string>
+    <string name="program_flow_status_today">Today</string>
+    <string name="program_flow_status_planned">Planned</string>
+    <string name="program_flow_status_rest">Rest day</string>
+    <string name="program_flow_a11y_day">Day %1$d, %2$s. %3$s. %4$s</string>
+    <string name="program_flow_a11y_chart">Daily form scores chart</string>
 
     <!-- Auth (10) -->
     <string name="auth_app_name">WayToFix</string>
@@ -595,6 +630,11 @@
     <string name="auth_reset_sent_sub">Check your email for the reset link.</string>
     <string name="auth_back_to_sign_in">Back to Sign In</string>
     <string name="auth_google_unavailable">Google Sign-In is not available in this build yet.</string>
+    <string name="auth_error_email_required">Enter your email address.</string>
+    <string name="auth_error_email_invalid">Enter a valid email address.</string>
+    <string name="auth_error_password_required">Enter your password.</string>
+    <string name="auth_error_name_required">Enter your full name.</string>
+    <string name="auth_error_password_short">Password must be at least 8 characters.</string>
     <string name="auth_logo_content_desc">WayToFix app logo</string>
     <string name="auth_intro_icon_desc">Intro illustration</string>
     <string name="auth_forgot_success_icon_desc">Email sent</string>
@@ -699,6 +739,37 @@
     <string name="onboarding_summary_days">Training days</string>
     <string name="onboarding_summary_equipment">Location</string>
     <string name="onboarding_disclaimer">I confirm the information is accurate and I\'m cleared to exercise.</string>
+    <string name="onboarding_saving">Saving…</string>
+    <string name="onboarding_retry_save">Try again</string>
+    <string name="onboarding_save_failed_title">Couldn\'t save profile</string>
+    <string name="onboarding_progress_a11y">Onboarding progress, step %1$d of %2$d</string>
+    <string name="onboarding_summary_profile_label">Your profile</string>
+    <string name="onboarding_sessions_value">%1$d sessions</string>
+    <string name="onboarding_weekdays_hint">%1$d of %2$d days</string>
+    <string name="onboarding_location_home_sub">Limited equipment</string>
+    <string name="onboarding_location_gym_sub">Full access</string>
+    <string name="onboarding_equipment_all">Full gym equipment</string>
+    <string name="onboarding_equipment_bodyweight">Bodyweight</string>
+    <string name="onboarding_error_age_required">Enter your age to continue.</string>
+    <string name="onboarding_error_age_range">Age must be between 13 and 90.</string>
+    <string name="onboarding_error_sex_required">Select biological sex to continue.</string>
+    <string name="onboarding_error_height_range">Height must be between 120 and 220 cm.</string>
+    <string name="onboarding_error_weight_range">Weight must be between 30 and 200 kg.</string>
+    <string name="onboarding_error_experience_required">Select your experience level.</string>
+    <string name="onboarding_error_sessions_required">Select sessions per week.</string>
+    <string name="onboarding_error_goal_required">Select a training goal.</string>
+    <string name="onboarding_error_weekdays_required">Select at least one training day.</string>
+    <string name="onboarding_error_location_required">Select where you train.</string>
+    <string name="onboarding_error_equipment_required">Select at least one piece of equipment.</string>
+    <string name="onboarding_error_disclaimer_required">Accept the disclaimer to finish.</string>
+    <string name="onboarding_error_step_incomplete">Complete this step to continue.</string>
+    <string name="onboarding_weekday_sun">Sun</string>
+    <string name="onboarding_weekday_mon">Mon</string>
+    <string name="onboarding_weekday_tue">Tue</string>
+    <string name="onboarding_weekday_wed">Wed</string>
+    <string name="onboarding_weekday_thu">Thu</string>
+    <string name="onboarding_weekday_fri">Fri</string>
+    <string name="onboarding_weekday_sat">Sat</string>
 
     <!-- Assessment (13) -->
     <string name="assessment_health_check">Health check</string>
@@ -707,6 +778,8 @@
     <string name="assessment_parq_sub">Answer honestly. If you answer Yes to any question, consult a physician before training.</string>
     <string name="assessment_parq_physician_warning">Consult a physician before training if you answered Yes to any question.</string>
     <string name="assessment_parq_progress">%1$d of %2$d answered</string>
+    <string name="assessment_parq_progress_a11y">PAR-Q progress, %1$d of %2$d answered</string>
+    <string name="assessment_region_score_a11y">%1$s score %2$d percent</string>
     <string name="assessment_parq_heart">Has a doctor ever said you have a heart condition?</string>
     <string name="assessment_parq_chest_pain">Do you feel pain in your chest during physical activity?</string>
     <string name="assessment_parq_dizziness">Do you lose balance because of dizziness or lose consciousness?</string>

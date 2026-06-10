@@ -1,8 +1,11 @@
 package com.movit.feature.account
 
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.yield
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -34,28 +37,38 @@ class MovitAssessmentViewModelTest {
     }
 
     @Test
-    fun continueToBodyScan_withYesAnswer_emitsPhysicianWarning() = runBlocking {
-        val viewModel = MovitAssessmentViewModel()
-        viewModel.onEvent(MovitAssessmentEvent.ParqAnswered(1, true))
-        viewModel.onEvent(MovitAssessmentEvent.ContinueToBodyScan)
+    fun continueToBodyScan_withYesAnswer_emitsPhysicianWarning() {
+        runBlocking {
+            val viewModel = MovitAssessmentViewModel()
+            val effectDeferred = async {
+                withTimeout(5_000) { viewModel.effects.first() }
+            }
+            yield()
+            viewModel.onEvent(MovitAssessmentEvent.ParqAnswered(1, true))
+            viewModel.onEvent(MovitAssessmentEvent.ContinueToBodyScan)
 
-        val effect = viewModel.effects.first()
-        assertTrue(effect is MovitAssessmentEffect.ShowLocalizedMessage)
-        assertEquals("assessment_parq_physician_warning", effect.key)
+            val effect = effectDeferred.await()
+            assertTrue(effect is MovitAssessmentEffect.ShowLocalizedMessage)
+            assertEquals("assessment_parq_physician_warning", effect.key)
+        }
     }
 
     @Test
-    fun completeBodyScan_loadsResultsFromRepository() = runBlocking {
-        val customResults = FakeAssessmentPreviewData.results.copy(bodyScore = 81)
-        val viewModel = MovitAssessmentViewModel(
-            repository = FakeAssessmentRepository(results = customResults),
-        )
-        viewModel.onEvent(MovitAssessmentEvent.CompleteBodyScan)
+    fun completeBodyScan_loadsResultsFromRepository() {
+        runBlocking {
+            val customResults = FakeAssessmentPreviewData.results.copy(bodyScore = 81)
+            val viewModel = MovitAssessmentViewModel(
+                repository = FakeAssessmentRepository(results = customResults),
+            )
+            viewModel.onEvent(MovitAssessmentEvent.CompleteBodyScan)
 
-        val state = viewModel.state
-            .filter { it.phase == AssessmentPhase.Results && !it.isLoadingResults }
-            .first()
-        assertEquals(81, state.results.bodyScore)
+            val state = withTimeout(5_000) {
+                viewModel.state
+                    .filter { it.phase == AssessmentPhase.Results && !it.isLoadingResults }
+                    .first()
+            }
+            assertEquals(81, state.results.bodyScore)
+        }
     }
 
     @Test

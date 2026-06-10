@@ -47,13 +47,15 @@ object LevelApiMapper {
         if (programs.isEmpty()) return emptyList()
 
         return programs.map { slot ->
-            val programName = slot.program?.name?.localized(strings.language)
+            val program = slot.program
+            val programName = program?.name?.localized(strings.language)
                 ?.ifBlank { strings.programFallback }
                 ?: strings.programFallback
-            val levelLabel = slot.program?.levelMin?.name?.localized(strings.language)
-                ?.ifBlank { slot.program.levelMin.code }
-                ?: slot.program?.type.orEmpty().ifBlank { programName }
-            val durationWeeks = slot.program?.durationWeeks ?: 0
+            val levelMin = program?.levelMin
+            val levelLabel = levelMin?.name?.localized(strings.language)
+                ?.ifBlank { levelMin.code }
+                ?: program?.type.orEmpty().ifBlank { programName }
+            val durationWeeks = program?.durationWeeks ?: 0
 
             when (slot.status.lowercase()) {
                 "completed" -> PlanPhaseUi(
@@ -74,11 +76,10 @@ object LevelApiMapper {
                     } ?: strings.reassessmentNext(durationWeeks.coerceAtLeast(progress.currentWeek))
                     PlanPhaseUi(
                         title = "$levelLabel · ${strings.phaseInProgress}",
-                        subtitle = buildString {
-                            append(strings.phaseWeeks(programName, durationWeeks))
-                            append(" · ")
-                            append(strings.phaseWeekProgress(progress.currentWeek, durationWeeks.coerceAtLeast(1)))
-                        },
+                        subtitle = "${programName} · ${strings.phaseWeekProgress(
+                            progress.currentWeek,
+                            durationWeeks.coerceAtLeast(1),
+                        )}",
                         status = PlanPhaseStatus.Active,
                         progressPercent = percent,
                         highlight = highlight,

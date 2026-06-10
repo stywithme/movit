@@ -18,6 +18,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.components.MovitButton
@@ -219,6 +221,7 @@ private fun SessionStartDock(
     onStart: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val startA11y = movitText("session_a11y_start_workout")
     MovitCard(
         modifier = modifier.fillMaxWidth(),
         variant = MovitCardVariant.Elevated,
@@ -246,6 +249,7 @@ private fun SessionStartDock(
                 onClick = onStart,
                 variant = MovitButtonVariant.Filled,
                 leadingIcon = Icons.Default.PlayArrow,
+                modifier = Modifier.semantics { contentDescription = startA11y },
             )
         }
     }

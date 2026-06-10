@@ -85,6 +85,13 @@ class MovitHomeViewModel(
             MovitHomeEvent.ViewPlanClicked -> _effects.tryEmit(MovitHomeEffect.OpenLevel)
             is MovitHomeEvent.AlertClicked -> handleAlert(event.type)
             is MovitHomeEvent.JourneyRowClicked -> handleJourneyRow(event.rowId)
+            is MovitHomeEvent.RecentActivityClicked -> {
+                if (event.reportId.isNotBlank()) {
+                    _effects.tryEmit(MovitHomeEffect.OpenReportDetail(event.reportId))
+                } else {
+                    _effects.tryEmit(MovitHomeEffect.OpenReports)
+                }
+            }
             is MovitHomeEvent.QuickActionClicked -> {
                 when (event.actionId) {
                     "train" -> _effects.tryEmit(MovitHomeEffect.OpenTrain)

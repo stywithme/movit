@@ -15,7 +15,7 @@
 | الصفحة | Prototype | الحالة في KMP | ملاحظة للمدير |
 |--------|-----------|---------------|----------------|
 | **10 Auth** | `10-auth.html` | ✅ **76%** | Splash · Intro · Sign in/up · Forgot — API Ktor + جلسة آمنة (WS-D) — تفصيل: [`Page-Scorecards.md`](Page-Scorecards.md) |
-| **11 Profile** | `11-profile.html` | ✅ **70%** | Hero · Pro/Free · إعدادات · اشتراك · تسجيل خروج — تبويب Profile |
+| **11 Profile** | `11-profile.html` | ✅ **86%** | Hero · Pro/Free · إعدادات فعّالة · اشتراك · logout confirm — تبويب Profile |
 | **12 Onboarding** | `12-profile-onboarding.html` | ✅ **74%** | معالج 7 خطوات · `PUT /api/mobile/training-profile` |
 | **13 Assessment** | `13-assessment.html` | ✅ **55%** | PAR-Q · Body scan (UI فقط) — **بدون كاميرا** (Phase 07) |
 | **14 Level & Plan** | `14-level-plan.html` | ✅ **58%** | Level profile · Plan overview · `GET /api/mobile/level-profile` |

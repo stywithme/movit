@@ -14,6 +14,9 @@ suspend fun localizedString(
     if (formatArgs.isEmpty() && language.lowercase() == "en") {
         movitEnglishStrings[name]?.let { return it }
     }
+    if (formatArgs.isEmpty() && language.lowercase() == "ar") {
+        movitArabicStrings[name]?.let { return it }
+    }
     return try {
         localizedString(language, movitString(name), *formatArgs)
     } catch (_: Throwable) {

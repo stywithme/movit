@@ -18,6 +18,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.movit.designsystem.MovitRadius
@@ -27,6 +29,7 @@ import com.movit.designsystem.components.MovitButtonSize
 import com.movit.designsystem.components.MovitButtonVariant
 import com.movit.designsystem.components.MovitCard
 import com.movit.designsystem.components.MovitCardVariant
+import com.movit.designsystem.components.MovitRemoteImage
 import com.movit.designsystem.components.MovitTag
 import com.movit.designsystem.components.MovitTagVariant
 import com.movit.designsystem.movitColors
@@ -39,6 +42,7 @@ fun TrainFeaturedProgramCard(
     onStartProgram: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val startProgramA11y = movitText("train_a11y_start_program", program.title)
     MovitCard(
         modifier = modifier.fillMaxWidth(),
         variant = MovitCardVariant.Elevated,
@@ -59,10 +63,11 @@ fun TrainFeaturedProgramCard(
                 modifier = Modifier.align(Alignment.Center),
             )
             if (!program.imageUrl.isNullOrBlank()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                MovitRemoteImage(
+                    imageUrl = program.imageUrl,
+                    contentDescription = program.title,
+                    placeholderLabel = program.title.take(1).uppercase(),
+                    modifier = Modifier.fillMaxSize(),
                 )
             }
             Row(
@@ -118,7 +123,8 @@ fun TrainFeaturedProgramCard(
                 size = MovitButtonSize.Small,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = MovitSpacing.sm),
+                    .padding(top = MovitSpacing.sm)
+                    .semantics { contentDescription = startProgramA11y },
             )
         }
     }

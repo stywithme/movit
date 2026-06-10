@@ -76,7 +76,7 @@ object MovitExplorePreviewData {
         ExploreItemUi(
             id = "workout-full-body",
             title = "Full Body Strength",
-            subtitle = "A complete session that mixes legs, push and core work.",
+            subtitle = "A complete session that mixes legs, push and stability work.",
             type = ExploreItemType.Workout,
             imageUrl = IMG_FULL,
             badge = "Popular",

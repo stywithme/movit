@@ -2,6 +2,8 @@ package com.movit.feature.library
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -60,6 +62,10 @@ class ExercisePrepareViewModel(
 ) : ViewModel() {
     private val _state = MutableStateFlow(ExercisePrepareUiState(isLoading = true))
     val state: StateFlow<ExercisePrepareUiState> = _state.asStateFlow()
+    private var restTimerJob: Job? = null
+
+    /** Disable in JVM unit tests where [viewModelScope] has no dispatcher. */
+    internal var enableRestTicker: Boolean = true
 
     fun loadInitial() {
         viewModelScope.launch { load() }
@@ -86,10 +92,28 @@ class ExercisePrepareViewModel(
 
     fun enterRestMode() {
         _state.update { it.copy(mode = ExercisePrepareMode.Rest, isRestPaused = false) }
+        startRestTimer()
     }
 
     fun skipRest() {
+        restTimerJob?.cancel()
         _state.update { it.copy(mode = ExercisePrepareMode.Prepare, isRestPaused = false) }
+    }
+
+    override fun onCleared() {
+        restTimerJob?.cancel()
+        super.onCleared()
+    }
+
+    private fun startRestTimer() {
+        if (!enableRestTicker) return
+        restTimerJob?.cancel()
+        restTimerJob = viewModelScope.launch {
+            while (_state.value.mode == ExercisePrepareMode.Rest) {
+                delay(REST_TICK_MS)
+                _state.update { current -> applyRestSecondTick(current) }
+            }
+        }
     }
 
     fun toggleRestPause() {
@@ -142,6 +166,20 @@ internal fun formatRestTimer(seconds: Int): String {
     val remainder = clamped % 60
     return "${minutes.toString().padStart(2, '0')}:${remainder.toString().padStart(2, '0')}"
 }
+
+internal fun applyRestSecondTick(state: ExercisePrepareUiState): ExercisePrepareUiState {
+    if (state.mode != ExercisePrepareMode.Rest || state.isRestPaused) return state
+    return when {
+        state.restSeconds <= 1 -> state.copy(
+            mode = ExercisePrepareMode.Prepare,
+            isRestPaused = false,
+            restSeconds = 0,
+        )
+        else -> state.copy(restSeconds = state.restSeconds - 1)
+    }
+}
+
+private const val REST_TICK_MS = 1_000L
 
 private object ExercisePreparePreviewData {
     fun byId(id: String): ExercisePrepareUi? = when (id) {

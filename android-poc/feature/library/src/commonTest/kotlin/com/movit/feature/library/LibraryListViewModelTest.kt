@@ -1,8 +1,6 @@
 package com.movit.feature.library
 
 import com.movit.feature.explore.ExploreContent
-import com.movit.feature.explore.ExploreItemType
-import com.movit.feature.explore.ExploreItemUi
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -21,7 +19,7 @@ class LibraryListViewModelTest {
 
         val state = viewModel.state.value
         assertFalse(state.isLoading)
-        assertEquals(2, state.totalCount)
+        assertEquals(4, state.totalCount)
         assertTrue(state.items.isNotEmpty())
     }
 

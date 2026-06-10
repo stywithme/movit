@@ -23,7 +23,6 @@ import com.movit.designsystem.components.MovitFilterRow
 import com.movit.designsystem.components.MovitSearchBar
 import com.movit.designsystem.movitColors
 import com.movit.feature.library.LibraryFilterChip
-import com.movit.resources.movitText
 
 @Composable
 fun LibraryToolbar(
@@ -31,7 +30,6 @@ fun LibraryToolbar(
     onQueryChange: (String) -> Unit,
     filters: List<LibraryFilterChip>,
     selectedFilter: LibraryFilterChip,
-    accentFilter: LibraryFilterChip,
     onFilterSelected: (LibraryFilterChip) -> Unit,
     resultSummary: String,
     searchPlaceholder: String,
@@ -75,7 +73,6 @@ fun LibraryToolbar(
             LibraryFilterStrip(
                 filters = filters,
                 selectedFilter = selectedFilter,
-                accentFilter = accentFilter,
                 onFilterSelected = onFilterSelected,
                 enabled = enabled,
             )
@@ -103,7 +100,6 @@ fun LibraryToolbar(
 private fun LibraryFilterStrip(
     filters: List<LibraryFilterChip>,
     selectedFilter: LibraryFilterChip,
-    accentFilter: LibraryFilterChip,
     onFilterSelected: (LibraryFilterChip) -> Unit,
     enabled: Boolean,
     modifier: Modifier = Modifier,

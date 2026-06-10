@@ -12,6 +12,7 @@ import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 class TrainApiMapperTest {
 
     @Test
@@ -100,7 +101,7 @@ class TrainApiMapperTest {
             val strings = TrainStrings.load("en")
             val data = HomeDataDto(
                 trainMode = TrainModeDto(status = "active"),
-                stats = HomeStatsDto(avgFormScore = 85f, streak = 2),
+                stats = HomeStatsDto(avgFormScore = 85, streak = 2),
                 recentWorkouts = listOf(
                     RecentWorkoutDto(
                         formScore = 80,

@@ -23,8 +23,11 @@ fun ExercisesLibraryRoute(
         state = state,
         onBack = onBack,
         onQueryChange = viewModel::onQueryChange,
-        onChipSelected = viewModel::onChipSelected,
+        onFilterSelected = viewModel::onFilterSelected,
+        onFilterClick = viewModel::onFilterClick,
+        onDismissFilterSheet = viewModel::onDismissFilterSheet,
         onSeeMore = viewModel::onSeeMore,
+        onClearFilters = viewModel::onClearFilters,
         onItemClick = onItemClick,
         onRetry = { scope.launch { viewModel.load() } },
         modifier = modifier,
@@ -45,8 +48,11 @@ fun WorkoutsLibraryRoute(
         state = state,
         onBack = onBack,
         onQueryChange = viewModel::onQueryChange,
-        onChipSelected = viewModel::onChipSelected,
+        onFilterSelected = viewModel::onFilterSelected,
+        onFilterClick = viewModel::onFilterClick,
+        onDismissFilterSheet = viewModel::onDismissFilterSheet,
         onSeeMore = viewModel::onSeeMore,
+        onClearFilters = viewModel::onClearFilters,
         onItemClick = onItemClick,
         onRetry = { scope.launch { viewModel.load() } },
         modifier = modifier,
@@ -87,7 +93,7 @@ fun WorkoutSessionRoute(
     workoutId: String,
     onBack: () -> Unit,
     onExerciseClick: (String) -> Unit,
-    onStartWorkout: () -> Unit,
+    onStartWorkout: (exerciseId: String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: WorkoutSessionViewModel = viewModel { WorkoutSessionViewModel(workoutId) },
 ) {
@@ -104,7 +110,9 @@ fun WorkoutSessionRoute(
         onDeleteExercise = viewModel::deleteExercise,
         onAddExercise = viewModel::openAddExerciseSheet,
         onAddRest = viewModel::addRestBlock,
-        onStartWorkout = onStartWorkout,
+        onStartWorkout = {
+            state.session?.firstExerciseId()?.let(onStartWorkout)
+        },
         onRetry = { scope.launch { viewModel.load() } },
         onDismissSheet = viewModel::dismissSheet,
         onSwapQueryChange = viewModel::onSwapQueryChange,
@@ -173,7 +181,7 @@ fun ProgramWeekPlanRoute(
         },
         onOpenTodaySession = {
             val plan = state.weekPlan ?: return@ProgramWeekPlanScreen
-            val today = plan.days.firstOrNull { it.status == ProgramDayStatus.Today }
+            val today = plan.days.firstOrNull { it.status == ProgramFlowDayStatus.Today }
                 ?: return@ProgramWeekPlanScreen
             val workoutId = today.plannedWorkoutId ?: return@ProgramWeekPlanScreen
             onOpenSession(

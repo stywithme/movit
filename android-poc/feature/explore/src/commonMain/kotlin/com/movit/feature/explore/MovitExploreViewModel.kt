@@ -110,6 +110,9 @@ class MovitExploreViewModel(
                 }
                 publishFiltered()
             }
+            MovitExploreEvent.SeeAllProgramsClicked -> {
+                _effects.tryEmit(MovitExploreEffect.OpenProgramList)
+            }
             MovitExploreEvent.OpenFeaturedProgramClicked -> {
                 val programId = cachedPrograms.firstOrNull()?.id
                     ?: cachedFeatured.firstOrNull { it.type == ExploreItemType.Program }?.id
@@ -133,7 +136,9 @@ class MovitExploreViewModel(
         val current = _state.value
         val categoryChips = ExploreContentFilter.buildExerciseCategoryChips(cachedExercises)
         val selectedCategory = current.selectedExerciseCategory?.takeIf { code ->
-            categoryChips.any { it.code.equals(code, ignoreCase = true) }
+            categoryChips.any { chip ->
+                chip.code != null && chip.code.equals(code, ignoreCase = true)
+            }
         }
         val filteredWorkouts = ExploreContentFilter.filterItems(
             items = cachedWorkouts,

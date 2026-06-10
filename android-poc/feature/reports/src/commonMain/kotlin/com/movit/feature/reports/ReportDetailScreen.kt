@@ -263,6 +263,7 @@ private fun ReportOverviewPage(report: ReportDetailUi) {
 
 @Composable
 private fun ReportFormPage(report: ReportDetailUi) {
+    val movit = MaterialTheme.movitColors
     Column(verticalArrangement = Arrangement.spacedBy(MovitSpacing.lg)) {
         MovitSectionHeader(title = movitText("report_detail_joint_analysis"))
         if (report.joints.isEmpty()) {
@@ -447,11 +448,7 @@ private fun ReportFatiguePage(report: ReportDetailUi) {
                     append(": ")
                     append(
                         chartItems.joinToString(", ") { item ->
-                            movitText(
-                                "report_detail_set_score_a11y",
-                                item.label,
-                                item.value.roundToInt(),
-                            )
+                            "${item.label} ${item.value.roundToInt()}"
                         },
                     )
                 }

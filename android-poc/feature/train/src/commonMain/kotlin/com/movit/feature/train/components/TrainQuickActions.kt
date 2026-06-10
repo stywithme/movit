@@ -10,6 +10,8 @@ import androidx.compose.material.icons.filled.Tune
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.components.MovitIconBoxVariant
 import com.movit.designsystem.components.MovitListGroup
@@ -35,11 +37,8 @@ fun TrainQuickActions(
         MovitListGroup(
             rows = actions.map { action ->
                 {
-                    MovitListRow(
-                        title = action.label,
-                        subtitle = action.description,
-                        icon = actionIcon(action.id),
-                        iconVariant = actionIconVariant(action.id),
+                    TrainQuickActionRow(
+                        action = action,
                         onClick = { onActionClick(action.id) },
                     )
                 }
@@ -58,4 +57,24 @@ private fun actionIconVariant(id: String): MovitIconBoxVariant = when (id) {
     "reports" -> MovitIconBoxVariant.Lime
     "preferences" -> MovitIconBoxVariant.Coral
     else -> MovitIconBoxVariant.Primary
+}
+
+@Composable
+private fun TrainQuickActionRow(
+    action: TrainQuickActionUi,
+    onClick: () -> Unit,
+) {
+    val a11yLabel = when (action.id) {
+        "reports" -> movitText("home_a11y_reports_action")
+        "preferences" -> movitText("train_a11y_preferences")
+        else -> movitText("home_a11y_explore_action")
+    }
+    MovitListRow(
+        title = action.label,
+        subtitle = action.description,
+        icon = actionIcon(action.id),
+        iconVariant = actionIconVariant(action.id),
+        onClick = onClick,
+        modifier = Modifier.semantics { contentDescription = a11yLabel },
+    )
 }

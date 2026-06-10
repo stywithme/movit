@@ -23,11 +23,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.movit.designsystem.MovitRadius
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.components.MovitButton
+import com.movit.designsystem.components.MovitButtonVariant
 import com.movit.designsystem.components.MovitErrorState
 import com.movit.designsystem.components.MovitInnerPageHeader
 import com.movit.designsystem.components.MovitLoadingState
@@ -38,7 +41,7 @@ import com.movit.resources.movitText
 fun ProgramWeekPlanScreen(
     state: ProgramWeekPlanUiState,
     onBack: () -> Unit,
-    onDayClick: (ProgramDayUi) -> Unit,
+    onDayClick: (ProgramFlowDayUi) -> Unit,
     onOpenTodaySession: () -> Unit,
     onViewWeeklyReport: () -> Unit,
     onRetry: () -> Unit,
@@ -95,6 +98,7 @@ fun ProgramWeekPlanScreen(
                     MovitButton(
                         text = movitText("program_flow_view_week_report"),
                         onClick = onViewWeeklyReport,
+                        variant = MovitButtonVariant.Outlined,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = MovitSpacing.lg),
@@ -107,28 +111,42 @@ fun ProgramWeekPlanScreen(
 
 @Composable
 private fun ProgramDayPill(
-    day: ProgramDayUi,
+    day: ProgramFlowDayUi,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val shape = RoundedCornerShape(MovitRadius.md)
     val movit = MaterialTheme.movitColors
     val dayNumberColors = when (day.status) {
-        ProgramDayStatus.Done -> MaterialTheme.colorScheme.secondary to MaterialTheme.colorScheme.onSecondary
-        ProgramDayStatus.Today -> MaterialTheme.colorScheme.primary to MaterialTheme.colorScheme.onPrimary
+        ProgramFlowDayStatus.Done -> MaterialTheme.colorScheme.secondary to MaterialTheme.colorScheme.onSecondary
+        ProgramFlowDayStatus.Today -> MaterialTheme.colorScheme.primary to MaterialTheme.colorScheme.onPrimary
         else -> movit.surface2 to MaterialTheme.colorScheme.onSurface
     }
-    val borderColor = if (day.status == ProgramDayStatus.Today) {
+    val borderColor = if (day.status == ProgramFlowDayStatus.Today) {
         MaterialTheme.colorScheme.primary
     } else {
         MaterialTheme.colorScheme.outline
     }
+    val statusLabel = when (day.status) {
+        ProgramFlowDayStatus.Done -> movitText("program_flow_status_done")
+        ProgramFlowDayStatus.Today -> movitText("program_flow_status_today")
+        ProgramFlowDayStatus.Planned -> movitText("program_flow_status_planned")
+        ProgramFlowDayStatus.Rest -> movitText("program_flow_status_rest")
+    }
+    val dayDescription = movitText(
+        "program_flow_a11y_day",
+        day.dayNumber,
+        day.title,
+        day.subtitle,
+        statusLabel,
+    )
     Row(
         modifier = modifier
             .fillMaxWidth()
             .clip(shape)
             .border(1.dp, borderColor, shape)
             .background(MaterialTheme.colorScheme.surface)
+            .semantics { contentDescription = dayDescription }
             .clickable(enabled = !day.isRestDay, onClick = onClick)
             .padding(MovitSpacing.md),
         verticalAlignment = Alignment.CenterVertically,
@@ -163,7 +181,7 @@ private fun ProgramDayPill(
         if (!day.isRestDay) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
+                contentDescription = dayDescription,
                 tint = MaterialTheme.movitColors.textTertiary,
             )
         }

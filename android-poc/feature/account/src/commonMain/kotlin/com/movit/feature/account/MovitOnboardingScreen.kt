@@ -663,9 +663,9 @@ private fun formatGoalSummary(data: OnboardingData): String = when (data.trainin
 @Composable
 private fun formatWeekdaysSummary(data: OnboardingData): String {
     if (data.trainingWeekdays.isEmpty()) return "—"
-    return data.trainingWeekdays.sorted().joinToString(", ") { index ->
+    return data.trainingWeekdays.sorted().map { index ->
         movitText(OnboardingData.WEEKDAY_LABEL_KEYS.getOrElse(index) { "onboarding_weekday_sun" })
-    }
+    }.joinToString(", ")
 }
 
 @Composable
@@ -674,15 +674,15 @@ private fun formatLocationEquipmentSummary(data: OnboardingData): String {
     if (data.trainingLocation == "gym") {
         return "$location · ${movitText("onboarding_equipment_all")}"
     }
-    val equipment = data.availableEquipment
+    val equipmentLabels = data.availableEquipment
         .plus("bodyweight")
         .distinct()
-        .joinToString(", ") { code ->
+        .map { code ->
             if (code == "bodyweight") {
                 movitText("onboarding_equipment_bodyweight")
             } else {
                 movitText("onboarding_equipment_$code")
             }
         }
-    return "$location · $equipment"
+    return "$location · ${equipmentLabels.joinToString(", ")}"
 }

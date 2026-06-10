@@ -76,7 +76,6 @@ fun WorkoutsLibraryScreen(
                         onQueryChange = onQueryChange,
                         filters = state.filters,
                         selectedFilter = state.selectedFilter,
-                        accentFilter = state.accentFilter,
                         onFilterSelected = onFilterSelected,
                         resultSummary = movitText(
                             "library_result_workouts",
@@ -103,7 +102,6 @@ fun WorkoutsLibraryScreen(
                         onQueryChange = onQueryChange,
                         filters = state.filters,
                         selectedFilter = state.selectedFilter,
-                        accentFilter = state.accentFilter,
                         onFilterSelected = onFilterSelected,
                         resultSummary = movitText(
                             "library_result_workouts",

@@ -1,6 +1,6 @@
 package com.movit.feature.library
 
-enum class ProgramDayStatus {
+enum class ProgramFlowDayStatus {
     Done,
     Today,
     Planned,
@@ -20,11 +20,11 @@ data class ProgramListItemUi(
     val isActive: Boolean = false,
 )
 
-data class ProgramDayUi(
+data class ProgramFlowDayUi(
     val dayNumber: Int,
     val title: String,
     val subtitle: String,
-    val status: ProgramDayStatus,
+    val status: ProgramFlowDayStatus,
     val exerciseCount: Int = 0,
     val durationMinutes: Int? = null,
     val plannedWorkoutId: String? = null,
@@ -38,7 +38,7 @@ data class ProgramWeekPlanUi(
     val weekNumber: Int,
     val weekTitle: String,
     val weekSubtitle: String,
-    val days: List<ProgramDayUi>,
+    val days: List<ProgramFlowDayUi>,
     val todayDayNumber: Int?,
 )
 

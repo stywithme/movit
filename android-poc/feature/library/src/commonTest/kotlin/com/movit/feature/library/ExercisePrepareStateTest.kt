@@ -23,7 +23,9 @@ class ExercisePrepareStateTest {
 
     @Test
     fun restMode_showsUpNextExercise() {
-        val viewModel = ExercisePrepareViewModel(exerciseId = "ex-squat")
+        val viewModel = ExercisePrepareViewModel(exerciseId = "ex-squat").apply {
+            enableRestTicker = false
+        }
         kotlinx.coroutines.runBlocking { viewModel.load() }
         viewModel.enterRestMode()
 
@@ -35,7 +37,9 @@ class ExercisePrepareStateTest {
 
     @Test
     fun restControls_updateStaticTimerAndReturnToPrepare() {
-        val viewModel = ExercisePrepareViewModel(exerciseId = "ex-squat")
+        val viewModel = ExercisePrepareViewModel(exerciseId = "ex-squat").apply {
+            enableRestTicker = false
+        }
         kotlinx.coroutines.runBlocking { viewModel.load() }
         viewModel.enterRestMode()
         viewModel.addRestTime()
@@ -54,6 +58,28 @@ class ExercisePrepareStateTest {
         assertEquals("bodyweight-squat", legacySlug("ex-squat"))
         assertEquals("bodyweight-squat", legacySlug("ex-squat-warm"))
         assertEquals("lunge", legacySlug("ex-lunge"))
+    }
+
+    @Test
+    fun restTick_decrementsAndReturnsToPrepareAtZero() {
+        val resting = ExercisePrepareUiState(
+            mode = ExercisePrepareMode.Rest,
+            restSeconds = 2,
+        )
+        assertEquals(1, applyRestSecondTick(resting).restSeconds)
+        val done = applyRestSecondTick(resting.copy(restSeconds = 1))
+        assertEquals(ExercisePrepareMode.Prepare, done.mode)
+        assertEquals(0, done.restSeconds)
+    }
+
+    @Test
+    fun restTick_respectsPause() {
+        val paused = ExercisePrepareUiState(
+            mode = ExercisePrepareMode.Rest,
+            restSeconds = 10,
+            isRestPaused = true,
+        )
+        assertEquals(paused, applyRestSecondTick(paused))
     }
 
     @Test

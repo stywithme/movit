@@ -1,8 +1,11 @@
 package com.movit.feature.account
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.movit.shared.AppResult
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -15,6 +18,7 @@ import kotlinx.coroutines.launch
 class MovitProfileViewModel(
     private val repository: ProfileRepository = defaultProfileRepository(),
 ) : ViewModel() {
+    private val workScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
     private val _state = MutableStateFlow(MovitProfileUiState(isLoading = true))
     val state: StateFlow<MovitProfileUiState> = _state.asStateFlow()
 
@@ -22,7 +26,7 @@ class MovitProfileViewModel(
     val effects: SharedFlow<MovitProfileEffect> = _effects.asSharedFlow()
 
     fun loadInitial() {
-        viewModelScope.launch { load() }
+        workScope.launch { load() }
     }
 
     suspend fun load() {
@@ -104,7 +108,7 @@ class MovitProfileViewModel(
     }
 
     private fun logout() {
-        viewModelScope.launch {
+        workScope.launch {
             _state.update { it.copy(isLoggingOut = true) }
             when (repository.logout()) {
                 is AppResult.Success -> {
@@ -125,7 +129,7 @@ class MovitProfileViewModel(
     }
 
     private fun selectLanguage(languageCode: String) {
-        viewModelScope.launch {
+        workScope.launch {
             _state.update { it.copy(activePicker = null) }
             when (
                 val result = repository.updateSettings(
@@ -146,7 +150,7 @@ class MovitProfileViewModel(
     }
 
     private fun selectAppearance(themeMode: String) {
-        viewModelScope.launch {
+        workScope.launch {
             _state.update { it.copy(activePicker = null) }
             when (val result = repository.setThemeMode(themeMode)) {
                 is AppResult.Success -> {
@@ -163,7 +167,7 @@ class MovitProfileViewModel(
     }
 
     private fun toggleAudioCues(enabled: Boolean) {
-        viewModelScope.launch {
+        workScope.launch {
             when (val result = repository.updateSettings(ProfileSettingsUpdate(voiceFeedback = enabled))) {
                 is AppResult.Success -> {
                     _state.update { current ->
@@ -178,7 +182,7 @@ class MovitProfileViewModel(
     }
 
     private fun toggleHaptic(enabled: Boolean) {
-        viewModelScope.launch {
+        workScope.launch {
             when (val result = repository.updateSettings(ProfileSettingsUpdate(notifications = enabled))) {
                 is AppResult.Success -> {
                     _state.update { current ->
@@ -190,5 +194,10 @@ class MovitProfileViewModel(
                 }
             }
         }
+    }
+
+    override fun onCleared() {
+        workScope.cancel()
+        super.onCleared()
     }
 }

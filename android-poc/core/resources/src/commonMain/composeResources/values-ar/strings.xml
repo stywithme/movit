@@ -347,6 +347,13 @@
     <string name="train_week_next">الأسبوع التالي</string>
     <string name="train_form_trend_scope">آخر 7 جلسات · الإنجاز</string>
     <string name="train_form_trend_delta">+%1$d%% مقارنة بالأسبوع الماضي</string>
+    <string name="train_a11y_start_workout">بدء تمرين اليوم</string>
+    <string name="train_a11y_explore_light">استكشاف تمرين خفيف</string>
+    <string name="train_a11y_view_journey">عرض رحلة البرنامج</string>
+    <string name="train_a11y_whats_next">معرفة الخطوة التالية</string>
+    <string name="train_a11y_form_trend_chart">اتجاه درجة الأداء لآخر 7 جلسات</string>
+    <string name="train_a11y_start_program">بدء برنامج %1$s</string>
+    <string name="train_a11y_preferences">فتح تفضيلات التدريب</string>
 
     <!-- Report detail -->
     <string name="report_detail_loading">جاري تحميل التقرير…</string>
@@ -510,6 +517,7 @@
     <string name="session_a11y_delete">حذف التمرين</string>
     <string name="session_a11y_reorder">إعادة ترتيب التمرين</string>
     <string name="session_a11y_exercise_thumb">صورة %1$s</string>
+    <string name="session_a11y_start_workout">بدء جلسة التدريب</string>
     <string name="session_add_title">إضافة تمرين</string>
     <string name="session_add_subtitle">اختر تمريناً لإضافته</string>
     <string name="session_edit_rest_title">تعديل الراحة</string>
@@ -537,6 +545,30 @@
     <string name="prepare_skip_rest">تخطي</string>
     <string name="prepare_training_bridge_unavailable">تدريب الكاميرا غير متاح على هذا الجهاز بعد.</string>
 
+    <!-- Program flow (15) -->
+    <string name="program_flow_list_title">البرامج</string>
+    <string name="program_flow_loading">جاري تحميل البرامج…</string>
+    <string name="program_flow_empty_title">لا توجد برامج بعد</string>
+    <string name="program_flow_empty_message">تحقق من الاتصال وحاول مرة أخرى.</string>
+    <string name="program_flow_weeks_days">%1$d أسابيع · %2$d أيام/أسبوع</string>
+    <string name="program_flow_week_title">الأسبوع %1$d</string>
+    <string name="program_flow_open_today">فتح جلسة اليوم</string>
+    <string name="program_flow_view_week_report">عرض تقرير الأسبوع</string>
+    <string name="program_flow_week_report_title">تقرير الأسبوع %1$d</string>
+    <string name="program_flow_week_report_fallback">التقرير الأسبوعي</string>
+    <string name="program_flow_metric_sessions">الجلسات</string>
+    <string name="program_flow_metric_form">متوسط الأداء</string>
+    <string name="program_flow_metric_reps">التكرارات</string>
+    <string name="program_flow_daily_form">درجات الأداء اليومية</string>
+    <string name="program_flow_share_report">مشاركة التقرير</string>
+    <string name="program_flow_share_coming_soon">مشاركة التقرير قريباً.</string>
+    <string name="program_flow_status_done">مكتمل</string>
+    <string name="program_flow_status_today">اليوم</string>
+    <string name="program_flow_status_planned">مجدول</string>
+    <string name="program_flow_status_rest">يوم راحة</string>
+    <string name="program_flow_a11y_day">اليوم %1$d، %2$s. %3$s. %4$s</string>
+    <string name="program_flow_a11y_chart">مخطط درجات الأداء اليومية</string>
+
     <!-- Workout flow (16) -->
     <string name="workout_flow_back">رجوع</string>
     <string name="workout_flow_customize_title">تخصيص التمرين</string>
@@ -554,6 +586,9 @@
     <string name="workout_flow_now">الآن</string>
     <string name="workout_flow_previous_form">السابق: %1$d%% شكل</string>
     <string name="workout_flow_start_exercise">ابدأ التمرين</string>
+    <string name="workout_flow_a11y_sequence">%1$s، %2$s</string>
+    <string name="workout_flow_a11y_pending">قادم</string>
+    <string name="workout_flow_a11y_progress">تقدم التمرين %1$d بالمئة</string>
 
     <string name="auth_app_name">WayToFix</string>
     <string name="auth_tagline">تدريب بالذكاء الاصطناعي لتحسين الأداء</string>
@@ -589,6 +624,11 @@
     <string name="auth_reset_sent_sub">تحقق من بريدك الإلكتروني.</string>
     <string name="auth_back_to_sign_in">العودة لتسجيل الدخول</string>
     <string name="auth_google_unavailable">تسجيل الدخول عبر Google غير متاح في هذا الإصدار بعد.</string>
+    <string name="auth_error_email_required">أدخل بريدك الإلكتروني.</string>
+    <string name="auth_error_email_invalid">أدخل بريد إلكتروني صالحاً.</string>
+    <string name="auth_error_password_required">أدخل كلمة المرور.</string>
+    <string name="auth_error_name_required">أدخل اسمك الكامل.</string>
+    <string name="auth_error_password_short">كلمة المرور يجب أن تكون 8 أحرف على الأقل.</string>
     <string name="auth_logo_content_desc">شعار تطبيق WayToFix</string>
     <string name="auth_intro_icon_desc">رسم توضيحي للمقدمة</string>
     <string name="auth_forgot_success_icon_desc">تم إرسال البريد</string>
@@ -726,6 +766,8 @@
     <string name="assessment_parq_sub">أجب بصدق. إن أجبت بنعم على أي سؤال، استشر طبيباً قبل التدريب.</string>
     <string name="assessment_parq_physician_warning">استشر طبيباً قبل التدريب إن أجبت بنعم على أي سؤال.</string>
     <string name="assessment_parq_progress">%1$d من %2$d مُجاب</string>
+    <string name="assessment_parq_progress_a11y">تقدم PAR-Q، %1$d من %2$d مُجاب</string>
+    <string name="assessment_region_score_a11y">درجة %1$s %2$d بالمئة</string>
     <string name="assessment_parq_heart">هل قال طبيب أن لديك مشكلة قلبية؟</string>
     <string name="assessment_parq_chest_pain">هل تشعر بألم في الصدر أثناء النشاط؟</string>
     <string name="assessment_parq_dizziness">هل تفقد التوازن أو الوعي بسبب الدوار؟</string>

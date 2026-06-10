@@ -235,7 +235,9 @@ fun MovitHomeScreen(
                                     title = activity.title,
                                     subtitle = activity.subtitle,
                                     icon = Icons.Default.FitnessCenter,
-                                    onClick = { onEvent(MovitHomeEvent.ReportsClicked) },
+                                    onClick = {
+                                        onEvent(MovitHomeEvent.RecentActivityClicked(activity.id))
+                                    },
                                 )
                             }
                         }

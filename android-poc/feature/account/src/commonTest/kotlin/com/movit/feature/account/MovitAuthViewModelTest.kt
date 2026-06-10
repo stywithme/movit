@@ -1,9 +1,12 @@
 package com.movit.feature.account
 
 import com.movit.shared.AppResult
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.yield
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -15,28 +18,28 @@ class MovitAuthViewModelTest {
 
     @Test
     fun validateSignIn_requiresEmailAndPassword() {
-        assertNotNull(MovitAuthViewModel.validateSignIn("", "secret"))
-        assertNotNull(MovitAuthViewModel.validateSignIn("user@test.com", ""))
+        assertEquals("auth_error_email_required", MovitAuthViewModel.validateSignIn("", "secret"))
+        assertEquals("auth_error_password_required", MovitAuthViewModel.validateSignIn("user@test.com", ""))
         assertNull(MovitAuthViewModel.validateSignIn("user@test.com", "secret"))
     }
 
     @Test
     fun validateSignIn_requiresValidEmail() {
-        assertNotNull(MovitAuthViewModel.validateSignIn("invalid", "secret"))
+        assertEquals("auth_error_email_invalid", MovitAuthViewModel.validateSignIn("invalid", "secret"))
     }
 
     @Test
     fun validateSignUp_requiresNameEmailAndPasswordLength() {
-        assertNotNull(MovitAuthViewModel.validateSignUp("", "user@test.com", "12345678"))
-        assertNotNull(MovitAuthViewModel.validateSignUp("Athlete", "bad", "12345678"))
-        assertNotNull(MovitAuthViewModel.validateSignUp("Athlete", "user@test.com", "short"))
+        assertEquals("auth_error_name_required", MovitAuthViewModel.validateSignUp("", "user@test.com", "12345678"))
+        assertEquals("auth_error_email_invalid", MovitAuthViewModel.validateSignUp("Athlete", "bad", "12345678"))
+        assertEquals("auth_error_password_short", MovitAuthViewModel.validateSignUp("Athlete", "user@test.com", "short"))
         assertNull(MovitAuthViewModel.validateSignUp("Athlete", "user@test.com", "12345678"))
     }
 
     @Test
     fun validateForgotPassword_requiresValidEmail() {
-        assertNotNull(MovitAuthViewModel.validateForgotPassword(""))
-        assertNotNull(MovitAuthViewModel.validateForgotPassword("invalid"))
+        assertEquals("auth_error_email_required", MovitAuthViewModel.validateForgotPassword(""))
+        assertEquals("auth_error_email_invalid", MovitAuthViewModel.validateForgotPassword("invalid"))
         assertNull(MovitAuthViewModel.validateForgotPassword("user@test.com"))
     }
 
@@ -117,20 +120,26 @@ class MovitAuthViewModelTest {
     }
 
     @Test
-    fun googleSignIn_emitsStubMessage() = runBlocking {
-        val viewModel = MovitAuthViewModel(
-            repository = FakeAuthRepository(),
-            bootstrap = previewBootstrap(),
-            initialScreen = AuthScreen.SignIn,
-        )
-        viewModel.onEvent(MovitAuthEvent.GoogleSignInClicked)
+    fun googleSignIn_emitsStubMessage() {
+        runBlocking {
+            val viewModel = MovitAuthViewModel(
+                repository = FakeAuthRepository(),
+                bootstrap = previewBootstrap(),
+                initialScreen = AuthScreen.SignIn,
+            )
+            val effectDeferred = async {
+                withTimeout(5_000) { viewModel.effects.first() }
+            }
+            yield()
+            viewModel.onEvent(MovitAuthEvent.GoogleSignInClicked)
 
-        val effect = viewModel.effects.first()
-        assertTrue(effect is MovitAuthEffect.ShowMessage)
-        assertEquals(
-            MovitAuthViewModel.GOOGLE_SIGN_IN_STUB_MESSAGE,
-            (effect as MovitAuthEffect.ShowMessage).message,
-        )
+            val effect = effectDeferred.await()
+            assertTrue(effect is MovitAuthEffect.ShowLocalizedMessage)
+            assertEquals(
+                "auth_google_unavailable",
+                (effect as MovitAuthEffect.ShowLocalizedMessage).key,
+            )
+        }
     }
 
     @Test

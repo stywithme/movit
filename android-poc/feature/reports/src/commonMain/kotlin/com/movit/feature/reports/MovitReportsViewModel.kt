@@ -80,6 +80,7 @@ class MovitReportsViewModel(
             is MovitReportsEvent.ExerciseReportClicked -> {
                 _effects.tryEmit(MovitReportsEffect.OpenReportDetail(event.reportId))
             }
+            MovitReportsEvent.RefreshRequested -> Unit
         }
     }
 }

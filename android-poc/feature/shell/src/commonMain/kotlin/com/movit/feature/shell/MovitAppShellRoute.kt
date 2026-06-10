@@ -33,6 +33,7 @@ fun MovitAppShellRoute(
     profileViewModel: MovitProfileViewModel = viewModel { MovitProfileViewModel() },
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     onTrainEffect: (MovitTrainEffect) -> Boolean = { false },
+    onLaunchLegacyTraining: (MovitAppShellEffect.LaunchLegacyCameraTraining) -> Boolean = { false },
 ) {
     val shellState by shellViewModel.state.collectAsStateWithLifecycle()
     val language = remember(shellState.localeRevision) {
@@ -55,6 +56,7 @@ fun MovitAppShellRoute(
                 modifier = modifier,
                 snackbarHostState = snackbarHostState,
                 onTrainEffect = onTrainEffect,
+                onLaunchLegacyTraining = onLaunchLegacyTraining,
             )
         }
     }
@@ -71,6 +73,7 @@ private fun MovitAppShellRouteContent(
     modifier: Modifier,
     snackbarHostState: SnackbarHostState,
     onTrainEffect: (MovitTrainEffect) -> Boolean,
+    onLaunchLegacyTraining: (MovitAppShellEffect.LaunchLegacyCameraTraining) -> Boolean,
 ) {
     val state by shellViewModel.state.collectAsStateWithLifecycle()
     val language = LocalMovitLanguage.current
@@ -83,6 +86,13 @@ private fun MovitAppShellRouteContent(
                 }
                 is MovitAppShellEffect.ShowLocalizedMessage -> {
                     snackbarHostState.showSnackbar(localizedString(language, effect.key))
+                }
+                is MovitAppShellEffect.LaunchLegacyCameraTraining -> {
+                    if (!onLaunchLegacyTraining(effect)) {
+                        snackbarHostState.showSnackbar(
+                            localizedString(language, "prepare_training_bridge_unavailable"),
+                        )
+                    }
                 }
             }
         }

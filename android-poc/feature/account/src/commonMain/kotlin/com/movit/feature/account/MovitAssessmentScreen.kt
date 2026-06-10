@@ -35,6 +35,8 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -119,9 +121,16 @@ private fun PreScreeningContent(
         icon = Icons.Default.Warning,
         variant = MovitInsightVariant.Warning,
     )
+    val parqProgressA11y = movitText(
+        "assessment_parq_progress_a11y",
+        state.parqAnswers.size,
+        FakeAssessmentPreviewData.parqQuestions.size,
+    )
     MovitProgressBar(
         progressPercent = state.parqProgressPercent,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics { contentDescription = parqProgressA11y },
     )
     Text(
         text = movitText(
@@ -377,19 +386,21 @@ private fun ResultsContent(
 @Composable
 private fun RegionTile(region: AssessmentRegionUi, modifier: Modifier = Modifier) {
     val movit = MaterialTheme.movitColors
+    val regionLabel = movitText("assessment_region_${region.regionKey}")
+    val regionA11y = movitText("assessment_region_score_a11y", regionLabel, region.score)
     val (background, border) = when (region.tone) {
         AssessmentRegionTone.Good -> movit.successTint to movit.success
         AssessmentRegionTone.Warning -> movit.warningTint to movit.warning
         AssessmentRegionTone.Neutral -> MaterialTheme.colorScheme.surface to MaterialTheme.colorScheme.outline
     }
     Surface(
-        modifier = modifier,
+        modifier = modifier.semantics { contentDescription = regionA11y },
         shape = RoundedCornerShape(MovitRadius.lg),
         color = background,
         border = BorderStroke(1.dp, border),
     ) {
         MovitMetricTile(
-            label = movitText("assessment_region_${region.regionKey}"),
+            label = regionLabel,
             value = region.score.toString(),
             modifier = Modifier.padding(MovitSpacing.md),
         )

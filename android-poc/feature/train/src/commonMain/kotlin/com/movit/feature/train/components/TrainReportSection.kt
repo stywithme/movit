@@ -12,6 +12,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import kotlin.math.roundToInt
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.components.MovitButton
 import com.movit.designsystem.components.MovitButtonVariant
@@ -65,11 +68,21 @@ fun TrainReportSection(
                         )
                     }
                 }
+                val chartDescription = buildString {
+                    append(movitText("train_a11y_form_trend_chart"))
+                    append(": ")
+                    append(
+                        chartPoints.mapIndexed { index, value ->
+                            "${index + 1} ${(value * 100f).roundToInt()}%"
+                        }.joinToString(", "),
+                    )
+                }
                 MovitLineChart(
                     points = chartPoints,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = MovitSpacing.sm),
+                        .padding(top = MovitSpacing.sm)
+                        .semantics { contentDescription = chartDescription },
                     lineColor = MaterialTheme.movitColors.success,
                     fillColor = MaterialTheme.movitColors.success.copy(alpha = 0.25f),
                 )

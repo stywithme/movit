@@ -2,8 +2,11 @@ package com.movit.feature.shell
 
 import androidx.lifecycle.ViewModel
 import com.movit.core.data.MovitData
+import com.movit.feature.account.AuthBootstrapContext
+import com.movit.feature.account.AuthBootstrapTarget
 import com.movit.feature.account.MovitAssessmentEffect
 import com.movit.feature.account.MovitAuthEffect
+import com.movit.feature.account.MovitAuthViewModel
 import com.movit.feature.account.MovitLevelEffect
 import com.movit.feature.account.MovitOnboardingEffect
 import com.movit.feature.account.MovitProfileEffect
@@ -27,7 +30,16 @@ class MovitAppShellViewModel : ViewModel() {
     init {
         if (MovitData.isInstalled) {
             val platform = MovitData.requirePlatform()
-            _state.update { it.copy(themeMode = platform.themeMode()) }
+            val bootstrap = AuthBootstrapContext.fromMovitData()
+            _state.update {
+                it.copy(
+                    themeMode = platform.themeMode(),
+                    innerStack = resolveStartupInnerStack(
+                        bootstrap = bootstrap,
+                        onboardingCompleted = platform.isOnboardingCompleted(),
+                    ),
+                )
+            }
         }
     }
 
@@ -96,6 +108,7 @@ class MovitAppShellViewModel : ViewModel() {
             MovitHomeEffect.OpenProfile -> navigateTo(MovitAppDestination.Profile)
             MovitHomeEffect.OpenAssessment -> pushInner(MovitInnerRoute.Assessment)
             MovitHomeEffect.OpenLevel -> pushInner(MovitInnerRoute.LevelProfile)
+            is MovitHomeEffect.OpenReportDetail -> pushInner(MovitInnerRoute.ReportDetail(effect.reportId))
             is MovitHomeEffect.ShowMessage -> {
                 _effects.tryEmit(MovitAppShellEffect.ShowMessage(effect.message))
             }
@@ -134,6 +147,9 @@ class MovitAppShellViewModel : ViewModel() {
             }
             is MovitAuthEffect.ShowMessage -> {
                 _effects.tryEmit(MovitAppShellEffect.ShowMessage(effect.message))
+            }
+            is MovitAuthEffect.ShowLocalizedMessage -> {
+                _effects.tryEmit(MovitAppShellEffect.ShowLocalizedMessage(effect.key))
             }
         }
     }
@@ -234,14 +250,19 @@ class MovitAppShellViewModel : ViewModel() {
         when (effect) {
             MovitExploreEffect.OpenExercisesLibrary -> pushInner(MovitInnerRoute.ExercisesLibrary)
             MovitExploreEffect.OpenWorkoutsLibrary -> pushInner(MovitInnerRoute.WorkoutsLibrary)
-            is MovitExploreEffect.OpenProgramDetail -> pushInner(MovitInnerRoute.ProgramDetail(effect.programId))
+            MovitExploreEffect.OpenProgramList -> pushInner(MovitInnerRoute.ProgramList)
+            is MovitExploreEffect.OpenProgramDetail -> pushInner(
+                MovitInnerRoute.ProgramWeekPlan(programId = effect.programId, weekNumber = 1),
+            )
             is MovitExploreEffect.OpenWorkoutSession -> pushInner(MovitInnerRoute.WorkoutSession(effect.workoutId))
             is MovitExploreEffect.OpenExercisePrepare -> pushInner(MovitInnerRoute.ExercisePrepare(effect.exerciseId))
             is MovitExploreEffect.NavigateToItem -> {
                 when (effect.type) {
                     ExploreItemType.Exercise -> pushInner(MovitInnerRoute.ExercisePrepare(effect.id))
                     ExploreItemType.Workout -> pushInner(MovitInnerRoute.WorkoutSession(effect.id))
-                    ExploreItemType.Program -> pushInner(MovitInnerRoute.ProgramDetail(effect.id))
+                    ExploreItemType.Program -> pushInner(
+                        MovitInnerRoute.ProgramWeekPlan(programId = effect.id, weekNumber = 1),
+                    )
                 }
             }
             is MovitExploreEffect.NavigateToExercise -> {
@@ -269,5 +290,25 @@ class MovitAppShellViewModel : ViewModel() {
 
     private fun navigateTo(destination: MovitAppDestination) {
         _state.update { it.copy(selectedDestination = destination) }
+    }
+
+    companion object {
+        internal fun resolveStartupInnerStack(
+            bootstrap: AuthBootstrapContext,
+            onboardingCompleted: Boolean,
+        ): List<MovitInnerRoute> {
+            return when (MovitAuthViewModel.resolveBootstrapTarget(bootstrap)) {
+                AuthBootstrapTarget.ActiveSession -> {
+                    if (onboardingCompleted) {
+                        emptyList()
+                    } else {
+                        listOf(MovitInnerRoute.ProfileOnboarding)
+                    }
+                }
+                AuthBootstrapTarget.SignIn,
+                AuthBootstrapTarget.SplashThenIntro,
+                -> listOf(MovitInnerRoute.Auth)
+            }
+        }
     }
 }

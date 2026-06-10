@@ -140,6 +140,7 @@ object WorkoutSessionApiMapper {
                 subtitle = catalog?.category?.ifBlank { row.archetype.orEmpty() }
                     ?: row.archetype.orEmpty(),
                 badge = if (index == 0 && query.isBlank()) strings.bestBadge else null,
+                imageUrl = catalog?.imageUrl,
             )
         }
     }

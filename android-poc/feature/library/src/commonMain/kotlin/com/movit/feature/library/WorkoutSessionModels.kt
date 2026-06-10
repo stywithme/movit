@@ -19,6 +19,14 @@ fun WorkoutSessionUi.firstExerciseSlug(): String? =
         .firstOrNull()
         ?.exerciseSlug
 
+fun WorkoutSessionUi.firstExerciseId(): String? =
+    sections
+        .asSequence()
+        .flatMap { it.items.asSequence() }
+        .filterIsInstance<WorkoutSessionBlockUi.Exercise>()
+        .firstOrNull()
+        ?.id
+
 data class WorkoutSessionSectionUi(
     val title: String,
     val phaseRole: String,

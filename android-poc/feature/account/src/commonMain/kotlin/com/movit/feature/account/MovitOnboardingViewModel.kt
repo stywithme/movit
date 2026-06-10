@@ -1,8 +1,11 @@
 package com.movit.feature.account
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.movit.shared.AppResult
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -15,6 +18,7 @@ import kotlinx.coroutines.launch
 class MovitOnboardingViewModel(
     private val repository: OnboardingRepository = defaultOnboardingRepository(),
 ) : ViewModel() {
+    private val workScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
     private val _state = MutableStateFlow(MovitOnboardingUiState())
     val state: StateFlow<MovitOnboardingUiState> = _state.asStateFlow()
 
@@ -131,7 +135,7 @@ class MovitOnboardingViewModel(
             return
         }
 
-        viewModelScope.launch {
+        workScope.launch {
             _state.update { it.copy(isSubmitting = true, submitErrorMessage = null) }
             when (val result = repository.putTrainingProfile(data)) {
                 is AppResult.Success -> {
@@ -149,5 +153,10 @@ class MovitOnboardingViewModel(
 
     private inline fun updateData(block: (OnboardingData) -> OnboardingData) {
         _state.update { it.copy(data = block(it.data), validationErrorKey = null) }
+    }
+
+    override fun onCleared() {
+        workScope.cancel()
+        super.onCleared()
     }
 }

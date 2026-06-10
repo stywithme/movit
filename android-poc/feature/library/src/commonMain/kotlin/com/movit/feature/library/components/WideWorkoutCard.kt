@@ -61,8 +61,8 @@ fun WideWorkoutCard(
                         text = when {
                             featured && featuredLabel != null -> featuredLabel
                             item.focusLabel != null -> item.focusLabel
-                            else -> it.text
-                        },
+                            else -> null
+                        } ?: it.text,
                         variant = it.variant,
                     )
                 }

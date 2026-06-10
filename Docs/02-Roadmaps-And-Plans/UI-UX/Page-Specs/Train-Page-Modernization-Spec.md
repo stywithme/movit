@@ -1,14 +1,21 @@
 # Train Page Modernization Spec
 
-آخر تحديث: 2026-06-08
+آخر تحديث: 2026-06-09
 
 ## Implementation Status
 
 - تم تنفيذ أول نسخة KMP من صفحة Train داخل `android-poc/feature/train`.
 - تم ربطها داخل `feature:shell` بدلاً من placeholder الخاص بـ `MovitAppDestination.Train`.
+- **دفعة 2026-06-09 — إغلاق فجوات `01-train.html`:**
+  - `TrainWeekPreview`: تنقل أسبوع تفاعلي (`←/→`) عبر `weekOptions` + `selectedWeekIndex`.
+  - **No program:** hero lime (`train_get_started` + `MovitAccentBlock`) + `TrainFeaturedProgramCard` (صورة/placeholder + badges + Start).
+  - **Session cards:** thumbnails عبر `MovitSessionCard.thumbnailUrl`.
+  - **Program complete:** حلقة trophy (`EmojiEvents`) + «View your journey» / «What's next».
+  - **Form trend:** `MovitDeltaBadge` + `train_form_trend_delta`.
+  - **Preferences snackbar:** `TrainStrings.prefsLater` بدل نص hardcoded.
 - التنفيذ الحالي يعتمد على fixture/fake repository آمن على Android وiOS؛ الربط الحقيقي مع API أو legacy Retrofit مؤجل حتى قرار bridge منفصل.
 - CTA الخاص ببدء التدريب لا يفتح camera/session في هذه المرحلة، ويصدر effect يتعامل معه shell برسالة واضحة.
-- تحقق Gradle الحالي يغطي `feature:train`, `feature:shell`, Android debug assemble، وKMP iOS simulator compile/link task من بيئة Windows. يبقى Xcode Simulator visual smoke على Mac هو خطوة القبول البصرية التالية.
+- Scorecard محدّث: **84%** (انظر `Page-Scorecards.md`).
 
 ## Current Implementation
 
