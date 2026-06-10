@@ -16,6 +16,7 @@ import com.movit.core.network.dto.TrainModeDto
 import com.movit.core.network.dto.UserExercisePreferenceUpsertRequest
 import com.movit.core.network.dto.UserProgramOverrideCreateRequest
 import com.movit.core.network.dto.UserProgramUpdateRequest
+import com.movit.core.network.dto.WorkoutExecutionUploadRequestDto
 import com.movit.shared.AppResult
 
 /**
@@ -178,6 +179,23 @@ class MobileWriteSyncRepository(
                 userProgramId, weekNumber, dayNumber, request,
             )
         }
+        return AppResult.Success(id)
+    }
+
+    /**
+     * Offline-safe upload for a single exercise execution (camera / training metrics).
+     * Uses [WorkoutExecutionUploadRequestDto.id] as the outbox idempotency key by default.
+     *
+     * Legacy OkHttp upload path still owns production traffic until KMP session wiring (Phase 07).
+     */
+    suspend fun uploadWorkoutExecution(
+        request: WorkoutExecutionUploadRequestDto,
+        operationId: String? = null,
+    ): AppResult<String> {
+        if (!hasAuth()) return AppResult.Failure("Sign in to upload workout data.")
+
+        val id = operationId ?: request.id
+        offlineWrites.enqueueWorkoutExecutionUpload(request, operationId = id)
         return AppResult.Success(id)
     }
 

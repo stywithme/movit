@@ -11,6 +11,8 @@ enum class OutboxOperationType {
     USER_PROGRAM_OVERRIDE_DELETE,
     SAVE_DAY_CUSTOMIZATIONS,
     PROGRESSION_MARK_SEEN,
+    /** Single exercise execution metrics — POST api/mobile/workout-executions (Phase 07 camera path). */
+    WORKOUT_EXECUTION_UPLOAD,
 }
 
 enum class OutboxStatus {

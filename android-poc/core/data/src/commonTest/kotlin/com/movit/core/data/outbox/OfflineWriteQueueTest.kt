@@ -3,7 +3,9 @@ package com.movit.core.data.outbox
 import com.movit.core.data.local.InMemoryMovitLocalStore
 import com.movit.core.data.repository.FakeMovitPlatformBindings
 import com.movit.core.data.repository.testMobileApi
+import com.movit.core.network.dto.ExecutionMetricsDto
 import com.movit.core.network.dto.UserProgramUpdateRequest
+import com.movit.core.network.dto.WorkoutExecutionUploadRequestDto
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
@@ -19,6 +21,7 @@ class OfflineWriteQueueTest {
 
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
     private val planOkBody = """{"success":true}"""
+    private val executionOkBody = """{"success":true,"data":{"id":"exec-offline-1"}}"""
 
     @Test
     fun offlineWrite_replaysOnceWhenNetworkReturns() {
@@ -145,6 +148,36 @@ class OfflineWriteQueueTest {
     }
 
     @Test
+    fun workoutExecutionUpload_offline_replaysOnceWhenOnline() {
+        runBlocking {
+            val apiCalls = AtomicInteger(0)
+            val engine = MockEngine {
+                apiCalls.incrementAndGet()
+                respond(executionOkBody, HttpStatusCode.OK, jsonHeaders)
+            }
+            val platform = object : FakeMovitPlatformBindings() {
+                private var online = false
+                override fun isNetworkAvailable(): Boolean = online
+                fun goOnline() {
+                    online = true
+                }
+            }
+            val queue = OfflineWriteQueue(InMemoryMovitLocalStore(), testMobileApi(engine, platform)) { platform }
+
+            queue.enqueueWorkoutExecutionUpload(sampleWorkoutExecutionUpload())
+
+            assertEquals(0, apiCalls.get())
+            assertEquals(1L, queue.pendingCount())
+
+            platform.goOnline()
+            val replay = queue.replayPending()
+            assertEquals(1, replay.succeeded)
+            assertEquals(1, apiCalls.get())
+            assertEquals(0L, queue.pendingCount())
+        }
+    }
+
+    @Test
     fun serverConflict409_marksSucceeded_serverWins() {
         runBlocking {
             val engine = MockEngine { respond("conflict", HttpStatusCode.Conflict) }
@@ -165,4 +198,23 @@ class OfflineWriteQueueTest {
             assertTrue(entry?.status == OutboxStatus.SUCCEEDED)
         }
     }
+
+    private fun sampleWorkoutExecutionUpload(
+        id: String = "exec-offline-1",
+    ): WorkoutExecutionUploadRequestDto = WorkoutExecutionUploadRequestDto(
+        id = id,
+        exerciseId = "bodyweight-squat",
+        timestamp = 1_700_000_000_000L,
+        durationMs = 84_000,
+        totalReps = 10,
+        countedReps = 9,
+        invalidReps = 1,
+        executionMetrics = ExecutionMetricsDto(
+            avgRom = 9.2f,
+            avgStability = 7.5f,
+            avgFormScore = 8.4f,
+            avgAlignmentAccuracy = 8.8f,
+            totalTUT = 8400,
+        ),
+    )
 }

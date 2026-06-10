@@ -85,6 +85,18 @@ object MobileApiContractRegistry {
         "GET api/bookings/rules",
     )
 
+    /**
+     * Legacy mobile consumers **outside** Retrofit (OkHttp constants).
+     * Kept in sync via [WorkoutSyncContractPathExtractor] test.
+     */
+    val legacyNonRetrofitEndpoints: Set<String> = setOf(
+        "POST api/mobile/workout-executions",
+    )
+
+    /** Retrofit + OkHttp legacy paths that KMP must cover or defer explicitly. */
+    val allLegacyConsumerEndpoints: Set<String>
+        get() = legacyEndpoints + legacyNonRetrofitEndpoints
+
     /** Endpoints implemented in MovitMobileApi (must match base("…") paths in source). */
     val kmpCoveredEndpoints: Set<String> = setOf(
         "GET api/mobile/explore",
@@ -164,9 +176,8 @@ object MobileApiContractRegistry {
     val deferredEndpointKeys: Set<String> =
         deferredEndpoints.map { "${it.method} ${it.path}" }.toSet()
 
-    /** KMP-only additions (not in legacy Retrofit list). */
+    /** KMP-only additions (not in any legacy consumer catalog). */
     val kmpOnlyEndpoints: Set<String> = setOf(
         "GET api/mobile/programs/{id}",
-        "POST api/mobile/workout-executions",
     )
 }

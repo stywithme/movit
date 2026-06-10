@@ -6,6 +6,7 @@ import com.movit.core.network.dto.ProgressionMarkSeenRequest
 import com.movit.core.network.dto.UserExercisePreferenceUpsertRequest
 import com.movit.core.network.dto.UserProgramOverrideCreateRequest
 import com.movit.core.network.dto.UserProgramUpdateRequest
+import com.movit.core.network.dto.WorkoutExecutionUploadRequestDto
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -54,4 +55,9 @@ data class UserProgramOverrideDeleteOutboxPayload(
 @Serializable
 data class ProgressionMarkSeenOutboxPayload(
     val request: ProgressionMarkSeenRequest,
+)
+
+@Serializable
+data class WorkoutExecutionUploadOutboxPayload(
+    val request: WorkoutExecutionUploadRequestDto,
 )

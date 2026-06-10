@@ -54,6 +54,10 @@ internal class OutboxDispatcher(
                     val payload = MovitJson.decodeFromString<ProgressionMarkSeenOutboxPayload>(entry.payload)
                     api.markProgressionSeen(payload.request, authorization).getOrThrow()
                 }
+                OutboxOperationType.WORKOUT_EXECUTION_UPLOAD -> {
+                    val payload = MovitJson.decodeFromString<WorkoutExecutionUploadOutboxPayload>(entry.payload)
+                    api.uploadWorkoutExecution(payload.request, authorization).getOrThrow()
+                }
             }
         }
 

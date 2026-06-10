@@ -11,6 +11,7 @@ import com.movit.core.network.dto.ProgressionMarkSeenRequest
 import com.movit.core.network.dto.UserExercisePreferenceUpsertRequest
 import com.movit.core.network.dto.UserProgramOverrideCreateRequest
 import com.movit.core.network.dto.UserProgramUpdateRequest
+import com.movit.core.network.dto.WorkoutExecutionUploadRequestDto
 import kotlin.random.Random
 
 /**
@@ -112,6 +113,15 @@ class OfflineWriteQueue(
         payload = MovitJson.encodeToString(
             SaveDayCustomizationsOutboxPayload(userProgramId, weekNumber, dayNumber, request),
         ),
+    )
+
+    suspend fun enqueueWorkoutExecutionUpload(
+        request: WorkoutExecutionUploadRequestDto,
+        operationId: String = request.id,
+    ): String = enqueue(
+        operationId = operationId,
+        type = OutboxOperationType.WORKOUT_EXECUTION_UPLOAD,
+        payload = MovitJson.encodeToString(WorkoutExecutionUploadOutboxPayload(request)),
     )
 
     suspend fun enqueueProgressionMarkSeen(

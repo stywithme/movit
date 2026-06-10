@@ -466,3 +466,23 @@ cd android-poc
 3. **18 قراءة parity** — عند الحاجة في UI (لا تحجز الكاميرا).
 4. **`@Url` audio download** — platform adapter في Phase 07.
 5. **هجرة AGP 9** — عند الترقية.
+
+---
+
+## سجل متابعة — فجوات مراجعة المدير (2026-06-10)
+
+### [P1] Outbox لـ `POST workout-executions` — ✅ بنية · 🔶 توصيل UI
+
+| | |
+|---|---|
+| **الحالة** | ✅ `WORKOUT_EXECUTION_UPLOAD` في Outbox + `MobileWriteSyncRepository.uploadWorkoutExecution()` |
+| **ملفات** | `OutboxModels.kt` · `OutboxDispatcher.kt` · `OfflineWriteQueue.kt` · `MobileWriteSyncRepository.kt` |
+| **قرار** | idempotency = `WorkoutExecutionUploadRequestDto.id` · legacy `WorkoutSyncService` (OkHttp) ما زال يملك الإنتاج حتى ربط جلسة KMP في Phase 07 |
+| **متبقٍ** | استدعاء من `feature/train` / shell بعد الكاميرا — لا يُعتبر offline-safe end-to-end قبل ذلك |
+
+### [P2] Contract registry — `workout-executions` ليس KMP-only — ✅
+
+| | |
+|---|---|
+| **الحالة** | ✅ `legacyNonRetrofitEndpoints` + `WorkoutSyncContractPathExtractor` + `LegacyKmpContractParityTest.legacyNonRetrofitCatalogMatchesWorkoutSyncService` |
+| **قرار** | أُزيل من `kmpOnlyEndpoints` · `allLegacyConsumerEndpoints` = Retrofit + OkHttp |

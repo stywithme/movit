@@ -8,13 +8,22 @@ class LegacyKmpContractParityTest {
 
     @Test
     fun everyLegacyEndpointIsCoveredOrExplicitlyDeferred() {
-        val uncovered = MobileApiContractRegistry.legacyEndpoints -
+        val uncovered = MobileApiContractRegistry.allLegacyConsumerEndpoints -
             MobileApiContractRegistry.kmpCoveredEndpoints -
             MobileApiContractRegistry.deferredEndpointKeys
 
         assertTrue(
             uncovered.isEmpty(),
             "Legacy endpoints missing from KMP and not deferred: $uncovered",
+        )
+    }
+
+    @Test
+    fun legacyNonRetrofitCatalogMatchesWorkoutSyncService() {
+        assertEquals(
+            MobileApiContractRegistry.legacyNonRetrofitEndpoints,
+            WorkoutSyncContractPathExtractor.extractAll(),
+            "WorkoutSyncService ENDPOINT changed — update legacyNonRetrofitEndpoints",
         )
     }
 
