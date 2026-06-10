@@ -8,6 +8,7 @@ import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.getByType
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 
 class MovitKmpCoreConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
@@ -17,6 +18,8 @@ class MovitKmpCoreConventionPlugin : Plugin<Project> {
 
             val extension = extensions.create("movitKmp", MovitKmpExtension::class.java)
             val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
+
+            val iosMinVersion = libs.findVersion("ios-deployment-target").get().requiredVersion
 
             extensions.configure<KotlinMultiplatformExtension> {
                 androidTarget {
@@ -40,6 +43,13 @@ class MovitKmpCoreConventionPlugin : Plugin<Project> {
             }
 
             afterEvaluate {
+                extensions.configure<KotlinMultiplatformExtension> {
+                    targets.withType(KotlinNativeTarget::class.java).configureEach {
+                        binaries.configureEach {
+                            freeCompilerArgs += "-Xoverride-konan-properties=minVersion.ios=$iosMinVersion"
+                        }
+                    }
+                }
                 if (extension.includeIosX64) {
                     extensions.configure<KotlinMultiplatformExtension> {
                         iosX64()

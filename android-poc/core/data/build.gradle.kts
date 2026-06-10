@@ -14,7 +14,6 @@ kotlin {
             implementation(project(":core:model"))
             implementation(project(":core:network"))
             implementation(project(":core:resources"))
-            implementation(project(":core:designsystem"))
             implementation(libs.ktor.client.core)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)

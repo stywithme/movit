@@ -1,6 +1,5 @@
 package com.movit.core.model
 
-import com.movit.designsystem.components.MovitTagVariant
 import com.movit.shared.AppResult
 
 data class ExploreItemUi(

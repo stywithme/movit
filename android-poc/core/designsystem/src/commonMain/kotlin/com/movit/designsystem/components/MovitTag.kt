@@ -19,13 +19,6 @@ import com.movit.designsystem.MovitRadius
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.movitColors
 
-enum class MovitTagVariant {
-    Lime,
-    Blue,
-    Coral,
-    Gold,
-}
-
 @Composable
 fun MovitTag(
     text: String,

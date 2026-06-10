@@ -11,6 +11,7 @@ android {
 kotlin {
     sourceSets {
         commonMain.dependencies {
+            api(project(":core:model"))
             implementation(project(":core:resources"))
             implementation(compose.runtime)
             implementation(compose.foundation)

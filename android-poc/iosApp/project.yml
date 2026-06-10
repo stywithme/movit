@@ -4,8 +4,8 @@ name: iosApp
 options:
   bundleIdPrefix: com.movit
   deploymentTarget:
-    # Production floor — Kotlin/Native + Compose Multiplatform 1.11 supports iOS 15+.
-    iOS: "16.0"
+    # Align with android-poc gradle ios-deployment-target (Compose MP 1.11 + Skiko).
+    iOS: "18.0"
 targets:
   iosApp:
     type: application

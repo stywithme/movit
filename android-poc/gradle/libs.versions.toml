@@ -46,6 +46,8 @@ robolectric = "4.16"
 compile-sdk = "36"
 min-sdk = "24"
 target-sdk = "36"
+# Compose Multiplatform 1.11 + Skiko require iOS 18+; CMP 1.11 LayoutRegion APIs need Xcode with iOS 18 SDK+.
+ios-deployment-target = "18.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidx-core-ktx" }

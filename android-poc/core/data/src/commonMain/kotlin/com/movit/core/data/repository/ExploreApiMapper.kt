@@ -8,7 +8,7 @@ import com.movit.core.network.dto.ExploreExerciseDto
 import com.movit.core.network.dto.ExploreProgramDto
 import com.movit.core.network.dto.ExploreWorkoutDto
 import com.movit.core.network.dto.LocalizedNameDto
-import com.movit.designsystem.components.MovitTagVariant
+import com.movit.core.model.MovitTagVariant
 import com.movit.resources.strings.ExploreStrings
 
 object ExploreApiMapper {
