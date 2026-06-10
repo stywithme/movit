@@ -51,7 +51,8 @@ class WorkoutRunViewModel(
             is AppResult.Failure -> null
         }
 
-    fun currentExerciseSlug(): String? = _state.value.currentExercise?.exerciseSlug
+    /** Legacy [TrainingActivity] file slug for the active exercise (Phase 05 boundary). */
+    fun legacyFileNameForStart(): String? = _state.value.currentExercise?.exerciseSlug
 }
 
 private object WorkoutRunPreviewInsights {

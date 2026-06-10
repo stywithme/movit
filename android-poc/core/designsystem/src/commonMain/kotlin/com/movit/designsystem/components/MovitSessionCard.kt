@@ -49,7 +49,7 @@ fun MovitSessionCard(
     modifier: Modifier = Modifier,
     isCompleted: Boolean = false,
     completedLabel: String? = null,
-    actionLabel: String = "Start session",
+    actionLabel: String,
     onActionClick: (() -> Unit)? = null,
     footerNote: String? = null,
     thumbnailUrl: String? = null,

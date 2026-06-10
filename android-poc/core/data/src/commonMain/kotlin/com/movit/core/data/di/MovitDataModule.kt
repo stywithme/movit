@@ -7,6 +7,7 @@ import com.movit.core.data.repository.AccountSyncRepository
 import com.movit.core.data.repository.ExploreSyncRepository
 import com.movit.core.data.repository.HomeSyncRepository
 import com.movit.core.data.repository.PlanSyncRepository
+import com.movit.core.data.repository.ProgramFlowSyncRepository
 import com.movit.core.data.repository.ReportsSyncRepository
 import com.movit.core.data.repository.WorkoutSessionSyncRepository
 import com.movit.core.network.MovitAuthTokenStore
@@ -38,6 +39,15 @@ fun movitDataModule(platform: MovitPlatformBindings): Module = module {
     single { ExploreSyncRepository(api = get(), platform = { get() }) }
     single { HomeSyncRepository(api = get(), platform = { get() }) }
     single { PlanSyncRepository(api = get(), platform = { get() }, homeSync = get()) }
+    single {
+        ProgramFlowSyncRepository(
+            api = get(),
+            platform = { get() },
+            exploreSync = get(),
+            homeSync = get(),
+            planSync = get(),
+        )
+    }
     single { ReportsSyncRepository(api = get(), platform = { get() }) }
     single { WorkoutSessionSyncRepository(api = get(), platform = { get() }) }
     single { AccountSyncRepository(api = get(), platform = { get() }) }

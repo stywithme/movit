@@ -33,4 +33,4 @@ class FakeProgramFlowRepository(
     }
 }
 
-fun defaultProgramFlowRepository(): ProgramFlowRepository = FakeProgramFlowRepository()
+fun defaultProgramFlowRepository(): ProgramFlowRepository = SharedProgramFlowRepository()

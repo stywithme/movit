@@ -1,40 +1,29 @@
 package com.trainingvalidator.poc.training.engine.policy
 
+import com.movit.core.training.engine.policy.FeedbackPolicy as KmpFeedbackPolicy
+import com.trainingvalidator.poc.training.engine.toKmp
 import com.trainingvalidator.poc.training.models.JointState
 
 /**
  * Candidate-rate limiting for training feedback emitted from [com.trainingvalidator.poc.training.TrainingEngine].
- * User-facing cooldowns and delivery decisions live in [com.trainingvalidator.poc.training.feedback.FeedbackScheduler].
+ * Delegates to KMP [com.movit.core.training.engine.policy.FeedbackPolicy].
  */
 class FeedbackPolicy(
-    private val stateMessageCooldownMs: Long,
-    private val maxCandidateIntervalMs: Long = 250L
+    stateMessageCooldownMs: Long,
+    maxCandidateIntervalMs: Long = 250L,
 ) {
-    private val lastStateMessageTimes = mutableMapOf<String, Long>()
-    private val lastEmittedStates = mutableMapOf<String, JointState>()
+    private val core = KmpFeedbackPolicy(stateMessageCooldownMs, maxCandidateIntervalMs)
 
-    fun resetExecution() {
-        lastStateMessageTimes.clear()
-        lastEmittedStates.clear()
-    }
+    fun resetExecution() = core.resetExecution()
 
-    /**
-     * @return When the joint has a non-empty message, whether to emit [com.trainingvalidator.poc.training.feedback.FeedbackEvent.JointQuality] with [com.trainingvalidator.poc.training.feedback.JointQualityContent.StateMessage] this frame.
-     */
     fun shouldEmitStateMessage(
         jointCode: String,
         state: JointState,
-        nowMs: Long
-    ): Boolean {
-        val lastState = lastEmittedStates[jointCode]
-        val lastTime = lastStateMessageTimes[jointCode] ?: 0L
-        val candidateInterval = stateMessageCooldownMs.coerceAtMost(maxCandidateIntervalMs)
-        return (lastState != state) || (nowMs - lastTime >= candidateInterval)
-    }
+        nowMs: Long,
+    ): Boolean = core.shouldEmitStateMessage(jointCode, state.toKmp(), nowMs)
 
     fun recordStateMessage(jointCode: String, state: JointState, nowMs: Long) {
-        lastEmittedStates[jointCode] = state
-        lastStateMessageTimes[jointCode] = nowMs
+        core.recordStateMessage(jointCode, state.toKmp(), nowMs)
     }
 
     companion object {

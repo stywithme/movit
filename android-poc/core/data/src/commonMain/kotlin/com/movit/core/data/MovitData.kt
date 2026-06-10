@@ -6,6 +6,7 @@ import com.movit.core.data.repository.AccountSyncRepository
 import com.movit.core.data.repository.ExploreSyncRepository
 import com.movit.core.data.repository.HomeSyncRepository
 import com.movit.core.data.repository.PlanSyncRepository
+import com.movit.core.data.repository.ProgramFlowSyncRepository
 import com.movit.core.data.repository.ReportsSyncRepository
 import com.movit.core.data.repository.WorkoutSessionSyncRepository
 import org.koin.core.Koin
@@ -50,6 +51,7 @@ object MovitData {
     val explore: ExploreSyncRepository get() = koin().get()
     val home: HomeSyncRepository get() = koin().get()
     val plan: PlanSyncRepository get() = koin().get()
+    val programFlow: ProgramFlowSyncRepository get() = koin().get()
     val reports: ReportsSyncRepository get() = koin().get()
     val workoutSession: WorkoutSessionSyncRepository get() = koin().get()
     val account: AccountSyncRepository get() = koin().get()

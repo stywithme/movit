@@ -602,6 +602,17 @@
     <string name="program_flow_status_rest">Rest day</string>
     <string name="program_flow_a11y_day">Day %1$d, %2$s. %3$s. %4$s</string>
     <string name="program_flow_a11y_chart">Daily form scores chart</string>
+    <string name="program_flow_load_failed">Unable to load programs.</string>
+    <string name="program_flow_program_not_found">Program not found.</string>
+    <string name="program_flow_active_badge">Active</string>
+    <string name="program_flow_chip_all">All</string>
+    <string name="program_flow_day_short">Day %1$d</string>
+    <string name="program_flow_week_subtitle">%1$d workouts · %2$d rest</string>
+    <string name="program_flow_day_today_detail">Today · %1$d exercises · %2$d min</string>
+    <string name="program_flow_day_completed">Completed</string>
+    <string name="program_flow_report_hero_eyebrow">Week %1$d summary</string>
+    <string name="program_flow_report_hero_title">Great week!</string>
+    <string name="program_flow_report_hero_subtitle">You completed %1$d of %2$d planned sessions.</string>
 
     <!-- Auth (10) -->
     <string name="auth_app_name">WayToFix</string>

@@ -15,6 +15,8 @@ import com.movit.core.network.dto.ReassessmentListApiResponse
 import com.movit.core.network.dto.LoginRequestDto
 import com.movit.core.network.dto.LogoutRequestDto
 import com.movit.core.network.dto.MetricsApiResponse
+import com.movit.core.network.dto.ProgramExportApiResponse
+import com.movit.core.network.dto.ProgramProgressMetricsApiResponse
 import com.movit.core.network.dto.RefreshTokenRequestDto
 import com.movit.core.network.dto.RegisterRequestDto
 import com.movit.core.network.dto.ReportsDashboardApiResponse
@@ -113,6 +115,32 @@ class MovitMobileApi(
             error("Exercise metrics request failed (${response.status.value})")
         }
         response.body<MetricsApiResponse>()
+    }
+
+    suspend fun fetchProgram(
+        programId: String,
+        authorization: String? = null,
+    ): Result<ProgramExportApiResponse> = runCatching {
+        val response = client.get(base("api/mobile/programs/$programId")) {
+            applyBearerAuthorization(authorization)
+        }
+        if (!response.status.isSuccess()) {
+            error("Program request failed (${response.status.value})")
+        }
+        response.body<ProgramExportApiResponse>()
+    }
+
+    suspend fun fetchProgramProgressMetrics(
+        userProgramId: String,
+        authorization: String? = null,
+    ): Result<ProgramProgressMetricsApiResponse> = runCatching {
+        val response = client.get(base("api/mobile/user-programs/$userProgramId/progress-metrics")) {
+            applyBearerAuthorization(authorization)
+        }
+        if (!response.status.isSuccess()) {
+            error("Program progress metrics request failed (${response.status.value})")
+        }
+        response.body<ProgramProgressMetricsApiResponse>()
     }
 
     suspend fun fetchEffectivePlan(

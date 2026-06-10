@@ -4,11 +4,14 @@
 
 ## Implementation Status
 
-- تدفق KMP كامل في `feature:library`: قائمة البرامج → خطة الأسبوع (أيام) → التقرير الأسبوعي.
+- تدفق KMP كامل في `feature:library`: قائمة البرامج → خطة الأسبوع (أيام) → التقرير الأسبوعي → `WorkoutSession`.
 - مسارات shell داخلية: `ProgramList` · `ProgramWeekPlan` · `WeeklyReport`.
-- الربط من Train (تصفح البرامج / عرض التقرير) و Explore (عرض الكل / بطاقة برنامج).
-- لا كاميرا في هذا التدفق؛ فتح الجلسة يذهب إلى `WorkoutSession` (بناء يوم البرنامج) فقط.
-- بيانات preview عبر `FakeProgramFlowRepository`؛ ربط API حقيقي (`ProgramRepository` / metrics) مؤجل لمرحلة bridge.
+- الربط من Train (`OpenProgramList` · `OpenProgramWeekPlan` · `OpenWeeklyReport`) و Explore (`OpenProgramList` · `OpenProgramDetail` → `ProgramWeekPlan` أسبوع 1).
+- **API bridge (إنتاج):** `SharedProgramFlowRepository` → `ProgramFlowSyncRepository` (`ExploreSync` · `HomeSync` · `PlanSync` · `fetchProgram` · `progress-metrics` · `ReportsSync` للمقاييس).
+- **Preview/offline:** `FakeProgramFlowRepository` عند عدم تثبيت `MovitData` أو لمعرّفات `ProgramFlowPreviewData`.
+- i18n: `program_flow_*` كامل (en/ar + `MovitArabicStrings` للاختبارات).
+- اختبارات: `ProgramFlowStateTest` (5) · shell/train navigation tests — خضراء.
+- **مفتوح:** Share platform · قائمة كل أسابيع التقرير (legacy multi-week) · صور الوسائط من الشبكة عند غياب explore cache.
 
 ## Legacy Reference
 

@@ -575,6 +575,17 @@
     <string name="program_flow_status_rest">يوم راحة</string>
     <string name="program_flow_a11y_day">اليوم %1$d، %2$s. %3$s. %4$s</string>
     <string name="program_flow_a11y_chart">مخطط درجات الأداء اليومية</string>
+    <string name="program_flow_load_failed">تعذّر تحميل البرامج.</string>
+    <string name="program_flow_program_not_found">البرنامج غير موجود.</string>
+    <string name="program_flow_active_badge">نشط</string>
+    <string name="program_flow_chip_all">الكل</string>
+    <string name="program_flow_day_short">اليوم %1$d</string>
+    <string name="program_flow_week_subtitle">%1$d تمارين · %2$d راحة</string>
+    <string name="program_flow_day_today_detail">اليوم · %1$d تمارين · %2$d د</string>
+    <string name="program_flow_day_completed">مكتمل</string>
+    <string name="program_flow_report_hero_eyebrow">ملخص الأسبوع %1$d</string>
+    <string name="program_flow_report_hero_title">أسبوع رائع!</string>
+    <string name="program_flow_report_hero_subtitle">أكملت %1$d من %2$d جلسات مخططة.</string>
 
     <!-- Workout flow (16) -->
     <string name="workout_flow_back">رجوع</string>

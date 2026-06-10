@@ -95,7 +95,7 @@ fun WorkoutSessionRoute(
     workoutId: String,
     onBack: () -> Unit,
     onExerciseClick: (String) -> Unit,
-    onStartWorkout: (exerciseId: String) -> Unit,
+    onStartWorkout: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: WorkoutSessionViewModel = viewModel { WorkoutSessionViewModel(workoutId) },
 ) {
@@ -113,7 +113,7 @@ fun WorkoutSessionRoute(
         onAddExercise = viewModel::openAddExerciseSheet,
         onAddRest = viewModel::addRestBlock,
         onStartWorkout = {
-            state.session?.firstExerciseId()?.let(onStartWorkout)
+            if (state.session != null) onStartWorkout()
         },
         onRetry = { scope.launch { viewModel.load() } },
         onDismissSheet = viewModel::dismissSheet,
@@ -288,7 +288,7 @@ fun WorkoutRunRoute(
     WorkoutRunScreen(
         state = state,
         onBack = onBack,
-        onStartExercise = { viewModel.currentExerciseSlug()?.let(onStartExercise) },
+        onStartExercise = { viewModel.legacyFileNameForStart()?.let(onStartExercise) },
         onRetry = { scope.launch { viewModel.load() } },
         modifier = modifier,
     )

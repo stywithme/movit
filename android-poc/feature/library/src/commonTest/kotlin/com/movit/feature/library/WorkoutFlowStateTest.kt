@@ -78,4 +78,23 @@ class WorkoutFlowStateTest {
         assertTrue(config.exercises.size >= 5)
         assertEquals(60, config.restBetweenSetsSeconds)
     }
+
+    @Test
+    fun run_legacyFileName_matchesCurrentExerciseSlug() {
+        WorkoutFlowCache.clearAll()
+        val customize = WorkoutCustomizeViewModel(
+            workoutId = "preview",
+            sessionRepository = DefaultWorkoutSessionRepository(),
+        )
+        kotlinx.coroutines.runBlocking {
+            customize.load()
+            customize.commitForRun()
+        }
+        val run = WorkoutRunViewModel(
+            workoutId = "preview",
+            sessionRepository = DefaultWorkoutSessionRepository(),
+        )
+        kotlinx.coroutines.runBlocking { run.load() }
+        assertEquals("bodyweight-squat", run.legacyFileNameForStart())
+    }
 }

@@ -1,6 +1,9 @@
 package com.trainingvalidator.poc.training.engine.bilateral
 
 import android.util.Log
+import com.movit.core.training.bilateral.BilateralConfigInput
+import com.movit.core.training.bilateral.BilateralController as KmpBilateralController
+import com.movit.core.training.bilateral.BilateralSwitchMode as KmpBilateralSwitchMode
 import com.trainingvalidator.poc.training.models.BilateralConfig
 import com.trainingvalidator.poc.training.models.BilateralSwitchMode
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -9,51 +12,54 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Owns [BilateralSide] and per-rep switching for bilateral exercises.
+ * Delegates to KMP [com.movit.core.training.bilateral.BilateralController].
  */
 class BilateralController(
-    val isBilateral: Boolean,
-    private val config: BilateralConfig?,
-    private val targetReps: Int,
+    isBilateral: Boolean,
+    config: BilateralConfig?,
+    targetReps: Int,
 ) {
-    val startSide: BilateralSide = when (config?.startSide) {
-        "left" -> BilateralSide.LEFT
-        else -> BilateralSide.RIGHT
-    }
+    private val core = KmpBilateralController(
+        isBilateral = isBilateral,
+        config = config?.toKmpInput(),
+        targetReps = targetReps,
+    )
 
-    private var current: BilateralSide = startSide
-    private val _side = MutableStateFlow(current)
+    val isBilateral: Boolean get() = core.isBilateral
+    val startSide: BilateralSide get() = core.startSide
+
+    private val _side = MutableStateFlow(core.currentSide)
     val side: StateFlow<BilateralSide> = _side.asStateFlow()
 
-    val isFlipped: Boolean
-        get() = isBilateral && current != startSide
+    val isFlipped: Boolean get() = core.isFlipped
+    val currentSideCode: String get() = core.currentSideCode
 
-    val currentSideCode: String
-        get() = current.name.lowercase()
+    init {
+        core.onSideChanged = { side ->
+            _side.value = side
+            Log.d(TAG, "Bilateral side switched to: $side")
+        }
+    }
 
     fun resetToConfigStart() {
-        if (!isBilateral) return
-        current = startSide
-        _side.value = current
+        core.resetToConfigStart()
+        _side.value = core.currentSide
     }
 
-    /**
-     * After a rep is counted, optionally flip the active side (every N reps).
-     */
-    fun onRepCounted(newCount: Int) {
-        if (!isBilateral) return
-        val every = when (config?.switchMode) {
-            BilateralSwitchMode.EVERY_REP -> 1
-            BilateralSwitchMode.AFTER_ALL_REPS -> targetReps.coerceAtLeast(1)
-            null -> (config?.switchEvery ?: 1).coerceAtLeast(1)
-        }
-        if (newCount > 0 && newCount % every == 0) {
-            current = current.flip()
-            _side.value = current
-            Log.d(TAG, "Bilateral side switched to: $current")
-        }
-    }
+    fun onRepCounted(newCount: Int) = core.onRepCounted(newCount)
 
     private companion object {
         private const val TAG = "BilateralController"
     }
+}
+
+private fun BilateralConfig.toKmpInput(): BilateralConfigInput = BilateralConfigInput(
+    switchMode = switchMode?.toKmp(),
+    switchEvery = switchEvery,
+    startSide = startSide,
+)
+
+private fun BilateralSwitchMode.toKmp(): KmpBilateralSwitchMode = when (this) {
+    BilateralSwitchMode.EVERY_REP -> KmpBilateralSwitchMode.EVERY_REP
+    BilateralSwitchMode.AFTER_ALL_REPS -> KmpBilateralSwitchMode.AFTER_ALL_REPS
 }

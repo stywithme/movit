@@ -22,6 +22,7 @@ out/
 .gradle/
 android-poc/.kotlin/
 local.properties
+android-poc/api.properties
 *.iml
 .idea/
 *.keystore

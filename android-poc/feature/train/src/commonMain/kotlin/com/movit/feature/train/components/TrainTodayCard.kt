@@ -137,7 +137,7 @@ private fun SessionList(
                 completedLabel = if (session.isCompleted) movitText("session_done") else null,
                 thumbnailUrl = session.thumbnailUrl,
                 thumbnailLabel = session.title.take(1).uppercase(),
-                actionLabel = session.actionLabel,
+                actionLabel = movitText("train_start_session"),
                 onActionClick = if (!session.isCompleted) onPrimaryAction else null,
                 footerNote = if (session.isCompleted) {
                     movitText("train_form_footer_steady", 88)

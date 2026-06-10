@@ -1,4 +1,7 @@
-# Optional API defaults for :app BuildConfig (copy to api.properties or override in local.properties).
+# Optional API defaults for :app BuildConfig.
+# 1. Copy this file to api.properties (gitignored), or
+# 2. Override keys in local.properties (machine-specific, also gitignored).
+# Precedence: local.properties > api.properties > defaults in app/build.gradle.kts
 api.mode=local
 api.port=4000
 api.physical_device_ip=192.168.1.18

@@ -15,6 +15,10 @@ object MovitCacheKeys {
 
     const val SESSION_STORE = "session_cache"
 
+    const val PROGRAM_STORE = "program_cache"
+
+    fun programKey(programId: String): String = "program_export_$programId"
+
     fun effectivePlanKey(userProgramId: String, weekNumber: Int, dayNumber: Int): String =
         "effective_plan_${userProgramId}_${weekNumber}_$dayNumber"
 }

@@ -107,13 +107,8 @@ fun MovitInnerHost(
                         ),
                     )
                 },
-                onStartWorkout = { exerciseId ->
-                    onNavigate(
-                        MovitInnerRoute.ExercisePrepare(
-                            exerciseId = exerciseId,
-                            workoutId = route.workoutId,
-                        ),
-                    )
+                onStartWorkout = {
+                    onNavigate(MovitInnerRoute.WorkoutCustomize(route.workoutId))
                 },
                 modifier = modifier,
             )

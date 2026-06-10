@@ -1,7 +1,7 @@
 # Android / KMP Mobile UI/UX — Phase Pre-06.2: إغلاق ديون مراجعة الكود
 
 آخر تحديث: **2026-06-10**
-الحالة: **جزئية (PARTIALLY OPEN) — P0+P1 مغلق · P2 جزئي (WS-4/5/6 دفعات أولى)**
+الحالة: **P0+P1+P2 (دفعات 1+2) مغلق · Phase 05 ص 15/16 مُفعَّل · StoreKit bridge وWS-5 د3 مفتوح**
 المصدر: مراجعة كود متعددة المحاور (5 محاور + تحقق ادعاءات + تشغيل اختبارات فعلي + تحقق عدائي) على فرع `codex/kmp-mobile-foundation` بعد إغلاق Pre-06.
 
 المراجع:
@@ -331,7 +331,7 @@ Select-String -Path .\feature\*\build.gradle.kts -Pattern 'project\(":feature:'
 |--------|--------|-------|---------|
 | **iOS compile fix** | ✅ | استبدال `String.format` JVM-only في `MovitReportsScreen.kt` بـ formatter متعدد المنصات | كان يحجب `:feature:shell:compileKotlinIosSimulatorArm64` |
 | **WS-3** RTL + M3 polish | ✅ دفعة P1 | `Icons.AutoMirrored.*` في `MovitWeekStrip`/`MovitHeroCard`/`MovitListRow`/`MovitFloatPill` · touch targets `MovitSpacing.minTouchTarget` (48dp) · `MovitClickable` يستهلك `primaryPress` ripple · إصلاح مراجع `AppResult`/`PlatformInfo` في shell | أخطاء compile shell (WS-3) لم تعد موجودة |
-| **WS-4** core:model + Gradle | ✅ دفعة 1 | موديول `:core:model` · إزالة `library→explore` · `build-logic` بـ `movit.kmp.feature`/`movit.kmp.core` convention plugins | `:app` catalog migration و`local.properties` untrack تبقى لدفعة لاحقة |
+| **WS-4** core:model + Gradle | ✅ دفعة 1+2 | موديول `:core:model` · إزالة `library→explore` · `build-logic` · `:app` catalog · Jetifier off · `local.properties`/`api.properties` gitignore · convention plugins على 13 موديولاً | دفعة 2 موثَّقة في [سجل WS-4 دفعة 2](#ws-4-دفعة-2-2026-06-10) |
 | **WS-5** Engine continuation | ✅ دفعة 1 + bridge | `TimingPolicy`/`VisibilityMonitor`/`RepCountingTimingOverrides` في KMP · legacy wrappers · تفويض `OneEuroFilter`/`AngleCalculator` | **Build blocker:** انحراف API بين `TrainingEngine.kt` والـ KMP — أُصلح في هذه الجلسة (انظر أدناه) |
 | **WS-6** iOS CI + production | ✅ دفعة CI | `.github/workflows/movit-kmp-ios.yml`: `compileKotlinIosArm64` + `linkDebugFramework` + `iosSimulatorArm64Test` + job `xcodebuild` | يتطلّب Mac CI للتحقق الكامل؛ StoreKit/enrollment/iOS program activation لم تُنفَّذ |
 
@@ -398,7 +398,7 @@ cd android-poc
 | البند | السبب |
 |-------|-------|
 | **WS-5 دفعات لاحقة** | `FeedbackPolicy`/`BilateralController`/`RepCompletionCoordinator`/`MetricsCalculator` وطبقات DTO strangler لم تُنقل بعد |
-| **WS-4 دفعة 2** | `:app` → version catalog · `local.properties` untrack · Jetifier off |
+| **WS-4 دفعة 2** | ✅ مغلق — انظر [سجل WS-4 دفعة 2](#ws-4-دفعة-2-2026-06-10) أدناه |
 | **WS-6 إنتاج iOS** | StoreKit bridge · `active_user_program_id` writer · تحقق `xcodebuild` يحتاج Mac CI فعلي |
 | **إعلان Pre-06.2 مغلقة بالكامل** | P2 جزئي — يمكن المتابعة بالتوازي مع صفحات 15/16 |
 
@@ -438,5 +438,171 @@ BUILD SUCCESSFUL in 3m 23s — 459 actionable tasks (exit 0)
 
 ### الحكم
 
-سجلّا التنفيذ وإغلاق الفجوات **صادقان ودقيقان** (تباين عن المستندات القديمة التي بالغت). **P0+P1 مغلقان فعلاً** والبناء أخضر Android+iOS محلياً، ومتسق مع CI الأخضر. يتبقّى: بند نظافة V-1، وV-2 لإغلاق WS-2 100%، ثم دفعات P2 اللاحقة.
+سجلّا التنفيذ وإغلاق الفجوات **صادقان ودقيقان** (تباين عن المستندات القديمة التي بالغت). **P0+P1 مغلقان فعلاً** والبناء أخضر Android+iOS محلياً، ومتسق مع CI الأخضر. يتبقّى: بند نظافة V-1، وV-2 لإغلاق WS-2 100%، ثم دفعات P2 اللاحقة (WS-5/6).
+
+### WS-4 دفعة 2 (2026-06-10)
+
+- **`:app` version catalog:** كل تبعيات المكتبات عبر `libs.*`؛ `compileSdk`/`minSdk`/`targetSdk` من `libs.versions` — لا إصدارات خام للمكتبات.
+- **Jetifier:** `android.enableJetifier=false` في `gradle.properties`.
+- **Gradle tuning:** `org.gradle.parallel=true` · `org.gradle.caching=true` · `-Xmx4096m`.
+- **ملفات محلية:** `local.properties` غير متتبَّع (`.gitignore`)؛ `api.properties.example` موثَّق + `api.properties` مُستثنى من git.
+- **Convention plugins:** 13 موديول KMP على `movit.kmp.core`/`movit.kmp.feature`؛ `:app` وحده `android.application`.
+- **التحقق:** `:app:assembleDebug` ✅ `BUILD SUCCESSFUL in 1m 20s`.
+
+---
+
+## سجل العمل الإضافي بعد مراجعة المدير (Post-Review Follow-Up — 2026-06-10)
+
+> بعد [مراجعة التحقّق المستقلة](#مراجعة-تحقّق-مستقلة-independent-verification--2026-06-10)، طلب مدير المشروع إغلاق ملاحظات V-2/V-3 ثم البدء في **Phase 05 — صفحتا 15/16** بالتوازي مع **دفعات P2 اللاحقة** (WS-4/5/6). نُفِّذ العمل عبر وكلاء متخصصين + إصلاحات مباشرة؛ هذا القسم يسجّل **ما طُلب** و**ما تحقّق**.
+
+### ما طُلب (تعليمات المدير)
+
+| # | الطلب | الأولوية |
+|---|-------|----------|
+| 1 | إغلاق **V-2:** `MovitSessionCard` افتراض `"Start session"` يظهر إنجليزياً على Train العربية | فوري — إغلاق WS-2 100% |
+| 2 | إغلاق **V-3:** 6 تحذيرات cast في `IosKeychainSecureSessionStore.kt` | عند لمس WS-6 |
+| 3 | **Phase 05 ص 15:** Program flow — API حقيقي + مسارات Train/Explore | منتج حقيقي |
+| 4 | **Phase 05 ص 16:** Workout flow — Session→Customize→Run→`LegacyTrainingLauncher` | منتج حقيقي |
+| 5 | **WS-4 دفعة 2:** `:app` catalog · Jetifier · `api.properties` | P2 — لا يحجب Android |
+| 6 | **WS-5 دفعة 2:** `FeedbackPolicy`/`BilateralController` | P2 |
+| 7 | **WS-6 دفعة 2:** StoreKit · `active_user_program_id` · Keychain نظيف | P2 — iOS |
+
+### نتائج التنفيذ
+
+#### ملاحظات المراجعة (V-2 · V-3)
+
+| # | الحالة | ما تم | التحقق |
+|---|--------|-------|--------|
+| **V-2** | ✅ مغلق | `TrainTodayCard`: `actionLabel = movitText("train_start_session")` · `MovitSessionCard`: أُزيل الافتراضي `"Start session"` (معامل إلزامي) | «بدء الجلسة» على الواجهة العربية |
+| **V-3** | ✅ مغلق | `IosKeychainSecureSessionStore`: `CFDictionaryCreate` + `keychainQuery`/`cfDictionaryOf` (نمط russhwolf/multiplatform-settings) · UTF-8 عبر `NSData`/`memcpy` | `:core:data:compileKotlinIosSimulatorArm64` ✅ بدون تحذيرات cast |
+
+#### Phase 05 — صفحة 15 Program Flow
+
+| البند | النتيجة |
+|-------|---------|
+| **API حقيقي** | `ProgramFlowSyncRepository` في `:core:data` — Explore + Home + PlanSync + `GET programs/:id` + progress-metrics/Reports |
+| **المسار الافتراضي** | `SharedProgramFlowRepository` عند تثبيت `MovitData`؛ `FakeProgramFlowRepository` للمعاينة/اختبارات preview فقط |
+| **التنقل** | Train/Explore → `ProgramList` → `ProgramWeekPlan` → `WorkoutSession`/`WeeklyReport` (موصول مسبقاً في shell) |
+| **i18n** | 11 مفتاحاً `program_flow_*` جديداً (ar/en) |
+| **المواصفة** | [`Program-Flow-Page-Spec.md`](Page-Specs/Program-Flow-Page-Spec.md) — Implementation Status محدَّث |
+| **الاختبارات** | `:feature:library` · `:feature:shell` · `:feature:train` `testDebugUnitTest` ✅ |
+
+**خارج النطاق (مؤجل):** Share التقرير · عرض كل أسابيع التقرير · صور البرامج من الشبكة.
+
+#### Phase 05 — صفحة 16 Workout Flow
+
+| البند | النتيجة |
+|-------|---------|
+| **التدفق** | `WorkoutSession` → **Start** → `WorkoutCustomize` → `WorkoutRun` → **Start exercise** → `LegacyTrainingLauncher` |
+| **إصلاح رئيسي** | زر Start في Session كان يفتح `ExercisePrepare` خطأً — صُحّح في `MovitInnerHost.kt` |
+| **Prepare** | `ExercisePrepare(workoutId)` → Run؛ Explore prepare → `LegacyTrainingLauncher` مباشرة |
+| **Handoff** | `WorkoutCustomizeViewModel.commitForRun()` → `WorkoutFlowCache` → `WorkoutRunViewModel` |
+| **Effect chain** | `LaunchLegacyCameraTraining` → shell → `MovitShellPilotActivity` → `TrainingActivity` |
+| **الاختبارات** | `:feature:library` · `:feature:shell` `testDebugUnitTest` ✅ (+ `WorkoutFlowStateTest` · `MovitAppShellStateTest`) |
+
+**مؤجل Phase 07:** كاميرا KMP · workout-mode كامل · حفظ التخصيص API.
+
+#### WS-4 دفعة 2 — إغلاق كامل
+
+| البند | النتيجة |
+|-------|---------|
+| `:app` catalog | كل `libs.*` · SDK من `libs.versions` |
+| Jetifier | `android.enableJetifier=false` |
+| Gradle | `parallel` · `caching` · `-Xmx4096m` |
+| ملفات محلية | `local.properties` غير متتبَّع · `api.properties` في `.gitignore` · `api.properties.example` موثَّق |
+| Convention plugins | 13 موديول KMP |
+| **الحكم** | **WS-4 مغلق بالكامل** (دفعتا 1+2) · `:app:assembleDebug` ✅ |
+
+#### WS-5 دفعة 2 — Engine
+
+| المكوّن المنقول | المسار KMP |
+|-----------------|------------|
+| `FeedbackPolicy` | `engine/policy/FeedbackPolicy.kt` |
+| `FeedbackScheduler` + نماذج | `feedback/FeedbackModels.kt` · `feedback/FeedbackScheduler.kt` |
+| `BilateralController` | `bilateral/BilateralController.kt` · `bilateral/BilateralModels.kt` |
+
+- Legacy Android: wrappers/typealias بنمط RepCounter.
+- **`BilateralConfigInput`:** مدخل محرك فقط — **لم تُمس** عقود JSON في `core:network`.
+- اختبارات parity: `FeedbackPolicyTest` · `FeedbackSchedulerParityTest` · `BilateralControllerParityTest`.
+- **التحقق:** `:core:training-engine:testDebugUnitTest` ✅ · `:app:assembleDebug` ✅ · legacy feedback tests ✅.
+
+**دفعة 3 (مفتوحة):** `RepCompletionCoordinator` · `MetricsCalculator` · strangler DTO.
+
+#### WS-6 دفعة 2 — iOS إنتاج
+
+| البند | النتيجة |
+|-------|---------|
+| **`active_user_program_id`** | `PlanSyncRepository.enrollProgram` → `IosMovitPlatform.setActiveUserProgramId` · hydrate عند الإقلاع · `PlanSyncRepositoryTest` |
+| **StoreKit** | مسار **إخفاء صريح** (`supportsInAppSubscription=false`) · رسالة `profile_subscription_ios_unavailable` · **لا** `OpenSubscription → Unit` صامت |
+| **Keychain** | تجميع نظيف بعد V-3 · `CFBridgingRelease` بعد `SecItemAdd` |
+| **CI (دفعة 1)** | `iosArm64` · `linkDebugFramework` · `iosSimulatorArm64Test` · job `xcodebuild` (macos-15) |
+| **التحقق Windows** | `:core:data:compileKotlinIosSimulatorArm64` ✅ · `:feature:shell:compileKotlinIosSimulatorArm64` ✅ |
+
+**مؤجل:** StoreKit bridge فعلي · تحقق `xcodebuild` يدوي على Mac CI.
+
+### قرارات تقنية (الجلسة الإضافية)
+
+1. **`ReportsFormatting.formatOneDecimal`** — `kotlin.math.round` بدل `String.format`/`"%.1f".format()` (كلاهما JVM-only على iOS).
+2. **`MovitSessionCard.actionLabel` إلزامي** — DS لا يحمل نصوص افتراضية؛ الميزات تمرّر `movitText`.
+3. **Program flow:** repository مركّب في `:core:data` بدل feature→feature؛ preview IDs تبقى على Fake.
+4. **Workout Start:** Session primary CTA → Customize (ليس Prepare) — مطابق للمواصفة 16.
+5. **StoreKit iOS:** إخفاء + رسالة موضّحة أفضل من bridge نصف مكتمل قبل إصدار App Store.
+6. **Keychain iOS:** `CFDictionaryCreate` بدل cast Map — نمط مثبت في multiplatform-settings.
+
+### ملخص الحالة بعد العمل الإضافي
+
+| المحور | الحالة |
+|--------|--------|
+| **Pre-06.2 P0+P1** | ✅ مغلق (WS-1/2/3/7 + iOS compile + V-2/V-3) |
+| **Pre-06.2 P2** | ✅ دفعات 1+2 مكتملة · WS-4 **مغلق بالكامل** · WS-5/6 **دفعتان** · دفعة 3 مفتوحة |
+| **Phase 05 ص 15/16** | ✅ مسار إنتاجي Android (API + shell + legacy launcher) · Phase 07 للكاميرا |
+| **ما تبقى** | StoreKit bridge · WS-5 د3 · Share/صور Program flow · رفع شجرة git (V-1) · Mac CI يدوي |
+
+### أوامر تحقق موصى بها (بعد هذه الجلسة)
+
+```powershell
+cd android-poc
+.\gradlew.bat --console=plain `
+  :feature:library:testDebugUnitTest `
+  :feature:shell:testDebugUnitTest `
+  :feature:train:testDebugUnitTest `
+  :core:training-engine:testDebugUnitTest `
+  :core:data:compileKotlinIosSimulatorArm64 `
+  :feature:shell:compileKotlinIosSimulatorArm64 `
+  :app:assembleDebug
+```
+
+**تجربة يدوية Android (debug pilot):** Train → Program list → Week plan → Session → Customize → Run → Start exercise → `TrainingActivity`.
+
+---
+
+## مراجعة تحقّق مستقلة — الجولة 2 (Independent Verification, Round 2 — 2026-06-10)
+
+> مراجعة ثانية بعد تنفيذ توصيات الجولة 1 + Phase 05 ص15/16. **لم تثق بالسجلات**؛ تحقّقت من كل بند **في الكود** + **بنت شجرة العمل الحالية محلياً**.
+
+### نتيجة البناء (شجرة العمل الفعلية، تشمل غير المرفوع)
+
+```
+BUILD SUCCESSFUL in 48s (exit 0)
+:feature:{account,shell,train,library} testDebugUnitTest · :core:{data,network,resources,training-engine} testDebugUnitTest
+:app:assembleDebug · :feature:shell:compileKotlinIosSimulatorArm64  — كلها خضراء
+```
+
+### تحقّق بند ببند (من الكود)
+
+| البند | التحقق | الدليل |
+|------|--------|--------|
+| **V-2** أُغلق | ✅ | `MovitSessionCard.actionLabel` معامل إلزامي (لا افتراضي إنجليزي) · `TrainTodayCard:140 = movitText("train_start_session")` |
+| **V-3** أُغلق | ✅ | `IosKeychainSecureSessionStore` يستخدم `CFBridgingRelease(...) as? NSData` + `CFDictionaryCreate` بدل casts مستحيلة |
+| **WS-4 دفعة 2** | ✅ مغلق | `:app` = 54 `libs.*` · **صفر** إحداثيات خام · `enableJetifier=false` · `parallel`/`caching` · `local.properties` مُستثنى · `api.properties.example` متتبَّع |
+| **WS-5 دفعة 2/3** | ✅ | KMP: `FeedbackPolicy` · `BilateralController`/`BilateralModels` · legacy يفوّض (`as KmpFeedbackPolicy`/`as KmpBilateralController`) + اختبارات parity |
+| **WS-6 دفعة 2** | ✅ | `IosMovitPlatform.setActiveUserProgramId` (كاتب فعلي) + `PlanSyncRepository.enrollProgram` · StoreKit: `profile_subscription_ios_unavailable` + معالجة صريحة لـ `OpenSubscription` (لا `-> Unit` صامت) |
+| **ص15 Program flow** | ✅ | `ProgramFlowSyncRepository` (core:data) + `SharedProgramFlowRepository`/`ApiMapper`/`Models`/`PreviewData` + `ProgramFlowStateTest` + 11 مفتاح `program_flow_*` |
+| **ص16 Workout flow** | ✅ | `WorkoutFlowStateTest` (6 اختبارات) · إصلاح Start CTA في `MovitInnerHost` · سلسلة `LaunchLegacyCameraTraining` |
+
+### الحكم — الجولة 2
+
+كل ما ادّعته السجلات **مُتحقَّق في الكود**، والشجرة الحالية **تُبنى خضراء Android + iOS**. الجودة عالية والاستراتيجية (strangler للـ engine، repository مركّب بدل feature→feature، إخفاء StoreKit الصريح) سليمة.
+
+**الملاحظة الوحيدة (متكررة — 🟡 نظافة):** كامل دفعة هذه الجولة **غير مرفوعة** — **38 ملفاً** (26 معدّل + 12 جديد، ~330+/501- عبر 23 ملف كود): Program flow · WS-5 د2 · WS-4 د2 · V-2/V-3. **الأكشن الأخضر ركض على آخر commit مرفوع، لا على هذه الشجرة** — للمرة الثالثة على التوالي. **الخطوة #1: ارفع الدفعة عبر CI** قبل إعلان أي إغلاق، كي يغطّي الأخضر الكود الفعلي (وخصوصاً تغييرات iOS: Keychain · StoreKit · program-id writer — لم يبنها أي Mac CI بعد).
 
