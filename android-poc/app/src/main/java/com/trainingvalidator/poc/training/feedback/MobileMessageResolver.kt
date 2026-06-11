@@ -4,8 +4,6 @@ import com.trainingvalidator.poc.training.engine.BodyPosture
 import com.trainingvalidator.poc.training.engine.ExpectedDirection
 import com.trainingvalidator.poc.training.engine.VisibleRegion
 import com.trainingvalidator.poc.training.models.LocalizedText
-import com.trainingvalidator.poc.ui.training.Direction
-import com.trainingvalidator.poc.ui.training.GuidanceLevel
 
 /**
  * Stable keys + defaults for all training/setup copy that should sync from the message library.

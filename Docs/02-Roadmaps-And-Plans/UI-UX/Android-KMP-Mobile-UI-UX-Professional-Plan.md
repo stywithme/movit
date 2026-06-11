@@ -66,6 +66,7 @@ feature:home  → Body scan → Assessment · بطاقة المستوى → Leve
 - حالة صفحة بصفحة: [`Android-UI-UX-Modernization-Status.md`](Android-UI-UX-Modernization-Status.md)
 - خطة Phase 05 (Train + Account): [`Android-KMP-Mobile-UI-UX-Phase-05-Page-By-Page-Modernization-Plan.md`](Android-KMP-Mobile-UI-UX-Phase-05-Page-By-Page-Modernization-Plan.md)
 - Pre-05 (مغلقة): [`Android-KMP-Mobile-UI-UX-Phase-Pre-05-Stabilization-And-Debt-Closure-Plan.md`](Android-KMP-Mobile-UI-UX-Phase-Pre-05-Stabilization-And-Debt-Closure-Plan.md)
+- **خطة Phase 07 (محرك التدريب الحي → KMP):** [`Android-KMP-Mobile-UI-UX-Phase-07-Training-Engine-Migration-Plan.md`](Android-KMP-Mobile-UI-UX-Phase-07-Training-Engine-Migration-Plan.md)
 
 ## الهدف
 
@@ -513,7 +514,7 @@ sealed interface ExploreEffect {
 
 ## خطة الهجرة
 
-> حالة التنفيذ (انظر "حالة التنفيذ الفعلية" و«ملخص تنفيذي للمدير» أعلاه): Phase 0→4 ✅ · Pre-05 ✅ · Phase 6 (iOS entry) ✅ render proof. **Phase 5 🔄 جارٍ** — مكتمل: Train · Reports · Report Detail · Session · **Account 10–14** (`:feature:account`). متبقّي Phase 05: فجوات UX (Train week nav، Library صور، Program flow 15، Workout flow 16، …). Phase 7 (camera/ML) ⬜ مؤجّل.
+> حالة التنفيذ (انظر "حالة التنفيذ الفعلية" و«ملخص تنفيذي للمدير» أعلاه): Phase 0→4 ✅ · Pre-05 ✅ · Phase 6 (iOS entry) ✅ render proof · Pre-07 (عقود/Outbox/حدود المحرك) ✅ P0. **Phase 5 🔄 جارٍ** — مكتمل: Train · Reports · Report Detail · Session · **Account 10–14** (`:feature:account`). متبقّي Phase 05: فجوات UX (Train week nav، Library صور، Program flow 15، Workout flow 16، …). **Phase 7 (محرك التدريب الحي) 🔄 خطة معتمدة** — [`Phase-07 Plan`](Android-KMP-Mobile-UI-UX-Phase-07-Training-Engine-Migration-Plan.md).
 
 ### Phase 0 - تأسيس فرع التحول
 
@@ -632,6 +633,8 @@ sealed interface ExploreEffect {
 بوابة هذه المرحلة قبل الإنتاج: إغلاق P1/P2/P3 المذكورة أعلاه أو توثيق بديل مقبول لها. إلى أن يحدث ذلك، iOS صالح كـ render proof ومسار تطوير، وليس كأرضية إصدار نهائي.
 
 ### Phase 7 - Camera/ML multiplatform boundary
+
+> **الخطة التفصيلية المعتمدة (2026-06-11):** [`Android-KMP-Mobile-UI-UX-Phase-07-Training-Engine-Migration-Plan.md`](Android-KMP-Mobile-UI-UX-Phase-07-Training-Engine-Migration-Plan.md) — تشمل خريطة فهم المحرك كاملة، WS-0..WS-10، بوابات قبول، iOS path (MediaPipe-iOS)، ومقترحات تحسين I-1..I-34. ما يلي هو التصور المفاهيمي الأصلي.
 
 الهدف: جعل التدريب قابلاً للتوسع بدون إجبار iOS على نفس Android implementation.
 

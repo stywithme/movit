@@ -33,7 +33,6 @@ fun MovitAppShellRoute(
     profileViewModel: MovitProfileViewModel = viewModel { MovitProfileViewModel() },
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     onTrainEffect: (MovitTrainEffect) -> Boolean = { false },
-    onLaunchLegacyTraining: (MovitAppShellEffect.LaunchLegacyCameraTraining) -> Boolean = { false },
     onLaunchLegacySubscription: () -> Boolean = { false },
     onNavigateToLegacyAuth: () -> Boolean = { false },
 ) {
@@ -65,7 +64,6 @@ fun MovitAppShellRoute(
                 modifier = modifier,
                 snackbarHostState = snackbarHostState,
                 onTrainEffect = onTrainEffect,
-                onLaunchLegacyTraining = onLaunchLegacyTraining,
                 onLaunchLegacySubscription = onLaunchLegacySubscription,
                 onNavigateToLegacyAuth = onNavigateToLegacyAuth,
             )
@@ -84,7 +82,6 @@ private fun MovitAppShellRouteContent(
     modifier: Modifier,
     snackbarHostState: SnackbarHostState,
     onTrainEffect: (MovitTrainEffect) -> Boolean,
-    onLaunchLegacyTraining: (MovitAppShellEffect.LaunchLegacyCameraTraining) -> Boolean,
     onLaunchLegacySubscription: () -> Boolean,
     onNavigateToLegacyAuth: () -> Boolean,
 ) {
@@ -99,13 +96,6 @@ private fun MovitAppShellRouteContent(
                 }
                 is MovitAppShellEffect.ShowLocalizedMessage -> {
                     snackbarHostState.showSnackbar(localizedString(language, effect.key))
-                }
-                is MovitAppShellEffect.LaunchLegacyCameraTraining -> {
-                    if (!onLaunchLegacyTraining(effect)) {
-                        snackbarHostState.showSnackbar(
-                            localizedString(language, "prepare_training_bridge_unavailable"),
-                        )
-                    }
                 }
                 MovitAppShellEffect.LaunchLegacySubscription -> {
                     if (!onLaunchLegacySubscription()) {

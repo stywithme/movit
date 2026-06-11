@@ -295,39 +295,3 @@ fun WorkoutRunRoute(
     )
 }
 
-@Composable
-fun ExerciseLiveRoute(
-    exerciseSlug: String,
-    exerciseName: String,
-    targetReps: Int,
-    onBack: () -> Unit,
-    onFinish: () -> Unit,
-    modifier: Modifier = Modifier,
-    viewModel: com.movit.feature.library.training.ExerciseLiveViewModel = viewModel {
-        com.movit.feature.library.training.ExerciseLiveViewModel(
-            exerciseSlug = exerciseSlug,
-            exerciseName = exerciseName,
-            targetReps = targetReps,
-        )
-    },
-) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
-    DisposableEffect(viewModel) {
-        onDispose { viewModel.stopSession() }
-    }
-    com.movit.feature.library.training.ExerciseLiveScreen(
-        state = state,
-        runner = viewModel.runner,
-        onBack = {
-            viewModel.stopSession()
-            onBack()
-        },
-        onFinish = {
-            viewModel.stopSession()
-            onFinish()
-        },
-        onCameraReady = viewModel::onCameraReady,
-        onCameraError = viewModel::onCameraError,
-        modifier = modifier,
-    )
-}

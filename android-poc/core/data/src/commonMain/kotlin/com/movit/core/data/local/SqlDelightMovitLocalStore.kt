@@ -15,6 +15,7 @@ class SqlDelightMovitLocalStore(
     private val jsonQueries = database.jsonCacheEntryQueries
     private val syncQueries = database.syncMetadataQueries
     private val outboxQueries = database.outboxQueries
+    private val journalQueries = database.sessionJournalQueries
 
     override fun readJsonCache(store: String, key: String): String? =
         jsonQueries.selectByStoreAndKey(store, key).executeAsOneOrNull()
@@ -110,8 +111,44 @@ class SqlDelightMovitLocalStore(
             jsonQueries.deleteAll()
             syncQueries.deleteAll()
             outboxQueries.deleteAll()
+            journalQueries.deleteAllJournals()
         }
     }
+
+    override fun upsertSessionJournal(
+        sessionId: String,
+        exerciseId: String,
+        payloadJson: String,
+        status: String,
+        updatedAtEpochMs: Long,
+    ) {
+        journalQueries.upsertJournal(
+            session_id = sessionId,
+            exercise_id = exerciseId,
+            payload_json = payloadJson,
+            status = status,
+            updated_at_epoch_ms = updatedAtEpochMs,
+        )
+    }
+
+    override fun selectSessionJournal(sessionId: String): SessionJournalRow? =
+        journalQueries.selectBySessionId(sessionId).executeAsOneOrNull()?.toRow()
+
+    override fun listActiveSessionJournals(): List<SessionJournalRow> =
+        journalQueries.selectActiveJournals().executeAsList().map { it.toRow() }
+
+    override fun deleteSessionJournal(sessionId: String) {
+        journalQueries.deleteBySessionId(sessionId)
+    }
+
+    private fun com.movit.core.data.db.Session_journal_entry.toRow(): SessionJournalRow =
+        SessionJournalRow(
+            sessionId = session_id,
+            exerciseId = exercise_id,
+            payloadJson = payload_json,
+            status = status,
+            updatedAtEpochMs = updated_at_epoch_ms,
+        )
 
     private fun com.movit.core.data.db.Outbox_entry.toOutboxEntry(): OutboxEntry =
         OutboxEntry(

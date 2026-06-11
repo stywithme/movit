@@ -52,13 +52,15 @@ class MovitAppShellViewModel(
             }
             val platform = MovitData.requirePlatform()
             val bootstrap = AuthBootstrapContext.fromMovitData()
+            val startupStack = resolveStartupInnerStack(
+                bootstrap = bootstrap,
+                onboardingCompleted = platform.isOnboardingCompleted(),
+            )
+            val deepLinkStack = MovitShellPendingNavigation.consume()
             _state.update {
                 it.copy(
                     themeMode = platform.themeMode(),
-                    innerStack = resolveStartupInnerStack(
-                        bootstrap = bootstrap,
-                        onboardingCompleted = platform.isOnboardingCompleted(),
-                    ),
+                    innerStack = startupStack + deepLinkStack,
                 )
             }
             if (bootstrap.hasActiveSession) {

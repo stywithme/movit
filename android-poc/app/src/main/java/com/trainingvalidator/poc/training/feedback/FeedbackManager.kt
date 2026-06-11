@@ -995,7 +995,7 @@ class FeedbackManager(
     /**
      * Speak directional guidance for the worst joint during SETUP_POSE (ANGLES phase).
      */
-    fun speakSetupGuidance(joint: com.trainingvalidator.poc.ui.training.JointGuidance) {
+    fun speakSetupGuidance(joint: JointGuidance) {
         val localizedText = joint.message
         val message = localizedText.get(config.language)
         if (message.isBlank()) return

@@ -85,6 +85,27 @@ data class WorkoutRunUiState(
         }
 }
 
+/** Resolves Explore/Library/Workout training entry when [MovitTrainingKmpGate] is on. */
+fun resolveTrainingStartAction(
+    slug: String,
+    exerciseName: String,
+    targetReps: Int,
+    workoutId: String? = null,
+): TrainingStartAction? {
+    val kmpReady = com.movit.core.data.MovitData.isInstalled &&
+        com.movit.core.data.MovitData.trainingConfig.supports(slug)
+    return when {
+        kmpReady -> TrainingStartAction.KmpLive(
+            slug = slug,
+            exerciseName = exerciseName,
+            targetReps = targetReps,
+            workoutId = workoutId,
+        )
+        com.movit.core.data.MovitTrainingKmpGate.enabled -> null
+        else -> TrainingStartAction.Legacy(slug)
+    }
+}
+
 /** Start path from workout run / prepare — KMP live camera or legacy [TrainingActivity]. */
 sealed interface TrainingStartAction {
     data class KmpLive(

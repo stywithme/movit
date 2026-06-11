@@ -17,7 +17,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.movit.core.data.MovitData
+import com.movit.core.posecapture.android.CameraXFrameSource
+import com.movit.core.training.boundary.CameraFrameSource
+import com.movit.core.training.boundary.CameraSourceConfiguration
 import com.movit.core.training.model.PoseFrame
+import org.koin.core.component.get
 
 @Composable
 actual fun AssessmentCameraHost(
@@ -47,24 +52,24 @@ actual fun AssessmentCameraHost(
         }
     }
 
-    val session = remember(permissionGranted) {
-        if (!permissionGranted) return@remember null
-        KmpAssessmentSessionBridge.factory?.create(
-            hostContext = context,
-            lifecycleOwner = lifecycleOwner,
-            onPoseFrame = onPoseFrame,
-            onError = onError,
-        )
+    val cameraSource = remember(permissionGranted) {
+        if (!permissionGranted || !MovitData.isInstalled) return@remember null
+        runCatching { MovitData.koin().get<CameraFrameSource>() }.getOrNull()
     }
 
-    DisposableEffect(session) {
-        onDispose { session?.close() }
+    DisposableEffect(cameraSource, onPoseFrame) {
+        val source = cameraSource ?: return@DisposableEffect onDispose {}
+        source.setFrameListener { frame -> onPoseFrame(frame) }
+        onDispose {
+            source.setFrameListener(null)
+            source.stop()
+        }
     }
 
-    if (session == null) {
+    if (cameraSource == null) {
         LaunchedEffect(permissionGranted) {
             if (permissionGranted) {
-                onError("KMP assessment bridge is not installed.")
+                onError("Pose capture is not available. Restart the app.")
             }
         }
         return
@@ -74,11 +79,11 @@ actual fun AssessmentCameraHost(
         modifier = modifier,
         factory = { ctx ->
             PreviewView(ctx).also { preview ->
-                session.bindPreview(preview)
-                session.start()
+                val androidSource = cameraSource as? CameraXFrameSource ?: return@also
+                androidSource.bindPreview(preview, lifecycleOwner)
+                androidSource.start(CameraSourceConfiguration(useFrontCamera = true))
                 onCameraReady()
             }
         },
     )
 }
-

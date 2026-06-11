@@ -1,0 +1,29 @@
+{
+  "id": "report-golden-001",
+  "workoutId": "workout-golden-001",
+  "exerciseId": "bodyweight-squat",
+  "timestamp": 1700000000000,
+  "summary": {
+    "totalReps": 3,
+    "durationMs": 84000,
+    "rating": "EXCELLENT",
+    "countedReps": 3,
+    "invalidatedReps": 0,
+    "averageScore": 85.0,
+    "countedRatio": 1.0,
+    "stateBreakdown": {
+      "perfectCount": 1,
+      "normalCount": 2,
+      "padCount": 0,
+      "warningCount": 0,
+      "dangerCount": 0
+    },
+    "shouldCelebrate": true
+  },
+  "executionQuality": {
+    "visibilityPauseCount": 0,
+    "totalInvisibleMs": 0,
+    "cameraWarningCount": 0,
+    "overallQuality": "EXCELLENT"
+  }
+}

@@ -32,7 +32,6 @@ import com.trainingvalidator.poc.storage.UserDataCleaner
 import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.ui.auth.SignInActivity
 import com.trainingvalidator.poc.ui.subscription.SubscriptionActivity
-import com.trainingvalidator.poc.ui.debug.DebugActivity
 import com.trainingvalidator.poc.ui.theme.AppThemeManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -185,12 +184,7 @@ class ProfileActivity : AppCompatActivity() {
             showThemeModeDialog()
         }
 
-        binding.itemDebug.visibility = if (BuildConfig.DEBUG) View.VISIBLE else View.GONE
-        binding.itemDebug.setOnClickListener {
-            if (BuildConfig.DEBUG) {
-                startActivity(Intent(this, DebugActivity::class.java))
-            }
-        }
+        binding.itemDebug.visibility = View.GONE
 
         binding.itemLogOut.setOnClickListener {
             showLogoutConfirmation()

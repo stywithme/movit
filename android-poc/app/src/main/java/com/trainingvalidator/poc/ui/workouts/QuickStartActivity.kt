@@ -14,6 +14,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.gson.Gson
+import com.movit.navigation.MovitTrainingEntryNavigator
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityQuickStartBinding
 import com.trainingvalidator.poc.storage.ExerciseRepository
@@ -105,13 +107,10 @@ class QuickStartActivity : AppCompatActivity() {
             }
 
             val workoutConfig = buildWorkoutConfig()
-            startActivity(
-                WorkoutRunActivity.createIntent(
-                    context = this,
-                    workoutConfig = workoutConfig,
-                    workoutId = null,
-                    workoutContext = WorkoutExecutionContext.QUICK_START
-                )
+            MovitTrainingEntryNavigator.openWorkoutRunWithLocalConfig(
+                context = this,
+                workoutId = "quick-start-${System.currentTimeMillis()}",
+                workoutConfigJson = Gson().toJson(workoutConfig),
             )
         }
         updateStartButton()

@@ -19,6 +19,10 @@ object MovitCacheKeys {
 
     const val SESSION_STORE = "session_cache"
 
+    const val SESSION_JOURNAL_STORE = "session_journal_cache"
+
+    fun sessionJournalKey(sessionId: String): String = "session_journal_$sessionId"
+
     const val DAY_CUSTOMIZATION_STORE = "day_customization_cache"
 
     const val PREFERENCES_STORE = "exercise_preferences_cache"
@@ -63,4 +67,13 @@ object MovitCacheKeys {
 
     fun workoutTemplateTrainingConfigKey(templateId: String): String =
         "workout_template_training_config_$templateId"
+
+    const val EXERCISE_CONFIG_STORE = "exercise_config_cache"
+    const val EXERCISE_CONFIG_SLUG_INDEX = "exercise_config_slug_index"
+    const val TRAINING_PREFERENCES_STORE = "training_preferences_cache"
+    const val TRAINING_PREFERENCES_JSON = "training_preferences_json"
+
+    fun exerciseConfigKey(slug: String): String = "exercise_config_$slug"
+
+    fun exerciseIdToSlugKey(id: String): String = "exercise_id_slug_$id"
 }

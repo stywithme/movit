@@ -9,6 +9,7 @@ class InMemoryMovitLocalStore : MovitLocalStore {
     private val jsonCache = mutableMapOf<String, String>()
     private val outbox = linkedMapOf<String, OutboxEntry>()
     private val syncMetadata = mutableMapOf<String, SyncMetadata>()
+    private val sessionJournals = mutableMapOf<String, SessionJournalRow>()
 
     override fun readJsonCache(store: String, key: String): String? =
         jsonCache[cacheKey(store, key)]
@@ -71,6 +72,33 @@ class InMemoryMovitLocalStore : MovitLocalStore {
         jsonCache.clear()
         syncMetadata.clear()
         outbox.clear()
+        sessionJournals.clear()
+    }
+
+    override fun upsertSessionJournal(
+        sessionId: String,
+        exerciseId: String,
+        payloadJson: String,
+        status: String,
+        updatedAtEpochMs: Long,
+    ) {
+        sessionJournals[sessionId] = SessionJournalRow(
+            sessionId = sessionId,
+            exerciseId = exerciseId,
+            payloadJson = payloadJson,
+            status = status,
+            updatedAtEpochMs = updatedAtEpochMs,
+        )
+    }
+
+    override fun selectSessionJournal(sessionId: String): SessionJournalRow? =
+        sessionJournals[sessionId]
+
+    override fun listActiveSessionJournals(): List<SessionJournalRow> =
+        sessionJournals.values.filter { it.status == "active" }
+
+    override fun deleteSessionJournal(sessionId: String) {
+        sessionJournals.remove(sessionId)
     }
 
     private fun cacheKey(store: String, key: String): String = "$store::$key"

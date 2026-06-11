@@ -17,6 +17,7 @@ import com.trainingvalidator.poc.ui.utils.feedbackLanguageCode
 import com.trainingvalidator.poc.assessment.models.ParqQuestion
 import com.trainingvalidator.poc.assessment.models.ParqQuestions
 import com.trainingvalidator.poc.assessment.models.AssessmentType
+import com.movit.navigation.MovitTrainingEntryNavigator
 import com.trainingvalidator.poc.training.models.LocalizedText
 
 /**
@@ -204,13 +205,7 @@ class PreScreeningActivity : AppCompatActivity() {
     }
     
     private fun launchAssessment() {
-        val intent = AssessmentSessionActivity.createIntent(
-            this,
-            parqPassed = !ParqQuestions.hasFlags(questions),
-            parqFlags = ParqQuestions.getFlaggedIds(questions),
-            assessmentType = assessmentType,
-        )
-        startActivity(intent)
+        MovitTrainingEntryNavigator.openAssessment(this)
         finish()
     }
     

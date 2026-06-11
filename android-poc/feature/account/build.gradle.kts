@@ -32,9 +32,11 @@ kotlin {
             implementation(libs.jetbrains.lifecycle.runtime.compose)
         }
         androidMain.dependencies {
+            implementation(project(":core:pose-capture"))
             implementation(libs.androidx.activity.compose)
             implementation(libs.camera.view)
             implementation(libs.jetbrains.lifecycle.runtime.compose)
+            implementation(libs.koin.core)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))

@@ -57,4 +57,18 @@ interface MovitLocalStore {
     suspend fun countOutboxByStatus(status: OutboxStatus): Long
 
     suspend fun clearAllUserData()
+
+    fun upsertSessionJournal(
+        sessionId: String,
+        exerciseId: String,
+        payloadJson: String,
+        status: String,
+        updatedAtEpochMs: Long = com.movit.core.network.MovitClock.nowEpochMs(),
+    )
+
+    fun selectSessionJournal(sessionId: String): SessionJournalRow?
+
+    fun listActiveSessionJournals(): List<SessionJournalRow>
+
+    fun deleteSessionJournal(sessionId: String)
 }

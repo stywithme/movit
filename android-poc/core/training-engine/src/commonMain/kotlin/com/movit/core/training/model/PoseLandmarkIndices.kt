@@ -6,6 +6,14 @@ package com.movit.core.training.model
  */
 object PoseLandmarkIndices {
     const val NOSE = 0
+    const val LEFT_EYE_INNER = 1
+    const val LEFT_EYE = 2
+    const val LEFT_EYE_OUTER = 3
+    const val RIGHT_EYE_INNER = 4
+    const val RIGHT_EYE = 5
+    const val RIGHT_EYE_OUTER = 6
+    const val LEFT_EAR = 7
+    const val RIGHT_EAR = 8
     const val LEFT_SHOULDER = 11
     const val RIGHT_SHOULDER = 12
     const val LEFT_ELBOW = 13
@@ -18,6 +26,8 @@ object PoseLandmarkIndices {
     const val RIGHT_KNEE = 26
     const val LEFT_ANKLE = 27
     const val RIGHT_ANKLE = 28
+    const val LEFT_HEEL = 29
+    const val RIGHT_HEEL = 30
     const val LEFT_FOOT_INDEX = 31
     const val RIGHT_FOOT_INDEX = 32
 }

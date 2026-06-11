@@ -21,6 +21,8 @@ targets:
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationPortraitUpsideDown
+        NSCameraUsageDescription: "Movit needs the camera to track your form during live training."
+        NSMotionUsageDescription: "Movit uses motion sensors to correct pose tracking when your phone is tilted."
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.movit.iosApp

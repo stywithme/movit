@@ -1,7 +1,14 @@
 package com.movit.core.training.engine
 
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+@Serializable
 enum class CountingMethod {
+    @SerialName("up_down")
     UP_DOWN,
+
+    @SerialName("hold")
     HOLD,
 }
 

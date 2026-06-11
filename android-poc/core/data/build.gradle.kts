@@ -22,6 +22,7 @@ kotlin {
             implementation(project(":shared"))
             implementation(project(":core:model"))
             implementation(project(":core:network"))
+            implementation(project(":core:training-engine"))
             implementation(project(":core:resources"))
             implementation(libs.ktor.client.core)
             implementation(libs.kotlinx.coroutines.core)

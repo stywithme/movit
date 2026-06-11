@@ -1,7 +1,7 @@
 ﻿package com.trainingvalidator.poc.ui.programs
 
-import android.content.Intent
 import android.os.Bundle
+import com.movit.navigation.MovitTrainingEntryNavigator
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -221,14 +221,13 @@ class ProgramDayActivity : AppCompatActivity() {
 
     private fun openPlannedWorkout(dayNumber: Int, plannedWorkout: ProgramWorkout) {
         val slug = program?.slug ?: return
-        val intent = Intent(this, ProgramWorkoutActivity::class.java).apply {
-            putExtra(ProgramWorkoutActivity.EXTRA_PROGRAM_SLUG, slug)
-            putExtra(ProgramWorkoutActivity.EXTRA_PROGRAM_ID, program?.id ?: "")
-            putExtra(ProgramWorkoutActivity.EXTRA_WEEK_NUMBER, weekNumber)
-            putExtra(ProgramWorkoutActivity.EXTRA_DAY_NUMBER, dayNumber)
-            putExtra(ProgramWorkoutActivity.EXTRA_TARGET_WORKOUT_ID, plannedWorkout.id)
-        }
-        startActivity(intent)
+        MovitTrainingEntryNavigator.openPlannedWorkout(
+            context = this,
+            programId = program?.id ?: return,
+            weekNumber = weekNumber,
+            dayNumber = dayNumber,
+            plannedWorkoutId = plannedWorkout.id,
+        )
     }
 
     override fun onResume() {

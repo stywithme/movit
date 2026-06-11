@@ -21,7 +21,7 @@ import com.trainingvalidator.poc.ui.level.LevelProfileActivity
 import com.trainingvalidator.poc.ui.main.MainContainerActivity
 import com.trainingvalidator.poc.ui.programs.PlanOverviewActivity
 import com.trainingvalidator.poc.ui.programs.ProgramDetailActivity
-import com.trainingvalidator.poc.ui.programs.ProgramWorkoutActivity
+import com.movit.navigation.MovitTrainingEntryNavigator
 import com.trainingvalidator.poc.ui.utils.bindUserAvatar
 import com.trainingvalidator.poc.ui.utils.currentLanguage
 import java.util.Calendar
@@ -451,14 +451,12 @@ class HomeFragment : Fragment() {
                     getString(R.string.today_plan_workout_format, workoutName, firstPlannedWorkout.itemCount)
                 binding.btnStartTodayPlan.visibility = View.VISIBLE
                 binding.btnStartTodayPlan.setOnClickListener {
-                    startActivity(
-                        Intent(requireContext(), ProgramWorkoutActivity::class.java).apply {
-                            putExtra(ProgramWorkoutActivity.EXTRA_PROGRAM_SLUG, programInfo.slug)
-                            putExtra(ProgramWorkoutActivity.EXTRA_PROGRAM_ID, programInfo.id)
-                            putExtra(ProgramWorkoutActivity.EXTRA_WEEK_NUMBER, currentProgram.weekNumber)
-                            putExtra(ProgramWorkoutActivity.EXTRA_DAY_NUMBER, currentProgram.dayNumber)
-                            putExtra(ProgramWorkoutActivity.EXTRA_TARGET_WORKOUT_ID, firstPlannedWorkout.id)
-                        }
+                    MovitTrainingEntryNavigator.openPlannedWorkout(
+                        context = requireContext(),
+                        programId = programInfo.id,
+                        weekNumber = currentProgram.weekNumber,
+                        dayNumber = currentProgram.dayNumber,
+                        plannedWorkoutId = firstPlannedWorkout.id,
                     )
                 }
             } else {
@@ -515,14 +513,12 @@ class HomeFragment : Fragment() {
         val programInfo = activePlanProgram?.program
 
         if (programInfo != null) {
-            startActivity(
-                Intent(requireContext(), ProgramWorkoutActivity::class.java).apply {
-                    putExtra(ProgramWorkoutActivity.EXTRA_PROGRAM_SLUG, programInfo.slug)
-                    putExtra(ProgramWorkoutActivity.EXTRA_PROGRAM_ID, programInfo.id)
-                    putExtra(ProgramWorkoutActivity.EXTRA_WEEK_NUMBER, weekNumber)
-                    putExtra(ProgramWorkoutActivity.EXTRA_DAY_NUMBER, dayNumber)
-                    putExtra(ProgramWorkoutActivity.EXTRA_TARGET_WORKOUT_ID, workoutId)
-                }
+            MovitTrainingEntryNavigator.openPlannedWorkout(
+                context = requireContext(),
+                programId = programInfo.id,
+                weekNumber = weekNumber,
+                dayNumber = dayNumber,
+                plannedWorkoutId = workoutId,
             )
         } else {
             // Fallback to plan overview
@@ -597,17 +593,19 @@ class HomeFragment : Fragment() {
         val cachedData = homeRepository.getCachedData()
         val activePlanProgram = cachedData?.activePlan?.programs?.firstOrNull { it.status == "active" }
         val programInfo = activePlanProgram?.program
-        if (programInfo != null) {
-            startActivity(
-                Intent(requireContext(), ProgramWorkoutActivity::class.java).apply {
-                    putExtra(ProgramWorkoutActivity.EXTRA_PROGRAM_SLUG, programInfo.slug)
-                    putExtra(ProgramWorkoutActivity.EXTRA_PROGRAM_ID, programInfo.id)
-                    putExtra(ProgramWorkoutActivity.EXTRA_WEEK_NUMBER, weekNumber)
-                    putExtra(ProgramWorkoutActivity.EXTRA_DAY_NUMBER, dayNumber)
-                    if (workoutId != null) {
-                        putExtra(ProgramWorkoutActivity.EXTRA_TARGET_WORKOUT_ID, workoutId)
-                    }
-                }
+        if (programInfo != null && workoutId != null) {
+            MovitTrainingEntryNavigator.openPlannedWorkout(
+                context = requireContext(),
+                programId = programInfo.id,
+                weekNumber = weekNumber,
+                dayNumber = dayNumber,
+                plannedWorkoutId = workoutId,
+            )
+        } else if (programInfo != null) {
+            MovitTrainingEntryNavigator.openProgramWeekPlan(
+                context = requireContext(),
+                programId = programInfo.id,
+                weekNumber = weekNumber,
             )
         } else {
             startActivity(PlanOverviewActivity.createIntent(requireContext()))

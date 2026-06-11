@@ -9,7 +9,7 @@ import com.trainingvalidator.poc.databinding.ActivityMainContainerBinding
 import com.trainingvalidator.poc.ui.explore.ExploreFragment
 import com.trainingvalidator.poc.ui.home.HomeFragment
 import com.trainingvalidator.poc.ui.reports.HistoryFragment
-import com.trainingvalidator.poc.ui.train.TrainFragment
+import com.trainingvalidator.poc.ui.programs.TrainFragment
 
 /**
  * MainContainerActivity - Main app container with Bottom Navigation

@@ -16,6 +16,7 @@ kotlin {
         commonMain.dependencies {
             implementation(project(":shared"))
             implementation(project(":core:data"))
+            implementation(project(":core:training-engine"))
             implementation(project(":core:network"))
             implementation(project(":core:designsystem"))
             implementation(project(":core:resources"))

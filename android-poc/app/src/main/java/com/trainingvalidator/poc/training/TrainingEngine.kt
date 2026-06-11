@@ -4,7 +4,6 @@ import android.util.Log
 import android.os.SystemClock
 import com.trainingvalidator.poc.analysis.JointAngles
 import com.trainingvalidator.poc.analysis.SmoothedLandmark
-import com.trainingvalidator.poc.training.analytics.MotionRecorder
 import com.trainingvalidator.poc.training.engine.*
 import com.trainingvalidator.poc.training.engine.bilateral.BilateralController
 import com.trainingvalidator.poc.training.engine.bilateral.BilateralSide
@@ -102,8 +101,6 @@ class TrainingEngine(
     // Milestone: frame components and exercise-run coordinators.
     
     private val jointTracker = JointAngleTracker(trackedJoints, stabilityPolicy)
-    
-    var motionRecorder: MotionRecorder? = null
     
     private val angleSmoother = AngleSmoother(timingPolicy.smoothingWindowSize)
     
@@ -213,7 +210,6 @@ class TrainingEngine(
         stateMachine = stateMachine,
         repCounter = repCounter,
         repCompletionSignal = repCompletionSignal,
-        motionRecorder = { motionRecorder },
         bilateral = bilateral,
         pipelineTrace = pipelineTrace
     )
@@ -224,7 +220,6 @@ class TrainingEngine(
         repCounter = repCounter,
         getTargetDurationMs = { targetDurationMs ?: 0L },
         timeProvider = { nowMs() },
-        motionRecorder = { motionRecorder },
         bilateral = bilateral,
         pipelineTrace = pipelineTrace
     )
@@ -501,7 +496,6 @@ class TrainingEngine(
             
             // Wall-clock start so finalize() can compute (end - start) without Int overflow.
             // start(0L) made (nowMs - 0) exceed Int.MAX_VALUE when cast to Int → negative durations in DB/UI.
-            motionRecorder?.start(System.currentTimeMillis())
         }
         acquireTiltCorrection()
         
@@ -713,14 +707,6 @@ class TrainingEngine(
             val cachedPositionValidation = m.positionResult
             _jointStateInfos.value = jointStateInfos
             frameFeedback.emitThrottledStateMessages(jointStateInfos, ::emitEvent)
-
-            motionRecorder?.record(
-                timestamp = frameTimeMs,
-                phase = currentPhase,
-                angles = m.smoothedAngles,
-                states = jointStateInfos,
-                skippedJointCodes = m.skippedForFrame
-            )
 
             val hasDanger = jointEvals.hasAnyDangerState()
             _isDangerActive.value = hasDanger

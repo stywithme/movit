@@ -13,7 +13,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 fun MovitAppShellHost(
     legacyAuthExitEnabled: Boolean = false,
     onHostBackPressed: () -> Unit = {},
-    onLaunchLegacyTraining: (MovitAppShellEffect.LaunchLegacyCameraTraining) -> Boolean = { false },
     onLaunchLegacySubscription: () -> Boolean = { false },
     onNavigateToLegacyAuth: () -> Boolean = { false },
 ) {
@@ -27,7 +26,6 @@ fun MovitAppShellHost(
 
     MovitAppShellRoute(
         shellViewModel = shellViewModel,
-        onLaunchLegacyTraining = onLaunchLegacyTraining,
         onLaunchLegacySubscription = onLaunchLegacySubscription,
         onNavigateToLegacyAuth = onNavigateToLegacyAuth,
     )

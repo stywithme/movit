@@ -1,7 +1,6 @@
 package com.trainingvalidator.poc.training.engine.session
 
 import android.util.Log
-import com.trainingvalidator.poc.training.analytics.MotionRecorder
 import com.trainingvalidator.poc.training.engine.PhaseStateMachine
 import com.trainingvalidator.poc.training.engine.RepCompletionSignal
 import com.trainingvalidator.poc.training.engine.RepCounter
@@ -17,7 +16,6 @@ class RepCompletionCoordinator(
     private val stateMachine: PhaseStateMachine,
     private val repCounter: RepCounter,
     private val repCompletionSignal: RepCompletionSignal,
-    private val motionRecorder: () -> MotionRecorder?,
     private val bilateral: BilateralController,
     private val pipelineTrace: PipelineTrace
 ) {
@@ -53,13 +51,6 @@ class RepCompletionCoordinator(
             return
         }
         pipelineTrace.record("rep complete n=${repCounter.count} score=$score worst=$worstState")
-        motionRecorder()?.finalizeRep(
-            repNumber = repCounter.count,
-            phaseTimings = phaseTimings.mapKeys { it.key.name.lowercase() },
-            worstState = worstState,
-            score = score,
-            side = bilateral.currentSideCode.takeIf { bilateral.isBilateral }
-        )
         bilateral.onRepCounted(repCounter.count)
         Log.d(tag, "Rep ${repCounter.count} completed. Correct: ${repCounter.correctCount}/${repCounter.count}")
     }

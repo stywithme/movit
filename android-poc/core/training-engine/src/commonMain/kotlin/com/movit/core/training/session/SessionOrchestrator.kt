@@ -17,8 +17,9 @@ class SessionOrchestrator(
     targetDurationMs: Long? = null,
     minRepIntervalMs: Long = timingPolicy.defaultMinRepIntervalMs,
     private val wallClock: () -> Long = { com.movit.core.training.engine.currentTimeMillis() },
+    executionClock: ExecutionClock? = null,
 ) {
-    val clock = ExecutionClock(wallClock)
+    val clock: ExecutionClock = executionClock ?: ExecutionClock(wallClock)
     val pauseController = PauseController.fromTiming(timingPolicy) { clock.nowMs() }
     val safetyGuards = ExecutionSafetyGuards(
         timingPolicy = timingPolicy,

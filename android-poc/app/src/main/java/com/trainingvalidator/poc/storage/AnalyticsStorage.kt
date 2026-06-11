@@ -4,7 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
-import com.trainingvalidator.poc.training.analytics.WorkoutUpload
+import com.trainingvalidator.poc.storage.WorkoutUpload
 import java.io.*
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream

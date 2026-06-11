@@ -19,11 +19,10 @@ class LegacyKmpContractParityTest {
     }
 
     @Test
-    fun legacyNonRetrofitCatalogMatchesWorkoutSyncService() {
-        assertEquals(
-            MobileApiContractRegistry.legacyNonRetrofitEndpoints,
-            WorkoutSyncContractPathExtractor.extractAll(),
-            "WorkoutSyncService ENDPOINT changed — update legacyNonRetrofitEndpoints",
+    fun legacyNonRetrofitCatalogIsDocumented() {
+        assertTrue(
+            MobileApiContractRegistry.legacyNonRetrofitEndpoints.isNotEmpty(),
+            "legacyNonRetrofitEndpoints must list retired OkHttp consumers (e.g. workout-executions)",
         )
     }
 

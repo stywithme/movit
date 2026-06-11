@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui.train
+package com.trainingvalidator.poc.ui.programs
 
 import android.content.Intent
 import android.graphics.drawable.GradientDrawable
@@ -39,7 +39,7 @@ import com.trainingvalidator.poc.ui.main.MainContainerActivity
 import com.trainingvalidator.poc.ui.profile.ProfileActivity
 import com.trainingvalidator.poc.ui.programs.ProgramDetailActivity
 import com.trainingvalidator.poc.ui.programs.ProgramListActivity
-import com.trainingvalidator.poc.ui.programs.ProgramWorkoutActivity
+import com.movit.navigation.MovitTrainingEntryNavigator
 import com.trainingvalidator.poc.ui.report.WorkoutReportActivity
 import com.trainingvalidator.poc.ui.programs.WeeklyReportActivity
 import android.graphics.Color
@@ -1134,13 +1134,15 @@ class TrainFragment : Fragment() {
         val resolvedDay = dayNumber ?: program.weeks.flatMap { it.days }
             .firstOrNull { d -> d.workouts.any { it.id == plannedWorkout.id } }?.dayNumber
 
-        startActivity(Intent(requireContext(), ProgramWorkoutActivity::class.java).apply {
-            putExtra(ProgramWorkoutActivity.EXTRA_PROGRAM_SLUG, program.slug)
-            putExtra(ProgramWorkoutActivity.EXTRA_PROGRAM_ID, program.id)
-            resolvedWeek?.let { putExtra(ProgramWorkoutActivity.EXTRA_WEEK_NUMBER, it) }
-            resolvedDay?.let { putExtra(ProgramWorkoutActivity.EXTRA_DAY_NUMBER, it) }
-            putExtra(ProgramWorkoutActivity.EXTRA_TARGET_WORKOUT_ID, plannedWorkout.id)
-        })
+        val week = resolvedWeek ?: program.weeks.firstOrNull()?.weekNumber ?: 1
+        val day = resolvedDay ?: program.weeks.firstOrNull()?.days?.firstOrNull()?.dayNumber ?: 1
+        MovitTrainingEntryNavigator.openPlannedWorkout(
+            context = requireContext(),
+            programId = program.id,
+            weekNumber = week,
+            dayNumber = day,
+            plannedWorkoutId = plannedWorkout.id,
+        )
     }
 
     private fun openWorkoutReport(

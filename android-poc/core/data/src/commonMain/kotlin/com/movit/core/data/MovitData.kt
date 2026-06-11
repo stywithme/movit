@@ -1,5 +1,6 @@
 package com.movit.core.data
 
+import com.movit.core.data.audio.AudioPrefetchRunner
 import com.movit.core.data.cache.AudioManifestCache
 import com.movit.core.data.cache.ColdOfflineBundleSeeder
 import com.movit.core.data.cache.SystemMessageCache
@@ -16,12 +17,17 @@ import com.movit.core.data.repository.MobileWriteSyncRepository
 import com.movit.core.data.repository.PlanSyncRepository
 import com.movit.core.data.repository.ProgramFlowSyncRepository
 import com.movit.core.data.repository.ReportsSyncRepository
+import com.movit.core.data.preferences.MovitTrainingPreferences
+import com.movit.core.data.repository.TrainingConfigRepository
+import com.movit.core.data.repository.seedBundledDefaultsIfEmpty
+import com.movit.core.data.repository.TrainingSessionWriteCoordinator
 import com.movit.core.data.repository.WorkoutSessionSyncRepository
 import com.movit.core.data.sync.MovitSyncOrchestrator
 import org.koin.core.Koin
 import org.koin.core.KoinApplication
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
+import org.koin.core.module.Module
 
 /**
  * Typed accessors for Movit sync repositories resolved through Koin.
@@ -41,16 +47,19 @@ object MovitData {
     val isInstalled: Boolean
         get() = koinApp != null
 
+    fun koin(): Koin = koinApp?.koin ?: error("MovitData.install() was not called.")
+
     fun install(
         platform: MovitPlatformBindings,
         localStoreFactory: MovitLocalStoreFactory = DefaultMovitLocalStoreFactory,
+        additionalModules: List<Module> = emptyList(),
     ) {
         if (koinApp != null) {
             stopKoin()
         }
         onSessionExpired = null
         koinApp = startKoin {
-            modules(movitDataModule(platform, localStoreFactory))
+            modules(movitDataModule(platform, localStoreFactory) + additionalModules)
         }
     }
 
@@ -63,6 +72,7 @@ object MovitData {
         val koin = koin()
         koin.get<ColdOfflineBundleSeeder>().seedIfNeeded()
         koin.get<SystemMessageCache>().loadIntoRegistry()
+        koin.get<TrainingConfigRepository>().seedBundledDefaultsIfEmpty()
     }
 
     internal fun notifySessionExpired() {
@@ -91,11 +101,14 @@ object MovitData {
     val programFlow: ProgramFlowSyncRepository get() = koin().get()
     val reports: ReportsSyncRepository get() = koin().get()
     val workoutSession: WorkoutSessionSyncRepository get() = koin().get()
+    val trainingWrites: TrainingSessionWriteCoordinator get() = koin().get()
     val mobileWrites: MobileWriteSyncRepository get() = koin().get()
     val account: AccountSyncRepository get() = koin().get()
+    val trainingConfig: TrainingConfigRepository get() = koin().get()
+    val trainingPreferences: MovitTrainingPreferences get() = koin().get()
+    val audioManifest: AudioManifestCache get() = koin().get()
+    val audioPrefetch: AudioPrefetchRunner get() = koin().get()
     val offlineWrites: OfflineWriteQueue get() = koin().get()
     val sync: MovitSyncOrchestrator get() = koin().get()
 
-    private fun koin(): Koin = koinApp?.koin
-        ?: error("MovitData.install() was not called.")
 }

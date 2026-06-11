@@ -35,7 +35,8 @@ class VisibilityMonitor(
         currentPhase: Phase,
     ): VisibilityCheckResult {
         val visibilityDetails = evaluateJointVisibility(jointVisibilities)
-        val allVisible = visibilityDetails.isNotEmpty() && visibilityDetails.all { it.isVisible }
+        if (visibilityDetails.isEmpty()) return VisibilityCheckResult.ContinueTraining
+        val allVisible = visibilityDetails.all { it.isVisible }
         val now = timeProvider()
         return if (allVisible) {
             handleVisible(currentRepCount, currentPhase)

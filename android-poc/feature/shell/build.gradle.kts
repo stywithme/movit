@@ -30,7 +30,10 @@ kotlin {
             implementation(project(":feature:train"))
             implementation(project(":feature:reports"))
             implementation(project(":feature:library"))
-            implementation(project(":feature:account"))
+            implementation(project(":feature:training"))
+            // Account effect types (e.g. MovitProfileEffect) are part of shell's public API
+            // (MovitAppShellEvent) — api() keeps them visible to the iOS framework compile.
+            api(project(":feature:account"))
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)

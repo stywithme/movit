@@ -13,6 +13,7 @@ import com.movit.core.data.repository.HomeSyncRepository
 import com.movit.core.data.repository.MovitCacheKeys
 import com.movit.core.data.repository.PlanSyncRepository
 import com.movit.core.data.repository.ReportsSyncRepository
+import com.movit.core.data.repository.TrainingConfigRepository
 import com.movit.core.data.repository.testLocalStore
 import com.movit.core.data.repository.testMobileApi
 import com.movit.core.network.MovitJson
@@ -188,6 +189,7 @@ class MovitSyncOrchestratorTest {
             audioManifestCache = audioManifestCache,
             audioPrefetchRunner = AudioPrefetchRunner(audioManifestCache, downloader),
             offlineWrites = queue,
+            trainingConfig = TrainingConfigRepository(localStore),
         )
     }
 

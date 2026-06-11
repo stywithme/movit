@@ -23,6 +23,8 @@ import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityWorkoutDetailBinding
 import com.trainingvalidator.poc.storage.ExerciseRepository
 import com.trainingvalidator.poc.storage.WorkoutRepository
+import com.google.gson.Gson
+import com.movit.navigation.MovitTrainingEntryNavigator
 import com.trainingvalidator.poc.training.models.*
 
 /**
@@ -327,13 +329,12 @@ class WorkoutDetailActivity : AppCompatActivity() {
     }
 
     private fun launchWorkoutRun(config: WorkoutConfig) {
-        val intent = WorkoutRunActivity.createIntent(
+        val workoutId = config.fileName.ifBlank { config.name.en.ifBlank { "local-workout" } }
+        MovitTrainingEntryNavigator.openWorkoutRunWithLocalConfig(
             context = this,
-            workoutConfig = config,
-            workoutId = null, // local workout — no backend ID yet
-            workoutContext = WorkoutExecutionContext.EXPLORE_WORKOUT
+            workoutId = workoutId,
+            workoutConfigJson = Gson().toJson(config),
         )
-        startActivity(intent)
     }
 
     private fun formatWorkoutLevel(config: WorkoutConfig): String {

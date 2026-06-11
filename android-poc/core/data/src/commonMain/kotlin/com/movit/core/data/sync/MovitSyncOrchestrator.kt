@@ -11,6 +11,7 @@ import com.movit.core.data.repository.ExploreSyncRepository
 import com.movit.core.data.repository.HomeSyncRepository
 import com.movit.core.data.repository.PlanSyncRepository
 import com.movit.core.data.repository.ReportsSyncRepository
+import com.movit.core.data.repository.TrainingConfigRepository
 import com.movit.core.network.MovitMobileApi
 import com.movit.core.network.dto.ExploreDataDto
 import com.movit.core.network.dto.HomeDataDto
@@ -30,6 +31,7 @@ class MovitSyncOrchestrator(
     private val audioManifestCache: AudioManifestCache,
     private val audioPrefetchRunner: AudioPrefetchRunner,
     private val offlineWrites: OfflineWriteQueue,
+    private val trainingConfig: TrainingConfigRepository,
 ) {
     sealed class SyncOutcome {
         data class Success(
@@ -132,6 +134,13 @@ class MovitSyncOrchestrator(
         }
 
         planSync.refreshActiveUserProgramId()
+        syncResponse.data?.let { payload ->
+            trainingConfig.applySyncExercises(
+                exercises = payload.exercises,
+                deletedExerciseIds = payload.deletedExerciseIds,
+                isFullSync = forceFullRefresh || syncResponse.meta?.isFullSync == true,
+            )
+        }
 
         val exploreResult = if (forceFullRefresh) exploreSync.syncFull() else exploreSync.sync()
         val homeResult = homeSync.sync()

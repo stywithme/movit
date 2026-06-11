@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import com.movit.feature.library.training.KmpTrainingSlugs
+import com.movit.core.data.MovitData
 import com.movit.shared.AppResult
 import kotlinx.coroutines.launch
 
@@ -54,17 +54,12 @@ class WorkoutRunViewModel(
 
     fun trainingStartAction(): TrainingStartAction? {
         val exercise = _state.value.currentExercise ?: return null
-        val slug = exercise.exerciseSlug
-        return if (KmpTrainingSlugs.supports(slug)) {
-            TrainingStartAction.KmpLive(
-                slug = slug,
-                exerciseName = exercise.name,
-                targetReps = exercise.reps ?: 12,
-                workoutId = workoutId,
-            )
-        } else {
-            TrainingStartAction.Legacy(slug)
-        }
+        return resolveTrainingStartAction(
+            slug = exercise.exerciseSlug,
+            exerciseName = exercise.name,
+            targetReps = exercise.reps ?: 12,
+            workoutId = workoutId,
+        )
     }
 
     /** @deprecated Use [trainingStartAction]; kept for tests. */

@@ -19,7 +19,11 @@ import com.movit.core.data.repository.HomeSyncRepository
 import com.movit.core.data.repository.MobileWriteSyncRepository
 import com.movit.core.data.repository.PlanSyncRepository
 import com.movit.core.data.repository.ProgramFlowSyncRepository
+import com.movit.core.data.preferences.MovitTrainingPreferences
 import com.movit.core.data.repository.ReportsSyncRepository
+import com.movit.core.data.repository.TrainingConfigRepository
+import com.movit.core.data.journal.SessionJournalStore
+import com.movit.core.data.repository.TrainingSessionWriteCoordinator
 import com.movit.core.data.repository.WorkoutSessionSyncRepository
 import com.movit.core.data.sync.MovitSyncOrchestrator
 import com.movit.core.network.MovitAuthTokenStore
@@ -101,7 +105,17 @@ fun movitDataModule(
             mobileWrites = get(),
         )
     }
+    single { SessionJournalStore(localStore = get()) }
+    single {
+        TrainingSessionWriteCoordinator(
+            mobileWrites = get(),
+            reportsSync = get(),
+            journalStore = get(),
+        )
+    }
     single { AccountSyncRepository(api = get(), platform = { get() }) }
+    single { TrainingConfigRepository(localStore = get()) }
+    single { MovitTrainingPreferences(localStore = get()) }
     single {
         MovitSyncOrchestrator(
             api = get(),
@@ -115,6 +129,7 @@ fun movitDataModule(
             audioManifestCache = get(),
             audioPrefetchRunner = get(),
             offlineWrites = get(),
+            trainingConfig = get(),
         )
     }
 }

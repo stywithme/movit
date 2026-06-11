@@ -9,24 +9,40 @@ import com.movit.core.training.model.PoseLandmarkIndices
  * Builds [PoseFrame] from platform-neutral landmarks using shared angle math.
  */
 object PoseFrameAssembler {
+    private val elbowEstimator = ElbowAngleEstimator()
+
     fun assemble(
         landmarks: List<Landmark>,
         timestampMs: Long,
         isFrontCamera: Boolean,
+        worldLandmarks: List<Landmark>? = null,
         visibilityThreshold: Float = 0.5f,
-    ): PoseFrame = PoseFrame(
-        angles = calculateAngles(landmarks, visibilityThreshold),
-        landmarks = landmarks,
-        isFrontCamera = isFrontCamera,
-        timestampMs = timestampMs,
-    )
+        applyElbowCorrection: Boolean = true,
+    ): PoseFrame {
+        var angles = calculateAngles(landmarks, visibilityThreshold, worldLandmarks)
+        if (applyElbowCorrection && worldLandmarks != null && worldLandmarks.size >= 33) {
+            angles = elbowEstimator.correct(angles, worldLandmarks, landmarks, timestampMs)
+        }
+        return PoseFrame(
+            angles = angles,
+            landmarks = landmarks,
+            worldLandmarks = worldLandmarks,
+            isFrontCamera = isFrontCamera,
+            timestampMs = timestampMs,
+        )
+    }
+
+    fun resetElbowEstimator() = elbowEstimator.reset()
 
     fun calculateAngles(
         landmarks: List<Landmark>,
         visibilityThreshold: Float = 0.5f,
-    ): JointAngles = JointAngles(
-        leftElbow = angleAt(landmarks, PoseLandmarkIndices.LEFT_SHOULDER, PoseLandmarkIndices.LEFT_ELBOW, PoseLandmarkIndices.LEFT_WRIST, visibilityThreshold),
-        rightElbow = angleAt(landmarks, PoseLandmarkIndices.RIGHT_SHOULDER, PoseLandmarkIndices.RIGHT_ELBOW, PoseLandmarkIndices.RIGHT_WRIST, visibilityThreshold),
+        worldLandmarks: List<Landmark>? = null,
+    ): JointAngles {
+        val world = worldLandmarks?.takeIf { it.size >= landmarks.size }
+        return JointAngles(
+        leftElbow = angleAt3D(world, landmarks, PoseLandmarkIndices.LEFT_SHOULDER, PoseLandmarkIndices.LEFT_ELBOW, PoseLandmarkIndices.LEFT_WRIST, visibilityThreshold),
+        rightElbow = angleAt3D(world, landmarks, PoseLandmarkIndices.RIGHT_SHOULDER, PoseLandmarkIndices.RIGHT_ELBOW, PoseLandmarkIndices.RIGHT_WRIST, visibilityThreshold),
         leftShoulder = angleAt(landmarks, PoseLandmarkIndices.LEFT_ELBOW, PoseLandmarkIndices.LEFT_SHOULDER, PoseLandmarkIndices.LEFT_HIP, visibilityThreshold),
         rightShoulder = angleAt(landmarks, PoseLandmarkIndices.RIGHT_ELBOW, PoseLandmarkIndices.RIGHT_SHOULDER, PoseLandmarkIndices.RIGHT_HIP, visibilityThreshold),
         leftHip = angleAt(landmarks, PoseLandmarkIndices.LEFT_SHOULDER, PoseLandmarkIndices.LEFT_HIP, PoseLandmarkIndices.LEFT_KNEE, visibilityThreshold),
@@ -35,7 +51,29 @@ object PoseFrameAssembler {
         rightKnee = angleAt(landmarks, PoseLandmarkIndices.RIGHT_HIP, PoseLandmarkIndices.RIGHT_KNEE, PoseLandmarkIndices.RIGHT_ANKLE, visibilityThreshold),
         leftAnkle = angleAt(landmarks, PoseLandmarkIndices.LEFT_KNEE, PoseLandmarkIndices.LEFT_ANKLE, PoseLandmarkIndices.LEFT_FOOT_INDEX, visibilityThreshold),
         rightAnkle = angleAt(landmarks, PoseLandmarkIndices.RIGHT_KNEE, PoseLandmarkIndices.RIGHT_ANKLE, PoseLandmarkIndices.RIGHT_FOOT_INDEX, visibilityThreshold),
-    )
+        )
+    }
+
+    private fun angleAt3D(
+        world: List<Landmark>?,
+        landmarks: List<Landmark>,
+        indexA: Int,
+        indexB: Int,
+        indexC: Int,
+        visibilityThreshold: Float,
+    ): Double? {
+        if (world != null && world.size > maxOf(indexA, indexB, indexC)) {
+            val a = world[indexA]; val b = world[indexB]; val c = world[indexC]
+            if (a.isVisible(visibilityThreshold) && b.isVisible(visibilityThreshold) && c.isVisible(visibilityThreshold)) {
+                return JointAngleCalculator.angleDegrees3D(
+                    PosePoint3D(a.x, a.y, a.z),
+                    PosePoint3D(b.x, b.y, b.z),
+                    PosePoint3D(c.x, c.y, c.z),
+                )
+            }
+        }
+        return angleAt(landmarks, indexA, indexB, indexC, visibilityThreshold)
+    }
 
     private fun angleAt(
         landmarks: List<Landmark>,

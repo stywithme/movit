@@ -1,6 +1,7 @@
 package com.movit.core.training.engine.policy
 
 import com.movit.core.training.engine.JointState
+import com.movit.core.training.feedback.CoachIntensity
 
 /**
  * Candidate-rate limiting for training feedback emitted from the engine.
@@ -36,5 +37,8 @@ class FeedbackPolicy(
 
     companion object {
         fun from(timing: TimingPolicy) = FeedbackPolicy(timing.stateMessageCooldownMs)
+
+        fun fromCoachIntensity(intensity: CoachIntensity, base: TimingPolicy = TimingPolicy.DEFAULT): FeedbackPolicy =
+            from(TimingPolicy.withCoachIntensity(intensity, base))
     }
 }

@@ -1,5 +1,7 @@
 package com.movit.core.training.engine.policy
 
+import com.movit.core.training.feedback.CoachIntensity
+
 /**
  * Time-based guard rails for one exercise run.
  * Legacy Android reads runtime defaults from SettingsManager via [fromSettings] factory.
@@ -49,5 +51,20 @@ data class TimingPolicy(
         val DEFAULT = TimingPolicy()
 
         fun default(): TimingPolicy = DEFAULT
+
+        /** I-17 — scales engine-side cooldowns with live coach density (mirrors FeedbackScheduler multipliers). */
+        fun withCoachIntensity(intensity: CoachIntensity, base: TimingPolicy = DEFAULT): TimingPolicy {
+            val multiplier = when (intensity) {
+                CoachIntensity.CALM -> 1.6
+                CoachIntensity.STANDARD -> 1.0
+                CoachIntensity.STRICT -> 0.75
+            }
+            return base.copy(
+                stateMessageCooldownMs = (base.stateMessageCooldownMs * multiplier).toLong(),
+                cameraWarningEventCooldownMs = (base.cameraWarningEventCooldownMs * multiplier).toLong(),
+                visibilityGraceDurationMs = (base.visibilityGraceDurationMs * multiplier).toLong(),
+                visibilityWarningDurationMs = (base.visibilityWarningDurationMs * multiplier).toLong(),
+            )
+        }
     }
 }

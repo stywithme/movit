@@ -9,6 +9,9 @@ plugins {
 val movitShellLauncherEnabled =
     providers.gradleProperty("movit.shell.launcher.enabled").orNull?.toBoolean() ?: false
 
+val movitTrainingKmpEnabled =
+    providers.gradleProperty("movit.training.kmp.enabled").orNull?.toBoolean() ?: false
+
 // Read API config from local.properties (machine-specific) with optional api.properties defaults.
 val localProps = rootProject.file("local.properties")
 val apiPropsFile = rootProject.file("api.properties")
@@ -41,6 +44,11 @@ android {
             "boolean",
             "MOVIT_SHELL_LAUNCHER_ENABLED",
             movitShellLauncherEnabled.toString(),
+        )
+        buildConfigField(
+            "boolean",
+            "MOVIT_TRAINING_KMP_ENABLED",
+            movitTrainingKmpEnabled.toString(),
         )
     }
 
@@ -102,6 +110,8 @@ kotlin {
 dependencies {
     // Secure auth tokens (EncryptedSharedPreferences) — production path via AuthManager
     implementation(project(":core:data"))
+    implementation(project(":core:pose-capture"))
+    implementation(libs.koin.core)
 
     // Movit KMP modules — release classpath only when launcher flag is on (Phase 06 G-5).
     // core:data stays implementation unconditionally (AuthManager / secure tokens in legacy path).
@@ -115,6 +125,7 @@ dependencies {
         ":feature:home",
         ":feature:train",
         ":feature:library",
+        ":feature:training",
         ":feature:reports",
         ":feature:account",
         ":feature:shell",

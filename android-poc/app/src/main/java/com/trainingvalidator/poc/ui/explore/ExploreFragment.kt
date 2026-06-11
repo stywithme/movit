@@ -25,7 +25,7 @@ import com.trainingvalidator.poc.storage.WorkoutRepository
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.training.models.WorkoutConfig
 import com.trainingvalidator.poc.ui.profile.ProfileActivity
-import com.trainingvalidator.poc.ui.train.PreWorkoutActivity
+import com.movit.navigation.MovitTrainingEntryNavigator
 import com.trainingvalidator.poc.ui.utils.ExerciseSearchMatcher
 import com.trainingvalidator.poc.ui.utils.bindUserAvatar
 import com.trainingvalidator.poc.ui.utils.currentLanguage
@@ -457,9 +457,10 @@ class ExploreFragment : Fragment() {
     }
 
     private fun openExercise(exercise: ExerciseConfig) {
-        startActivity(Intent(requireContext(), PreWorkoutActivity::class.java).apply {
-            putExtra(PreWorkoutActivity.EXTRA_EXERCISE_NAME, exercise.fileName)
-        })
+        MovitTrainingEntryNavigator.openExercisePrepare(
+            context = requireContext(),
+            exerciseId = exercise.fileName,
+        )
     }
 
     private fun localizedWorkoutName(workout: WorkoutConfig, language: String): String {

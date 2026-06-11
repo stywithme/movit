@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import com.movit.core.data.MovitData
+import com.movit.core.data.MovitTrainingKmpGate
+import com.movit.core.posecapture.di.movitPoseCaptureAndroidModule
 import com.movit.core.data.local.MovitAndroidRuntime
 import com.movit.core.data.outbox.registerOutboxConnectivityReplay
 import com.movit.core.data.platform.AuthSessionSnapshot
@@ -17,10 +19,15 @@ import com.trainingvalidator.poc.ui.theme.AppThemeManager
 
 object MovitDataInstall {
 
-    fun install(context: Context) {
+    fun install(
+        context: Context,
+        trainingKmpEnabled: Boolean = MovitTrainingKmpGate.enabled,
+    ) {
         val appContext = context.applicationContext
         MovitAndroidRuntime.applicationContext = appContext
+        MovitTrainingKmpGate.enabled = trainingKmpEnabled
         MovitData.install(
+            additionalModules = listOf(movitPoseCaptureAndroidModule()),
             platform = object : MovitPlatformBindings {
                 override fun apiBaseUrl(): String = ApiConfig.getEffectiveBaseUrl()
 
@@ -189,5 +196,8 @@ object MovitDataInstall {
             },
         )
         registerOutboxConnectivityReplay(appContext)
+        if (trainingKmpEnabled) {
+            LegacyWorkoutSyncDrain.drainPendingExecutions(appContext)
+        }
     }
 }

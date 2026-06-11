@@ -3,6 +3,7 @@ package com.movit
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import com.movit.host.attachMovitShellHost
+import com.trainingvalidator.poc.BuildConfig
 
 /**
  * Post-login home for the Movit KMP shell (Phase 06 G-3 — Strategy B).
@@ -14,6 +15,10 @@ class MovitMainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        attachMovitShellHost(exitToLegacyAuthOnLogout = true)
+        attachMovitShellHost(
+            exitToLegacyAuthOnLogout = true,
+            trainingKmpEnabled = BuildConfig.MOVIT_TRAINING_KMP_ENABLED,
+            launchIntent = intent,
+        )
     }
 }

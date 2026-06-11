@@ -56,6 +56,22 @@ class MigratingMovitLocalStore(
 
     override suspend fun clearAllUserData() = sqlStore.clearAllUserData()
 
+    override fun upsertSessionJournal(
+        sessionId: String,
+        exerciseId: String,
+        payloadJson: String,
+        status: String,
+        updatedAtEpochMs: Long,
+    ) = sqlStore.upsertSessionJournal(sessionId, exerciseId, payloadJson, status, updatedAtEpochMs)
+
+    override fun selectSessionJournal(sessionId: String): SessionJournalRow? =
+        sqlStore.selectSessionJournal(sessionId)
+
+    override fun listActiveSessionJournals(): List<SessionJournalRow> =
+        sqlStore.listActiveSessionJournals()
+
+    override fun deleteSessionJournal(sessionId: String) = sqlStore.deleteSessionJournal(sessionId)
+
     fun migrateKnownCachesFromPlatform() {
         val bindings = platform()
         KNOWN_STATIC_KEYS.forEach { (store, key) ->

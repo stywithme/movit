@@ -1,0 +1,30 @@
+CREATE TABLE session_journal_entry (
+    session_id TEXT NOT NULL PRIMARY KEY,
+    exercise_id TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    status TEXT NOT NULL,
+    updated_at_epoch_ms INTEGER NOT NULL
+);
+
+CREATE INDEX session_journal_status ON session_journal_entry(status);
+
+upsertJournal:
+INSERT OR REPLACE INTO session_journal_entry(session_id, exercise_id, payload_json, status, updated_at_epoch_ms)
+VALUES (?, ?, ?, ?, ?);
+
+selectBySessionId:
+SELECT session_id, exercise_id, payload_json, status, updated_at_epoch_ms
+FROM session_journal_entry
+WHERE session_id = ?;
+
+selectActiveJournals:
+SELECT session_id, exercise_id, payload_json, status, updated_at_epoch_ms
+FROM session_journal_entry
+WHERE status = 'active';
+
+deleteBySessionId:
+DELETE FROM session_journal_entry
+WHERE session_id = ?;
+
+deleteAllJournals:
+DELETE FROM session_journal_entry;

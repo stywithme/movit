@@ -34,11 +34,13 @@ $kmpModules = @(
     ":core:network",
     ":core:data",
     ":core:training-engine",
+    ":core:pose-capture",
     ":feature:explore",
     ":feature:home",
     ":feature:train",
     ":feature:reports",
     ":feature:library",
+    ":feature:training",
     ":feature:account",
     ":feature:shell"
 )

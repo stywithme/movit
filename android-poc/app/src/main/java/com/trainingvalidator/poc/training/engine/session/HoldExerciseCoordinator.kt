@@ -1,7 +1,6 @@
 package com.trainingvalidator.poc.training.engine.session
 
 import android.util.Log
-import com.trainingvalidator.poc.training.analytics.MotionRecorder
 import com.trainingvalidator.poc.training.engine.HoldStatus
 import com.trainingvalidator.poc.training.engine.HoldTimer
 import com.trainingvalidator.poc.training.engine.RepCounter
@@ -19,7 +18,6 @@ class HoldExerciseCoordinator(
     private val repCounter: RepCounter,
     private val getTargetDurationMs: () -> Long,
     private val timeProvider: () -> Long,
-    private val motionRecorder: () -> MotionRecorder?,
     private val bilateral: BilateralController,
     private val pipelineTrace: PipelineTrace
 ) {
@@ -92,13 +90,6 @@ class HoldExerciseCoordinator(
             if (repCounter.count > previousCount && finalResult != null) {
                 pipelineTrace.record(
                     "hold complete n=${repCounter.count} score=$score worst=${finalResult.worstState}"
-                )
-                motionRecorder()?.finalizeRep(
-                    repNumber = repCounter.count,
-                    phaseTimings = finalResult.phaseTimings,
-                    worstState = finalResult.worstState,
-                    score = score,
-                    side = bilateral.currentSideCode.takeIf { bilateral.isBilateral }
                 )
                 bilateral.onRepCounted(repCounter.count)
             }

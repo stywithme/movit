@@ -65,13 +65,13 @@
 | الصفحة | المُدّعى | الواقعي (تقدير) | السبب الرئيسي للفجوة |
 |--------|:-------:|:--------------:|----------------------|
 | Home (08) | 92% | ~75% | الأقرب للمطابقة؛ بيانات حقيقية · لكن RTL/Dark QA لم يُنفَّذ فعلياً (مُعترف) |
-| Train (01) | 86% | ~60% | الهيكل جيد لكن «Start» يرتدّ legacy · صور thumbnails placeholder |
+| Train (01) | 86% | ~65% | «Start» → KMP عبر shell · صور thumbnails placeholder |
 | Explore (04) | 87% | ~65% | A11y=25% فعلياً · صور iOS placeholder · مطابقة بصرية جزئية |
 | Reports (09) | 85% | ~60% | upsell/charts a11y placeholder · الاعتماد على dashboard API جزئي |
 | Report Detail (17) | 92% | ~70% | Share/Export وهمي · joints من API غير متوفرة |
-| Session (02) | 84% | ~50% | لا multi-workout day · **Start → legacy camera** · لا catch-up/skip-warmup |
-| Prepare (03) | 80% | ~45% | صور hero placeholder (حرف أول) · **التدريب = legacy launcher** |
-| Workout flow (16) | 66% | ~30% | **القلب: لا كاميرا/تنسيق · «previous form» وهمي · لا persist** |
+| Session (02) | 84% | ~55% | **Start → KMP training (shell)** · لا multi-workout day · لا catch-up/skip-warmup |
+| Prepare (03) | 80% | ~55% | صور hero placeholder · **التدريب → KMP `TrainingSession` (shell)** · parity إعدادات 🔶 |
+| Workout flow (16) | 66% | ~45% | جلسة KMP موصولة · sets/rest/audio 🔶 · persist/Outbox جزئي |
 | Library (05–06) | 78% | ~60% | صور iOS placeholder · A11y جزئي · tests 55% |
 | Program detail (07) | 72% | ~45% | enrollment **محلي بلا API** · بيانات أسابيع من fixture · labels إنجليزية |
 | Auth (10) | 86% (سابقاً 76%) | ~65% | Google OAuth stub · reset-password بلا شاشة · Splash legacy |
@@ -105,13 +105,13 @@
 
 **الأثر الإداري:** المدير يقرأ «66%/85%» كـ «نسبة الإنجاز». فعلياً تعني «نسبة بنود rubric موزونة 35% نحو البنية التحتية». هذا هو لبّ سوء الفهم.
 
-### 4.2 🔴 الأخطر: قلب المنتج (التدريب + التقييم) غير موصول
+### 4.2 🔶 قلب المنتج (التدريب + التقييم) — موصول جزئياً (Phase 07 ~92% بنية · ~65% منتج (07.8-E))
 
-هذه أهمّ فجوة، وتُفسّر إحساسك بأن «النقل ضعيف جداً»:
+> **تحديث 2026-06-11 (Phase 07 · دفعة 07.7–07.8):** المداخل الأربعة في shell تفتح `TrainingSessionRoute` KMP؛ `TrainingActivity`/`LegacyTrainingLauncher` محذوفان. التفاصيل في [Phase 07 §13](Android-KMP-Mobile-UI-UX-Phase-07-Training-Engine-Migration-Plan.md#13-دفعة-078--إغلاق-المتبقي-بدون-جهاز).
 
-- **محرّك التدريب الجديد `core:training-engine` موصول جزئياً بعد P0/P1**: `feature:library` يستهلكه لمسار سكوات مباشر، و`feature:account` يستهلك `PoseFrame`/`JointAngles` لتقييم Body Scan.
-- **مسارات «Start» لم تعد كلها legacy، لكنها ليست مهاجرة كلها:** السكوات المدعوم ينتقل إلى `ExerciseLive`، بينما بقية التمارين/المداخل ما زالت ترتدّ إلى legacy.
-- **`WorkoutRunScreen`** صار يملك POC تدريب مباشر لتمارين محددة فقط؛ لا يزال ينقصه تحميل config كامل، حفظ الجلسة، feedback صوتي، وتوسيع بقية التمارين.
+- **`feature:training` + `core:training-engine`:** جلسة حية كاملة (setup→countdown→live→rest→complete) في commonMain + Compose؛ `ExerciseConfig` من API؛ Outbox/journal (WS-8).
+- **ما زال مفتوحاً (منتج):** golden replay لـ 4 تمارين · rest/sets parity كامل · iOS MediaPipe حيّ · Visual QA · `training/**` legacy للتقارير XML · LiteRT MLP.
+- **`WorkoutRunScreen`:** يوجّه إلى جلسة KMP عبر shell؛ parity workout mode (sets/rest/audio) 🔶.
 - **`Assessment` → `BodyScanContent`** لم يعد placeholder فقط: `AssessmentCameraHost` يرسل إطارات pose إلى `AssessmentBodyScanEngine`، ثم يرفع النتيجة عبر `POST api/assessment` أو يعرض نتيجة محلية محسوبة عند فشل الشبكة. ما زال ناقصاً: parity كامل مع legacy 4k lines، body map بصري، وiOS live camera.
 
 **الحجم الذي بقي في الـ legacy ولم يدخل التجربة الحية:**

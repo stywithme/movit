@@ -13,7 +13,8 @@ import com.movit.feature.library.ProgramListRoute
 import com.movit.feature.library.ProgramWeekPlanRoute
 import com.movit.feature.library.WeeklyReportEffect
 import com.movit.feature.library.WeeklyReportRoute
-import com.movit.feature.library.ExerciseLiveRoute
+import com.movit.feature.training.ExerciseLiveRoute
+import com.movit.feature.training.TrainingSessionRoute
 import com.movit.feature.library.TrainingStartAction
 import com.movit.feature.library.WorkoutCustomizeRoute
 import com.movit.feature.library.WorkoutRunRoute
@@ -127,7 +128,9 @@ fun MovitInnerHost(
             WorkoutRunRoute(
                 workoutId = route.workoutId,
                 onBack = onBack,
-                onStartExercise = { action -> handleTrainingStart(action, onNavigate, onShellEffect) },
+                onStartExercise = { action ->
+                    handleTrainingStart(action, workoutId = route.workoutId, onNavigate, onShellEffect)
+                },
                 modifier = modifier,
             )
         }
@@ -148,35 +151,34 @@ fun MovitInnerHost(
                 modifier = modifier,
             )
         }
+        is MovitInnerRoute.TrainingSession -> {
+            TrainingSessionRoute(
+                exerciseSlug = route.exerciseSlug,
+                exerciseName = route.exerciseName,
+                targetReps = route.targetReps,
+                onBack = onBack,
+                onFinish = {
+                    val workoutId = route.workoutId
+                    if (workoutId != null) {
+                        onNavigate(MovitInnerRoute.WorkoutRun(workoutId))
+                    } else {
+                        onBack()
+                    }
+                },
+                modifier = modifier,
+            )
+        }
         is MovitInnerRoute.ExercisePrepare -> {
             ExercisePrepareRoute(
                 exerciseId = route.exerciseId,
                 onBack = onBack,
                 onStart = { action ->
-                    val workoutId = route.workoutId
-                    when (action) {
-                        is TrainingStartAction.KmpLive -> {
-                            onNavigate(
-                                MovitInnerRoute.ExerciseLive(
-                                    exerciseSlug = action.slug,
-                                    exerciseName = action.exerciseName,
-                                    targetReps = action.targetReps,
-                                    workoutId = workoutId,
-                                ),
-                            )
-                        }
-                        is TrainingStartAction.Legacy -> {
-                            if (workoutId != null) {
-                                onNavigate(MovitInnerRoute.WorkoutRun(workoutId))
-                            } else {
-                                onShellEffect(
-                                    MovitAppShellEffect.LaunchLegacyCameraTraining(
-                                        exerciseFileName = action.exerciseFileName,
-                                    ),
-                                )
-                            }
-                        }
-                    }
+                    handleTrainingStart(
+                        action = action,
+                        workoutId = route.workoutId,
+                        onNavigate = onNavigate,
+                        onShellEffect = onShellEffect,
+                    )
                 },
                 modifier = modifier,
             )
@@ -224,26 +226,30 @@ fun MovitInnerHost(
 }
 
 private fun handleTrainingStart(
-    action: TrainingStartAction,
+    action: TrainingStartAction?,
+    workoutId: String? = null,
     onNavigate: (MovitInnerRoute) -> Unit,
     onShellEffect: (MovitAppShellEffect) -> Unit,
 ) {
     when (action) {
         is TrainingStartAction.KmpLive -> {
             onNavigate(
-                MovitInnerRoute.ExerciseLive(
+                MovitInnerRoute.TrainingSession(
                     exerciseSlug = action.slug,
                     exerciseName = action.exerciseName,
                     targetReps = action.targetReps,
-                    workoutId = action.workoutId,
+                    workoutId = action.workoutId ?: workoutId,
                 ),
             )
         }
         is TrainingStartAction.Legacy -> {
             onShellEffect(
-                MovitAppShellEffect.LaunchLegacyCameraTraining(
-                    exerciseFileName = action.exerciseFileName,
-                ),
+                MovitAppShellEffect.ShowLocalizedMessage("prepare_training_bridge_unavailable"),
+            )
+        }
+        null -> {
+            onShellEffect(
+                MovitAppShellEffect.ShowLocalizedMessage("prepare_training_bridge_unavailable"),
             )
         }
     }

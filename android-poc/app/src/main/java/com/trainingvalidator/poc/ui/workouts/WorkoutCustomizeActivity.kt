@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.gson.Gson
+import com.movit.navigation.MovitTrainingEntryNavigator
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityWorkoutCustomizeBinding
 import com.trainingvalidator.poc.databinding.ItemWorkoutCustomizeExerciseBinding
@@ -114,13 +115,11 @@ class WorkoutCustomizeActivity : AppCompatActivity() {
             }
 
             val customizedConfig = originalConfig.copy(exercises = exercises.toList())
-            startActivity(
-                WorkoutRunActivity.createIntent(
-                    context = this,
-                    workoutConfig = customizedConfig,
-                    workoutId = null,
-                    workoutContext = WorkoutExecutionContext.EXPLORE_WORKOUT
-                )
+            val workoutId = customizedConfig.fileName.ifBlank { "custom-workout" }
+            MovitTrainingEntryNavigator.openWorkoutRunWithLocalConfig(
+                context = this,
+                workoutId = workoutId,
+                workoutConfigJson = Gson().toJson(customizedConfig),
             )
         }
     }

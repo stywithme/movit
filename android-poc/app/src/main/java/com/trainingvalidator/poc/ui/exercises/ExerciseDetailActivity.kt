@@ -17,7 +17,7 @@ import com.trainingvalidator.poc.databinding.ActivityExerciseDetailBinding
 import com.trainingvalidator.poc.training.models.CountingMethod
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.storage.UserExercisePreferenceStore
-import com.trainingvalidator.poc.ui.train.TrainingActivity
+import com.movit.navigation.MovitTrainingEntryNavigator
 import kotlinx.coroutines.launch
 
 /**
@@ -308,13 +308,10 @@ class ExerciseDetailActivity : AppCompatActivity() {
     private fun startCameraTraining() {
         val exercise = exerciseConfig ?: return
         
-        val intent = Intent(this, TrainingActivity::class.java).apply {
-            putExtra(TrainingActivity.EXTRA_EXERCISE_NAME, exercise.fileName)
-            putExtra(TrainingActivity.EXTRA_POSE_VARIANT, selectedVariantIndex)
-            putExtra(TrainingActivity.EXTRA_TRAINING_MODE, TrainingActivity.MODE_CAMERA)
-            putExtra(TrainingActivity.EXTRA_INDICATOR_TYPE, selectedIndicatorType)
-        }
-        startActivity(intent)
+        MovitTrainingEntryNavigator.openExercisePrepare(
+            context = this,
+            exerciseId = exercise.fileName,
+        )
     }
 
 }
