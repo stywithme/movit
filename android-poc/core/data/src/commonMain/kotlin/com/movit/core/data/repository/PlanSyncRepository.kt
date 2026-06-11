@@ -10,6 +10,10 @@ class PlanSyncRepository(
     private val platform: () -> MovitPlatformBindings,
     private val homeSync: HomeSyncRepository,
 ) {
+    /** Active enrollment id persisted on platform bindings (migrated to SQLDelight on install). */
+    fun readCachedActiveUserProgramId(): String? =
+        platform().activeUserProgramId()?.takeIf { it.isNotBlank() }
+
     /**
      * Enrolls in [programId] via `POST /api/mobile/plan/enroll`, then resolves the active
      * [UserProgramExportDto.id] from `/api/mobile/sync` and persists it on the platform bindings

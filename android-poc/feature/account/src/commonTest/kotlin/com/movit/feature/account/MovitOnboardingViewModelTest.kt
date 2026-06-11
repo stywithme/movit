@@ -83,7 +83,7 @@ class MovitOnboardingViewModelTest {
 
     @Test
     fun viewModel_submitSuccessClearsSubmitting() = runBlocking {
-        val viewModel = MovitOnboardingViewModel()
+        val viewModel = MovitOnboardingViewModel(repository = FakeOnboardingRepository())
         fillCompleteProfile(viewModel)
         viewModel.onEvent(MovitOnboardingEvent.ContinueClicked)
         delay(50)

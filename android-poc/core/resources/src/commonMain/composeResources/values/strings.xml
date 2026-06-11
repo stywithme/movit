@@ -578,6 +578,14 @@
     <string name="workout_flow_a11y_sequence">%1$s, %2$s</string>
     <string name="workout_flow_a11y_pending">Upcoming</string>
     <string name="workout_flow_a11y_progress">Workout progress %1$d percent</string>
+    <string name="workout_live_title">Live training</string>
+    <string name="workout_live_phase">Phase: %1$s</string>
+    <string name="workout_live_reps">%1$d / %2$d reps</string>
+    <string name="workout_live_form">Form %1$d%%</string>
+    <string name="workout_live_avg_form">Avg form %1$d%%</string>
+    <string name="workout_live_finish">Finish set</string>
+    <string name="workout_live_bridge_unavailable">Live camera training is not available on this build yet.</string>
+    <string name="workout_live_ios_placeholder">iOS camera training — coming soon</string>
 
     <!-- Program flow (15) -->
     <string name="program_flow_list_title">Programs</string>
@@ -819,6 +827,9 @@
     <string name="assessment_hold_position">Hold position</string>
     <string name="assessment_camera_active">Camera active</string>
     <string name="assessment_camera_active_sub">Analyzing joint angles in real time</string>
+    <string name="assessment_camera_waiting">Finding pose</string>
+    <string name="assessment_camera_waiting_sub">Step into frame and hold the current movement.</string>
+    <string name="assessment_scan_error">Assessment scan needs attention: %1$s</string>
     <string name="assessment_camera_placeholder">Camera preview</string>
     <string name="assessment_camera_placeholder_sub">Live pose analysis opens in a later phase.</string>
     <string name="assessment_view_results">View results</string>
@@ -836,6 +847,8 @@
     <string name="assessment_region_spine">Spine</string>
     <string name="assessment_region_knees">Knees</string>
     <string name="assessment_region_knee">Knee</string>
+    <string name="assessment_region_balance">Balance</string>
+    <string name="assessment_region_core">Core</string>
     <string name="assessment_insights">Insights</string>
     <string name="assessment_insight_shoulder_title">Limited shoulder flexion</string>
     <string name="assessment_insight_shoulder_message">May affect overhead pressing. Consider mobility work before heavy loads.</string>
@@ -862,6 +875,9 @@
     <string name="level_body_score">Body score</string>
     <string name="level_plan_title">Your training plan</string>
     <string name="level_plan_sub">Personalized path based on your level &amp; goals</string>
+    <string name="level_recommended_programs">Recommended programs</string>
+    <string name="level_recommended_programs_sub">Matched to Level %1$d</string>
+    <string name="level_body_score_completion">Body score at completion</string>
     <string name="level_browse_programs">Browse recommended programs</string>
     <string name="level_plan_empty">No active training plan yet. Browse programs to get started.</string>
     <string name="level_phase_completed">Completed</string>

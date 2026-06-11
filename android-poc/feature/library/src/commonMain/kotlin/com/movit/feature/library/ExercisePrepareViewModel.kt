@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import com.movit.feature.library.training.KmpTrainingSlugs
 import kotlinx.coroutines.launch
 
 enum class ExercisePrepareMode {
@@ -122,6 +123,22 @@ class ExercisePrepareViewModel(
 
     fun addRestTime() {
         _state.update { it.copy(restSeconds = it.restSeconds + 15) }
+    }
+
+    fun trainingStartAction(workoutId: String? = null): TrainingStartAction? {
+        val exercise = _state.value.displayExercise ?: return null
+        val slug = exercise.legacyFileName
+        val reps = exercise.reps.filter { it.isDigit() }.toIntOrNull() ?: 12
+        return if (KmpTrainingSlugs.supports(slug)) {
+            TrainingStartAction.KmpLive(
+                slug = slug,
+                exerciseName = exercise.name,
+                targetReps = reps,
+                workoutId = workoutId,
+            )
+        } else {
+            TrainingStartAction.Legacy(slug)
+        }
     }
 
     fun legacyFileNameForStart(): String? = _state.value.exercise?.legacyFileName

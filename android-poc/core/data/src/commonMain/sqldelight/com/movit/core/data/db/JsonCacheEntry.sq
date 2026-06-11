@@ -25,3 +25,6 @@ selectAllByStore:
 SELECT cache_key, json_payload
 FROM json_cache_entry
 WHERE store = ?;
+
+deleteAll:
+DELETE FROM json_cache_entry;

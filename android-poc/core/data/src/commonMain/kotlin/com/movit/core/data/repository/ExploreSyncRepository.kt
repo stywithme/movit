@@ -20,6 +20,14 @@ class ExploreSyncRepository(
             ExploreDataDto.serializer(),
         )
 
+    /** Thumbnail URL from the explore catalog cache (replaces legacy ExerciseRepository lookup). */
+    fun exerciseImageUrl(slug: String): String? =
+        readCached()
+            ?.exercises
+            ?.firstOrNull { it.slug == slug }
+            ?.imageUrl
+            ?.takeIf { it.isNotBlank() }
+
     suspend fun sync(limit: Int = 50): AppResult<ExploreDataDto> =
         syncInternal(clearLastSync = false, limit = limit)
 

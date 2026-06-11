@@ -1,7 +1,9 @@
 package com.movit.feature.shell
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.movit.core.data.MovitData
+import com.movit.core.data.sync.MovitSyncOrchestrator
 import com.movit.feature.account.AuthBootstrapContext
 import com.movit.feature.account.AuthBootstrapTarget
 import com.movit.feature.account.MovitAssessmentEffect
@@ -23,6 +25,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 class MovitAppShellViewModel(
     private val legacyAuthExitEnabled: Boolean = false,
@@ -30,8 +33,15 @@ class MovitAppShellViewModel(
     private val _state = MutableStateFlow(MovitAppShellState())
     val state: StateFlow<MovitAppShellState> = _state.asStateFlow()
 
+    private val _syncOutcome = MutableStateFlow<MovitSyncOrchestrator.SyncOutcome?>(null)
+    val syncOutcome: StateFlow<MovitSyncOrchestrator.SyncOutcome?> = _syncOutcome.asStateFlow()
+
     init {
+        ShellSyncCoordinator.install { forceCheck -> requestSyncIfNeeded(forceCheck) }
         if (MovitData.isInstalled) {
+            viewModelScope.launch {
+                MovitData.bootstrapLocalCaches()
+            }
             MovitData.onSessionExpired = {
                 if (legacyAuthExitEnabled) {
                     _effects.tryEmit(MovitAppShellEffect.NavigateToLegacyAuth)
@@ -51,7 +61,33 @@ class MovitAppShellViewModel(
                     ),
                 )
             }
+            if (bootstrap.hasActiveSession) {
+                requestSyncIfNeeded()
+            }
         }
+    }
+
+    fun onAppResumed() {
+        requestSyncIfNeeded()
+    }
+
+    fun onConnectivityRestored() {
+        requestSyncIfNeeded(forceCheck = true)
+    }
+
+    private fun requestSyncIfNeeded(forceCheck: Boolean = false) {
+        if (!MovitData.isInstalled) return
+        if (!AuthBootstrapContext.fromMovitData().hasActiveSession) return
+
+        viewModelScope.launch {
+            val outcome = MovitData.sync.syncIfNeeded(forceCheck = forceCheck)
+            _syncOutcome.value = outcome
+        }
+    }
+
+    override fun onCleared() {
+        ShellSyncCoordinator.clear()
+        super.onCleared()
     }
 
     private val _effects = MutableSharedFlow<MovitAppShellEffect>(extraBufferCapacity = 1)

@@ -209,6 +209,7 @@ class OfflineWriteQueue(
                 status = OutboxStatus.PENDING,
             ),
         )
+        OfflineWriteOptimisticCache.apply(localStore, type, payload)
 
         if (platform().isNetworkAvailable() && platform().authHeader() != null) {
             replayPending()

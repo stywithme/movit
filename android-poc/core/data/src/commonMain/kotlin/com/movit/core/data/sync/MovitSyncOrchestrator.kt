@@ -1,9 +1,11 @@
 package com.movit.core.data.sync
 
+import com.movit.core.data.audio.AudioPrefetchRunner
 import com.movit.core.data.cache.AudioManifestCache
 import com.movit.core.data.cache.MovitCacheDriftDetector
 import com.movit.core.data.cache.MovitSyncMetadataStore
 import com.movit.core.data.local.MovitLocalStore
+import com.movit.core.data.outbox.OfflineWriteQueue
 import com.movit.core.data.platform.MovitPlatformBindings
 import com.movit.core.data.repository.ExploreSyncRepository
 import com.movit.core.data.repository.HomeSyncRepository
@@ -26,6 +28,8 @@ class MovitSyncOrchestrator(
     private val planSync: PlanSyncRepository,
     private val metadataStore: MovitSyncMetadataStore,
     private val audioManifestCache: AudioManifestCache,
+    private val audioPrefetchRunner: AudioPrefetchRunner,
+    private val offlineWrites: OfflineWriteQueue,
 ) {
     sealed class SyncOutcome {
         data class Success(
@@ -120,7 +124,8 @@ class MovitSyncOrchestrator(
             return runSyncCycle(forceFullRefresh = true)
         }
 
-        applyAudioManifest(syncResponse, forceFullRefresh)
+        val audioFullSync = applyAudioManifest(syncResponse, forceFullRefresh)
+        audioPrefetchRunner.afterManifestApplied(audioFullSync)
         metadataStore.writeFromSyncMeta(syncResponse.meta)
         if (syncResponse.timestamp.isNotBlank()) {
             metadataStore.writeLastSyncTimestamp(syncResponse.timestamp)
@@ -133,6 +138,7 @@ class MovitSyncOrchestrator(
         val reportsResult = if (bindings.isProUser()) reportsSync.syncDashboard() else null
 
         updateLocalEntityCounts(exploreSync.readCached())
+        offlineWrites.replayPending()
 
         return SyncOutcome.Success(
             home = (homeResult as? AppResult.Success)?.value ?: homeSync.readCached(),
@@ -172,9 +178,9 @@ class MovitSyncOrchestrator(
         }
     }
 
-    private fun applyAudioManifest(response: MobileSyncApiResponse, isFullSync: Boolean) {
-        val manifest = response.data?.audioManifest ?: return
-        if (!isFullSync && manifest.files.isEmpty()) return
+    private suspend fun applyAudioManifest(response: MobileSyncApiResponse, isFullSync: Boolean): Boolean {
+        val manifest = response.data?.audioManifest ?: return false
+        if (!isFullSync && manifest.files.isEmpty()) return false
 
         val base = AudioManifestCache.resolveEffectiveAudioBase(
             apiBaseUrl = platform().apiBaseUrl(),
@@ -185,6 +191,7 @@ class MovitSyncOrchestrator(
         } else {
             audioManifestCache.mergePartial(base, manifest)
         }
+        return isFullSync
     }
 
     private fun updateLocalEntityCounts(explore: ExploreDataDto?) {

@@ -17,3 +17,6 @@ VALUES (?, ?, ?, ?);
 deleteByScope:
 DELETE FROM sync_metadata
 WHERE scope = ?;
+
+deleteAll:
+DELETE FROM sync_metadata;

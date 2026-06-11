@@ -3,6 +3,7 @@ package com.movit.feature.home.components
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.movit.designsystem.components.MovitDashboardHero
+import com.movit.designsystem.components.MovitDashboardHeroVariant
 import com.movit.feature.home.HomeProgressUi
 import com.movit.feature.home.HomeSummaryCalculator
 
@@ -23,7 +24,7 @@ fun HomeHeroSummary(
         title = greetingTitle,
         subtitle = greetingSubtitle,
         progressPercent = progressPercent,
-        inkStyle = true,
+        variant = MovitDashboardHeroVariant.Default,
         modifier = modifier,
     )
 }

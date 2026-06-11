@@ -1,6 +1,7 @@
 package com.movit.feature.library.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -196,22 +198,28 @@ fun ProgramCopyCard(
     modifier: Modifier = Modifier,
 ) {
     val movit = MaterialTheme.movitColors
-    MovitCard(
-        modifier = modifier.fillMaxWidth(),
-        variant = MovitCardVariant.Filled,
+    val scheme = MaterialTheme.colorScheme
+    val shape = RoundedCornerShape(MovitRadius.xl)
+    val primaryTintSolid = movit.primaryTint.compositeOver(scheme.surface)
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(Brush.linearGradient(listOf(primaryTintSolid, scheme.surface)))
+            .border(androidx.compose.foundation.BorderStroke(1.dp, scheme.primary.copy(alpha = 0.36f)), shape),
     ) {
         Column(modifier = Modifier.padding(MovitSpacing.lg)) {
             Row(horizontalArrangement = Arrangement.spacedBy(MovitSpacing.md)) {
                 Surface(
                     modifier = Modifier.size(44.dp),
                     shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.primary,
+                    color = scheme.primary,
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             Icons.Default.Edit,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimary,
+                            tint = scheme.onPrimary,
                         )
                     }
                 }

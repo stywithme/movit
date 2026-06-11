@@ -10,8 +10,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import com.movit.designsystem.MovitSpacing
+import com.movit.designsystem.movitColors
 
 data class MovitStatTileData(
     val value: String,
@@ -22,12 +24,23 @@ data class MovitStatTileData(
 fun MovitStatTileRow(
     stats: List<MovitStatTileData>,
     modifier: Modifier = Modifier,
+    coloredValues: Boolean = false,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
     ) {
-        stats.forEach { stat ->
+        stats.forEachIndexed { index, stat ->
+            // prototype `.metric-row`: values colored by position (primary · lime · coral)
+            val valueColor = if (coloredValues) {
+                when (index % 3) {
+                    0 -> MaterialTheme.colorScheme.primary
+                    1 -> MaterialTheme.movitColors.limeDeep
+                    else -> MaterialTheme.colorScheme.tertiary
+                }
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            }
             MovitCard(
                 modifier = Modifier.weight(1f),
                 variant = MovitCardVariant.Filled,
@@ -42,7 +55,8 @@ fun MovitStatTileRow(
                     Text(
                         text = stat.value,
                         style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = valueColor,
+                        fontWeight = FontWeight.W800,
                         textAlign = TextAlign.Center,
                     )
                     Text(

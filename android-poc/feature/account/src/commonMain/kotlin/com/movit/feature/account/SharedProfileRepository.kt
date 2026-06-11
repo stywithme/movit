@@ -3,13 +3,11 @@ package com.movit.feature.account
 import com.movit.core.data.MovitData
 import com.movit.shared.AppResult
 
-class SharedProfileRepository(
-    private val fallback: ProfileRepository = FakeProfileRepository(),
-) : ProfileRepository {
+class SharedProfileRepository : ProfileRepository {
 
     override suspend fun loadProfile(): AppResult<ProfileUi> {
         if (!MovitData.isInstalled) {
-            return fallback.loadProfile()
+            return AppResult.Failure(DATA_LAYER_NOT_INSTALLED)
         }
         val platform = MovitData.requirePlatform()
         if (platform.authHeader() == null) {
@@ -28,14 +26,14 @@ class SharedProfileRepository(
 
     override suspend fun logout(): AppResult<Unit> {
         if (!MovitData.isInstalled) {
-            return fallback.logout()
+            return AppResult.Failure(DATA_LAYER_NOT_INSTALLED)
         }
         return MovitData.account.logout()
     }
 
     override suspend fun updateSettings(update: ProfileSettingsUpdate): AppResult<ProfileUi> {
         if (!MovitData.isInstalled) {
-            return fallback.updateSettings(update)
+            return AppResult.Failure(DATA_LAYER_NOT_INSTALLED)
         }
         val platform = MovitData.requirePlatform()
         return when (
@@ -60,10 +58,14 @@ class SharedProfileRepository(
 
     override suspend fun setThemeMode(mode: String): AppResult<ProfileUi> {
         if (!MovitData.isInstalled) {
-            return fallback.setThemeMode(mode)
+            return AppResult.Failure(DATA_LAYER_NOT_INSTALLED)
         }
         val platform = MovitData.requirePlatform()
         platform.setThemeMode(mode)
         return loadProfile()
+    }
+
+    private companion object {
+        const val DATA_LAYER_NOT_INSTALLED = "App data layer is not installed."
     }
 }

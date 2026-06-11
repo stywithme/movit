@@ -22,7 +22,7 @@ class MovitHomeStateTest {
     @Test
     fun successfulLoad_populatesDashboard() {
         runBlocking {
-            val viewModel = MovitHomeViewModel()
+            val viewModel = MovitHomeViewModel(repository = FakeHomeRepository())
             viewModel.load()
             val state = viewModel.state.value
             assertEquals(false, state.isLoading)
@@ -178,7 +178,7 @@ class MovitHomeStateTest {
     @Test
     fun successfulLoad_heroProgressReflectsApi() {
         runBlocking {
-            val viewModel = MovitHomeViewModel()
+            val viewModel = MovitHomeViewModel(repository = FakeHomeRepository())
             viewModel.load()
             val state = viewModel.state.value
             assertEquals(71, state.progress?.weeklyCompletionPercent)

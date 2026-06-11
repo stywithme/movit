@@ -9,6 +9,8 @@ internal object ProgramDetailMapper {
         enrollment: ProgramEnrollmentUi,
         selectedWeekNumber: Int,
         edit: ProgramEditUiState,
+        weeks: List<ProgramWeekUi>,
+        nextSession: ProgramNextSessionUi?,
     ): ProgramDetailUiState {
         val durationWeeks = parseWeeksCount(program.metadata)
         val weeklyTarget = parseWeeklyTarget(program.metadata)
@@ -17,13 +19,8 @@ internal object ProgramDetailMapper {
         val restDays = (trainingDays - totalSessions).coerceAtLeast(0)
         val sessionMinutes = parseSessionMinutes(program.metadata) ?: 25
 
-        val weeks = ProgramDetailPreviewData.weeksFor(program.id, durationWeeks, weeklyTarget)
         val currentWeek = weeks.firstOrNull { it.weekNumber == selectedWeekNumber } ?: weeks.firstOrNull()
-        val nextSession = if (enrollment.isEnrolled) {
-            ProgramDetailPreviewData.nextSession(program.id)
-        } else {
-            null
-        }
+        val resolvedNextSession = if (enrollment.isEnrolled) nextSession else null
 
         val kickers = buildList {
             program.badge?.let { add(it) }
@@ -64,7 +61,7 @@ internal object ProgramDetailMapper {
             selectedWeekNumber = selectedWeekNumber,
             weeks = weeks,
             enrollment = enrollment,
-            nextSession = nextSession,
+            nextSession = resolvedNextSession,
             edit = edit.copy(
                 weeklyTarget = weeklyTarget,
                 editingDayTitle = currentWeek?.days?.firstOrNull { it.status == ProgramDayStatus.Next }?.title

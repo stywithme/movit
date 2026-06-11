@@ -105,6 +105,14 @@ class SqlDelightMovitLocalStore(
         outboxQueries.selectByStatus(status.storageValue).executeAsList().size.toLong()
     }
 
+    override suspend fun clearAllUserData() {
+        withContext(Dispatchers.IO) {
+            jsonQueries.deleteAll()
+            syncQueries.deleteAll()
+            outboxQueries.deleteAll()
+        }
+    }
+
     private fun com.movit.core.data.db.Outbox_entry.toOutboxEntry(): OutboxEntry =
         OutboxEntry(
             id = id,

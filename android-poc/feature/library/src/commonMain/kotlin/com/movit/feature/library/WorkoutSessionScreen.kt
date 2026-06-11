@@ -31,7 +31,7 @@ import com.movit.designsystem.components.MovitInnerPageHeader
 import com.movit.designsystem.components.MovitLoadingState
 import com.movit.designsystem.components.MovitSectionHeader
 import com.movit.designsystem.components.MovitStatTileData
-import com.movit.designsystem.components.MovitStatTileRow
+import com.movit.designsystem.components.MovitStatsStrip
 import com.movit.designsystem.movitColors
 import com.movit.feature.library.components.SessionExerciseCard
 import com.movit.feature.library.components.SessionRestBlock
@@ -148,7 +148,7 @@ fun WorkoutSessionScreen(
                             },
                         )
                     }
-                    MovitStatTileRow(
+                    MovitStatsStrip(
                         stats = listOf(
                             MovitStatTileData(session.exerciseCount.toString(), movitText("session_exercises")),
                             MovitStatTileData(session.durationLabel, movitText("session_duration")),

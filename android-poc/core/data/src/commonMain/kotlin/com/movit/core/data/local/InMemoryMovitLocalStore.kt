@@ -67,5 +67,11 @@ class InMemoryMovitLocalStore : MovitLocalStore {
     override suspend fun countOutboxByStatus(status: OutboxStatus): Long =
         outbox.values.count { it.status == status }.toLong()
 
+    override suspend fun clearAllUserData() {
+        jsonCache.clear()
+        syncMetadata.clear()
+        outbox.clear()
+    }
+
     private fun cacheKey(store: String, key: String): String = "$store::$key"
 }

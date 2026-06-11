@@ -1,5 +1,8 @@
 package com.movit.feature.account
 
+import com.movit.core.training.model.JointAngles
+import com.movit.core.training.model.Landmark
+import com.movit.core.training.model.PoseFrame
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
@@ -18,7 +21,7 @@ class MovitAssessmentViewModelTest {
         val viewModel = MovitAssessmentViewModel()
         val state = viewModel.state.value
         assertEquals(AssessmentPhase.PreScreening, state.phase)
-        assertEquals(FakeAssessmentPreviewData.parqQuestions.size, state.parqAnswers.size)
+        assertEquals(AssessmentDefaults.parqQuestions.size, state.parqAnswers.size)
         assertTrue(state.parqAnswers.values.all { !it })
     }
 
@@ -60,6 +63,10 @@ class MovitAssessmentViewModelTest {
             val viewModel = MovitAssessmentViewModel(
                 repository = FakeAssessmentRepository(results = customResults),
             )
+            viewModel.onEvent(MovitAssessmentEvent.ContinueToBodyScan)
+            repeat(AssessmentDefaults.initialTemplate.movements.size * 24) { index ->
+                viewModel.onEvent(MovitAssessmentEvent.BodyScanFrameReceived(testPoseFrame(index.toLong())))
+            }
             viewModel.onEvent(MovitAssessmentEvent.CompleteBodyScan)
 
             val state = withTimeout(5_000) {
@@ -83,7 +90,36 @@ class MovitAssessmentViewModelTest {
     fun bodyScanDefaults_secondMovementOfThree() {
         val viewModel = MovitAssessmentViewModel()
         viewModel.onEvent(MovitAssessmentEvent.ContinueToBodyScan)
-        assertEquals(2, viewModel.state.value.scanMovementNumber)
+        assertEquals(1, viewModel.state.value.scanMovementNumber)
         assertEquals(3, viewModel.state.value.scanMovementTotal)
     }
+
+    @Test
+    fun bodyScanFrames_markScanComplete() {
+        val viewModel = MovitAssessmentViewModel()
+        viewModel.onEvent(MovitAssessmentEvent.ContinueToBodyScan)
+
+        repeat(AssessmentDefaults.initialTemplate.movements.size * 24) { index ->
+            viewModel.onEvent(MovitAssessmentEvent.BodyScanFrameReceived(testPoseFrame(index.toLong())))
+        }
+
+        assertTrue(viewModel.state.value.isScanComplete)
+        assertEquals(100, viewModel.state.value.scanProgressPercent)
+    }
 }
+
+private fun testPoseFrame(timestamp: Long): PoseFrame = PoseFrame(
+    angles = JointAngles(
+        leftShoulder = 150.0,
+        rightShoulder = 148.0,
+        leftHip = 105.0,
+        rightHip = 103.0,
+        leftKnee = 132.0,
+        rightKnee = 130.0,
+        leftAnkle = 92.0,
+        rightAnkle = 91.0,
+    ),
+    landmarks = List(33) { Landmark(x = 0.5f, y = 0.5f, z = 0f, visibility = 0.92f, presence = 0.95f) },
+    isFrontCamera = true,
+    timestampMs = timestamp,
+)

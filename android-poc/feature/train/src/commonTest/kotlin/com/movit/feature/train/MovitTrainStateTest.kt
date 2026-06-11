@@ -21,7 +21,7 @@ class MovitTrainStateTest {
     @Test
     fun activePlan_loadsContent() {
         runBlocking {
-            val viewModel = MovitTrainViewModel()
+            val viewModel = MovitTrainViewModel(repository = FakeTrainRepository())
             viewModel.load()
             val state = viewModel.state.value
             assertEquals(false, state.isLoading)
@@ -110,7 +110,7 @@ class MovitTrainStateTest {
     @Test
     fun weekNavigation_updatesSelectedIndex() {
         runBlocking {
-            val viewModel = MovitTrainViewModel()
+            val viewModel = MovitTrainViewModel(repository = FakeTrainRepository())
             viewModel.load()
             val initialIndex = viewModel.state.value.selectedWeekIndex
             viewModel.onEvent(MovitTrainEvent.NextWeekClicked)
@@ -123,7 +123,7 @@ class MovitTrainStateTest {
     @Test
     fun weekNavigation_clampsAtBounds() {
         runBlocking {
-            val viewModel = MovitTrainViewModel()
+            val viewModel = MovitTrainViewModel(repository = FakeTrainRepository())
             viewModel.load()
             repeat(10) { viewModel.onEvent(MovitTrainEvent.PreviousWeekClicked) }
             assertEquals(0, viewModel.state.value.selectedWeekIndex)
@@ -152,7 +152,7 @@ class MovitTrainStateTest {
     @Test
     fun viewReport_emitsOpenWeeklyReportWhenProgramPresent() {
         runBlocking {
-            val viewModel = MovitTrainViewModel()
+            val viewModel = MovitTrainViewModel(repository = FakeTrainRepository())
             viewModel.load()
             val effectDeferred = async {
                 withTimeout(5_000) {

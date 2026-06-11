@@ -1,0 +1,141 @@
+{
+  "home": {
+    "user": {
+      "name": "Movit",
+      "level": 1,
+      "levelCode": "L1",
+      "bodyScore": 50.0,
+      "levelProgress": 20
+    },
+    "trainMode": {
+      "status": "active",
+      "activeProgram": {
+        "id": "offline-up-001",
+        "name": { "en": "Strength Base", "ar": "أساس القوة" },
+        "weekNumber": 1,
+        "dayNumber": 1,
+        "totalWeeks": 8,
+        "weekProgress": { "completed": 0, "total": 4 }
+      },
+      "todayWorkout": {
+        "plannedWorkoutId": "offline-pw-001",
+        "name": { "en": "Quick Legs", "ar": "أرجل سريعة" },
+        "exerciseCount": 4,
+        "estimatedMinutes": 20,
+        "workoutTemplateId": "wt-001",
+        "isCompleted": false,
+        "allWorkoutsCount": 1,
+        "completedWorkoutsCount": 0
+      },
+      "dayType": "training",
+      "isPaused": false,
+      "isTrainingDay": true
+    },
+    "stats": {
+      "totalWorkoutExecutions": 0,
+      "avgFormScore": 0,
+      "streak": 0,
+      "thisWeekExecutions": 0,
+      "totalMinutes": 0
+    },
+    "recentWorkouts": [],
+    "alerts": [],
+    "levelProfile": {
+      "overallLevel": 1,
+      "bodyScore": 50.0,
+      "levelInfo": { "name": { "en": "Getting started", "ar": "البداية" } }
+    }
+  },
+  "explore": {
+    "levels": [
+      {
+        "number": 1,
+        "code": "L1",
+        "name": { "en": "Beginner", "ar": "مبتدئ" }
+      }
+    ],
+    "programs": [
+      {
+        "id": "prog-001",
+        "slug": "strength-base",
+        "name": { "en": "Strength Base", "ar": "أساس القوة" },
+        "durationWeeks": 8,
+        "coverImageUrl": "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=400&q=70",
+        "updatedAt": "1970-01-01T00:00:00.000Z"
+      }
+    ],
+    "workoutTemplates": [
+      {
+        "id": "wt-001",
+        "slug": "quick-legs",
+        "name": { "en": "Quick Legs", "ar": "أرجل سريعة" },
+        "exerciseCount": 4,
+        "estimatedDurationMin": 20,
+        "coverImageUrl": "https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&w=320&q=70",
+        "updatedAt": "1970-01-01T00:00:00.000Z"
+      }
+    ],
+    "exercises": [
+      {
+        "id": "ex-001",
+        "slug": "bodyweight-squat",
+        "name": { "en": "Bodyweight Squat", "ar": "قرفصاء" },
+        "categoryCode": "lower_body",
+        "categoryName": { "en": "Lower body", "ar": "الجزء السفلي" },
+        "musclesCount": 2,
+        "imageUrl": "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=400&q=70",
+        "updatedAt": "1970-01-01T00:00:00.000Z"
+      }
+    ],
+    "deletedProgramIds": [],
+    "deletedWorkoutTemplateIds": [],
+    "deletedExerciseIds": []
+  },
+  "systemMessages": [
+    {
+      "code": "training_countdown_3",
+      "content": { "ar": "3", "en": "3" },
+      "updatedAt": "1970-01-01T00:00:00.000Z"
+    },
+    {
+      "code": "training_countdown_2",
+      "content": { "ar": "2", "en": "2" },
+      "updatedAt": "1970-01-01T00:00:00.000Z"
+    },
+    {
+      "code": "training_countdown_1",
+      "content": { "ar": "1", "en": "1" },
+      "updatedAt": "1970-01-01T00:00:00.000Z"
+    },
+    {
+      "code": "training_countdown_go",
+      "content": { "ar": "ابدأ!", "en": "Go!" },
+      "updatedAt": "1970-01-01T00:00:00.000Z"
+    },
+    {
+      "code": "training_go_overlay",
+      "content": { "ar": "انطلق!", "en": "GO!" },
+      "updatedAt": "1970-01-01T00:00:00.000Z"
+    },
+    {
+      "code": "training_pose_confirmed",
+      "content": { "ar": "ممتاز، استعد!", "en": "Great, get ready!" },
+      "updatedAt": "1970-01-01T00:00:00.000Z"
+    },
+    {
+      "code": "training_streak_good",
+      "content": { "ar": "جيد!", "en": "Good!" },
+      "updatedAt": "1970-01-01T00:00:00.000Z"
+    },
+    {
+      "code": "training_hold_stay",
+      "content": { "ar": "ابق ثابتاً!", "en": "Stay in position!" },
+      "updatedAt": "1970-01-01T00:00:00.000Z"
+    },
+    {
+      "code": "training_hold_resumed",
+      "content": { "ar": "أحسنت، استمر", "en": "Good, keep holding" },
+      "updatedAt": "1970-01-01T00:00:00.000Z"
+    }
+  ]
+}

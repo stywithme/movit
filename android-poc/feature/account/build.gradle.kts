@@ -17,6 +17,7 @@ kotlin {
             implementation(project(":shared"))
             implementation(project(":core:data"))
             implementation(project(":core:network"))
+            implementation(project(":core:training-engine"))
             implementation(project(":core:designsystem"))
             implementation(project(":core:resources"))
             implementation(compose.components.resources)
@@ -28,6 +29,11 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.jetbrains.lifecycle.viewmodel)
             implementation(libs.jetbrains.lifecycle.viewmodel.compose)
+            implementation(libs.jetbrains.lifecycle.runtime.compose)
+        }
+        androidMain.dependencies {
+            implementation(libs.androidx.activity.compose)
+            implementation(libs.camera.view)
             implementation(libs.jetbrains.lifecycle.runtime.compose)
         }
         commonTest.dependencies {

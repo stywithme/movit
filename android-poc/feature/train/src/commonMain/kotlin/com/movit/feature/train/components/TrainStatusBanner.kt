@@ -21,6 +21,7 @@ import com.movit.designsystem.components.MovitAccentVariant
 import com.movit.designsystem.components.MovitBanner
 import com.movit.designsystem.components.MovitBannerVariant
 import com.movit.designsystem.components.MovitDashboardHero
+import com.movit.designsystem.components.MovitDashboardHeroVariant
 import com.movit.designsystem.components.MovitMetricItem
 import com.movit.designsystem.components.MovitMetricRow
 import com.movit.designsystem.components.MovitTag
@@ -45,7 +46,7 @@ fun TrainStatusBanner(
                     title = program.name,
                     subtitle = program.positionLabel,
                     progressPercent = program.progressPercent,
-                    inkStyle = true,
+                    variant = MovitDashboardHeroVariant.Default,
                 )
                 MovitMetricRow(
                     items = listOf(

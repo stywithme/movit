@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import com.movit.feature.library.training.KmpTrainingSlugs
 import com.movit.shared.AppResult
 import kotlinx.coroutines.launch
 
@@ -51,7 +52,22 @@ class WorkoutRunViewModel(
             is AppResult.Failure -> null
         }
 
-    /** Legacy [TrainingActivity] file slug for the active exercise (Phase 05 boundary). */
+    fun trainingStartAction(): TrainingStartAction? {
+        val exercise = _state.value.currentExercise ?: return null
+        val slug = exercise.exerciseSlug
+        return if (KmpTrainingSlugs.supports(slug)) {
+            TrainingStartAction.KmpLive(
+                slug = slug,
+                exerciseName = exercise.name,
+                targetReps = exercise.reps ?: 12,
+                workoutId = workoutId,
+            )
+        } else {
+            TrainingStartAction.Legacy(slug)
+        }
+    }
+
+    /** @deprecated Use [trainingStartAction]; kept for tests. */
     fun legacyFileNameForStart(): String? = _state.value.currentExercise?.exerciseSlug
 }
 

@@ -1,5 +1,8 @@
 package com.movit.core.data
 
+import com.movit.core.data.cache.AudioManifestCache
+import com.movit.core.data.cache.ColdOfflineBundleSeeder
+import com.movit.core.data.cache.SystemMessageCache
 import com.movit.core.data.di.movitDataModule
 import com.movit.core.data.local.DefaultMovitLocalStoreFactory
 import com.movit.core.data.local.MovitLocalStore
@@ -51,8 +54,31 @@ object MovitData {
         }
     }
 
+    /**
+     * Seeds bundled cold-start data and hydrates [SystemMessageRegistry] on first launch.
+     * Call once after [install] from the shell entry point.
+     */
+    suspend fun bootstrapLocalCaches() {
+        if (!isInstalled) return
+        val koin = koin()
+        koin.get<ColdOfflineBundleSeeder>().seedIfNeeded()
+        koin.get<SystemMessageCache>().loadIntoRegistry()
+    }
+
     internal fun notifySessionExpired() {
         onSessionExpired?.invoke()
+    }
+
+    /**
+     * Clears all user-owned durable caches (SQLDelight JSON + sync metadata + outbox + audio manifest)
+     * and legacy platform migration stores. Call before [MovitPlatformBindings.clearAuthSession] on logout.
+     */
+    suspend fun clearAllUserData() {
+        if (!isInstalled) return
+        val koin = koin()
+        koin.get<MovitLocalStore>().clearAllUserData()
+        koin.get<AudioManifestCache>().clear()
+        koin.get<MovitPlatformBindings>().clearLegacyUserCaches()
     }
 
     fun requirePlatform(): MovitPlatformBindings = koin().get()

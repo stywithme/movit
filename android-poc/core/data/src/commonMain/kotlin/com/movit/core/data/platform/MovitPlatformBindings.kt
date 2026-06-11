@@ -14,6 +14,9 @@ interface MovitPlatformBindings {
     fun writeCache(store: String, key: String, value: String)
     fun removeCache(store: String, key: String)
 
+    /** All string entries in a legacy prefs namespace (Android SharedPreferences). Used for batch migration. */
+    fun readAllCacheEntries(store: String): Map<String, String> = emptyMap()
+
     /** Pro subscription unlocks coach-style reports from the backend. */
     fun isProUser(): Boolean = false
 
@@ -54,6 +57,8 @@ interface MovitPlatformBindings {
     fun persistAuthSession(snapshot: AuthSessionSnapshot) {}
 
     fun clearAuthSession() {}
+
+    fun clearLegacyUserCaches() {}
 
     fun setOnboardingCompleted(completed: Boolean) {}
 

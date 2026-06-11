@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import com.movit.designsystem.components.MovitDashboardHero
+import com.movit.designsystem.components.MovitDashboardHeroVariant
 import com.movit.feature.home.HomeLevelCardUi
 import com.movit.resources.movitText
 
@@ -22,7 +23,7 @@ fun HomeLevelCard(
         title = level.title,
         subtitle = level.subtitle,
         progressPercent = level.progressPercent,
-        inkStyle = false,
+        variant = MovitDashboardHeroVariant.Level,
         actionLabel = movitText("home_view_level"),
         onActionClick = onClick,
         modifier = modifier

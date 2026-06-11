@@ -1,6 +1,7 @@
 package com.movit.feature.library
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -229,7 +230,7 @@ fun WeeklyReportRoute(
 fun ExercisePrepareRoute(
     exerciseId: String,
     onBack: () -> Unit,
-    onStart: (String) -> Unit,
+    onStart: (TrainingStartAction) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ExercisePrepareViewModel = viewModel { ExercisePrepareViewModel(exerciseId) },
 ) {
@@ -239,7 +240,7 @@ fun ExercisePrepareRoute(
     ExercisePrepareScreen(
         state = state,
         onBack = onBack,
-        onStart = { viewModel.legacyFileNameForStart()?.let(onStart) },
+        onStart = { viewModel.trainingStartAction()?.let(onStart) },
         onSkipRest = viewModel::skipRest,
         onToggleRestPause = viewModel::toggleRestPause,
         onAddRestTime = viewModel::addRestTime,
@@ -278,7 +279,7 @@ fun WorkoutCustomizeRoute(
 fun WorkoutRunRoute(
     workoutId: String,
     onBack: () -> Unit,
-    onStartExercise: (String) -> Unit,
+    onStartExercise: (TrainingStartAction) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: WorkoutRunViewModel = viewModel { WorkoutRunViewModel(workoutId) },
 ) {
@@ -288,8 +289,45 @@ fun WorkoutRunRoute(
     WorkoutRunScreen(
         state = state,
         onBack = onBack,
-        onStartExercise = { viewModel.legacyFileNameForStart()?.let(onStartExercise) },
+        onStartExercise = { viewModel.trainingStartAction()?.let(onStartExercise) },
         onRetry = { scope.launch { viewModel.load() } },
+        modifier = modifier,
+    )
+}
+
+@Composable
+fun ExerciseLiveRoute(
+    exerciseSlug: String,
+    exerciseName: String,
+    targetReps: Int,
+    onBack: () -> Unit,
+    onFinish: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: com.movit.feature.library.training.ExerciseLiveViewModel = viewModel {
+        com.movit.feature.library.training.ExerciseLiveViewModel(
+            exerciseSlug = exerciseSlug,
+            exerciseName = exerciseName,
+            targetReps = targetReps,
+        )
+    },
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    DisposableEffect(viewModel) {
+        onDispose { viewModel.stopSession() }
+    }
+    com.movit.feature.library.training.ExerciseLiveScreen(
+        state = state,
+        runner = viewModel.runner,
+        onBack = {
+            viewModel.stopSession()
+            onBack()
+        },
+        onFinish = {
+            viewModel.stopSession()
+            onFinish()
+        },
+        onCameraReady = viewModel::onCameraReady,
+        onCameraError = viewModel::onCameraError,
         modifier = modifier,
     )
 }

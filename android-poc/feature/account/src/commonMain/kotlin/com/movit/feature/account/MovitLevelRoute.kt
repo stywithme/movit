@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun MovitLevelRoute(
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: MovitLevelViewModel = viewModel { MovitLevelViewModel() },
     onEffect: (MovitLevelEffect) -> Unit = {},
@@ -36,6 +37,7 @@ fun MovitLevelRoute(
                 else -> viewModel.onEvent(event)
             }
         },
+        onBack = onBack,
         modifier = modifier,
     )
 }

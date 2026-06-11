@@ -13,6 +13,8 @@ import com.movit.feature.library.ProgramListRoute
 import com.movit.feature.library.ProgramWeekPlanRoute
 import com.movit.feature.library.WeeklyReportEffect
 import com.movit.feature.library.WeeklyReportRoute
+import com.movit.feature.library.ExerciseLiveRoute
+import com.movit.feature.library.TrainingStartAction
 import com.movit.feature.library.WorkoutCustomizeRoute
 import com.movit.feature.library.WorkoutRunRoute
 import com.movit.feature.library.WorkoutSessionRoute
@@ -125,12 +127,23 @@ fun MovitInnerHost(
             WorkoutRunRoute(
                 workoutId = route.workoutId,
                 onBack = onBack,
-                onStartExercise = { fileName ->
-                    onShellEffect(
-                        MovitAppShellEffect.LaunchLegacyCameraTraining(
-                            exerciseFileName = fileName,
-                        ),
-                    )
+                onStartExercise = { action -> handleTrainingStart(action, onNavigate, onShellEffect) },
+                modifier = modifier,
+            )
+        }
+        is MovitInnerRoute.ExerciseLive -> {
+            ExerciseLiveRoute(
+                exerciseSlug = route.exerciseSlug,
+                exerciseName = route.exerciseName,
+                targetReps = route.targetReps,
+                onBack = onBack,
+                onFinish = {
+                    val workoutId = route.workoutId
+                    if (workoutId != null) {
+                        onNavigate(MovitInnerRoute.WorkoutRun(workoutId))
+                    } else {
+                        onBack()
+                    }
                 },
                 modifier = modifier,
             )
@@ -139,16 +152,30 @@ fun MovitInnerHost(
             ExercisePrepareRoute(
                 exerciseId = route.exerciseId,
                 onBack = onBack,
-                onStart = { fileName ->
+                onStart = { action ->
                     val workoutId = route.workoutId
-                    if (workoutId != null) {
-                        onNavigate(MovitInnerRoute.WorkoutRun(workoutId))
-                    } else {
-                        onShellEffect(
-                            MovitAppShellEffect.LaunchLegacyCameraTraining(
-                                exerciseFileName = fileName,
-                            ),
-                        )
+                    when (action) {
+                        is TrainingStartAction.KmpLive -> {
+                            onNavigate(
+                                MovitInnerRoute.ExerciseLive(
+                                    exerciseSlug = action.slug,
+                                    exerciseName = action.exerciseName,
+                                    targetReps = action.targetReps,
+                                    workoutId = workoutId,
+                                ),
+                            )
+                        }
+                        is TrainingStartAction.Legacy -> {
+                            if (workoutId != null) {
+                                onNavigate(MovitInnerRoute.WorkoutRun(workoutId))
+                            } else {
+                                onShellEffect(
+                                    MovitAppShellEffect.LaunchLegacyCameraTraining(
+                                        exerciseFileName = action.exerciseFileName,
+                                    ),
+                                )
+                            }
+                        }
                     }
                 },
                 modifier = modifier,
@@ -188,8 +215,35 @@ fun MovitInnerHost(
         }
         MovitInnerRoute.LevelProfile -> {
             MovitLevelRoute(
+                onBack = onBack,
                 onEffect = { onShellEvent(MovitAppShellEvent.LevelEffectReceived(it)) },
                 modifier = modifier,
+            )
+        }
+    }
+}
+
+private fun handleTrainingStart(
+    action: TrainingStartAction,
+    onNavigate: (MovitInnerRoute) -> Unit,
+    onShellEffect: (MovitAppShellEffect) -> Unit,
+) {
+    when (action) {
+        is TrainingStartAction.KmpLive -> {
+            onNavigate(
+                MovitInnerRoute.ExerciseLive(
+                    exerciseSlug = action.slug,
+                    exerciseName = action.exerciseName,
+                    targetReps = action.targetReps,
+                    workoutId = action.workoutId,
+                ),
+            )
+        }
+        is TrainingStartAction.Legacy -> {
+            onShellEffect(
+                MovitAppShellEffect.LaunchLegacyCameraTraining(
+                    exerciseFileName = action.exerciseFileName,
+                ),
             )
         }
     }

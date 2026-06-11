@@ -2,29 +2,40 @@ package com.movit.feature.account
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.movit.designsystem.MovitRadius
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.components.MovitAccentBlock
 import com.movit.designsystem.components.MovitAccentVariant
@@ -33,8 +44,13 @@ import com.movit.designsystem.components.MovitButtonSize
 import com.movit.designsystem.components.MovitButtonVariant
 import com.movit.designsystem.components.MovitCard
 import com.movit.designsystem.components.MovitDashboardHero
+import com.movit.designsystem.components.MovitDashboardHeroVariant
 import com.movit.designsystem.components.MovitErrorState
-import com.movit.designsystem.components.MovitFilterChip
+import com.movit.designsystem.components.MovitFloatPill
+import com.movit.designsystem.components.MovitFloatPillVariant
+import com.movit.designsystem.components.MovitIconBoxVariant
+import com.movit.designsystem.components.MovitListCard
+import com.movit.designsystem.components.MovitListRow
 import com.movit.designsystem.components.MovitLoadingState
 import com.movit.designsystem.components.MovitProgressBar
 import com.movit.designsystem.movitColors
@@ -44,36 +60,17 @@ import com.movit.resources.movitText
 fun MovitLevelScreen(
     state: MovitLevelUiState,
     onEvent: (MovitLevelEvent) -> Unit,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(MovitSpacing.lg),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
-        ) {
-            MovitFilterChip(
-                label = movitText("level_tab_profile"),
-                selected = state.selectedTab == LevelTab.LevelProfile,
-                onClick = { onEvent(MovitLevelEvent.TabSelected(LevelTab.LevelProfile)) },
-                modifier = Modifier.weight(1f),
-            )
-            MovitFilterChip(
-                label = movitText("level_tab_plan"),
-                selected = state.selectedTab == LevelTab.PlanOverview,
-                onClick = { onEvent(MovitLevelEvent.TabSelected(LevelTab.PlanOverview)) },
-                modifier = Modifier.weight(1f),
-            )
-        }
-
+    Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
-                .weight(1f)
+                .fillMaxSize()
+                .padding(top = 56.dp)
                 .verticalScroll(rememberScrollState())
-                .padding(top = MovitSpacing.lg),
+                .padding(horizontal = MovitSpacing.lg)
+                .padding(bottom = MovitSpacing.xl),
             verticalArrangement = Arrangement.spacedBy(MovitSpacing.lg),
         ) {
             when {
@@ -94,6 +91,61 @@ fun MovitLevelScreen(
                 }
             }
         }
+
+        LevelFloatingHeader(
+            selectedTab = state.selectedTab,
+            onBack = onBack,
+            onTabSelected = { onEvent(MovitLevelEvent.TabSelected(it)) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = MovitSpacing.lg, vertical = MovitSpacing.md),
+        )
+    }
+}
+
+@Composable
+private fun LevelFloatingHeader(
+    selectedTab: LevelTab,
+    onBack: () -> Unit,
+    onTabSelected: (LevelTab) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
+    ) {
+        MovitFloatPill(
+            onClick = onBack,
+            icon = Icons.AutoMirrored.Filled.ArrowBack,
+            variant = MovitFloatPillVariant.Ink,
+            contentDescription = movitText("profile_back"),
+        )
+        MovitFloatPill(
+            onClick = { onTabSelected(LevelTab.LevelProfile) },
+            label = movitText("level_tab_profile"),
+            variant = if (selectedTab == LevelTab.LevelProfile) {
+                MovitFloatPillVariant.Action
+            } else {
+                MovitFloatPillVariant.Ink
+            },
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+        )
+        MovitFloatPill(
+            onClick = { onTabSelected(LevelTab.PlanOverview) },
+            label = movitText("level_tab_plan"),
+            variant = if (selectedTab == LevelTab.PlanOverview) {
+                MovitFloatPillVariant.Action
+            } else {
+                MovitFloatPillVariant.Ink
+            },
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+        )
+        Spacer(modifier = Modifier.size(46.dp))
     }
 }
 
@@ -112,7 +164,7 @@ private fun LevelProfileContent(
             profile.reassessmentLabel,
         ),
         progressPercent = profile.progressToNext,
-        inkStyle = false,
+        variant = MovitDashboardHeroVariant.Lime,
     )
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         LevelRing(score = profile.bodyScore)
@@ -141,6 +193,16 @@ private fun LevelProfileContent(
             )
         },
     )
+    MovitListCard {
+        MovitListRow(
+            title = movitText("level_recommended_programs"),
+            subtitle = movitText("level_recommended_programs_sub", profile.levelNumber),
+            icon = Icons.Default.EmojiEvents,
+            iconVariant = MovitIconBoxVariant.Lime,
+            onClick = { onEvent(MovitLevelEvent.BrowseProgramsClicked) },
+            showChevron = true,
+        )
+    }
 }
 
 @Composable
@@ -239,9 +301,7 @@ private fun PlanOverviewContent(
             )
         }
     } else {
-        profile.planPhases.forEach { phase ->
-            PlanPhaseCard(phase = phase)
-        }
+        PlanTimeline(phases = profile.planPhases)
     }
     MovitButton(
         text = movitText("level_browse_programs"),
@@ -252,48 +312,169 @@ private fun PlanOverviewContent(
 }
 
 @Composable
-private fun PlanPhaseCard(phase: PlanPhaseUi) {
-    val dotColor = when (phase.status) {
-        PlanPhaseStatus.Done -> MaterialTheme.movitColors.success
-        PlanPhaseStatus.Active -> MaterialTheme.colorScheme.primary
-        PlanPhaseStatus.Upcoming -> MaterialTheme.movitColors.surface2
+private fun PlanTimeline(phases: List<PlanPhaseUi>) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        phases.forEachIndexed { index, phase ->
+            PlanTimelineItem(
+                phase = phase,
+                showConnector = index < phases.lastIndex,
+            )
+        }
     }
-    MovitCard {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(MovitSpacing.md),
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(12.dp)
-                    .clip(CircleShape)
-                    .background(dotColor),
-            )
-            Text(text = phase.title, fontWeight = FontWeight.W800)
-        }
-        Text(
-            text = phase.subtitle,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.movitColors.textSecondary,
-            modifier = Modifier.padding(top = MovitSpacing.xs),
+}
+
+@Composable
+private fun PlanTimelineItem(
+    phase: PlanPhaseUi,
+    showConnector: Boolean,
+) {
+    val movit = MaterialTheme.movitColors
+    val dividerColor = movit.divider
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 22.dp)
+            .drawBehind {
+                if (showConnector) {
+                    val x = (-16).dp.toPx()
+                    drawLine(
+                        color = dividerColor,
+                        start = Offset(x, 20.dp.toPx()),
+                        end = Offset(x, size.height),
+                        strokeWidth = 2.dp.toPx(),
+                    )
+                }
+            },
+    ) {
+        TimelineDot(
+            status = phase.status,
+            modifier = Modifier
+                .offset(x = (-22).dp)
+                .padding(top = 6.dp),
         )
-        phase.progressPercent?.let { percent ->
-            MovitProgressBar(
-                progressPercent = percent,
-                modifier = Modifier.padding(top = MovitSpacing.md),
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 18.dp),
+        ) {
+            Text(
+                text = phase.title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.W800,
+            )
+            Text(
+                text = phase.subtitle,
+                style = MaterialTheme.typography.labelMedium,
+                color = movit.textTertiary,
+                modifier = Modifier.padding(top = 3.dp),
+            )
+            PlanPhaseStateCard(phase = phase)
+        }
+    }
+}
+
+@Composable
+private fun TimelineDot(
+    status: PlanPhaseStatus,
+    modifier: Modifier = Modifier,
+) {
+    val movit = MaterialTheme.movitColors
+    val dotSize = 14.dp
+    val surfaceColor = MaterialTheme.colorScheme.surface
+
+    when (status) {
+        PlanPhaseStatus.Active -> {
+            Box(
+                modifier = modifier.size(22.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(22.dp)
+                        .clip(CircleShape)
+                        .background(movit.primaryTint),
+                )
+                Box(
+                    modifier = Modifier
+                        .size(dotSize)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary)
+                        .border(3.dp, surfaceColor, CircleShape),
+                )
+            }
+        }
+        PlanPhaseStatus.Done -> {
+            Box(
+                modifier = modifier
+                    .size(dotSize)
+                    .clip(CircleShape)
+                    .background(movit.success),
             )
         }
-        phase.highlight?.let { highlight ->
-            Text(
-                text = highlight,
-                style = MaterialTheme.typography.bodySmall,
-                color = if (phase.status == PlanPhaseStatus.Done) {
-                    MaterialTheme.movitColors.success
-                } else {
-                    MaterialTheme.movitColors.textSecondary
-                },
-                modifier = Modifier.padding(top = MovitSpacing.sm),
+        PlanPhaseStatus.Upcoming -> {
+            val borderColor = movit.stroke
+            Box(
+                modifier = modifier
+                    .size(dotSize)
+                    .clip(CircleShape)
+                    .background(movit.surface2)
+                    .border(3.dp, surfaceColor, CircleShape)
+                    .border(1.dp, borderColor, CircleShape),
             )
+        }
+    }
+}
+
+@Composable
+private fun PlanPhaseStateCard(phase: PlanPhaseUi) {
+    val movit = MaterialTheme.movitColors
+    val hasDoneHighlight = phase.status == PlanPhaseStatus.Done && phase.highlight != null
+    val hasActiveProgress = phase.status == PlanPhaseStatus.Active &&
+        (phase.progressPercent != null || phase.highlight != null)
+
+    if (!hasDoneHighlight && !hasActiveProgress) return
+
+    Surface(
+        shape = RoundedCornerShape(MovitRadius.md),
+        color = movit.surface2,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = MovitSpacing.sm),
+    ) {
+        Column(modifier = Modifier.padding(MovitSpacing.md)) {
+            when (phase.status) {
+                PlanPhaseStatus.Done -> {
+                    Text(
+                        text = movitText("level_body_score_completion"),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = movit.textSecondary,
+                    )
+                    Text(
+                        text = phase.highlight.orEmpty(),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.W800,
+                        color = movit.success,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+                PlanPhaseStatus.Active -> {
+                    phase.progressPercent?.let { percent ->
+                        MovitProgressBar(progressPercent = percent)
+                    }
+                    phase.highlight?.let { highlight ->
+                        Text(
+                            text = highlight,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = movit.textSecondary,
+                            modifier = Modifier.padding(
+                                top = if (phase.progressPercent != null) MovitSpacing.sm else 0.dp,
+                            ),
+                        )
+                    }
+                }
+                PlanPhaseStatus.Upcoming -> Unit
+            }
         }
     }
 }

@@ -96,6 +96,7 @@ fun MovitHomeScreen(
                             stats = state.metricTiles.map {
                                 MovitStatTileData(value = it.value, label = it.label)
                             },
+                            coloredValues = true,
                         )
                     }
 

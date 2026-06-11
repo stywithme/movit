@@ -18,11 +18,14 @@ class ProgramDetailMapperTest {
             type = ExploreItemType.Program,
             metadata = listOf("4 weeks", "3 days/week", "Beginner"),
         )
+        val weeks = ProgramDetailPreviewData.weeksFor(program.id, durationWeeks = 4, weeklyTarget = 3)
         val state = ProgramDetailMapper.map(
             program = program,
             enrollment = ProgramEnrollmentUi(isEnrolled = false),
             selectedWeekNumber = 1,
             edit = ProgramEditUiState(),
+            weeks = weeks,
+            nextSession = null,
         )
 
         assertEquals("4 weeks", state.stats[0].value)
@@ -40,11 +43,15 @@ class ProgramDetailMapperTest {
             type = ExploreItemType.Program,
             metadata = listOf("4 weeks", "3 days/week"),
         )
+        val weeks = ProgramDetailPreviewData.weeksFor(program.id, durationWeeks = 4, weeklyTarget = 3)
+        val nextSession = ProgramDetailPreviewData.nextSession(program.id)
         val state = ProgramDetailMapper.map(
             program = program,
             enrollment = ProgramEnrollmentUi(isEnrolled = true),
             selectedWeekNumber = 1,
             edit = ProgramEditUiState(),
+            weeks = weeks,
+            nextSession = nextSession,
         )
 
         assertNotNull(state.nextSession)

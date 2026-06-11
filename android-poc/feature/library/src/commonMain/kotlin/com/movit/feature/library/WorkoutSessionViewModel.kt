@@ -2,6 +2,7 @@ package com.movit.feature.library
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.movit.core.data.cache.CacheState
 import com.movit.shared.AppResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,17 +32,21 @@ class WorkoutSessionViewModel(
     }
 
     suspend fun load() {
-        _state.update { it.copy(isLoading = true, errorMessage = null) }
-        when (val result = repository.loadSession(workoutId)) {
-            is AppResult.Success -> {
-                _state.update {
-                    it.copy(isLoading = false, session = result.value.recalculated())
+        if (_state.value.session == null) {
+            _state.update { it.copy(isLoading = true, errorMessage = null) }
+        }
+        repository.observeSession(workoutId).collect { cacheState ->
+            when (cacheState) {
+                is CacheState.Cached -> _state.update {
+                    it.copy(isLoading = false, session = cacheState.value.recalculated())
                 }
-            }
-            is AppResult.Failure -> {
-                _state.update {
-                    it.copy(isLoading = false, errorMessage = result.message)
+                is CacheState.Fresh -> _state.update {
+                    it.copy(isLoading = false, session = cacheState.value.recalculated())
                 }
+                is CacheState.Error -> _state.update {
+                    it.copy(isLoading = false, errorMessage = cacheState.message)
+                }
+                is CacheState.Loading -> Unit
             }
         }
     }

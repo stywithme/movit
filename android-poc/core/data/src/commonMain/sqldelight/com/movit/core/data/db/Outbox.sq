@@ -47,3 +47,6 @@ WHERE id = ?;
 deleteById:
 DELETE FROM outbox_entry
 WHERE id = ?;
+
+deleteAll:
+DELETE FROM outbox_entry;

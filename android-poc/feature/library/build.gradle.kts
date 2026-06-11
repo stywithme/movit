@@ -16,6 +16,7 @@ kotlin {
             implementation(project(":core:designsystem"))
             implementation(project(":core:network"))
             implementation(project(":core:resources"))
+            implementation(project(":core:training-engine"))
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)
@@ -28,6 +29,9 @@ kotlin {
         }
         androidMain.dependencies {
             implementation(libs.coil.compose)
+            implementation(libs.androidx.activity.compose)
+            implementation(libs.jetbrains.lifecycle.runtime.compose)
+            implementation(libs.camera.view)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))

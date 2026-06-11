@@ -15,7 +15,7 @@ import com.movit.designsystem.components.MovitErrorState
 import com.movit.designsystem.components.MovitFilterRow
 import com.movit.designsystem.components.MovitInnerPageHeader
 import com.movit.designsystem.components.MovitLoadingState
-import com.movit.designsystem.components.MovitMediaCard
+import com.movit.designsystem.components.MovitProgramCard
 import com.movit.resources.movitText
 
 @Composable
@@ -62,13 +62,13 @@ fun ProgramListScreen(
                         val metadata = buildList {
                             add(movitText("program_flow_weeks_days", program.durationWeeks, program.daysPerWeek))
                         }
-                        MovitMediaCard(
+                        MovitProgramCard(
                             title = program.title,
-                            subtitle = program.description,
+                            description = program.description,
                             metadata = metadata,
-                            badge = program.badge ?: program.levelLabel.takeIf { !program.isActive },
+                            badge = program.badge,
+                            levelLabel = program.levelLabel.takeIf { !program.isActive },
                             imageUrl = program.imageUrl,
-                            imageLabel = program.title.take(1),
                             modifier = Modifier.fillMaxWidth(),
                             onClick = { onProgramClick(program.id) },
                         )

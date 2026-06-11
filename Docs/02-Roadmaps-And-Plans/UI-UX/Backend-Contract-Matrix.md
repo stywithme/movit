@@ -1,30 +1,29 @@
 # Backend Contract Matrix — Legacy · KMP · الحالة
 
-آخر تحديث: **2026-06-10**  
-النطاق: Phase Pre-07 · **WS-1**  
+آخر تحديث: **2026-06-11**
+النطاق: Phase Pre-07 · **WS-1 + P3 (قراءات UI + Outbox WS-2) + P1 Assessment**
 المبدأ: **لا تغيير عقد** — KMP يستهلك نفس المسارات/الحقول التي يستهلكها legacy.
 
 ## ملخص
 
 | المصدر | العدد |
 |--------|------:|
-| Legacy Retrofit (`MobileSyncApi` + `AuthApi` + `SubscriptionApi` + `BookingApi`) | **67** |
+| Legacy Retrofit (`MobileSyncApi` + `AuthApi` + `SubscriptionApi` + `BookingApi`) | **65** |
 | Legacy OkHttp (`WorkoutSyncService` — `POST workout-executions`) | **1** |
-| Legacy consumers (Retrofit + OkHttp · `allLegacyConsumerEndpoints`) | **68** |
-| KMP `MovitMobileApi` (`kmpCoveredEndpoints`) | **38** |
-| مغطّى من legacy في KMP (`kmpCovered` ∩ legacy consumers) | **37** |
+| Legacy consumers (Retrofit + OkHttp · `allLegacyConsumerEndpoints`) | **66** |
+| KMP `MovitMobileApi` (`kmpCoveredEndpoints`) | **48** |
+| مغطّى من legacy في KMP (`kmpCovered` ∩ legacy consumers) | **47** |
 | KMP-only (ليس في أي legacy consumer · `kmpOnlyEndpoints`) | **1** — `GET programs/{id}` فقط |
 | متروك عمداً (ضمن deferred) | **12** |
-| مؤجَّل / phantom / parity قراءة | **31** (`deferredEndpoints` — يشمل pause/resume phantom) |
+| إجمالي المؤجَّل / phantom / parity | **19** (`deferredEndpoints` — يشمل pause/resume phantom) |
 
-### تصنيف الـ45 الناقصة (قبل WS-1)
+### تصنيف الـ19 المؤجّلة الحالية
 
 | التصنيف | العدد | الوصف |
 |---------|------:|-------|
-| 🔴 **نُقل الآن (WS-1)** | **7** | مدخلات Phase 07 المباشرة |
-| 🟠 **Phase 07 + WS-2** | **9** | كتابات تحتاج Outbox |
-| 🟡 **Phase 07 parity قراءة** | **16** | قراءات legacy — تُنقل عند الحاجة في UI |
 | ⚪ **متروك عمداً** | **12** | خارج نطاق المنتج الحالي |
+| 🟡 **Parity/UI لاحق** | **5** | `workout-executions/stats` · `prescription/recommend` · `enrollment-check` · `reassessment/request` · `overrides` list |
+| 🟣 **Phantom بلا backend route** | **2** | `plan/pause` · `plan/resume` |
 | 🔶 **KMP فقط (ليس في legacy Retrofit)** | **1** | `GET programs/{id}` export كامل |
 
 ---
@@ -80,14 +79,14 @@
 | Method | Path | Legacy | KMP | DTO | الحالة |
 |--------|------|:------:|:---:|-----|--------|
 | GET | `api/mobile/plan` | ✅ | ✅ `fetchActivePlan` | ✅ | ✅ مغطّى |
-| GET | `api/mobile/plan/today` | ✅ | ❌ | — | 🟡 مؤجَّل — `home` يغطي معظم الحالة |
+| GET | `api/mobile/plan/today` | ✅ | ✅ `fetchTodayPlan` | ✅ `TodayPlanApiResponse` | ✅ **P3** |
 | POST | `api/mobile/plan/enroll` | ✅ | ✅ `enrollProgram` | ✅ | ✅ مغطّى |
 | POST | `api/mobile/plan/complete` | ✅ | ✅ `completePlan` | ✅ | ✅ Outbox `PLAN_COMPLETE` |
 | GET | `api/mobile/plan/enrollment-check` | ✅ | ❌ | — | 🟡 مؤجَّل — قبل التسجيل في البرنامج |
 | POST | `api/mobile/plan/pause` | ✅ Retrofit فقط | ❌ | — | 🔴 **لا route في الباك اند** — مؤجَّل |
 | POST | `api/mobile/plan/resume` | ✅ Retrofit فقط | ❌ | — | 🔴 **لا route في الباك اند** — مؤجَّل |
 | GET | `api/mobile/programs/{id}` | ❌ Retrofit | ✅ `fetchProgram` | ✅ | 🔶 KMP — يأتي من sync في legacy |
-| GET | `api/mobile/programs/{id}/preview` | ✅ | ❌ | — | 🟡 مؤجَّل — شاشة تفاصيل البرنامج |
+| GET | `api/mobile/programs/{id}/preview` | ✅ | ✅ `fetchProgramPreview` | ✅ `ProgramPreviewApiResponse` | ✅ **P3** |
 
 ### User Programs & Customization
 
@@ -95,17 +94,17 @@
 |--------|------|:------:|:---:|-----|--------|
 | PUT | `api/mobile/user-programs/{id}` | ✅ | ✅ `updateUserProgramCustomizations` | ✅ | ✅ مغطّى — Outbox WS-2 |
 | GET | `api/mobile/user-programs/{id}/effective-plan` | ✅ | ✅ `fetchEffectivePlan` | ✅ | ✅ مغطّى |
-| GET | `api/mobile/user-programs/{id}/overrides` | ✅ | ❌ | — | 🟠 WS-2 |
-| POST | `api/mobile/user-programs/{id}/overrides` | ✅ | ✅ `createUserProgramOverride` | ✅ `weekNumber`/`dayNumber`/`overrideType` في جذر body | ✅ **P0** — أُصلح شكل الطلب |
-| DELETE | `api/mobile/user-programs/{id}/overrides/{overrideId}` | ✅ | ❌ | — | 🟠 WS-2 |
+| GET | `api/mobile/user-programs/{id}/overrides` | ✅ | ❌ | — | 🟡 مؤجَّل — قائمة overrides |
+| POST | `api/mobile/user-programs/{id}/overrides` | ✅ | ✅ `createUserProgramOverride` | ✅ `weekNumber`/`dayNumber`/`overrideType` في جذر body | ✅ **P0** — Outbox `USER_PROGRAM_OVERRIDE_CREATE` |
+| DELETE | `api/mobile/user-programs/{id}/overrides/{overrideId}` | ✅ | ✅ `deleteUserProgramOverride` | ✅ | ✅ **P3** — Outbox `USER_PROGRAM_OVERRIDE_DELETE` |
 | GET | `api/mobile/user-programs/{id}/progress-metrics` | ✅ | ✅ `fetchProgramProgressMetrics` | ✅ | ✅ مغطّى |
 
 ### Exercise preferences & substitutions
 
 | Method | Path | Legacy | KMP | DTO | الحالة |
 |--------|------|:------:|:---:|-----|--------|
-| PUT | `api/mobile/exercise-preferences/{exerciseId}` | ✅ | ❌ | — | 🟠 WS-2 Outbox |
-| DELETE | `api/mobile/exercise-preferences/{exerciseId}` | ✅ | ❌ | — | 🟠 WS-2 |
+| PUT | `api/mobile/exercise-preferences/{exerciseId}` | ✅ | ✅ `upsertExercisePreference` | ✅ | ✅ **P3** — Outbox `EXERCISE_PREFERENCE_UPSERT` |
+| DELETE | `api/mobile/exercise-preferences/{exerciseId}` | ✅ | ✅ `deleteExercisePreference` | ✅ | ✅ **P3** — Outbox `EXERCISE_PREFERENCE_DELETE` |
 | GET | `api/mobile/exercises/substitutions` | ✅ | ✅ `fetchSubstitutionExercises` | ✅ | ✅ مغطّى |
 | GET | `api/exercises/{id}/substitutions` | ✅ | ❌ | — | 🟡 مؤجَّل — legacy يستخدم slug endpoint |
 
@@ -113,20 +112,20 @@
 
 | Method | Path | Legacy | KMP | DTO | الحالة |
 |--------|------|:------:|:---:|-----|--------|
-| GET | `api/mobile/training-profile` | ✅ | ❌ | — | 🟡 مؤجَّل — KMP عنده PUT فقط |
+| GET | `api/mobile/training-profile` | ✅ | ✅ `fetchTrainingProfile` | ✅ | ✅ **P3** |
 | PUT | `api/mobile/training-profile` | ✅ | ✅ `putTrainingProfile` | ✅ | ✅ مغطّى |
 
 ### Assessment & Level
 
 | Method | Path | Legacy | KMP | DTO | الحالة |
 |--------|------|:------:|:---:|-----|--------|
-| POST | `api/assessment` | ✅ | ❌ | — | 🟡 Phase 07 — Body Scan upload |
-| GET | `api/assessment/latest` | ✅ | ❌ | — | 🟡 مؤجَّل |
-| GET | `api/assessment/progress` | ✅ | ❌ | — | 🟡 مؤجَّل |
-| GET | `api/mobile/assessment-templates/resolve` | ✅ | ❌ | — | 🟡 Phase 07 assessment flow |
+| POST | `api/assessment` | ✅ | ✅ `uploadAssessment` | ✅ `BodyScanUploadRequestDto` | ✅ **P1** — Body Scan upload |
+| GET | `api/assessment/latest` | ✅ | ✅ `fetchLatestAssessment` | ✅ `BodyScanResultDto` | ✅ **P1** |
+| GET | `api/assessment/progress` | ✅ | ✅ `fetchAssessmentProgress` | ✅ `AssessmentProgressDto` | ✅ **P1** |
+| GET | `api/mobile/assessment-templates/resolve` | ✅ | ✅ `resolveAssessmentTemplate` | ✅ `AssessmentTemplateDto` | ✅ **P1** — assessment template |
 | GET | `api/mobile/level-profile` | ✅ | ✅ `fetchLevelProfile` | ✅ | ✅ مغطّى |
-| GET | `api/mobile/level-profile/history` | ✅ | ❌ | — | 🟡 مؤجَّل |
-| GET | `api/mobile/level-profile/levels` | ✅ | ❌ | — | 🟡 مؤجَّل |
+| GET | `api/mobile/level-profile/history` | ✅ | ✅ `fetchLevelProfileHistory` | ✅ | ✅ **P3** |
+| GET | `api/mobile/level-profile/levels` | ✅ | ✅ `fetchLevelDefinitions` | ✅ | ✅ **P3** |
 | POST | `api/mobile/prescription/recommend` | ✅ | ❌ | — | 🟡 مؤجَّل — onboarding |
 | GET | `api/mobile/reassessment/upcoming` | ✅ | ✅ `fetchUpcomingReassessments` | ✅ | ✅ مغطّى |
 | POST | `api/mobile/reassessment/request` | ✅ | ❌ | — | 🟡 مؤجَّل |
@@ -135,10 +134,10 @@
 
 | Method | Path | Legacy | KMP | DTO | الحالة |
 |--------|------|:------:|:---:|-----|--------|
-| GET | `api/mobile/progression/history` | ✅ | ❌ | — | 🟡 مؤجَّل |
-| GET | `api/mobile/progression/recent` | ✅ | ❌ | — | 🟡 مؤجَّل |
-| GET | `api/mobile/progression/session/{sessionId}` | ✅ | ❌ | — | 🟡 مؤجَّل |
-| POST | `api/mobile/progression/mark-seen` | ✅ | ❌ | — | 🟠 WS-2 |
+| GET | `api/mobile/progression/history` | ✅ | ✅ `fetchProgressionHistory` | ✅ | ✅ **P3** |
+| GET | `api/mobile/progression/recent` | ✅ | ✅ `fetchRecentProgression` | ✅ | ✅ **P3** |
+| GET | `api/mobile/progression/session/{sessionId}` | ✅ | ✅ `fetchSessionProgression` | ✅ | ✅ **P3** — alias backend لـ `planned-workout/{id}` |
+| POST | `api/mobile/progression/mark-seen` | ✅ | ✅ `markProgressionSeen` | ✅ | ✅ **P3** — Outbox `PROGRESSION_MARK_SEEN` |
 | GET | `api/mobile/workout-executions/stats` | ✅ | ❌ | — | 🟡 مؤجَّل — `home.stats` يغطي جزئياً |
 
 ### Reports
@@ -203,8 +202,10 @@
 2. **`training-config`:** الاستجابة معقّدة (pose variants · checks · messages) — `data` كـ `JsonElement` حتى يستهلكها `core:training-engine` في Phase 07 بلا تكرار schema.
 3. **`/report` vs `/complete`:** legacy يستخدم `/complete` أساساً؛ `/report` موجود للتوافق — كلاهما في KMP.
 4. **Sync consumption:** DTO كامل في WS-1؛ orchestration (`SyncManager` parity) يبقى WS-3.
-5. **Outbox:** كتابات `planned-workouts` · `plan/complete` · `preferences` — WS-2. **`plan/pause|resume` خارج Outbox** (لا backend route).
+5. **Outbox WS-2 (P3):** `exercise-preferences` PUT/DELETE · `overrides` DELETE · `progression/mark-seen` — عبر `OfflineWriteQueue` + `MobileWriteSyncRepository`. **`plan/pause|resume` خارج Outbox** (لا backend route).
 6. **pause/resume phantom:** `MobileSyncApi` (legacy) يحتفظ بالتوقيع؛ KMP + Outbox لا يستدعيان مساراً غير موجود في NestJS.
+7. **progression/session:** legacy Retrofit يستخدم `session/{sessionId}`؛ NestJS أضاف alias يوجّه لنفس منطق `planned-workout/{id}` (المعرّف = planned-workout id).
+8. **Assessment P1:** عقود `assessment` الأربعة صارت في `MovitMobileApi` + `AccountSyncRepository` وتستهلك DTOs KMP؛ `prescription/recommend` ما زال مؤجلاً.
 
 ---
 

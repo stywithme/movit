@@ -2,6 +2,7 @@ package com.movit.feature.reports
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.movit.core.data.cache.CacheState
 import com.movit.shared.AppResult
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,31 +27,13 @@ class MovitReportsViewModel(
     }
 
     suspend fun load(isRefresh: Boolean = false) {
-        _state.update {
-            it.copy(
-                isLoading = !isRefresh && it.dashboard == null,
-                isRefreshing = isRefresh,
-                errorMessage = null,
-            )
-        }
-        when (val result = repository.getReportsDashboard()) {
-            is AppResult.Success -> {
-                val dashboard = result.value
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        isRefreshing = false,
-                        dashboard = dashboard,
-                        errorMessage = if (dashboard.hubState == ReportsHubState.Error) {
-                            dashboard.errorMessage
-                        } else {
-                            null
-                        },
-                    )
-                }
+        if (isRefresh) {
+            _state.update {
+                it.copy(isRefreshing = true, errorMessage = null)
             }
-            is AppResult.Failure -> {
-                _state.update {
+            when (val result = repository.getReportsDashboard(refresh = true)) {
+                is AppResult.Success -> applyDashboard(result.value)
+                is AppResult.Failure -> _state.update {
                     it.copy(
                         isLoading = false,
                         isRefreshing = false,
@@ -62,6 +45,48 @@ class MovitReportsViewModel(
                     )
                 }
             }
+            return
+        }
+
+        _state.update {
+            it.copy(
+                isLoading = it.dashboard == null,
+                isRefreshing = false,
+                errorMessage = null,
+            )
+        }
+        repository.observeDashboard().collect { cacheState ->
+            when (cacheState) {
+                is CacheState.Cached -> applyDashboard(cacheState.value)
+                is CacheState.Fresh -> applyDashboard(cacheState.value)
+                is CacheState.Error -> _state.update {
+                    it.copy(
+                        isLoading = false,
+                        isRefreshing = false,
+                        dashboard = ReportsDashboardUi(
+                            hubState = ReportsHubState.Error,
+                            errorMessage = cacheState.message,
+                        ),
+                        errorMessage = cacheState.message,
+                    )
+                }
+                is CacheState.Loading -> Unit
+            }
+        }
+    }
+
+    private fun applyDashboard(dashboard: ReportsDashboardUi) {
+        _state.update {
+            it.copy(
+                isLoading = false,
+                isRefreshing = false,
+                dashboard = dashboard,
+                errorMessage = if (dashboard.hubState == ReportsHubState.Error) {
+                    dashboard.errorMessage
+                } else {
+                    null
+                },
+            )
         }
     }
 

@@ -2,7 +2,7 @@ package com.movit.feature.library
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.movit.shared.AppResult
+import com.movit.core.data.cache.CacheState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,25 +31,33 @@ class ProgramListViewModel(
     }
 
     suspend fun load() {
-        _state.update { it.copy(isLoading = true, errorMessage = null) }
-        when (val result = repository.loadPrograms()) {
-            is AppResult.Success -> {
-                allPrograms = result.value
-                val chips = buildChips(allPrograms)
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        programs = allPrograms,
-                        chips = chips,
-                        selectedChip = chips.firstOrNull() ?: "All",
-                    )
+        if (allPrograms.isEmpty()) {
+            _state.update { it.copy(isLoading = true, errorMessage = null) }
+        }
+        repository.observePrograms().collect { cacheState ->
+            when (cacheState) {
+                is CacheState.Cached -> applyPrograms(cacheState.value)
+                is CacheState.Fresh -> applyPrograms(cacheState.value)
+                is CacheState.Error -> _state.update {
+                    it.copy(isLoading = false, errorMessage = cacheState.message)
                 }
-                publishFiltered()
-            }
-            is AppResult.Failure -> {
-                _state.update { it.copy(isLoading = false, errorMessage = result.message) }
+                is CacheState.Loading -> Unit
             }
         }
+    }
+
+    private fun applyPrograms(programs: List<ProgramListItemUi>) {
+        allPrograms = programs
+        val chips = buildChips(allPrograms)
+        _state.update {
+            it.copy(
+                isLoading = false,
+                programs = allPrograms,
+                chips = chips,
+                selectedChip = chips.firstOrNull() ?: "All",
+            )
+        }
+        publishFiltered()
     }
 
     fun onChipSelected(chip: String) {

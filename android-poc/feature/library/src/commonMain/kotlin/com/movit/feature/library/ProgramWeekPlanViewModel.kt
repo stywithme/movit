@@ -2,7 +2,7 @@ package com.movit.feature.library
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.movit.shared.AppResult
+import com.movit.core.data.cache.CacheState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,13 +28,17 @@ class ProgramWeekPlanViewModel(
     }
 
     suspend fun load() {
-        _state.update { it.copy(isLoading = true, errorMessage = null) }
-        when (val result = repository.loadWeekPlan(programId, weekNumber)) {
-            is AppResult.Success -> {
-                _state.update { it.copy(isLoading = false, weekPlan = result.value) }
-            }
-            is AppResult.Failure -> {
-                _state.update { it.copy(isLoading = false, errorMessage = result.message) }
+        if (_state.value.weekPlan == null) {
+            _state.update { it.copy(isLoading = true, errorMessage = null) }
+        }
+        repository.observeWeekPlan(programId, weekNumber).collect { cacheState ->
+            when (cacheState) {
+                is CacheState.Cached -> _state.update { it.copy(isLoading = false, weekPlan = cacheState.value) }
+                is CacheState.Fresh -> _state.update { it.copy(isLoading = false, weekPlan = cacheState.value) }
+                is CacheState.Error -> _state.update {
+                    it.copy(isLoading = false, errorMessage = cacheState.message)
+                }
+                is CacheState.Loading -> Unit
             }
         }
     }

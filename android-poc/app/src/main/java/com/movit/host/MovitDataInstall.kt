@@ -9,10 +9,9 @@ import com.movit.core.data.outbox.registerOutboxConnectivityReplay
 import com.movit.core.data.platform.AuthSessionSnapshot
 import com.movit.core.data.platform.MovitPlatformBindings
 import com.movit.core.data.platform.isMovitNetworkAvailable
+import com.movit.core.data.repository.MovitCacheKeys
 import com.trainingvalidator.poc.network.ApiConfig
 import com.trainingvalidator.poc.storage.AuthManager
-import com.trainingvalidator.poc.storage.ExerciseRepository
-import com.trainingvalidator.poc.storage.ProgramRepository
 import com.trainingvalidator.poc.storage.UserDataCleaner
 import com.trainingvalidator.poc.ui.theme.AppThemeManager
 
@@ -50,16 +49,41 @@ object MovitDataInstall {
                         .apply()
                 }
 
+                override fun readAllCacheEntries(store: String): Map<String, String> {
+                    val prefs = appContext.getSharedPreferences(store, Context.MODE_PRIVATE)
+                    return prefs.all
+                        .mapNotNull { (key, value) ->
+                            (value as? String)?.let { key to it }
+                        }
+                        .toMap()
+                }
+
                 override fun isProUser(): Boolean = AuthManager.isProUser(appContext)
 
                 override fun activeUserProgramId(): String? =
-                    ProgramRepository.getInstance(appContext)
-                        .getActiveUserProgramExport()
-                        ?.takeIf { it.isActive }
-                        ?.id
+                    readCache(
+                        MovitCacheKeys.PROGRAM_STORE,
+                        MovitCacheKeys.ACTIVE_USER_PROGRAM_ID,
+                    )?.takeIf { it.isNotBlank() }
+
+                override fun setActiveUserProgramId(userProgramId: String?) {
+                    if (userProgramId.isNullOrBlank()) {
+                        removeCache(MovitCacheKeys.PROGRAM_STORE, MovitCacheKeys.ACTIVE_USER_PROGRAM_ID)
+                    } else {
+                        writeCache(
+                            MovitCacheKeys.PROGRAM_STORE,
+                            MovitCacheKeys.ACTIVE_USER_PROGRAM_ID,
+                            userProgramId,
+                        )
+                    }
+                }
 
                 override fun exerciseImageUrl(slug: String): String? =
-                    ExerciseRepository.getInstance(appContext).getExercise(slug)?.imageUrl
+                    if (MovitData.isInstalled) {
+                        MovitData.explore.exerciseImageUrl(slug)
+                    } else {
+                        null
+                    }
 
                 override fun userEmail(): String? =
                     AuthManager.getUserEmail(appContext).takeIf { it.isNotBlank() }

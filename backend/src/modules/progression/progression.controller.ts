@@ -60,6 +60,16 @@ export class ProgressionController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
+    return this.getSessionProgression(plannedWorkoutId, req, res);
+  }
+
+  /** Legacy Retrofit alias — sessionId is the planned-workout id. */
+  @Get('session/:sessionId')
+  async getSessionProgression(
+    @Param('sessionId') sessionId: string,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     try {
       const authResult = await verifyMobileToken(req);
       if (!authResult.success || !authResult.userId) {
@@ -67,7 +77,7 @@ export class ProgressionController {
         return { success: false, error: authResult.error || 'Unauthorized' };
       }
 
-      const changes = await progressionService.getByPlannedWorkout(authResult.userId, plannedWorkoutId);
+      const changes = await progressionService.getByPlannedWorkout(authResult.userId, sessionId);
       return { success: true, data: changes };
     } catch (error) {
       console.error('[Progression] Workout progression error:', error);

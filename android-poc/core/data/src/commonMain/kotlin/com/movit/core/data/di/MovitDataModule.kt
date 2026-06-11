@@ -1,8 +1,12 @@
 package com.movit.core.data.di
 
 import com.movit.core.data.MovitData
+import com.movit.core.data.audio.AudioFileDownloader
+import com.movit.core.data.audio.AudioPrefetchRunner
 import com.movit.core.data.cache.AudioManifestCache
+import com.movit.core.data.cache.ColdOfflineBundleSeeder
 import com.movit.core.data.cache.MovitSyncMetadataStore
+import com.movit.core.data.cache.SystemMessageCache
 import com.movit.core.data.local.DefaultMovitLocalStoreFactory
 import com.movit.core.data.local.MovitLocalStore
 import com.movit.core.data.local.MovitLocalStoreFactory
@@ -50,6 +54,17 @@ fun movitDataModule(
     }
     single { MovitSyncMetadataStore(get()) }
     single { AudioManifestCache(get()) }
+    single { AudioFileDownloader() }
+    single { AudioPrefetchRunner(get(), get()) }
+    single { SystemMessageCache(get()) }
+    single {
+        ColdOfflineBundleSeeder(
+            localStore = get(),
+            homeSync = get(),
+            exploreSync = get(),
+            systemMessageCache = get(),
+        )
+    }
     single {
         OfflineWriteQueue(
             localStore = get(),
@@ -98,6 +113,8 @@ fun movitDataModule(
             planSync = get(),
             metadataStore = get(),
             audioManifestCache = get(),
+            audioPrefetchRunner = get(),
+            offlineWrites = get(),
         )
     }
 }

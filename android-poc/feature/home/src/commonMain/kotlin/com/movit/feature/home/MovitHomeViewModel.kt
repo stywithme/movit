@@ -3,8 +3,8 @@ package com.movit.feature.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.movit.core.data.MovitData
+import com.movit.core.data.cache.CacheState
 import com.movit.resources.strings.HomeStrings
-import com.movit.shared.AppResult
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -28,45 +28,47 @@ class MovitHomeViewModel(
     }
 
     suspend fun load() {
-        _state.update { it.copy(isLoading = true, errorMessage = null) }
-        when (val result = repository.getHomeDashboard()) {
-            is AppResult.Success -> {
-                val dashboard = result.value
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        userName = dashboard.userName,
-                        greetingEyebrow = dashboard.greetingEyebrow,
-                        greetingTitle = dashboard.greetingTitle,
-                        greetingSubtitle = dashboard.greetingSubtitle,
-                        metricTiles = dashboard.metricTiles,
-                        levelCard = dashboard.levelCard,
-                        alert = dashboard.alert,
-                        activeProgram = dashboard.activeProgram,
-                        todayPlan = dashboard.todayPlan,
-                        showBodyScanCta = dashboard.showBodyScanCta,
-                        showNoProgramEmpty = dashboard.showNoProgramEmpty,
-                        journeyRows = dashboard.journeyRows,
-                        recentActivities = dashboard.recentActivities,
-                        progress = dashboard.progress.copy(
-                            weeklyCompletionPercent = HomeSummaryCalculator.clampPercent(
-                                dashboard.progress.weeklyCompletionPercent,
-                            ),
-                        ),
-                        reportPreview = dashboard.reportPreview,
-                        quickActions = dashboard.quickActions,
-                        insightMessage = dashboard.insightMessage,
-                    )
+        if (_state.value.userName == null) {
+            _state.update { it.copy(isLoading = true, errorMessage = null) }
+        }
+        repository.observeDashboard().collect { cacheState ->
+            when (cacheState) {
+                is CacheState.Cached -> applyDashboard(cacheState.value)
+                is CacheState.Fresh -> applyDashboard(cacheState.value)
+                is CacheState.Error -> _state.update {
+                    it.copy(isLoading = false, errorMessage = cacheState.message)
                 }
+                is CacheState.Loading -> Unit
             }
-            is AppResult.Failure -> {
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = result.message,
-                    )
-                }
-            }
+        }
+    }
+
+    private fun applyDashboard(dashboard: HomeDashboardUi) {
+        _state.update {
+            it.copy(
+                isLoading = false,
+                userName = dashboard.userName,
+                greetingEyebrow = dashboard.greetingEyebrow,
+                greetingTitle = dashboard.greetingTitle,
+                greetingSubtitle = dashboard.greetingSubtitle,
+                metricTiles = dashboard.metricTiles,
+                levelCard = dashboard.levelCard,
+                alert = dashboard.alert,
+                activeProgram = dashboard.activeProgram,
+                todayPlan = dashboard.todayPlan,
+                showBodyScanCta = dashboard.showBodyScanCta,
+                showNoProgramEmpty = dashboard.showNoProgramEmpty,
+                journeyRows = dashboard.journeyRows,
+                recentActivities = dashboard.recentActivities,
+                progress = dashboard.progress.copy(
+                    weeklyCompletionPercent = HomeSummaryCalculator.clampPercent(
+                        dashboard.progress.weeklyCompletionPercent,
+                    ),
+                ),
+                reportPreview = dashboard.reportPreview,
+                quickActions = dashboard.quickActions,
+                insightMessage = dashboard.insightMessage,
+            )
         }
     }
 

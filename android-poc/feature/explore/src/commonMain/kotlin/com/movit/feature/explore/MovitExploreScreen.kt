@@ -23,6 +23,7 @@ import com.movit.designsystem.components.MovitEmptyState
 import com.movit.designsystem.components.MovitErrorState
 import com.movit.designsystem.components.MovitLoadingState
 import com.movit.designsystem.components.MovitMediaCard
+import com.movit.designsystem.components.MovitProgramCard
 import com.movit.designsystem.components.MovitScaffold
 import com.movit.designsystem.components.MovitSectionHeader
 import com.movit.designsystem.movitColors
@@ -221,9 +222,9 @@ fun MovitExploreScreen(
                                 onEvent(MovitExploreEvent.SeeAllProgramsClicked)
                             },
                         )
-                        MovitMediaCard(
+                        MovitProgramCard(
                             title = program.title,
-                            subtitle = program.subtitle,
+                            description = program.subtitle,
                             metadata = program.metadata,
                             badge = program.badge,
                             imageUrl = program.imageUrl,

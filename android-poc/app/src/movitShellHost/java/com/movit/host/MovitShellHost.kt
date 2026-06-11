@@ -17,6 +17,7 @@ fun ComponentActivity.attachMovitShellHost(
     exitToLegacyAuthOnLogout: Boolean,
 ) {
     MovitDataInstall.install(applicationContext)
+    TrainingBoundaryInstall.install()
     enableEdgeToEdge()
 
     setContent {

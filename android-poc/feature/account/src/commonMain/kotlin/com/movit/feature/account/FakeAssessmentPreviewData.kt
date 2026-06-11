@@ -1,33 +1,6 @@
 package com.movit.feature.account
 
-object FakeAssessmentPreviewData {
-    val results = AssessmentResultsUi(
-        bodyScore = 72,
-        levelLabel = "Level 2 · Building",
-        domains = listOf(
-            AssessmentDomainUi("mobility", 78),
-            AssessmentDomainUi("control", 65),
-            AssessmentDomainUi("symmetry", 71),
-            AssessmentDomainUi("safety", 74),
-        ),
-        regions = listOf(
-            AssessmentRegionUi("hips", 84, AssessmentRegionTone.Good),
-            AssessmentRegionUi("shoulders", 61, AssessmentRegionTone.Warning),
-            AssessmentRegionUi("spine", 74, AssessmentRegionTone.Neutral),
-            AssessmentRegionUi("knees", 79, AssessmentRegionTone.Good),
-        ),
-        insights = listOf(
-            AssessmentInsightUi(
-                titleKey = "assessment_insight_shoulder_title",
-                messageKey = "assessment_insight_shoulder_message",
-            ),
-            AssessmentInsightUi(
-                titleKey = "assessment_insight_hip_title",
-                messageKey = "assessment_insight_hip_message",
-            ),
-        ),
-    )
-
+object AssessmentDefaults {
     val parqQuestions = listOf(
         "assessment_parq_heart",
         "assessment_parq_chest_pain",
@@ -38,10 +11,36 @@ object FakeAssessmentPreviewData {
         "assessment_parq_pregnancy",
     )
 
-    val bodyScanMovements = listOf(
-        "assessment_movement_forward_fold",
-        "assessment_movement_overhead_squat",
-        "assessment_movement_single_leg_balance",
+    val initialTemplate = AssessmentTemplateUi(
+        templateId = null,
+        type = "initial",
+        domainWeights = AssessmentDomainWeights(),
+        movements = listOf(
+            AssessmentMovementUi(
+                exerciseId = "local-forward-fold",
+                exerciseSlug = "forward_fold",
+                titleKey = "assessment_movement_forward_fold",
+                targetRegion = "spine",
+                side = "center",
+                referenceNormDegrees = 110.0,
+            ),
+            AssessmentMovementUi(
+                exerciseId = "local-overhead-squat",
+                exerciseSlug = "overhead_squat",
+                titleKey = "assessment_movement_overhead_squat",
+                targetRegion = "hips",
+                side = "center",
+                referenceNormDegrees = 120.0,
+            ),
+            AssessmentMovementUi(
+                exerciseId = "local-single-leg-balance",
+                exerciseSlug = "single_leg_balance",
+                titleKey = "assessment_movement_single_leg_balance",
+                targetRegion = "balance",
+                side = "center",
+                referenceNormDegrees = 100.0,
+            ),
+        ),
     )
 }
 
@@ -51,6 +50,34 @@ data class AssessmentResultsUi(
     val domains: List<AssessmentDomainUi> = emptyList(),
     val regions: List<AssessmentRegionUi>,
     val insights: List<AssessmentInsightUi>,
+)
+
+data class AssessmentTemplateUi(
+    val templateId: String?,
+    val type: String = "initial",
+    val domainWeights: AssessmentDomainWeights = AssessmentDomainWeights(),
+    val movements: List<AssessmentMovementUi>,
+) {
+    val safeMovements: List<AssessmentMovementUi>
+        get() = movements.ifEmpty { AssessmentDefaults.initialTemplate.movements }
+}
+
+data class AssessmentDomainWeights(
+    val mobility: Double = 0.35,
+    val control: Double = 0.25,
+    val symmetry: Double = 0.20,
+    val safety: Double = 0.20,
+)
+
+data class AssessmentMovementUi(
+    val exerciseId: String,
+    val exerciseSlug: String,
+    val titleKey: String,
+    val targetRegion: String,
+    val side: String = "center",
+    val entryType: String = "core",
+    val referenceNormDegrees: Double? = null,
+    val thresholds: Map<String, Double> = emptyMap(),
 )
 
 data class AssessmentDomainUi(

@@ -22,7 +22,7 @@ class MovitReportsStateTest {
     @Test
     fun successfulLoad_populatesDashboard() {
         runBlocking {
-            val viewModel = MovitReportsViewModel()
+            val viewModel = MovitReportsViewModel(repository = FakeReportsRepository())
             viewModel.load(isRefresh = false)
             val state = viewModel.state.value
             assertEquals(false, state.isLoading)
@@ -61,7 +61,7 @@ class MovitReportsStateTest {
 
     @Test
     fun refreshLoad_setsRefreshingThenClears() = runBlocking {
-        val viewModel = MovitReportsViewModel()
+        val viewModel = MovitReportsViewModel(repository = FakeReportsRepository())
         viewModel.load(isRefresh = false)
         viewModel.load(isRefresh = true)
         assertEquals(false, viewModel.state.value.isRefreshing)

@@ -85,6 +85,18 @@ data class WorkoutRunUiState(
         }
 }
 
+/** Start path from workout run / prepare — KMP live camera or legacy [TrainingActivity]. */
+sealed interface TrainingStartAction {
+    data class KmpLive(
+        val slug: String,
+        val exerciseName: String,
+        val targetReps: Int,
+        val workoutId: String? = null,
+    ) : TrainingStartAction
+
+    data class Legacy(val exerciseFileName: String) : TrainingStartAction
+}
+
 /** In-memory handoff between customize → run (Phase 05 shell; no persisted plan write). */
 object WorkoutFlowCache {
     private val configs = mutableMapOf<String, WorkoutFlowConfigUi>()

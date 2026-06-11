@@ -4,25 +4,26 @@ import com.movit.core.data.MovitData
 import com.movit.resources.strings.ReportDetailStrings
 import com.movit.shared.AppResult
 
-class SharedReportDetailRepository(
-    private val fallback: ReportDetailRepository = DefaultReportDetailRepository(),
-) : ReportDetailRepository {
+class SharedReportDetailRepository : ReportDetailRepository {
 
     override suspend fun getReportDetail(reportId: String): AppResult<ReportDetailUi> {
-        if (!MovitData.isInstalled || reportId.isBlank() || reportId == "preview") {
-            return fallback.getReportDetail(reportId)
+        if (!MovitData.isInstalled) {
+            return AppResult.Failure(DATA_LAYER_NOT_INSTALLED)
+        }
+        if (reportId.isBlank() || reportId == "preview") {
+            return AppResult.Failure("Report not found.")
         }
 
         val platform = MovitData.requirePlatform()
         val language = platform.preferredLanguage()
         val strings = ReportDetailStrings.load(language)
         if (!platform.isProUser()) {
-            return fallback.getReportDetail(reportId)
+            return AppResult.Failure(REPORT_NOT_FOUND)
         }
 
         val programId = MovitData.home.readCached()?.trainMode?.activeProgram?.id
         if (programId.isNullOrBlank()) {
-            return fallback.getReportDetail(reportId)
+            return AppResult.Failure(REPORT_NOT_FOUND)
         }
 
         return when (
@@ -36,7 +37,7 @@ class SharedReportDetailRepository(
                 if (detail != null) {
                     AppResult.Success(detail)
                 } else {
-                    fallback.getReportDetail(reportId)
+                    AppResult.Failure(REPORT_NOT_FOUND)
                 }
             }
             is AppResult.Failure -> {
@@ -45,10 +46,15 @@ class SharedReportDetailRepository(
                 if (detail != null) {
                     AppResult.Success(detail)
                 } else {
-                    fallback.getReportDetail(reportId)
+                    AppResult.Failure(result.message)
                 }
             }
         }
+    }
+
+    private companion object {
+        const val DATA_LAYER_NOT_INSTALLED = "App data layer is not installed."
+        const val REPORT_NOT_FOUND = "Report not found."
     }
 }
 

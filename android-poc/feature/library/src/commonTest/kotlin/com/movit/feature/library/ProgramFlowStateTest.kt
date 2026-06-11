@@ -11,7 +11,7 @@ class ProgramFlowStateTest {
     @Test
     fun programList_loadsPrograms() {
         runBlocking {
-            val viewModel = ProgramListViewModel()
+            val viewModel = ProgramListViewModel(repository = FakeProgramFlowRepository())
             viewModel.load()
             val state = viewModel.state.value
             assertEquals(false, state.isLoading)
@@ -23,7 +23,7 @@ class ProgramFlowStateTest {
     @Test
     fun programList_chipFiltersByLevel() {
         runBlocking {
-            val viewModel = ProgramListViewModel()
+            val viewModel = ProgramListViewModel(repository = FakeProgramFlowRepository())
             viewModel.load()
             val beginnerCount = viewModel.state.value.programs.count {
                 it.levelLabel.equals("Beginner", ignoreCase = true)
@@ -36,7 +36,11 @@ class ProgramFlowStateTest {
     @Test
     fun weekPlan_loadsDays() {
         runBlocking {
-            val viewModel = ProgramWeekPlanViewModel("prog-full-body", weekNumber = 2)
+            val viewModel = ProgramWeekPlanViewModel(
+                programId = "prog-full-body",
+                weekNumber = 2,
+                repository = FakeProgramFlowRepository(),
+            )
             viewModel.load()
             val plan = viewModel.state.value.weekPlan
             assertNotNull(plan)
@@ -49,7 +53,11 @@ class ProgramFlowStateTest {
     @Test
     fun weeklyReport_loadsMetrics() {
         runBlocking {
-            val viewModel = WeeklyReportViewModel("prog-full-body", weekNumber = 2)
+            val viewModel = WeeklyReportViewModel(
+                programId = "prog-full-body",
+                weekNumber = 2,
+                repository = FakeProgramFlowRepository(),
+            )
             viewModel.load()
             val report = viewModel.state.value.report
             assertNotNull(report)

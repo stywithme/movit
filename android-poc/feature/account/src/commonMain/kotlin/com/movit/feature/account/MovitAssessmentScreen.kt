@@ -52,6 +52,7 @@ import com.movit.designsystem.components.MovitInsightVariant
 import com.movit.designsystem.components.MovitMetricTile
 import com.movit.designsystem.components.MovitProgressBar
 import com.movit.designsystem.movitColors
+import com.movit.feature.account.assessment.AssessmentCameraHost
 import com.movit.resources.movitText
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -124,7 +125,7 @@ private fun PreScreeningContent(
     val parqProgressA11y = movitText(
         "assessment_parq_progress_a11y",
         state.parqAnswers.size,
-        FakeAssessmentPreviewData.parqQuestions.size,
+        AssessmentDefaults.parqQuestions.size,
     )
     MovitProgressBar(
         progressPercent = state.parqProgressPercent,
@@ -136,12 +137,12 @@ private fun PreScreeningContent(
         text = movitText(
             "assessment_parq_progress",
             state.parqAnswers.size,
-            FakeAssessmentPreviewData.parqQuestions.size,
+            AssessmentDefaults.parqQuestions.size,
         ),
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.movitColors.textTertiary,
     )
-    FakeAssessmentPreviewData.parqQuestions.forEachIndexed { index, key ->
+    AssessmentDefaults.parqQuestions.forEachIndexed { index, key ->
         val answer = state.parqAnswers[index]
         Column(
             modifier = Modifier
@@ -170,7 +171,7 @@ private fun PreScreeningContent(
                     modifier = Modifier.weight(1f),
                 )
             }
-            if (index < FakeAssessmentPreviewData.parqQuestions.lastIndex) {
+            if (index < AssessmentDefaults.parqQuestions.lastIndex) {
                 HorizontalDivider(
                     modifier = Modifier.padding(top = MovitSpacing.md),
                     color = MaterialTheme.movitColors.divider,
@@ -203,6 +204,12 @@ private fun BodyScanContent(
             .background(MaterialTheme.movitColors.ink),
         contentAlignment = Alignment.Center,
     ) {
+        AssessmentCameraHost(
+            onPoseFrame = { onEvent(MovitAssessmentEvent.BodyScanFrameReceived(it)) },
+            onCameraReady = { onEvent(MovitAssessmentEvent.BodyScanCameraReady) },
+            onError = { onEvent(MovitAssessmentEvent.BodyScanError(it)) },
+            modifier = Modifier.fillMaxSize(),
+        )
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             val frameColor = MaterialTheme.movitColors.onInkVeil55
             Box(
@@ -265,9 +272,19 @@ private fun BodyScanContent(
                 )
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = movitText("assessment_camera_active"), fontWeight = FontWeight.W700)
+                val cameraTitle = if (state.isPoseDetected) {
+                    "assessment_camera_active"
+                } else {
+                    "assessment_camera_waiting"
+                }
+                val cameraSubtitle = if (state.isPoseDetected) {
+                    "assessment_camera_active_sub"
+                } else {
+                    "assessment_camera_waiting_sub"
+                }
+                Text(text = movitText(cameraTitle), fontWeight = FontWeight.W700)
                 Text(
-                    text = movitText("assessment_camera_active_sub"),
+                    text = movitText(cameraSubtitle),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.movitColors.textSecondary,
                 )
@@ -285,10 +302,18 @@ private fun BodyScanContent(
             }
         }
     }
+    state.scanErrorMessage?.let { message ->
+        MovitInsightCard(
+            title = movitText("common_error_title"),
+            message = movitText("assessment_scan_error", message),
+            icon = Icons.Default.Warning,
+            variant = MovitInsightVariant.Warning,
+        )
+    }
     MovitButton(
         text = movitText("assessment_view_results"),
         onClick = { onEvent(MovitAssessmentEvent.CompleteBodyScan) },
-        enabled = !state.isLoadingResults,
+        enabled = state.isScanComplete && !state.isLoadingResults && !state.isResolvingTemplate,
         modifier = Modifier.fillMaxWidth(),
     )
 }

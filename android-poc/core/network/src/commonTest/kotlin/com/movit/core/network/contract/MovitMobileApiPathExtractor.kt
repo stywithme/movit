@@ -46,6 +46,7 @@ internal object MovitMobileApiPathExtractor {
             .replace("\$exerciseId", "{exerciseId}")
             .replace("\$slug", "{slug}")
             .replace("\$exerciseSlug", "{slug}")
+            .replace("\$sessionId", "{sessionId}")
 
     private fun readSource(): String {
         val fromModule = javaClass.classLoader.getResource(sourcePath)?.readText()

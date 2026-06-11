@@ -4,13 +4,11 @@ import com.movit.core.data.MovitData
 import com.movit.resources.strings.LevelStrings
 import com.movit.shared.AppResult
 
-class SharedLevelRepository(
-    private val fallback: LevelRepository = FakeLevelRepository(),
-) : LevelRepository {
+class SharedLevelRepository : LevelRepository {
 
     override suspend fun fetchLevelProfile(): AppResult<LevelProfileUi> {
         if (!MovitData.isInstalled) {
-            return fallback.fetchLevelProfile()
+            return AppResult.Failure(DATA_LAYER_NOT_INSTALLED)
         }
         val platform = MovitData.requirePlatform()
         if (platform.authHeader() == null) {
@@ -30,7 +28,11 @@ class SharedLevelRepository(
                 val strings = LevelStrings.load(language)
                 AppResult.Success(LevelApiMapper.map(result.value, plan, reassessments, strings))
             }
-            is AppResult.Failure -> fallback.fetchLevelProfile()
+            is AppResult.Failure -> AppResult.Failure(result.message)
         }
+    }
+
+    private companion object {
+        const val DATA_LAYER_NOT_INSTALLED = "App data layer is not installed."
     }
 }

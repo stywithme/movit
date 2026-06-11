@@ -55,4 +55,6 @@ interface MovitLocalStore {
     suspend fun deleteOutbox(id: String)
 
     suspend fun countOutboxByStatus(status: OutboxStatus): Long
+
+    suspend fun clearAllUserData()
 }

@@ -4,6 +4,8 @@ import com.movit.core.data.outbox.OutboxEntry
 import com.movit.core.data.outbox.OutboxStatus
 import com.movit.core.data.platform.MovitPlatformBindings
 import com.movit.core.data.repository.MovitCacheKeys
+import com.movit.core.network.MovitJson
+import com.movit.core.network.dto.UserProgramExportDto
 
 /**
  * SQLDelight-primary store with lazy migration from legacy platform JSON prefs.
@@ -52,15 +54,56 @@ class MigratingMovitLocalStore(
     override suspend fun countOutboxByStatus(status: OutboxStatus): Long =
         sqlStore.countOutboxByStatus(status)
 
+    override suspend fun clearAllUserData() = sqlStore.clearAllUserData()
+
     fun migrateKnownCachesFromPlatform() {
         val bindings = platform()
         KNOWN_STATIC_KEYS.forEach { (store, key) ->
-            if (sqlStore.readJsonCache(store, key) == null) {
-                bindings.readCache(store, key)?.let { legacy ->
-                    sqlStore.writeJsonCache(store, key, legacy)
-                }
+            migrateEntry(bindings, store, key)
+        }
+        KNOWN_DYNAMIC_STORES.forEach { store ->
+            bindings.readAllCacheEntries(store).forEach { (key, value) ->
+                migrateEntry(bindings, store, key, prefetchedValue = value)
             }
         }
+        LEGACY_PREF_STORE_MIGRATIONS.forEach { (legacyStore, targetStore) ->
+            bindings.readAllCacheEntries(legacyStore).forEach { (key, value) ->
+                migrateEntry(bindings, targetStore, key, prefetchedValue = value)
+            }
+        }
+        migrateActiveUserProgramId(bindings)
+    }
+
+    private fun migrateEntry(
+        bindings: MovitPlatformBindings,
+        store: String,
+        key: String,
+        prefetchedValue: String? = null,
+    ) {
+        if (sqlStore.readJsonCache(store, key) != null) return
+        val legacy = prefetchedValue ?: bindings.readCache(store, key) ?: return
+        sqlStore.writeJsonCache(store, key, legacy)
+    }
+
+    private fun migrateActiveUserProgramId(bindings: MovitPlatformBindings) {
+        val store = MovitCacheKeys.PROGRAM_STORE
+        val key = MovitCacheKeys.ACTIVE_USER_PROGRAM_ID
+        if (sqlStore.readJsonCache(store, key) != null) return
+        bindings.readCache(store, key)?.takeIf { it.isNotBlank() }?.let { activeId ->
+            sqlStore.writeJsonCache(store, key, activeId)
+            return
+        }
+        val legacyProgramsJson = bindings.readCache(
+            MovitCacheKeys.LEGACY_USER_PROGRAM_STORE,
+            MovitCacheKeys.LEGACY_USER_PROGRAMS_KEY,
+        ) ?: return
+        val activeId = runCatching {
+            MovitJson.decodeFromString<List<UserProgramExportDto>>(legacyProgramsJson)
+                .firstOrNull { it.isActive && it.id.isNotBlank() }
+                ?.id
+        }.getOrNull() ?: return
+        sqlStore.writeJsonCache(store, key, activeId)
+        bindings.writeCache(store, key, activeId)
     }
 
     private companion object {
@@ -69,6 +112,28 @@ class MigratingMovitLocalStore(
             MovitCacheKeys.EXPLORE_STORE to MovitCacheKeys.EXPLORE_LAST_SYNC,
             MovitCacheKeys.HOME_STORE to MovitCacheKeys.HOME_DATA,
             MovitCacheKeys.REPORTS_STORE to MovitCacheKeys.REPORTS_DASHBOARD,
+            MovitCacheKeys.PROGRAM_STORE to MovitCacheKeys.ACTIVE_USER_PROGRAM_ID,
+            MovitCacheKeys.AUDIO_STORE to MovitCacheKeys.AUDIO_BASE_URL,
+            MovitCacheKeys.AUDIO_STORE to MovitCacheKeys.AUDIO_MANIFEST_JSON,
+            MovitCacheKeys.SYNC_STORE to MovitCacheKeys.SYNC_LAST_TIMESTAMP,
+            MovitCacheKeys.SYNC_STORE to MovitCacheKeys.SYNC_SERVER_VERSION,
+            MovitCacheKeys.SYNC_STORE to MovitCacheKeys.SYNC_LOCAL_EXERCISES,
+            MovitCacheKeys.SYNC_STORE to MovitCacheKeys.SYNC_LOCAL_WORKOUTS,
+            MovitCacheKeys.SYNC_STORE to MovitCacheKeys.SYNC_LOCAL_PROGRAMS,
+            MovitCacheKeys.SYNC_STORE to MovitCacheKeys.SYNC_MSG_COUNT,
+            MovitCacheKeys.SYNC_STORE to MovitCacheKeys.SYNC_MSG_AUDIO,
+            MovitCacheKeys.SYNC_STORE to MovitCacheKeys.SYNC_MSG_ASSIGNMENTS,
+            MovitCacheKeys.SYNC_STORE to MovitCacheKeys.SYNC_MSG_FINGERPRINT,
+        )
+
+        val KNOWN_DYNAMIC_STORES = listOf(
+            MovitCacheKeys.SESSION_STORE,
+            MovitCacheKeys.PREFERENCES_STORE,
+            MovitCacheKeys.PROGRAM_STORE,
+        )
+
+        val LEGACY_PREF_STORE_MIGRATIONS = listOf(
+            MovitCacheKeys.LEGACY_USER_EXERCISE_PREFERENCES_STORE to MovitCacheKeys.PREFERENCES_STORE,
         )
     }
 }

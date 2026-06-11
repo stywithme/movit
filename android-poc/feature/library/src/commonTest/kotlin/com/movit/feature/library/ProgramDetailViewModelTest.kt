@@ -4,9 +4,10 @@ import com.movit.core.model.ExploreContent
 import com.movit.core.model.ExploreItemType
 import com.movit.core.model.ExploreItemUi
 import com.movit.shared.AppResult
+import kotlinx.coroutines.delay
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ProgramDetailViewModelTest {
@@ -20,7 +21,7 @@ class ProgramDetailViewModelTest {
     )
 
     @Test
-    fun load_mapsWeeksAndStats() = kotlinx.coroutines.runBlocking {
+    fun load_mapsStatsWithoutFakeWeeks() = kotlinx.coroutines.runBlocking {
         val viewModel = ProgramDetailViewModel(
             programId = "program-starter",
             repository = FakeProgramLibraryRepository(sampleProgram),
@@ -29,7 +30,7 @@ class ProgramDetailViewModelTest {
 
         val state = viewModel.state.value
         assertEquals("Starter Strength Plan", state.title)
-        assertEquals(4, state.weeks.size)
+        assertEquals(0, state.weeks.size)
         assertEquals(4, state.stats.size)
         assertEquals("4 weeks", state.stats.first().value)
     }
@@ -42,22 +43,43 @@ class ProgramDetailViewModelTest {
         )
         viewModel.load()
         viewModel.onWeekSelected(2)
+        delay(50)
 
         assertEquals(2, viewModel.state.value.selectedWeekNumber)
     }
 
     @Test
-    fun startProgram_enrollsAndReturnsSessionKey() = kotlinx.coroutines.runBlocking {
+    fun startProgram_callsEnrollApi() = kotlinx.coroutines.runBlocking {
+        var enrolledId: String? = null
         val viewModel = ProgramDetailViewModel(
             programId = "program-starter",
             repository = FakeProgramLibraryRepository(sampleProgram),
+            enrollProgram = { programId ->
+                enrolledId = programId
+                AppResult.Success("up-1")
+            },
         )
         viewModel.load()
 
         val key = viewModel.startProgramAndGetSessionKey()
-        assertNotNull(key)
-        assertTrue(key.startsWith("session:"))
+        assertEquals("program-starter", enrolledId)
         assertTrue(viewModel.state.value.enrollment.isEnrolled)
+        assertNull(key)
+        assertEquals("No upcoming session found for this program.", viewModel.state.value.errorMessage)
+    }
+
+    @Test
+    fun startProgram_enrollFailure_setsError() = kotlinx.coroutines.runBlocking {
+        val viewModel = ProgramDetailViewModel(
+            programId = "program-starter",
+            repository = FakeProgramLibraryRepository(sampleProgram),
+            enrollProgram = { AppResult.Failure("Enrollment failed.") },
+        )
+        viewModel.load()
+
+        val key = viewModel.startProgramAndGetSessionKey()
+        assertNull(key)
+        assertEquals("Enrollment failed.", viewModel.state.value.errorMessage)
     }
 
     @Test
@@ -68,6 +90,7 @@ class ProgramDetailViewModelTest {
         )
         viewModel.load()
         viewModel.onSaveEdit()
+        delay(50)
 
         assertEquals(1, viewModel.state.value.enrollment.customEditsCount)
         assertTrue(viewModel.state.value.edit.showSaveToast)

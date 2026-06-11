@@ -607,6 +607,14 @@
     <string name="workout_flow_a11y_sequence">%1$s، %2$s</string>
     <string name="workout_flow_a11y_pending">قادم</string>
     <string name="workout_flow_a11y_progress">تقدم التمرين %1$d بالمئة</string>
+    <string name="workout_live_title">تدريب مباشر</string>
+    <string name="workout_live_phase">المرحلة: %1$s</string>
+    <string name="workout_live_reps">%1$d / %2$d تكرار</string>
+    <string name="workout_live_form">الشكل %1$d%%</string>
+    <string name="workout_live_avg_form">متوسط الشكل %1$d%%</string>
+    <string name="workout_live_finish">إنهاء المجموعة</string>
+    <string name="workout_live_bridge_unavailable">التدريب المباشر بالكاميرا غير متاح في هذا الإصدار بعد.</string>
+    <string name="workout_live_ios_placeholder">تدريب الكاميرا على iOS — قريباً</string>
 
     <string name="auth_app_name">WayToFix</string>
     <string name="auth_tagline">تدريب بالذكاء الاصطناعي لتحسين الأداء</string>
@@ -806,6 +814,9 @@
     <string name="assessment_hold_position">ثبّت الوضعية</string>
     <string name="assessment_camera_active">الكاميرا نشطة</string>
     <string name="assessment_camera_active_sub">تحليل زوايا المفاصل في الوقت الفعلي</string>
+    <string name="assessment_camera_waiting">البحث عن الوضعية</string>
+    <string name="assessment_camera_waiting_sub">ادخل داخل الإطار واثبت على الحركة الحالية.</string>
+    <string name="assessment_scan_error">مسح التقييم يحتاج انتباهاً: %1$s</string>
     <string name="assessment_camera_placeholder">معاينة الكاميرا</string>
     <string name="assessment_camera_placeholder_sub">التحليل الحي يُفتح في مرحلة لاحقة.</string>
     <string name="assessment_view_results">عرض النتائج</string>
@@ -823,6 +834,8 @@
     <string name="assessment_region_spine">العمود</string>
     <string name="assessment_region_knees">الركبة</string>
     <string name="assessment_region_knee">الركبة</string>
+    <string name="assessment_region_balance">التوازن</string>
+    <string name="assessment_region_core">الجذع</string>
     <string name="assessment_insights">رؤى</string>
     <string name="assessment_insight_shoulder_title">محدودية ثني الكتف</string>
     <string name="assessment_insight_shoulder_message">قد يؤثر على الضغط فوق الرأس. فكّر بتمارين حركة قبل الأحمال الثقيلة.</string>
@@ -847,6 +860,9 @@
     <string name="level_body_score">درجة الجسم</string>
     <string name="level_plan_title">خطة التدريب</string>
     <string name="level_plan_sub">مسار مخصص حسب مستواك وأهدافك</string>
+    <string name="level_recommended_programs">البرامج الموصى بها</string>
+    <string name="level_recommended_programs_sub">مطابقة للمستوى %1$d</string>
+    <string name="level_body_score_completion">درجة الجسم عند الإكمال</string>
     <string name="level_browse_programs">تصفح البرامج الموصى بها</string>
     <string name="level_plan_empty">لا توجد خطة تدريب نشطة بعد. تصفّح البرامج للبدء.</string>
     <string name="level_phase_completed">مكتمل</string>

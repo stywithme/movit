@@ -9,7 +9,10 @@ class ReportDetailStateTest {
 
     @Test
     fun loadPreview_populatesReport() = runBlocking {
-        val viewModel = ReportDetailViewModel("preview")
+        val viewModel = ReportDetailViewModel(
+            reportId = "preview",
+            repository = DefaultReportDetailRepository(),
+        )
         viewModel.load()
         val report = viewModel.state.value.report
         assertNotNull(report)

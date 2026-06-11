@@ -1,6 +1,9 @@
 package com.movit.feature.library
 
+import com.movit.core.data.cache.CacheState
 import com.movit.shared.AppResult
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 
 data class SessionSwapCandidateUi(
     val slug: String,
@@ -19,6 +22,16 @@ interface WorkoutSessionRepository {
     ): List<SessionSwapCandidateUi>
 
     suspend fun findAddExerciseCandidates(query: String): List<SessionSwapCandidateUi>
+
+    fun observeSession(workoutId: String): Flow<CacheState<WorkoutSessionUi>> {
+        val self = this
+        return flow {
+            when (val result = self.loadSession(workoutId)) {
+                is AppResult.Success -> emit(CacheState.Fresh(result.value))
+                is AppResult.Failure -> emit(CacheState.Error(result.message))
+            }
+        }
+    }
 }
 
 class DefaultWorkoutSessionRepository(

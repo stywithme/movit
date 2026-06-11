@@ -42,6 +42,7 @@ import com.movit.designsystem.components.MovitButtonVariant
 import com.movit.designsystem.components.MovitCard
 import com.movit.designsystem.components.MovitCardVariant
 import com.movit.designsystem.components.MovitDashboardHero
+import com.movit.designsystem.components.MovitDashboardHeroVariant
 import com.movit.designsystem.components.MovitIconBox
 import com.movit.designsystem.components.MovitIconBoxVariant
 import com.movit.designsystem.components.MovitInsightCard
@@ -227,7 +228,8 @@ private fun ExperienceStep(data: OnboardingData, onEvent: (MovitOnboardingEvent)
         title = movitText("onboarding_experience_title"),
         subtitle = movitText("onboarding_experience_sub"),
         progressPercent = 0,
-        inkStyle = false,
+        variant = MovitDashboardHeroVariant.Default,
+        showProgress = false,
     )
     FlowRow(horizontalArrangement = Arrangement.spacedBy(MovitSpacing.sm)) {
         listOf("beginner", "intermediate", "advanced").forEach { level ->

@@ -13,6 +13,10 @@ import com.movit.core.network.dto.ForgotPasswordRequestDto
 import com.movit.core.network.dto.HomeApiResponse
 import com.movit.core.network.dto.EffectivePlanApiResponse
 import com.movit.core.network.dto.ActivePlanApiResponse
+import com.movit.core.network.dto.AssessmentApiResponse
+import com.movit.core.network.dto.AssessmentProgressApiResponse
+import com.movit.core.network.dto.AssessmentTemplateApiResponse
+import com.movit.core.network.dto.BodyScanUploadRequestDto
 import com.movit.core.network.dto.EnrollProgramRequestDto
 import com.movit.core.network.dto.MobileSyncApiResponse
 import com.movit.core.network.dto.LevelProfileApiResponse
@@ -24,10 +28,15 @@ import com.movit.core.network.dto.PlannedWorkoutApiResponse
 import com.movit.core.network.dto.PlannedWorkoutCompleteRequestDto
 import com.movit.core.network.dto.PlannedWorkoutStartRequestDto
 import com.movit.core.network.dto.PlanMutationResponse
+import com.movit.core.network.dto.LevelProfileHistoryApiResponse
+import com.movit.core.network.dto.LevelsListApiResponse
 import com.movit.core.network.dto.ProgramExportApiResponse
+import com.movit.core.network.dto.ProgramPreviewApiResponse
 import com.movit.core.network.dto.ProgramProgressMetricsApiResponse
+import com.movit.core.network.dto.ProgressionHistoryApiResponse
 import com.movit.core.network.dto.ProgressionMarkSeenRequest
 import com.movit.core.network.dto.ProgressionMarkSeenResponse
+import com.movit.core.network.dto.TodayPlanApiResponse
 import com.movit.core.network.dto.RefreshTokenRequestDto
 import com.movit.core.network.dto.UserExercisePreferenceUpsertRequest
 import com.movit.core.network.dto.UserProgramOverrideCreateRequest
@@ -144,6 +153,19 @@ class MovitMobileApi(
             error("Program request failed (${response.status.value})")
         }
         response.body<ProgramExportApiResponse>()
+    }
+
+    suspend fun fetchProgramPreview(
+        programId: String,
+        authorization: String? = null,
+    ): Result<ProgramPreviewApiResponse> = runCatching {
+        val response = client.get(base("api/mobile/programs/$programId/preview")) {
+            applyBearerAuthorization(authorization)
+        }
+        if (!response.status.isSuccess()) {
+            error("Program preview request failed (${response.status.value})")
+        }
+        response.body<ProgramPreviewApiResponse>()
     }
 
     suspend fun fetchProgramProgressMetrics(
@@ -301,6 +323,30 @@ class MovitMobileApi(
         response.body<LevelProfileApiResponse>()
     }
 
+    suspend fun fetchLevelProfileHistory(
+        authorization: String? = null,
+    ): Result<LevelProfileHistoryApiResponse> = runCatching {
+        val response = client.get(base("api/mobile/level-profile/history")) {
+            applyBearerAuthorization(authorization)
+        }
+        if (!response.status.isSuccess()) {
+            error("Level profile history request failed (${response.status.value})")
+        }
+        response.body<LevelProfileHistoryApiResponse>()
+    }
+
+    suspend fun fetchLevelDefinitions(
+        authorization: String? = null,
+    ): Result<LevelsListApiResponse> = runCatching {
+        val response = client.get(base("api/mobile/level-profile/levels")) {
+            applyBearerAuthorization(authorization)
+        }
+        if (!response.status.isSuccess()) {
+            error("Level definitions request failed (${response.status.value})")
+        }
+        response.body<LevelsListApiResponse>()
+    }
+
     suspend fun fetchActivePlan(authorization: String? = null): Result<ActivePlanApiResponse> = runCatching {
         val response = client.get(base("api/mobile/plan")) {
             applyBearerAuthorization(authorization)
@@ -309,6 +355,16 @@ class MovitMobileApi(
             error("Active plan request failed (${response.status.value})")
         }
         response.body<ActivePlanApiResponse>()
+    }
+
+    suspend fun fetchTodayPlan(authorization: String? = null): Result<TodayPlanApiResponse> = runCatching {
+        val response = client.get(base("api/mobile/plan/today")) {
+            applyBearerAuthorization(authorization)
+        }
+        if (!response.status.isSuccess()) {
+            error("Today plan request failed (${response.status.value})")
+        }
+        response.body<TodayPlanApiResponse>()
     }
 
     suspend fun enrollProgram(
@@ -496,6 +552,71 @@ class MovitMobileApi(
         response.body<ReassessmentListApiResponse>()
     }
 
+    suspend fun resolveAssessmentTemplate(
+        mode: String = "initial",
+        authorization: String? = null,
+    ): Result<AssessmentTemplateApiResponse> = runCatching {
+        val response = client.get(base("api/mobile/assessment-templates/resolve")) {
+            applyBearerAuthorization(authorization)
+            parameter("mode", mode)
+        }
+        if (!response.status.isSuccess()) {
+            error("Assessment template request failed (${response.status.value})")
+        }
+        response.body<AssessmentTemplateApiResponse>()
+    }
+
+    suspend fun uploadAssessment(
+        request: BodyScanUploadRequestDto,
+        authorization: String? = null,
+    ): Result<AssessmentApiResponse> = runCatching {
+        val response = client.post(base("api/assessment")) {
+            applyBearerAuthorization(authorization)
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }
+        if (!response.status.isSuccess()) {
+            error("Assessment upload failed (${response.status.value})")
+        }
+        response.body<AssessmentApiResponse>()
+    }
+
+    suspend fun fetchLatestAssessment(
+        authorization: String? = null,
+    ): Result<AssessmentApiResponse> = runCatching {
+        val response = client.get(base("api/assessment/latest")) {
+            applyBearerAuthorization(authorization)
+        }
+        if (!response.status.isSuccess()) {
+            error("Latest assessment request failed (${response.status.value})")
+        }
+        response.body<AssessmentApiResponse>()
+    }
+
+    suspend fun fetchAssessmentProgress(
+        authorization: String? = null,
+    ): Result<AssessmentProgressApiResponse> = runCatching {
+        val response = client.get(base("api/assessment/progress")) {
+            applyBearerAuthorization(authorization)
+        }
+        if (!response.status.isSuccess()) {
+            error("Assessment progress request failed (${response.status.value})")
+        }
+        response.body<AssessmentProgressApiResponse>()
+    }
+
+    suspend fun fetchTrainingProfile(
+        authorization: String? = null,
+    ): Result<TrainingProfileApiResponse> = runCatching {
+        val response = client.get(base("api/mobile/training-profile")) {
+            applyBearerAuthorization(authorization)
+        }
+        if (!response.status.isSuccess()) {
+            error("Training profile request failed (${response.status.value})")
+        }
+        response.body<TrainingProfileApiResponse>()
+    }
+
     suspend fun putTrainingProfile(
         request: TrainingProfilePutRequest,
         authorization: String? = null,
@@ -577,6 +698,43 @@ class MovitMobileApi(
         if (!response.status.isSuccess()) {
             error("User program override delete failed (${response.status.value})")
         }
+    }
+
+    suspend fun fetchProgressionHistory(
+        authorization: String? = null,
+    ): Result<ProgressionHistoryApiResponse> = runCatching {
+        val response = client.get(base("api/mobile/progression/history")) {
+            applyBearerAuthorization(authorization)
+        }
+        if (!response.status.isSuccess()) {
+            error("Progression history request failed (${response.status.value})")
+        }
+        response.body<ProgressionHistoryApiResponse>()
+    }
+
+    suspend fun fetchRecentProgression(
+        authorization: String? = null,
+    ): Result<ProgressionHistoryApiResponse> = runCatching {
+        val response = client.get(base("api/mobile/progression/recent")) {
+            applyBearerAuthorization(authorization)
+        }
+        if (!response.status.isSuccess()) {
+            error("Recent progression request failed (${response.status.value})")
+        }
+        response.body<ProgressionHistoryApiResponse>()
+    }
+
+    suspend fun fetchSessionProgression(
+        sessionId: String,
+        authorization: String? = null,
+    ): Result<ProgressionHistoryApiResponse> = runCatching {
+        val response = client.get(base("api/mobile/progression/session/$sessionId")) {
+            applyBearerAuthorization(authorization)
+        }
+        if (!response.status.isSuccess()) {
+            error("Session progression request failed (${response.status.value})")
+        }
+        response.body<ProgressionHistoryApiResponse>()
     }
 
     suspend fun markProgressionSeen(

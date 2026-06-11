@@ -1,9 +1,13 @@
 package com.movit.core.data.outbox
 
 import com.movit.core.data.local.InMemoryMovitLocalStore
+import com.movit.core.data.repository.DayCustomizationLocalStore
 import com.movit.core.data.repository.FakeMovitPlatformBindings
 import com.movit.core.data.repository.testMobileApi
+import com.movit.core.network.dto.EffectivePlannedWorkoutDto
 import com.movit.core.network.dto.ExecutionMetricsDto
+import com.movit.core.network.dto.ProgramCustomizationKeys
+import com.movit.core.network.dto.ProgressionMarkSeenRequest
 import com.movit.core.network.dto.UserProgramUpdateRequest
 import com.movit.core.network.dto.WorkoutExecutionUploadRequestDto
 import io.ktor.client.engine.mock.MockEngine
@@ -22,6 +26,39 @@ class OfflineWriteQueueTest {
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
     private val planOkBody = """{"success":true}"""
     private val executionOkBody = """{"success":true,"data":{"id":"exec-offline-1"}}"""
+
+    @Test
+    fun enqueueSaveDayCustomizations_appliesOptimisticLocalCache() {
+        runBlocking {
+            val platform = object : FakeMovitPlatformBindings() {
+                override fun isNetworkAvailable(): Boolean = false
+            }
+            val localStore = InMemoryMovitLocalStore()
+            val queue = OfflineWriteQueue(localStore, testMobileApi(MockEngine { respond("{}", HttpStatusCode.OK) }, platform)) { platform }
+
+            queue.enqueueSaveDayCustomizations(
+                userProgramId = "up-1",
+                weekNumber = 1,
+                dayNumber = 1,
+                request = UserProgramUpdateRequest(
+                    customizations = mapOf(
+                        ProgramCustomizationKeys.dayKey(1, 1) to listOf(
+                            EffectivePlannedWorkoutDto(id = "pw-optimistic"),
+                        ),
+                    ),
+                ),
+            )
+
+            val effective = DayCustomizationLocalStore(localStore).getEffectivePlannedWorkouts(
+                userProgramId = "up-1",
+                weekNumber = 1,
+                dayNumber = 1,
+                originalWorkouts = listOf(EffectivePlannedWorkoutDto(id = "pw-server")),
+            )
+            assertEquals("pw-optimistic", effective.single().id)
+            assertEquals(1L, queue.pendingCount())
+        }
+    }
 
     @Test
     fun offlineWrite_replaysOnceWhenNetworkReturns() {
@@ -174,6 +211,33 @@ class OfflineWriteQueueTest {
             assertEquals(1, replay.succeeded)
             assertEquals(1, apiCalls.get())
             assertEquals(0L, queue.pendingCount())
+        }
+    }
+
+    @Test
+    fun progressionMarkSeen_offline_replaysOnceWhenOnline() {
+        runBlocking {
+            val apiCalls = AtomicInteger(0)
+            val engine = MockEngine {
+                apiCalls.incrementAndGet()
+                respond("""{"success":true}""", HttpStatusCode.OK, jsonHeaders)
+            }
+            val platform = object : FakeMovitPlatformBindings() {
+                private var online = false
+                override fun isNetworkAvailable(): Boolean = online
+                fun goOnline() {
+                    online = true
+                }
+            }
+            val queue = OfflineWriteQueue(InMemoryMovitLocalStore(), testMobileApi(engine, platform)) { platform }
+
+            queue.enqueueProgressionMarkSeen(ProgressionMarkSeenRequest(ids = listOf("chg-1")))
+            assertEquals(0, apiCalls.get())
+
+            platform.goOnline()
+            val replay = queue.replayPending()
+            assertEquals(1, replay.succeeded)
+            assertEquals(1, apiCalls.get())
         }
     }
 

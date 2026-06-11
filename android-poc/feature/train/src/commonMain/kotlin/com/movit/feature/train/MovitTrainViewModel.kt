@@ -3,8 +3,8 @@ package com.movit.feature.train
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.movit.core.data.MovitData
+import com.movit.core.data.cache.CacheState
 import com.movit.resources.strings.TrainStrings
-import com.movit.shared.AppResult
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -28,28 +28,30 @@ class MovitTrainViewModel(
     }
 
     suspend fun load() {
-        _state.update { it.copy(isLoading = true, errorMessage = null) }
-        when (val result = repository.getTrainDashboard()) {
-            is AppResult.Success -> {
-                val dashboard = result.value
-                val weekIndex = resolveWeekIndex(dashboard)
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        dashboard = dashboard,
-                        errorMessage = null,
-                        selectedWeekIndex = weekIndex,
-                    )
+        if (_state.value.dashboard == null) {
+            _state.update { it.copy(isLoading = true, errorMessage = null) }
+        }
+        repository.observeDashboard().collect { cacheState ->
+            when (cacheState) {
+                is CacheState.Cached -> applyDashboard(cacheState.value)
+                is CacheState.Fresh -> applyDashboard(cacheState.value)
+                is CacheState.Error -> _state.update {
+                    it.copy(isLoading = false, errorMessage = cacheState.message)
                 }
+                is CacheState.Loading -> Unit
             }
-            is AppResult.Failure -> {
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = result.message,
-                    )
-                }
-            }
+        }
+    }
+
+    private fun applyDashboard(dashboard: TrainDashboardUi) {
+        val weekIndex = resolveWeekIndex(dashboard)
+        _state.update {
+            it.copy(
+                isLoading = false,
+                dashboard = dashboard,
+                errorMessage = null,
+                selectedWeekIndex = weekIndex,
+            )
         }
     }
 

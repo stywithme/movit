@@ -28,6 +28,12 @@ open class FakeMovitPlatformBindings(
 
     override fun readCache(store: String, key: String): String? = cache["$store::$key"]
 
+    override fun readAllCacheEntries(store: String): Map<String, String> {
+        val prefix = "$store::"
+        return cache.filterKeys { it.startsWith(prefix) }
+            .mapKeys { (k, _) -> k.removePrefix(prefix) }
+    }
+
     override fun writeCache(store: String, key: String, value: String) {
         cache["$store::$key"] = value
     }

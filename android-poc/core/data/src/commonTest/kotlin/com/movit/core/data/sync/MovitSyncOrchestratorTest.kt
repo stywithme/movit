@@ -1,8 +1,12 @@
 package com.movit.core.data.sync
 
+import com.movit.core.data.audio.AudioPrefetchRunner
+import com.movit.core.data.audio.FakeAudioFileDownloader
 import com.movit.core.data.cache.AudioManifestCache
 import com.movit.core.data.cache.MovitSyncMetadataStore
+import com.movit.core.data.local.InMemoryMovitLocalStore
 import com.movit.core.data.local.MovitLocalStore
+import com.movit.core.data.outbox.OfflineWriteQueue
 import com.movit.core.data.repository.ExploreSyncRepository
 import com.movit.core.data.repository.FakeMovitPlatformBindings
 import com.movit.core.data.repository.HomeSyncRepository
@@ -12,17 +16,30 @@ import com.movit.core.data.repository.ReportsSyncRepository
 import com.movit.core.data.repository.testLocalStore
 import com.movit.core.data.repository.testMobileApi
 import com.movit.core.network.MovitJson
+import com.movit.core.network.dto.AudioFileInfoDto
+import com.movit.core.network.dto.AudioManifestDto
+import com.movit.core.network.dto.ExploreApiResponse
 import com.movit.core.network.dto.ExploreDataDto
+import com.movit.core.network.dto.HomeApiResponse
 import com.movit.core.network.dto.HomeDataDto
+import com.movit.core.network.dto.MobileSyncApiResponse
+import com.movit.core.network.dto.MobileSyncDataDto
+import com.movit.core.network.dto.SyncMetaDto
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class MovitSyncOrchestratorTest {
+
+    private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
 
     @Test
     fun readColdOfflineBundle_returnsStructuredCachedData() {
@@ -73,15 +90,92 @@ class MovitSyncOrchestratorTest {
         }
     }
 
+    @Test
+    fun syncIfNeeded_withAudioManifest_triggersPrefetchDownload() {
+        runBlocking {
+            val platform = FakeMovitPlatformBindings()
+            val localStore = testLocalStore(platform)
+            val downloader = FakeAudioFileDownloader()
+            val engine = MockEngine { request ->
+                when {
+                    request.url.encodedPath.contains("sync") ->
+                        respond(syncWithAudioBody(), HttpStatusCode.OK, jsonHeaders)
+                    request.url.encodedPath.contains("explore") ->
+                        respond(exploreOkBody(), HttpStatusCode.OK, jsonHeaders)
+                    request.url.encodedPath.contains("home") ->
+                        respond(homeOkBody(), HttpStatusCode.OK, jsonHeaders)
+                    else -> respond("{}", HttpStatusCode.NotFound)
+                }
+            }
+            val api = testMobileApi(engine, platform)
+            val orchestrator = buildOrchestrator(
+                api = api,
+                platform = platform,
+                localStore = localStore,
+                downloader = downloader,
+            )
+
+            orchestrator.syncIfNeeded(forceCheck = true)
+
+            assertEquals(1, downloader.downloadedBatches.size)
+            assertEquals("tts_en_1.wav", downloader.downloadedBatches.single().second.single().filename)
+        }
+    }
+
+    @Test
+    fun syncIfNeeded_replaysPendingOutboxAfterSuccessfulSync() {
+        runBlocking {
+            val platform = object : FakeMovitPlatformBindings() {
+                override fun isNetworkAvailable(): Boolean = false
+            }
+            val localStore = InMemoryMovitLocalStore()
+            val engine = MockEngine { request ->
+                when {
+                    request.url.encodedPath.contains("sync") ->
+                        respond(syncBody(), HttpStatusCode.OK, jsonHeaders)
+                    request.url.encodedPath.contains("explore") ->
+                        respond(exploreOkBody(), HttpStatusCode.OK, jsonHeaders)
+                    request.url.encodedPath.contains("home") ->
+                        respond(homeOkBody(), HttpStatusCode.OK, jsonHeaders)
+                    request.url.encodedPath.contains("plan/complete") ->
+                        respond("""{"success":true}""", HttpStatusCode.OK, jsonHeaders)
+                    else -> respond("{}", HttpStatusCode.NotFound)
+                }
+            }
+            val onlinePlatform = object : FakeMovitPlatformBindings() {
+                override fun isNetworkAvailable(): Boolean = true
+            }
+            val api = testMobileApi(engine, onlinePlatform)
+            val offlineWrites = OfflineWriteQueue(localStore, api) { onlinePlatform }
+            val orchestrator = buildOrchestrator(
+                api = api,
+                platform = onlinePlatform,
+                localStore = localStore,
+                offlineWrites = offlineWrites,
+            )
+
+            OfflineWriteQueue(localStore, api) { platform }.enqueuePlanComplete("op-pending-before-sync")
+            assertEquals(1L, offlineWrites.pendingCount())
+
+            orchestrator.syncIfNeeded(forceCheck = true)
+
+            assertEquals(0L, offlineWrites.pendingCount())
+        }
+    }
+
     private fun buildOrchestrator(
         api: com.movit.core.network.MovitMobileApi,
         platform: FakeMovitPlatformBindings,
         localStore: MovitLocalStore,
+        downloader: FakeAudioFileDownloader = FakeAudioFileDownloader(),
+        offlineWrites: OfflineWriteQueue? = null,
     ): MovitSyncOrchestrator {
         val home = HomeSyncRepository(api, { platform }, { localStore })
         val explore = ExploreSyncRepository(api, { platform }, { localStore })
         val reports = ReportsSyncRepository(api, { platform }, { localStore })
         val plan = PlanSyncRepository(api, { platform }, home)
+        val audioManifestCache = AudioManifestCache(localStore)
+        val queue = offlineWrites ?: OfflineWriteQueue(localStore, api) { platform }
         return MovitSyncOrchestrator(
             api = api,
             platform = { platform },
@@ -91,7 +185,46 @@ class MovitSyncOrchestratorTest {
             reportsSync = reports,
             planSync = plan,
             metadataStore = MovitSyncMetadataStore(localStore),
-            audioManifestCache = AudioManifestCache(localStore),
+            audioManifestCache = audioManifestCache,
+            audioPrefetchRunner = AudioPrefetchRunner(audioManifestCache, downloader),
+            offlineWrites = queue,
         )
     }
+
+    private fun syncBody(): String = MovitJson.encodeToString(
+        MobileSyncApiResponse.serializer(),
+        MobileSyncApiResponse(
+            success = true,
+            timestamp = "2026-06-11T00:00:00Z",
+            data = MobileSyncDataDto(),
+            meta = SyncMetaDto(isFullSync = true),
+        ),
+    )
+
+    private fun syncWithAudioBody(): String = MovitJson.encodeToString(
+        MobileSyncApiResponse.serializer(),
+        MobileSyncApiResponse(
+            success = true,
+            timestamp = "2026-06-11T00:00:00Z",
+            data = MobileSyncDataDto(
+                audioManifest = AudioManifestDto(
+                    baseUrl = "https://cdn.test/audio",
+                    files = listOf(
+                        AudioFileInfoDto(filename = "tts_en_1.wav", url = "/a.wav", language = "en"),
+                    ),
+                ),
+            ),
+            meta = SyncMetaDto(isFullSync = true),
+        ),
+    )
+
+    private fun exploreOkBody(): String = MovitJson.encodeToString(
+        ExploreApiResponse.serializer(),
+        ExploreApiResponse(success = true, data = ExploreDataDto()),
+    )
+
+    private fun homeOkBody(): String = MovitJson.encodeToString(
+        HomeApiResponse.serializer(),
+        HomeApiResponse(success = true, data = HomeDataDto()),
+    )
 }

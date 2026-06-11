@@ -1,6 +1,7 @@
 package com.movit.feature.library
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,8 +32,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.movit.designsystem.MovitRadius
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.components.MovitButton
 import com.movit.designsystem.components.MovitButtonVariant
@@ -44,7 +48,7 @@ import com.movit.designsystem.components.MovitLoadingState
 import com.movit.designsystem.components.MovitProgressBar
 import com.movit.designsystem.components.MovitSectionHeader
 import com.movit.designsystem.components.MovitStatTileData
-import com.movit.designsystem.components.MovitStatTileRow
+import com.movit.designsystem.components.MovitStatsStrip
 import com.movit.designsystem.components.MovitTag
 import com.movit.designsystem.components.MovitTagVariant
 import com.movit.designsystem.movitColors
@@ -148,7 +152,7 @@ fun ExercisePrepareScreen(
                             color = MaterialTheme.movitColors.textSecondary,
                         )
                     }
-                    MovitStatTileRow(
+                    MovitStatsStrip(
                         stats = listOf(
                             MovitStatTileData(exercise.sets, movitText("prepare_stat_sets")),
                             MovitStatTileData(
@@ -236,10 +240,16 @@ private fun SetupGuideCard(
     modifier: Modifier = Modifier,
 ) {
     val movit = MaterialTheme.movitColors
-    MovitCard(
-        modifier = modifier.fillMaxWidth(),
-        variant = MovitCardVariant.Outlined,
-        contentPadding = MovitSpacing.md,
+    val scheme = MaterialTheme.colorScheme
+    val cardShape = RoundedCornerShape(MovitRadius.lg)
+    val primaryTintSolid = movit.primaryTint.compositeOver(scheme.surface)
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(cardShape)
+            .background(Brush.linearGradient(listOf(primaryTintSolid, scheme.surface)))
+            .border(androidx.compose.foundation.BorderStroke(1.dp, scheme.primary), cardShape)
+            .padding(MovitSpacing.md),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),

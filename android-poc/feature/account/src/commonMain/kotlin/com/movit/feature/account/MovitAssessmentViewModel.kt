@@ -22,6 +22,8 @@ class MovitAssessmentViewModel(
     private val workScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
     private val _state = MutableStateFlow(MovitAssessmentUiState())
     val state: StateFlow<MovitAssessmentUiState> = _state.asStateFlow()
+    private var scanEngine: AssessmentBodyScanEngine? = null
+    private var pendingScanResult: AssessmentBodyScanResult? = null
 
     private val _effects = MutableSharedFlow<MovitAssessmentEffect>(extraBufferCapacity = 1)
     val effects: SharedFlow<MovitAssessmentEffect> = _effects.asSharedFlow()
@@ -42,10 +44,28 @@ class MovitAssessmentViewModel(
                         MovitAssessmentEffect.ShowLocalizedMessage("assessment_parq_physician_warning"),
                     )
                 }
-                _state.update { it.copy(phase = AssessmentPhase.BodyScan) }
+                startBodyScan()
+            }
+            MovitAssessmentEvent.BodyScanCameraReady -> {
+                _state.update { it.copy(scanErrorMessage = null) }
+            }
+            is MovitAssessmentEvent.BodyScanFrameReceived -> {
+                val update = scanEngine?.ingest(event.frame) ?: return
+                _state.update {
+                    it.copy(
+                        scanProgressPercent = update.progressPercent,
+                        scanMovementIndex = update.movementIndex,
+                        isPoseDetected = update.poseDetected,
+                        isScanComplete = update.isComplete,
+                        scanErrorMessage = if (update.poseDetected) null else it.scanErrorMessage,
+                    )
+                }
+            }
+            is MovitAssessmentEvent.BodyScanError -> {
+                _state.update { it.copy(scanErrorMessage = event.message) }
             }
             MovitAssessmentEvent.CompleteBodyScan -> {
-                loadResults()
+                completeBodyScan()
             }
             MovitAssessmentEvent.BrowseProgramsClicked -> {
                 _effects.tryEmit(MovitAssessmentEffect.OpenExplore)
@@ -63,12 +83,65 @@ class MovitAssessmentViewModel(
         }
     }
 
-    private fun loadResults() {
+    private fun startBodyScan() {
         workScope.launch {
-            _state.update { it.copy(isLoadingResults = true) }
-            val results = when (val result = repository.fetchLastResults(language)) {
+            _state.update {
+                it.copy(
+                    phase = AssessmentPhase.BodyScan,
+                    isResolvingTemplate = true,
+                    scanProgressPercent = 0,
+                    scanMovementIndex = 0,
+                    isScanComplete = false,
+                    isPoseDetected = false,
+                    scanErrorMessage = null,
+                )
+            }
+            val template = when (val result = repository.resolveTemplate(mode = "initial", language = language)) {
                 is AppResult.Success -> result.value
-                is AppResult.Failure -> FakeAssessmentPreviewData.results
+                is AppResult.Failure -> {
+                    _state.update { it.copy(scanErrorMessage = result.message) }
+                    AssessmentDefaults.initialTemplate
+                }
+            }
+            scanEngine = AssessmentBodyScanEngine(template = template, language = language)
+            pendingScanResult = null
+            _state.update {
+                it.copy(
+                    bodyScanTemplate = template,
+                    isResolvingTemplate = false,
+                    scanMovementIndex = 0,
+                    scanProgressPercent = 0,
+                )
+            }
+        }
+    }
+
+    private fun completeBodyScan() {
+        val engine = scanEngine ?: run {
+            _state.update { it.copy(scanErrorMessage = "Assessment engine is not ready.") }
+            return
+        }
+        if (!engine.isComplete) {
+            _state.update { it.copy(scanErrorMessage = "Complete all scan movements before viewing results.") }
+            return
+        }
+        val parqFlags = _state.value.parqAnswers
+            .filterValues { it }
+            .keys
+            .mapNotNull { AssessmentDefaults.parqQuestions.getOrNull(it) }
+        val localResult = engine.buildResult(
+            parqPassed = parqFlags.isEmpty(),
+            parqFlags = parqFlags,
+        )
+        pendingScanResult = localResult
+        workScope.launch {
+            _state.update { it.copy(isLoadingResults = true, scanErrorMessage = null) }
+            val results = when (val result = repository.submitBodyScan(localResult)) {
+                is AppResult.Success -> result.value
+                is AppResult.Failure -> {
+                    _state.update { current -> current.copy(scanErrorMessage = result.message) }
+                    localResult.uiResults
+                }
             }
             _state.update {
                 it.copy(

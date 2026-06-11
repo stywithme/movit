@@ -11,6 +11,10 @@ import com.movit.core.network.dto.RegisterRequestDto
 import com.movit.core.network.dto.TrainingProfilePutRequest
 import com.movit.core.network.dto.UpdateSettingsRequestDto
 import com.movit.core.network.dto.ActivePlanDto
+import com.movit.core.network.dto.AssessmentProgressDto
+import com.movit.core.network.dto.AssessmentTemplateDto
+import com.movit.core.network.dto.BodyScanResultDto
+import com.movit.core.network.dto.BodyScanUploadRequestDto
 import com.movit.core.network.dto.LevelProfileDetailDto
 import com.movit.core.network.dto.ReassessmentDto
 import com.movit.core.network.dto.UserPublicDto
@@ -168,5 +172,57 @@ class AccountSyncRepository(
             return AppResult.Failure(response.error ?: "Reassessment request failed.")
         }
         return AppResult.Success(response.data.orEmpty())
+    }
+
+    suspend fun resolveAssessmentTemplate(mode: String = "initial"): AppResult<AssessmentTemplateDto> {
+        val auth = platform().authHeader()
+            ?: return AppResult.Failure("Sign in to start your assessment.")
+        val response = api.resolveAssessmentTemplate(mode = mode, authorization = auth).getOrElse { error ->
+            return AppResult.Failure(error.message ?: "Assessment template request failed.")
+        }
+        if (!response.success) {
+            return AppResult.Failure(response.error ?: "Assessment template request failed.")
+        }
+        val data = response.data ?: return AppResult.Failure("Assessment template response was empty.")
+        return AppResult.Success(data)
+    }
+
+    suspend fun uploadAssessment(request: BodyScanUploadRequestDto): AppResult<BodyScanResultDto> {
+        val auth = platform().authHeader()
+            ?: return AppResult.Failure("Sign in to save your assessment.")
+        val response = api.uploadAssessment(request, authorization = auth).getOrElse { error ->
+            return AppResult.Failure(error.message ?: "Assessment upload failed.")
+        }
+        if (!response.success) {
+            return AppResult.Failure(response.error ?: response.message ?: "Assessment upload failed.")
+        }
+        val data = response.data ?: return AppResult.Failure("Assessment response was empty.")
+        return AppResult.Success(data)
+    }
+
+    suspend fun fetchLatestAssessment(): AppResult<BodyScanResultDto> {
+        val auth = platform().authHeader()
+            ?: return AppResult.Failure("Sign in to load your assessment.")
+        val response = api.fetchLatestAssessment(auth).getOrElse { error ->
+            return AppResult.Failure(error.message ?: "Latest assessment request failed.")
+        }
+        if (!response.success) {
+            return AppResult.Failure(response.error ?: "Latest assessment request failed.")
+        }
+        val data = response.data ?: return AppResult.Failure("Latest assessment response was empty.")
+        return AppResult.Success(data)
+    }
+
+    suspend fun fetchAssessmentProgress(): AppResult<AssessmentProgressDto> {
+        val auth = platform().authHeader()
+            ?: return AppResult.Failure("Sign in to load assessment progress.")
+        val response = api.fetchAssessmentProgress(auth).getOrElse { error ->
+            return AppResult.Failure(error.message ?: "Assessment progress request failed.")
+        }
+        if (!response.success) {
+            return AppResult.Failure(response.error ?: "Assessment progress request failed.")
+        }
+        val data = response.data ?: return AppResult.Failure("Assessment progress response was empty.")
+        return AppResult.Success(data)
     }
 }
