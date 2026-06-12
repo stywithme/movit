@@ -13,6 +13,9 @@ import coil3.compose.AsyncImage
  *
  * Previously this was `expect/actual`: Android used Coil 2 (`AsyncImage`) while iOS rendered a
  * placeholder unconditionally. Coil 3 unifies both behind one commonMain implementation.
+ *
+ * Disk cache: [com.movit.designsystem.platform.MovitImageCachePolicy.DISK_MAX_BYTES] (64 MiB) via
+ * [com.movit.designsystem.platform.installMovitCoilImageLoader] on Android shell startup.
  */
 @Composable
 fun MovitRemoteImage(

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.movit.designsystem.MovitSpacing
@@ -32,7 +33,7 @@ fun WorkoutsLibraryScreen(
     onFilterSelected: (LibraryFilterChip) -> Unit,
     onFilterClick: () -> Unit,
     onDismissFilterSheet: () -> Unit,
-    onSeeMore: () -> Unit,
+    onLoadMore: () -> Unit,
     onClearFilters: () -> Unit,
     onItemClick: (String) -> Unit,
     onRetry: () -> Unit,
@@ -129,11 +130,11 @@ fun WorkoutsLibraryScreen(
                             onClick = { onItemClick(item.id) },
                         )
                     }
-                    if (!state.showAll && state.visibleCount > state.items.size) {
-                        MovitButton(
-                            text = movitText("library_see_more_workouts"),
-                            onClick = onSeeMore,
-                            variant = MovitButtonVariant.Outlined,
+                    if (state.hasMore) {
+                        LaunchedEffect(state.items.size) { onLoadMore() }
+                        MovitLoadingState(
+                            message = movitText("library_loading_more"),
+                            modifier = Modifier.padding(vertical = MovitSpacing.md),
                         )
                     }
                 }

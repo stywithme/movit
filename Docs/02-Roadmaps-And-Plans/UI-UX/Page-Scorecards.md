@@ -213,7 +213,7 @@
 
 ---
 
-## 04 — Explore (`MovitExploreScreen`) — **91%**
+## 04 — Explore (`MovitExploreScreen`) — **93%**
 
 **الملفات:** `feature/explore/.../MovitExploreScreen.kt` · `SharedExploreRepository` · [`Explore-Page-Modernization-Spec.md`](Page-Specs/Explore-Page-Modernization-Spec.md)
 
@@ -221,19 +221,20 @@
 
 | المجال | الدرجة | مساهمة |
 |--------|--------|--------|
-| Functional | 92% | 23.0 |
-| Visual | 85% | 17.0 |
-| DS | 93% | 14.0 |
+| Functional | 94% | 23.5 |
+| Visual | 88% | 17.6 |
+| DS | 95% | 14.3 |
 | i18n/RTL | 100% | 15.0 |
-| A11y | 80% | 8.0 |
-| Tests | 88% | 8.8 |
+| A11y | 85% | 8.5 |
+| Tests | 90% | 9.0 |
 | iOS | 100% | 5.0 |
-| **الإجمالي** | | **91%** |
+| **الإجمالي** | | **93%** |
 
 ### ما أُغلق (2026-06-12)
 
 - `explore_a11y_filter` · `explore_a11y_media_image` · `explore_a11y_filter_chip` على Filter / `MovitMediaCard` / chips.
 - iOS: `MovitRemoteImage` Coil 3 KMP (لا placeholder-only).
+- **Explore Flow Reset:** تمرين → `ExerciseDetail` قبل Prepare؛ See all → `ExercisesLibrary` / `WorkoutsLibrary` مع pagination؛ Program Detail → يوم مختار + جلسات اليوم.
 
 ### Checklist
 

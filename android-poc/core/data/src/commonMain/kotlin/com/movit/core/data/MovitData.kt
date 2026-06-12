@@ -23,6 +23,7 @@ import com.movit.core.data.repository.seedBundledDefaultsIfEmpty
 import com.movit.core.data.repository.TrainingSessionWriteCoordinator
 import com.movit.core.data.repository.WorkoutSessionSyncRepository
 import com.movit.core.data.sync.MovitSyncOrchestrator
+import com.movit.core.data.sync.WeekOfflinePackPrefetcher
 import org.koin.core.Koin
 import org.koin.core.KoinApplication
 import org.koin.core.context.startKoin
@@ -110,5 +111,6 @@ object MovitData {
     val audioPrefetch: AudioPrefetchRunner get() = koin().get()
     val offlineWrites: OfflineWriteQueue get() = koin().get()
     val sync: MovitSyncOrchestrator get() = koin().get()
+    val weekOfflinePrefetch: WeekOfflinePackPrefetcher get() = koin().get()
 
 }

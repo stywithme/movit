@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.components.MovitEmptyState
@@ -16,13 +17,16 @@ import com.movit.designsystem.components.MovitFilterRow
 import com.movit.designsystem.components.MovitInnerPageHeader
 import com.movit.designsystem.components.MovitLoadingState
 import com.movit.designsystem.components.MovitProgramCard
+import com.movit.feature.library.components.LibraryToolbar
 import com.movit.resources.movitText
 
 @Composable
 fun ProgramListScreen(
     state: ProgramListUiState,
     onBack: () -> Unit,
+    onQueryChange: (String) -> Unit,
     onChipSelected: (String) -> Unit,
+    onLoadMore: () -> Unit,
     onProgramClick: (String) -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
@@ -41,10 +45,26 @@ fun ProgramListScreen(
                 actionLabel = movitText("common_retry"),
                 onRetry = onRetry,
             )
-            state.filteredPrograms.isEmpty() -> MovitEmptyState(
-                title = movitText("program_flow_empty_title"),
-                message = movitText("program_flow_empty_message"),
-            )
+            state.filteredPrograms.isEmpty() -> {
+                LibraryToolbar(
+                    query = state.query,
+                    onQueryChange = onQueryChange,
+                    filters = emptyList(),
+                    selectedFilter = LibraryFilterChip.All,
+                    onFilterSelected = {},
+                    resultSummary = movitText("program_flow_list_count", state.programs.size),
+                    searchPlaceholder = movitText("program_flow_search"),
+                    filterContentDescription = movitText("library_a11y_filter"),
+                    onFilterClick = {},
+                    filterSheetVisible = false,
+                    onDismissFilterSheet = {},
+                    filterSheetTitle = movitText("library_filter_sheet_title"),
+                )
+                MovitEmptyState(
+                    title = movitText("program_flow_empty_title"),
+                    message = movitText("program_flow_empty_message"),
+                )
+            }
             else -> {
                 Column(
                     modifier = Modifier
@@ -53,12 +73,30 @@ fun ProgramListScreen(
                         .padding(horizontal = MovitSpacing.lg),
                     verticalArrangement = Arrangement.spacedBy(MovitSpacing.md),
                 ) {
+                    LibraryToolbar(
+                        query = state.query,
+                        onQueryChange = onQueryChange,
+                        filters = emptyList(),
+                        selectedFilter = LibraryFilterChip.All,
+                        onFilterSelected = {},
+                        resultSummary = movitText(
+                            "program_flow_list_count_filtered",
+                            state.visiblePrograms.size,
+                            state.filteredPrograms.size,
+                        ),
+                        searchPlaceholder = movitText("program_flow_search"),
+                        filterContentDescription = movitText("library_a11y_filter"),
+                        onFilterClick = {},
+                        filterSheetVisible = false,
+                        onDismissFilterSheet = {},
+                        filterSheetTitle = movitText("library_filter_sheet_title"),
+                    )
                     MovitFilterRow(
                         filters = state.chips,
                         selectedFilter = state.selectedChip,
                         onFilterSelected = onChipSelected,
                     )
-                    state.filteredPrograms.forEach { program ->
+                    state.visiblePrograms.forEach { program ->
                         val metadata = buildList {
                             add(movitText("program_flow_weeks_days", program.durationWeeks, program.daysPerWeek))
                         }
@@ -71,6 +109,13 @@ fun ProgramListScreen(
                             imageUrl = program.imageUrl,
                             modifier = Modifier.fillMaxWidth(),
                             onClick = { onProgramClick(program.id) },
+                        )
+                    }
+                    if (state.hasMore) {
+                        LaunchedEffect(state.visiblePrograms.size) { onLoadMore() }
+                        MovitLoadingState(
+                            message = movitText("library_loading_more"),
+                            modifier = Modifier.padding(vertical = MovitSpacing.md),
                         )
                     }
                 }

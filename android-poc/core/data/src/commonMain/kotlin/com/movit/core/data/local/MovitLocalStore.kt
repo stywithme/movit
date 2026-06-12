@@ -54,6 +54,9 @@ interface MovitLocalStore {
 
     suspend fun deleteOutbox(id: String)
 
+    /** Removes completed outbox rows older than [cutoffEpochMs] (F7 retention). */
+    suspend fun purgeSucceededOutboxOlderThan(cutoffEpochMs: Long): Int
+
     suspend fun countOutboxByStatus(status: OutboxStatus): Long
 
     suspend fun clearAllUserData()

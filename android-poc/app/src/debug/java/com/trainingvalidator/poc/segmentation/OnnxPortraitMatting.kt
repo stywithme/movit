@@ -15,8 +15,7 @@ import kotlin.math.roundToInt
 /**
  * Portrait matting via ONNX Runtime (MODNet / U²-Net human seg).
  *
- * MODNet: RGB 0–1, NCHW, matte in [0, 1].
- * U²-Net: ImageNet-normalized RGB, NCHW, min–max normalized matte.
+ * Debug builds only — release uses [com.trainingvalidator.poc.segmentation.OnnxPortraitMatting] stub (F8).
  */
 class OnnxPortraitMatting(
     private val context: Context,

@@ -51,6 +51,9 @@ class MigratingMovitLocalStore(
 
     override suspend fun deleteOutbox(id: String) = sqlStore.deleteOutbox(id)
 
+    override suspend fun purgeSucceededOutboxOlderThan(cutoffEpochMs: Long): Int =
+        sqlStore.purgeSucceededOutboxOlderThan(cutoffEpochMs)
+
     override suspend fun countOutboxByStatus(status: OutboxStatus): Long =
         sqlStore.countOutboxByStatus(status)
 

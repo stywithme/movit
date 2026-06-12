@@ -108,15 +108,28 @@ class MovitExploreStateTest {
     }
 
     @Test
-    fun viewModel_seeAllWorkouts_focusesWorkoutsFilter() {
+    fun viewModel_seeAllWorkouts_emitsWorkoutsLibrary() {
         runBlocking {
             val viewModel = MovitExploreViewModel(FakeExploreRepository())
-            viewModel.load(isRefresh = false)
+            val effectDeferred = async {
+                withTimeout(5_000) { viewModel.effects.first() }
+            }
+            yield()
             viewModel.onEvent(MovitExploreEvent.SeeAllWorkoutsClicked)
-            val state = viewModel.state.value
-            assertEquals(ExploreFilter.Workouts, state.selectedFilter)
-            assertEquals(ExploreWorkoutFilter.All, state.selectedWorkoutFilter)
-            assertTrue(state.scrollToWorkouts)
+            assertEquals(MovitExploreEffect.OpenWorkoutsLibrary, effectDeferred.await())
+        }
+    }
+
+    @Test
+    fun viewModel_seeAllExercises_emitsExercisesLibrary() {
+        runBlocking {
+            val viewModel = MovitExploreViewModel(FakeExploreRepository())
+            val effectDeferred = async {
+                withTimeout(5_000) { viewModel.effects.first() }
+            }
+            yield()
+            viewModel.onEvent(MovitExploreEvent.SeeAllExercisesClicked)
+            assertEquals(MovitExploreEffect.OpenExercisesLibrary, effectDeferred.await())
         }
     }
 
@@ -147,7 +160,7 @@ class MovitExploreStateTest {
     }
 
     @Test
-    fun viewModel_itemClicked_emitsExercisePrepareEffect() {
+    fun viewModel_itemClicked_emitsExerciseDetailEffect() {
         runBlocking {
             val viewModel = MovitExploreViewModel(FakeExploreRepository())
             val effectDeferred = async {
@@ -155,7 +168,7 @@ class MovitExploreStateTest {
             }
             yield()
             viewModel.onEvent(MovitExploreEvent.ItemClicked("ex-squat", ExploreItemType.Exercise))
-            assertEquals(MovitExploreEffect.OpenExercisePrepare("ex-squat"), effectDeferred.await())
+            assertEquals(MovitExploreEffect.OpenExerciseDetail("ex-squat"), effectDeferred.await())
         }
     }
 

@@ -29,6 +29,7 @@ import com.movit.feature.library.components.ProgramEditPanel
 import com.movit.feature.library.components.ProgramHeroSection
 import com.movit.feature.library.components.ProgramStartDock
 import com.movit.feature.library.components.ProgramStatGrid
+import com.movit.feature.library.components.ProgramDaySessionsPanel
 import com.movit.feature.library.components.ProgramWeekCard
 import com.movit.feature.library.components.ProgramWeekStrip
 import com.movit.resources.movitText
@@ -39,6 +40,8 @@ fun ProgramDetailScreen(
     onBack: () -> Unit,
     onTabSelected: (ProgramDetailTab) -> Unit,
     onWeekSelected: (Int) -> Unit,
+    onDaySelected: (Int) -> Unit,
+    onOpenDaySession: (String) -> Unit,
     onStartProgram: () -> Unit,
     onEditReasonSelected: (ProgramEditReason) -> Unit,
     onEditScopeSelected: (ProgramEditScope) -> Unit,
@@ -177,6 +180,8 @@ fun ProgramDetailScreen(
                         ProgramOverviewContent(
                             state = state,
                             onWeekSelected = onWeekSelected,
+                            onDaySelected = onDaySelected,
+                            onOpenDaySession = onOpenDaySession,
                             onViewWeeklyReport = onViewWeeklyReport,
                         )
                     } else {
@@ -204,6 +209,8 @@ fun ProgramDetailScreen(
 private fun ProgramOverviewContent(
     state: ProgramDetailUiState,
     onWeekSelected: (Int) -> Unit,
+    onDaySelected: (Int) -> Unit,
+    onOpenDaySession: (String) -> Unit,
     onViewWeeklyReport: () -> Unit,
 ) {
     MovitSectionHeader(
@@ -220,7 +227,15 @@ private fun ProgramOverviewContent(
     val selectedWeek = state.weeks.firstOrNull { it.weekNumber == state.selectedWeekNumber }
         ?: state.weeks.firstOrNull()
     if (selectedWeek != null) {
-        ProgramWeekCard(week = selectedWeek)
+        ProgramWeekCard(
+            week = selectedWeek,
+            selectedDayNumber = state.selectedDayNumber,
+            onDaySelected = onDaySelected,
+        )
+        ProgramDaySessionsPanel(
+            sessions = state.selectedDaySessions,
+            onOpenSession = onOpenDaySession,
+        )
     }
     state.weeks
         .filter { it.weekNumber != selectedWeek?.weekNumber && !it.isCurrent }

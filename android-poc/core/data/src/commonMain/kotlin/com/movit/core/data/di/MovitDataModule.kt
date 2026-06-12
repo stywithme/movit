@@ -27,6 +27,7 @@ import com.movit.core.data.journal.SessionJournalStore
 import com.movit.core.data.repository.TrainingSessionWriteCoordinator
 import com.movit.core.data.repository.WorkoutSessionSyncRepository
 import com.movit.core.data.sync.MovitSyncOrchestrator
+import com.movit.core.data.sync.WeekOfflinePackPrefetcher
 import com.movit.core.network.MovitAuthTokenStore
 import com.movit.core.network.MovitHttpClientConfig
 import com.movit.core.network.MovitMobileApi
@@ -131,6 +132,15 @@ fun movitDataModule(
             audioPrefetchRunner = get(),
             offlineWrites = get(),
             trainingConfig = get(),
+        )
+    }
+    single {
+        WeekOfflinePackPrefetcher(
+            sync = get(),
+            audioPrefetch = get(),
+            workoutSession = get(),
+            trainingConfig = get(),
+            platform = { get() },
         )
     }
 }

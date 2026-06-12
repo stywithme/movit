@@ -65,6 +65,16 @@ class InMemoryMovitLocalStore : MovitLocalStore {
         outbox.remove(id)
     }
 
+    override suspend fun purgeSucceededOutboxOlderThan(cutoffEpochMs: Long): Int {
+        val toRemove = outbox.entries
+            .filter { (_, entry) ->
+                entry.status == OutboxStatus.SUCCEEDED && entry.createdAt < cutoffEpochMs
+            }
+            .map { it.key }
+        toRemove.forEach { outbox.remove(it) }
+        return toRemove.size
+    }
+
     override suspend fun countOutboxByStatus(status: OutboxStatus): Long =
         outbox.values.count { it.status == status }.toLong()
 

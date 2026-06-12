@@ -24,6 +24,7 @@ internal object IosNetworkMonitor {
             val online = nw_path_get_status(path) == nw_path_status_satisfied
             if (online && wasOffline) {
                 replayPendingOutboxIfInstalled()
+                MovitConnectivitySignals.notifyConnectivityRestored()
             }
             wasOffline = !online
             isOnline = online

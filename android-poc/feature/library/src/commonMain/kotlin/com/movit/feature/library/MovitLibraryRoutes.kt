@@ -1,5 +1,7 @@
 package com.movit.feature.library
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -27,7 +29,7 @@ fun ExercisesLibraryRoute(
         onFilterSelected = viewModel::onFilterSelected,
         onFilterClick = viewModel::onFilterClick,
         onDismissFilterSheet = viewModel::onDismissFilterSheet,
-        onSeeMore = viewModel::onSeeMore,
+        onLoadMore = viewModel::onLoadMore,
         onClearFilters = viewModel::onClearFilters,
         onItemClick = onItemClick,
         onRetry = { scope.launch { viewModel.load() } },
@@ -52,9 +54,31 @@ fun WorkoutsLibraryRoute(
         onFilterSelected = viewModel::onFilterSelected,
         onFilterClick = viewModel::onFilterClick,
         onDismissFilterSheet = viewModel::onDismissFilterSheet,
-        onSeeMore = viewModel::onSeeMore,
+        onLoadMore = viewModel::onLoadMore,
         onClearFilters = viewModel::onClearFilters,
         onItemClick = onItemClick,
+        onRetry = { scope.launch { viewModel.load() } },
+        modifier = modifier,
+    )
+}
+
+@Composable
+fun ExerciseDetailRoute(
+    exerciseId: String,
+    onBack: () -> Unit,
+    onStartExercise: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: ExerciseDetailViewModel = viewModel(key = "exercise-detail-$exerciseId") {
+        ExerciseDetailViewModel(exerciseId)
+    },
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(viewModel) { viewModel.loadInitial() }
+    ExerciseDetailScreen(
+        state = state,
+        onBack = onBack,
+        onStartExercise = onStartExercise,
         onRetry = { scope.launch { viewModel.load() } },
         modifier = modifier,
     )
@@ -65,6 +89,7 @@ fun ProgramDetailRoute(
     programId: String,
     onBack: () -> Unit,
     onStartSession: (String) -> Unit,
+    onOpenDaySession: (String) -> Unit,
     onViewWeeklyReport: (Int) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ProgramDetailViewModel = viewModel { ProgramDetailViewModel(programId) },
@@ -77,6 +102,8 @@ fun ProgramDetailRoute(
         onBack = onBack,
         onTabSelected = viewModel::onTabSelected,
         onWeekSelected = viewModel::onWeekSelected,
+        onDaySelected = viewModel::onDaySelected,
+        onOpenDaySession = onOpenDaySession,
         onStartProgram = {
             scope.launch {
                 viewModel.startProgramAndGetSessionKey()?.let(onStartSession)
@@ -183,7 +210,9 @@ fun ProgramListRoute(
     ProgramListScreen(
         state = state,
         onBack = onBack,
+        onQueryChange = viewModel::onQueryChange,
         onChipSelected = viewModel::onChipSelected,
+        onLoadMore = viewModel::onLoadMore,
         onProgramClick = onProgramClick,
         onRetry = { scope.launch { viewModel.load() } },
         modifier = modifier,
@@ -273,69 +302,73 @@ fun ExercisePrepareRoute(
     onStart: (TrainingStartAction?) -> Unit,
     modifier: Modifier = Modifier,
     workoutId: String? = null,
-    viewModel: ExercisePrepareViewModel = viewModel { ExercisePrepareViewModel(exerciseId) },
+    prepareMode: String = "prepare",
+    restSeconds: Int? = null,
+    upNextExerciseId: String? = null,
+    viewModel: ExercisePrepareViewModel = viewModel(
+        key = "prepare-$exerciseId-${workoutId ?: "solo"}-$prepareMode-$upNextExerciseId",
+    ) {
+        ExercisePrepareViewModel(
+            exerciseId = exerciseId,
+            initialMode = if (prepareMode == "rest") {
+                ExercisePrepareMode.Rest
+            } else {
+                ExercisePrepareMode.Prepare
+            },
+            initialRestSeconds = restSeconds,
+            upNextExerciseId = upNextExerciseId,
+        )
+    },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     LaunchedEffect(viewModel) { viewModel.loadInitial() }
-    ExercisePrepareScreen(
-        state = state,
-        onBack = onBack,
-        onStart = { onStart(viewModel.trainingStartAction(workoutId = workoutId)) },
-        onSkipRest = viewModel::skipRest,
-        onToggleRestPause = viewModel::toggleRestPause,
-        onAddRestTime = viewModel::addRestTime,
-        onRetry = { scope.launch { viewModel.load() } },
-        onPoseVariantSelected = viewModel::selectPoseVariant,
-        modifier = modifier,
-    )
-}
-
-@Composable
-fun WorkoutCustomizeRoute(
-    workoutId: String,
-    onBack: () -> Unit,
-    onStart: () -> Unit,
-    modifier: Modifier = Modifier,
-    viewModel: WorkoutCustomizeViewModel = viewModel { WorkoutCustomizeViewModel(workoutId) },
-) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
-    val scope = rememberCoroutineScope()
-    LaunchedEffect(viewModel) { viewModel.loadInitial() }
-    WorkoutCustomizeScreen(
-        state = state,
-        restOptionsSeconds = viewModel.restOptionsSeconds,
-        onBack = onBack,
-        onSetsChanged = viewModel::onSetsChanged,
-        onRepsChanged = viewModel::onRepsChanged,
-        onDeleteExercise = viewModel::deleteExercise,
-        onMoveExercise = viewModel::moveExercise,
-        onRestOptionSelected = viewModel::onRestOptionSelected,
-        onStart = {
-            viewModel.commitForRun(onReady = { onStart() })
-        },
-        onRetry = { scope.launch { viewModel.load() } },
-        modifier = modifier,
-    )
+    LaunchedEffect(viewModel) {
+        viewModel.startEffects.collect(onStart)
+    }
+    Box(modifier = modifier) {
+        ExercisePrepareScreen(
+            state = state,
+            onBack = onBack,
+            onStart = { viewModel.requestTrainingStart(workoutId = workoutId) },
+            onSkipRest = viewModel::skipRest,
+            onToggleRestPause = viewModel::toggleRestPause,
+            onAddRestTime = viewModel::addRestTime,
+            onRetry = { scope.launch { viewModel.load() } },
+            onPoseVariantSelected = viewModel::selectPoseVariant,
+            modifier = Modifier.fillMaxSize(),
+        )
+        TrainingConfigEnsureOverlay(
+            isEnsuring = state.isEnsuringConfig,
+            unavailable = state.trainingConfigUnavailable,
+            onSyncNow = { viewModel.retryTrainingConfigSync(workoutId) },
+            onDismiss = viewModel::dismissTrainingConfigUnavailable,
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
 }
 
 @Composable
 fun WorkoutRunRoute(
     workoutId: String,
     onBack: () -> Unit,
-    onStartExercise: (TrainingStartAction) -> Unit,
+    onStartExercise: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: WorkoutRunViewModel = viewModel { WorkoutRunViewModel(workoutId) },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     LaunchedEffect(viewModel) { viewModel.loadInitial() }
-    WorkoutRunScreen(
-        state = state,
-        onBack = onBack,
-        onStartExercise = { viewModel.trainingStartAction()?.let(onStartExercise) },
-        onRetry = { scope.launch { viewModel.load() } },
-        modifier = modifier,
-    )
+    Box(modifier = modifier) {
+        WorkoutRunScreen(
+            state = state,
+            onBack = onBack,
+            onStartExercise = {
+                state.currentExercise?.id?.let(onStartExercise)
+            },
+            onRetry = { scope.launch { viewModel.load() } },
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
 }
 

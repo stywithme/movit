@@ -52,9 +52,9 @@ class LibraryListViewModelTest {
     }
 
     @Test
-    fun seeMore_expandsVisibleItems() = runBlocking {
+    fun loadMore_expandsVisibleItems() = runBlocking {
         val base = sampleWorkoutItems().first()
-        val manyWorkouts = (1..8).map { index ->
+        val manyWorkouts = (1..25).map { index ->
             base.copy(id = "workout-$index", title = "Workout $index")
         }
         val viewModel = LibraryListViewModel(
@@ -69,10 +69,11 @@ class LibraryListViewModelTest {
             ),
         )
         viewModel.load()
-        assertEquals(LibraryListViewModel.DEFAULT_VISIBLE, viewModel.state.value.items.size)
-        viewModel.onSeeMore()
-        assertEquals(8, viewModel.state.value.items.size)
-        assertTrue(viewModel.state.value.showAll)
+        assertEquals(LibraryListViewModel.PAGE_SIZE, viewModel.state.value.items.size)
+        assertTrue(viewModel.state.value.hasMore)
+        viewModel.onLoadMore()
+        assertEquals(25, viewModel.state.value.items.size)
+        assertFalse(viewModel.state.value.hasMore)
     }
 
     @Test

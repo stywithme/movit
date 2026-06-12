@@ -19,7 +19,8 @@ data class LibraryListUiState(
     val items: List<ExploreItemUi> = emptyList(),
     val totalCount: Int = 0,
     val visibleCount: Int = 0,
-    val showAll: Boolean = false,
+    val hasMore: Boolean = false,
+    val isLoadingMore: Boolean = false,
     val isFilteredEmpty: Boolean = false,
     val filterSheetVisible: Boolean = false,
     val errorMessage: String? = null,
@@ -69,19 +70,26 @@ class LibraryListViewModel(
         }
     }
 
+    private var visibleLimit = PAGE_SIZE
+
     fun onQueryChange(query: String) {
+        visibleLimit = PAGE_SIZE
         _state.update { it.copy(query = query) }
         publishFiltered()
     }
 
     fun onFilterSelected(filter: LibraryFilterChip) {
+        visibleLimit = PAGE_SIZE
         _state.update { it.copy(selectedFilter = filter, filterSheetVisible = false) }
         publishFiltered()
     }
 
-    fun onSeeMore() {
-        _state.update { it.copy(showAll = true) }
+    fun onLoadMore() {
+        if (_state.value.isLoadingMore || !_state.value.hasMore) return
+        _state.update { it.copy(isLoadingMore = true) }
+        visibleLimit += PAGE_SIZE
         publishFiltered()
+        _state.update { it.copy(isLoadingMore = false) }
     }
 
     fun onFilterClick() {
@@ -93,6 +101,7 @@ class LibraryListViewModel(
     }
 
     fun onClearFilters() {
+        visibleLimit = PAGE_SIZE
         _state.update {
             it.copy(
                 query = "",
@@ -111,18 +120,20 @@ class LibraryListViewModel(
             chip = current.selectedFilter,
             query = current.query,
         )
-        val limit = if (current.showAll) filtered.size else minOf(filtered.size, DEFAULT_VISIBLE)
+        val limit = minOf(filtered.size, visibleLimit)
         _state.update {
             it.copy(
                 items = filtered.take(limit),
                 totalCount = allItems.size,
                 visibleCount = filtered.size,
+                hasMore = limit < filtered.size,
                 isFilteredEmpty = filtered.isEmpty() && allItems.isNotEmpty(),
             )
         }
     }
 
     companion object {
-        const val DEFAULT_VISIBLE = 6
+        const val PAGE_SIZE = 20
+        const val DEFAULT_VISIBLE = PAGE_SIZE
     }
 }

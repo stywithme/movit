@@ -701,6 +701,11 @@
     <string name="workout_live_finish">إنهاء المجموعة</string>
     <string name="workout_live_bridge_unavailable">التدريب المباشر بالكاميرا غير متاح في هذا الإصدار بعد.</string>
     <string name="workout_live_config_unavailable">تكوين التمرين غير متاح دون اتصال. زامِن أو أعد المحاولة لاحقاً.</string>
+    <string name="training_config_ensuring">جارٍ تجهيز إعداد التمرين…</string>
+    <string name="training_config_unavailable_title">إعداد التمرين مطلوب</string>
+    <string name="training_config_first_use_online">أول استخدام يحتاج اتصالاً لمرة واحدة لتنزيل إعداد التمرين. اضغط زامِن الآن ثم أعد المحاولة.</string>
+    <string name="training_config_offline_unavailable">إعداد التمرين غير موجود على هذا الجهاز بعد. اتصل بالإنترنت وزامِن ثم أعد المحاولة.</string>
+    <string name="training_config_sync_now">زامِن الآن</string>
     <string name="workout_live_ios_placeholder">تدريب الكاميرا على iOS — قريباً</string>
     <string name="training_session_setup_title">خذ وضعية البداية</string>
     <string name="training_session_setup_phase">الخطوة: %1$s</string>

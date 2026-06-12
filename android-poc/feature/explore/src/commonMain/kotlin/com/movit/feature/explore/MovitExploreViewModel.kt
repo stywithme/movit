@@ -89,30 +89,16 @@ class MovitExploreViewModel(
                     ExploreItemType.Workout ->
                         _effects.tryEmit(MovitExploreEffect.OpenWorkoutSession(event.id))
                     ExploreItemType.Exercise ->
-                        _effects.tryEmit(MovitExploreEffect.OpenExercisePrepare(event.id))
+                        _effects.tryEmit(MovitExploreEffect.OpenExerciseDetail(event.id))
                     ExploreItemType.Program ->
                         _effects.tryEmit(MovitExploreEffect.OpenProgramDetail(event.id))
                 }
             }
             MovitExploreEvent.SeeAllExercisesClicked -> {
-                _state.update {
-                    it.copy(
-                        selectedFilter = ExploreFilter.Exercises,
-                        selectedExerciseCategory = null,
-                        scrollToExercises = true,
-                    )
-                }
-                publishFiltered()
+                _effects.tryEmit(MovitExploreEffect.OpenExercisesLibrary)
             }
             MovitExploreEvent.SeeAllWorkoutsClicked -> {
-                _state.update {
-                    it.copy(
-                        selectedFilter = ExploreFilter.Workouts,
-                        selectedWorkoutFilter = ExploreWorkoutFilter.All,
-                        scrollToWorkouts = true,
-                    )
-                }
-                publishFiltered()
+                _effects.tryEmit(MovitExploreEffect.OpenWorkoutsLibrary)
             }
             MovitExploreEvent.SeeAllProgramsClicked -> {
                 _effects.tryEmit(MovitExploreEffect.OpenProgramList)

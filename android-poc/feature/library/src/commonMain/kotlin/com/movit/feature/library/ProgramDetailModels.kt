@@ -66,6 +66,13 @@ data class ProgramEnrollmentUi(
     val isPaused: Boolean = false,
 )
 
+data class ProgramDaySessionUi(
+    val title: String,
+    val subtitle: String,
+    val exerciseCount: Int,
+    val sessionKey: String,
+)
+
 data class ProgramNextSessionUi(
     val weekNumber: Int,
     val dayNumber: Int,
@@ -120,6 +127,8 @@ data class ProgramDetailUiState(
     val detailCards: List<ProgramDetailCardUi> = emptyList(),
     val selectedTab: ProgramDetailTab = ProgramDetailTab.Overview,
     val selectedWeekNumber: Int = 1,
+    val selectedDayNumber: Int? = null,
+    val selectedDaySessions: List<ProgramDaySessionUi> = emptyList(),
     val weeks: List<ProgramWeekUi> = emptyList(),
     val enrollment: ProgramEnrollmentUi = ProgramEnrollmentUi(isEnrolled = false),
     val nextSession: ProgramNextSessionUi? = null,

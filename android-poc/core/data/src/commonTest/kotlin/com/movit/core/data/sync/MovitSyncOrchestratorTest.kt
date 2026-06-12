@@ -26,6 +26,8 @@ import com.movit.core.network.dto.HomeDataDto
 import com.movit.core.network.dto.MobileSyncApiResponse
 import com.movit.core.network.dto.MobileSyncDataDto
 import com.movit.core.network.dto.SyncMetaDto
+import com.movit.core.training.config.ExerciseConfigParser
+import com.movit.core.training.config.ExerciseConfigRecord
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
@@ -124,6 +126,67 @@ class MovitSyncOrchestratorTest {
     }
 
     @Test
+    fun syncIfNeeded_sparseTrainingConfig_escalatesToFullRefresh() {
+        runBlocking {
+            val platform = FakeMovitPlatformBindings()
+            val localStore = testLocalStore(platform)
+            val metadataStore = MovitSyncMetadataStore(localStore)
+            metadataStore.writeLastSyncTimestamp("2026-01-01T00:00:00Z")
+            metadataStore.writeEntityCounts(
+                com.movit.core.data.cache.MovitCacheDriftDetector.EntityCounts(
+                    exercises = 50,
+                    workouts = 5,
+                    programs = 2,
+                ),
+            )
+
+            val trainingConfig = TrainingConfigRepository(localStore)
+            val squatJson = readSquatFixture()
+            val squatConfig = ExerciseConfigParser.parseConfigJson(squatJson)
+            trainingConfig.seedRecord(
+                ExerciseConfigRecord.fromConfig(
+                    id = "ex-squat",
+                    slug = "bodyweight-squat",
+                    updatedAt = "2026-06-11",
+                    config = squatConfig,
+                ),
+            )
+
+            val syncForceRefreshFlags = mutableListOf<Boolean>()
+            val engine = MockEngine { request ->
+                when {
+                    request.url.encodedPath.contains("sync") -> {
+                        val forceRefresh = request.url.parameters["forceRefresh"] == "true"
+                        syncForceRefreshFlags += forceRefresh
+                        val body = if (forceRefresh) {
+                            syncBody(isFullSync = true)
+                        } else {
+                            syncDeltaEmptyMeta(totalExercises = 10)
+                        }
+                        respond(body, HttpStatusCode.OK, jsonHeaders)
+                    }
+                    request.url.encodedPath.contains("explore") ->
+                        respond(exploreOkBody(), HttpStatusCode.OK, jsonHeaders)
+                    request.url.encodedPath.contains("home") ->
+                        respond(homeOkBody(), HttpStatusCode.OK, jsonHeaders)
+                    else -> respond("{}", HttpStatusCode.NotFound)
+                }
+            }
+            val api = testMobileApi(engine, platform)
+            val orchestrator = buildOrchestrator(api, platform, localStore)
+
+            orchestrator.syncIfNeeded(forceCheck = true)
+
+            // delta → backfill full refresh → planSync.refreshActiveUserProgramId() (fetchSyncUserPrograms)
+            assertEquals(listOf(false, true, false), syncForceRefreshFlags)
+            assertEquals(
+                trainingConfig.allCachedSlugs().size,
+                metadataStore.readEntityCounts().exercises,
+            )
+        }
+    }
+
+    @Test
     fun syncIfNeeded_replaysPendingOutboxAfterSuccessfulSync() {
         runBlocking {
             val platform = object : FakeMovitPlatformBindings() {
@@ -193,15 +256,46 @@ class MovitSyncOrchestratorTest {
         )
     }
 
-    private fun syncBody(): String = MovitJson.encodeToString(
+    private fun syncBody(isFullSync: Boolean = true): String = MovitJson.encodeToString(
         MobileSyncApiResponse.serializer(),
         MobileSyncApiResponse(
             success = true,
             timestamp = "2026-06-11T00:00:00Z",
             data = MobileSyncDataDto(),
-            meta = SyncMetaDto(isFullSync = true),
+            meta = SyncMetaDto(isFullSync = isFullSync),
         ),
     )
+
+    private fun syncDeltaEmptyMeta(totalExercises: Int): String = MovitJson.encodeToString(
+        MobileSyncApiResponse.serializer(),
+        MobileSyncApiResponse(
+            success = true,
+            timestamp = "2026-06-11T00:00:00Z",
+            data = MobileSyncDataDto(),
+            meta = SyncMetaDto(
+                totalExercises = totalExercises,
+                totalWorkoutTemplates = 5,
+                totalPrograms = 2,
+                isFullSync = false,
+                exercisesInResponse = 0,
+            ),
+        ),
+    )
+
+    private fun readSquatFixture(): String {
+        val name = "squat.json"
+        val resourcePath = "fixtures/exercises/$name"
+        javaClass.classLoader?.getResource(resourcePath)?.readText()?.let { return it }
+        listOf(
+            "src/commonTest/resources/$resourcePath",
+            "core/data/src/commonTest/resources/$resourcePath",
+            "core/training-engine/src/commonTest/resources/$resourcePath",
+        ).forEach { relative ->
+            val file = java.io.File(relative)
+            if (file.isFile) return file.readText()
+        }
+        error("Missing fixture: $resourcePath")
+    }
 
     private fun syncWithAudioBody(): String = MovitJson.encodeToString(
         MobileSyncApiResponse.serializer(),

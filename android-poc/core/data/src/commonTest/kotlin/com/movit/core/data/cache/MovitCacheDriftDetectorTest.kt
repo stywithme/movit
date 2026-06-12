@@ -19,6 +19,16 @@ class MovitCacheDriftDetectorTest {
     }
 
     @Test
+    fun entityDrift_detectsLocalExerciseUnderflow() {
+        val verdict = MovitCacheDriftDetector.detectEntityDrift(
+            local = MovitCacheDriftDetector.EntityCounts(1, 5, 2),
+            meta = SyncMetaDto(totalExercises = 10, totalWorkoutTemplates = 5, totalPrograms = 2),
+            hasNoEntityDelta = true,
+        )
+        assertIs<MovitCacheDriftDetector.DriftVerdict.NeedsFullRefresh>(verdict)
+    }
+
+    @Test
     fun entityDrift_okWhenCountsMatch() {
         val verdict = MovitCacheDriftDetector.detectEntityDrift(
             local = MovitCacheDriftDetector.EntityCounts(10, 5, 2),

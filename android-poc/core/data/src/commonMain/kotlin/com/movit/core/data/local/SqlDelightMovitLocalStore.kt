@@ -102,6 +102,12 @@ class SqlDelightMovitLocalStore(
         }
     }
 
+    override suspend fun purgeSucceededOutboxOlderThan(cutoffEpochMs: Long): Int = withContext(Dispatchers.IO) {
+        outboxQueries.deleteSucceededOlderThan(cutoffEpochMs)
+        // SQLDelight delete queries do not return affected row count in common API.
+        0
+    }
+
     override suspend fun countOutboxByStatus(status: OutboxStatus): Long = withContext(Dispatchers.IO) {
         outboxQueries.selectByStatus(status.storageValue).executeAsList().size.toLong()
     }

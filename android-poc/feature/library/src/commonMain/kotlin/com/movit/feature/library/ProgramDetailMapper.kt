@@ -9,6 +9,7 @@ internal object ProgramDetailMapper {
         program: ExploreItemUi,
         enrollment: ProgramEnrollmentUi,
         selectedWeekNumber: Int,
+        selectedDayNumber: Int?,
         edit: ProgramEditUiState,
         weeks: List<ProgramWeekUi>,
         nextSession: ProgramNextSessionUi?,
@@ -22,6 +23,13 @@ internal object ProgramDetailMapper {
         val sessionMinutes = parseSessionMinutes(program.metadata) ?: 25
 
         val currentWeek = weeks.firstOrNull { it.weekNumber == selectedWeekNumber } ?: weeks.firstOrNull()
+        val resolvedDayNumber = resolveSelectedDayNumber(currentWeek, selectedDayNumber)
+        val selectedDay = currentWeek?.days?.firstOrNull { it.dayNumber == resolvedDayNumber }
+        val selectedDaySessions = buildDaySessions(
+            programId = program.id,
+            weekNumber = selectedWeekNumber,
+            day = selectedDay,
+        )
         val resolvedNextSession = if (enrollment.isEnrolled) nextSession else null
 
         val kickers = buildList {
@@ -61,6 +69,8 @@ internal object ProgramDetailMapper {
             ),
             detailCards = defaultDetailCards(),
             selectedWeekNumber = selectedWeekNumber,
+            selectedDayNumber = resolvedDayNumber,
+            selectedDaySessions = selectedDaySessions,
             weeks = weeks,
             enrollment = enrollment,
             nextSession = resolvedNextSession,
@@ -70,6 +80,40 @@ internal object ProgramDetailMapper {
                     currentWeek?.days?.firstOrNull { it.status == ProgramDayStatus.Next }?.title
                         ?: currentWeek?.days?.firstOrNull()?.title.orEmpty()
                 },
+            ),
+        )
+    }
+
+    private fun resolveSelectedDayNumber(
+        week: ProgramWeekUi?,
+        selectedDayNumber: Int?,
+    ): Int? {
+        if (week == null) return null
+        if (selectedDayNumber != null && week.days.any { it.dayNumber == selectedDayNumber }) {
+            return selectedDayNumber
+        }
+        return week.days.firstOrNull { it.status == ProgramDayStatus.Next }?.dayNumber
+            ?: week.days.firstOrNull { it.status != ProgramDayStatus.Rest }?.dayNumber
+    }
+
+    private fun buildDaySessions(
+        programId: String,
+        weekNumber: Int,
+        day: ProgramDayUi?,
+    ): List<ProgramDaySessionUi> {
+        if (day == null || day.status == ProgramDayStatus.Rest) return emptyList()
+        val plannedWorkoutId = day.plannedWorkoutId ?: return emptyList()
+        return listOf(
+            ProgramDaySessionUi(
+                title = day.title,
+                subtitle = day.meta,
+                exerciseCount = day.exerciseCount,
+                sessionKey = WorkoutSessionKeys.encode(
+                    programId = programId,
+                    weekNumber = weekNumber,
+                    dayNumber = day.dayNumber,
+                    plannedWorkoutId = plannedWorkoutId,
+                ),
             ),
         )
     }

@@ -82,6 +82,8 @@ class ProgramDetailViewModel(
 
     private var selectedWeekNumber = 1
 
+    private var selectedDayNumber: Int? = null
+
     private var editState = ProgramEditUiState(startDateLabel = "Jun 2")
 
 
@@ -182,9 +184,17 @@ class ProgramDetailViewModel(
 
 
 
+    fun onDaySelected(dayNumber: Int) {
+        selectedDayNumber = dayNumber
+        loadedProgram?.let { program ->
+            toastScope.launch { publish(program) }
+        }
+    }
+
     fun onWeekSelected(weekNumber: Int) {
 
         selectedWeekNumber = weekNumber
+        selectedDayNumber = null
 
         editState = editState.copy(
 
@@ -945,6 +955,8 @@ class ProgramDetailViewModel(
             enrollment = enrollment,
 
             selectedWeekNumber = selectedWeekNumber,
+
+            selectedDayNumber = selectedDayNumber,
 
             edit = editState,
 

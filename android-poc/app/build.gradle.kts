@@ -50,6 +50,7 @@ android {
             "MOVIT_TRAINING_KMP_ENABLED",
             movitTrainingKmpEnabled.toString(),
         )
+
     }
 
     buildTypes {
@@ -60,6 +61,16 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // F8 — real devices only; debug keeps x86/x86_64 for emulators.
+            ndk {
+                abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+            }
+        }
+    }
+
+    bundle {
+        abi {
+            enableSplit = true
         }
     }
 
@@ -70,6 +81,8 @@ android {
 
     androidResources {
         noCompress += listOf("tflite", "task", "onnx")
+        // F8 — ship ar/en only (Compose resources + legacy res).
+        localeFilters += listOf("en", "ar")
     }
 
     buildFeatures {
@@ -110,6 +123,8 @@ kotlin {
 dependencies {
     // Secure auth tokens (EncryptedSharedPreferences) — production path via AuthManager
     implementation(project(":core:data"))
+    // LegacyWorkoutSyncDrain + MovitData types on release classpath (shell modules are debug-only when launcher off).
+    implementation(project(":shared"))
     implementation(project(":core:pose-capture"))
     implementation(libs.koin.core)
 
@@ -194,8 +209,8 @@ dependencies {
         exclude(group = "com.google.ai.edge.litert", module = "litert-support-api")
     }
 
-    // Portrait matting (MODNet / U²-Net ONNX) for report hero background effect
-    implementation(libs.onnxruntime.android)
+    // Portrait matting (MODNet / U²-Net ONNX) — debug only until D9 dynamic delivery (F8).
+    debugImplementation(libs.onnxruntime.android)
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)

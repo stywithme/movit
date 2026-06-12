@@ -31,7 +31,10 @@ class WorkoutRunViewModel(
             }
             return
         }
-        val currentSlug = config.exercises.firstOrNull()?.exerciseSlug
+        WorkoutFlowCache.put(config)
+        val progress = WorkoutRunProgressStore.read(workoutId)
+        val currentSlug = config.exercises.getOrNull(progress.exerciseIndex)?.exerciseSlug
+            ?: config.exercises.firstOrNull()?.exerciseSlug
         val insight = WorkoutFormInsightLoader.load(
             programId = sessionContext?.programSlug ?: sessionContext?.programId,
             exerciseSlug = currentSlug,
@@ -40,8 +43,8 @@ class WorkoutRunViewModel(
             it.copy(
                 isLoading = false,
                 config = config,
-                currentExerciseIndex = 0,
-                currentSet = 1,
+                currentExerciseIndex = progress.exerciseIndex,
+                currentSet = progress.currentSet,
                 previousFormPercent = insight?.formPercent,
                 previousFormTip = insight?.tip,
             )
@@ -57,25 +60,5 @@ class WorkoutRunViewModel(
             is AppResult.Failure -> null
         }
 
-    fun trainingStartAction(): TrainingStartAction? {
-        val config = _state.value.config ?: return null
-        val exercise = _state.value.currentExercise ?: return null
-        return when (
-            val action = resolveTrainingStartAction(
-                slug = exercise.exerciseSlug,
-                exerciseName = exercise.name,
-                targetReps = exercise.reps ?: 12,
-                workoutId = workoutId,
-            )
-        ) {
-            is TrainingStartAction.KmpLive -> action.copy(
-                flowItems = config.toTrainingFlowItems(_state.value.currentExerciseIndex),
-                plannedWorkout = resolvePlannedWorkoutLaunch(workoutId, sessionContext),
-            )
-            else -> action
-        }
-    }
-
-    /** @deprecated Use [trainingStartAction]; kept for tests. */
     fun legacyFileNameForStart(): String? = _state.value.currentExercise?.exerciseSlug
 }

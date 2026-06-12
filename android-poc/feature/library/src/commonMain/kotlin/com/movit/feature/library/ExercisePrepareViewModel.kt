@@ -4,13 +4,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import com.movit.core.data.MovitData
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 
 enum class ExercisePrepareMode {
     Prepare,
@@ -41,6 +43,8 @@ data class ExercisePrepareUi(
 
 data class ExercisePrepareUiState(
     val isLoading: Boolean = false,
+    val isEnsuringConfig: Boolean = false,
+    val trainingConfigUnavailable: TrainingConfigUnavailableUi? = null,
     val mode: ExercisePrepareMode = ExercisePrepareMode.Prepare,
     val exercise: ExercisePrepareUi? = null,
     val upNextExercise: ExercisePrepareUi? = null,
@@ -63,10 +67,15 @@ data class ExercisePrepareUiState(
 
 class ExercisePrepareViewModel(
     private val exerciseId: String,
+    private val initialMode: ExercisePrepareMode = ExercisePrepareMode.Prepare,
+    private val initialRestSeconds: Int? = null,
+    private val upNextExerciseId: String? = null,
     private val repository: LibraryRepository = defaultLibraryRepository(),
 ) : ViewModel() {
     private val _state = MutableStateFlow(ExercisePrepareUiState(isLoading = true))
     val state: StateFlow<ExercisePrepareUiState> = _state.asStateFlow()
+    private val _startEffects = MutableSharedFlow<TrainingStartAction>(extraBufferCapacity = 1)
+    val startEffects: SharedFlow<TrainingStartAction> = _startEffects.asSharedFlow()
     private var restTimerJob: Job? = null
 
     /** Disable in JVM unit tests where [viewModelScope] has no dispatcher. */
@@ -81,19 +90,27 @@ class ExercisePrepareViewModel(
             MovitData.bootstrapLocalCaches()
         }
         _state.update { it.copy(isLoading = true, errorMessage = null) }
-        val exercise = buildExercise(exerciseId)
+        val exercise = ExerciseContentMapper.loadExercise(exerciseId, repository)
         if (exercise == null) {
             _state.update {
                 it.copy(isLoading = false, errorMessage = "prepare_not_found")
             }
         } else {
+            val upNext = upNextExerciseId?.let { ExerciseContentMapper.loadExercise(it, repository) }
+                ?: ExercisePreparePreviewData.restUpNext
+            val restSeconds = initialRestSeconds ?: parseRestSeconds(exercise.rest)
             _state.update {
                 it.copy(
                     isLoading = false,
+                    mode = initialMode,
                     exercise = exercise,
-                    upNextExercise = ExercisePreparePreviewData.restUpNext,
-                    restSeconds = parseRestSeconds(exercise.rest),
+                    upNextExercise = upNext,
+                    restSeconds = restSeconds,
+                    isRestPaused = false,
                 )
+            }
+            if (initialMode == ExercisePrepareMode.Rest) {
+                startRestTimer()
             }
         }
     }
@@ -105,7 +122,7 @@ class ExercisePrepareViewModel(
 
     fun skipRest() {
         restTimerJob?.cancel()
-        _state.update { it.copy(mode = ExercisePrepareMode.Prepare, isRestPaused = false) }
+        _state.update { current -> transitionRestToPrepare(current) }
     }
 
     override fun onCleared() {
@@ -132,33 +149,62 @@ class ExercisePrepareViewModel(
         _state.update { it.copy(restSeconds = it.restSeconds + 15) }
     }
 
-    fun trainingStartAction(workoutId: String? = null): TrainingStartAction? {
-        if (MovitData.isInstalled) {
-            runBlocking { MovitData.bootstrapLocalCaches() }
+    fun requestTrainingStart(workoutId: String? = null) {
+        val exercise = _state.value.displayExercise ?: return
+        viewModelScope.launch {
+            _state.update {
+                it.copy(
+                    isEnsuringConfig = true,
+                    trainingConfigUnavailable = null,
+                )
+            }
+            val slug = normalizeTrainingSlug(
+                exercise.legacyFileName.ifBlank { exercise.exerciseSlug },
+            )
+            val reps = exercise.reps.filter { it.isDigit() }.toIntOrNull() ?: 12
+            val flowConfig = workoutId?.let { WorkoutFlowCache.get(it) }
+            val progress = workoutId?.let { WorkoutRunProgressStore.read(it) }
+            val startIndex = progress?.exerciseIndex ?: 0
+            val flowItems = flowConfig?.toTrainingFlowItems(startIndex)
+            when (
+                val result = resolveTrainingStartWithEnsure(
+                    slug = slug,
+                    exerciseName = exercise.name,
+                    targetReps = reps,
+                    workoutId = workoutId,
+                    flowItems = flowItems,
+                    startExerciseIndex = startIndex,
+                    exerciseId = exercise.id,
+                )
+            ) {
+                is TrainingStartResolveResult.Ready -> {
+                    val action = when (val resolved = result.action) {
+                        is TrainingStartAction.KmpLive -> resolved.copy(
+                            plannedWorkout = workoutId?.let { resolvePlannedWorkoutLaunch(it, null) },
+                        )
+                        else -> resolved
+                    }
+                    _state.update { it.copy(isEnsuringConfig = false) }
+                    _startEffects.emit(action)
+                }
+                is TrainingStartResolveResult.Unavailable -> {
+                    _state.update {
+                        it.copy(
+                            isEnsuringConfig = false,
+                            trainingConfigUnavailable = result.reason.toUi(),
+                        )
+                    }
+                }
+            }
         }
-        val exercise = _state.value.displayExercise ?: return null
-        val slug = normalizeTrainingSlug(
-            exercise.legacyFileName.ifBlank { exercise.exerciseSlug },
-        )
-        val reps = exercise.reps.filter { it.isDigit() }.toIntOrNull() ?: 12
-        val base = resolveTrainingStartAction(
-            slug = slug,
-            exerciseName = exercise.name,
-            targetReps = reps,
-            workoutId = workoutId,
-        )
-        val kmp = base as? TrainingStartAction.KmpLive ?: return base
-        if (workoutId.isNullOrBlank()) return kmp
-        val plannedWorkout = resolvePlannedWorkoutLaunch(workoutId, sessionContext = null)
-        val config = WorkoutFlowCache.get(workoutId) ?: return kmp.copy(plannedWorkout = plannedWorkout)
-        val exerciseIndex = config.exercises.indexOfFirst { item ->
-            item.exerciseSlug.equals(slug, ignoreCase = true) || item.id == exercise.id
-        }.let { index -> if (index >= 0) index else 0 }
-        return kmp.copy(
-            flowItems = config.toTrainingFlowItems(exerciseIndex),
-            plannedWorkout = plannedWorkout,
-            startExerciseIndex = exerciseIndex,
-        )
+    }
+
+    fun retryTrainingConfigSync(workoutId: String? = null) {
+        requestTrainingStart(workoutId)
+    }
+
+    fun dismissTrainingConfigUnavailable() {
+        _state.update { it.copy(trainingConfigUnavailable = null) }
     }
 
     fun legacyFileNameForStart(): String? = _state.value.exercise?.legacyFileName
@@ -196,38 +242,16 @@ class ExercisePrepareViewModel(
     private fun prepareLanguage(): String =
         if (MovitData.isInstalled) MovitData.requirePlatform().preferredLanguage() else "en"
 
-    private suspend fun buildExercise(exerciseId: String): ExercisePrepareUi? {
-        val preview = ExercisePreparePreviewData.byId(exerciseId)
-        if (preview != null) return preview
-        val item = repository.findItem(exerciseId) ?: return null
-        val slug = legacySlug(exerciseId)
-        val media = ExercisePrepareMediaResolver.resolve(
-            exerciseSlug = slug,
-            language = prepareLanguage(),
-            fallbackImageUrl = item.imageUrl,
-        )
-        return ExercisePrepareUi(
-            id = item.id,
-            exerciseSlug = slug,
-            name = item.title,
-            category = item.subtitle,
-            sets = "3",
-            reps = "12",
-            rest = "60s",
-            equipment = item.metadata.firstOrNull() ?: "None",
-            axesLabel = media.axesLabel,
-            distanceTip = "Stand ~2 m from the camera, full body in frame.",
-            instructions = media.instructions.ifEmpty { listOf(item.subtitle) },
-            targetMuscles = media.targetMuscles.ifEmpty { item.metadata.take(3) },
-            sessionProgressPercent = 20,
-            sessionSummary = "1 exercise · ~10 min",
-            legacyFileName = slug,
-            heroImageUrl = media.heroImageUrl,
-            poseVariants = media.poseVariants,
-            selectedPoseVariantIndex = media.selectedPoseVariantIndex,
-        )
-    }
 }
+
+internal fun transitionRestToPrepare(state: ExercisePrepareUiState): ExercisePrepareUiState =
+    state.copy(
+        mode = ExercisePrepareMode.Prepare,
+        exercise = state.upNextExercise ?: state.exercise,
+        upNextExercise = null,
+        isRestPaused = false,
+        restSeconds = 0,
+    )
 
 internal fun legacySlug(exerciseId: String): String = when (exerciseId) {
     "ex-squat", "ex-squat-warm" -> "bodyweight-squat"
@@ -249,18 +273,14 @@ internal fun formatRestTimer(seconds: Int): String {
 internal fun applyRestSecondTick(state: ExercisePrepareUiState): ExercisePrepareUiState {
     if (state.mode != ExercisePrepareMode.Rest || state.isRestPaused) return state
     return when {
-        state.restSeconds <= 1 -> state.copy(
-            mode = ExercisePrepareMode.Prepare,
-            isRestPaused = false,
-            restSeconds = 0,
-        )
+        state.restSeconds <= 1 -> transitionRestToPrepare(state)
         else -> state.copy(restSeconds = state.restSeconds - 1)
     }
 }
 
 private const val REST_TICK_MS = 1_000L
 
-private object ExercisePreparePreviewData {
+internal object ExercisePreparePreviewData {
     fun byId(id: String): ExercisePrepareUi? = when (id) {
         "ex-squat", "ex-squat-warm" -> squat.copy(id = id)
         "preview" -> squat

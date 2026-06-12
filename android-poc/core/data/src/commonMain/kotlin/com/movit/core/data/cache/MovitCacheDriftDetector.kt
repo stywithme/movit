@@ -44,6 +44,7 @@ object MovitCacheDriftDetector {
         val serverPrograms = meta.totalPrograms
 
         val exerciseOverflow = local.exercises > serverExercises
+        val exerciseUnderflow = local.exercises < serverExercises
         val workoutOverflow = local.workouts > serverWorkouts
         val programOverflow = local.programs > serverPrograms
         val workoutUnderflow = local.workouts < serverWorkouts
@@ -51,6 +52,7 @@ object MovitCacheDriftDetector {
 
         return if (
             exerciseOverflow ||
+            exerciseUnderflow ||
             workoutOverflow ||
             programOverflow ||
             workoutUnderflow ||

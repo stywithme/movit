@@ -9,6 +9,7 @@ import com.movit.core.network.dto.ExecutionMetricsDto
 import com.movit.core.network.dto.ProgramCustomizationKeys
 import com.movit.core.network.dto.ProgressionMarkSeenRequest
 import com.movit.core.network.dto.UserProgramUpdateRequest
+import com.movit.core.network.MovitClock
 import com.movit.core.network.dto.WorkoutExecutionUploadRequestDto
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -167,7 +168,7 @@ class OfflineWriteQueueTest {
                     id = "op-stuck-in-flight",
                     type = OutboxOperationType.PLAN_COMPLETE,
                     payload = "{}",
-                    createdAt = 1L,
+                    createdAt = MovitClock.nowEpochMs(),
                     attempts = 0,
                     status = OutboxStatus.IN_FLIGHT,
                 ),
@@ -260,6 +261,47 @@ class OfflineWriteQueueTest {
             assertEquals(0L, queue.pendingCount())
             val entry = localStore.getOutboxById("op-409")
             assertTrue(entry?.status == OutboxStatus.SUCCEEDED)
+        }
+    }
+
+    @Test
+    fun replayPending_purgesSucceededRowsOlderThanRetention() {
+        runBlocking {
+            val platform = object : FakeMovitPlatformBindings() {
+                override fun isNetworkAvailable(): Boolean = true
+            }
+            val localStore = InMemoryMovitLocalStore()
+            val queue = OfflineWriteQueue(
+                localStore,
+                testMobileApi(MockEngine { respond(planOkBody, HttpStatusCode.OK, jsonHeaders) }, platform),
+            ) { platform }
+
+            val staleCreatedAt = MovitClock.nowEpochMs() - (8L * 24 * 60 * 60 * 1000)
+            localStore.insertOutbox(
+                OutboxEntry(
+                    id = "op-stale",
+                    type = OutboxOperationType.PLAN_COMPLETE,
+                    payload = "{}",
+                    createdAt = staleCreatedAt,
+                    attempts = 1,
+                    status = OutboxStatus.SUCCEEDED,
+                ),
+            )
+            localStore.insertOutbox(
+                OutboxEntry(
+                    id = "op-fresh",
+                    type = OutboxOperationType.PLAN_COMPLETE,
+                    payload = "{}",
+                    createdAt = MovitClock.nowEpochMs(),
+                    attempts = 1,
+                    status = OutboxStatus.SUCCEEDED,
+                ),
+            )
+
+            queue.replayPending()
+
+            assertEquals(null, localStore.getOutboxById("op-stale"))
+            assertEquals(OutboxStatus.SUCCEEDED, localStore.getOutboxById("op-fresh")?.status)
         }
     }
 

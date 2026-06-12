@@ -542,3 +542,58 @@ graph LR
 ### هـ) ما هو سليم ويُبنى عليه (لا يُعاد)
 
 `MovitSyncOrchestrator` (drift/audio/manifest/replay) بنية صحيحة — العلّة في **المُطلِقات والمصادر** لا في المنسق · SWR مستخدمة في 5 repos · seed البارد موصول · Outbox replay على الشبكة يعمل · `enforceCacheLimit` للصوت مستدعى من الـ prefetch runner · حذف الـ journal عند الإنهاء.
+
+---
+
+## نتيجة تنفيذ مراجعة 2026-06-12
+
+> دمج مسارات F1–F12 بعد المراجعة الميدانية (§485–545). لا commit في هذه الجولة.
+
+### ما اكتمل (F1–F12)
+
+| بند | الحالة | ملخص |
+|-----|--------|------|
+| **F1** | ✅ | مزامنة `forceCheck` بعد login / onboarding / register عبر `MovitAppShellViewModel` |
+| **F2** | ✅ | `needsTrainingConfigBackfill` + `EntityCounts.exercises` من مخزن التكوينات + `exerciseUnderflow` في drift |
+| **F3** | ✅ | `TrainingConfigEnsure.kt` + `resolveTrainingStartWithEnsure` في Prepare/Run |
+| **F4** | ✅ | `MovitConnectivitySignals` → `ShellSyncCoordinator.requestSync` (Android/iOS بعد outbox replay) |
+| **F5** | 🟡 جزئي | overlay تحميل + رسائل + زر «زامِن الآن» في Prepare/Run؛ **شارة أوفلاين/آخر مزامنة في الـ shell لم تُربط بعد** (`syncOutcome` موجود بلا UI) |
+| **F6** | ✅ | فهرس slugs + LRU 8 لتكوينات مفكوكة في `TrainingConfigRepository` |
+| **F7** | ✅ | LRU تقارير (10) · `WorkoutFlowCache` (4) + `onCleared` · purge Outbox ناجح >7 أيام |
+| **F8** | ✅ | release `abiFilters` arm64/v7a · AAB split · `localeFilters` en/ar · ONNX/matting debug-only |
+| **F9** | ✅ | aliases من sync (`id→slug`) + seed aliases مدمجة |
+| **F10** | 🟡 جزئي | `WeekOfflinePackPrefetcher` + تسجيل Koin/`MovitData.weekOfflinePrefetch`؛ **زر حزمة الأسبوع في UI لم يُسلّم** |
+| **F11** | 🟡 مؤجل | `BackgroundSyncScheduler` توثيق قرار فقط — WorkManager غير مضاف |
+| **F12** | ✅ | Coil3 disk cache 64 MiB عبر `installMovitCoilImageLoader` في `MovitShellHost` |
+
+### قرارات مهمة
+
+- **`TrainingConfigRepository.ensure`** extension منفصل عن طبقة الذاكرة/LRU — لا تعارض تواقيع.
+- **تصعيد المزامنة:** delta → `fullRefresh` عند backfill؛ ثم `planSync.refreshActiveUserProgramId()` يستدعي `fetchSyncUserPrograms` (طلب sync ثالث `forceRefresh=false` — متوقّع).
+- **F7 purge:** بعد `replayPending` يُحذف الناجح الأقدم من 7 أيام — اختبارات in-flight تستخدم `createdAt` حديثاً.
+- **Release classpath:** `implementation(:shared)` في `:app` لأن وحدات الـ shell على `debugImplementation` عند تعطيل launcher — يصلح `LegacyWorkoutSyncDrain` / `AppResult` في release.
+
+### أوامر التحقق ونتائجها (2026-06-12)
+
+```
+✅ :core:data:testDebugUnitTest  (27 اختباراً مركّزاً: Ensure, Repository, Orchestrator, Prefetcher, Drift, LRU, Outbox)
+✅ :feature:library:testDebugUnitTest
+✅ :app:compileDebugKotlin
+✅ :app:compileReleaseKotlin        (بعد إضافة :shared)
+```
+
+### إصلاحات الدمج في هذه الجولة
+
+- اختبارات: مسار fixture في `TrainingConfigEnsureTest` · `syncMustNotRunOrchestrator` بدل `error()` كوسيط · توقع `[false,true,false]` في orchestrator · `createdAt` حديث في outbox in-flight.
+- `app/build.gradle.kts`: `implementation(project(":shared"))`.
+
+### مخاطر / متابعات
+
+| # | المتابعة | الأولوية |
+|---|----------|----------|
+| 1 | شارة «أوفلاين — آخر مزامنة» في shell (F5) | P0 UX |
+| 2 | زر «حزمة الأسبوع» + مؤشر جاهزية (F10) | P1 |
+| 3 | WorkManager دوري (F11) + telemetry N-14 | P2 |
+| 4 | `heavy.task` تنزيل عند الطلب (F8 متبقي) | P2 |
+| 5 | إعادة D9 matting كـ dynamic delivery | لاحقاً |
+| 6 | اختبار يدوي: تسجيل دخول → تدريب مباشرة بعد ترقية قديمة | QA |

@@ -50,3 +50,7 @@ WHERE id = ?;
 
 deleteAll:
 DELETE FROM outbox_entry;
+
+deleteSucceededOlderThan:
+DELETE FROM outbox_entry
+WHERE status = 'succeeded' AND created_at_epoch_ms < ?;

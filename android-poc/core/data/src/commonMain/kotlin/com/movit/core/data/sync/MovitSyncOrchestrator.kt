@@ -11,12 +11,14 @@ import com.movit.core.data.repository.ExploreSyncRepository
 import com.movit.core.data.repository.HomeSyncRepository
 import com.movit.core.data.repository.PlanSyncRepository
 import com.movit.core.data.repository.ReportsSyncRepository
+import com.movit.core.data.repository.BUNDLED_TRAINING_SEED_SLUG_THRESHOLD
 import com.movit.core.data.repository.TrainingConfigRepository
 import com.movit.core.network.MovitMobileApi
 import com.movit.core.network.dto.ExploreDataDto
 import com.movit.core.network.dto.HomeDataDto
 import com.movit.core.network.dto.MobileSyncApiResponse
 import com.movit.core.network.dto.ReportsDashboardApiResponse
+import com.movit.core.network.dto.SyncMetaDto
 import com.movit.shared.AppResult
 
 class MovitSyncOrchestrator(
@@ -121,6 +123,10 @@ class MovitSyncOrchestrator(
             return SyncOutcome.Offline(readColdOfflineBundle())
         }
 
+        if (!forceFullRefresh && needsTrainingConfigBackfill(syncResponse.meta)) {
+            return runSyncCycle(forceFullRefresh = true)
+        }
+
         val drift = detectDrift(syncResponse, forceFullRefresh)
         if (!forceFullRefresh && drift != MovitCacheDriftDetector.DriftVerdict.Ok) {
             return runSyncCycle(forceFullRefresh = true)
@@ -203,13 +209,19 @@ class MovitSyncOrchestrator(
         return isFullSync
     }
 
+    private fun needsTrainingConfigBackfill(meta: SyncMetaDto?): Boolean {
+        if (meta == null) return false
+        val serverExercises = meta.totalExercises
+        if (serverExercises <= BUNDLED_TRAINING_SEED_SLUG_THRESHOLD) return false
+        return trainingConfig.allCachedSlugs().size <= BUNDLED_TRAINING_SEED_SLUG_THRESHOLD
+    }
+
     private fun updateLocalEntityCounts(explore: ExploreDataDto?) {
-        if (explore == null) return
         metadataStore.writeEntityCounts(
             MovitCacheDriftDetector.EntityCounts(
-                exercises = explore.exercises.size,
-                workouts = explore.workoutTemplates.size,
-                programs = explore.programs.size,
+                exercises = trainingConfig.allCachedSlugs().size,
+                workouts = explore?.workoutTemplates?.size ?: 0,
+                programs = explore?.programs?.size ?: 0,
             ),
         )
     }

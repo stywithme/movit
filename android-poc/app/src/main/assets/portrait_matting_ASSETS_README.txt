@@ -1,4 +1,6 @@
-Portrait matting ONNX models (report hero background effect only):
+Portrait matting ONNX models (report hero background effect only).
+NOTE (F8): these assets ship in debug APK only; release excludes them until D9 dynamic delivery.
+
 
   modnet_photographic.onnx   (~25 MB) — default, best portrait edges
   u2net_human_seg.onnx       (~4.4 MB) — lighter human segmentation fallback

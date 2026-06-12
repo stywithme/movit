@@ -16,8 +16,9 @@
 |--------|---------|
 | **P0 #1 — تجاوز Program Detail (07)** | أُغلقت: Home `ViewProgramClicked` → `OpenProgramDetail`؛ Explore `OpenProgramDetail` / `NavigateToItem(Program)` → `MovitInnerRoute.ProgramDetail`؛ Train `StartProgramClicked` → `OpenProgramDetail`؛ ProgramList `onProgramClick` → `ProgramDetail` قبل WeekPlan |
 | **تسمية `OpenProgramDetail`** | أُغلقت: الـ effect يوجّه الآن إلى `ProgramDetailScreen` وليس `ProgramWeekPlan` |
+| **Explore Flow Reset** | أُغلقت: Explore → `ExerciseDetail` قبل Prepare؛ See all Ex/Workouts → صفحات مكتبة مع pagination؛ Program Detail → اختيار يوم + panel جلسات اليوم؛ Rest مربوط بعد `TrainingSession` داخل WorkoutRun؛ Train/Home يعيدان استخدام نفس inner routes |
 
-> **ما بقي مفتوحاً في 07:** Edit tab persistence · محرر الجلسات — خارج نطاق إصلاح التنقل.
+> **ما بقي مفتوحاً في 07:** Edit tab persistence · محرر الجلسات · camera/pose polish — خارج نطاق إصلاح التنقل.
 
 ---
 
@@ -290,10 +291,10 @@
 |--------|-----------|--------|-----|
 | تبويب Explore | ✅ | tab | `MovitAppDestination.Explore` |
 | Workout card | `02-session.html` | `WorkoutDetailActivity` | `OpenWorkoutSession` → `WorkoutSession` (02) — **أقرب للـ prototype** |
-| Exercise card | `03-prepare.html` | `PreWorkout` عبر navigator | `OpenExercisePrepare` (03) |
-| Program card | `07-program.html` | **لا قسم programs** | `OpenProgramDetail` → **`ProgramWeekPlan` w=1** ⚠️ |
-| See all workouts | `06-workouts.html` | scroll/filter | `OpenWorkoutsLibrary` أو scroll داخلي |
-| See all exercises | `05-exercises.html` | scroll/filter | `OpenExercisesLibrary` أو scroll |
+| Exercise card | `03-prepare.html` | `ExerciseDetailActivity` | `OpenExerciseDetail` → `ExerciseDetail` → Prepare |
+| Program card | `07-program.html` | **لا قسم programs** | `OpenProgramDetail` → `ProgramDetailScreen` |
+| See all workouts | `06-workouts.html` | scroll/filter | `OpenWorkoutsLibrary` (pagination) |
+| See all exercises | `05-exercises.html` | scroll/filter | `OpenExercisesLibrary` (pagination) |
 | See all programs | — | — | `OpenProgramList` (15) |
 | Featured recommended | feature-card | — | `ExploreHero` → workout/exercise |
 | Filter button | filter-btn | bottom sheet جزئي | `secondaryFiltersVisible` + chips |

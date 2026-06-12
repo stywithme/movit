@@ -5,6 +5,9 @@ import com.movit.core.training.config.ExerciseConfigParser
 import com.movit.core.training.config.ExerciseConfigRecord
 import com.movit.resources.readBundledExerciseSeedSquatJson
 
+/** Max distinct slugs written by cold seed; used to detect upgraded installs missing configs. */
+const val BUNDLED_TRAINING_SEED_SLUG_THRESHOLD = 3
+
 private val BUNDLED_TRAINING_SLUGS = listOf("squat", "bodyweight-squat", "barbell-squat")
 
 /** Seeds bundled squat config when any bundled alias is still missing (sync may leave a non-empty index). */

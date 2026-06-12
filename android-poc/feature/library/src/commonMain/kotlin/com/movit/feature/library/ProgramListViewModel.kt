@@ -11,10 +11,14 @@ import kotlinx.coroutines.launch
 
 data class ProgramListUiState(
     val isLoading: Boolean = false,
+    val query: String = "",
     val programs: List<ProgramListItemUi> = emptyList(),
     val filteredPrograms: List<ProgramListItemUi> = emptyList(),
+    val visiblePrograms: List<ProgramListItemUi> = emptyList(),
     val chips: List<String> = emptyList(),
     val selectedChip: String = "All",
+    val hasMore: Boolean = false,
+    val isLoadingMore: Boolean = false,
     val errorMessage: String? = null,
 )
 
@@ -25,6 +29,7 @@ class ProgramListViewModel(
     val state: StateFlow<ProgramListUiState> = _state.asStateFlow()
 
     private var allPrograms: List<ProgramListItemUi> = emptyList()
+    private var visibleLimit = PAGE_SIZE
 
     fun loadInitial() {
         viewModelScope.launch { load() }
@@ -60,15 +65,40 @@ class ProgramListViewModel(
         publishFiltered()
     }
 
+    fun onQueryChange(query: String) {
+        visibleLimit = PAGE_SIZE
+        _state.update { it.copy(query = query) }
+        publishFiltered()
+    }
+
     fun onChipSelected(chip: String) {
+        visibleLimit = PAGE_SIZE
         _state.update { it.copy(selectedChip = chip) }
         publishFiltered()
     }
 
+    fun onLoadMore() {
+        if (_state.value.isLoadingMore || !_state.value.hasMore) return
+        _state.update { it.copy(isLoadingMore = true) }
+        visibleLimit += PAGE_SIZE
+        publishFiltered()
+        _state.update { it.copy(isLoadingMore = false) }
+    }
+
     private fun publishFiltered() {
-        val chip = _state.value.selectedChip
-        val filtered = allPrograms.filter { matchesChip(it, chip) }
-        _state.update { it.copy(filteredPrograms = filtered) }
+        val current = _state.value
+        val chip = current.selectedChip
+        val filtered = allPrograms
+            .filter { matchesChip(it, chip) }
+            .filter { matchesQuery(it, current.query) }
+        val limit = minOf(filtered.size, visibleLimit)
+        _state.update {
+            it.copy(
+                filteredPrograms = filtered,
+                visiblePrograms = filtered.take(limit),
+                hasMore = limit < filtered.size,
+            )
+        }
     }
 
     private fun buildChips(programs: List<ProgramListItemUi>): List<String> {
@@ -79,5 +109,16 @@ class ProgramListViewModel(
     private fun matchesChip(program: ProgramListItemUi, chip: String): Boolean {
         if (chip == "All") return true
         return program.levelLabel.equals(chip, ignoreCase = true)
+    }
+
+    private fun matchesQuery(program: ProgramListItemUi, query: String): Boolean {
+        if (query.isBlank()) return true
+        val needle = query.trim()
+        return program.title.contains(needle, ignoreCase = true) ||
+            program.description.contains(needle, ignoreCase = true)
+    }
+
+    companion object {
+        const val PAGE_SIZE = 20
     }
 }

@@ -148,6 +148,7 @@ fun WorkoutRunScreen(
                         onClick = onStartExercise,
                         variant = MovitButtonVariant.Filled,
                         leadingIcon = Icons.Default.PlayArrow,
+                        enabled = !state.isEnsuringConfig,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }

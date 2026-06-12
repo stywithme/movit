@@ -306,6 +306,7 @@
     <string name="library_result_workouts">Showing %1$d of %2$d workouts</string>
     <string name="library_see_more_exercises">See more exercises</string>
     <string name="library_see_more_workouts">See more workouts</string>
+    <string name="library_loading_more">Loading more…</string>
     <string name="library_no_results">No results</string>
     <string name="library_try_filter">Try a different search or filter.</string>
     <string name="library_clear_filters">Clear filters</string>
@@ -514,6 +515,9 @@
     <string name="program_details_sub">Details</string>
     <string name="program_start">Start program</string>
     <string name="program_start_next">Start next session</string>
+    <string name="program_day_sessions_title">Day sessions</string>
+    <string name="program_day_sessions_sub">Open a session to review or start training.</string>
+    <string name="program_open_session">View session</string>
     <string name="program_cancel">Cancel</string>
     <string name="program_save_copy">Save my copy</string>
     <string name="program_edit_customize">Customize</string>
@@ -625,6 +629,11 @@
     <string name="prepare_a11y_hero_image">Exercise preview image</string>
     <string name="prepare_a11y_pose_variant">%1$s camera angle</string>
 
+    <!-- Exercise detail -->
+    <string name="exercise_detail_title">Exercise details</string>
+    <string name="exercise_detail_start">Start exercise</string>
+    <string name="exercise_detail_equipment">Equipment</string>
+
     <!-- Workout flow (16) -->
     <string name="workout_flow_back">Back</string>
     <string name="workout_flow_customize_title">Customize workout</string>
@@ -663,6 +672,11 @@
     <string name="workout_live_finish">Finish set</string>
     <string name="workout_live_bridge_unavailable">Live camera training is not available on this build yet.</string>
     <string name="workout_live_config_unavailable">Exercise configuration is not available offline. Sync or try again later.</string>
+    <string name="training_config_ensuring">Preparing exercise setup…</string>
+    <string name="training_config_unavailable_title">Exercise setup needed</string>
+    <string name="training_config_first_use_online">First use needs a one-time connection to download exercise setup. Tap Sync now, then try again.</string>
+    <string name="training_config_offline_unavailable">Exercise setup isn\'t on this device yet. Connect to the internet, sync, then try again.</string>
+    <string name="training_config_sync_now">Sync now</string>
     <string name="workout_live_ios_placeholder">iOS camera training — coming soon</string>
     <string name="training_session_setup_title">Get into position</string>
     <string name="training_session_setup_phase">Step: %1$s</string>
@@ -703,6 +717,9 @@
 
     <!-- Program flow (15) -->
     <string name="program_flow_list_title">Programs</string>
+    <string name="program_flow_search">Search programs</string>
+    <string name="program_flow_list_count">%1$d programs</string>
+    <string name="program_flow_list_count_filtered">%1$d of %2$d programs</string>
     <string name="program_flow_loading">Loading programs…</string>
     <string name="program_flow_empty_title">No programs yet</string>
     <string name="program_flow_empty_message">Check your connection and try again.</string>

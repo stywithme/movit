@@ -1,5 +1,6 @@
 package com.movit.feature.library
 
+import com.movit.core.data.cache.MovitLruCache
 import com.movit.core.training.session.TrainingFlowItem
 
 data class WorkoutFlowExerciseUi(
@@ -46,15 +47,10 @@ data class WorkoutRunSequenceItemUi(
     val status: WorkoutRunExerciseStatus,
 )
 
-data class WorkoutCustomizeUiState(
-    val isLoading: Boolean = false,
-    val isSaving: Boolean = false,
-    val config: WorkoutFlowConfigUi? = null,
-    val errorMessage: String? = null,
-)
-
 data class WorkoutRunUiState(
     val isLoading: Boolean = false,
+    val isEnsuringConfig: Boolean = false,
+    val trainingConfigUnavailable: TrainingConfigUnavailableUi? = null,
     val config: WorkoutFlowConfigUi? = null,
     val currentExerciseIndex: Int = 0,
     val currentSet: Int = 1,
@@ -129,15 +125,16 @@ sealed interface TrainingStartAction {
     data class Legacy(val exerciseFileName: String) : TrainingStartAction
 }
 
-/** In-memory handoff between customize → run; persisted via [WorkoutFlowSaveEncoder] on commit. */
+/** In-memory handoff between workout details, run, prepare, and live training. */
 object WorkoutFlowCache {
-    private val configs = mutableMapOf<String, WorkoutFlowConfigUi>()
+    private const val MAX_WORKOUTS = 4
+    private val configs = MovitLruCache<String, WorkoutFlowConfigUi>(MAX_WORKOUTS)
 
     fun put(config: WorkoutFlowConfigUi) {
-        configs[config.workoutId] = config
+        configs.put(config.workoutId, config)
     }
 
-    fun get(workoutId: String): WorkoutFlowConfigUi? = configs[workoutId]
+    fun get(workoutId: String): WorkoutFlowConfigUi? = configs.get(workoutId)
 
     fun clear(workoutId: String) {
         configs.remove(workoutId)

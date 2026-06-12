@@ -70,6 +70,7 @@ object MovitCacheKeys {
 
     const val EXERCISE_CONFIG_STORE = "exercise_config_cache"
     const val EXERCISE_CONFIG_SLUG_INDEX = "exercise_config_slug_index"
+    const val EXERCISE_CONFIG_SLUG_ALIASES = "exercise_config_slug_aliases"
     const val TRAINING_PREFERENCES_STORE = "training_preferences_cache"
     const val TRAINING_PREFERENCES_JSON = "training_preferences_json"
 

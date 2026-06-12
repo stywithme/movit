@@ -56,6 +56,7 @@ import com.movit.designsystem.components.MovitStepper
 import com.movit.designsystem.components.MovitTag
 import com.movit.designsystem.components.MovitTagVariant
 import com.movit.designsystem.movitColors
+import com.movit.feature.library.ProgramDaySessionUi
 import com.movit.feature.library.ProgramDayStatus
 import com.movit.feature.library.ProgramDayUi
 import com.movit.feature.library.ProgramDetailCardUi
@@ -364,6 +365,8 @@ fun ProgramWeekStrip(
 @Composable
 fun ProgramWeekCard(
     week: ProgramWeekUi,
+    selectedDayNumber: Int? = null,
+    onDaySelected: (Int) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     MovitCard(
@@ -408,14 +411,70 @@ fun ProgramWeekCard(
                 modifier = Modifier.padding(top = MovitSpacing.md),
                 verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
             ) {
-                week.days.forEach { day -> ProgramDayRow(day = day) }
+                week.days.forEach { day ->
+                    ProgramDayRow(
+                        day = day,
+                        isSelected = day.dayNumber == selectedDayNumber,
+                        onClick = { onDaySelected(day.dayNumber) },
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun ProgramDayRow(day: ProgramDayUi) {
+fun ProgramDaySessionsPanel(
+    sessions: List<ProgramDaySessionUi>,
+    onOpenSession: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (sessions.isEmpty()) return
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
+    ) {
+        MovitSectionHeader(
+            title = movitText("program_day_sessions_title"),
+            subtitle = movitText("program_day_sessions_sub"),
+        )
+        sessions.forEach { session ->
+            MovitCard(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = { onOpenSession(session.sessionKey) },
+            ) {
+                Column(modifier = Modifier.padding(MovitSpacing.lg)) {
+                    Text(
+                        text = session.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.W800,
+                    )
+                    Text(
+                        text = session.subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.movitColors.textTertiary,
+                        modifier = Modifier.padding(top = 3.dp),
+                    )
+                    MovitButton(
+                        text = movitText("program_open_session"),
+                        onClick = { onOpenSession(session.sessionKey) },
+                        variant = MovitButtonVariant.Outlined,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = MovitSpacing.md),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProgramDayRow(
+    day: ProgramDayUi,
+    isSelected: Boolean = false,
+    onClick: () -> Unit = {},
+) {
     val movit = MaterialTheme.movitColors
     val dotColor = when (day.status) {
         ProgramDayStatus.Done -> movit.success
@@ -428,9 +487,13 @@ private fun ProgramDayRow(day: ProgramDayUi) {
         else -> day.dayNumber.toString()
     }
     Surface(
+        onClick = onClick,
         shape = RoundedCornerShape(MovitRadius.lg),
         color = movit.surface2,
-        border = androidx.compose.foundation.BorderStroke(1.dp, movit.divider),
+        border = androidx.compose.foundation.BorderStroke(
+            width = if (isSelected) 2.dp else 1.dp,
+            color = if (isSelected) MaterialTheme.colorScheme.primary else movit.divider,
+        ),
     ) {
         Row(
             modifier = Modifier

@@ -106,6 +106,7 @@ fun ExercisePrepareScreen(
                     PrepareStartDock(
                         sessionSummary = state.exercise.sessionSummary,
                         onStart = onStart,
+                        startEnabled = !state.isEnsuringConfig,
                         modifier = Modifier.padding(MovitSpacing.lg),
                     )
                 }
@@ -438,6 +439,7 @@ private fun TargetMusclesRow(
 private fun PrepareStartDock(
     sessionSummary: String,
     onStart: () -> Unit,
+    startEnabled: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     MovitCard(
@@ -467,6 +469,7 @@ private fun PrepareStartDock(
                 onClick = onStart,
                 variant = MovitButtonVariant.Filled,
                 leadingIcon = Icons.Default.PlayArrow,
+                enabled = startEnabled,
             )
         }
     }

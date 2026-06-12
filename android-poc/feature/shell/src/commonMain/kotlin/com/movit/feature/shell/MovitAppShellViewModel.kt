@@ -3,6 +3,7 @@ package com.movit.feature.shell
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.movit.core.data.MovitData
+import com.movit.core.data.platform.MovitConnectivitySignals
 import com.movit.core.data.sync.MovitSyncOrchestrator
 import com.movit.feature.account.AuthBootstrapContext
 import com.movit.feature.account.AuthBootstrapTarget
@@ -40,6 +41,9 @@ class MovitAppShellViewModel(
 
     init {
         ShellSyncCoordinator.install { forceCheck -> requestSyncIfNeeded(forceCheck) }
+        MovitConnectivitySignals.setOnConnectivityRestored {
+            ShellSyncCoordinator.requestSync(forceCheck = true)
+        }
         if (MovitData.isInstalled) {
             viewModelScope.launch {
                 MovitData.bootstrapLocalCaches()
@@ -99,6 +103,7 @@ class MovitAppShellViewModel(
     }
 
     override fun onCleared() {
+        MovitConnectivitySignals.setOnConnectivityRestored(null)
         ShellSyncCoordinator.clear()
         super.onCleared()
     }
@@ -138,7 +143,7 @@ class MovitAppShellViewModel(
             MovitAppShellEvent.InnerRoutePopped -> popInner()
             is MovitAppShellEvent.ExploreEffectReceived -> handleExploreEffect(event.effect)
             is MovitAppShellEvent.ExploreItemSelected -> {
-                pushInner(MovitInnerRoute.ExercisePrepare(event.itemId))
+                pushInner(MovitInnerRoute.ExerciseDetail(event.itemId))
             }
             is MovitAppShellEvent.HomeEffectReceived -> {
                 handleHomeEffect(event.effect)
@@ -234,10 +239,14 @@ class MovitAppShellViewModel(
 
     private fun handleAuthEffect(effect: MovitAuthEffect) {
         when (effect) {
-            MovitAuthEffect.OpenShell -> popInner()
+            MovitAuthEffect.OpenShell -> {
+                popInner()
+                requestSyncIfNeeded(forceCheck = true)
+            }
             MovitAuthEffect.OpenOnboarding -> {
                 popInner()
                 pushInner(MovitInnerRoute.ProfileOnboarding)
+                requestSyncIfNeeded(forceCheck = true)
             }
             is MovitAuthEffect.ShowMessage -> {
                 _effects.tryEmit(MovitAppShellEffect.ShowMessage(effect.message))
@@ -250,7 +259,10 @@ class MovitAppShellViewModel(
 
     private fun handleOnboardingEffect(effect: MovitOnboardingEffect) {
         when (effect) {
-            MovitOnboardingEffect.Completed -> popInner()
+            MovitOnboardingEffect.Completed -> {
+                popInner()
+                requestSyncIfNeeded(forceCheck = true)
+            }
             is MovitOnboardingEffect.ShowMessage -> {
                 _effects.tryEmit(MovitAppShellEffect.ShowMessage(effect.message))
             }
@@ -357,10 +369,12 @@ class MovitAppShellViewModel(
                 MovitInnerRoute.ProgramDetail(programId = effect.programId),
             )
             is MovitExploreEffect.OpenWorkoutSession -> pushInner(MovitInnerRoute.WorkoutSession(effect.workoutId))
-            is MovitExploreEffect.OpenExercisePrepare -> pushInner(MovitInnerRoute.ExercisePrepare(effect.exerciseId))
+            is MovitExploreEffect.OpenExerciseDetail -> pushInner(
+                MovitInnerRoute.ExerciseDetail(exerciseId = effect.exerciseId),
+            )
             is MovitExploreEffect.NavigateToItem -> {
                 when (effect.type) {
-                    ExploreItemType.Exercise -> pushInner(MovitInnerRoute.ExercisePrepare(effect.id))
+                    ExploreItemType.Exercise -> pushInner(MovitInnerRoute.ExerciseDetail(effect.id))
                     ExploreItemType.Workout -> pushInner(MovitInnerRoute.WorkoutSession(effect.id))
                     ExploreItemType.Program -> pushInner(
                         MovitInnerRoute.ProgramDetail(programId = effect.id),
@@ -368,7 +382,7 @@ class MovitAppShellViewModel(
                 }
             }
             is MovitExploreEffect.NavigateToExercise -> {
-                pushInner(MovitInnerRoute.ExercisePrepare(effect.id))
+                pushInner(MovitInnerRoute.ExerciseDetail(effect.id))
             }
             is MovitExploreEffect.ShowMessage -> {
                 _effects.tryEmit(MovitAppShellEffect.ShowMessage(effect.message))

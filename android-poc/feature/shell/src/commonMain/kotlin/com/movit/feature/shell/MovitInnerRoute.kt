@@ -15,11 +15,14 @@ sealed interface MovitInnerRoute {
     data class WeeklyReport(val programId: String, val weekNumber: Int = 1) : MovitInnerRoute
     data class ProgramDetail(val programId: String) : MovitInnerRoute
     data class WorkoutSession(val workoutId: String) : MovitInnerRoute
-    data class WorkoutCustomize(val workoutId: String) : MovitInnerRoute
     data class WorkoutRun(val workoutId: String) : MovitInnerRoute
+    data class ExerciseDetail(val exerciseId: String) : MovitInnerRoute
     data class ExercisePrepare(
         val exerciseId: String,
         val workoutId: String? = null,
+        val prepareMode: String = "prepare",
+        val restSeconds: Int? = null,
+        val upNextExerciseId: String? = null,
     ) : MovitInnerRoute
     data class ExerciseLive(
         val exerciseSlug: String,

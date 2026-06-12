@@ -10,6 +10,7 @@ import androidx.activity.compose.setContent
 
 import androidx.activity.enableEdgeToEdge
 
+import com.movit.designsystem.platform.installMovitCoilImageLoader
 import com.movit.feature.shell.MovitAppShellHost
 
 import com.trainingvalidator.poc.ui.auth.SplashActivity
@@ -32,6 +33,8 @@ fun ComponentActivity.attachMovitShellHost(
     launchIntent: android.content.Intent? = null,
 ) {
     MovitShellDeepLinkParser.applyFromIntent(launchIntent)
+
+    installMovitCoilImageLoader(applicationContext)
 
     MovitDataInstall.install(
 

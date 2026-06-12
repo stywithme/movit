@@ -186,6 +186,7 @@ class OfflineWriteQueue(
             }
         }
 
+        OutboxMaintenance.purgeCompletedOlderThanRetention(localStore)
         return OutboxReplayResult(attempted, succeeded, failed, skipped)
     }
 

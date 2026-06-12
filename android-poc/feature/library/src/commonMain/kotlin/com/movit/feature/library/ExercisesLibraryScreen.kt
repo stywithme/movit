@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.movit.designsystem.MovitSpacing
@@ -34,7 +35,7 @@ fun ExercisesLibraryScreen(
     onFilterSelected: (LibraryFilterChip) -> Unit,
     onFilterClick: () -> Unit,
     onDismissFilterSheet: () -> Unit,
-    onSeeMore: () -> Unit,
+    onLoadMore: () -> Unit,
     onClearFilters: () -> Unit,
     onItemClick: (String) -> Unit,
     onRetry: () -> Unit,
@@ -134,14 +135,15 @@ fun ExercisesLibraryScreen(
                                 ),
                             )
                         }
-                    }
-                    if (!state.showAll && state.visibleCount > state.items.size) {
-                        MovitButton(
-                            text = movitText("library_see_more_exercises"),
-                            onClick = onSeeMore,
-                            variant = MovitButtonVariant.Outlined,
-                            modifier = Modifier.padding(bottom = MovitSpacing.lg),
-                        )
+                        if (state.hasMore) {
+                            item(key = "load-more") {
+                                LaunchedEffect(state.items.size) { onLoadMore() }
+                                MovitLoadingState(
+                                    message = movitText("library_loading_more"),
+                                    modifier = Modifier.padding(vertical = MovitSpacing.md),
+                                )
+                            }
+                        }
                     }
                 }
             }

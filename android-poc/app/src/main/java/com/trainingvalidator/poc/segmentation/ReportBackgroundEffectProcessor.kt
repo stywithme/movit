@@ -14,7 +14,8 @@ import java.security.MessageDigest
 /**
  * Applies portrait matting + background blur/tint to the report hero image only.
  *
- * Engine priority: configured engine → ONNX fallback (u2net/modnet) → MediaPipe selfie → original.
+ * Engine priority: configured engine → ONNX fallback (u2net/modnet, debug only) → MediaPipe selfie → original.
+ * Release APK excludes matting assets and ONNX runtime until D9 dynamic delivery (F8).
  */
 class ReportBackgroundEffectProcessor(
     private val context: Context
