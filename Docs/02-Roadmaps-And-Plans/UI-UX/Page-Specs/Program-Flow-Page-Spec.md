@@ -11,7 +11,8 @@
 - **Preview/offline:** `FakeProgramFlowRepository` عند عدم تثبيت `MovitData` أو لمعرّفات `ProgramFlowPreviewData`.
 - i18n: `program_flow_*` كامل (en/ar + `MovitArabicStrings` للاختبارات).
 - اختبارات: `ProgramFlowStateTest` (5) · shell/train navigation tests — خضراء.
-- **مفتوح:** Share platform · قائمة كل أسابيع التقرير (legacy multi-week) · صور الوسائط من الشبكة عند غياب explore cache.
+- **مفتوح:** iOS share sheet · week-over-week metrics عميقة.
+- **✅ أُغلق (2026-06-12):** قائمة كل الأسابيع في `WeeklyReportScreen` · Share Android (`MovitAppShellEffect.ShareText`) · `coverImageUrl` على بطاقات البرامج.
 
 ## Legacy Reference
 

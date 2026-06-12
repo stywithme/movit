@@ -50,6 +50,16 @@ data class AssessmentResultsUi(
     val domains: List<AssessmentDomainUi> = emptyList(),
     val regions: List<AssessmentRegionUi>,
     val insights: List<AssessmentInsightUi>,
+    val safetyGates: List<AssessmentSafetyGateUi> = emptyList(),
+    val resultsSavedToServer: Boolean = true,
+)
+
+data class AssessmentSafetyGateUi(
+    val regionKey: String,
+    val reasonKey: String,
+    val reasonArgs: List<Any> = emptyList(),
+    val blockedExerciseTypes: List<String> = emptyList(),
+    val allowedAlternatives: List<String> = emptyList(),
 )
 
 data class AssessmentTemplateUi(
@@ -89,6 +99,8 @@ data class AssessmentRegionUi(
     val regionKey: String,
     val score: Int,
     val tone: AssessmentRegionTone,
+    val confidence: String = "high",
+    val status: String = "average",
 )
 
 enum class AssessmentRegionTone {

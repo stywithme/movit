@@ -34,6 +34,8 @@ import com.movit.resources.movitText
 fun MovitSubscriptionScreen(
     isPro: Boolean,
     onBack: () -> Unit,
+    onPrimaryAction: () -> Unit = onBack,
+    onRestorePurchases: () -> Unit = onBack,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -109,14 +111,14 @@ fun MovitSubscriptionScreen(
                     } else {
                         movitText("profile_subscribe_now")
                     },
-                    onClick = onBack,
+                    onClick = onPrimaryAction,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = MovitSpacing.lg),
                 )
                 MovitButton(
                     text = movitText("profile_restore_purchases"),
-                    onClick = onBack,
+                    onClick = onRestorePurchases,
                     variant = MovitButtonVariant.Text,
                     modifier = Modifier.fillMaxWidth(),
                 )

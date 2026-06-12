@@ -8,6 +8,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
@@ -18,6 +21,12 @@ data class WorkoutSessionUiState(
     val session: WorkoutSessionUi? = null,
     val errorMessage: String? = null,
     val activeSheet: SessionSheet? = null,
+    val plannedWorkoutCards: List<PlannedWorkoutCardUi> = emptyList(),
+    val expandedPlannedWorkoutId: String? = null,
+    val catchUpPrompt: SessionCatchUpPromptUi? = null,
+    val showCatchUpDialog: Boolean = false,
+    val catchUpDialogDismissed: Boolean = false,
+    val snackbarMessageKey: String? = null,
 )
 
 class WorkoutSessionViewModel(
@@ -26,6 +35,7 @@ class WorkoutSessionViewModel(
 ) : ViewModel() {
     private val _state = MutableStateFlow(WorkoutSessionUiState(isLoading = true))
     val state: StateFlow<WorkoutSessionUiState> = _state.asStateFlow()
+    private val persistScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     fun loadInitial() {
         viewModelScope.launch { load() }
@@ -37,12 +47,8 @@ class WorkoutSessionViewModel(
         }
         repository.observeSession(workoutId).collect { cacheState ->
             when (cacheState) {
-                is CacheState.Cached -> _state.update {
-                    it.copy(isLoading = false, session = cacheState.value.recalculated())
-                }
-                is CacheState.Fresh -> _state.update {
-                    it.copy(isLoading = false, session = cacheState.value.recalculated())
-                }
+                is CacheState.Cached -> applyLoadedSession(cacheState.value.recalculated())
+                is CacheState.Fresh -> applyLoadedSession(cacheState.value.recalculated())
                 is CacheState.Error -> _state.update {
                     it.copy(isLoading = false, errorMessage = cacheState.message)
                 }
@@ -322,6 +328,57 @@ class WorkoutSessionViewModel(
 
     fun dismissSheet() {
         _state.update { it.copy(activeSheet = null) }
+    }
+
+    fun togglePlannedWorkoutExpand(workoutId: String) {
+        _state.update { current ->
+            val next = if (current.expandedPlannedWorkoutId == workoutId) null else workoutId
+            current.copy(expandedPlannedWorkoutId = next)
+        }
+    }
+
+    fun dismissCatchUpDialog() {
+        _state.update { it.copy(showCatchUpDialog = false, catchUpDialogDismissed = true) }
+    }
+
+    fun consumeSnackbar() {
+        _state.update { it.copy(snackbarMessageKey = null) }
+    }
+
+    fun skipWarmup() {
+        val session = _state.value.session ?: return
+        if (!session.hasWarmupSection()) {
+            _state.update { it.copy(snackbarMessageKey = "session_skip_warmup_none") }
+            return
+        }
+        updateSession { it.withoutWarmup() }
+        _state.update { it.copy(snackbarMessageKey = "session_skip_warmup_done") }
+        persistScope.launch { persistSession() }
+    }
+
+    suspend fun sessionKeyForCatchUpDay(): String? {
+        val prompt = _state.value.catchUpPrompt ?: return null
+        val programId = _state.value.session?.context?.programId ?: return null
+        return repository.sessionKeyForDay(
+            programId = programId,
+            weekNumber = prompt.missedWeekNumber,
+            dayNumber = prompt.missedDayNumber,
+        )
+    }
+
+    private suspend fun applyLoadedSession(session: WorkoutSessionUi) {
+        val dayContext = repository.loadDayContext(session.id)
+        val selectedId = session.context?.plannedWorkoutId
+        _state.update { current ->
+            current.copy(
+                isLoading = false,
+                session = session,
+                plannedWorkoutCards = dayContext.plannedWorkoutCards,
+                expandedPlannedWorkoutId = selectedId ?: current.expandedPlannedWorkoutId,
+                catchUpPrompt = dayContext.catchUpPrompt,
+                showCatchUpDialog = dayContext.catchUpPrompt != null && !current.catchUpDialogDismissed,
+            )
+        }
     }
 
     fun switchEditSheetToSwap() {

@@ -7,7 +7,7 @@ object ProfileApiMapper {
     fun map(
         user: UserPublicDto,
         themeMode: String = MovitThemeModeStorage.SYSTEM,
-        trainingProfileSummary: String = "Goals · equipment · schedule",
+        trainingProfileSummary: String = TrainingProfileSummaryMapper.EMPTY_SUMMARY_KEY,
     ): ProfileUi = ProfileUi(
         name = user.name,
         email = user.email,

@@ -44,7 +44,20 @@ fun ProgramDetailScreen(
     onEditScopeSelected: (ProgramEditScope) -> Unit,
     onWeeklyTargetChange: (Int) -> Unit,
     onPauseCalendarToggle: () -> Unit,
+    onSessionMove: (sessionId: String, direction: Int) -> Unit,
+    onExerciseParamChange: (
+        sessionId: String,
+        exerciseId: String,
+        sets: Int?,
+        reps: Int?,
+        weightKg: Double?,
+        restSeconds: Int?,
+    ) -> Unit,
+    onRemoveSession: (sessionId: String) -> Unit,
+    onRemoveExercise: (sessionId: String, exerciseId: String) -> Unit,
+    onResetEditDay: () -> Unit,
     onSaveEdit: () -> Unit,
+    onViewWeeklyReport: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -164,6 +177,7 @@ fun ProgramDetailScreen(
                         ProgramOverviewContent(
                             state = state,
                             onWeekSelected = onWeekSelected,
+                            onViewWeeklyReport = onViewWeeklyReport,
                         )
                     } else {
                         ProgramEditPanel(
@@ -172,6 +186,11 @@ fun ProgramDetailScreen(
                             onScopeSelected = onEditScopeSelected,
                             onWeeklyTargetChange = onWeeklyTargetChange,
                             onPauseToggle = onPauseCalendarToggle,
+                            onSessionMove = onSessionMove,
+                            onExerciseParamChange = onExerciseParamChange,
+                            onRemoveSession = onRemoveSession,
+                            onRemoveExercise = onRemoveExercise,
+                            onResetDay = onResetEditDay,
                             onSave = onSaveEdit,
                         )
                     }
@@ -185,12 +204,13 @@ fun ProgramDetailScreen(
 private fun ProgramOverviewContent(
     state: ProgramDetailUiState,
     onWeekSelected: (Int) -> Unit,
+    onViewWeeklyReport: () -> Unit,
 ) {
     MovitSectionHeader(
         title = movitText("program_journey_title"),
         subtitle = movitText("program_journey_sub"),
         actionLabel = movitText("program_weekly_report"),
-        onActionClick = {},
+        onActionClick = onViewWeeklyReport,
     )
     ProgramWeekStrip(
         weeks = state.weeks,

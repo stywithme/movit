@@ -269,9 +269,14 @@ private fun ReportFormPage(report: ReportDetailUi) {
     Column(verticalArrangement = Arrangement.spacedBy(MovitSpacing.lg)) {
         MovitSectionHeader(title = movitText("report_detail_joint_analysis"))
         if (report.joints.isEmpty()) {
+            val jointsMessageKey = when (report.jointsEmptyReason) {
+                ReportJointsEmptyReason.ApiPending -> "report_detail_joints_api_pending"
+                ReportJointsEmptyReason.SessionUntracked -> "report_detail_joints_session_untracked"
+                ReportJointsEmptyReason.Generic -> "report_detail_joints_unavailable"
+            }
             MovitCard(variant = MovitCardVariant.Filled) {
                 Text(
-                    text = movitText("report_detail_joints_unavailable"),
+                    text = movitText(jointsMessageKey),
                     style = MaterialTheme.typography.bodyMedium,
                     color = movit.textSecondary,
                     modifier = Modifier.padding(MovitSpacing.md),

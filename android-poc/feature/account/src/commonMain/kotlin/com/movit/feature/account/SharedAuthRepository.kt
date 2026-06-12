@@ -30,6 +30,24 @@ class SharedAuthRepository : AuthRepository {
         }
     }
 
+    override suspend fun googleSignIn(credentials: GoogleSignInCredentials): AppResult<AuthSessionUi> {
+        if (!MovitData.isInstalled) {
+            return AppResult.Failure(DATA_LAYER_NOT_INSTALLED)
+        }
+        return when (
+            val result = MovitData.account.googleAuth(
+                idToken = credentials.idToken,
+                googleId = credentials.googleId,
+                email = credentials.email,
+                name = credentials.name,
+                avatarUrl = credentials.avatarUrl,
+            )
+        ) {
+            is AppResult.Success -> AppResult.Success(result.value.toUi())
+            is AppResult.Failure -> AppResult.Failure(result.message)
+        }
+    }
+
     override suspend fun forgotPassword(email: String): AppResult<Unit> {
         if (!MovitData.isInstalled) {
             return AppResult.Failure(DATA_LAYER_NOT_INSTALLED)

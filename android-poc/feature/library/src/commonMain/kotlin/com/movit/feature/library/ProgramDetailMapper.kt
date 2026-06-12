@@ -1,16 +1,18 @@
 package com.movit.feature.library
 
 import com.movit.core.model.ExploreItemUi
+import com.movit.resources.strings.ProgramDetailStrings
 
 internal object ProgramDetailMapper {
 
-    fun map(
+    suspend fun map(
         program: ExploreItemUi,
         enrollment: ProgramEnrollmentUi,
         selectedWeekNumber: Int,
         edit: ProgramEditUiState,
         weeks: List<ProgramWeekUi>,
         nextSession: ProgramNextSessionUi?,
+        strings: ProgramDetailStrings,
     ): ProgramDetailUiState {
         val durationWeeks = parseWeeksCount(program.metadata)
         val weeklyTarget = parseWeeklyTarget(program.metadata)
@@ -37,24 +39,24 @@ internal object ProgramDetailMapper {
             kickers = kickers,
             stats = listOf(
                 ProgramStatUi(
-                    value = "${durationWeeks} weeks",
-                    label = "Duration",
-                    hint = "$trainingDays training days",
+                    value = strings.durationValue(durationWeeks),
+                    label = strings.durationLabel,
+                    hint = strings.durationHint(trainingDays),
                 ),
                 ProgramStatUi(
-                    value = "$weeklyTarget / week",
-                    label = "Weekly target",
-                    hint = "Flexible calendar",
+                    value = strings.weeklyValue(weeklyTarget),
+                    label = strings.weeklyTargetLabel,
+                    hint = strings.weeklyHint,
                 ),
                 ProgramStatUi(
-                    value = "$sessionMinutes min",
-                    label = "Session time",
-                    hint = "Estimated average",
+                    value = strings.sessionValue(sessionMinutes),
+                    label = strings.sessionTimeLabel,
+                    hint = strings.sessionHint,
                 ),
                 ProgramStatUi(
-                    value = "$totalSessions sessions",
-                    label = "Plan load",
-                    hint = "$restDays rest days",
+                    value = strings.planValue(totalSessions),
+                    label = strings.planLoadLabel,
+                    hint = strings.planHint(restDays),
                 ),
             ),
             detailCards = defaultDetailCards(),
@@ -64,8 +66,10 @@ internal object ProgramDetailMapper {
             nextSession = resolvedNextSession,
             edit = edit.copy(
                 weeklyTarget = weeklyTarget,
-                editingDayTitle = currentWeek?.days?.firstOrNull { it.status == ProgramDayStatus.Next }?.title
-                    ?: currentWeek?.days?.firstOrNull()?.title.orEmpty(),
+                editingDayTitle = edit.editingDayTitle.ifBlank {
+                    currentWeek?.days?.firstOrNull { it.status == ProgramDayStatus.Next }?.title
+                        ?: currentWeek?.days?.firstOrNull()?.title.orEmpty()
+                },
             ),
         )
     }

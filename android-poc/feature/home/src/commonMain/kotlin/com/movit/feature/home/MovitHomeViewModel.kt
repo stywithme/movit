@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.movit.core.data.MovitData
 import com.movit.core.data.cache.CacheState
 import com.movit.resources.strings.HomeStrings
+import com.movit.shared.AppResult
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -24,10 +25,24 @@ class MovitHomeViewModel(
     val effects: SharedFlow<MovitHomeEffect> = _effects.asSharedFlow()
 
     fun loadInitial() {
-        viewModelScope.launch { load() }
+        viewModelScope.launch { load(isRefresh = false) }
     }
 
-    suspend fun load() {
+    suspend fun load(isRefresh: Boolean = false) {
+        if (isRefresh) {
+            _state.update { it.copy(isRefreshing = true, errorMessage = null) }
+            when (val result = repository.getHomeDashboard()) {
+                is AppResult.Success -> {
+                    applyDashboard(result.value)
+                    _state.update { it.copy(isRefreshing = false) }
+                }
+                is AppResult.Failure -> _state.update {
+                    it.copy(isRefreshing = false, errorMessage = result.message)
+                }
+            }
+            return
+        }
+
         if (_state.value.userName == null) {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
         }
@@ -68,12 +83,14 @@ class MovitHomeViewModel(
                 reportPreview = dashboard.reportPreview,
                 quickActions = dashboard.quickActions,
                 insightMessage = dashboard.insightMessage,
+                catchUp = dashboard.catchUp,
             )
         }
     }
 
     fun onEvent(event: MovitHomeEvent) {
         when (event) {
+            MovitHomeEvent.RefreshRequested -> Unit
             MovitHomeEvent.RetryClicked -> Unit
             MovitHomeEvent.StartTodayPlanClicked -> _effects.tryEmit(MovitHomeEffect.OpenTrain)
             MovitHomeEvent.BodyScanClicked -> _effects.tryEmit(MovitHomeEffect.OpenAssessment)
@@ -83,7 +100,11 @@ class MovitHomeViewModel(
             -> _effects.tryEmit(MovitHomeEffect.OpenExplore)
             MovitHomeEvent.ReportsClicked -> _effects.tryEmit(MovitHomeEffect.OpenReports)
             MovitHomeEvent.ProfileClicked -> _effects.tryEmit(MovitHomeEffect.OpenProfile)
-            MovitHomeEvent.ViewProgramClicked -> _effects.tryEmit(MovitHomeEffect.OpenTrain)
+            is MovitHomeEvent.ViewProgramClicked -> {
+                if (event.programId.isNotBlank()) {
+                    _effects.tryEmit(MovitHomeEffect.OpenProgramDetail(event.programId))
+                }
+            }
             MovitHomeEvent.ViewPlanClicked -> _effects.tryEmit(MovitHomeEffect.OpenLevel)
             is MovitHomeEvent.AlertClicked -> handleAlert(event.type)
             is MovitHomeEvent.JourneyRowClicked -> handleJourneyRow(event.rowId)
@@ -111,6 +132,16 @@ class MovitHomeViewModel(
                         _effects.emit(MovitHomeEffect.ShowMessage(message))
                     }
                 }
+            }
+            MovitHomeEvent.CatchUpOpenClicked -> {
+                val catchUp = _state.value.catchUp ?: return
+                _effects.tryEmit(
+                    MovitHomeEffect.OpenCatchUpDay(
+                        programId = catchUp.programId,
+                        weekNumber = catchUp.weekNumber,
+                        dayNumber = catchUp.dayNumber,
+                    ),
+                )
             }
         }
     }

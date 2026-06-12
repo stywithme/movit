@@ -42,7 +42,7 @@ fun ExploreSearchSection(
         ) {
             Icon(
                 imageVector = Icons.Default.FilterList,
-                contentDescription = movitText("explore_filter_button"),
+                contentDescription = movitText("explore_a11y_filter"),
                 tint = if (filtersActive) {
                     MaterialTheme.colorScheme.primary
                 } else {

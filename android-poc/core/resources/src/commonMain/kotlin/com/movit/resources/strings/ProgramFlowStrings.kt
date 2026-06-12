@@ -36,6 +36,49 @@ data class ProgramFlowStrings(
     suspend fun reportHeroSubtitle(completed: Int, planned: Int): String =
         localizedString(language, "program_flow_report_hero_subtitle", completed, planned)
 
+    suspend fun weekProgress(completed: Int, planned: Int): String =
+        localizedString(language, "program_flow_week_progress", completed, planned)
+
+    suspend fun weekReps(reps: String): String =
+        localizedString(language, "program_flow_week_reps", reps)
+
+    suspend fun weekForm(percent: Int): String =
+        localizedString(language, "program_flow_week_form", percent)
+
+    suspend fun weekMessage(completed: Int, planned: Int, avgForm: Int): String {
+        if (planned == 0 || completed == 0) {
+            return localizedString(language, "program_flow_week_message_start")
+        }
+        val progress = completed.toFloat() / planned
+        return when {
+            progress >= 0.9f && avgForm >= 85 ->
+                localizedString(language, "program_flow_week_message_excellent")
+            progress >= 0.6f ->
+                localizedString(language, "program_flow_week_message_good")
+            else -> localizedString(language, "program_flow_week_message_start")
+        }
+    }
+
+    suspend fun shareBody(
+        programName: String,
+        weekNumber: Int,
+        subtitle: String,
+        completed: Int,
+        planned: Int,
+        formPercent: Int,
+        reps: String,
+    ): String = localizedString(
+        language,
+        "program_flow_share_body",
+        programName,
+        weekNumber,
+        subtitle,
+        completed,
+        planned,
+        formPercent,
+        reps,
+    )
+
     companion object {
         suspend fun load(language: String): ProgramFlowStrings = ProgramFlowStrings(
             language = language,

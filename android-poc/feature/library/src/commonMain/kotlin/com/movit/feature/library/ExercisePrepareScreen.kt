@@ -52,7 +52,14 @@ import com.movit.designsystem.components.MovitStatsStrip
 import com.movit.designsystem.components.MovitTag
 import com.movit.designsystem.components.MovitTagVariant
 import com.movit.designsystem.movitColors
+import com.movit.feature.library.components.MovitAsyncImage
 import com.movit.resources.movitText
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.FilterChip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.layout.ContentScale
 
 @Composable
 fun ExercisePrepareScreen(
@@ -63,6 +70,7 @@ fun ExercisePrepareScreen(
     onToggleRestPause: () -> Unit,
     onAddRestTime: () -> Unit,
     onRetry: () -> Unit,
+    onPoseVariantSelected: (Int) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val exercise = state.displayExercise
@@ -139,7 +147,17 @@ fun ExercisePrepareScreen(
                             variant = MovitTagVariant.Coral,
                         )
                     }
-                    ExerciseHeroPreview(name = exercise.name)
+                    ExerciseHeroPreview(
+                        name = exercise.name,
+                        imageUrl = exercise.heroImageUrl,
+                    )
+                    if (exercise.poseVariants.size > 1) {
+                        PoseVariantPicker(
+                            variants = exercise.poseVariants,
+                            selectedIndex = exercise.selectedPoseVariantIndex,
+                            onSelected = onPoseVariantSelected,
+                        )
+                    }
                     Column(verticalArrangement = Arrangement.spacedBy(MovitSpacing.xs)) {
                         Text(
                             text = exercise.name,
@@ -182,28 +200,74 @@ fun ExercisePrepareScreen(
 }
 
 @Composable
+private fun PoseVariantPicker(
+    variants: List<PreparePoseVariantUi>,
+    selectedIndex: Int,
+    onSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(MovitSpacing.xs),
+    ) {
+        MovitSectionHeader(title = movitText("prepare_pose_variant"))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
+        ) {
+            variants.forEach { variant ->
+                val selected = variant.index == selectedIndex
+                val variantA11y = movitText("prepare_a11y_pose_variant", variant.label)
+                FilterChip(
+                    selected = selected,
+                    onClick = { onSelected(variant.index) },
+                    label = { Text(variant.label) },
+                    modifier = Modifier.semantics {
+                        contentDescription = variantA11y
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun ExerciseHeroPreview(
     name: String,
+    imageUrl: String?,
     modifier: Modifier = Modifier,
 ) {
     val movit = MaterialTheme.movitColors
+    val heroA11y = movitText("prepare_a11y_hero_image")
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(280.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.primaryContainer),
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .semantics { contentDescription = heroA11y },
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = name.take(1).uppercase(),
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.W800,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
+        if (!imageUrl.isNullOrBlank()) {
+            MovitAsyncImage(
+                url = imageUrl,
+                contentDescription = heroA11y,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
             )
+        } else {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = name.take(1).uppercase(),
+                    style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.W800,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
         }
         Surface(
             modifier = Modifier

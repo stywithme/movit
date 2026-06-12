@@ -48,6 +48,7 @@ data class WorkoutRunSequenceItemUi(
 
 data class WorkoutCustomizeUiState(
     val isLoading: Boolean = false,
+    val isSaving: Boolean = false,
     val config: WorkoutFlowConfigUi? = null,
     val errorMessage: String? = null,
 )
@@ -123,7 +124,7 @@ sealed interface TrainingStartAction {
     data class Legacy(val exerciseFileName: String) : TrainingStartAction
 }
 
-/** In-memory handoff between customize → run (Phase 05 shell; no persisted plan write). */
+/** In-memory handoff between customize → run; persisted via [WorkoutFlowSaveEncoder] on commit. */
 object WorkoutFlowCache {
     private val configs = mutableMapOf<String, WorkoutFlowConfigUi>()
 
@@ -144,7 +145,7 @@ object WorkoutFlowCache {
 
 internal object WorkoutFlowMapper {
     fun fromSession(session: WorkoutSessionUi, restBetweenSetsSeconds: Int = 60): WorkoutFlowConfigUi {
-        val exercises = session.sections
+        val exercises = session.sectionsForTraining()
             .flatMap { it.items }
             .filterIsInstance<WorkoutSessionBlockUi.Exercise>()
             .map { block ->

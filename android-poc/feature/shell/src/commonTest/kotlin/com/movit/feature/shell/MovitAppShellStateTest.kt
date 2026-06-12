@@ -208,6 +208,15 @@ class MovitAppShellStateTest {
     }
 
     @Test
+    fun reportsOpenUpgrade_launchesSubscriptionWithoutProfileTabSwitch() {
+        val viewModel = MovitAppShellViewModel()
+        viewModel.onEvent(
+            MovitAppShellEvent.ReportsEffectReceived(MovitReportsEffect.OpenUpgrade),
+        )
+        assertEquals(MovitAppDestination.Home, viewModel.state.value.selectedDestination)
+    }
+
+    @Test
     fun reportsOpenReportDetail_pushesInnerRoute() {
         val viewModel = MovitAppShellViewModel()
         viewModel.onEvent(
@@ -239,7 +248,80 @@ class MovitAppShellStateTest {
     fun homeOpenAssessment_pushesAssessmentInnerRoute() {
         val viewModel = MovitAppShellViewModel()
         viewModel.onEvent(MovitAppShellEvent.HomeEffectReceived(MovitHomeEffect.OpenAssessment))
-        assertEquals(MovitInnerRoute.Assessment, viewModel.state.value.currentInnerRoute)
+        assertEquals(MovitInnerRoute.Assessment(), viewModel.state.value.currentInnerRoute)
+    }
+
+    @Test
+    fun homeOpenCatchUpDay_pushesWorkoutSessionWithAutoPlannedWorkout() {
+        val viewModel = MovitAppShellViewModel()
+        viewModel.onEvent(
+            MovitAppShellEvent.HomeEffectReceived(
+                MovitHomeEffect.OpenCatchUpDay(
+                    programId = "prog-1",
+                    weekNumber = 2,
+                    dayNumber = 2,
+                ),
+            ),
+        )
+        assertEquals(
+            MovitInnerRoute.WorkoutSession("session:prog-1:2:2:_auto"),
+            viewModel.state.value.currentInnerRoute,
+        )
+    }
+
+    @Test
+    fun homeOpenProgramDetail_pushesProgramDetailInnerRoute() {
+        val viewModel = MovitAppShellViewModel()
+        viewModel.onEvent(
+            MovitAppShellEvent.HomeEffectReceived(
+                MovitHomeEffect.OpenProgramDetail("prog-full-body"),
+            ),
+        )
+        assertEquals(
+            MovitInnerRoute.ProgramDetail("prog-full-body"),
+            viewModel.state.value.currentInnerRoute,
+        )
+    }
+
+    @Test
+    fun exploreOpenProgramDetail_pushesProgramDetailInnerRoute() {
+        val viewModel = MovitAppShellViewModel()
+        viewModel.onEvent(
+            MovitAppShellEvent.ExploreEffectReceived(
+                MovitExploreEffect.OpenProgramDetail("prog-strength"),
+            ),
+        )
+        assertEquals(
+            MovitInnerRoute.ProgramDetail("prog-strength"),
+            viewModel.state.value.currentInnerRoute,
+        )
+    }
+
+    @Test
+    fun trainOpenProgramDetail_pushesProgramDetailInnerRoute() {
+        val viewModel = MovitAppShellViewModel()
+        viewModel.onEvent(
+            MovitAppShellEvent.TrainEffectReceived(
+                MovitTrainEffect.OpenProgramDetail("prog-strength"),
+            ),
+        )
+        assertEquals(
+            MovitInnerRoute.ProgramDetail("prog-strength"),
+            viewModel.state.value.currentInnerRoute,
+        )
+    }
+
+    @Test
+    fun programListClick_pushesProgramDetailInnerRoute() {
+        val viewModel = MovitAppShellViewModel()
+        viewModel.onEvent(MovitAppShellEvent.InnerRoutePushed(MovitInnerRoute.ProgramList))
+        viewModel.onEvent(
+            MovitAppShellEvent.InnerRoutePushed(MovitInnerRoute.ProgramDetail("prog-strength")),
+        )
+        assertEquals(
+            MovitInnerRoute.ProgramDetail("prog-strength"),
+            viewModel.state.value.currentInnerRoute,
+        )
     }
 
     @Test
@@ -293,7 +375,7 @@ class MovitAppShellStateTest {
     fun backPressed_withInnerRoute_popsStack() {
         val viewModel = MovitAppShellViewModel()
         viewModel.onEvent(MovitAppShellEvent.HomeEffectReceived(MovitHomeEffect.OpenAssessment))
-        assertEquals(MovitInnerRoute.Assessment, viewModel.state.value.currentInnerRoute)
+        assertEquals(MovitInnerRoute.Assessment(), viewModel.state.value.currentInnerRoute)
         assertEquals(true, viewModel.handleSystemBack())
         assertEquals(null, viewModel.state.value.currentInnerRoute)
     }

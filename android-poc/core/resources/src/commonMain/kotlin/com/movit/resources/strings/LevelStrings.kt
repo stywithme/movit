@@ -37,6 +37,40 @@ data class LevelStrings(
             ?: domain.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
     }
 
+    suspend fun regionName(region: String): String {
+        val key = when (region.lowercase()) {
+            "hips", "hip" -> "assessment_region_hips"
+            "shoulders", "shoulder" -> "assessment_region_shoulders"
+            "knees", "knee" -> "assessment_region_knees"
+            "spine", "core", "lower_back", "back" -> "assessment_region_spine"
+            "balance" -> "assessment_region_balance"
+            else -> null
+        }
+        return key?.let { localizedString(language, it) }
+            ?: region.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+    }
+
+    suspend fun limitingFactorName(type: String, code: String): String {
+        val normalized = code.lowercase().replace('_', ' ')
+        val key = when {
+            type.equals("domain", ignoreCase = true) && code.contains("mobility", ignoreCase = true) ->
+                "level_domain_mobility"
+            type.equals("domain", ignoreCase = true) && code.contains("control", ignoreCase = true) ->
+                "level_domain_control"
+            type.equals("domain", ignoreCase = true) && code.contains("symmetry", ignoreCase = true) ->
+                "level_domain_symmetry"
+            type.equals("domain", ignoreCase = true) && code.contains("safety", ignoreCase = true) ->
+                "level_domain_safety"
+            else -> null
+        }
+        return key?.let { localizedString(language, it) }
+            ?: normalized.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+    }
+
+    suspend fun fetchError(): String = localizedString(language, "level_fetch_error")
+
+    suspend fun noProfileMessage(): String = localizedString(language, "level_no_profile_message")
+
     companion object {
         suspend fun load(language: String): LevelStrings = LevelStrings(
             language = language,

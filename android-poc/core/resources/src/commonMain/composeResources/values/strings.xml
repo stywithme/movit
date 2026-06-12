@@ -126,6 +126,8 @@
     <string name="home_a11y_start_workout">Start today\'s workout</string>
     <string name="home_a11y_view_program">View active program</string>
     <string name="home_a11y_body_scan">Start body scan assessment</string>
+    <string name="home_a11y_catch_up">Catch up: %1$s</string>
+    <string name="home_catch_up_unavailable">Unable to open the missed training day right now.</string>
 
     <!-- Train -->
     <string name="train_title">Train</string>
@@ -245,6 +247,13 @@
     <string name="reports_attendance_trend">Weekly attendance</string>
     <string name="reports_loading_sub">Pull down to refresh anytime.</string>
     <string name="reports_athlete_fallback">Athlete</string>
+    <string name="reports_a11y_upgrade">Upgrade to Pro subscription</string>
+    <string name="reports_a11y_form_journey_chart">Form score journey, from %1$s to %2$s out of 100</string>
+    <string name="reports_a11y_weekly_breakdown_chart">Weekly breakdown, peak week %1$s with value %2$s</string>
+    <string name="reports_a11y_improvement_chart">Improvement rate line chart across tracked sessions</string>
+    <string name="reports_a11y_volume_chart">Volume trend bar chart by week</string>
+    <string name="reports_a11y_attendance_chart">Weekly attendance bar chart</string>
+    <string name="reports_a11y_exercise_row">%1$s, score %2$s, %3$s</string>
 
     <!-- Explore -->
     <string name="explore_title">Explore</string>
@@ -282,6 +291,9 @@
     <string name="explore_workout_filter_advanced">Advanced</string>
     <string name="explore_workout_filter_short">Under 20 min</string>
     <string name="explore_results_summary">%1$d workouts • %2$d exercises</string>
+    <string name="explore_a11y_filter">Open filter options</string>
+    <string name="explore_a11y_media_image">Image for %1$s</string>
+    <string name="explore_a11y_filter_chip">Filter by %1$s</string>
 
     <!-- Library (05 Exercises / 06 Workouts) -->
     <string name="library_back_explore">Explore</string>
@@ -309,6 +321,9 @@
     <string name="library_filter_under_20">Under 20 min</string>
     <string name="library_featured_workout">Best for legs</string>
     <string name="library_load_error">Unable to load library content.</string>
+    <string name="library_a11y_back">Back to explore</string>
+    <string name="library_a11y_filter">Open library filters</string>
+    <string name="library_a11y_item_image">Image for %1$s</string>
 
     <!-- Train components (UI) -->
     <string name="train_day_complete">Day complete!</string>
@@ -367,6 +382,10 @@
     <string name="train_a11y_form_trend_chart">Form score trend for last 7 sessions</string>
     <string name="train_a11y_start_program">Start %1$s program</string>
     <string name="train_a11y_preferences">Open training preferences</string>
+    <string name="train_a11y_session_collapsed">%1$s, %2$s, collapsed, double tap to expand</string>
+    <string name="train_a11y_session_expanded">%1$s, %2$s, expanded, double tap to collapse</string>
+    <string name="train_a11y_session_start">Start session %1$s</string>
+    <string name="train_a11y_session_thumbnail">Thumbnail for %1$s</string>
 
     <!-- Report detail -->
     <string name="report_detail_loading">Loading report…</string>
@@ -397,6 +416,13 @@
     <string name="report_detail_form_steady">Form held steady across sets.</string>
     <string name="report_detail_not_found">Report not found.</string>
     <string name="report_detail_joints_unavailable">Joint breakdown will appear here when your session includes tracked joints.</string>
+    <string name="report_detail_joints_api_pending">Joint scores are not in this API response yet. They will appear automatically once the backend publishes joint breakdown.</string>
+    <string name="report_detail_joints_session_untracked">This session did not record per-joint scores. Complete a tracked exercise to see joint analysis here.</string>
+    <string name="report_detail_share_text">🏋️ %1$s — Quality: %2$d%%</string>
+    <string name="report_detail_share_chooser_title">Share report</string>
+    <string name="report_detail_export_header">🏋️ %1$s — Quality: %2$d%%</string>
+    <string name="report_detail_export_stats">Sets: %1$s · Reps: %2$s · Duration: %3$s</string>
+    <string name="report_detail_export_chooser_title">Export report</string>
     <string name="report_detail_page_a11y">%1$s, page %2$d of %3$d</string>
     <string name="report_detail_form_score_a11y">Form score %1$d out of 100</string>
     <string name="report_detail_joint_score_a11y">%1$s, score %2$d percent</string>
@@ -517,7 +543,37 @@
     <string name="program_setting_pause_sub">Keep progress and customizations, stop date-based advancement.</string>
     <string name="program_paused">Paused</string>
     <string name="program_active">Active</string>
+    <string name="program_edit_day_title">Edit day sessions</string>
+    <string name="program_edit_day_sub">Week %1$d · Day %2$d</string>
+    <string name="program_edit_session_meta">%1$d exercises</string>
+    <string name="program_edit_session_edited">Edited</string>
+    <string name="program_edit_exercise_sets">Sets</string>
+    <string name="program_edit_exercise_reps">Reps</string>
+    <string name="program_edit_exercise_weight">Weight (kg)</string>
+    <string name="program_edit_exercise_rest">Rest (s)</string>
+    <string name="program_edit_remove_session">Remove session</string>
+    <string name="program_edit_remove_exercise">Remove exercise</string>
+    <string name="program_edit_reset_day">Reset day</string>
+    <string name="program_edit_saving">Saving your copy…</string>
+    <string name="program_impact_sync">Sync payload</string>
+    <string name="program_impact_sync_value">%1$d sessions</string>
     <string name="program_not_found">Program not found.</string>
+    <string name="program_stat_duration">Duration</string>
+    <string name="program_stat_weekly_target">Weekly target</string>
+    <string name="program_stat_session_time">Session time</string>
+    <string name="program_stat_plan_load">Plan load</string>
+    <string name="program_stat_duration_value">%1$d weeks</string>
+    <string name="program_stat_weekly_value">%1$d / week</string>
+    <string name="program_stat_session_value">%1$d min</string>
+    <string name="program_stat_plan_value">%1$d sessions</string>
+    <string name="program_stat_duration_hint">%1$d training days</string>
+    <string name="program_stat_weekly_hint">Flexible calendar</string>
+    <string name="program_stat_session_hint">Estimated average</string>
+    <string name="program_stat_plan_hint">%1$d rest days</string>
+    <string name="program_a11y_hero_image">Program cover image</string>
+    <string name="program_a11y_week_strip">Program weeks</string>
+    <string name="program_a11y_week_card">%1$s, %2$s, %3$d percent complete</string>
+    <string name="program_a11y_start_dock">%1$s. %2$s</string>
 
     <string name="session_sets_reps">%1$d × %2$d</string>
     <string name="session_sets_duration">%1$d × %2$ds</string>
@@ -538,6 +594,14 @@
     <string name="session_alternatives">Alternatives</string>
     <string name="session_bodyweight">Bodyweight</string>
     <string name="session_weighted">Weighted</string>
+    <string name="session_planned_workouts">Planned workouts</string>
+    <string name="session_planned_workout_meta">%1$d exercises · %2$s</string>
+    <string name="session_catch_up_title">Catch up</string>
+    <string name="session_catch_up_continue">Continue this day</string>
+    <string name="session_catch_up_open_missed">Open first missed day</string>
+    <string name="session_skip_warmup">Skip warm-up</string>
+    <string name="session_skip_warmup_none">Nothing to skip — main work already comes first.</string>
+    <string name="session_skip_warmup_done">Warm-up skipped for this session.</string>
 
     <!-- Prepare & rest (03) -->
     <string name="prepare_back">Back</string>
@@ -557,6 +621,9 @@
     <string name="prepare_add_rest">+15</string>
     <string name="prepare_skip_rest">Skip</string>
     <string name="prepare_training_bridge_unavailable">Camera training is not available on this device yet.</string>
+    <string name="prepare_pose_variant">Camera angle</string>
+    <string name="prepare_a11y_hero_image">Exercise preview image</string>
+    <string name="prepare_a11y_pose_variant">%1$s camera angle</string>
 
     <!-- Workout flow (16) -->
     <string name="workout_flow_back">Back</string>
@@ -578,6 +645,16 @@
     <string name="workout_flow_a11y_sequence">%1$s, %2$s</string>
     <string name="workout_flow_a11y_pending">Upcoming</string>
     <string name="workout_flow_a11y_progress">Workout progress %1$d percent</string>
+    <string name="workout_flow_saving_customization">Saving workout changes…</string>
+    <string name="workout_flow_sets_label">Sets</string>
+    <string name="workout_flow_reps_label">Reps</string>
+    <string name="workout_flow_empty_error">Add at least one exercise to start training</string>
+    <string name="workout_flow_a11y_reorder">Reorder exercise</string>
+    <string name="workout_flow_a11y_remove">Remove %1$s</string>
+    <string name="session_a11y_toggle_edit">Toggle session edit mode</string>
+    <string name="session_a11y_skip_warmup">Skip warm-up</string>
+    <string name="session_a11y_add_exercise">Add exercise to session</string>
+    <string name="session_a11y_add_rest">Add rest block to session</string>
     <string name="workout_live_title">Live training</string>
     <string name="workout_live_phase">Phase: %1$s</string>
     <string name="workout_live_reps">%1$d / %2$d reps</string>
@@ -658,6 +735,15 @@
     <string name="program_flow_report_hero_eyebrow">Week %1$d summary</string>
     <string name="program_flow_report_hero_title">Great week!</string>
     <string name="program_flow_report_hero_subtitle">You completed %1$d of %2$d planned sessions.</string>
+    <string name="program_flow_all_weeks_title">All weeks</string>
+    <string name="program_flow_week_progress">%1$d / %2$d sessions</string>
+    <string name="program_flow_week_reps">%1$s reps</string>
+    <string name="program_flow_week_form">%1$d percent form</string>
+    <string name="program_flow_week_message_start">Start your first session this week.</string>
+    <string name="program_flow_week_message_good">Solid progress — keep the rhythm.</string>
+    <string name="program_flow_week_message_excellent">Excellent week — form and consistency on point.</string>
+    <string name="program_flow_share_body">%1$s — Week %2$d · %3$s · Sessions: %4$d/%5$d · Form: %6$d percent · Reps: %7$s</string>
+    <string name="program_flow_a11y_week_summary">Week %1$d, %2$s, %3$d percent, %4$s</string>
 
     <!-- Auth (10) -->
     <string name="auth_app_name">WayToFix</string>
@@ -693,7 +779,8 @@
     <string name="auth_reset_sent">Password reset link sent!</string>
     <string name="auth_reset_sent_sub">Check your email for the reset link.</string>
     <string name="auth_back_to_sign_in">Back to Sign In</string>
-    <string name="auth_google_unavailable">Google Sign-In is not available in this build yet.</string>
+    <string name="auth_google_unavailable">Google Sign-In is unavailable on this device or was cancelled.</string>
+    <string name="auth_google_ios_blocker">Google Sign-In on iOS requires a native SDK bridge (planned). Use email sign-in for now.</string>
     <string name="auth_error_email_required">Enter your email address.</string>
     <string name="auth_error_email_invalid">Enter a valid email address.</string>
     <string name="auth_error_password_required">Enter your password.</string>
@@ -714,6 +801,10 @@
     <string name="profile_haptic">Haptic feedback</string>
     <string name="profile_training">Training</string>
     <string name="profile_training_profile">Training profile</string>
+    <string name="profile_training_profile_summary_empty">Goal, availability, and equipment preferences</string>
+    <string name="profile_training_profile_a11y">Open training profile settings</string>
+    <string name="profile_setting_row_a11y">%1$s, %2$s</string>
+    <string name="profile_toggle_a11y">%1$s, %2$s</string>
     <string name="profile_body_assessment">Body assessment</string>
     <string name="profile_body_assessment_sub">PAR-Q + body scan history</string>
     <string name="profile_level_plan">Level &amp; plan</string>
@@ -748,6 +839,7 @@
     <string name="profile_logout_confirm_message">You will need to sign in again to sync workouts and reports.</string>
     <string name="profile_avatar_cd">Profile photo</string>
     <string name="profile_edit_avatar_cd">Edit profile photo</string>
+    <string name="profile_edit_coming_soon">Profile photo editing is coming soon.</string>
 
     <!-- Onboarding (12) -->
     <string name="onboarding_step_label">Step %1$d of %2$d</string>
@@ -808,6 +900,10 @@
     <string name="onboarding_retry_save">Try again</string>
     <string name="onboarding_save_failed_title">Couldn\'t save profile</string>
     <string name="onboarding_progress_a11y">Onboarding progress, step %1$d of %2$d</string>
+    <string name="onboarding_selection_a11y">%1$s, %2$s</string>
+    <string name="onboarding_selected_state_a11y">selected</string>
+    <string name="onboarding_unselected_state_a11y">not selected</string>
+    <string name="onboarding_sessions_slider_a11y">Sessions per week, %1$d</string>
     <string name="onboarding_summary_profile_label">Your profile</string>
     <string name="onboarding_sessions_value">%1$d sessions</string>
     <string name="onboarding_weekdays_hint">%1$d of %2$d days</string>
@@ -872,6 +968,7 @@
     <string name="assessment_view_results">View results</string>
     <string name="assessment_body_score">BODY SCORE</string>
     <string name="assessment_domain_scores">Assessment domains</string>
+    <string name="assessment_domain_score_a11y">%1$s score %2$d percent</string>
     <string name="assessment_domain_mobility">Mobility</string>
     <string name="assessment_domain_control">Control</string>
     <string name="assessment_domain_symmetry">Symmetry</string>
@@ -897,6 +994,23 @@
     <string name="assessment_insight_region_limit_message">Region score %1$d — consider mobility work.</string>
     <string name="assessment_browse_programs">Browse programs</string>
     <string name="assessment_go_home">Go to Home</string>
+    <string name="assessment_body_map_title">Body map</string>
+    <string name="assessment_body_map_a11y">Body map with colored region scores</string>
+    <string name="assessment_safety_gates_title">Safety restrictions</string>
+    <string name="assessment_safety_gate_parq">PAR-Q flagged — consult a physician before high-intensity training.</string>
+    <string name="assessment_safety_gate_unreliable">%1$s measurement unreliable — retest recommended.</string>
+    <string name="assessment_safety_gate_limited">Notable limitation in %1$s.</string>
+    <string name="assessment_safety_gate_weak">Severe limitation in %1$s.</string>
+    <string name="assessment_safety_gate_blocked">Blocked: %1$s</string>
+    <string name="assessment_safety_gate_alternatives">Alternatives: %1$s</string>
+    <string name="assessment_results_local_fallback_title">Results saved locally</string>
+    <string name="assessment_results_local_fallback_message">Could not sync to the server. These scores are from your device scan only — retry when you are back online.</string>
+    <string name="assessment_progression_scan">Progression reassessment</string>
+    <string name="assessment_progression_scan_sub">Track improvements · shorter movement set</string>
+    <string name="assessment_progression_results_title">Progression results</string>
+    <string name="assessment_ios_guided_scan_title">Guided scan mode</string>
+    <string name="assessment_ios_guided_scan_message">Live pose tracking is limited on iOS. Hold each movement while the timer advances — full pose analysis ships in a later update.</string>
+    <string name="assessment_ios_camera_error">Camera access is required for body scan.</string>
 
     <!-- Level & plan (14) -->
     <string name="level_tab_profile">Level profile</string>
@@ -933,9 +1047,76 @@
     <string name="level_domain_symmetry">Symmetry</string>
     <string name="level_domain_safety">Safety</string>
     <string name="level_body_score_ring_a11y">Body score %1$d out of 100</string>
+    <string name="level_tab_a11y">%1$s tab, %2$s</string>
+    <string name="level_recommended_programs_a11y">Recommended programs matched to level %1$d</string>
+    <string name="level_up_title">LEVEL UP!</string>
+    <string name="level_up_transition">%1$d → %2$d</string>
+    <string name="level_up_message">Your hard work is paying off! Keep pushing forward.</string>
+    <string name="level_up_continue">Continue</string>
+    <string name="level_up_overlay_a11y">Level up from %1$d to %2$d, %3$s</string>
     <string name="level_domain_score_a11y">%1$s score %2$d percent</string>
+    <string name="level_region_breakdown">Region levels</string>
+    <string name="level_region_row_a11y">%1$s level %2$d, score %3$d percent</string>
+    <string name="level_region_level_badge">L%1$d</string>
+    <string name="level_region_score">%1$d%%</string>
+    <string name="level_limiting_factors_title">Areas to improve</string>
+    <string name="level_limiting_factor_progress">Level %1$d → %2$d</string>
+    <string name="level_fetch_error">Unable to load your level profile. Check your connection and try again.</string>
+    <string name="level_no_profile_title">No assessment yet</string>
+    <string name="level_no_profile_message">Complete a body scan assessment to discover your training level.</string>
+    <string name="level_no_profile_start_scan">Start assessment</string>
 
     <!-- Shell (Pre-06) -->
     <string name="shell_report_share_coming_soon">Share report — coming soon.</string>
     <string name="shell_report_export_coming_soon">Export report — coming soon.</string>
+
+    <!-- Components catalog (00) -->
+    <string name="catalog_title">Components</string>
+    <string name="catalog_subtitle">Design system catalog for visual QA.</string>
+    <string name="catalog_intro_ar">مرجع بصري لكل مكوّنات Movit قبل استخدامها في الصفحات.</string>
+    <string name="catalog_intro_en">Review colors, buttons, cards and premium patterns here before page integration.</string>
+    <string name="catalog_eyebrow_progress">Progress</string>
+    <string name="catalog_eyebrow_lists">Lists</string>
+    <string name="catalog_eyebrow_content">Content</string>
+    <string name="catalog_eyebrow_featured">Featured</string>
+    <string name="catalog_macro_title">Rings &amp; metrics</string>
+    <string name="catalog_macro_subtitle">Macro calories card from prototype</string>
+    <string name="catalog_macro_calories_title">Calories</string>
+    <string name="catalog_macro_calories_subtitle">Daily dose</string>
+    <string name="catalog_macro_carbs">Carbs</string>
+    <string name="catalog_macro_proteins">Proteins</string>
+    <string name="catalog_macro_fats">Fats</string>
+    <string name="catalog_coach_title">Coach card</string>
+    <string name="catalog_coach_name">Robert Fox</string>
+    <string name="catalog_coach_subtitle">Personal coach · Cardiologist</string>
+    <string name="catalog_program_card_title">Program card</string>
+    <string name="catalog_program_card_name">Mobility Starter</string>
+    <string name="catalog_program_card_desc">A gentle 4-week plan to build safe, controlled movement and flexibility.</string>
+    <string name="catalog_program_card_badge">★ Featured</string>
+    <string name="catalog_program_card_weeks">4 weeks</string>
+    <string name="catalog_program_card_level">Beginner</string>
+    <string name="catalog_program_card_sessions">12 sessions</string>
+    <string name="catalog_program_card_frequency">3 / week</string>
+    <string name="catalog_program_card_cta">Start program</string>
+    <string name="catalog_workout_cards_title">Workout cards</string>
+    <string name="catalog_see_all">See all</string>
+    <string name="catalog_workout_ai_title">Full Body AI</string>
+    <string name="catalog_workout_ai_meta">8 exercises · Full body</string>
+    <string name="catalog_workout_ai_badge">AI</string>
+    <string name="catalog_workout_ai_duration">45 min</string>
+    <string name="catalog_workout_hiit_title">HIIT Cardio</string>
+    <string name="catalog_workout_hiit_meta">6 exercises · Cardio</string>
+    <string name="catalog_workout_hiit_duration">30 min</string>
+    <string name="catalog_workout_hiit_level">Intermediate</string>
+    <string name="catalog_workout_start">Start</string>
+    <string name="catalog_exercise_cards_title">Exercise cards</string>
+    <string name="catalog_exercise_squats">Squats</string>
+    <string name="catalog_exercise_squats_meta">Legs &amp; Glutes</string>
+    <string name="catalog_exercise_pushup">Push-up</string>
+    <string name="catalog_exercise_pushup_meta">Chest &amp; Triceps</string>
+    <string name="catalog_difficulty_medium">MEDIUM</string>
+    <string name="catalog_difficulty_easy">EASY</string>
+    <string name="catalog_accent_tokens_title">Accent tokens</string>
+    <string name="catalog_accent_coral_title">Challenge With Pro Coach</string>
+    <string name="catalog_accent_coral_subtitle">Premium coaching challenge pattern</string>
 </resources>

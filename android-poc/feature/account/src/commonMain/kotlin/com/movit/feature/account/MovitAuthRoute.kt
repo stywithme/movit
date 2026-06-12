@@ -21,6 +21,13 @@ fun MovitAuthRoute(
         }
     }
 
+    GoogleSignInHost(
+        pending = state.pendingGoogleSignIn,
+        onCompleted = { credentials ->
+            viewModel.onEvent(MovitAuthEvent.GoogleSignInCompleted(credentials))
+        },
+    )
+
     MovitAuthScreen(
         state = state,
         onEvent = viewModel::onEvent,

@@ -6,6 +6,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 
 @Composable
 fun MovitFilterChip(
@@ -14,11 +16,18 @@ fun MovitFilterChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    contentDescription: String? = null,
 ) {
     FilterChip(
         selected = selected,
         onClick = onClick,
-        modifier = modifier,
+        modifier = modifier.then(
+            if (contentDescription != null) {
+                Modifier.semantics { this.contentDescription = contentDescription }
+            } else {
+                Modifier
+            },
+        ),
         enabled = enabled,
         label = {
             Text(

@@ -55,14 +55,32 @@ class ProgramFlowStateTest {
         runBlocking {
             val viewModel = WeeklyReportViewModel(
                 programId = "prog-full-body",
-                weekNumber = 2,
+                initialWeekNumber = 2,
                 repository = FakeProgramFlowRepository(),
             )
             viewModel.load()
-            val report = viewModel.state.value.report
+            val state = viewModel.state.value
+            val report = state.report
             assertNotNull(report)
             assertEquals(4, report.sessionsCompleted)
             assertEquals(5, report.dailyScores.size)
+            assertEquals(4, state.weekSummaries.size)
+        }
+    }
+
+    @Test
+    fun weeklyReport_weekSelection_reloadsSelectedWeek() {
+        runBlocking {
+            val viewModel = WeeklyReportViewModel(
+                programId = "prog-full-body",
+                initialWeekNumber = 1,
+                repository = FakeProgramFlowRepository(),
+            )
+            viewModel.load()
+            viewModel.onWeekSelected(2)
+            viewModel.load()
+            assertEquals(2, viewModel.state.value.selectedWeekNumber)
+            assertEquals(2, viewModel.state.value.report?.weekNumber)
         }
     }
 

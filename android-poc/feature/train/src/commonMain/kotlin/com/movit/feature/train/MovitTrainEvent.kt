@@ -1,6 +1,7 @@
 package com.movit.feature.train
 
 sealed interface MovitTrainEvent {
+    data object RefreshRequested : MovitTrainEvent
     data object StartWorkoutClicked : MovitTrainEvent
     data object ExploreProgramsClicked : MovitTrainEvent
     data object AssessmentClicked : MovitTrainEvent

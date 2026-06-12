@@ -27,6 +27,7 @@ class WorkoutSessionStateTest {
     fun firstExerciseId_returnsWarmupExercise() {
         val session = WorkoutSessionPreviewData.preview
         assertEquals("ex-squat-warm", session.firstExerciseId())
+        assertEquals("ex-barbell-squat", session.withoutWarmup().firstExerciseId())
     }
 
     @Test
@@ -102,6 +103,21 @@ class WorkoutSessionStateTest {
             ?.items
             ?.map { it.id }
         assertEquals(listOf(secondId, firstId), reordered?.take(2))
+    }
+
+    @Test
+    fun skipWarmup_setsFlagWithoutRemovingPersistedSections() {
+        val viewModel = WorkoutSessionViewModel(
+            workoutId = "preview",
+            repository = DefaultWorkoutSessionRepository(),
+        )
+        kotlinx.coroutines.runBlocking { viewModel.load() }
+        viewModel.skipWarmup()
+        val session = viewModel.state.value.session
+        assertNotNull(session)
+        assertTrue(session.warmupSkipped)
+        assertTrue(session.sections.any { it.phaseRole == "WARMUP" })
+        assertEquals("ex-barbell-squat", session.firstExerciseId())
     }
 
     @Test

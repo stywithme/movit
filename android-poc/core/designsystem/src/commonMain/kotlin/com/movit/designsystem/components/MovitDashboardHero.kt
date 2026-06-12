@@ -15,6 +15,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.movit.designsystem.MovitRadius
 import com.movit.designsystem.MovitSpacing
@@ -97,12 +98,16 @@ fun MovitDashboardHero(
             style = MaterialTheme.typography.headlineSmall,
             color = content,
             fontWeight = FontWeight.W800,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = MovitSpacing.xs),
         )
         Text(
             text = subtitle,
             style = MaterialTheme.typography.bodySmall,
             color = muted,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = MovitSpacing.xs),
         )
         if (showProgress) {

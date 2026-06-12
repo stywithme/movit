@@ -3,6 +3,7 @@ package com.movit.feature.account
 import androidx.lifecycle.ViewModel
 import com.movit.core.data.MovitData
 import com.movit.shared.AppResult
+import com.movit.shared.PlatformInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -65,8 +66,13 @@ class MovitAuthViewModel(
             MovitAuthEvent.SignInClicked -> submitSignIn()
             MovitAuthEvent.SignUpClicked -> submitSignUp()
             MovitAuthEvent.GoogleSignInClicked -> {
-                _effects.tryEmit(MovitAuthEffect.ShowLocalizedMessage("auth_google_unavailable"))
+                if (!PlatformInfo.supportsGoogleSignIn) {
+                    _effects.tryEmit(MovitAuthEffect.ShowLocalizedMessage("auth_google_ios_blocker"))
+                    return
+                }
+                _state.update { it.copy(pendingGoogleSignIn = true, errorMessage = null) }
             }
+            is MovitAuthEvent.GoogleSignInCompleted -> completeGoogleSignIn(event.credentials)
             MovitAuthEvent.CreateAccountClicked -> submitSignUp()
             MovitAuthEvent.ForgotPasswordLinkClicked -> {
                 _state.update {
@@ -153,6 +159,26 @@ class MovitAuthViewModel(
         workScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
             when (val result = repository.register(name, email, password)) {
+                is AppResult.Success -> {
+                    _state.update { it.copy(isLoading = false) }
+                    emitPostAuthNavigation()
+                }
+                is AppResult.Failure -> {
+                    _state.update { it.copy(isLoading = false, errorMessage = result.message) }
+                }
+            }
+        }
+    }
+
+    private fun completeGoogleSignIn(credentials: GoogleSignInCredentials?) {
+        _state.update { it.copy(pendingGoogleSignIn = false) }
+        if (credentials == null) {
+            _effects.tryEmit(MovitAuthEffect.ShowLocalizedMessage("auth_google_unavailable"))
+            return
+        }
+        workScope.launch {
+            _state.update { it.copy(isLoading = true, errorMessage = null) }
+            when (val result = repository.googleSignIn(credentials)) {
                 is AppResult.Success -> {
                     _state.update { it.copy(isLoading = false) }
                     emitPostAuthNavigation()

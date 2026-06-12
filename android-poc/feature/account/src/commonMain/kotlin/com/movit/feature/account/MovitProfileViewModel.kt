@@ -63,11 +63,14 @@ class MovitProfileViewModel(
             MovitProfileEvent.SignInClicked -> _effects.tryEmit(MovitProfileEffect.OpenAuth)
             MovitProfileEvent.ViewPlansClicked -> openSubscription()
             MovitProfileEvent.ManageSubscriptionClicked -> openSubscription()
+            MovitProfileEvent.SubscribeNowClicked,
+            MovitProfileEvent.RestorePurchasesClicked,
+            -> launchLegacyBilling()
             MovitProfileEvent.CloseSubscriptionClicked -> {
                 _state.update { it.copy(showSubscription = false) }
             }
             MovitProfileEvent.EditProfileClicked -> {
-                _effects.tryEmit(MovitProfileEffect.ShowMessage("Edit profile coming soon."))
+                _effects.tryEmit(MovitProfileEffect.ShowLocalizedMessage("profile_edit_coming_soon"))
             }
             MovitProfileEvent.TrainingProfileClicked -> {
                 _effects.tryEmit(MovitProfileEffect.OpenOnboarding)
@@ -109,6 +112,15 @@ class MovitProfileViewModel(
             return
         }
         _state.update { it.copy(showSubscription = true) }
+        _effects.tryEmit(MovitProfileEffect.OpenSubscription)
+    }
+
+    private fun launchLegacyBilling() {
+        if (!PlatformInfo.supportsInAppSubscription) {
+            _effects.tryEmit(MovitProfileEffect.ShowLocalizedMessage("profile_subscription_ios_unavailable"))
+            return
+        }
+        _state.update { it.copy(showSubscription = false) }
         _effects.tryEmit(MovitProfileEffect.OpenSubscription)
     }
 

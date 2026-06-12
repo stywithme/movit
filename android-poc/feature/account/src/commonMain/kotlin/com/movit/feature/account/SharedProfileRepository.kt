@@ -13,11 +13,16 @@ class SharedProfileRepository : ProfileRepository {
         if (platform.authHeader() == null) {
             return AppResult.Failure("Sign in to load your profile.")
         }
+        val trainingProfileSummary = when (val trainingProfile = MovitData.account.fetchTrainingProfile()) {
+            is AppResult.Success -> TrainingProfileSummaryMapper.format(trainingProfile.value)
+            is AppResult.Failure -> TrainingProfileSummaryMapper.EMPTY_SUMMARY_KEY
+        }
         return when (val result = MovitData.account.fetchProfile()) {
             is AppResult.Success -> AppResult.Success(
                 ProfileApiMapper.map(
                     user = result.value,
                     themeMode = platform.themeMode(),
+                    trainingProfileSummary = trainingProfileSummary,
                 ),
             )
             is AppResult.Failure -> AppResult.Failure(result.message)

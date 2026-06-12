@@ -28,6 +28,19 @@ object FakeLevelPreviewData {
             LevelDomainUi("Stability", 65),
             LevelDomainUi("Strength", 58),
         ),
+        regions = listOf(
+            LevelRegionUi(name = "Hips", level = 3, score = 84, isLimiting = false),
+            LevelRegionUi(name = "Shoulders", level = 2, score = 61, isLimiting = true),
+        ),
+        limitingFactors = listOf(
+            LevelLimitingFactorUi(
+                type = "region",
+                name = "Shoulders",
+                currentLevel = 2,
+                targetLevel = 3,
+                gap = 1,
+            ),
+        ),
         planPhases = listOf(
             PlanPhaseUi(
                 title = "Foundation · Completed",

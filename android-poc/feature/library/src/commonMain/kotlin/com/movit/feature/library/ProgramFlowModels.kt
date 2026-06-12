@@ -47,6 +47,17 @@ data class WeeklyReportDayScoreUi(
     val scorePercent: Int,
 )
 
+data class WeeklyReportWeekSummaryUi(
+    val weekNumber: Int,
+    val title: String,
+    val progressPercent: Int,
+    val sessionsCompleted: Int,
+    val sessionsPlanned: Int,
+    val avgFormPercent: Int,
+    val totalReps: Int,
+    val message: String,
+)
+
 data class WeeklyReportUi(
     val programId: String,
     val programSlug: String,
@@ -60,4 +71,5 @@ data class WeeklyReportUi(
     val avgFormPercent: Int,
     val totalReps: Int,
     val dailyScores: List<WeeklyReportDayScoreUi>,
+    val weekSummaries: List<WeeklyReportWeekSummaryUi> = emptyList(),
 )

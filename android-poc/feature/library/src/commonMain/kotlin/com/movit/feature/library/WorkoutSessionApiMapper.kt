@@ -68,6 +68,27 @@ object WorkoutSessionApiMapper {
             .toList()
     }
 
+    fun mapPlannedWorkoutCards(
+        plan: EffectivePlanPayloadDto,
+        selectedPlannedWorkoutId: String,
+        language: String,
+        strings: SessionStrings,
+    ): List<PlannedWorkoutCardUi> =
+        plan.plannedWorkouts
+            .sortedBy { it.sortOrder }
+            .map { workout ->
+                val exerciseCount = workout.items.count {
+                    it.skipped != true && !it.type.equals("rest", ignoreCase = true)
+                }
+                PlannedWorkoutCardUi(
+                    id = workout.id,
+                    title = workout.name.localized(language).ifBlank { strings.workoutFallback },
+                    exerciseCount = exerciseCount,
+                    durationLabel = "~${workout.estimatedDurationMin ?: 30}m",
+                    isSelected = workout.id == selectedPlannedWorkoutId,
+                )
+            }
+
     suspend fun mapSession(
         parsed: ParsedSessionKey,
         plan: EffectivePlanPayloadDto,
@@ -76,8 +97,11 @@ object WorkoutSessionApiMapper {
         exerciseBySlug: Map<String, ExerciseCatalogEntry>,
         exerciseById: Map<String, ExerciseCatalogEntry>,
     ): WorkoutSessionUi? {
-        val plannedWorkout = plan.plannedWorkouts.firstOrNull { it.id == parsed.plannedWorkoutId }
-            ?: return null
+        val plannedWorkout = when (parsed.plannedWorkoutId) {
+            WorkoutSessionKeys.AUTO_PLANNED_WORKOUT ->
+                plan.plannedWorkouts.minByOrNull { it.sortOrder }
+            else -> plan.plannedWorkouts.firstOrNull { it.id == parsed.plannedWorkoutId }
+        } ?: return null
         val sections = mapItemsToSections(
             items = plannedWorkout.items.filter { it.skipped != true }.sortedBy { it.sortOrder },
             language = language,

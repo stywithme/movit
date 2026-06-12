@@ -6,6 +6,7 @@ sealed interface MovitAssessmentEvent {
     data class ParqAnswered(val questionIndex: Int, val yes: Boolean) : MovitAssessmentEvent
     data object ContinueToBodyScan : MovitAssessmentEvent
     data object BodyScanCameraReady : MovitAssessmentEvent
+    data object BodyScanGuidedModeStarted : MovitAssessmentEvent
     data class BodyScanFrameReceived(val frame: PoseFrame?) : MovitAssessmentEvent
     data class BodyScanError(val message: String) : MovitAssessmentEvent
     data object CompleteBodyScan : MovitAssessmentEvent

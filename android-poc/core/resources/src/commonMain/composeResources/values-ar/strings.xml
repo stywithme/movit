@@ -123,6 +123,8 @@
     <string name="home_a11y_start_workout">بدء تمرين اليوم</string>
     <string name="home_a11y_view_program">عرض البرنامج النشط</string>
     <string name="home_a11y_body_scan">بدء فحص الجسم</string>
+    <string name="home_a11y_catch_up">التعويض: %1$s</string>
+    <string name="home_catch_up_unavailable">تعذّر فتح يوم التدريب الفائت الآن.</string>
 
     <string name="train_title">تدريب</string>
     <string name="train_loading">جاري تحميل خطة التدريب…</string>
@@ -240,6 +242,13 @@
     <string name="reports_attendance_trend">الحضور الأسبوعي</string>
     <string name="reports_loading_sub">اسحب للأسفل للتحديث في أي وقت.</string>
     <string name="reports_athlete_fallback">رياضي</string>
+    <string name="reports_a11y_upgrade">الترقية إلى اشتراك Pro</string>
+    <string name="reports_a11y_form_journey_chart">رحلة درجة الأداء، من %1$s إلى %2$s من 100</string>
+    <string name="reports_a11y_weekly_breakdown_chart">التوزيع الأسبوعي، أعلى أسبوع %1$s بقيمة %2$s</string>
+    <string name="reports_a11y_improvement_chart">مخطط خطي لمعدل التحسّن عبر الجلسات</string>
+    <string name="reports_a11y_volume_chart">مخطط أعمدة لاتجاه الحجم حسب الأسبوع</string>
+    <string name="reports_a11y_attendance_chart">مخطط أعمدة للحضور الأسبوعي</string>
+    <string name="reports_a11y_exercise_row">%1$s، الدرجة %2$s، %3$s</string>
 
     <string name="explore_title">استكشاف</string>
     <string name="explore_subtitle">تمارين وجلسات وبرامج في مكان واحد.</string>
@@ -276,6 +285,9 @@
     <string name="explore_workout_filter_advanced">متقدم</string>
     <string name="explore_workout_filter_short">أقل من 20 دقيقة</string>
     <string name="explore_results_summary">%1$d جلسات • %2$d تمارين</string>
+    <string name="explore_a11y_filter">فتح خيارات التصفية</string>
+    <string name="explore_a11y_media_image">صورة %1$s</string>
+    <string name="explore_a11y_filter_chip">تصفية حسب %1$s</string>
 
     <!-- Library (05 Exercises / 06 Workouts) -->
     <string name="library_back_explore">استكشاف</string>
@@ -303,6 +315,9 @@
     <string name="library_filter_under_20">أقل من 20 دقيقة</string>
     <string name="library_featured_workout">الأفضل للأرجل</string>
     <string name="library_load_error">تعذّر تحميل محتوى المكتبة.</string>
+    <string name="library_a11y_back">العودة إلى الاستكشاف</string>
+    <string name="library_a11y_filter">فتح فلاتر المكتبة</string>
+    <string name="library_a11y_item_image">صورة %1$s</string>
 
     <!-- Train components (UI) -->
     <string name="train_day_complete">اكتمل اليوم!</string>
@@ -361,6 +376,10 @@
     <string name="train_a11y_form_trend_chart">اتجاه درجة الأداء لآخر 7 جلسات</string>
     <string name="train_a11y_start_program">بدء برنامج %1$s</string>
     <string name="train_a11y_preferences">فتح تفضيلات التدريب</string>
+    <string name="train_a11y_session_collapsed">%1$s، %2$s، مطوي، انقر مرتين للتوسيع</string>
+    <string name="train_a11y_session_expanded">%1$s، %2$s، موسّع، انقر مرتين للطي</string>
+    <string name="train_a11y_session_start">بدء جلسة %1$s</string>
+    <string name="train_a11y_session_thumbnail">صورة مصغّرة لـ %1$s</string>
 
     <!-- Report detail -->
     <string name="report_detail_loading">جاري تحميل التقرير…</string>
@@ -391,6 +410,13 @@
     <string name="report_detail_form_steady">ثبات الأداء عبر المجموعات.</string>
     <string name="report_detail_not_found">التقرير غير موجود.</string>
     <string name="report_detail_joints_unavailable">سيظهر تحليل المفاصل هنا عندما تتضمن الجلسة مفاصل متتبعة.</string>
+    <string name="report_detail_joints_api_pending">درجات المفاصل غير متوفرة في استجابة الـ API بعد. ستظهر تلقائياً عند نشر تفصيل المفاصل من الخادم.</string>
+    <string name="report_detail_joints_session_untracked">لم تُسجَّل درجات لكل مفصل في هذه الجلسة. أكمل تمريناً متتبعاً لرؤية تحليل المفاصل هنا.</string>
+    <string name="report_detail_share_text">🏋️ %1$s — الجودة: %2$d%%</string>
+    <string name="report_detail_share_chooser_title">مشاركة التقرير</string>
+    <string name="report_detail_export_header">🏋️ %1$s — الجودة: %2$d%%</string>
+    <string name="report_detail_export_stats">المجموعات: %1$s · التكرارات: %2$s · المدة: %3$s</string>
+    <string name="report_detail_export_chooser_title">تصدير التقرير</string>
     <string name="report_detail_page_a11y">%1$s، صفحة %2$d من %3$d</string>
     <string name="report_detail_form_score_a11y">درجة الأداء %1$d من 100</string>
     <string name="report_detail_joint_score_a11y">%1$s، الدرجة %2$d بالمئة</string>
@@ -511,7 +537,37 @@
     <string name="program_setting_pause_sub">احتفظ بالتقدم والتخصيصات، وأوقف التقدم حسب التاريخ.</string>
     <string name="program_paused">متوقف</string>
     <string name="program_active">نشط</string>
+    <string name="program_edit_day_title">تعديل جلسات اليوم</string>
+    <string name="program_edit_day_sub">الأسبوع %1$d · اليوم %2$d</string>
+    <string name="program_edit_session_meta">%1$d تمارين</string>
+    <string name="program_edit_session_edited">معدّل</string>
+    <string name="program_edit_exercise_sets">مجموعات</string>
+    <string name="program_edit_exercise_reps">تكرارات</string>
+    <string name="program_edit_exercise_weight">الوزن (كغ)</string>
+    <string name="program_edit_exercise_rest">راحة (ث)</string>
+    <string name="program_edit_remove_session">إزالة الجلسة</string>
+    <string name="program_edit_remove_exercise">إزالة التمرين</string>
+    <string name="program_edit_reset_day">إعادة ضبط اليوم</string>
+    <string name="program_edit_saving">جاري حفظ نسختك…</string>
+    <string name="program_impact_sync">حمولة المزامنة</string>
+    <string name="program_impact_sync_value">%1$d جلسات</string>
     <string name="program_not_found">البرنامج غير موجود.</string>
+    <string name="program_stat_duration">المدة</string>
+    <string name="program_stat_weekly_target">الهدف الأسبوعي</string>
+    <string name="program_stat_session_time">مدة الجلسة</string>
+    <string name="program_stat_plan_load">حمل الخطة</string>
+    <string name="program_stat_duration_value">%1$d أسابيع</string>
+    <string name="program_stat_weekly_value">%1$d / أسبوع</string>
+    <string name="program_stat_session_value">%1$d د</string>
+    <string name="program_stat_plan_value">%1$d جلسات</string>
+    <string name="program_stat_duration_hint">%1$d أيام تدريب</string>
+    <string name="program_stat_weekly_hint">تقويم مرن</string>
+    <string name="program_stat_session_hint">متوسط تقديري</string>
+    <string name="program_stat_plan_hint">%1$d أيام راحة</string>
+    <string name="program_a11y_hero_image">صورة غلاف البرنامج</string>
+    <string name="program_a11y_week_strip">أسابيع البرنامج</string>
+    <string name="program_a11y_week_card">%1$s، %2$s، اكتمال %3$d بالمئة</string>
+    <string name="program_a11y_start_dock">%1$s. %2$s</string>
 
     <string name="session_sets_reps">%1$d × %2$d</string>
     <string name="session_sets_duration">%1$d × %2$d ث</string>
@@ -532,6 +588,14 @@
     <string name="session_alternatives">بدائل</string>
     <string name="session_bodyweight">وزن الجسم</string>
     <string name="session_weighted">بأوزان</string>
+    <string name="session_planned_workouts">تمارين اليوم المخططة</string>
+    <string name="session_planned_workout_meta">%1$d تمارين · %2$s</string>
+    <string name="session_catch_up_title">التعويض</string>
+    <string name="session_catch_up_continue">متابعة هذا اليوم</string>
+    <string name="session_catch_up_open_missed">افتح أول يوم فائت</string>
+    <string name="session_skip_warmup">تخطي الإحماء</string>
+    <string name="session_skip_warmup_none">لا يوجد ما يُتخطى — العمل الرئيسي يأتي أولاً.</string>
+    <string name="session_skip_warmup_done">تم تخطي الإحماء لهذه الجلسة.</string>
 
     <!-- Prepare & rest (03) -->
     <string name="prepare_back">رجوع</string>
@@ -551,6 +615,9 @@
     <string name="prepare_add_rest">+15</string>
     <string name="prepare_skip_rest">تخطي</string>
     <string name="prepare_training_bridge_unavailable">تدريب الكاميرا غير متاح على هذا الجهاز بعد.</string>
+    <string name="prepare_pose_variant">زاوية الكاميرا</string>
+    <string name="prepare_a11y_hero_image">صورة معاينة التمرين</string>
+    <string name="prepare_a11y_pose_variant">زاوية كاميرا %1$s</string>
 
     <!-- Program flow (15) -->
     <string name="program_flow_list_title">البرامج</string>
@@ -586,6 +653,15 @@
     <string name="program_flow_report_hero_eyebrow">ملخص الأسبوع %1$d</string>
     <string name="program_flow_report_hero_title">أسبوع رائع!</string>
     <string name="program_flow_report_hero_subtitle">أكملت %1$d من %2$d جلسات مخططة.</string>
+    <string name="program_flow_all_weeks_title">كل الأسابيع</string>
+    <string name="program_flow_week_progress">%1$d / %2$d جلسات</string>
+    <string name="program_flow_week_reps">%1$s تكرار</string>
+    <string name="program_flow_week_form">أداء %1$d بالمئة</string>
+    <string name="program_flow_week_message_start">ابدأ أول جلسة هذا الأسبوع.</string>
+    <string name="program_flow_week_message_good">تقدم جيد — حافظ على الإيقاع.</string>
+    <string name="program_flow_week_message_excellent">أسبوع ممتاز — الأداء والانتظام ممتازان.</string>
+    <string name="program_flow_share_body">%1$s — الأسبوع %2$d · %3$s · الجلسات: %4$d/%5$d · الأداء: %6$d بالمئة · التكرارات: %7$s</string>
+    <string name="program_flow_a11y_week_summary">الأسبوع %1$d، %2$s، %3$d بالمئة، %4$s</string>
 
     <!-- Workout flow (16) -->
     <string name="workout_flow_back">رجوع</string>
@@ -607,6 +683,16 @@
     <string name="workout_flow_a11y_sequence">%1$s، %2$s</string>
     <string name="workout_flow_a11y_pending">قادم</string>
     <string name="workout_flow_a11y_progress">تقدم التمرين %1$d بالمئة</string>
+    <string name="workout_flow_saving_customization">جاري حفظ تغييرات التمرين…</string>
+    <string name="workout_flow_sets_label">المجموعات</string>
+    <string name="workout_flow_reps_label">التكرارات</string>
+    <string name="workout_flow_empty_error">أضف تمريناً واحداً على الأقل للبدء</string>
+    <string name="workout_flow_a11y_reorder">إعادة ترتيب التمرين</string>
+    <string name="workout_flow_a11y_remove">إزالة %1$s</string>
+    <string name="session_a11y_toggle_edit">تبديل وضع تعديل الجلسة</string>
+    <string name="session_a11y_skip_warmup">تخطي الإحماء</string>
+    <string name="session_a11y_add_exercise">إضافة تمرين للجلسة</string>
+    <string name="session_a11y_add_rest">إضافة راحة للجلسة</string>
     <string name="workout_live_title">تدريب مباشر</string>
     <string name="workout_live_phase">المرحلة: %1$s</string>
     <string name="workout_live_reps">%1$d / %2$d تكرار</string>
@@ -686,7 +772,8 @@
     <string name="auth_reset_sent">تم إرسال رابط الاستعادة!</string>
     <string name="auth_reset_sent_sub">تحقق من بريدك الإلكتروني.</string>
     <string name="auth_back_to_sign_in">العودة لتسجيل الدخول</string>
-    <string name="auth_google_unavailable">تسجيل الدخول عبر Google غير متاح في هذا الإصدار بعد.</string>
+    <string name="auth_google_unavailable">تسجيل الدخول عبر Google غير متاح على هذا الجهاز أو تم الإلغاء.</string>
+    <string name="auth_google_ios_blocker">تسجيل الدخول عبر Google على iOS يتطلب جسر SDK أصلي (مخطط). استخدم البريد الإلكتروني مؤقتاً.</string>
     <string name="auth_error_email_required">أدخل بريدك الإلكتروني.</string>
     <string name="auth_error_email_invalid">أدخل بريد إلكتروني صالحاً.</string>
     <string name="auth_error_password_required">أدخل كلمة المرور.</string>
@@ -705,6 +792,10 @@
     <string name="profile_haptic">اهتزاز</string>
     <string name="profile_training">التدريب</string>
     <string name="profile_training_profile">ملف التدريب</string>
+    <string name="profile_training_profile_summary_empty">الهدف، التوفر، وتفضيلات المعدات</string>
+    <string name="profile_training_profile_a11y">فتح إعدادات ملف التدريب</string>
+    <string name="profile_setting_row_a11y">%1$s، %2$s</string>
+    <string name="profile_toggle_a11y">%1$s، %2$s</string>
     <string name="profile_body_assessment">تقييم الجسم</string>
     <string name="profile_body_assessment_sub">PAR-Q + سجل فحص الجسم</string>
     <string name="profile_level_plan">المستوى والخطة</string>
@@ -739,6 +830,7 @@
     <string name="profile_logout_confirm_message">ستحتاج لتسجيل الدخول مجدداً لمزامنة التمارين والتقارير.</string>
     <string name="profile_avatar_cd">صورة الملف الشخصي</string>
     <string name="profile_edit_avatar_cd">تعديل صورة الملف</string>
+    <string name="profile_edit_coming_soon">تعديل صورة الملف قريباً.</string>
     <string name="onboarding_step_label">الخطوة %1$d من %2$d</string>
     <string name="onboarding_back">رجوع</string>
     <string name="onboarding_continue">متابعة</string>
@@ -797,6 +889,10 @@
     <string name="onboarding_retry_save">إعادة المحاولة</string>
     <string name="onboarding_save_failed_title">تعذّر حفظ الملف</string>
     <string name="onboarding_progress_a11y">تقدم الإعداد، الخطوة %1$d من %2$d</string>
+    <string name="onboarding_selection_a11y">%1$s، %2$s</string>
+    <string name="onboarding_selected_state_a11y">محدد</string>
+    <string name="onboarding_unselected_state_a11y">غير محدد</string>
+    <string name="onboarding_sessions_slider_a11y">جلسات في الأسبوع، %1$d</string>
     <string name="onboarding_summary_profile_label">ملفك</string>
     <string name="onboarding_sessions_value">%1$d جلسات</string>
     <string name="onboarding_weekdays_hint">%1$d من %2$d أيام</string>
@@ -859,6 +955,7 @@
     <string name="assessment_view_results">عرض النتائج</string>
     <string name="assessment_body_score">درجة الجسم</string>
     <string name="assessment_domain_scores">أبعاد التقييم</string>
+    <string name="assessment_domain_score_a11y">درجة %1$s %2$d بالمئة</string>
     <string name="assessment_domain_mobility">الحركة</string>
     <string name="assessment_domain_control">التحكم</string>
     <string name="assessment_domain_symmetry">التناظر</string>
@@ -884,6 +981,23 @@
     <string name="assessment_insight_region_limit_message">درجة المنطقة %1$d — فكّر بتمارين الحركة.</string>
     <string name="assessment_browse_programs">تصفح البرامج</string>
     <string name="assessment_go_home">الذهاب للرئيسية</string>
+    <string name="assessment_body_map_title">خريطة الجسم</string>
+    <string name="assessment_body_map_a11y">خريطة الجسم بدرجات ملونة للمناطق</string>
+    <string name="assessment_safety_gates_title">قيود السلامة</string>
+    <string name="assessment_safety_gate_parq">تنبيه PAR-Q — استشر طبيباً قبل التدريب عالي الشدة.</string>
+    <string name="assessment_safety_gate_unreliable">قياس %1$s غير موثوق — يُنصح بإعادة الفحص.</string>
+    <string name="assessment_safety_gate_limited">محدودية ملحوظة في %1$s.</string>
+    <string name="assessment_safety_gate_weak">محدودية شديدة في %1$s.</string>
+    <string name="assessment_safety_gate_blocked">محظور: %1$s</string>
+    <string name="assessment_safety_gate_alternatives">بدائل: %1$s</string>
+    <string name="assessment_results_local_fallback_title">النتائج محفوظة محلياً</string>
+    <string name="assessment_results_local_fallback_message">تعذّر المزامنة مع الخادم. هذه الدرجات من فحص جهازك فقط — أعد المحاولة عند الاتصال.</string>
+    <string name="assessment_progression_scan">إعادة تقييم التقدم</string>
+    <string name="assessment_progression_scan_sub">تتبع التحسن · مجموعة حركات أقصر</string>
+    <string name="assessment_progression_results_title">نتائج التقدم</string>
+    <string name="assessment_ios_guided_scan_title">وضع الفحص الموجّه</string>
+    <string name="assessment_ios_guided_scan_message">تتبع الوضعية المباشر محدود على iOS. ثبّت كل حركة حتى ينتهي المؤقت — التحليل الكامل قادم في تحديث لاحق.</string>
+    <string name="assessment_ios_camera_error">يلزم الوصول للكاميرا لإجراء فحص الجسم.</string>
     <string name="level_tab_profile">ملف المستوى</string>
     <string name="level_tab_plan">خطتك</string>
     <string name="level_loading">جاري تحميل المستوى…</string>
@@ -918,9 +1032,75 @@
     <string name="level_domain_symmetry">التناظر</string>
     <string name="level_domain_safety">السلامة</string>
     <string name="level_body_score_ring_a11y">درجة الجسم %1$d من 100</string>
+    <string name="level_tab_a11y">تبويب %1$s، %2$s</string>
+    <string name="level_recommended_programs_a11y">برامج موصى بها للمستوى %1$d</string>
+    <string name="level_up_title">ارتقيت مستوى!</string>
+    <string name="level_up_transition">%1$d ← %2$d</string>
+    <string name="level_up_message">جهدك يؤتي ثماره! واصل التقدم.</string>
+    <string name="level_up_continue">متابعة</string>
+    <string name="level_up_overlay_a11y">ارتقاء من المستوى %1$d إلى %2$d، %3$s</string>
     <string name="level_domain_score_a11y">درجة %1$s %2$d بالمئة</string>
+    <string name="level_region_breakdown">مستوى المناطق</string>
+    <string name="level_region_row_a11y">%1$s مستوى %2$d، درجة %3$d بالمئة</string>
+    <string name="level_region_level_badge">م%1$d</string>
+    <string name="level_region_score">%1$d%%</string>
+    <string name="level_limiting_factors_title">نقاط التحسين</string>
+    <string name="level_limiting_factor_progress">المستوى %1$d → %2$d</string>
+    <string name="level_fetch_error">تعذّر تحميل ملف المستوى. تحقق من الاتصال وأعد المحاولة.</string>
+    <string name="level_no_profile_title">لم يتم التقييم بعد</string>
+    <string name="level_no_profile_message">أكمل تقييم حركي لمعرفة مستواك التدريبي.</string>
+    <string name="level_no_profile_start_scan">ابدأ التقييم</string>
 
     <!-- Shell (Pre-06) -->
     <string name="shell_report_share_coming_soon">مشاركة التقرير — قريباً.</string>
     <string name="shell_report_export_coming_soon">تصدير التقرير — قريباً.</string>
+
+    <string name="catalog_title">المكوّنات</string>
+    <string name="catalog_subtitle">كتالوج نظام التصميم لمراجعة الواجهة.</string>
+    <string name="catalog_intro_ar">مرجع بصري لكل مكوّنات Movit قبل استخدامها في الصفحات.</string>
+    <string name="catalog_intro_en">راجع الألوان والأزرار والبطاقات وأنماط Premium قبل دمج الصفحات.</string>
+    <string name="catalog_eyebrow_progress">التقدّم</string>
+    <string name="catalog_eyebrow_lists">القوائم</string>
+    <string name="catalog_eyebrow_content">المحتوى</string>
+    <string name="catalog_eyebrow_featured">مميّز</string>
+    <string name="catalog_macro_title">الحلقات والمقاييس</string>
+    <string name="catalog_macro_subtitle">بطاقة السعرات من النموذج</string>
+    <string name="catalog_macro_calories_title">السعرات</string>
+    <string name="catalog_macro_calories_subtitle">الجرعة اليومية</string>
+    <string name="catalog_macro_carbs">كربوهيدرات</string>
+    <string name="catalog_macro_proteins">بروتينات</string>
+    <string name="catalog_macro_fats">دهون</string>
+    <string name="catalog_coach_title">بطاقة المدرب</string>
+    <string name="catalog_coach_name">روبرت فوكس</string>
+    <string name="catalog_coach_subtitle">مدرب شخصي · أخصائي قلب</string>
+    <string name="catalog_program_card_title">بطاقة البرنامج</string>
+    <string name="catalog_program_card_name">بداية المرونة</string>
+    <string name="catalog_program_card_desc">خطة لطيفة لمدة 4 أسابيع لبناء حركة آمنة ومرنة.</string>
+    <string name="catalog_program_card_badge">★ مميّز</string>
+    <string name="catalog_program_card_weeks">4 أسابيع</string>
+    <string name="catalog_program_card_level">مبتدئ</string>
+    <string name="catalog_program_card_sessions">12 جلسة</string>
+    <string name="catalog_program_card_frequency">3 / أسبوع</string>
+    <string name="catalog_program_card_cta">ابدأ البرنامج</string>
+    <string name="catalog_workout_cards_title">بطاقات التمارين</string>
+    <string name="catalog_see_all">عرض الكل</string>
+    <string name="catalog_workout_ai_title">تمارين كاملة بالذكاء</string>
+    <string name="catalog_workout_ai_meta">8 تمارين · الجسم كامل</string>
+    <string name="catalog_workout_ai_badge">ذكاء</string>
+    <string name="catalog_workout_ai_duration">45 د</string>
+    <string name="catalog_workout_hiit_title">HIIT كارديو</string>
+    <string name="catalog_workout_hiit_meta">6 تمارين · كارديو</string>
+    <string name="catalog_workout_hiit_duration">30 د</string>
+    <string name="catalog_workout_hiit_level">متوسط</string>
+    <string name="catalog_workout_start">ابدأ</string>
+    <string name="catalog_exercise_cards_title">بطاقات التمارين</string>
+    <string name="catalog_exercise_squats">سكوات</string>
+    <string name="catalog_exercise_squats_meta">الأرجل والأرداف</string>
+    <string name="catalog_exercise_pushup">ضغط</string>
+    <string name="catalog_exercise_pushup_meta">الصدر والترايسبس</string>
+    <string name="catalog_difficulty_medium">متوسط</string>
+    <string name="catalog_difficulty_easy">سهل</string>
+    <string name="catalog_accent_tokens_title">رموز التمييز</string>
+    <string name="catalog_accent_coral_title">تحدٍ مع مدرب Pro</string>
+    <string name="catalog_accent_coral_subtitle">نمط تحدٍ تدريب مميّز</string>
 </resources>

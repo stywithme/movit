@@ -27,14 +27,21 @@ kotlin {
             implementation(compose.materialIconsExtended)
             implementation(compose.ui)
             implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.kotlinx.serialization.json)
             implementation(libs.jetbrains.lifecycle.viewmodel)
             implementation(libs.jetbrains.lifecycle.viewmodel.compose)
             implementation(libs.jetbrains.lifecycle.runtime.compose)
         }
+        iosMain.dependencies {
+            implementation(project(":core:pose-capture"))
+        }
         androidMain.dependencies {
             implementation(project(":core:pose-capture"))
             implementation(libs.androidx.activity.compose)
+            implementation(libs.androidx.credentials)
+            implementation(libs.androidx.credentials.play.services.auth)
             implementation(libs.camera.view)
+            implementation(libs.googleid)
             implementation(libs.jetbrains.lifecycle.runtime.compose)
             implementation(libs.koin.core)
         }

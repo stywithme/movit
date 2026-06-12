@@ -174,6 +174,10 @@ fun MovitExploreScreen(
                                         badge = item.badge,
                                         focusLabel = item.focusLabel,
                                         imageUrl = item.imageUrl,
+                                        imageContentDescription = movitText(
+                                            "explore_a11y_media_image",
+                                            item.title,
+                                        ),
                                         modifier = Modifier.fillMaxWidth(),
                                         onClick = {
                                             onEvent(

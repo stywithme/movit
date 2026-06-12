@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.movit.designsystem.MovitRadius
 import com.movit.designsystem.MovitSpacing
@@ -98,11 +99,15 @@ fun TrainFeaturedProgramCard(
                 text = program.title,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.W800,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = program.subtitle,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.movitColors.textSecondary,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
             )
             if (program.metadata.isNotEmpty()) {
                 Row(

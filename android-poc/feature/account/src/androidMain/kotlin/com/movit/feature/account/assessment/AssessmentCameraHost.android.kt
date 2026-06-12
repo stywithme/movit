@@ -28,6 +28,7 @@ import org.koin.core.component.get
 actual fun AssessmentCameraHost(
     onPoseFrame: (PoseFrame?) -> Unit,
     onCameraReady: () -> Unit,
+    onGuidedModeStarted: () -> Unit,
     onError: (String) -> Unit,
     modifier: Modifier,
 ) {

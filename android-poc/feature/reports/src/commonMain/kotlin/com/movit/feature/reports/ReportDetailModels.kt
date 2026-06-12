@@ -22,6 +22,12 @@ enum class ReportScoreTone {
     Warning,
 }
 
+enum class ReportJointsEmptyReason {
+    Generic,
+    ApiPending,
+    SessionUntracked,
+}
+
 data class ReportRepCompareUi(
     val label: String,
     val score: Int,
@@ -44,6 +50,7 @@ data class ReportDetailUi(
     val overviewInsightTitle: String,
     val overviewInsightMessage: String,
     val joints: List<ReportJointScoreUi>,
+    val jointsEmptyReason: ReportJointsEmptyReason = ReportJointsEmptyReason.Generic,
     val repCompare: List<ReportRepCompareUi>,
     val fatigueLabel: String,
     val fatigueTitle: String,

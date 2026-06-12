@@ -75,3 +75,12 @@ data class UpdateSettingsRequestDto(
     val voiceFeedback: Boolean? = null,
     val notifications: Boolean? = null,
 )
+
+@Serializable
+data class GoogleAuthRequestDto(
+    val idToken: String,
+    val googleId: String,
+    val email: String,
+    val name: String,
+    val avatarUrl: String? = null,
+)

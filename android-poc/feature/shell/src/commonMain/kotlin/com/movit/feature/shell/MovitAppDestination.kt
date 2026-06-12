@@ -1,25 +1,23 @@
 package com.movit.feature.shell
 
+import androidx.compose.runtime.Composable
+import com.movit.resources.movitText
+
 enum class MovitAppDestination(
     val route: String,
-    val label: String,
+    val labelKey: String,
+    val subtitleKey: String,
 ) {
-    Home("home", "Home"),
-    Train("train", "Train"),
-    Explore("explore", "Explore"),
-    Reports("reports", "Reports"),
-    Profile("profile", "Account"),
+    Home("home", "nav_home", "dest_home_subtitle"),
+    Train("train", "nav_train", "dest_train_subtitle"),
+    Explore("explore", "nav_explore", "dest_explore_subtitle"),
+    Reports("reports", "nav_reports", "dest_reports_subtitle"),
+    Profile("profile", "nav_account", "profile_subtitle"),
     ;
-
-    val pageTitle: String
-        get() = label
-
-    val pageSubtitle: String
-        get() = when (this) {
-            Home -> "Your daily training dashboard."
-            Train -> "Your program and today's plan."
-            Explore -> "Browse workouts, exercises and programs."
-            Reports -> "Session history and performance insights."
-            Profile -> "Account settings and subscription."
-        }
 }
+
+@Composable
+fun MovitAppDestination.localizedLabel(): String = movitText(labelKey)
+
+@Composable
+fun MovitAppDestination.localizedSubtitle(): String = movitText(subtitleKey)

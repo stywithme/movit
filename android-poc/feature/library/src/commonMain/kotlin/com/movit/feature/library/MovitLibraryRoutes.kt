@@ -65,6 +65,7 @@ fun ProgramDetailRoute(
     programId: String,
     onBack: () -> Unit,
     onStartSession: (String) -> Unit,
+    onViewWeeklyReport: (Int) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ProgramDetailViewModel = viewModel { ProgramDetailViewModel(programId) },
 ) {
@@ -85,7 +86,13 @@ fun ProgramDetailRoute(
         onEditScopeSelected = viewModel::onEditScopeSelected,
         onWeeklyTargetChange = viewModel::onWeeklyTargetChange,
         onPauseCalendarToggle = viewModel::onPauseCalendarToggle,
+        onSessionMove = viewModel::onSessionMove,
+        onExerciseParamChange = viewModel::onExerciseParamChange,
+        onRemoveSession = viewModel::onRemoveSession,
+        onRemoveExercise = viewModel::onRemoveExercise,
+        onResetEditDay = viewModel::onResetEditDay,
         onSaveEdit = viewModel::onSaveEdit,
+        onViewWeeklyReport = { onViewWeeklyReport(state.selectedWeekNumber) },
         onRetry = { scope.launch { viewModel.load() } },
         modifier = modifier,
     )
@@ -97,12 +104,21 @@ fun WorkoutSessionRoute(
     onBack: () -> Unit,
     onExerciseClick: (String) -> Unit,
     onStartWorkout: () -> Unit,
+    onSwitchWorkout: (String) -> Unit,
+    onOpenCatchUpDay: (String) -> Unit,
+    onSnackbar: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: WorkoutSessionViewModel = viewModel { WorkoutSessionViewModel(workoutId) },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     LaunchedEffect(viewModel) { viewModel.loadInitial() }
+    LaunchedEffect(state.snackbarMessageKey) {
+        state.snackbarMessageKey?.let { key ->
+            onSnackbar(key)
+            viewModel.consumeSnackbar()
+        }
+    }
     WorkoutSessionScreen(
         state = state,
         onBack = onBack,
@@ -130,6 +146,26 @@ fun WorkoutSessionRoute(
         onMoveBlock = viewModel::moveBlock,
         onRestDurationChange = viewModel::updateRestDuration,
         onSaveRestEdit = viewModel::saveRestEdit,
+        onSelectPlannedWorkout = { plannedWorkoutId ->
+            val context = state.session?.context ?: return@WorkoutSessionScreen
+            if (plannedWorkoutId == context.plannedWorkoutId) return@WorkoutSessionScreen
+            onSwitchWorkout(
+                WorkoutSessionKeys.encode(
+                    programId = context.programId,
+                    weekNumber = context.weekNumber,
+                    dayNumber = context.dayNumber,
+                    plannedWorkoutId = plannedWorkoutId,
+                ),
+            )
+        },
+        onTogglePlannedWorkoutExpand = viewModel::togglePlannedWorkoutExpand,
+        onDismissCatchUpDialog = viewModel::dismissCatchUpDialog,
+        onOpenCatchUpDay = {
+            scope.launch {
+                viewModel.sessionKeyForCatchUpDay()?.let(onOpenCatchUpDay)
+            }
+        },
+        onSkipWarmup = viewModel::skipWarmup,
         modifier = modifier,
     )
 }
@@ -221,6 +257,10 @@ fun WeeklyReportRoute(
         state = state,
         onBack = onBack,
         onShare = viewModel::onShareClicked,
+        onWeekSelected = { selectedWeek ->
+            viewModel.onWeekSelected(selectedWeek)
+            scope.launch { viewModel.load() }
+        },
         onRetry = { scope.launch { viewModel.load() } },
         modifier = modifier,
     )
@@ -245,6 +285,7 @@ fun ExercisePrepareRoute(
         onToggleRestPause = viewModel::toggleRestPause,
         onAddRestTime = viewModel::addRestTime,
         onRetry = { scope.launch { viewModel.load() } },
+        onPoseVariantSelected = viewModel::selectPoseVariant,
         modifier = modifier,
     )
 }
@@ -265,10 +306,12 @@ fun WorkoutCustomizeRoute(
         restOptionsSeconds = viewModel.restOptionsSeconds,
         onBack = onBack,
         onSetsChanged = viewModel::onSetsChanged,
+        onRepsChanged = viewModel::onRepsChanged,
+        onDeleteExercise = viewModel::deleteExercise,
+        onMoveExercise = viewModel::moveExercise,
         onRestOptionSelected = viewModel::onRestOptionSelected,
         onStart = {
-            viewModel.commitForRun()
-            onStart()
+            viewModel.commitForRun(onReady = { onStart() })
         },
         onRetry = { scope.launch { viewModel.load() } },
         modifier = modifier,

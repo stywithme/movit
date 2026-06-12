@@ -7,6 +7,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.movit.resources.LocalMovitLanguage
+import com.movit.resources.localizedString
 import kotlinx.coroutines.launch
 
 @Composable
@@ -53,17 +55,22 @@ fun ReportDetailRoute(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+    val language = LocalMovitLanguage.current
+    val shareAction = rememberReportShareAction()
 
     LaunchedEffect(viewModel) {
         viewModel.loadInitial()
     }
 
-    LaunchedEffect(viewModel) {
+    LaunchedEffect(viewModel, language, shareAction) {
         viewModel.effects.collect { effect ->
-            when (effect) {
-                ReportDetailEffect.ShareRequested,
-                ReportDetailEffect.ExportRequested,
-                -> onEffect(effect)
+            val payload = when (effect) {
+                is ReportDetailEffect.ShareRequested -> effect.payload
+                is ReportDetailEffect.ExportRequested -> effect.payload
+            }
+            val chooserTitle = localizedString(language, payload.chooserTitleKey)
+            if (!shareAction(payload.text, chooserTitle)) {
+                onEffect(effect)
             }
         }
     }

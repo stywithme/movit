@@ -33,6 +33,9 @@ data class ExercisePrepareUi(
     val sessionProgressPercent: Int,
     val sessionSummary: String,
     val legacyFileName: String,
+    val heroImageUrl: String? = null,
+    val poseVariants: List<PreparePoseVariantUi> = emptyList(),
+    val selectedPoseVariantIndex: Int = 0,
 )
 
 data class ExercisePrepareUiState(
@@ -139,26 +142,68 @@ class ExercisePrepareViewModel(
 
     fun legacyFileNameForStart(): String? = _state.value.exercise?.legacyFileName
 
+    fun selectPoseVariant(index: Int) {
+        val exercise = _state.value.displayExercise ?: return
+        val media = ExercisePrepareMediaResolver.withSelectedVariant(
+            media = ExercisePrepareMediaUi(
+                heroImageUrl = exercise.heroImageUrl,
+                poseVariants = exercise.poseVariants,
+                selectedPoseVariantIndex = exercise.selectedPoseVariantIndex,
+                axesLabel = exercise.axesLabel,
+                instructions = exercise.instructions,
+                targetMuscles = exercise.targetMuscles,
+            ),
+            index = index,
+            language = prepareLanguage(),
+            exerciseSlug = exercise.exerciseSlug,
+        )
+        _state.update { current ->
+            val updateTarget: (ExercisePrepareUi) -> ExercisePrepareUi = { target ->
+                target.copy(
+                    heroImageUrl = media.heroImageUrl,
+                    selectedPoseVariantIndex = media.selectedPoseVariantIndex,
+                    axesLabel = media.axesLabel,
+                )
+            }
+            current.copy(
+                exercise = current.exercise?.let(updateTarget),
+                upNextExercise = current.upNextExercise?.let(updateTarget),
+            )
+        }
+    }
+
+    private fun prepareLanguage(): String =
+        if (MovitData.isInstalled) MovitData.requirePlatform().preferredLanguage() else "en"
+
     private suspend fun buildExercise(exerciseId: String): ExercisePrepareUi? {
         val preview = ExercisePreparePreviewData.byId(exerciseId)
         if (preview != null) return preview
         val item = repository.findItem(exerciseId) ?: return null
+        val slug = legacySlug(exerciseId)
+        val media = ExercisePrepareMediaResolver.resolve(
+            exerciseSlug = slug,
+            language = prepareLanguage(),
+            fallbackImageUrl = item.imageUrl,
+        )
         return ExercisePrepareUi(
             id = item.id,
-            exerciseSlug = item.id,
+            exerciseSlug = slug,
             name = item.title,
             category = item.subtitle,
             sets = "3",
             reps = "12",
             rest = "60s",
             equipment = item.metadata.firstOrNull() ?: "None",
-            axesLabel = "Front · Side · 45°",
+            axesLabel = media.axesLabel,
             distanceTip = "Stand ~2 m from the camera, full body in frame.",
-            instructions = listOf(item.subtitle),
-            targetMuscles = item.metadata.take(3),
+            instructions = media.instructions.ifEmpty { listOf(item.subtitle) },
+            targetMuscles = media.targetMuscles.ifEmpty { item.metadata.take(3) },
             sessionProgressPercent = 20,
             sessionSummary = "1 exercise · ~10 min",
-            legacyFileName = legacySlug(exerciseId),
+            legacyFileName = slug,
+            heroImageUrl = media.heroImageUrl,
+            poseVariants = media.poseVariants,
+            selectedPoseVariantIndex = media.selectedPoseVariantIndex,
         )
     }
 }

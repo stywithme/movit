@@ -51,6 +51,7 @@ object ReportDetailApiMapper {
             overviewInsightTitle = overviewInsight?.toTitle() ?: strings.sessionOverview,
             overviewInsightMessage = overviewInsight?.message ?: strings.avgForm(formScore),
             joints = mapJoints(summary.jointBreakdown),
+            jointsEmptyReason = jointsEmptyReason(summary.jointBreakdown),
             repCompare = repCompare,
             fatigueLabel = strings.fatigueLabel,
             fatigueTitle = fatigueTitle,
@@ -61,6 +62,9 @@ object ReportDetailApiMapper {
             tips = tips,
         )
     }
+
+    internal fun jointsEmptyReason(breakdown: List<JointMetricsDto>?): ReportJointsEmptyReason =
+        if (breakdown.isNullOrEmpty()) ReportJointsEmptyReason.ApiPending else ReportJointsEmptyReason.Generic
 
     internal fun mapJoints(breakdown: List<JointMetricsDto>?): List<ReportJointScoreUi> {
         return breakdown.orEmpty().mapNotNull { joint ->

@@ -32,7 +32,7 @@ object MovitShellDeepLinkParser {
             MovitTrainingEntryNavigator.ROUTE_EXERCISE_PREPARE ->
                 MovitInnerRoute.ExercisePrepare(exerciseId = arg, workoutId = arg2)
             MovitTrainingEntryNavigator.ROUTE_ASSESSMENT ->
-                MovitInnerRoute.Assessment
+                MovitInnerRoute.Assessment()
             MovitTrainingEntryNavigator.ROUTE_PROGRAM_WEEK_PLAN -> {
                 val week = arg2?.toIntOrNull() ?: 1
                 MovitInnerRoute.ProgramWeekPlan(programId = arg, weekNumber = week)

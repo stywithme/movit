@@ -47,7 +47,7 @@ fun WorkoutsLibraryScreen(
         ) {
             MovitInnerPageHeader(
                 onBack = onBack,
-                backLabel = movitText("library_back_explore"),
+                backLabel = movitText("library_a11y_back"),
                 modifier = Modifier.weight(1f),
             )
             if (!state.isLoading && state.errorMessage == null) {
@@ -85,7 +85,7 @@ fun WorkoutsLibraryScreen(
                             state.visibleCount,
                         ),
                         searchPlaceholder = movitText("library_search_workouts"),
-                        filterContentDescription = movitText("library_filter_button"),
+                        filterContentDescription = movitText("library_a11y_filter"),
                         onFilterClick = onFilterClick,
                         filterSheetVisible = state.filterSheetVisible,
                         onDismissFilterSheet = onDismissFilterSheet,
@@ -111,7 +111,7 @@ fun WorkoutsLibraryScreen(
                             state.visibleCount,
                         ),
                         searchPlaceholder = movitText("library_search_workouts"),
-                        filterContentDescription = movitText("library_filter_button"),
+                        filterContentDescription = movitText("library_a11y_filter"),
                         onFilterClick = onFilterClick,
                         filterSheetVisible = state.filterSheetVisible,
                         onDismissFilterSheet = onDismissFilterSheet,
@@ -122,6 +122,10 @@ fun WorkoutsLibraryScreen(
                             item = item,
                             featured = index == 0,
                             featuredLabel = movitText("library_featured_workout"),
+                            imageContentDescription = movitText(
+                                "library_a11y_item_image",
+                                item.title,
+                            ),
                             onClick = { onItemClick(item.id) },
                         )
                     }

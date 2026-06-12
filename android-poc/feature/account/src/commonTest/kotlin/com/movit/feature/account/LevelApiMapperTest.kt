@@ -5,7 +5,9 @@ import com.movit.core.network.dto.ActivePlanProgramDto
 import com.movit.core.network.dto.DomainLevelDto
 import com.movit.core.network.dto.LevelInfoDetailDto
 import com.movit.core.network.dto.LevelProfileDetailDto
+import com.movit.core.network.dto.LimitingFactorDto
 import com.movit.core.network.dto.LocalizedNameDto
+import com.movit.core.network.dto.RegionLevelDto
 import com.movit.core.network.dto.PlanProgramInfoDto
 import com.movit.core.network.dto.PlanProgressDto
 import com.movit.core.network.dto.ReassessmentDto
@@ -105,6 +107,28 @@ class LevelApiMapperTest {
         assertEquals(PlanPhaseStatus.Active, ui.planPhases[1].status)
         assertEquals(50, ui.planPhases[1].progressPercent)
         assertEquals(PlanPhaseStatus.Upcoming, ui.planPhases[2].status)
+    }
+
+    @Test
+    fun mapsRegionLevelsAndLimitingFactors() = runBlocking {
+        val dto = LevelProfileDetailDto(
+            overallLevel = 2,
+            bodyScore = 65.0,
+            regionLevels = listOf(
+                RegionLevelDto(region = "hips", level = 3, score = 80.0, isLimiting = false),
+                RegionLevelDto(region = "shoulders", level = 2, score = 58.0, isLimiting = true),
+            ),
+            limitingFactors = listOf(
+                LimitingFactorDto(type = "region", code = "shoulders", currentLevel = 2, targetLevel = 3, gap = 1),
+            ),
+        )
+        val strings = LevelStrings.load("en")
+        val ui = LevelApiMapper.map(dto, plan = null, reassessments = emptyList(), strings)
+
+        assertEquals(2, ui.regions.size)
+        assertTrue(ui.regions[1].isLimiting)
+        assertEquals(1, ui.limitingFactors.size)
+        assertEquals(2, ui.limitingFactors.first().currentLevel)
     }
 
     @Test

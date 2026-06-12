@@ -131,11 +131,37 @@ private fun ProfileContent(
 ) {
     ProfileHero(profile = profile, onEvent = onEvent)
     ProCard(profile = profile, onEvent = onEvent)
+    val languageRowA11y = movitText(
+        "profile_setting_row_a11y",
+        movitText("profile_language"),
+        profileLanguageLabel(profile.languageCode),
+    )
+    val audioCuesA11y = movitText(
+        "profile_toggle_a11y",
+        movitText("profile_audio_cues"),
+        if (profile.audioCuesEnabled) {
+            movitText("onboarding_selected_state_a11y")
+        } else {
+            movitText("onboarding_unselected_state_a11y")
+        },
+    )
+    val hapticA11y = movitText(
+        "profile_toggle_a11y",
+        movitText("profile_haptic"),
+        if (profile.hapticEnabled) {
+            movitText("onboarding_selected_state_a11y")
+        } else {
+            movitText("onboarding_unselected_state_a11y")
+        },
+    )
+    val trainingProfileA11y = movitText("profile_training_profile_a11y")
+
     SettingsGroup(title = movitText("profile_preferences")) {
         MovitListRow(
             title = movitText("profile_language"),
             trailingValue = profileLanguageLabel(profile.languageCode),
             onClick = { onEvent(MovitProfileEvent.LanguageClicked) },
+            modifier = Modifier.semantics { contentDescription = languageRowA11y },
         )
         MovitListRow(
             title = movitText("profile_appearance"),
@@ -154,6 +180,7 @@ private fun ProfileContent(
                         checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
                         checkedTrackColor = MaterialTheme.colorScheme.primary,
                     ),
+                    modifier = Modifier.semantics { contentDescription = audioCuesA11y },
                 )
             },
         )
@@ -168,6 +195,7 @@ private fun ProfileContent(
                         checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
                         checkedTrackColor = MaterialTheme.colorScheme.primary,
                     ),
+                    modifier = Modifier.semantics { contentDescription = hapticA11y },
                 )
             },
         )
@@ -179,8 +207,9 @@ private fun ProfileContent(
         )
         MovitListRow(
             title = movitText("profile_training_profile"),
-            subtitle = profile.trainingProfileSummary,
+            subtitle = resolveTrainingProfileSummary(profile.trainingProfileSummary),
             onClick = { onEvent(MovitProfileEvent.TrainingProfileClicked) },
+            modifier = Modifier.semantics { contentDescription = trainingProfileA11y },
         )
         MovitListRow(
             title = movitText("profile_body_assessment"),
@@ -193,6 +222,15 @@ private fun ProfileContent(
             onClick = { onEvent(MovitProfileEvent.LevelClicked) },
         )
         SignOutRow(onClick = { onEvent(MovitProfileEvent.LogoutClicked) })
+    }
+}
+
+@Composable
+private fun resolveTrainingProfileSummary(summary: String): String {
+    return if (summary == TrainingProfileSummaryMapper.EMPTY_SUMMARY_KEY) {
+        movitText(TrainingProfileSummaryMapper.EMPTY_SUMMARY_KEY)
+    } else {
+        summary
     }
 }
 

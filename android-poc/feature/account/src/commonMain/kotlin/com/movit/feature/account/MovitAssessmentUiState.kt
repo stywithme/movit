@@ -8,12 +8,14 @@ enum class AssessmentPhase {
 
 data class MovitAssessmentUiState(
     val phase: AssessmentPhase = AssessmentPhase.PreScreening,
+    val assessmentMode: String = "initial",
     val parqAnswers: Map<Int, Boolean> = AssessmentDefaults.parqQuestions.indices.associateWith { false },
     val bodyScanTemplate: AssessmentTemplateUi = AssessmentDefaults.initialTemplate,
     val scanProgressPercent: Int = 0,
     val scanMovementIndex: Int = 0,
     val isScanComplete: Boolean = false,
     val isPoseDetected: Boolean = false,
+    val isGuidedScan: Boolean = false,
     val scanErrorMessage: String? = null,
     val isResolvingTemplate: Boolean = false,
     val isLoadingResults: Boolean = false,
@@ -24,6 +26,8 @@ data class MovitAssessmentUiState(
         insights = emptyList(),
     ),
 ) {
+    val isProgressionAssessment: Boolean
+        get() = assessmentMode.equals("progression", ignoreCase = true)
     val parqProgressPercent: Int
         get() = if (parqAnswers.isEmpty()) {
             0

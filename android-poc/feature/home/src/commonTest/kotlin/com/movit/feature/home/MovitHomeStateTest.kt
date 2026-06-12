@@ -124,6 +124,22 @@ class MovitHomeStateTest {
     }
 
     @Test
+    fun viewProgramClicked_emitsOpenProgramDetail() = runBlocking {
+        val viewModel = MovitHomeViewModel()
+        val effectDeferred = async {
+            withTimeout(5_000) {
+                viewModel.effects.first()
+            }
+        }
+        yield()
+        viewModel.onEvent(MovitHomeEvent.ViewProgramClicked("prog-full-body"))
+        assertEquals(
+            MovitHomeEffect.OpenProgramDetail("prog-full-body"),
+            effectDeferred.await(),
+        )
+    }
+
+    @Test
     fun viewPlanClicked_emitsOpenLevel() = runBlocking {
         val viewModel = MovitHomeViewModel()
         val effectDeferred = async {
@@ -182,6 +198,46 @@ class MovitHomeStateTest {
             viewModel.load()
             val state = viewModel.state.value
             assertEquals(71, state.progress?.weeklyCompletionPercent)
+        }
+    }
+
+    @Test
+    fun refreshLoad_updatesDashboardAndClearsRefreshing() {
+        runBlocking {
+            val viewModel = MovitHomeViewModel(repository = FakeHomeRepository())
+            viewModel.load(isRefresh = true)
+            val state = viewModel.state.value
+            assertEquals(false, state.isRefreshing)
+            assertNotNull(state.todayPlan)
+        }
+    }
+
+    @Test
+    fun catchUpOpenClicked_emitsOpenCatchUpDay() {
+        runBlocking {
+            val catchUp = HomeCatchUpUi(
+                message = "You missed yesterday",
+                programId = "prog-1",
+                weekNumber = 2,
+                dayNumber = 2,
+            )
+            val viewModel = MovitHomeViewModel(
+                repository = FakeHomeRepository(
+                    dashboard = MovitHomePreviewData.dashboardWithPlan.copy(catchUp = catchUp),
+                ),
+            )
+            viewModel.load(isRefresh = true)
+            val effectDeferred = async {
+                withTimeout(5_000) {
+                    viewModel.effects.first()
+                }
+            }
+            yield()
+            viewModel.onEvent(MovitHomeEvent.CatchUpOpenClicked)
+            assertEquals(
+                MovitHomeEffect.OpenCatchUpDay("prog-1", 2, 2),
+                effectDeferred.await(),
+            )
         }
     }
 }

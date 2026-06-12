@@ -5,6 +5,7 @@ sealed interface MovitTrainEffect {
     data class OpenProgramWorkout(val target: TrainWorkoutLaunchUi) : MovitTrainEffect
     data object OpenProgramList : MovitTrainEffect
     data object OpenAssessment : MovitTrainEffect
+    data class OpenProgramDetail(val programId: String) : MovitTrainEffect
     data class OpenProgramWeekPlan(
         val programId: String,
         val weekNumber: Int,

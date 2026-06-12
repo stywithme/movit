@@ -19,4 +19,5 @@ data class MovitAuthUiState(
     val errorMessage: String? = null,
     val infoMessage: String? = null,
     val forgotPasswordSent: Boolean = false,
+    val pendingGoogleSignIn: Boolean = false,
 )

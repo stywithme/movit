@@ -53,6 +53,7 @@ import com.movit.designsystem.components.MovitMetricTile
 import com.movit.designsystem.components.MovitProgressBar
 import com.movit.designsystem.movitColors
 import com.movit.feature.account.assessment.AssessmentCameraHost
+import com.movit.feature.account.assessment.MovitBodyMap
 import com.movit.resources.movitText
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -85,8 +86,16 @@ private fun AssessmentHeader(
 ) {
     val title = when (state.phase) {
         AssessmentPhase.PreScreening -> movitText("assessment_health_check")
-        AssessmentPhase.BodyScan -> movitText("assessment_body_scan")
-        AssessmentPhase.Results -> movitText("assessment_results_title")
+        AssessmentPhase.BodyScan -> if (state.isProgressionAssessment) {
+            movitText("assessment_progression_scan")
+        } else {
+            movitText("assessment_body_scan")
+        }
+        AssessmentPhase.Results -> if (state.isProgressionAssessment) {
+            movitText("assessment_progression_results_title")
+        } else {
+            movitText("assessment_results_title")
+        }
     }
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -192,10 +201,22 @@ private fun BodyScanContent(
     onEvent: (MovitAssessmentEvent) -> Unit,
 ) {
     Text(
-        text = movitText("assessment_body_scan_sub"),
+        text = if (state.isProgressionAssessment) {
+            movitText("assessment_progression_scan_sub")
+        } else {
+            movitText("assessment_body_scan_sub")
+        },
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.movitColors.textSecondary,
     )
+    if (state.isGuidedScan) {
+        MovitInsightCard(
+            title = movitText("assessment_ios_guided_scan_title"),
+            message = movitText("assessment_ios_guided_scan_message"),
+            icon = Icons.Default.Scanner,
+            variant = MovitInsightVariant.Warning,
+        )
+    }
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -207,6 +228,7 @@ private fun BodyScanContent(
         AssessmentCameraHost(
             onPoseFrame = { onEvent(MovitAssessmentEvent.BodyScanFrameReceived(it)) },
             onCameraReady = { onEvent(MovitAssessmentEvent.BodyScanCameraReady) },
+            onGuidedModeStarted = { onEvent(MovitAssessmentEvent.BodyScanGuidedModeStarted) },
             onError = { onEvent(MovitAssessmentEvent.BodyScanError(it)) },
             modifier = Modifier.fillMaxSize(),
         )
@@ -335,6 +357,14 @@ private fun ResultsContent(
         return
     }
     val results = state.results
+    if (!results.resultsSavedToServer) {
+        MovitInsightCard(
+            title = movitText("assessment_results_local_fallback_title"),
+            message = movitText("assessment_results_local_fallback_message"),
+            icon = Icons.Default.Warning,
+            variant = MovitInsightVariant.Warning,
+        )
+    }
     MovitDashboardHero(
         eyebrow = movitText("assessment_body_score"),
         title = results.bodyScore.toString(),
@@ -353,25 +383,37 @@ private fun ResultsContent(
             verticalArrangement = Arrangement.spacedBy(MovitSpacing.md),
         ) {
             results.domains.forEach { domain ->
-                MovitMetricTile(
-                    label = movitText("assessment_domain_${domain.domainKey}"),
-                    value = domain.score.toString(),
-                    modifier = Modifier.fillMaxWidth(0.48f),
-                )
+                DomainMetricTile(domain = domain)
             }
         }
     }
-    Text(
-        text = movitText("assessment_region_scores"),
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.W800,
-    )
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(MovitSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(MovitSpacing.md),
-    ) {
-        results.regions.forEach { region ->
-            RegionTile(region = region, modifier = Modifier.fillMaxWidth(0.48f))
+    if (results.regions.isNotEmpty()) {
+        Text(
+            text = movitText("assessment_body_map_title"),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.W800,
+        )
+        MovitCard {
+            MovitBodyMap(regions = results.regions)
+            FlowRow(
+                modifier = Modifier.padding(top = MovitSpacing.md),
+                horizontalArrangement = Arrangement.spacedBy(MovitSpacing.md),
+                verticalArrangement = Arrangement.spacedBy(MovitSpacing.md),
+            ) {
+                results.regions.forEach { region ->
+                    RegionTile(region = region, modifier = Modifier.fillMaxWidth(0.48f))
+                }
+            }
+        }
+    }
+    if (results.safetyGates.isNotEmpty()) {
+        Text(
+            text = movitText("assessment_safety_gates_title"),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.W800,
+        )
+        results.safetyGates.forEach { gate ->
+            SafetyGateCard(gate = gate)
         }
     }
     Text(
@@ -405,6 +447,60 @@ private fun ResultsContent(
             onClick = { onEvent(MovitAssessmentEvent.GoHomeClicked) },
             modifier = Modifier.weight(1f),
         )
+    }
+}
+
+@Composable
+private fun DomainMetricTile(domain: AssessmentDomainUi, modifier: Modifier = Modifier) {
+    val domainLabel = movitText("assessment_domain_${domain.domainKey}")
+    val domainA11y = movitText("assessment_domain_score_a11y", domainLabel, domain.score)
+    MovitMetricTile(
+        label = domainLabel,
+        value = domain.score.toString(),
+        modifier = modifier
+            .fillMaxWidth(0.48f)
+            .semantics { contentDescription = domainA11y },
+    )
+}
+
+@Composable
+private fun SafetyGateCard(gate: AssessmentSafetyGateUi) {
+    val movit = MaterialTheme.movitColors
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(MovitRadius.lg),
+        color = movit.warningTint,
+        border = BorderStroke(1.dp, movit.warning),
+    ) {
+        Column(modifier = Modifier.padding(MovitSpacing.md)) {
+            Text(
+                text = movitText(gate.reasonKey, *gate.reasonArgs.toTypedArray()),
+                fontWeight = FontWeight.W700,
+                color = movit.warning,
+            )
+            if (gate.blockedExerciseTypes.isNotEmpty()) {
+                Text(
+                    text = movitText(
+                        "assessment_safety_gate_blocked",
+                        gate.blockedExerciseTypes.take(3).joinToString(", "),
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = movit.textSecondary,
+                    modifier = Modifier.padding(top = MovitSpacing.xs),
+                )
+            }
+            if (gate.allowedAlternatives.isNotEmpty()) {
+                Text(
+                    text = movitText(
+                        "assessment_safety_gate_alternatives",
+                        gate.allowedAlternatives.take(3).joinToString(", "),
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = movit.success,
+                    modifier = Modifier.padding(top = MovitSpacing.xs),
+                )
+            }
+        }
     }
 }
 

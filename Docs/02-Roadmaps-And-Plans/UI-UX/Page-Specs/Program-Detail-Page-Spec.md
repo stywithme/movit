@@ -1,13 +1,15 @@
 # Program Detail Page Spec (07)
 
-آخر تحديث: 2026-06-09
+آخر تحديث: 2026-06-12
 
 ## Implementation Status
 
 - تم تنفيذ `ProgramDetailScreen` داخل `android-poc/feature/library` مع تبويبي Overview و Customize copy.
-- البيانات الحالية: Explore cache + `ProgramDetailPreviewData` للأسابيع/الأيام حتى يُربط API البرنامج الكامل (enrollment، preview، sync).
-- **Start program** يفعّل التسجيل المحلي (fake enroll) ويولّد `WorkoutSessionKeys` للانتقال إلى `WorkoutSessionRoute`.
-- Edit tab: reason cards، scope، impact، إعدادات أسبوعية، pause — بدون drag/reorder للجلسات (مؤجل لمرحلة 15).
+- البيانات: Explore cache + `ProgramDetailApiMapper` من `ProgramExportDto` عند `MovitData`؛ preview fixture عند عدم التثبيت.
+- **Start program:** `MovitData.plan.enrollProgram` عند أول Start + `sessionKeyForProgram` من export/home.
+- **Weekly report:** journey header → `MovitInnerRoute.WeeklyReport(selectedWeekNumber)`.
+- Hero: `MovitRemoteImage` + overlay؛ stat grid عبر `ProgramDetailStrings` / `program_stat_*`.
+- Edit tab: reason/scope/settings — **drag/reorder مؤجّل**.
 
 ## المراجع
 
@@ -64,8 +66,8 @@
 - [x] Start → `WorkoutSessionKeys` → `WorkoutSessionRoute`
 - [x] نصوص `program_*` في ar/en
 - [x] `ProgramDetailViewModelTest` + `ProgramDetailMapperTest`
-- [ ] API enrollment حقيقي (bridge legacy)
-- [ ] Weekly report navigation (صفحة 15)
+- [x] API enrollment (`MovitData.plan.enrollProgram`)
+- [x] Weekly report navigation (صفحة 15)
 - [ ] Drag sessions / exercise param editor في Edit
 
 ## Gradle

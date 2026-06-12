@@ -33,7 +33,9 @@ fun MainViewController(): UIViewController = ComposeUIViewController(
         registerOutboxConnectivityReplay()
     }
 
-    MovitAppShellRoute()
+    MovitAppShellRoute(
+        onShareText = { _, text -> shareTextOnIos(subject = "", text = text) },
+    )
 
 }
 

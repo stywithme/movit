@@ -5,4 +5,5 @@ sealed interface MovitLevelEvent {
     data class TabSelected(val tab: LevelTab) : MovitLevelEvent
     data object StartScanClicked : MovitLevelEvent
     data object BrowseProgramsClicked : MovitLevelEvent
+    data object DismissLevelUpCelebration : MovitLevelEvent
 }

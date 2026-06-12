@@ -110,11 +110,13 @@ fun MovitReportsScreen(
                             )
                         }
                         dashboard?.hubState == ReportsHubState.Locked -> {
+                            val upgradeA11y = movitText("reports_a11y_upgrade")
                             MovitEmptyState(
                                 title = movitText("reports_pro_title"),
                                 message = movitText("reports_pro_message"),
                                 actionLabel = movitText("reports_upgrade"),
                                 onActionClick = { onEvent(MovitReportsEvent.UpgradeClicked) },
+                                actionContentDescription = upgradeA11y,
                             )
                         }
                         dashboard?.hubState == ReportsHubState.Empty -> {
@@ -180,9 +182,15 @@ private fun ReportsOverviewPanel(dashboard: ReportsDashboardUi) {
     )
 
     if (dashboard.formScorePoints.isNotEmpty()) {
+        val firstScore = dashboard.formScorePoints.first().toInt()
+        val lastScore = dashboard.formScorePoints.last().toInt()
         ReportsChartCard(
             title = movitText("reports_form_journey"),
-            contentDescription = movitText("reports_form_journey"),
+            contentDescription = movitText(
+                "reports_a11y_form_journey_chart",
+                firstScore.toString(),
+                lastScore.toString(),
+            ),
         ) {
             val normalized = dashboard.formScorePoints.map { (it / 100f).coerceIn(0f, 1f) }
             MovitLineChart(
@@ -193,9 +201,20 @@ private fun ReportsOverviewPanel(dashboard: ReportsDashboardUi) {
     }
 
     if (dashboard.weeklyBarValues.isNotEmpty()) {
+        val peakIndex = dashboard.weeklyBarValues.indices.maxByOrNull {
+            dashboard.weeklyBarValues[it]
+        } ?: 0
+        val peakLabel = dashboard.weeklyBarLabels.getOrElse(peakIndex) {
+            movitText("reports_week_short", peakIndex + 1)
+        }
+        val peakValue = dashboard.weeklyBarValues[peakIndex]
         ReportsChartCard(
             title = movitText("reports_weekly_breakdown"),
-            contentDescription = movitText("reports_weekly_breakdown"),
+            contentDescription = movitText(
+                "reports_a11y_weekly_breakdown_chart",
+                peakLabel,
+                ReportsFormatting.formatOneDecimal(peakValue),
+            ),
         ) {
             MovitBarChart(
                 items = dashboard.weeklyBarValues.mapIndexed { index, value ->
@@ -246,10 +265,17 @@ private fun ExerciseReportRow(
         else -> movit.warning to movit.warningTint
     }
 
+    val rowA11y = movitText(
+        "reports_a11y_exercise_row",
+        exercise.name,
+        exercise.scoreLabel,
+        exercise.sessionsLabel,
+    )
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
+            .semantics { contentDescription = rowA11y }
             .padding(vertical = MovitSpacing.md),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(MovitSpacing.md),
@@ -312,7 +338,7 @@ private fun ReportsTrendsPanel(dashboard: ReportsDashboardUi) {
     if (dashboard.formScorePoints.size >= 2) {
         ReportsChartCard(
             title = movitText("reports_improvement_rate"),
-            contentDescription = movitText("reports_improvement_rate"),
+            contentDescription = movitText("reports_a11y_improvement_chart"),
         ) {
             val normalized = dashboard.formScorePoints.map { (it / 100f).coerceIn(0f, 1f) }
             MovitLineChart(
@@ -327,7 +353,7 @@ private fun ReportsTrendsPanel(dashboard: ReportsDashboardUi) {
     if (dashboard.volumeBarValues.isNotEmpty()) {
         ReportsChartCard(
             title = movitText("reports_volume_trend"),
-            contentDescription = movitText("reports_volume_trend"),
+            contentDescription = movitText("reports_a11y_volume_chart"),
         ) {
             MovitBarChart(
                 items = dashboard.volumeBarValues.mapIndexed { index, value ->
@@ -347,7 +373,7 @@ private fun ReportsTrendsPanel(dashboard: ReportsDashboardUi) {
     if (dashboard.weeklyBarValues.isNotEmpty()) {
         ReportsChartCard(
             title = movitText("reports_attendance_trend"),
-            contentDescription = movitText("reports_attendance_trend"),
+            contentDescription = movitText("reports_a11y_attendance_chart"),
         ) {
             MovitBarChart(
                 items = dashboard.weeklyBarValues.mapIndexed { index, value ->

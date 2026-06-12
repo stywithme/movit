@@ -3,6 +3,7 @@ package com.movit.feature.library.components
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import com.movit.designsystem.components.MovitRemoteImage
 
 @Composable
 actual fun MovitAsyncImage(
@@ -11,5 +12,12 @@ actual fun MovitAsyncImage(
     modifier: Modifier,
     contentScale: ContentScale,
 ) {
-    // iOS: placeholder-only until shared image loader is wired.
+    if (!url.isNullOrBlank()) {
+        MovitRemoteImage(
+            imageUrl = url,
+            contentDescription = contentDescription,
+            placeholderLabel = "",
+            modifier = modifier,
+        )
+    }
 }

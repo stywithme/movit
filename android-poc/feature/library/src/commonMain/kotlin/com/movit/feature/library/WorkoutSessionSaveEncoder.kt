@@ -20,7 +20,7 @@ object WorkoutSessionSaveEncoder {
             if (workout.id == context.plannedWorkoutId) {
                 val originalItems = workout.items.associateBy { it.id }
                 workout.copy(
-                    items = encodeItems(session, originalItems, exerciseBySlug),
+                    items = encodeItems(session, originalItems, exerciseBySlug, session.warmupSkipped),
                 )
             } else {
                 workout
@@ -35,8 +35,17 @@ object WorkoutSessionSaveEncoder {
         session: WorkoutSessionUi,
         originals: Map<String, EffectivePlanItemDto>,
         exerciseBySlug: Map<String, ExerciseCatalogEntry>,
+        warmupSkipped: Boolean,
     ): List<EffectivePlanItemDto> {
         val flattened = session.sections.flatMap { section ->
+            if (warmupSkipped && section.phaseRole == "WARMUP") {
+                return@flatMap section.items.map { block ->
+                    val original = originals[block.id]
+                    (original ?: EffectivePlanItemDto(type = "exercise", id = block.id)).copy(
+                        skipped = true,
+                    )
+                }
+            }
             section.items.map { block ->
                 when (block) {
                     is WorkoutSessionBlockUi.Rest -> {

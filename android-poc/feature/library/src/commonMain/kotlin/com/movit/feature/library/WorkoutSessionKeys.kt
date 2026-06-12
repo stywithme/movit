@@ -18,6 +18,9 @@ data class ParsedSessionKey(
 object WorkoutSessionKeys {
     private const val PREFIX = "session:"
 
+    /** Resolves to the first planned workout when loading a program day (catch-up / home). */
+    const val AUTO_PLANNED_WORKOUT = "_auto"
+
     fun encode(
         programId: String,
         weekNumber: Int,

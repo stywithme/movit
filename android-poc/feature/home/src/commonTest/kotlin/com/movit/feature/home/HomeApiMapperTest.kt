@@ -1,7 +1,9 @@
 package com.movit.feature.home
 
+import com.movit.core.network.dto.CatchUpSuggestionDto
 import com.movit.core.network.dto.HomeDataDto
 import com.movit.core.network.dto.HomeUserDto
+import com.movit.core.network.dto.MissedSlotDto
 import com.movit.core.network.dto.TrainActiveProgramDto
 import com.movit.core.network.dto.TrainModeDto
 import com.movit.core.network.dto.TrainTodayWorkoutDto
@@ -41,6 +43,30 @@ class HomeApiMapperTest {
         assertEquals(62, dashboard.levelCard?.progressPercent)
         assertTrue(dashboard.journeyRows.isNotEmpty())
         assertEquals("timeline", dashboard.journeyRows.first().id)
+    }
+
+    @Test
+    fun catchUpSuggestion_mapsCatchUpUi() = runBlocking {
+        val data = HomeDataDto(
+            trainMode = TrainModeDto(
+                status = "active",
+                activeProgram = TrainActiveProgramDto(
+                    id = "prog-1",
+                    name = mapOf("en" to "Full Body"),
+                ),
+                catchUpSuggestion = CatchUpSuggestionDto(
+                    missedTrainingDays = 1,
+                    message = "You missed yesterday",
+                    missedSlots = listOf(MissedSlotDto(weekNumber = 2, dayNumber = 2)),
+                ),
+            ),
+        )
+        val dashboard = HomeApiMapper.map(data, "en", "Athlete", HomeStrings.load("en"))
+        assertNotNull(dashboard.catchUp)
+        assertEquals("You missed yesterday", dashboard.catchUp?.message)
+        assertEquals("prog-1", dashboard.catchUp?.programId)
+        assertEquals(2, dashboard.catchUp?.weekNumber)
+        assertEquals(2, dashboard.catchUp?.dayNumber)
     }
 
     @Test

@@ -15,17 +15,19 @@ fun MovitFilterRow(
     onFilterSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    chipContentDescriptions: List<String>? = null,
 ) {
     Row(
         modifier = modifier.horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
     ) {
-        filters.forEach { filter ->
+        filters.forEachIndexed { index, filter ->
             MovitFilterChip(
                 label = filter,
                 selected = filter == selectedFilter,
                 onClick = { onFilterSelected(filter) },
                 enabled = enabled,
+                contentDescription = chipContentDescriptions?.getOrNull(index),
             )
         }
     }

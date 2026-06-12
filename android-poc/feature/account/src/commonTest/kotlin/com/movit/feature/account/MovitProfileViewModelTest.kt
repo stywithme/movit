@@ -1,8 +1,12 @@
 package com.movit.feature.account
 
 import com.movit.core.data.platform.MovitThemeModeStorage
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.yield
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -83,6 +87,44 @@ class MovitProfileViewModelTest {
         viewModel.onEvent(MovitProfileEvent.LogoutClicked)
 
         assertEquals(ProfilePicker.LogoutConfirm, viewModel.state.value.activePicker)
+    }
+
+    @Test
+    fun editProfileClicked_emitsLocalizedComingSoon() = runBlocking {
+        val viewModel = MovitProfileViewModel(
+            repository = FakeProfileRepository(signedIn = true),
+        )
+        viewModel.load()
+        val effectDeferred = async {
+            withTimeout(5_000) {
+                viewModel.effects.first()
+            }
+        }
+        yield()
+        viewModel.onEvent(MovitProfileEvent.EditProfileClicked)
+        val effect = effectDeferred.await()
+        assertTrue(effect is MovitProfileEffect.ShowLocalizedMessage)
+        assertEquals(
+            "profile_edit_coming_soon",
+            (effect as MovitProfileEffect.ShowLocalizedMessage).key,
+        )
+    }
+
+    @Test
+    fun subscribeNowClicked_emitsOpenSubscription() = runBlocking {
+        val viewModel = MovitProfileViewModel(
+            repository = FakeProfileRepository(signedIn = true),
+        )
+        viewModel.load()
+        val effectDeferred = async {
+            withTimeout(5_000) {
+                viewModel.effects.first()
+            }
+        }
+        yield()
+        viewModel.onEvent(MovitProfileEvent.SubscribeNowClicked)
+        assertEquals(MovitProfileEffect.OpenSubscription, effectDeferred.await())
+        assertEquals(false, viewModel.state.value.showSubscription)
     }
 
     @Test

@@ -39,7 +39,8 @@ fun MovitHomeRoute(
         state = state,
         onEvent = { event ->
             when (event) {
-                MovitHomeEvent.RetryClicked -> scope.launch { viewModel.load() }
+                MovitHomeEvent.RetryClicked -> scope.launch { viewModel.load(isRefresh = false) }
+                MovitHomeEvent.RefreshRequested -> scope.launch { viewModel.load(isRefresh = true) }
                 else -> viewModel.onEvent(event)
             }
         },

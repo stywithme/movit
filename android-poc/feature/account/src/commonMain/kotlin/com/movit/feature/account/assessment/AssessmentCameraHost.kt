@@ -8,6 +8,7 @@ import com.movit.core.training.model.PoseFrame
 expect fun AssessmentCameraHost(
     onPoseFrame: (PoseFrame?) -> Unit,
     onCameraReady: () -> Unit,
+    onGuidedModeStarted: () -> Unit = {},
     onError: (String) -> Unit,
     modifier: Modifier = Modifier,
 )

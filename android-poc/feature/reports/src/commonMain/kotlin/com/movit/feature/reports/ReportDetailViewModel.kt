@@ -2,6 +2,7 @@ package com.movit.feature.reports
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.movit.core.data.MovitData
 import com.movit.shared.AppResult
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -54,15 +55,37 @@ class ReportDetailViewModel(
     }
 
     fun onShareClicked() {
-        _effects.tryEmit(ReportDetailEffect.ShareRequested)
+        emitShareEffect(isExport = false)
     }
 
     fun onExportClicked() {
-        _effects.tryEmit(ReportDetailEffect.ExportRequested)
+        emitShareEffect(isExport = true)
+    }
+
+    private fun emitShareEffect(isExport: Boolean) {
+        val report = _state.value.report ?: return
+        viewModelScope.launch {
+            val language = if (MovitData.isInstalled) {
+                MovitData.requirePlatform().preferredLanguage()
+            } else {
+                "en"
+            }
+            val payload = ReportDetailShareFormatter.sharePayload(
+                report = report,
+                language = language,
+                isExport = isExport,
+            )
+            val effect = if (isExport) {
+                ReportDetailEffect.ExportRequested(payload)
+            } else {
+                ReportDetailEffect.ShareRequested(payload)
+            }
+            _effects.emit(effect)
+        }
     }
 }
 
 sealed interface ReportDetailEffect {
-    data object ShareRequested : ReportDetailEffect
-    data object ExportRequested : ReportDetailEffect
+    data class ShareRequested(val payload: ReportSharePayload) : ReportDetailEffect
+    data class ExportRequested(val payload: ReportSharePayload) : ReportDetailEffect
 }

@@ -21,12 +21,15 @@ object AssessmentApiMapper {
             AssessmentDomainUi("safety", dto.safetyScore.toInt().coerceIn(0, 100)),
         )
         val regions = dto.regions.map(::mapRegion)
+        val safetyGates = AssessmentSafetyGateEngine.evaluate(dto.regions, emptyList())
         return AssessmentResultsUi(
             bodyScore = dto.bodyScore.toInt().coerceIn(0, 100),
             levelLabel = "Level $levelNumber · $fitnessLabel",
             domains = domains,
             regions = regions,
             insights = mapRegionInsights(regions),
+            safetyGates = safetyGates,
+            resultsSavedToServer = true,
         )
     }
 
@@ -74,6 +77,7 @@ object AssessmentApiMapper {
         } else {
             levelName
         }
+        val regions = dto.regionLevels.map(::mapRegion)
         return AssessmentResultsUi(
             bodyScore = dto.bodyScore.toInt().coerceIn(0, 100),
             levelLabel = levelLabel,
@@ -83,8 +87,10 @@ object AssessmentApiMapper {
                     score = domain.score.toInt().coerceIn(0, 100),
                 )
             },
-            regions = dto.regionLevels.map(::mapRegion),
+            regions = regions,
             insights = mapInsights(dto.limitingFactors, dto.regionLevels),
+            safetyGates = AssessmentSafetyGateEngine.evaluateFromUi(regions, emptyList()),
+            resultsSavedToServer = true,
         )
     }
 
@@ -99,6 +105,8 @@ object AssessmentApiMapper {
             regionKey = region.region.lowercase(),
             score = score,
             tone = tone,
+            confidence = "high",
+            status = if (region.isLimiting) "limited" else "average",
         )
     }
 
@@ -145,6 +153,8 @@ object AssessmentApiMapper {
                 score >= 80 -> AssessmentRegionTone.Good
                 else -> AssessmentRegionTone.Neutral
             },
+            confidence = region.confidence,
+            status = region.status,
         )
     }
 

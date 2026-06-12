@@ -50,6 +50,7 @@ import com.movit.designsystem.components.MovitButton
 import com.movit.designsystem.components.MovitButtonVariant
 import com.movit.designsystem.movitColors
 import com.movit.resources.movitText
+import com.movit.shared.PlatformInfo
 
 @Composable
 fun MovitAuthScreen(
@@ -315,14 +316,26 @@ private fun AuthSignInPanel(
                 .fillMaxWidth()
                 .padding(top = MovitSpacing.lg),
         )
-        AuthDivider()
-        MovitButton(
-            text = movitText("auth_google"),
-            onClick = { onEvent(MovitAuthEvent.GoogleSignInClicked) },
-            enabled = !state.isLoading,
-            variant = MovitButtonVariant.Outlined,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        if (PlatformInfo.supportsGoogleSignIn) {
+            AuthDivider()
+            MovitButton(
+                text = movitText("auth_google"),
+                onClick = { onEvent(MovitAuthEvent.GoogleSignInClicked) },
+                enabled = !state.isLoading,
+                variant = MovitButtonVariant.Outlined,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        } else {
+            Text(
+                text = movitText("auth_google_ios_blocker"),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.movitColors.textSecondary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = MovitSpacing.lg),
+            )
+        }
         AuthFooterLink(
             prompt = movitText("auth_no_account"),
             action = movitText("auth_sign_up"),

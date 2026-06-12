@@ -3,6 +3,7 @@ package com.movit.feature.library
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -12,6 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
@@ -23,10 +25,14 @@ import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.components.MovitBarChart
 import com.movit.designsystem.components.MovitBarChartItem
 import com.movit.designsystem.components.MovitButton
+import com.movit.designsystem.components.MovitCard
+import com.movit.designsystem.components.MovitCardVariant
 import com.movit.designsystem.components.MovitButtonVariant
 import com.movit.designsystem.components.MovitErrorState
 import com.movit.designsystem.components.MovitInnerPageHeader
 import com.movit.designsystem.components.MovitLoadingState
+import com.movit.designsystem.components.MovitProgressBar
+import com.movit.designsystem.components.MovitSectionHeader
 import com.movit.designsystem.components.MovitStatTileData
 import com.movit.designsystem.components.MovitStatTileRow
 import com.movit.designsystem.movitColors
@@ -37,6 +43,7 @@ fun WeeklyReportScreen(
     state: WeeklyReportUiState,
     onBack: () -> Unit,
     onShare: () -> Unit,
+    onWeekSelected: (Int) -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -64,6 +71,19 @@ fun WeeklyReportScreen(
                         .padding(horizontal = MovitSpacing.lg),
                     verticalArrangement = Arrangement.spacedBy(MovitSpacing.lg),
                 ) {
+                    if (state.weekSummaries.size > 1) {
+                        MovitSectionHeader(
+                            title = movitText("program_flow_all_weeks_title"),
+                            subtitle = report.programName,
+                        )
+                        state.weekSummaries.forEach { summary ->
+                            WeeklyReportWeekSummaryCard(
+                                summary = summary,
+                                selected = summary.weekNumber == state.selectedWeekNumber,
+                                onClick = { onWeekSelected(summary.weekNumber) },
+                            )
+                        }
+                    }
                     WeeklyReportHero(report = report)
                     MovitStatTileRow(
                         stats = listOf(
@@ -142,6 +162,75 @@ private fun WeeklyReportHero(report: WeeklyReportUi) {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSecondary,
         )
+    }
+}
+
+@Composable
+private fun WeeklyReportWeekSummaryCard(
+    summary: WeeklyReportWeekSummaryUi,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val summaryA11y = movitText(
+        "program_flow_a11y_week_summary",
+        summary.weekNumber,
+        summary.title,
+        summary.progressPercent,
+        summary.message,
+    )
+    MovitCard(
+        variant = if (selected) MovitCardVariant.Outlined else MovitCardVariant.Filled,
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics { contentDescription = summaryA11y },
+    ) {
+        Column(
+            modifier = Modifier.padding(MovitSpacing.md),
+            verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = movitText("program_flow_week_title", summary.weekNumber),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.W800,
+                )
+                Text(
+                    text = movitText(
+                        "program_flow_week_progress",
+                        summary.sessionsCompleted,
+                        summary.sessionsPlanned,
+                    ),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.movitColors.textTertiary,
+                )
+            }
+            Text(
+                text = summary.title,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.movitColors.textSecondary,
+            )
+            MovitProgressBar(progressPercent = summary.progressPercent)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = movitText("program_flow_week_form", summary.avgFormPercent),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.movitColors.textTertiary,
+                )
+                Text(
+                    text = summary.message,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.movitColors.textTertiary,
+                )
+            }
+        }
     }
 }
 

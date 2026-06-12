@@ -74,6 +74,43 @@ object ProgramFlowApiMapper {
         )
     }
 
+    suspend fun mapWeekSummaries(
+        program: ProgramExportDto,
+        metrics: ProgramProgressMetricsPayloadDto?,
+        language: String,
+        strings: ProgramFlowStrings,
+    ): List<WeeklyReportWeekSummaryUi> {
+        return program.weeks.sortedBy { it.weekNumber }.map { week ->
+            val weekMetrics = metrics?.weeks?.firstOrNull { it.weekNumber == week.weekNumber }
+            val plannedSessions = weekMetrics?.plannedWorkoutCount
+                ?: week.days.count { !it.isRestDay && it.plannedWorkouts.isNotEmpty() }
+                .coerceAtLeast(1)
+            val completedSessions = estimateCompletedSessions(weekMetrics, plannedSessions, null)
+            val avgForm = weekMetrics?.avgFormScore?.roundToInt() ?: 0
+            val progressPercent = if (plannedSessions > 0) {
+                ((completedSessions * 100f) / plannedSessions).roundToInt().coerceIn(0, 100)
+            } else {
+                0
+            }
+            val title = week.target?.localized(language)?.takeIf { it.isNotBlank() }
+                ?: strings.weekTitle(week.weekNumber)
+            WeeklyReportWeekSummaryUi(
+                weekNumber = week.weekNumber,
+                title = title,
+                progressPercent = progressPercent,
+                sessionsCompleted = completedSessions,
+                sessionsPlanned = plannedSessions,
+                avgFormPercent = avgForm.coerceIn(0, 100),
+                totalReps = 0,
+                message = strings.weekMessage(
+                    completed = completedSessions,
+                    planned = plannedSessions,
+                    avgForm = avgForm,
+                ),
+            )
+        }
+    }
+
     suspend fun mapWeeklyReport(
         program: ProgramExportDto,
         weekNumber: Int,

@@ -5,9 +5,11 @@ import com.movit.core.data.platform.MovitPlatformBindings
 import com.movit.core.data.platform.toSnapshot
 import com.movit.core.network.MovitMobileApi
 import com.movit.core.network.dto.ForgotPasswordRequestDto
+import com.movit.core.network.dto.GoogleAuthRequestDto
 import com.movit.core.network.dto.LoginRequestDto
 import com.movit.core.network.dto.LogoutRequestDto
 import com.movit.core.network.dto.RegisterRequestDto
+import com.movit.core.network.dto.TrainingProfilePayloadDto
 import com.movit.core.network.dto.TrainingProfilePutRequest
 import com.movit.core.network.dto.UpdateSettingsRequestDto
 import com.movit.core.network.dto.ActivePlanDto
@@ -32,6 +34,33 @@ class AccountSyncRepository(
             return AppResult.Failure(response.error ?: response.message ?: "Login failed.")
         }
         val data = response.data ?: return AppResult.Failure("Login response was empty.")
+        val snapshot = data.toSnapshot()
+        platform().persistAuthSession(snapshot)
+        return AppResult.Success(snapshot)
+    }
+
+    suspend fun googleAuth(
+        idToken: String,
+        googleId: String,
+        email: String,
+        name: String,
+        avatarUrl: String? = null,
+    ): AppResult<AuthSessionSnapshot> {
+        val response = api.googleAuth(
+            GoogleAuthRequestDto(
+                idToken = idToken,
+                googleId = googleId,
+                email = email,
+                name = name,
+                avatarUrl = avatarUrl,
+            ),
+        ).getOrElse { error ->
+            return AppResult.Failure(error.message ?: "Google sign-in failed.")
+        }
+        if (!response.success) {
+            return AppResult.Failure(response.error ?: response.message ?: "Google sign-in failed.")
+        }
+        val data = response.data ?: return AppResult.Failure("Google sign-in response was empty.")
         val snapshot = data.toSnapshot()
         platform().persistAuthSession(snapshot)
         return AppResult.Success(snapshot)
@@ -121,6 +150,18 @@ class AccountSyncRepository(
             notifications = notifications,
         )
         return AppResult.Success(user)
+    }
+
+    suspend fun fetchTrainingProfile(): AppResult<TrainingProfilePayloadDto> {
+        val auth = platform().authHeader()
+            ?: return AppResult.Failure("Sign in to load your training profile.")
+        val response = api.fetchTrainingProfile(authorization = auth).getOrElse { error ->
+            return AppResult.Failure(error.message ?: "Training profile request failed.")
+        }
+        if (!response.success) {
+            return AppResult.Failure(response.error ?: "Training profile request failed.")
+        }
+        return AppResult.Success(response.data ?: TrainingProfilePayloadDto())
     }
 
     suspend fun putTrainingProfile(request: TrainingProfilePutRequest): AppResult<Unit> {

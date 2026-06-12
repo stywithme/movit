@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.movit.designsystem.MovitSpacing
@@ -24,6 +26,7 @@ import com.movit.feature.train.components.TrainTodayCard
 import com.movit.feature.train.components.TrainWeekPreview
 import com.movit.resources.movitText
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MovitTrainScreen(
     state: MovitTrainUiState,
@@ -31,19 +34,31 @@ fun MovitTrainScreen(
     modifier: Modifier = Modifier,
 ) {
     val dashboard = state.dashboard
+    val canRefresh = state.errorMessage == null && !state.isLoading
+
     MovitScaffold(
         modifier = modifier,
         title = movitText("train_title"),
         subtitle = dashboard?.subtitle ?: movitText("train_dest_subtitle"),
     ) { padding ->
-        Column(
+        PullToRefreshBox(
+            isRefreshing = state.isRefreshing,
+            onRefresh = {
+                if (canRefresh) {
+                    onEvent(MovitTrainEvent.RefreshRequested)
+                }
+            },
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(MovitSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(MovitSpacing.lg),
+                .padding(padding),
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(MovitSpacing.lg),
+                verticalArrangement = Arrangement.spacedBy(MovitSpacing.lg),
+            ) {
             when {
                 state.isLoading && dashboard == null -> {
                     MovitLoadingState(message = movitText("train_loading"))
@@ -63,6 +78,7 @@ fun MovitTrainScreen(
                         onEvent = onEvent,
                     )
                 }
+            }
             }
         }
     }

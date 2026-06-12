@@ -1,5 +1,19 @@
 package com.movit.feature.library
 
+data class PlannedWorkoutCardUi(
+    val id: String,
+    val title: String,
+    val exerciseCount: Int,
+    val durationLabel: String,
+    val isSelected: Boolean,
+)
+
+data class SessionCatchUpPromptUi(
+    val message: String,
+    val missedWeekNumber: Int,
+    val missedDayNumber: Int,
+)
+
 data class WorkoutSessionUi(
     val id: String,
     val title: String,
@@ -9,6 +23,7 @@ data class WorkoutSessionUi(
     val setCount: Int,
     val sections: List<WorkoutSessionSectionUi>,
     val context: WorkoutSessionContextUi? = null,
+    val warmupSkipped: Boolean = false,
 )
 
 fun WorkoutSessionUi.firstExerciseSlug(): String? =
@@ -20,12 +35,23 @@ fun WorkoutSessionUi.firstExerciseSlug(): String? =
         ?.exerciseSlug
 
 fun WorkoutSessionUi.firstExerciseId(): String? =
-    sections
+    sectionsForTraining()
         .asSequence()
         .flatMap { it.items.asSequence() }
         .filterIsInstance<WorkoutSessionBlockUi.Exercise>()
         .firstOrNull()
         ?.id
+
+fun WorkoutSessionUi.hasWarmupSection(): Boolean =
+    sections.any { it.phaseRole == "WARMUP" && it.items.any { block -> block is WorkoutSessionBlockUi.Exercise } }
+
+fun WorkoutSessionUi.sectionsForTraining(): List<WorkoutSessionSectionUi> =
+    if (warmupSkipped) sections.filter { it.phaseRole != "WARMUP" } else sections
+
+fun WorkoutSessionUi.withoutWarmup(): WorkoutSessionUi {
+    if (!hasWarmupSection() || warmupSkipped) return this
+    return copy(warmupSkipped = true).recalculated()
+}
 
 data class WorkoutSessionSectionUi(
     val title: String,

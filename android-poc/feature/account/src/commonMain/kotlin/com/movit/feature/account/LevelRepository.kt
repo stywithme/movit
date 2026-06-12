@@ -10,7 +10,24 @@ data class LevelProfileUi(
     val pointsToNext: Int,
     val reassessmentLabel: String,
     val domains: List<LevelDomainUi>,
+    val regions: List<LevelRegionUi> = emptyList(),
+    val limitingFactors: List<LevelLimitingFactorUi> = emptyList(),
     val planPhases: List<PlanPhaseUi>,
+)
+
+data class LevelRegionUi(
+    val name: String,
+    val level: Int,
+    val score: Int,
+    val isLimiting: Boolean,
+)
+
+data class LevelLimitingFactorUi(
+    val type: String,
+    val name: String,
+    val currentLevel: Int,
+    val targetLevel: Int,
+    val gap: Int,
 )
 
 data class LevelDomainUi(

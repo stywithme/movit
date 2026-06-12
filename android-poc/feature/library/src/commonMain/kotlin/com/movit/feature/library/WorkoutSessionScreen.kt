@@ -34,8 +34,11 @@ import com.movit.designsystem.components.MovitStatTileData
 import com.movit.designsystem.components.MovitStatsStrip
 import com.movit.designsystem.movitColors
 import com.movit.feature.library.components.SessionExerciseCard
+import com.movit.feature.library.components.SessionPlannedWorkoutCards
 import com.movit.feature.library.components.SessionRestBlock
 import com.movit.resources.movitText
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 
 @Composable
 fun WorkoutSessionScreen(
@@ -63,6 +66,11 @@ fun WorkoutSessionScreen(
     onMoveBlock: (sectionPhaseRole: String, blockId: String, delta: Int) -> Unit,
     onRestDurationChange: (Int) -> Unit,
     onSaveRestEdit: () -> Unit,
+    onSelectPlannedWorkout: (String) -> Unit,
+    onTogglePlannedWorkoutExpand: (String) -> Unit,
+    onDismissCatchUpDialog: () -> Unit,
+    onOpenCatchUpDay: () -> Unit,
+    onSkipWarmup: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val session = state.session
@@ -70,13 +78,16 @@ fun WorkoutSessionScreen(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
+            val editToggleA11y = movitText("session_a11y_toggle_edit")
             MovitInnerPageHeader(
                 onBack = onBack,
                 backLabel = movitText("session_back"),
                 actionLabel = if (state.isEditMode) movitText("session_done") else movitText("session_edit"),
                 actionIcon = if (state.isEditMode) Icons.Default.Check else Icons.Default.Edit,
                 onAction = onToggleEdit,
-                modifier = Modifier.padding(horizontal = MovitSpacing.lg, vertical = MovitSpacing.sm),
+                modifier = Modifier
+                    .padding(horizontal = MovitSpacing.lg, vertical = MovitSpacing.sm)
+                    .semantics { contentDescription = editToggleA11y },
             )
         },
         bottomBar = {
@@ -84,10 +95,14 @@ fun WorkoutSessionScreen(
                 SessionStartDock(
                     exerciseCount = session.exerciseCount,
                     durationLabel = session.durationLabel,
+                    showSkipWarmup = session.hasWarmupSection() && !session.warmupSkipped,
+                    onSkipWarmup = onSkipWarmup,
                     onStart = onStartWorkout,
                     modifier = Modifier.padding(MovitSpacing.lg),
                 )
             } else if (state.isEditMode) {
+                val addExerciseA11y = movitText("session_a11y_add_exercise")
+                val addRestA11y = movitText("session_a11y_add_rest")
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -98,14 +113,18 @@ fun WorkoutSessionScreen(
                         text = movitText("session_add_exercise"),
                         onClick = onAddExercise,
                         variant = MovitButtonVariant.Outlined,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .semantics { contentDescription = addExerciseA11y },
                     )
                     MovitButton(
                         text = movitText("session_rest"),
                         onClick = onAddRest,
                         variant = MovitButtonVariant.Outlined,
                         leadingIcon = Icons.Default.Schedule,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .semantics { contentDescription = addRestA11y },
                     )
                 }
             }
@@ -120,6 +139,8 @@ fun WorkoutSessionScreen(
                 onRetry = onRetry,
             )
             session != null -> {
+                val showWorkoutDetails = state.plannedWorkoutCards.size <= 1 ||
+                    state.expandedPlannedWorkoutId == session.context?.plannedWorkoutId
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -128,6 +149,15 @@ fun WorkoutSessionScreen(
                         .padding(horizontal = MovitSpacing.lg),
                     verticalArrangement = Arrangement.spacedBy(MovitSpacing.md),
                 ) {
+                    if (state.plannedWorkoutCards.size > 1) {
+                        SessionPlannedWorkoutCards(
+                            cards = state.plannedWorkoutCards,
+                            expandedWorkoutId = state.expandedPlannedWorkoutId,
+                            onToggleExpand = onTogglePlannedWorkoutExpand,
+                            onSelectWorkout = onSelectPlannedWorkout,
+                        )
+                    }
+                    if (!showWorkoutDetails) return@Column
                     Column(verticalArrangement = Arrangement.spacedBy(MovitSpacing.xs)) {
                         Text(
                             text = session.title,
@@ -155,7 +185,7 @@ fun WorkoutSessionScreen(
                             MovitStatTileData(session.setCount.toString(), movitText("session_sets")),
                         ),
                     )
-                    session.sections.forEach { section ->
+                    session.sectionsForTraining().forEach { section ->
                         MovitSectionHeader(
                             title = section.title,
                             subtitle = section.items.count { it is WorkoutSessionBlockUi.Exercise }.toString(),
@@ -203,6 +233,24 @@ fun WorkoutSessionScreen(
             }
         }
     }
+    if (state.showCatchUpDialog && state.catchUpPrompt != null) {
+        val prompt = state.catchUpPrompt
+        AlertDialog(
+            onDismissRequest = onDismissCatchUpDialog,
+            title = { Text(movitText("session_catch_up_title")) },
+            text = { Text(prompt.message) },
+            confirmButton = {
+                TextButton(onClick = onOpenCatchUpDay) {
+                    Text(movitText("session_catch_up_open_missed"))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismissCatchUpDialog) {
+                    Text(movitText("session_catch_up_continue"))
+                }
+            },
+        )
+    }
     WorkoutSessionSheets(
         activeSheet = state.activeSheet,
         session = session,
@@ -223,6 +271,8 @@ fun WorkoutSessionScreen(
 private fun SessionStartDock(
     exerciseCount: Int,
     durationLabel: String,
+    showSkipWarmup: Boolean,
+    onSkipWarmup: () -> Unit,
     onStart: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -232,30 +282,43 @@ private fun SessionStartDock(
         variant = MovitCardVariant.Elevated,
         contentPadding = MovitSpacing.md,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = movitText("session_ready_to_train"),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.W800,
-                )
-                Text(
-                    text = movitText("session_summary", exerciseCount, durationLabel),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.movitColors.textSecondary,
+        Column(verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = movitText("session_ready_to_train"),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.W800,
+                    )
+                    Text(
+                        text = movitText("session_summary", exerciseCount, durationLabel),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.movitColors.textSecondary,
+                    )
+                }
+                MovitButton(
+                    text = movitText("session_start"),
+                    onClick = onStart,
+                    variant = MovitButtonVariant.Filled,
+                    leadingIcon = Icons.Default.PlayArrow,
+                    modifier = Modifier.semantics { contentDescription = startA11y },
                 )
             }
-            MovitButton(
-                text = movitText("session_start"),
-                onClick = onStart,
-                variant = MovitButtonVariant.Filled,
-                leadingIcon = Icons.Default.PlayArrow,
-                modifier = Modifier.semantics { contentDescription = startA11y },
-            )
+            if (showSkipWarmup) {
+                val skipWarmupA11y = movitText("session_a11y_skip_warmup")
+                MovitButton(
+                    text = movitText("session_skip_warmup"),
+                    onClick = onSkipWarmup,
+                    variant = MovitButtonVariant.Text,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .semantics { contentDescription = skipWarmupA11y },
+                )
+            }
         }
     }
 }

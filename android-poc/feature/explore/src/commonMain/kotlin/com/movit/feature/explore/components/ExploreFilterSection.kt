@@ -15,6 +15,7 @@ fun ExploreFilterSection(
     enabled: Boolean = true,
 ) {
     val labels = filters.map { it.label() }
+    val chipDescriptions = labels.map { label -> movitText("explore_a11y_filter_chip", label) }
     val selectedLabel = selectedFilter.label()
     MovitFilterRow(
         filters = labels,
@@ -25,6 +26,7 @@ fun ExploreFilterSection(
                 onFilterSelected(filters[index])
             }
         },
+        chipContentDescriptions = chipDescriptions,
         modifier = modifier,
         enabled = enabled,
     )

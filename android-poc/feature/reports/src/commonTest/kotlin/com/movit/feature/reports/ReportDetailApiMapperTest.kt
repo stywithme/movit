@@ -46,7 +46,18 @@ class ReportDetailApiMapperTest {
             assertEquals(2, detail.repCompare.size)
             assertEquals("Best · Set 2", detail.repCompare.first().label)
             assertTrue(detail.joints.isEmpty())
+            assertEquals(ReportJointsEmptyReason.ApiPending, detail.jointsEmptyReason)
         }
+    }
+
+    @Test
+    fun jointsEmptyReason_genericWhenPopulated() {
+        assertEquals(
+            ReportJointsEmptyReason.Generic,
+            ReportDetailApiMapper.jointsEmptyReason(
+                listOf(JointMetricsDto(jointCode = "knee", jointName = "Knee", score = 90f)),
+            ),
+        )
     }
 
     @Test

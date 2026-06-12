@@ -3,6 +3,7 @@ package com.movit.feature.library
 import com.movit.core.data.MovitData
 import com.movit.core.data.cache.CacheState
 import com.movit.core.data.cache.staleWhileRevalidate
+import com.movit.core.network.dto.CatchUpSuggestionDto
 import com.movit.core.network.dto.ExploreDataDto
 import com.movit.core.network.dto.ExploreWorkoutDto
 import com.movit.resources.strings.SessionStrings
@@ -342,6 +343,123 @@ class SharedWorkoutSessionRepository(
         slugOrId: String,
     ): ExploreWorkoutDto? =
         templates.firstOrNull { it.slug == slugOrId || it.id == slugOrId }
+
+    private fun resolveCatchUpPrompt(
+        weekNumber: Int,
+        dayNumber: Int,
+        catchUp: CatchUpSuggestionDto?,
+    ): SessionCatchUpPromptUi? {
+        val slots = catchUp?.missedSlots.orEmpty().map { it.weekNumber to it.dayNumber }
+        return SessionCatchUpResolver.resolve(
+            weekNumber = weekNumber,
+            dayNumber = dayNumber,
+            catchUpMessage = catchUp?.message,
+            missedSlots = slots,
+        )
+    }
+
+    override suspend fun loadDayContext(workoutId: String): SessionDayContext {
+        val parsed = WorkoutSessionKeys.parse(workoutId) ?: return SessionDayContext()
+        if (!MovitData.isInstalled) return SessionDayContext()
+
+        val platform = MovitData.requirePlatform()
+        val userProgramId = platform.activeUserProgramId() ?: return SessionDayContext()
+        val language = platform.preferredLanguage()
+        val strings = SessionStrings.load(language)
+        val plan = MovitData.workoutSession.readCachedEffectivePlan(
+            userProgramId = userProgramId,
+            weekNumber = parsed.weekNumber,
+            dayNumber = parsed.dayNumber,
+        ) ?: return SessionDayContext()
+
+        val cards = WorkoutSessionApiMapper.mapPlannedWorkoutCards(
+            plan = plan,
+            selectedPlannedWorkoutId = parsed.plannedWorkoutId,
+            language = language,
+            strings = strings,
+        )
+        val home = MovitData.home.readCached()
+        val catchUp = resolveCatchUpPrompt(
+            weekNumber = parsed.weekNumber,
+            dayNumber = parsed.dayNumber,
+            catchUp = home?.trainMode?.catchUpSuggestion,
+        )
+        return SessionDayContext(
+            plannedWorkoutCards = cards,
+            catchUpPrompt = catchUp,
+        )
+    }
+
+    override suspend fun sessionKeyForDay(
+        programId: String,
+        weekNumber: Int,
+        dayNumber: Int,
+    ): String? {
+        if (!MovitData.isInstalled) return null
+        val userProgramId = MovitData.requirePlatform().activeUserProgramId() ?: return null
+        val plan = MovitData.workoutSession.readCachedEffectivePlan(
+            userProgramId = userProgramId,
+            weekNumber = weekNumber,
+            dayNumber = dayNumber,
+        ) ?: when (
+            val sync = MovitData.workoutSession.syncEffectivePlan(
+                userProgramId = userProgramId,
+                weekNumber = weekNumber,
+                dayNumber = dayNumber,
+            )
+        ) {
+            is AppResult.Success -> sync.value
+            is AppResult.Failure -> return null
+        }
+        val plannedWorkoutId = plan.plannedWorkouts.minByOrNull { it.sortOrder }?.id
+            ?: return null
+        return WorkoutSessionKeys.encode(
+            programId = programId,
+            weekNumber = weekNumber,
+            dayNumber = dayNumber,
+            plannedWorkoutId = plannedWorkoutId,
+        )
+    }
+
+    override suspend fun saveFlowCustomization(
+        workoutId: String,
+        config: WorkoutFlowConfigUi,
+    ): AppResult<Unit> {
+        val parsed = WorkoutSessionKeys.parse(workoutId) ?: return AppResult.Success(Unit)
+        if (!MovitData.isInstalled) {
+            return AppResult.Failure(SessionStrings.load("en").dataNotInstalled)
+        }
+        val platform = MovitData.requirePlatform()
+        val userProgramId = platform.activeUserProgramId()
+            ?: return AppResult.Failure(SessionStrings.load(platform.preferredLanguage()).noEnrollment)
+        val context = when (val sessionResult = loadSession(workoutId)) {
+            is AppResult.Success -> sessionResult.value.context
+            is AppResult.Failure -> null
+        } ?: WorkoutSessionContextUi(
+            programId = parsed.programId,
+            programSlug = parsed.programId,
+            weekNumber = parsed.weekNumber,
+            dayNumber = parsed.dayNumber,
+            plannedWorkoutId = parsed.plannedWorkoutId,
+        )
+        val plan = MovitData.workoutSession.readCachedEffectivePlan(
+            userProgramId = userProgramId,
+            weekNumber = context.weekNumber,
+            dayNumber = context.dayNumber,
+        ) ?: return AppResult.Failure(SessionStrings.load(platform.preferredLanguage()).workoutNotInPlan)
+
+        val request = WorkoutFlowSaveEncoder.encodeDayUpdate(
+            config = config,
+            context = context,
+            plan = plan,
+        )
+        return MovitData.workoutSession.saveDayCustomizations(
+            userProgramId = userProgramId,
+            weekNumber = context.weekNumber,
+            dayNumber = context.dayNumber,
+            request = request,
+        )
+    }
 
     override suspend fun saveSession(session: WorkoutSessionUi): AppResult<Unit> {
         val context = session.context

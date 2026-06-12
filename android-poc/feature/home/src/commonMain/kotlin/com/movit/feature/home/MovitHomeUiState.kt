@@ -19,5 +19,7 @@ data class MovitHomeUiState(
     val reportPreview: HomeReportPreviewUi? = null,
     val quickActions: List<HomeQuickActionUi> = emptyList(),
     val insightMessage: String? = null,
+    val catchUp: HomeCatchUpUi? = null,
+    val isRefreshing: Boolean = false,
     val errorMessage: String? = null,
 )

@@ -13,8 +13,11 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.EventAvailable
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
@@ -51,26 +54,39 @@ import com.movit.feature.home.components.HomeReportPreview
 import com.movit.feature.home.components.TodayPlanCard
 import com.movit.resources.movitText
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MovitHomeScreen(
     state: MovitHomeUiState,
     onEvent: (MovitHomeEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val canRefresh = state.errorMessage == null && !state.isLoading
+
     MovitScaffold(
         modifier = modifier,
         title = null,
         userName = state.userName,
         onProfileClick = { onEvent(MovitHomeEvent.ProfileClicked) },
     ) { padding ->
-        Column(
+        PullToRefreshBox(
+            isRefreshing = state.isRefreshing,
+            onRefresh = {
+                if (canRefresh) {
+                    onEvent(MovitHomeEvent.RefreshRequested)
+                }
+            },
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(MovitSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(MovitSpacing.lg),
+                .padding(padding),
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(MovitSpacing.lg),
+                verticalArrangement = Arrangement.spacedBy(MovitSpacing.lg),
+            ) {
             when {
                 state.isLoading && state.metricTiles.isEmpty() && state.todayPlan == null -> {
                     MovitLoadingState(message = movitText("home_loading"))
@@ -107,6 +123,28 @@ fun MovitHomeScreen(
                         )
                     }
 
+                    state.catchUp?.let { catchUp ->
+                        val catchUpA11y = movitText("home_a11y_catch_up", catchUp.message)
+                        Column(
+                            modifier = Modifier.semantics { contentDescription = catchUpA11y },
+                            verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
+                        ) {
+                            MovitInsightCard(
+                                title = movitText("session_catch_up_title"),
+                                message = catchUp.message,
+                                icon = Icons.Default.EventAvailable,
+                                variant = MovitInsightVariant.Warning,
+                            )
+                            MovitButton(
+                                text = movitText("session_catch_up_open_missed"),
+                                onClick = { onEvent(MovitHomeEvent.CatchUpOpenClicked) },
+                                variant = MovitButtonVariant.Outlined,
+                                size = MovitButtonSize.Small,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
+
                     state.alert?.let { alert ->
                         MovitInsightCard(
                             title = alert.title,
@@ -132,7 +170,9 @@ fun MovitHomeScreen(
                     state.activeProgram?.let { program ->
                         HomeActiveProgramSection(
                             program = program,
-                            onViewProgram = { onEvent(MovitHomeEvent.ViewProgramClicked) },
+                            onViewProgram = {
+                                onEvent(MovitHomeEvent.ViewProgramClicked(program.programId))
+                            },
                         )
                     }
 
@@ -251,6 +291,7 @@ fun MovitHomeScreen(
                         onActionClick = { onEvent(MovitHomeEvent.QuickActionClicked(it)) },
                     )
                 }
+            }
             }
         }
     }

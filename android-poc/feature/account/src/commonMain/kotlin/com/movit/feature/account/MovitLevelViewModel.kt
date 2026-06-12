@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 
 class MovitLevelViewModel(
     private val repository: LevelRepository = defaultLevelRepository(),
+    private val celebrationPreferences: LevelCelebrationPreferences = LevelCelebrationPreferences.fromMovitData(),
 ) : ViewModel() {
     private val workScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
     private val _state = MutableStateFlow(MovitLevelUiState(isLoading = true))
@@ -33,19 +34,40 @@ class MovitLevelViewModel(
         _state.update { it.copy(isLoading = true, errorMessage = null) }
         when (val result = repository.fetchLevelProfile()) {
             is AppResult.Success -> {
+                val profile = result.value
+                val lastSeenLevel = celebrationPreferences.lastSeenLevel()
+                val celebration = if (lastSeenLevel > 0 && profile.levelNumber > lastSeenLevel) {
+                    LevelUpCelebrationUi(
+                        fromLevel = lastSeenLevel,
+                        toLevel = profile.levelNumber,
+                        levelName = profile.levelName,
+                    )
+                } else {
+                    null
+                }
+                celebrationPreferences.markLevelSeen(profile.levelNumber)
                 _state.update {
                     it.copy(
                         isLoading = false,
-                        profile = result.value,
+                        profile = profile,
                         errorMessage = null,
+                        showNoProfile = false,
+                        levelUpCelebration = celebration,
                     )
                 }
             }
             is AppResult.Failure -> {
+                val noProfile = LevelProfileLoadErrors.isNoProfile(result.message)
                 _state.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = result.message,
+                        profile = null,
+                        errorMessage = if (noProfile) {
+                            null
+                        } else {
+                            result.message
+                        },
+                        showNoProfile = noProfile,
                     )
                 }
             }
@@ -61,10 +83,18 @@ class MovitLevelViewModel(
                 _state.update { it.copy(selectedTab = event.tab) }
             }
             MovitLevelEvent.StartScanClicked -> {
-                _effects.tryEmit(MovitLevelEffect.OpenAssessment)
+                val mode = if ((_state.value.profile?.levelNumber ?: 0) > 0) {
+                    "progression"
+                } else {
+                    "initial"
+                }
+                _effects.tryEmit(MovitLevelEffect.OpenAssessment(mode = mode))
             }
             MovitLevelEvent.BrowseProgramsClicked -> {
                 _effects.tryEmit(MovitLevelEffect.OpenExplore)
+            }
+            MovitLevelEvent.DismissLevelUpCelebration -> {
+                _state.update { it.copy(levelUpCelebration = null) }
             }
         }
     }

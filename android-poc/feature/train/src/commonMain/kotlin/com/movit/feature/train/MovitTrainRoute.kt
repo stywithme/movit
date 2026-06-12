@@ -32,7 +32,8 @@ fun MovitTrainRoute(
         state = state,
         onEvent = { event ->
             when (event) {
-                MovitTrainEvent.RetryClicked -> scope.launch { viewModel.load() }
+                MovitTrainEvent.RetryClicked -> scope.launch { viewModel.load(isRefresh = false) }
+                MovitTrainEvent.RefreshRequested -> scope.launch { viewModel.load(isRefresh = true) }
                 else -> viewModel.onEvent(event)
             }
         },

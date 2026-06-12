@@ -120,26 +120,60 @@ class MovitAuthViewModelTest {
     }
 
     @Test
-    fun googleSignIn_emitsStubMessage() {
-        runBlocking {
-            val viewModel = MovitAuthViewModel(
-                repository = FakeAuthRepository(),
-                bootstrap = previewBootstrap(),
-                initialScreen = AuthScreen.SignIn,
-            )
-            val effectDeferred = async {
-                withTimeout(5_000) { viewModel.effects.first() }
-            }
-            yield()
-            viewModel.onEvent(MovitAuthEvent.GoogleSignInClicked)
+    fun googleSignInClicked_setsPendingFlag() {
+        val viewModel = MovitAuthViewModel(
+            repository = FakeAuthRepository(),
+            bootstrap = previewBootstrap(),
+            initialScreen = AuthScreen.SignIn,
+        )
+        viewModel.onEvent(MovitAuthEvent.GoogleSignInClicked)
+        assertTrue(viewModel.state.value.pendingGoogleSignIn)
+    }
 
-            val effect = effectDeferred.await()
-            assertTrue(effect is MovitAuthEffect.ShowLocalizedMessage)
-            assertEquals(
-                "auth_google_unavailable",
-                (effect as MovitAuthEffect.ShowLocalizedMessage).key,
-            )
+    @Test
+    fun googleSignInCompleted_withCredentials_opensShell() = runBlocking {
+        val viewModel = MovitAuthViewModel(
+            repository = FakeAuthRepository(),
+            bootstrap = previewBootstrap(),
+            initialScreen = AuthScreen.SignIn,
+        )
+        val effectDeferred = async {
+            withTimeout(5_000) { viewModel.effects.first() }
         }
+        yield()
+        viewModel.onEvent(
+            MovitAuthEvent.GoogleSignInCompleted(
+                GoogleSignInCredentials(
+                    idToken = "token",
+                    googleId = "google-id",
+                    email = "user@gmail.com",
+                    name = "Google User",
+                ),
+            ),
+        )
+        assertFalse(viewModel.state.value.pendingGoogleSignIn)
+        assertEquals(MovitAuthEffect.OpenShell, effectDeferred.await())
+    }
+
+    @Test
+    fun googleSignInCompleted_withoutCredentials_showsUnavailableMessage() = runBlocking {
+        val viewModel = MovitAuthViewModel(
+            repository = FakeAuthRepository(),
+            bootstrap = previewBootstrap(),
+            initialScreen = AuthScreen.SignIn,
+        )
+        val effectDeferred = async {
+            withTimeout(5_000) { viewModel.effects.first() }
+        }
+        yield()
+        viewModel.onEvent(MovitAuthEvent.GoogleSignInCompleted(null))
+
+        val effect = effectDeferred.await()
+        assertTrue(effect is MovitAuthEffect.ShowLocalizedMessage)
+        assertEquals(
+            "auth_google_unavailable",
+            (effect as MovitAuthEffect.ShowLocalizedMessage).key,
+        )
     }
 
     @Test

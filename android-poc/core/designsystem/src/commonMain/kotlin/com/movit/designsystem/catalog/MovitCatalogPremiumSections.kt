@@ -199,6 +199,13 @@ fun MovitCatalogHeroAccentSection() {
             variant = MovitAccentVariant.Blue,
             modifier = Modifier.padding(top = MovitSpacing.md),
         )
+        MovitAccentBlock(
+            title = movitText("catalog_accent_coral_title"),
+            subtitle = movitText("catalog_accent_coral_subtitle"),
+            variant = MovitAccentVariant.Coral,
+            glyphIcon = Icons.Default.EmojiEvents,
+            modifier = Modifier.padding(top = MovitSpacing.md),
+        )
     }
 }
 

@@ -37,6 +37,16 @@ class FakeAuthRepository(
         )
     }
 
+    override suspend fun googleSignIn(credentials: GoogleSignInCredentials): AppResult<AuthSessionUi> {
+        return AppResult.Success(
+            AuthSessionUi(
+                userId = "google-user",
+                name = credentials.name,
+                email = credentials.email,
+            ),
+        )
+    }
+
     override suspend fun forgotPassword(email: String): AppResult<Unit> {
         return if (email.isBlank()) {
             AppResult.Failure("Enter your email address.")

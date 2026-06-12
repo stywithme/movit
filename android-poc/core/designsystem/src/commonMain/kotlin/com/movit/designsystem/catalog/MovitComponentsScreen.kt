@@ -24,6 +24,7 @@ import com.movit.designsystem.MovitTheme
 import com.movit.designsystem.MovitThemeMode
 import com.movit.designsystem.components.MovitScaffold
 import com.movit.designsystem.movitColors
+import com.movit.resources.movitText
 
 /**
  * Components tab content — same header shell as main app tabs.
@@ -38,8 +39,8 @@ fun MovitComponentsTabScreen(
     MovitTheme(themeMode = themeMode) {
         MovitScaffold(
             modifier = modifier,
-            title = "Components",
-            subtitle = "Design system catalog for visual QA.",
+            title = movitText("catalog_title"),
+            subtitle = movitText("catalog_subtitle"),
             showNotification = false,
             actions = {
                 ThemeToggleChips(
@@ -57,13 +58,13 @@ fun MovitComponentsTabScreen(
                     .padding(bottom = MovitSpacing.lg),
             ) {
                 Text(
-                    text = "مرجع بصري لكل مكوّنات Movit قبل استخدامها في الصفحات.",
+                    text = movitText("catalog_intro_ar"),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.movitColors.textSecondary,
                     modifier = Modifier.padding(bottom = MovitSpacing.xs),
                 )
                 Text(
-                    text = "Review colors, buttons, cards and premium patterns here before page integration.",
+                    text = movitText("catalog_intro_en"),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.movitColors.textTertiary,
                     fontWeight = FontWeight.W500,
@@ -118,9 +119,13 @@ fun MovitComponentsCatalogContent() {
     MovitCatalogButtonsBlock()
     MovitCatalogCardsBlock()
     MovitCatalogMetricsBlock()
+    MovitCatalogMacroSection()
     MovitCatalogSearchBlock()
     MovitCatalogFilterRowBlock()
     MovitCatalogMediaCardsBlock()
+    MovitCatalogProgramCardSection()
+    MovitCatalogWorkoutCardsSection()
+    MovitCatalogDifficultyDotsSection()
     MovitCatalogExerciseCardsBlock()
     MovitCatalogStatesBlock()
     MovitCatalogPlaceholderBlock()
@@ -135,6 +140,7 @@ fun MovitComponentsCatalogContent() {
     MovitCatalogStatCardsSection()
     MovitCatalogChartsSection()
     MovitCatalogListRowsSection()
+    MovitCatalogCoachSection()
     MovitCatalogFloatingNavPreview()
     MovitCatalogFloatingControlsSection()
     MovitCatalogHeroAccentSection()

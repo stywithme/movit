@@ -35,6 +35,7 @@ fun MovitAppShellRoute(
     onTrainEffect: (MovitTrainEffect) -> Boolean = { false },
     onLaunchLegacySubscription: () -> Boolean = { false },
     onNavigateToLegacyAuth: () -> Boolean = { false },
+    onShareText: (subject: String, text: String) -> Boolean = { _, _ -> false },
 ) {
     val shellState by shellViewModel.state.collectAsStateWithLifecycle()
 
@@ -66,6 +67,7 @@ fun MovitAppShellRoute(
                 onTrainEffect = onTrainEffect,
                 onLaunchLegacySubscription = onLaunchLegacySubscription,
                 onNavigateToLegacyAuth = onNavigateToLegacyAuth,
+                onShareText = onShareText,
             )
         }
     }
@@ -84,6 +86,7 @@ private fun MovitAppShellRouteContent(
     onTrainEffect: (MovitTrainEffect) -> Boolean,
     onLaunchLegacySubscription: () -> Boolean,
     onNavigateToLegacyAuth: () -> Boolean,
+    onShareText: (subject: String, text: String) -> Boolean,
 ) {
     val state by shellViewModel.state.collectAsStateWithLifecycle()
     val language = LocalMovitLanguage.current
@@ -96,6 +99,13 @@ private fun MovitAppShellRouteContent(
                 }
                 is MovitAppShellEffect.ShowLocalizedMessage -> {
                     snackbarHostState.showSnackbar(localizedString(language, effect.key))
+                }
+                is MovitAppShellEffect.ShareText -> {
+                    if (!onShareText(effect.subject, effect.text)) {
+                        snackbarHostState.showSnackbar(
+                            localizedString(language, "program_flow_share_coming_soon"),
+                        )
+                    }
                 }
                 MovitAppShellEffect.LaunchLegacySubscription -> {
                     if (!onLaunchLegacySubscription()) {

@@ -125,9 +125,10 @@ private fun SessionList(
     Column(verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm)) {
         sessions.forEachIndexed { index, session ->
             val sessionKey = session.title
+            val sessionSubtitle = "${session.subtitle} · ${session.durationLabel}"
             MovitSessionCard(
                 title = session.title,
-                subtitle = "${session.subtitle} · ${session.durationLabel}",
+                subtitle = sessionSubtitle,
                 items = session.items.map { it.toSessionItem() },
                 expanded = expandedIndex == index,
                 onToggle = {
@@ -137,6 +138,18 @@ private fun SessionList(
                 completedLabel = if (session.isCompleted) movitText("session_done") else null,
                 thumbnailUrl = session.thumbnailUrl,
                 thumbnailLabel = session.title.take(1).uppercase(),
+                toggleCollapsedDescription = movitText(
+                    "train_a11y_session_collapsed",
+                    session.title,
+                    sessionSubtitle,
+                ),
+                toggleExpandedDescription = movitText(
+                    "train_a11y_session_expanded",
+                    session.title,
+                    sessionSubtitle,
+                ),
+                actionContentDescription = movitText("train_a11y_session_start", session.title),
+                thumbnailContentDescription = movitText("train_a11y_session_thumbnail", session.title),
                 actionLabel = movitText("train_start_session"),
                 onActionClick = if (!session.isCompleted) onPrimaryAction else null,
                 footerNote = if (session.isCompleted) {

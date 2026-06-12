@@ -8,4 +8,6 @@ sealed interface MovitAppShellEffect {
     data object LaunchLegacySubscription : MovitAppShellEffect
     /** Strategy B — exit shell and return to legacy [SplashActivity] after logout / session expiry. */
     data object NavigateToLegacyAuth : MovitAppShellEffect
+    /** Platform share sheet (Android ACTION_SEND); host may fall back to snackbar when unavailable. */
+    data class ShareText(val subject: String, val text: String) : MovitAppShellEffect
 }

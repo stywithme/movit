@@ -15,7 +15,10 @@ data class SessionSwapCandidateUi(
 
 interface WorkoutSessionRepository {
     suspend fun loadSession(workoutId: String): AppResult<WorkoutSessionUi>
+    suspend fun loadDayContext(workoutId: String): SessionDayContext
     suspend fun saveSession(session: WorkoutSessionUi): AppResult<Unit>
+    suspend fun saveFlowCustomization(workoutId: String, config: WorkoutFlowConfigUi): AppResult<Unit>
+    suspend fun sessionKeyForDay(programId: String, weekNumber: Int, dayNumber: Int): String?
     suspend fun findSwapCandidates(
         query: String,
         replacingSlug: String,
@@ -46,6 +49,19 @@ class DefaultWorkoutSessionRepository(
             else -> buildExploreFallback(workoutId)
         }
     }
+
+    override suspend fun loadDayContext(workoutId: String): SessionDayContext = SessionDayContext()
+
+    override suspend fun saveFlowCustomization(
+        workoutId: String,
+        config: WorkoutFlowConfigUi,
+    ): AppResult<Unit> = AppResult.Success(Unit)
+
+    override suspend fun sessionKeyForDay(
+        programId: String,
+        weekNumber: Int,
+        dayNumber: Int,
+    ): String? = null
 
     override suspend fun saveSession(session: WorkoutSessionUi): AppResult<Unit> {
         return if (session.context != null) {

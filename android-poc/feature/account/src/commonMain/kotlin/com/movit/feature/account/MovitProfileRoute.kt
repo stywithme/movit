@@ -32,6 +32,8 @@ fun MovitProfileRoute(
         MovitSubscriptionScreen(
             isPro = state.profile?.isPro == true,
             onBack = { viewModel.onEvent(MovitProfileEvent.CloseSubscriptionClicked) },
+            onPrimaryAction = { viewModel.onEvent(MovitProfileEvent.SubscribeNowClicked) },
+            onRestorePurchases = { viewModel.onEvent(MovitProfileEvent.RestorePurchasesClicked) },
             modifier = modifier,
         )
     } else {

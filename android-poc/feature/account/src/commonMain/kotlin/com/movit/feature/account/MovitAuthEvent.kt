@@ -17,4 +17,5 @@ sealed interface MovitAuthEvent {
     data class PasswordChanged(val value: String) : MovitAuthEvent
     data class NameChanged(val value: String) : MovitAuthEvent
     data class RememberMeChanged(val value: Boolean) : MovitAuthEvent
+    data class GoogleSignInCompleted(val credentials: GoogleSignInCredentials?) : MovitAuthEvent
 }

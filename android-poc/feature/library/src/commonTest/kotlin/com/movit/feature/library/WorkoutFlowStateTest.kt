@@ -3,6 +3,7 @@ package com.movit.feature.library
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class WorkoutFlowStateTest {
@@ -20,6 +21,65 @@ class WorkoutFlowStateTest {
         val initialSets = viewModel.state.value.config!!.exercises.first().sets
         viewModel.onSetsChanged(firstId, initialSets + 1)
         assertEquals(initialSets + 1, viewModel.state.value.config!!.exercises.first().sets)
+    }
+
+    @Test
+    fun customize_repsStepperUpdatesReps() {
+        WorkoutFlowCache.clearAll()
+        val viewModel = WorkoutCustomizeViewModel(
+            workoutId = "preview",
+            sessionRepository = DefaultWorkoutSessionRepository(),
+        )
+        kotlinx.coroutines.runBlocking { viewModel.load() }
+        val firstId = viewModel.state.value.config?.exercises?.first()?.id
+        assertNotNull(firstId)
+        viewModel.onRepsChanged(firstId, 15)
+        assertEquals(15, viewModel.state.value.config!!.exercises.first().reps)
+    }
+
+    @Test
+    fun customize_deleteExercise_removesFromList() {
+        WorkoutFlowCache.clearAll()
+        val viewModel = WorkoutCustomizeViewModel(
+            workoutId = "preview",
+            sessionRepository = DefaultWorkoutSessionRepository(),
+        )
+        kotlinx.coroutines.runBlocking { viewModel.load() }
+        val initialCount = viewModel.state.value.config!!.exercises.size
+        val firstId = viewModel.state.value.config!!.exercises.first().id
+        viewModel.deleteExercise(firstId)
+        assertEquals(initialCount - 1, viewModel.state.value.config!!.exercises.size)
+    }
+
+    @Test
+    fun customize_moveExercise_reordersList() {
+        WorkoutFlowCache.clearAll()
+        val viewModel = WorkoutCustomizeViewModel(
+            workoutId = "preview",
+            sessionRepository = DefaultWorkoutSessionRepository(),
+        )
+        kotlinx.coroutines.runBlocking { viewModel.load() }
+        val exercises = viewModel.state.value.config!!.exercises
+        if (exercises.size < 2) return
+        val firstId = exercises.first().id
+        val secondId = exercises[1].id
+        viewModel.moveExercise(firstId, 1)
+        val reordered = viewModel.state.value.config!!.exercises
+        assertEquals(secondId, reordered.first().id)
+        assertEquals(firstId, reordered[1].id)
+    }
+
+    @Test
+    fun customize_commitForRun_rejectsEmptyList() {
+        WorkoutFlowCache.clearAll()
+        val viewModel = WorkoutCustomizeViewModel(
+            workoutId = "preview",
+            sessionRepository = DefaultWorkoutSessionRepository(),
+        )
+        kotlinx.coroutines.runBlocking { viewModel.load() }
+        viewModel.state.value.config!!.exercises.forEach { viewModel.deleteExercise(it.id) }
+        viewModel.commitForRun()
+        assertNull(WorkoutFlowCache.get("preview"))
     }
 
     @Test
@@ -42,7 +102,8 @@ class WorkoutFlowStateTest {
             sessionRepository = DefaultWorkoutSessionRepository(),
         )
         kotlinx.coroutines.runBlocking { viewModel.load() }
-        val committed = viewModel.commitForRun()
+        var committed: WorkoutFlowConfigUi? = null
+        viewModel.commitForRun { committed = it }
         assertNotNull(committed)
         assertEquals(committed, WorkoutFlowCache.get("preview"))
     }

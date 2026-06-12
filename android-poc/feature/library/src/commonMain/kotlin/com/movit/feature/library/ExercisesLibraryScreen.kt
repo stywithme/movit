@@ -49,7 +49,7 @@ fun ExercisesLibraryScreen(
         ) {
             MovitInnerPageHeader(
                 onBack = onBack,
-                backLabel = movitText("library_back_explore"),
+                backLabel = movitText("library_a11y_back"),
                 modifier = Modifier.weight(1f),
             )
             if (!state.isLoading && state.errorMessage == null) {
@@ -85,7 +85,7 @@ fun ExercisesLibraryScreen(
                             state.visibleCount,
                         ),
                         searchPlaceholder = movitText("library_search_exercises"),
-                        filterContentDescription = movitText("library_filter_button"),
+                        filterContentDescription = movitText("library_a11y_filter"),
                         onFilterClick = onFilterClick,
                         filterSheetVisible = state.filterSheetVisible,
                         onDismissFilterSheet = onDismissFilterSheet,
@@ -111,7 +111,7 @@ fun ExercisesLibraryScreen(
                             state.visibleCount,
                         ),
                         searchPlaceholder = movitText("library_search_exercises"),
-                        filterContentDescription = movitText("library_filter_button"),
+                        filterContentDescription = movitText("library_a11y_filter"),
                         onFilterClick = onFilterClick,
                         filterSheetVisible = state.filterSheetVisible,
                         onDismissFilterSheet = onDismissFilterSheet,
@@ -128,6 +128,10 @@ fun ExercisesLibraryScreen(
                             ExerciseGridCard(
                                 item = item,
                                 onClick = { onItemClick(item.id) },
+                                imageContentDescription = movitText(
+                                    "library_a11y_item_image",
+                                    item.title,
+                                ),
                             )
                         }
                     }

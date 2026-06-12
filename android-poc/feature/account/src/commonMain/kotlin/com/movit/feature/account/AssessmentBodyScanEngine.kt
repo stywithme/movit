@@ -91,8 +91,11 @@ class AssessmentBodyScanEngine(
                 regionKey = dto.region,
                 score = dto.regionalScore.roundToInt().coerceIn(0, 100),
                 tone = dto.regionalScore.toTone(),
+                confidence = dto.confidence,
+                status = dto.status,
             )
         }
+        val safetyGates = AssessmentSafetyGateEngine.evaluate(regions, parqFlags)
         val uiResults = AssessmentResultsUi(
             bodyScore = bodyScore.roundToInt().coerceIn(0, 100),
             levelLabel = levelLabel(bodyScore),
@@ -104,6 +107,8 @@ class AssessmentBodyScanEngine(
             ),
             regions = uiRegions,
             insights = insights(uiRegions),
+            safetyGates = safetyGates,
+            resultsSavedToServer = false,
         )
         val duration = firstFrameTimestampMs?.let { start ->
             lastFrameTimestampMs?.let { end -> (end - start).coerceAtLeast(0) }

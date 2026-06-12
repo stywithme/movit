@@ -11,5 +11,6 @@ data class AuthSessionUi(
 interface AuthRepository {
     suspend fun login(email: String, password: String): AppResult<AuthSessionUi>
     suspend fun register(name: String, email: String, password: String): AppResult<AuthSessionUi>
+    suspend fun googleSignIn(credentials: GoogleSignInCredentials): AppResult<AuthSessionUi>
     suspend fun forgotPassword(email: String): AppResult<Unit>
 }

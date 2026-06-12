@@ -69,6 +69,24 @@ fun ComponentActivity.attachMovitShellHost(
 
             },
 
+            onShareText = { subject, text ->
+
+                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+
+                    type = "text/plain"
+
+                    putExtra(Intent.EXTRA_SUBJECT, subject)
+
+                    putExtra(Intent.EXTRA_TEXT, text)
+
+                }
+
+                startActivity(Intent.createChooser(shareIntent, subject))
+
+                true
+
+            },
+
         )
 
     }

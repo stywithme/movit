@@ -39,6 +39,6 @@ sealed interface MovitInnerRoute {
     data class ReportDetail(val reportId: String) : MovitInnerRoute
     data object Auth : MovitInnerRoute
     data object ProfileOnboarding : MovitInnerRoute
-    data object Assessment : MovitInnerRoute
+    data class Assessment(val mode: String = "initial") : MovitInnerRoute
     data object LevelProfile : MovitInnerRoute
 }

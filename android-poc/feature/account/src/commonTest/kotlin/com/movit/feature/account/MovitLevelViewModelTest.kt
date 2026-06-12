@@ -46,6 +46,43 @@ class MovitLevelViewModelTest {
     }
 
     @Test
+    fun load_levelUp_showsCelebrationWhenLevelIncreased() = runBlocking {
+        var lastSeen = 1
+        val preferences = LevelCelebrationPreferences(
+            readLastSeenLevel = { lastSeen },
+            writeLastSeenLevel = { lastSeen = it },
+        )
+        val viewModel = MovitLevelViewModel(
+            repository = FakeLevelRepository(),
+            celebrationPreferences = preferences,
+        )
+        viewModel.load()
+
+        val celebration = viewModel.state.value.levelUpCelebration
+        assertNotNull(celebration)
+        assertEquals(1, celebration.fromLevel)
+        assertEquals(2, celebration.toLevel)
+        assertEquals("Building", celebration.levelName)
+        assertEquals(2, lastSeen)
+    }
+
+    @Test
+    fun dismissLevelUp_clearsCelebration() = runBlocking {
+        val preferences = LevelCelebrationPreferences(
+            readLastSeenLevel = { 1 },
+            writeLastSeenLevel = {},
+        )
+        val viewModel = MovitLevelViewModel(
+            repository = FakeLevelRepository(),
+            celebrationPreferences = preferences,
+        )
+        viewModel.load()
+        viewModel.onEvent(MovitLevelEvent.DismissLevelUpCelebration)
+
+        assertNull(viewModel.state.value.levelUpCelebration)
+    }
+
+    @Test
     fun load_recoversAfterTransientFailure() = runBlocking {
         var calls = 0
         val repository = object : LevelRepository {

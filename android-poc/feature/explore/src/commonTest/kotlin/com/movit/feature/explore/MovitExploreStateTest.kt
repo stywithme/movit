@@ -134,6 +134,19 @@ class MovitExploreStateTest {
     }
 
     @Test
+    fun viewModel_itemClicked_emitsOpenProgramDetailForProgram() {
+        runBlocking {
+            val viewModel = MovitExploreViewModel(FakeExploreRepository())
+            val effectDeferred = async {
+                withTimeout(5_000) { viewModel.effects.first() }
+            }
+            yield()
+            viewModel.onEvent(MovitExploreEvent.ItemClicked("prog-strength", ExploreItemType.Program))
+            assertEquals(MovitExploreEffect.OpenProgramDetail("prog-strength"), effectDeferred.await())
+        }
+    }
+
+    @Test
     fun viewModel_itemClicked_emitsExercisePrepareEffect() {
         runBlocking {
             val viewModel = MovitExploreViewModel(FakeExploreRepository())

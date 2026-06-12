@@ -5,6 +5,8 @@ sealed interface MovitProfileEvent {
     data object SignInClicked : MovitProfileEvent
     data object ViewPlansClicked : MovitProfileEvent
     data object ManageSubscriptionClicked : MovitProfileEvent
+    data object SubscribeNowClicked : MovitProfileEvent
+    data object RestorePurchasesClicked : MovitProfileEvent
     data object CloseSubscriptionClicked : MovitProfileEvent
     data object EditProfileClicked : MovitProfileEvent
     data object TrainingProfileClicked : MovitProfileEvent

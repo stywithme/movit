@@ -2,6 +2,7 @@ package com.movit.feature.library.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,20 +17,30 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DragIndicator
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.TrackChanges
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.movit.designsystem.MovitRadius
@@ -39,15 +50,19 @@ import com.movit.designsystem.components.MovitButtonVariant
 import com.movit.designsystem.components.MovitCard
 import com.movit.designsystem.components.MovitCardVariant
 import com.movit.designsystem.components.MovitProgressBar
+import com.movit.designsystem.components.MovitRemoteImage
 import com.movit.designsystem.components.MovitSectionHeader
+import com.movit.designsystem.components.MovitStepper
 import com.movit.designsystem.components.MovitTag
 import com.movit.designsystem.components.MovitTagVariant
 import com.movit.designsystem.movitColors
 import com.movit.feature.library.ProgramDayStatus
 import com.movit.feature.library.ProgramDayUi
 import com.movit.feature.library.ProgramDetailCardUi
+import com.movit.feature.library.ProgramEditExerciseUi
 import com.movit.feature.library.ProgramEditReason
 import com.movit.feature.library.ProgramEditScope
+import com.movit.feature.library.ProgramEditSessionUi
 import com.movit.feature.library.ProgramEditUiState
 import com.movit.feature.library.ProgramEnrollmentUi
 import com.movit.feature.library.ProgramStatUi
@@ -64,27 +79,57 @@ fun ProgramHeroSection(
 ) {
     val movit = MaterialTheme.movitColors
     val shape = RoundedCornerShape(MovitRadius.xl)
+    val heroA11y = movitText("program_a11y_hero_image")
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(200.dp)
             .clip(shape)
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.primary,
-                        MaterialTheme.colorScheme.primaryContainer,
+            .semantics { contentDescription = heroA11y },
+    ) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primary,
+                            MaterialTheme.colorScheme.primaryContainer,
+                        ),
                     ),
                 ),
+        )
+        if (!imageUrl.isNullOrBlank()) {
+            MovitRemoteImage(
+                imageUrl = imageUrl,
+                contentDescription = null,
+                placeholderLabel = title.take(1).uppercase(),
+                modifier = Modifier.matchParentSize(),
             )
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(movit.inkVeil05, movit.inkVeil78),
+        }
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(movit.inkVeil05, movit.inkVeil78),
+                    ),
                 ),
+        )
+        if (imageUrl.isNullOrBlank()) {
+            Text(
+                text = title.take(1).uppercase(),
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.W800,
+                color = movit.onInkVeil22,
+                modifier = Modifier.align(Alignment.Center),
             )
-            .padding(MovitSpacing.lg),
-    ) {
-        Column(modifier = Modifier.align(Alignment.BottomStart)) {
+        }
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(MovitSpacing.lg),
+        ) {
             if (kickers.isNotEmpty()) {
                 Row(horizontalArrangement = Arrangement.spacedBy(MovitSpacing.xs)) {
                     kickers.forEachIndexed { index, kicker ->
@@ -119,15 +164,6 @@ fun ProgramHeroSection(
                 style = MaterialTheme.typography.bodySmall,
                 color = movit.onInkVeil70,
                 modifier = Modifier.padding(top = MovitSpacing.xs),
-            )
-        }
-        if (imageUrl.isNullOrBlank()) {
-            Text(
-                text = title.take(1).uppercase(),
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.W800,
-                color = movit.onInkVeil22,
-                modifier = Modifier.align(Alignment.Center),
             )
         }
     }
@@ -286,17 +322,26 @@ fun ProgramWeekStrip(
     onWeekSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val stripA11y = movitText("program_a11y_week_strip")
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
+            .horizontalScroll(rememberScrollState())
+            .semantics { contentDescription = stripA11y },
         horizontalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
     ) {
         weeks.forEach { week ->
             val selected = week.weekNumber == selectedWeekNumber
+            val weekA11y = movitText(
+                "program_a11y_week_card",
+                week.label,
+                week.theme,
+                week.progressPercent,
+            )
             MovitCard(
                 variant = if (selected) MovitCardVariant.Outlined else MovitCardVariant.Filled,
                 onClick = { onWeekSelected(week.weekNumber) },
+                modifier = Modifier.semantics { contentDescription = weekA11y },
             ) {
                 Column(modifier = Modifier.padding(MovitSpacing.md)) {
                     Text(text = week.label, fontWeight = FontWeight.W800)
@@ -490,6 +535,18 @@ fun ProgramEditPanel(
     onScopeSelected: (ProgramEditScope) -> Unit,
     onWeeklyTargetChange: (Int) -> Unit,
     onPauseToggle: () -> Unit,
+    onSessionMove: (sessionId: String, direction: Int) -> Unit,
+    onExerciseParamChange: (
+        sessionId: String,
+        exerciseId: String,
+        sets: Int?,
+        reps: Int?,
+        weightKg: Double?,
+        restSeconds: Int?,
+    ) -> Unit,
+    onRemoveSession: (sessionId: String) -> Unit,
+    onRemoveExercise: (sessionId: String, exerciseId: String) -> Unit,
+    onResetDay: () -> Unit,
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -542,6 +599,34 @@ fun ProgramEditPanel(
             onWeeklyTargetChange = onWeeklyTargetChange,
             onPauseToggle = onPauseToggle,
         )
+        ProgramEditDaySection(
+            edit = edit,
+            onSessionMove = onSessionMove,
+            onExerciseParamChange = onExerciseParamChange,
+            onRemoveSession = onRemoveSession,
+            onRemoveExercise = onRemoveExercise,
+            onResetDay = onResetDay,
+        )
+        edit.saveError?.let { message ->
+            Surface(
+                shape = RoundedCornerShape(MovitRadius.lg),
+                color = MaterialTheme.colorScheme.errorContainer,
+            ) {
+                Text(
+                    text = message,
+                    modifier = Modifier.padding(MovitSpacing.md),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
+        if (edit.isSaving) {
+            Text(
+                text = movitText("program_edit_saving"),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.movitColors.textTertiary,
+            )
+        }
     }
 }
 
@@ -632,10 +717,297 @@ private fun ProgramScopeList(
 private fun ProgramImpactCard(edit: ProgramEditUiState) {
     MovitCard(variant = MovitCardVariant.Filled) {
         Column(modifier = Modifier.padding(MovitSpacing.md)) {
-            ImpactRow(label = movitText("program_impact_editing"), value = "Week ${edit.editingWeekNumber} · Day ${edit.editingDayNumber}")
+            ImpactRow(
+                label = movitText("program_impact_editing"),
+                value = edit.editingDayTitle.ifBlank {
+                    "Week ${edit.editingWeekNumber} · Day ${edit.editingDayNumber}"
+                },
+            )
             ImpactRow(label = movitText("program_impact_plan"), value = movitText("program_impact_user_copy"))
             ImpactRow(label = movitText("program_impact_template"), value = movitText("program_impact_unchanged"))
+            ImpactRow(
+                label = movitText("program_impact_sync"),
+                value = movitText("program_impact_sync_value", edit.daySessions.size),
+            )
         }
+    }
+}
+
+@Composable
+private fun ProgramEditDaySection(
+    edit: ProgramEditUiState,
+    onSessionMove: (sessionId: String, direction: Int) -> Unit,
+    onExerciseParamChange: (
+        sessionId: String,
+        exerciseId: String,
+        sets: Int?,
+        reps: Int?,
+        weightKg: Double?,
+        restSeconds: Int?,
+    ) -> Unit,
+    onRemoveSession: (sessionId: String) -> Unit,
+    onRemoveExercise: (sessionId: String, exerciseId: String) -> Unit,
+    onResetDay: () -> Unit,
+) {
+    MovitSectionHeader(
+        title = movitText("program_edit_day_title"),
+        subtitle = edit.editingDayTitle.ifBlank {
+            movitText("program_edit_day_sub", edit.editingWeekNumber, edit.editingDayNumber)
+        },
+        actionLabel = movitText("program_edit_reset_day"),
+        onActionClick = onResetDay,
+    )
+    Column(verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm)) {
+        edit.daySessions.forEachIndexed { index, session ->
+            ProgramEditSessionCard(
+                session = session,
+                canMoveUp = index > 0,
+                canMoveDown = index < edit.daySessions.lastIndex,
+                onMoveUp = { onSessionMove(session.id, -1) },
+                onMoveDown = { onSessionMove(session.id, 1) },
+                onRemoveSession = { onRemoveSession(session.id) },
+                onExerciseParamChange = { exerciseId, sets, reps, weightKg, restSeconds ->
+                    onExerciseParamChange(session.id, exerciseId, sets, reps, weightKg, restSeconds)
+                },
+                onRemoveExercise = { exerciseId -> onRemoveExercise(session.id, exerciseId) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProgramEditSessionCard(
+    session: ProgramEditSessionUi,
+    canMoveUp: Boolean,
+    canMoveDown: Boolean,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
+    onRemoveSession: () -> Unit,
+    onExerciseParamChange: (
+        exerciseId: String,
+        sets: Int?,
+        reps: Int?,
+        weightKg: Double?,
+        restSeconds: Int?,
+    ) -> Unit,
+    onRemoveExercise: (exerciseId: String) -> Unit,
+) {
+    MovitCard(variant = MovitCardVariant.Outlined) {
+        Column(
+            modifier = Modifier.padding(MovitSpacing.md),
+            verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
+            ) {
+                ProgramEditDragHandle(
+                    onMoveUp = onMoveUp,
+                    onMoveDown = onMoveDown,
+                    enabled = canMoveUp || canMoveDown,
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = session.title, fontWeight = FontWeight.W800)
+                    Text(
+                        text = movitText("program_edit_session_meta", session.exercises.size),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.movitColors.textTertiary,
+                    )
+                }
+                if (session.isEdited) {
+                    MovitTag(text = movitText("program_edit_session_edited"), variant = MovitTagVariant.Lime)
+                }
+                IconButton(onClick = onRemoveSession) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = movitText("program_edit_remove_session"),
+                    )
+                }
+            }
+            session.exercises.forEach { exercise ->
+                ProgramEditExerciseParamRow(
+                    exercise = exercise,
+                    onParamChange = onExerciseParamChange,
+                    onRemove = { onRemoveExercise(exercise.id) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProgramEditExerciseParamRow(
+    exercise: ProgramEditExerciseUi,
+    onParamChange: (
+        exerciseId: String,
+        sets: Int?,
+        reps: Int?,
+        weightKg: Double?,
+        restSeconds: Int?,
+    ) -> Unit,
+    onRemove: () -> Unit,
+) {
+    Surface(
+        shape = RoundedCornerShape(MovitRadius.lg),
+        color = MaterialTheme.movitColors.surface2,
+    ) {
+        Column(
+            modifier = Modifier.padding(MovitSpacing.md),
+            verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = exercise.name, fontWeight = FontWeight.W800, style = MaterialTheme.typography.bodyMedium)
+                    if (exercise.isEdited) {
+                        MovitTag(text = movitText("program_edit_session_edited"), variant = MovitTagVariant.Blue)
+                    }
+                }
+                IconButton(onClick = onRemove) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = movitText("program_edit_remove_exercise"),
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(MovitSpacing.xs),
+            ) {
+                ProgramEditParamCell(
+                    label = movitText("program_edit_exercise_sets"),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    MovitStepper(
+                        value = exercise.sets,
+                        onDecrement = { onParamChange(exercise.id, exercise.sets - 1, null, null, null) },
+                        onIncrement = { onParamChange(exercise.id, exercise.sets + 1, null, null, null) },
+                        minValue = 1,
+                        maxValue = 12,
+                    )
+                }
+                ProgramEditParamCell(
+                    label = movitText("program_edit_exercise_reps"),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    MovitStepper(
+                        value = exercise.reps ?: 0,
+                        onDecrement = {
+                            val next = (exercise.reps ?: 0) - 1
+                            onParamChange(exercise.id, null, next.coerceAtLeast(0), null, null)
+                        },
+                        onIncrement = {
+                            onParamChange(exercise.id, null, (exercise.reps ?: 0) + 1, null, null)
+                        },
+                        minValue = 0,
+                        maxValue = 30,
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(MovitSpacing.xs),
+            ) {
+                ProgramEditParamCell(
+                    label = movitText("program_edit_exercise_weight"),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    MovitStepper(
+                        value = (exercise.weightKg ?: 0.0).toInt(),
+                        onDecrement = {
+                            val next = (exercise.weightKg ?: 0.0) - 2.5
+                            onParamChange(exercise.id, null, null, next.coerceAtLeast(0.0), null)
+                        },
+                        onIncrement = {
+                            onParamChange(exercise.id, null, null, (exercise.weightKg ?: 0.0) + 2.5, null)
+                        },
+                        minValue = 0,
+                        maxValue = 200,
+                    )
+                }
+                ProgramEditParamCell(
+                    label = movitText("program_edit_exercise_rest"),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    MovitStepper(
+                        value = exercise.restSeconds,
+                        onDecrement = {
+                            onParamChange(exercise.id, null, null, null, (exercise.restSeconds - 5).coerceAtLeast(0))
+                        },
+                        onIncrement = {
+                            onParamChange(exercise.id, null, null, null, exercise.restSeconds + 5)
+                        },
+                        minValue = 0,
+                        maxValue = 180,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProgramEditParamCell(
+    label: String,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.movitColors.textTertiary,
+            fontWeight = FontWeight.W700,
+        )
+        content()
+    }
+}
+
+@Composable
+private fun ProgramEditDragHandle(
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    var totalDrag by remember { mutableFloatStateOf(0f) }
+    IconButton(
+        onClick = {},
+        enabled = enabled,
+        modifier = modifier.pointerInput(enabled) {
+            if (!enabled) return@pointerInput
+            detectDragGesturesAfterLongPress(
+                onDragEnd = { totalDrag = 0f },
+                onDrag = { _, dragAmount ->
+                    totalDrag += dragAmount.y
+                    if (totalDrag < -72f) {
+                        onMoveUp()
+                        totalDrag = 0f
+                    } else if (totalDrag > 72f) {
+                        onMoveDown()
+                        totalDrag = 0f
+                    }
+                },
+            )
+        },
+    ) {
+        Icon(
+            Icons.Default.DragIndicator,
+            contentDescription = movitText("session_a11y_reorder"),
+            tint = if (enabled) {
+                MaterialTheme.movitColors.textSecondary
+            } else {
+                MaterialTheme.movitColors.textTertiary
+            },
+        )
     }
 }
 
@@ -746,8 +1118,11 @@ fun ProgramStartDock(
     onStart: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val dockA11y = movitText("program_a11y_start_dock", title, subtitle)
     MovitCard(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics { contentDescription = dockA11y },
         variant = MovitCardVariant.Elevated,
         contentPadding = MovitSpacing.md,
     ) {

@@ -10,6 +10,7 @@ import com.movit.core.network.dto.WorkoutExecutionApiResponse
 import com.movit.core.network.dto.WorkoutExecutionUploadRequestDto
 import com.movit.core.network.dto.EntityAudioManifestApiResponse
 import com.movit.core.network.dto.ForgotPasswordRequestDto
+import com.movit.core.network.dto.GoogleAuthRequestDto
 import com.movit.core.network.dto.HomeApiResponse
 import com.movit.core.network.dto.EffectivePlanApiResponse
 import com.movit.core.network.dto.ActivePlanApiResponse
@@ -247,6 +248,17 @@ class MovitMobileApi(
         }
         if (!response.status.isSuccess()) {
             error("Registration failed (${response.status.value})")
+        }
+        response.body<AuthApiResponse<AuthDataDto>>()
+    }
+
+    suspend fun googleAuth(request: GoogleAuthRequestDto): Result<AuthApiResponse<AuthDataDto>> = runCatching {
+        val response = client.post(base("api/mobile/auth/google")) {
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }
+        if (!response.status.isSuccess()) {
+            error("Google sign-in failed (${response.status.value})")
         }
         response.body<AuthApiResponse<AuthDataDto>>()
     }

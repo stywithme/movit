@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.components.MovitCard
 import com.movit.designsystem.components.MovitCardVariant
+import com.movit.designsystem.components.MovitRemoteImage
 import com.movit.designsystem.components.MovitTag
 import com.movit.designsystem.components.MovitTagVariant
 import com.movit.designsystem.movitColors
@@ -204,16 +205,10 @@ fun SessionExerciseThumbnail(
             .clip(RoundedCornerShape(14.dp))
             .background(MaterialTheme.colorScheme.primaryContainer),
     ) {
-        Text(
-            text = name.firstOrNull()?.uppercase() ?: "?",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.W800,
-            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.35f),
-            modifier = Modifier.align(Alignment.Center),
-        )
-        MovitAsyncImage(
-            url = imageUrl,
+        MovitRemoteImage(
+            imageUrl = imageUrl,
             contentDescription = movitText("session_a11y_exercise_thumb", name),
+            placeholderLabel = name.firstOrNull()?.uppercase() ?: "?",
             modifier = Modifier
                 .fillMaxSize()
                 .clip(RoundedCornerShape(14.dp)),

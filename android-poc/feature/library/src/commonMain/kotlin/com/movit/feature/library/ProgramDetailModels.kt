@@ -74,6 +74,24 @@ data class ProgramNextSessionUi(
     val sessionWorkoutId: String,
 )
 
+data class ProgramEditExerciseUi(
+    val id: String,
+    val name: String,
+    val sets: Int,
+    val reps: Int?,
+    val weightKg: Double?,
+    val restSeconds: Int,
+    val isEdited: Boolean = false,
+)
+
+data class ProgramEditSessionUi(
+    val id: String,
+    val title: String,
+    val sortOrder: Int,
+    val exercises: List<ProgramEditExerciseUi>,
+    val isEdited: Boolean = false,
+)
+
 data class ProgramEditUiState(
     val selectedReason: ProgramEditReason = ProgramEditReason.ScheduleChanged,
     val selectedScope: ProgramEditScope = ProgramEditScope.DaySessions,
@@ -84,6 +102,10 @@ data class ProgramEditUiState(
     val editingWeekNumber: Int = 1,
     val editingDayNumber: Int = 2,
     val editingDayTitle: String = "",
+    val daySessions: List<ProgramEditSessionUi> = emptyList(),
+    val isSaving: Boolean = false,
+    val saveError: String? = null,
+    val isDirty: Boolean = false,
 )
 
 data class ProgramDetailUiState(

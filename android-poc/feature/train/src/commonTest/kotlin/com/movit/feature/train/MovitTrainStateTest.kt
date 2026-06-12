@@ -93,6 +93,21 @@ class MovitTrainStateTest {
     }
 
     @Test
+    fun startProgramClicked_emitsOpenProgramDetail() {
+        runBlocking {
+            val viewModel = MovitTrainViewModel()
+            val effectDeferred = async {
+                withTimeout(5_000) {
+                    viewModel.effects.first()
+                }
+            }
+            yield()
+            viewModel.onEvent(MovitTrainEvent.StartProgramClicked("prog-strength"))
+            assertEquals(MovitTrainEffect.OpenProgramDetail("prog-strength"), effectDeferred.await())
+        }
+    }
+
+    @Test
     fun explorePrograms_emitsOpenProgramList() {
         runBlocking {
             val viewModel = MovitTrainViewModel()
@@ -169,5 +184,14 @@ class MovitTrainStateTest {
                 effectDeferred.await(),
             )
         }
+    }
+
+    @Test
+    fun refreshLoad_updatesDashboardAndClearsRefreshing() = runBlocking {
+        val viewModel = MovitTrainViewModel(repository = FakeTrainRepository())
+        viewModel.load(isRefresh = true)
+        val state = viewModel.state.value
+        assertEquals(false, state.isRefreshing)
+        assertEquals(TrainDashboardStatus.ActivePlan, state.dashboard?.status)
     }
 }

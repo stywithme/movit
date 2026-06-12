@@ -54,7 +54,7 @@ fun MovitInnerHost(
             ProgramListRoute(
                 onBack = onBack,
                 onProgramClick = { programId ->
-                    onNavigate(MovitInnerRoute.ProgramWeekPlan(programId = programId, weekNumber = 1))
+                    onNavigate(MovitInnerRoute.ProgramDetail(programId = programId))
                 },
                 modifier = modifier,
             )
@@ -84,8 +84,13 @@ fun MovitInnerHost(
                 weekNumber = route.weekNumber,
                 onBack = onBack,
                 onEffect = { effect ->
-                    if (effect == WeeklyReportEffect.ShareRequested) {
-                        onShellEffect(MovitAppShellEffect.ShowLocalizedMessage("program_flow_share_coming_soon"))
+                    if (effect is WeeklyReportEffect.ShareRequested) {
+                        onShellEffect(
+                            MovitAppShellEffect.ShareText(
+                                subject = effect.subject,
+                                text = effect.text,
+                            ),
+                        )
                     }
                 },
                 modifier = modifier,
@@ -97,6 +102,14 @@ fun MovitInnerHost(
                 onBack = onBack,
                 onStartSession = { sessionKey ->
                     onNavigate(MovitInnerRoute.WorkoutSession(sessionKey))
+                },
+                onViewWeeklyReport = { weekNumber ->
+                    onNavigate(
+                        MovitInnerRoute.WeeklyReport(
+                            programId = route.programId,
+                            weekNumber = weekNumber,
+                        ),
+                    )
                 },
                 modifier = modifier,
             )
@@ -115,6 +128,15 @@ fun MovitInnerHost(
                 },
                 onStartWorkout = {
                     onNavigate(MovitInnerRoute.WorkoutCustomize(route.workoutId))
+                },
+                onSwitchWorkout = { sessionKey ->
+                    onNavigate(MovitInnerRoute.WorkoutSession(sessionKey))
+                },
+                onOpenCatchUpDay = { sessionKey ->
+                    onNavigate(MovitInnerRoute.WorkoutSession(sessionKey))
+                },
+                onSnackbar = { key ->
+                    onShellEffect(MovitAppShellEffect.ShowLocalizedMessage(key))
                 },
                 modifier = modifier,
             )
@@ -198,12 +220,17 @@ fun MovitInnerHost(
                 exerciseId = route.exerciseId,
                 onBack = onBack,
                 onStart = { action ->
-                    handleTrainingStart(
-                        action = action,
-                        workoutId = route.workoutId,
-                        onNavigate = onNavigate,
-                        onShellEffect = onShellEffect,
-                    )
+                    val workoutId = route.workoutId
+                    if (workoutId != null) {
+                        onNavigate(MovitInnerRoute.WorkoutRun(workoutId))
+                    } else {
+                        handleTrainingStart(
+                            action = action,
+                            workoutId = null,
+                            onNavigate = onNavigate,
+                            onShellEffect = onShellEffect,
+                        )
+                    }
                 },
                 modifier = modifier,
             )
@@ -213,11 +240,21 @@ fun MovitInnerHost(
                 reportId = route.reportId,
                 onBack = onBack,
                 onEffect = { effect ->
-                    val key = when (effect) {
-                        ReportDetailEffect.ShareRequested -> "shell_report_share_coming_soon"
-                        ReportDetailEffect.ExportRequested -> "shell_report_export_coming_soon"
+                    when (effect) {
+                        is ReportDetailEffect.ShareRequested,
+                        is ReportDetailEffect.ExportRequested -> {
+                            val payload = when (effect) {
+                                is ReportDetailEffect.ShareRequested -> effect.payload
+                                is ReportDetailEffect.ExportRequested -> effect.payload
+                            }
+                            onShellEffect(
+                                MovitAppShellEffect.ShareText(
+                                    subject = payload.chooserTitleKey,
+                                    text = payload.text,
+                                ),
+                            )
+                        }
                     }
-                    onShellEffect(MovitAppShellEffect.ShowLocalizedMessage(key))
                 },
                 modifier = modifier,
             )
@@ -234,8 +271,9 @@ fun MovitInnerHost(
                 modifier = modifier,
             )
         }
-        MovitInnerRoute.Assessment -> {
+        is MovitInnerRoute.Assessment -> {
             MovitAssessmentRoute(
+                assessmentMode = route.mode,
                 onEffect = { onShellEvent(MovitAppShellEvent.AssessmentEffectReceived(it)) },
                 modifier = modifier,
             )

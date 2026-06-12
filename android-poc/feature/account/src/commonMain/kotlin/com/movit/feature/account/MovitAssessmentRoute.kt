@@ -10,7 +10,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 @Composable
 fun MovitAssessmentRoute(
     modifier: Modifier = Modifier,
-    viewModel: MovitAssessmentViewModel = viewModel { MovitAssessmentViewModel() },
+    assessmentMode: String = "initial",
+    viewModel: MovitAssessmentViewModel = viewModel(key = assessmentMode) {
+        MovitAssessmentViewModel(assessmentMode = assessmentMode)
+    },
     onEffect: (MovitAssessmentEffect) -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()

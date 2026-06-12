@@ -6,7 +6,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import com.movit.core.data.MovitData
 import com.movit.shared.AppResult
 import kotlinx.coroutines.launch
 
@@ -32,8 +31,10 @@ class WorkoutRunViewModel(
             }
             return
         }
-        val insight = WorkoutRunPreviewInsights.forExercise(
-            config.exercises.getOrNull(1)?.exerciseSlug ?: config.exercises.firstOrNull()?.exerciseSlug,
+        val currentSlug = config.exercises.firstOrNull()?.exerciseSlug
+        val insight = WorkoutFormInsightLoader.load(
+            programId = sessionContext?.programSlug ?: sessionContext?.programId,
+            exerciseSlug = currentSlug,
         )
         _state.update {
             it.copy(
@@ -77,14 +78,4 @@ class WorkoutRunViewModel(
 
     /** @deprecated Use [trainingStartAction]; kept for tests. */
     fun legacyFileNameForStart(): String? = _state.value.currentExercise?.exerciseSlug
-}
-
-private object WorkoutRunPreviewInsights {
-    data class Insight(val formPercent: Int, val tip: String)
-
-    fun forExercise(slug: String?): Insight? = when (slug) {
-        "barbell-squat", "bodyweight-squat" -> Insight(92, "Great depth — keep the same tempo.")
-        "romanian-deadlift", "rdl" -> Insight(94, "Great hip hinge — keep the same tempo.")
-        else -> Insight(90, "Solid form — maintain controlled reps.")
-    }
 }

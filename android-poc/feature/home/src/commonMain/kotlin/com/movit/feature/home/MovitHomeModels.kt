@@ -19,6 +19,7 @@ data class HomeAlertUi(
 )
 
 data class HomeActiveProgramUi(
+    val programId: String,
     val label: String,
     val title: String,
     val subtitle: String,
@@ -71,6 +72,13 @@ data class HomeQuickActionUi(
     val description: String,
 )
 
+data class HomeCatchUpUi(
+    val message: String,
+    val programId: String,
+    val weekNumber: Int,
+    val dayNumber: Int,
+)
+
 data class HomeDashboardUi(
     val userName: String,
     val greetingEyebrow: String,
@@ -89,4 +97,5 @@ data class HomeDashboardUi(
     val reportPreview: HomeReportPreviewUi?,
     val quickActions: List<HomeQuickActionUi>,
     val insightMessage: String? = null,
+    val catchUp: HomeCatchUpUi? = null,
 )

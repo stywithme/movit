@@ -38,6 +38,7 @@ object MovitHomePreviewData {
     )
 
     val activeProgram = HomeActiveProgramUi(
+        programId = "prog-full-body",
         label = "CURRENT PLAN",
         title = "Full Body 4-Week Challenge",
         subtitle = "Week 2 of 4 · 5 workouts / week",

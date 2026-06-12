@@ -1,5 +1,7 @@
 package com.movit.feature.account
 
+import com.movit.core.network.dto.AssessmentRegionDto
+import com.movit.core.network.dto.BodyScanResultDto
 import com.movit.core.network.dto.DomainLevelDto
 import com.movit.core.network.dto.LevelInfoDetailDto
 import com.movit.core.network.dto.LevelProfileDetailDto
@@ -52,6 +54,28 @@ class AssessmentApiMapperTest {
         assertEquals(1, results.insights.size)
         assertEquals("assessment_insight_limiting_title", results.insights.first().titleKey)
         assertEquals("shoulder_flexion", results.insights.first().titleArgs.first())
+    }
+
+    @Test
+    fun mapBodyScanResult_addsSafetyGatesForLimitedRegions() {
+        val dto = BodyScanResultDto(
+            bodyScore = 55.0,
+            mobilityScore = 60.0,
+            controlScore = 58.0,
+            safetyScore = 70.0,
+            regions = listOf(
+                AssessmentRegionDto(
+                    region = "knees",
+                    regionalScore = 38.0,
+                    status = "weak",
+                    confidence = "high",
+                ),
+            ),
+        )
+
+        val results = AssessmentApiMapper.map(dto)
+        assertTrue(results.safetyGates.isNotEmpty())
+        assertEquals("assessment_safety_gate_weak", results.safetyGates.first().reasonKey)
     }
 
     @Test

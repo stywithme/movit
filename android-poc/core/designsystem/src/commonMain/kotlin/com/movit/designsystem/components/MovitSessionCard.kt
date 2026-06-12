@@ -25,6 +25,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -54,15 +57,30 @@ fun MovitSessionCard(
     footerNote: String? = null,
     thumbnailUrl: String? = null,
     thumbnailLabel: String? = null,
+    toggleCollapsedDescription: String? = null,
+    toggleExpandedDescription: String? = null,
+    actionContentDescription: String? = null,
+    thumbnailContentDescription: String? = null,
     itemTrailing: (@Composable (index: Int, item: MovitSessionItem) -> Unit)? = null,
 ) {
     val movit = MaterialTheme.movitColors
+    val headerDescription = if (expanded) toggleExpandedDescription else toggleCollapsedDescription
 
     MovitCard(modifier = modifier, variant = MovitCardVariant.Elevated, contentPadding = 0.dp) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .movitClickable(onClick = onToggle)
+                .then(
+                    if (headerDescription != null) {
+                        Modifier.semantics {
+                            contentDescription = headerDescription
+                            stateDescription = if (expanded) "expanded" else "collapsed"
+                        }
+                    } else {
+                        Modifier
+                    },
+                )
                 .padding(MovitSpacing.lg),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -70,6 +88,7 @@ fun MovitSessionCard(
                 SessionThumbnail(
                     label = thumbnailLabel ?: title.take(1).uppercase(),
                     imageUrl = thumbnailUrl,
+                    contentDescription = thumbnailContentDescription,
                 )
             } else {
                 Surface(
@@ -87,14 +106,14 @@ fun MovitSessionCard(
                     text = title,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.W700,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.labelMedium,
                     color = movit.textTertiary,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
@@ -103,7 +122,7 @@ fun MovitSessionCard(
             }
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
+                contentDescription = headerDescription,
                 tint = movit.textQuaternary,
                 modifier = Modifier
                     .rotate(if (expanded) 90f else 0f)
@@ -135,7 +154,14 @@ fun MovitSessionCard(
                         onClick = onActionClick,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = MovitSpacing.md),
+                            .padding(top = MovitSpacing.md)
+                            .then(
+                                if (actionContentDescription != null) {
+                                    Modifier.semantics { contentDescription = actionContentDescription }
+                                } else {
+                                    Modifier
+                                },
+                            ),
                         leadingIcon = Icons.Default.PlayArrow,
                     )
                 }
@@ -148,6 +174,7 @@ fun MovitSessionCard(
 private fun SessionThumbnail(
     label: String,
     imageUrl: String?,
+    contentDescription: String?,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -156,20 +183,12 @@ private fun SessionThumbnail(
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.primaryContainer),
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.W800,
-            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.35f),
-            modifier = Modifier.align(Alignment.Center),
+        MovitRemoteImage(
+            imageUrl = imageUrl,
+            contentDescription = contentDescription,
+            placeholderLabel = label,
+            modifier = Modifier.fillMaxSize(),
         )
-        if (!imageUrl.isNullOrBlank()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-            )
-        }
     }
 }
 

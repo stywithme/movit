@@ -31,6 +31,7 @@ fun MovitMediaCard(
     focusLabel: String? = null,
     imageUrl: String? = null,
     imageLabel: String? = null,
+    imageContentDescription: String? = null,
     enabled: Boolean = true,
     isLoading: Boolean = false,
     onClick: (() -> Unit)? = null,
@@ -57,7 +58,7 @@ fun MovitMediaCard(
         ) {
             MovitRemoteImage(
                 imageUrl = imageUrl,
-                contentDescription = title,
+                contentDescription = imageContentDescription ?: title,
                 placeholderLabel = imageLabel ?: title.take(1).uppercase(),
                 modifier = Modifier
                     .width(96.dp)

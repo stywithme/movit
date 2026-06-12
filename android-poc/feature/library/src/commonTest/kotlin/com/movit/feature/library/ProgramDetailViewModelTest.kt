@@ -3,6 +3,10 @@ package com.movit.feature.library
 import com.movit.core.model.ExploreContent
 import com.movit.core.model.ExploreItemType
 import com.movit.core.model.ExploreItemUi
+import com.movit.core.network.dto.EffectivePlanItemDto
+import com.movit.core.network.dto.EffectivePlanPayloadDto
+import com.movit.core.network.dto.EffectivePlannedWorkoutDto
+import com.movit.core.network.dto.UserProgramUpdateRequest
 import com.movit.shared.AppResult
 import kotlinx.coroutines.delay
 import kotlin.test.Test
@@ -33,6 +37,7 @@ class ProgramDetailViewModelTest {
         assertEquals(0, state.weeks.size)
         assertEquals(4, state.stats.size)
         assertEquals("4 weeks", state.stats.first().value)
+        assertTrue(state.edit.daySessions.isNotEmpty())
     }
 
     @Test
@@ -46,6 +51,7 @@ class ProgramDetailViewModelTest {
         delay(50)
 
         assertEquals(2, viewModel.state.value.selectedWeekNumber)
+        assertEquals(2, viewModel.state.value.edit.editingWeekNumber)
     }
 
     @Test
@@ -94,6 +100,99 @@ class ProgramDetailViewModelTest {
 
         assertEquals(1, viewModel.state.value.enrollment.customEditsCount)
         assertTrue(viewModel.state.value.edit.showSaveToast)
+    }
+
+    @Test
+    fun sessionReorder_marksDirtyAndUpdatesOrder() = kotlinx.coroutines.runBlocking {
+        val viewModel = ProgramDetailViewModel(
+            programId = "program-starter",
+            repository = FakeProgramLibraryRepository(sampleProgram),
+        )
+        viewModel.load()
+        val firstId = viewModel.state.value.edit.daySessions.first().id
+        viewModel.onSessionMove(firstId, direction = 1)
+        delay(50)
+
+        assertTrue(viewModel.state.value.edit.isDirty)
+        val sessions = viewModel.state.value.edit.daySessions
+        assertEquals("session-pm", sessions.first().id)
+    }
+
+    @Test
+    fun editSave_callsSaveApiWhenDirty() = kotlinx.coroutines.runBlocking {
+        var savedRequest: UserProgramUpdateRequest? = null
+        val viewModel = ProgramDetailViewModel(
+            programId = "program-starter",
+            repository = FakeProgramLibraryRepository(sampleProgram),
+            saveDayCustomizations = { _, week, day, request ->
+                savedRequest = request
+                assertEquals(1, week)
+                assertEquals(2, day)
+                AppResult.Success(Unit)
+            },
+        )
+        viewModel.load()
+        val session = viewModel.state.value.edit.daySessions.first()
+        val exercise = session.exercises.first()
+        viewModel.onExerciseParamChange(
+            sessionId = session.id,
+            exerciseId = exercise.id,
+            sets = exercise.sets + 1,
+        )
+        viewModel.onSaveEdit()
+        delay(100)
+
+        assertTrue(savedRequest != null)
+        assertEquals(1, viewModel.state.value.enrollment.customEditsCount)
+        assertEquals(false, viewModel.state.value.edit.isDirty)
+    }
+
+    @Test
+    fun editSaveEncoder_updatesExerciseParams() {
+        val baseline = EffectivePlanPayloadDto(
+            plannedWorkouts = listOf(
+                EffectivePlannedWorkoutDto(
+                    id = "pw-1",
+                    sortOrder = 0,
+                    items = listOf(
+                        EffectivePlanItemDto(
+                            id = "ex-1",
+                            type = "exercise",
+                            sets = 3,
+                            targetReps = 12,
+                            restBetweenSetsMs = 60_000,
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val sessions = listOf(
+            ProgramEditSessionUi(
+                id = "pw-1",
+                title = "Main",
+                sortOrder = 0,
+                exercises = listOf(
+                    ProgramEditExerciseUi(
+                        id = "ex-1",
+                        name = "Squat",
+                        sets = 4,
+                        reps = 10,
+                        weightKg = 20.0,
+                        restSeconds = 90,
+                    ),
+                ),
+            ),
+        )
+        val request = ProgramEditSaveEncoder.encodeDayUpdate(
+            weekNumber = 1,
+            dayNumber = 2,
+            sessions = sessions,
+            baselinePlan = baseline,
+        )
+        val item = request.customizations["day_1_2"]!!.single().items.single()
+        assertEquals(4, item.sets)
+        assertEquals(10, item.targetReps)
+        assertEquals(90_000, item.restBetweenSetsMs)
     }
 }
 

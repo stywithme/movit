@@ -18,9 +18,10 @@ import kotlinx.coroutines.launch
 class MovitAssessmentViewModel(
     private val repository: AssessmentRepository = defaultAssessmentRepository(),
     private val language: String = "en",
+    assessmentMode: String = "initial",
 ) : ViewModel() {
     private val workScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
-    private val _state = MutableStateFlow(MovitAssessmentUiState())
+    private val _state = MutableStateFlow(MovitAssessmentUiState(assessmentMode = assessmentMode))
     val state: StateFlow<MovitAssessmentUiState> = _state.asStateFlow()
     private var scanEngine: AssessmentBodyScanEngine? = null
     private var pendingScanResult: AssessmentBodyScanResult? = null
@@ -48,6 +49,9 @@ class MovitAssessmentViewModel(
             }
             MovitAssessmentEvent.BodyScanCameraReady -> {
                 _state.update { it.copy(scanErrorMessage = null) }
+            }
+            MovitAssessmentEvent.BodyScanGuidedModeStarted -> {
+                _state.update { it.copy(isGuidedScan = true, scanErrorMessage = null) }
             }
             is MovitAssessmentEvent.BodyScanFrameReceived -> {
                 val update = scanEngine?.ingest(event.frame) ?: return
@@ -96,7 +100,8 @@ class MovitAssessmentViewModel(
                     scanErrorMessage = null,
                 )
             }
-            val template = when (val result = repository.resolveTemplate(mode = "initial", language = language)) {
+            val mode = _state.value.assessmentMode.ifBlank { "initial" }
+            val template = when (val result = repository.resolveTemplate(mode = mode, language = language)) {
                 is AppResult.Success -> result.value
                 is AppResult.Failure -> {
                     _state.update { it.copy(scanErrorMessage = result.message) }
@@ -137,10 +142,11 @@ class MovitAssessmentViewModel(
         workScope.launch {
             _state.update { it.copy(isLoadingResults = true, scanErrorMessage = null) }
             val results = when (val result = repository.submitBodyScan(localResult)) {
-                is AppResult.Success -> result.value
+                is AppResult.Success -> result.value.copy(resultsSavedToServer = true)
                 is AppResult.Failure -> {
-                    _state.update { current -> current.copy(scanErrorMessage = result.message) }
-                    localResult.uiResults
+                    localResult.uiResults.copy(
+                        resultsSavedToServer = false,
+                    )
                 }
             }
             _state.update {

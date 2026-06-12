@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.movit.core.data.MovitData
 import com.movit.core.data.cache.CacheState
 import com.movit.resources.strings.TrainStrings
+import com.movit.shared.AppResult
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -24,10 +25,24 @@ class MovitTrainViewModel(
     val effects: SharedFlow<MovitTrainEffect> = _effects.asSharedFlow()
 
     fun loadInitial() {
-        viewModelScope.launch { load() }
+        viewModelScope.launch { load(isRefresh = false) }
     }
 
-    suspend fun load() {
+    suspend fun load(isRefresh: Boolean = false) {
+        if (isRefresh) {
+            _state.update { it.copy(isRefreshing = true, errorMessage = null) }
+            when (val result = repository.getTrainDashboard()) {
+                is AppResult.Success -> {
+                    applyDashboard(result.value)
+                    _state.update { it.copy(isRefreshing = false) }
+                }
+                is AppResult.Failure -> _state.update {
+                    it.copy(isRefreshing = false, errorMessage = result.message)
+                }
+            }
+            return
+        }
+
         if (_state.value.dashboard == null) {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
         }
@@ -57,6 +72,7 @@ class MovitTrainViewModel(
 
     fun onEvent(event: MovitTrainEvent) {
         when (event) {
+            MovitTrainEvent.RefreshRequested -> Unit
             MovitTrainEvent.RetryClicked -> Unit
             MovitTrainEvent.PreviousWeekClicked -> navigateWeek(-1)
             MovitTrainEvent.NextWeekClicked -> navigateWeek(+1)
@@ -104,12 +120,7 @@ class MovitTrainViewModel(
                 }
             }
             is MovitTrainEvent.StartProgramClicked -> {
-                _effects.tryEmit(
-                    MovitTrainEffect.OpenProgramWeekPlan(
-                        programId = event.programId,
-                        weekNumber = 1,
-                    ),
-                )
+                _effects.tryEmit(MovitTrainEffect.OpenProgramDetail(event.programId))
             }
             is MovitTrainEvent.QuickActionClicked -> {
                 when (event.actionId) {

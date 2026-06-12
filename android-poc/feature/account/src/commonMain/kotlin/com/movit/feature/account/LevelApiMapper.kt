@@ -34,6 +34,23 @@ object LevelApiMapper {
                     score = domain.score.toInt(),
                 )
             },
+            regions = dto.regionLevels.map { region ->
+                LevelRegionUi(
+                    name = strings.regionName(region.region),
+                    level = region.level,
+                    score = region.score.toInt(),
+                    isLimiting = region.isLimiting,
+                )
+            },
+            limitingFactors = dto.limitingFactors.map { factor ->
+                LevelLimitingFactorUi(
+                    type = factor.type,
+                    name = strings.limitingFactorName(factor.type, factor.code),
+                    currentLevel = factor.currentLevel,
+                    targetLevel = factor.targetLevel,
+                    gap = factor.gap,
+                )
+            },
             planPhases = mapPlanPhases(plan, strings, reassessments),
         )
     }

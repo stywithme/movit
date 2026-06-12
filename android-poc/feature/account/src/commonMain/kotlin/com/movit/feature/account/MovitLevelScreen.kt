@@ -3,6 +3,7 @@ package com.movit.feature.account
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -75,6 +76,7 @@ fun MovitLevelScreen(
         ) {
             when {
                 state.isLoading -> MovitLoadingState(message = movitText("level_loading"))
+                state.showNoProfile -> LevelNoProfileContent(onEvent = onEvent, onBack = onBack)
                 state.errorMessage != null -> {
                     MovitErrorState(
                         title = movitText("common_error_title"),
@@ -100,6 +102,13 @@ fun MovitLevelScreen(
                 .fillMaxWidth()
                 .padding(horizontal = MovitSpacing.lg, vertical = MovitSpacing.md),
         )
+
+        state.levelUpCelebration?.let { celebration ->
+            LevelUpCelebrationOverlay(
+                celebration = celebration,
+                onDismiss = { onEvent(MovitLevelEvent.DismissLevelUpCelebration) },
+            )
+        }
     }
 }
 
@@ -129,6 +138,15 @@ private fun LevelFloatingHeader(
             } else {
                 MovitFloatPillVariant.Ink
             },
+            contentDescription = movitText(
+                "level_tab_a11y",
+                movitText("level_tab_profile"),
+                if (selectedTab == LevelTab.LevelProfile) {
+                    movitText("onboarding_selected_state_a11y")
+                } else {
+                    movitText("onboarding_unselected_state_a11y")
+                },
+            ),
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
@@ -141,6 +159,15 @@ private fun LevelFloatingHeader(
             } else {
                 MovitFloatPillVariant.Ink
             },
+            contentDescription = movitText(
+                "level_tab_a11y",
+                movitText("level_tab_plan"),
+                if (selectedTab == LevelTab.PlanOverview) {
+                    movitText("onboarding_selected_state_a11y")
+                } else {
+                    movitText("onboarding_unselected_state_a11y")
+                },
+            ),
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
@@ -179,6 +206,28 @@ private fun LevelProfileContent(
             DomainRow(domain = domain)
         }
     }
+    if (profile.regions.isNotEmpty()) {
+        Text(
+            text = movitText("level_region_breakdown"),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.W800,
+        )
+        MovitCard {
+            profile.regions.forEach { region ->
+                RegionLevelRow(region = region)
+            }
+        }
+    }
+    if (profile.limitingFactors.isNotEmpty()) {
+        Text(
+            text = movitText("level_limiting_factors_title"),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.W800,
+        )
+        profile.limitingFactors.forEach { factor ->
+            LimitingFactorCard(factor = factor)
+        }
+    }
     MovitAccentBlock(
         title = movitText("level_retake_scan"),
         subtitle = movitText("level_retake_scan_sub"),
@@ -194,6 +243,7 @@ private fun LevelProfileContent(
         },
     )
     MovitListCard {
+        val recommendedA11y = movitText("level_recommended_programs_a11y", profile.levelNumber)
         MovitListRow(
             title = movitText("level_recommended_programs"),
             subtitle = movitText("level_recommended_programs_sub", profile.levelNumber),
@@ -201,6 +251,7 @@ private fun LevelProfileContent(
             iconVariant = MovitIconBoxVariant.Lime,
             onClick = { onEvent(MovitLevelEvent.BrowseProgramsClicked) },
             showChevron = true,
+            modifier = Modifier.semantics { contentDescription = recommendedA11y },
         )
     }
 }
@@ -244,6 +295,122 @@ private fun LevelRing(score: Int) {
                 text = movitText("level_body_score"),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.movitColors.textSecondary,
+            )
+        }
+    }
+}
+
+@Composable
+private fun LevelNoProfileContent(
+    onEvent: (MovitLevelEvent) -> Unit,
+    onBack: () -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(MovitSpacing.lg),
+    ) {
+        Text(
+            text = movitText("level_no_profile_title"),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.W800,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        )
+        Text(
+            text = movitText("level_no_profile_message"),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.movitColors.textSecondary,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        )
+        MovitButton(
+            text = movitText("level_no_profile_start_scan"),
+            onClick = { onEvent(MovitLevelEvent.StartScanClicked) },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        MovitButton(
+            text = movitText("profile_back"),
+            onClick = onBack,
+            variant = MovitButtonVariant.Outlined,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+@Composable
+private fun RegionLevelRow(region: LevelRegionUi) {
+    val movit = MaterialTheme.movitColors
+    val rowDescription = movitText("level_region_row_a11y", region.name, region.level, region.score)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = MovitSpacing.sm)
+            .semantics { contentDescription = rowDescription },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
+    ) {
+        if (region.isLimiting) {
+            Text(
+                text = "⚠",
+                style = MaterialTheme.typography.labelMedium,
+                color = movit.warning,
+            )
+        }
+        Text(
+            text = region.name,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = if (region.isLimiting) FontWeight.W700 else FontWeight.W600,
+            color = if (region.isLimiting) movit.warning else MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = movitText("level_region_level_badge", region.level),
+            style = MaterialTheme.typography.labelMedium,
+            color = movit.textTertiary,
+        )
+        Text(
+            text = movitText("level_region_score", region.score),
+            fontWeight = FontWeight.W700,
+            color = if (region.isLimiting) movit.warning else MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+@Composable
+private fun LimitingFactorCard(factor: LevelLimitingFactorUi) {
+    val movit = MaterialTheme.movitColors
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(MovitRadius.lg),
+        color = movit.warningTint,
+        border = androidx.compose.foundation.BorderStroke(1.dp, movit.warning.copy(alpha = 0.35f)),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(MovitSpacing.md),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(MovitSpacing.md),
+        ) {
+            Text(
+                text = if (factor.type.equals("domain", ignoreCase = true)) "📊" else "🦴",
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Text(
+                text = factor.name,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.W700,
+                color = movit.warning,
+            )
+            Text(
+                text = movitText(
+                    "level_limiting_factor_progress",
+                    factor.currentLevel,
+                    factor.targetLevel,
+                ),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.W700,
+                color = movit.warning,
             )
         }
     }
@@ -474,6 +641,77 @@ private fun PlanPhaseStateCard(phase: PlanPhaseUi) {
                     }
                 }
                 PlanPhaseStatus.Upcoming -> Unit
+            }
+        }
+    }
+}
+
+@Composable
+private fun LevelUpCelebrationOverlay(
+    celebration: LevelUpCelebrationUi,
+    onDismiss: () -> Unit,
+) {
+    val movit = MaterialTheme.movitColors
+    val overlayDescription = movitText(
+        "level_up_overlay_a11y",
+        celebration.fromLevel,
+        celebration.toLevel,
+        celebration.levelName,
+    )
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.72f))
+            .clickable(onClick = onDismiss)
+            .semantics { contentDescription = overlayDescription },
+        contentAlignment = Alignment.Center,
+    ) {
+        MovitCard(
+            modifier = Modifier.padding(horizontal = MovitSpacing.xl),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(MovitSpacing.xl),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(MovitSpacing.md),
+            ) {
+                Text(
+                    text = movitText("level_up_title"),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.W900,
+                    color = movit.gold,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+                Text(
+                    text = movitText(
+                        "level_up_transition",
+                        celebration.fromLevel,
+                        celebration.toLevel,
+                    ),
+                    style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.W900,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+                Text(
+                    text = celebration.levelName,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.W800,
+                    color = movit.success,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+                Text(
+                    text = movitText("level_up_message"),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = movit.textSecondary,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+                MovitButton(
+                    text = movitText("level_up_continue"),
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
         }
     }

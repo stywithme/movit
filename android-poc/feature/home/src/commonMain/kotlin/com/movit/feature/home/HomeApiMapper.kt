@@ -72,6 +72,7 @@ object HomeApiMapper {
 
         val activeProgram = program?.let {
             HomeActiveProgramUi(
+                programId = it.id,
                 label = strings.currentPlan,
                 title = it.name.localized(language).ifBlank { strings.activeProgramFallback },
                 subtitle = when (status) {
@@ -93,6 +94,7 @@ object HomeApiMapper {
         val showNoProgramEmpty = status == "no_plan" || (status == null && program == null && workout == null)
 
         val journeyRows = buildJourneyRows(trainMode, language, strings)
+        val catchUp = buildCatchUpUi(trainMode, program)
 
         val recentActivities = data.recentWorkouts.orEmpty().take(3).mapIndexed { index, recent ->
             val name = recent.exerciseName.localized(language)
@@ -147,8 +149,25 @@ object HomeApiMapper {
                 HomeQuickActionUi("reports", strings.quickReports, strings.quickReportsSub),
             ),
             insightMessage = alert?.message,
+            catchUp = catchUp,
         )
     }
+}
+
+private fun buildCatchUpUi(
+    trainMode: TrainModeDto?,
+    program: TrainActiveProgramDto?,
+): HomeCatchUpUi? {
+    val catch = trainMode?.catchUpSuggestion ?: return null
+    val slot = catch.missedSlots.firstOrNull() ?: return null
+    val programId = program?.id?.takeIf { it.isNotBlank() } ?: return null
+    if (catch.message.isBlank() || catch.missedSlots.isEmpty()) return null
+    return HomeCatchUpUi(
+        message = catch.message,
+        programId = programId,
+        weekNumber = slot.weekNumber,
+        dayNumber = slot.dayNumber,
+    )
 }
 
 private suspend fun buildTodayPlan(

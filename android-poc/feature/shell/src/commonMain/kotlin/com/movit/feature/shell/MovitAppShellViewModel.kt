@@ -16,6 +16,7 @@ import com.movit.core.model.ExploreItemType
 import com.movit.feature.explore.MovitExploreEffect
 import com.movit.feature.home.MovitHomeEffect
 import com.movit.feature.reports.MovitReportsEffect
+import com.movit.feature.library.WorkoutSessionKeys
 import com.movit.feature.train.MovitTrainEffect
 import com.movit.shared.PlatformInfo
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -155,9 +156,28 @@ class MovitAppShellViewModel(
             MovitHomeEffect.OpenExplore -> navigateTo(MovitAppDestination.Explore)
             MovitHomeEffect.OpenReports -> navigateTo(MovitAppDestination.Reports)
             MovitHomeEffect.OpenProfile -> navigateTo(MovitAppDestination.Profile)
-            MovitHomeEffect.OpenAssessment -> pushInner(MovitInnerRoute.Assessment)
+            MovitHomeEffect.OpenAssessment -> pushInner(MovitInnerRoute.Assessment())
             MovitHomeEffect.OpenLevel -> pushInner(MovitInnerRoute.LevelProfile)
             is MovitHomeEffect.OpenReportDetail -> pushInner(MovitInnerRoute.ReportDetail(effect.reportId))
+            is MovitHomeEffect.OpenProgramDetail -> pushInner(MovitInnerRoute.ProgramDetail(effect.programId))
+            is MovitHomeEffect.OpenCatchUpDay -> {
+                if (effect.programId.isBlank()) {
+                    _effects.tryEmit(
+                        MovitAppShellEffect.ShowLocalizedMessage("home_catch_up_unavailable"),
+                    )
+                } else {
+                    pushInner(
+                        MovitInnerRoute.WorkoutSession(
+                            WorkoutSessionKeys.encode(
+                                programId = effect.programId,
+                                weekNumber = effect.weekNumber,
+                                dayNumber = effect.dayNumber,
+                                plannedWorkoutId = WorkoutSessionKeys.AUTO_PLANNED_WORKOUT,
+                            ),
+                        ),
+                    )
+                }
+            }
             is MovitHomeEffect.ShowMessage -> {
                 _effects.tryEmit(MovitAppShellEffect.ShowMessage(effect.message))
             }
@@ -168,7 +188,7 @@ class MovitAppShellViewModel(
         when (effect) {
             MovitProfileEffect.OpenAuth -> pushInner(MovitInnerRoute.Auth)
             MovitProfileEffect.OpenOnboarding -> pushInner(MovitInnerRoute.ProfileOnboarding)
-            MovitProfileEffect.OpenAssessment -> pushInner(MovitInnerRoute.Assessment)
+            MovitProfileEffect.OpenAssessment -> pushInner(MovitInnerRoute.Assessment())
             MovitProfileEffect.OpenLevel -> pushInner(MovitInnerRoute.LevelProfile)
             MovitProfileEffect.OpenSubscription -> {
                 if (PlatformInfo.supportsInAppSubscription) {
@@ -246,7 +266,7 @@ class MovitAppShellViewModel(
 
     private fun handleLevelEffect(effect: MovitLevelEffect) {
         when (effect) {
-            MovitLevelEffect.OpenAssessment -> pushInner(MovitInnerRoute.Assessment)
+            is MovitLevelEffect.OpenAssessment -> pushInner(MovitInnerRoute.Assessment(mode = effect.mode))
             MovitLevelEffect.OpenExplore -> {
                 popAllInner()
                 navigateTo(MovitAppDestination.Explore)
@@ -261,7 +281,13 @@ class MovitAppShellViewModel(
         when (effect) {
             MovitReportsEffect.OpenTrain -> navigateTo(MovitAppDestination.Train)
             MovitReportsEffect.OpenUpgrade -> {
-                navigateTo(MovitAppDestination.Profile)
+                if (PlatformInfo.supportsInAppSubscription) {
+                    _effects.tryEmit(MovitAppShellEffect.LaunchLegacySubscription)
+                } else {
+                    _effects.tryEmit(
+                        MovitAppShellEffect.ShowLocalizedMessage("profile_subscription_ios_unavailable"),
+                    )
+                }
             }
             is MovitReportsEffect.OpenReportDetail -> {
                 pushInner(MovitInnerRoute.ReportDetail(effect.reportId))
@@ -275,7 +301,8 @@ class MovitAppShellViewModel(
     private fun handleTrainEffect(effect: MovitTrainEffect) {
         when (effect) {
             MovitTrainEffect.OpenProgramList -> pushInner(MovitInnerRoute.ProgramList)
-            MovitTrainEffect.OpenAssessment -> pushInner(MovitInnerRoute.Assessment)
+            MovitTrainEffect.OpenAssessment -> pushInner(MovitInnerRoute.Assessment())
+            is MovitTrainEffect.OpenProgramDetail -> pushInner(MovitInnerRoute.ProgramDetail(effect.programId))
             is MovitTrainEffect.OpenProgramWeekPlan -> pushInner(
                 MovitInnerRoute.ProgramWeekPlan(
                     programId = effect.programId,
@@ -317,7 +344,7 @@ class MovitAppShellViewModel(
             MovitExploreEffect.OpenWorkoutsLibrary -> pushInner(MovitInnerRoute.WorkoutsLibrary)
             MovitExploreEffect.OpenProgramList -> pushInner(MovitInnerRoute.ProgramList)
             is MovitExploreEffect.OpenProgramDetail -> pushInner(
-                MovitInnerRoute.ProgramWeekPlan(programId = effect.programId, weekNumber = 1),
+                MovitInnerRoute.ProgramDetail(programId = effect.programId),
             )
             is MovitExploreEffect.OpenWorkoutSession -> pushInner(MovitInnerRoute.WorkoutSession(effect.workoutId))
             is MovitExploreEffect.OpenExercisePrepare -> pushInner(MovitInnerRoute.ExercisePrepare(effect.exerciseId))
@@ -326,7 +353,7 @@ class MovitAppShellViewModel(
                     ExploreItemType.Exercise -> pushInner(MovitInnerRoute.ExercisePrepare(effect.id))
                     ExploreItemType.Workout -> pushInner(MovitInnerRoute.WorkoutSession(effect.id))
                     ExploreItemType.Program -> pushInner(
-                        MovitInnerRoute.ProgramWeekPlan(programId = effect.id, weekNumber = 1),
+                        MovitInnerRoute.ProgramDetail(programId = effect.id),
                     )
                 }
             }

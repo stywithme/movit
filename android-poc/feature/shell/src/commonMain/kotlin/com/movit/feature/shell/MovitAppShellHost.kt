@@ -15,6 +15,7 @@ fun MovitAppShellHost(
     onHostBackPressed: () -> Unit = {},
     onLaunchLegacySubscription: () -> Boolean = { false },
     onNavigateToLegacyAuth: () -> Boolean = { false },
+    onShareText: (subject: String, text: String) -> Boolean = { _, _ -> false },
 ) {
     val shellViewModel = viewModel { MovitAppShellViewModel(legacyAuthExitEnabled) }
 
@@ -28,5 +29,6 @@ fun MovitAppShellHost(
         shellViewModel = shellViewModel,
         onLaunchLegacySubscription = onLaunchLegacySubscription,
         onNavigateToLegacyAuth = onNavigateToLegacyAuth,
+        onShareText = onShareText,
     )
 }

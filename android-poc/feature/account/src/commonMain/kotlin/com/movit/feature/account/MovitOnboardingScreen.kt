@@ -182,7 +182,6 @@ private fun AgeGenderStep(data: OnboardingData, onEvent: (MovitOnboardingEvent) 
                 selected = data.biologicalSex == sex,
                 onClick = { onEvent(MovitOnboardingEvent.SexSelected(sex)) },
                 modifier = Modifier.weight(1f),
-                contentDescription = label,
             )
         }
     }
@@ -251,12 +250,16 @@ private fun ExperienceStep(data: OnboardingData, onEvent: (MovitOnboardingEvent)
             fontWeight = FontWeight.W700,
             modifier = Modifier.padding(top = MovitSpacing.xs),
         )
+        val sessionsPerWeek = data.targetDaysPerWeek ?: OnboardingData.DEFAULT_DAYS_PER_WEEK
+        val sessionsSliderA11y = movitText("onboarding_sessions_slider_a11y", sessionsPerWeek)
         Slider(
-            value = (data.targetDaysPerWeek ?: OnboardingData.DEFAULT_DAYS_PER_WEEK).toFloat(),
+            value = sessionsPerWeek.toFloat(),
             onValueChange = { onEvent(MovitOnboardingEvent.TargetDaysChanged(it.toInt())) },
             valueRange = 1f..7f,
             steps = 5,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = sessionsSliderA11y },
         )
     }
 }
@@ -278,9 +281,11 @@ private fun GoalStep(data: OnboardingData, onEvent: (MovitOnboardingEvent) -> Un
     )
     goals.forEach { (code, label) ->
         val selected = data.trainingGoal == code
+        val goalA11y = onboardingSelectionA11y(label, selected)
         MovitCard(
             variant = if (selected) MovitCardVariant.Filled else MovitCardVariant.Outlined,
             onClick = { onEvent(MovitOnboardingEvent.GoalSelected(code)) },
+            modifier = Modifier.semantics { contentDescription = goalA11y },
         ) {
             Text(text = label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.W700)
             Text(
@@ -311,7 +316,7 @@ private fun WeekdaysStep(data: OnboardingData, onEvent: (MovitOnboardingEvent) -
                 selected = data.trainingWeekdays.contains(dayIndex),
                 onClick = { onEvent(MovitOnboardingEvent.WeekdayToggled(dayIndex)) },
                 modifier = Modifier.weight(1f),
-                contentDescription = label,
+                accessibilityLabel = label,
             )
         }
     }
@@ -346,7 +351,6 @@ private fun LocationEquipmentStep(data: OnboardingData, onEvent: (MovitOnboardin
                 selected = data.trainingLocation == location,
                 onClick = { onEvent(MovitOnboardingEvent.LocationSelected(location)) },
                 modifier = Modifier.weight(1f),
-                contentDescription = label,
             )
         }
     }
@@ -371,7 +375,6 @@ private fun LocationEquipmentStep(data: OnboardingData, onEvent: (MovitOnboardin
                         onEvent(MovitOnboardingEvent.EquipmentToggled(code, enabled))
                     },
                     modifier = Modifier.fillMaxWidth(0.48f),
-                    contentDescription = label,
                 )
             }
         }
@@ -450,11 +453,11 @@ private fun GenderCard(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    contentDescription: String,
 ) {
+    val selectionA11y = onboardingSelectionA11y(label, selected)
     Surface(
         onClick = onClick,
-        modifier = modifier.semantics { this.contentDescription = contentDescription },
+        modifier = modifier.semantics { contentDescription = selectionA11y },
         shape = MaterialTheme.shapes.large,
         color = if (selected) MaterialTheme.movitColors.primaryTint else MaterialTheme.colorScheme.surface,
         border = BorderStroke(
@@ -478,13 +481,14 @@ private fun WeekdayCell(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    contentDescription: String,
+    accessibilityLabel: String,
 ) {
+    val selectionA11y = onboardingSelectionA11y(accessibilityLabel, selected)
     Surface(
         onClick = onClick,
         modifier = modifier
             .aspectRatio(1f)
-            .semantics { this.contentDescription = contentDescription },
+            .semantics { contentDescription = selectionA11y },
         shape = androidx.compose.foundation.shape.RoundedCornerShape(MovitRadius.lg),
         color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
         border = BorderStroke(
@@ -514,11 +518,11 @@ private fun LocationCard(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    contentDescription: String,
 ) {
+    val selectionA11y = onboardingSelectionA11y(title, selected)
     Surface(
         onClick = onClick,
-        modifier = modifier.semantics { this.contentDescription = contentDescription },
+        modifier = modifier.semantics { contentDescription = selectionA11y },
         shape = MaterialTheme.shapes.large,
         color = if (selected) MaterialTheme.movitColors.primaryTint else MaterialTheme.colorScheme.surface,
         border = BorderStroke(
@@ -544,11 +548,11 @@ private fun EquipmentCard(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    contentDescription: String,
 ) {
+    val selectionA11y = onboardingSelectionA11y(title, selected)
     Surface(
         onClick = onClick,
-        modifier = modifier.semantics { this.contentDescription = contentDescription },
+        modifier = modifier.semantics { contentDescription = selectionA11y },
         shape = MaterialTheme.shapes.large,
         color = if (selected) MaterialTheme.movitColors.limeTint else MaterialTheme.colorScheme.surface,
         border = BorderStroke(
@@ -571,8 +575,10 @@ private fun MovitSelectionChip(
     selected: Boolean,
     onClick: () -> Unit,
 ) {
+    val selectionA11y = onboardingSelectionA11y(label, selected)
     Surface(
         onClick = onClick,
+        modifier = Modifier.semantics { contentDescription = selectionA11y },
         shape = MaterialTheme.shapes.medium,
         color = if (selected) MaterialTheme.movitColors.primaryTint else MaterialTheme.colorScheme.surface,
         border = BorderStroke(
@@ -687,4 +693,14 @@ private fun formatLocationEquipmentSummary(data: OnboardingData): String {
             }
         }
     return "$location · ${equipmentLabels.joinToString(", ")}"
+}
+
+@Composable
+private fun onboardingSelectionA11y(label: String, selected: Boolean): String {
+    val stateLabel = if (selected) {
+        movitText("onboarding_selected_state_a11y")
+    } else {
+        movitText("onboarding_unselected_state_a11y")
+    }
+    return movitText("onboarding_selection_a11y", label, stateLabel)
 }

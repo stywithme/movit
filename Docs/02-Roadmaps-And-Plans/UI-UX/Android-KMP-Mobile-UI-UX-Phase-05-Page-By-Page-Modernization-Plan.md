@@ -1,6 +1,6 @@
 # Android / KMP Mobile UI/UX - Phase 05 Page-by-Page Modernization + Train Page Plan
 
-آخر تحديث: 2026-06-10 (WS-7: `collectAsStateWithLifecycle` · Pre-05/WS-E P1–P3 مغلقة · نِسب في Page-Scorecards)
+آخر تحديث: 2026-06-12 (P0 doc sync من audit Phase 05 · `feature:training` bleed · نِسب في Page-Scorecards)
 
 > **✅ تحديث 2026-06-09 — بوابة Pre-05:** اجتُيزت [`Phase Pre-05`](Android-KMP-Mobile-UI-UX-Phase-Pre-05-Stabilization-And-Debt-Closure-Plan.md) (جسور مُغلقة · Koin · iOS compile · نصوص مشتركة). **اُستكملت دفعة Account** (صفحات 10–14) — التفاصيل في «ملخص للمدير» و«حالة تنفيذ 2026-06-09» أدناه.
 
@@ -13,7 +13,7 @@
 | تبويبات رئيسية | 01 Train · 04 Explore · 08 Home · 09 Reports | 🔄 scorecards | `feature:train` · `explore` · `home` · `reports` — نِسب في [`Page-Scorecards.md`](Page-Scorecards.md) |
 | تدفق تدريب | 02 Session · 17 Report detail | 🔄 scorecards | `feature:library` · `feature:reports` |
 | **حساب وتقييم** | **10 Auth · 11 Profile · 12 Onboarding · 13 Assessment · 14 Level** | **✅ أول إصدار** | **`feature:account` (جديد)** |
-| مكتبة وبرامج | 05–07 · 15–16 | ⬜ جزئي | `feature:library` |
+| مكتبة وبرامج | 02–03 · 05–07 · 15–16 | 🔄 scorecards | Session **87%** · Prepare **85%** · Workout **73%** · Library **84%** (انظر [`Page-Scorecards.md`](Page-Scorecards.md)) |
 
 ### دفعة Account (10–14) — ما يُعرض على المدير
 
@@ -32,7 +32,8 @@
 ```text
 :app:assembleDebug                              ✅
 :feature:account:testDebugUnitTest              ✅ (8)
-:feature:shell:testDebugUnitTest                ✅ (15)
+:feature:shell:testDebugUnitTest                ✅ (19)
+:feature:reports:testDebugUnitTest              ✅ (7+)
 :feature:shell:compileKotlinIosSimulatorArm64   ✅
 ```
 
@@ -55,9 +56,8 @@ Phase 05 تتكون من جزئين:
 
 السبب:
 
-- `Home` و`Explore` أصبحا موجودين داخل shell.
-- `Train`, `Reports`, و`Profile` ما زالت placeholders.
-- `Train` هي أهم صفحة تالية لأنها مدخل التدريب اليومي، لكنها يجب ألا تدخل بعد في camera/session/ML.
+- `Home` و`Explore` و`Train` و`Reports` و`Profile` أصبحت شاشات KMP حقيقية داخل shell (نِسب في [`Page-Scorecards.md`](Page-Scorecards.md)).
+- `Train` هي مدخل التدريب اليومي — Phase 05 أغلقت UI/plan states؛ camera/session الحية في **Phase 07** (`feature:training` · `MovitInnerRoute.TrainingSession`).
 - نحتاج نظاماً ثابتاً لاختيار، تحليل، تصميم، وتنفيذ كل صفحة بدلاً من تنفيذ الشاشات بالحدس.
 
 ## المراجع التصميمية
@@ -131,6 +131,12 @@ MovitShellPilotActivity debug-only
 ```
 
 لا يتم نقله إلى launcher production في Phase 05 إلا إذا طلبنا قراراً صريحاً قبل التنفيذ.
+
+**إغلاق فجوات cross-page (2026-06-12):**
+
+- `MovitAppDestination` → مفاتيح `core:resources` (`nav_*` · `dest_*_subtitle`) بدل EN hardcoded.
+- Report detail 17: `ReportPlatformShare` (Android text chooser) · `jointBreakdown` mapper · fallback joints messaging.
+- Components catalog 00: macro/coach/workout-scroll/program/difficulty sections + `catalog_*` i18n.
 
 ### 4. Navigation بعد Phase 05
 
@@ -828,10 +834,11 @@ feature/train/src/commonMain/kotlin/com/movit/feature/train/
   TrainRepository.kt
   TrainRepositoryFactory.kt          // expect defaultTrainRepository()
 
+feature/train/src/commonMain/kotlin/com/movit/feature/train/
+  SharedTrainRepository.kt
+
 feature/train/src/androidMain/kotlin/com/movit/feature/train/
   TrainRepositoryFactory.android.kt
-  remote/TrainContentFetcherBridge.kt
-  remote/RemoteTrainRepository.kt
 
 feature/train/src/iosMain/kotlin/com/movit/feature/train/
   TrainRepositoryFactory.ios.kt
@@ -846,30 +853,22 @@ feature/train/src/androidUnitTest/kotlin/com/movit/feature/train/
   MovitTrainThemeBoundaryTest.kt   // java.io.File — Android JVM only
 ```
 
-### 9.4 Data layer: fake first, bridge when ready
-
-ابدأ بـ:
+### 9.4 Data layer: `SharedTrainRepository` + `MovitData` (Pre-05 مغلق)
 
 ```text
-FakeTrainRepository
-MovitTrainPreviewData
+SharedTrainRepository          // commonMain — إنتاج
+FakeTrainRepository            // commonTest فقط
+MovitTrainPreviewData          // previews
 expect fun defaultTrainRepository(): TrainRepository
 ```
 
-states في preview/fixtures:
+- `defaultTrainRepository()` → `SharedTrainRepository` على Android و iOS (`TrainRepositoryFactory.*.kt`).
+- القراءة عبر `MovitData` + Ktor (`ProgramFlowSyncRepository` · cache home/train).
+- **لا** `TrainContentFetcherBridge` · **لا** Retrofit · **لا** `MovitTrainApiBridge`.
 
-- active plan.
-- no plan.
-- rest day.
-- completed.
-- error.
+states في preview/fixtures / tests:
 
-**API bridge (اختياري في Phase 05، نفس نمط Explore):**
-
-- `TrainContentFetcherBridge` في `androidMain` فقط.
-- `MovitTrainApiBridge.install(context)` من `app/src/debug` يعرف Retrofit القديم.
-- `feature:train` لا يعتمد على `app` ولا على Retrofit مباشرة.
-- iOS `iosMain` يستخدم `FakeTrainRepository` حتى Ktor.
+- active plan · no plan · rest day · completed · error.
 
 ### 9.5 Events
 
@@ -1170,12 +1169,76 @@ feature/account/src/commonMain/kotlin/com/movit/feature/account/
 
 ### 5. ما تبقى في Phase 05 (بعد Account)
 
-- فجوات UX: Train week nav · thumbnails · program complete hero
-- Library: صور · فلاتر · badges (05–07)
-- Program flow (15) · Workout run UI (16) — بدون كاميرا في 16 حتى Phase 07
-- Page specs لبقية الصفحات في `Docs/.../Page-Specs/`
-- Google Sign-In bridge
-- Visual QA على Mac لشاشات Account
+- **أُغلق (2026-06-12 — تبويبات 01/04/08/09/05–06):** `train_a11y_session_*` · `explore_a11y_*` · `library_a11y_*` · `reports_a11y_*` · Pro upsell · `MovitRemoteImage` KMP · RTL ellipsis Home/Train.
+- **أُغلق (2026-06-12 — 07/15):** enrollment API · weekly report من Program detail · `program_stat_*` · hero شبكي · a11y strip/dock · `SharedProgramFlowRepository` · كل أسابيع التقرير · Share Android.
+- فجوات UX scorecard: font-scale QA يدوي · Home dark mode visual QA على جهاز
+- Program 07: drag/reorder Edit tab (**مؤجّل**)
+- Program 15: iOS share sheet (**مفتوح**)
+- Page specs المتبقية في `Docs/.../Page-Specs/` (مثلاً Onboarding-12)
+- Mac/iOS smoke لشاشات Account + Program flow
+
+#### 5.3 Program detail (07) + Program flow (15) — مُغلقة (2026-06-12)
+
+| صفحة | البند | الحالة |
+|------|-------|--------|
+| 07 | API enrollment · weekly report nav · stat i18n · hero image · a11y | ✅ |
+| 07 | Drag/reorder Edit tab | ⬜ مؤجّل |
+| 15 | `SharedProgramFlowRepository` · صور API · كل أسابيع التقرير · Share Android | ✅ |
+| 15 | iOS share | ⬜ |
+
+**Gradle:** `:feature:library:testDebugUnitTest` · `:feature:shell:testDebugUnitTest` — **BUILD SUCCESSFUL** (2026-06-12)
+
+#### 5.4 Session (02) · Prepare (03) · Workout flow (16) — مُغلقة (2026-06-12)
+
+| صفحة | البند | الحالة |
+|------|-------|--------|
+| 02 | Multi-workout day cards (`SessionPlannedWorkoutCards`) | ✅ |
+| 02 | Catch-up day dialog (`SessionCatchUpResolver` + home cache) | ✅ |
+| 02 | Skip warm-up flow + persist `skipped` | ✅ |
+| 02 | iOS session thumbnails | ⬜ |
+| 03 | Hero `MovitAsyncImage` + pose variant picker | ✅ |
+| 03 | كاميرا/pose polish | ⬜ Phase 07 |
+| 16 | Persist customization (`WorkoutFlowSaveEncoder`) | ✅ |
+| 16 | Previous-form insight API (`WorkoutFormInsightLoader`) | ✅ |
+| 16 | Camera / full orchestration | ⬜ Phase 07 |
+| 16 | Customize drag-reorder / delete | ⬜ (موجود في Session 02) |
+
+**اختبارات:** `Phase05GapLogicTest` (6) · `WorkoutSessionStateTest` · `WorkoutFlowStateTest` — `:feature:library:testDebugUnitTest` ✅ · `:feature:shell:testDebugUnitTest` ✅
+
+#### 5.1 Account gaps — مُغلقة (2026-06-12)
+
+| صفحة | البند | الحالة |
+|------|-------|--------|
+| 10 Auth | `GoogleSignInHost` expect/actual + `POST auth/google` | ✅ Android · iOS stub |
+| 11 Profile | `GET training-profile` summary | ✅ |
+| 11–14 | A11y تحسينات (انظر scorecards) | ✅ جزئي — font-scale يدوي |
+| 13 Assessment | domain metric tiles a11y | ✅ (كاميرا Phase 07) |
+| 14 Level | celebration overlay + recommended programs row | ✅ |
+
+#### 5.2 Visual QA — شاشات Account (10–14)
+
+**بيئة التشغيل:** Windows emulator · `MovitShellPilotActivity` · 2026-06-12  
+**Mac/iOS:** لم يُنفَّذ smoke بعد — يُسجَّل كـ OPEN للجهاز.
+
+| شاشة | Light | Dark | ar RTL | Loading | Empty/Error | A11y spot | ملاحظات |
+|------|-------|------|--------|---------|-------------|-----------|---------|
+| 10 Auth | ✅ | ✅ | ✅ | ✅ sign-in | ✅ validation keys | ✅ intro/logo | Google يحتاج جهاز + حساب |
+| 11 Profile | ✅ | ✅ | ✅ | ✅ | ✅ signed-out | ✅ toggles/rows | summary من API عند تسجيل الدخول |
+| 12 Onboarding | ✅ | ✅ | ✅ | — | ✅ validation | ✅ cards/slider | font-scale 200% لم يُختبر |
+| 13 Assessment | ✅ | ✅ | ✅ | ✅ results | ✅ PAR-Q | ✅ domain/region tiles | كاميرا placeholder فقط |
+| 14 Level | ✅ | ✅ | ✅ | ✅ | ✅ plan empty | ✅ tabs/celebration | celebration عند level↑ |
+
+**بوابة إغلاق Account:** scorecards 10–14 ≥ 82% · `:feature:account:testDebugUnitTest` ✅ · Mac smoke ⬜
+
+### 6. Bleed مبكر من Phase 07 — `:feature:training`
+
+> **ليس نطاق إغلاق Phase 05**، لكنه موجود في الكود ويُوثَّق هنا لتجنب drift.
+
+- موديول **`feature:training`**: `TrainingSessionRoute` · `ExerciseLiveRoute` · محرك الجلسة KMP.
+- **`MovitInnerHost`:** `MovitInnerRoute.TrainingSession` — يُفتح من `handleTrainingStart` عند `TrainingStartAction.KmpLive` (مسارات Prepare 03 · WorkoutRun 16).
+- `TrainingStartAction.Legacy` → رسالة shell فقط (`prepare_training_bridge_unavailable`) — **لا** `LegacyTrainingLauncher` في shell الحالي.
+- `feature:shell/build.gradle.kts` يعتمد `implementation(project(":feature:training"))`.
+- التفاصيل الكاملة: [`Android-KMP-Mobile-UI-UX-Phase-07-Training-Engine-Migration-Plan.md`](Android-KMP-Mobile-UI-UX-Phase-07-Training-Engine-Migration-Plan.md).
 
 Phase 05 لا تعتبر مكتملة إلا إذا:
 

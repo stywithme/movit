@@ -10,4 +10,6 @@ data class MovitLevelUiState(
     val isLoading: Boolean = true,
     val profile: LevelProfileUi? = null,
     val errorMessage: String? = null,
+    val showNoProfile: Boolean = false,
+    val levelUpCelebration: LevelUpCelebrationUi? = null,
 )
