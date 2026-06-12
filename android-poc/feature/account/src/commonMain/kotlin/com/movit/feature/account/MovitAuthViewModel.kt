@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 
 class MovitAuthViewModel(
     private val repository: AuthRepository = defaultAuthRepository(),
+    private val onboardingRepository: OnboardingRepository = defaultOnboardingRepository(),
     private val bootstrap: AuthBootstrapContext = AuthBootstrapContext.fromMovitData(),
     initialScreen: AuthScreen = AuthScreen.Splash,
 ) : ViewModel() {
@@ -217,12 +218,17 @@ class MovitAuthViewModel(
     }
 
     private fun emitPostAuthNavigation() {
-        val needsOnboarding = MovitData.isInstalled &&
-            !MovitData.requirePlatform().isOnboardingCompleted()
-        if (needsOnboarding) {
-            _effects.tryEmit(MovitAuthEffect.OpenOnboarding)
-        } else {
-            _effects.tryEmit(MovitAuthEffect.OpenShell)
+        workScope.launch {
+            val needsOnboarding = if (MovitData.isInstalled) {
+                onboardingRepository.resolveNeedsOnboarding()
+            } else {
+                false
+            }
+            if (needsOnboarding) {
+                _effects.tryEmit(MovitAuthEffect.OpenOnboarding)
+            } else {
+                _effects.tryEmit(MovitAuthEffect.OpenShell)
+            }
         }
     }
 

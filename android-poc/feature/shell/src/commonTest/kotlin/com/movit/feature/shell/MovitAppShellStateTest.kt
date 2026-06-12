@@ -9,6 +9,7 @@ import com.movit.feature.reports.MovitReportsEffect
 import com.movit.feature.train.MovitTrainEffect
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class MovitAppShellStateTest {
 
@@ -26,7 +27,6 @@ class MovitAppShellStateTest {
                 hasActiveSession = false,
                 introSeen = true,
             ),
-            onboardingCompleted = true,
         )
         assertEquals(listOf(MovitInnerRoute.Auth), stack)
     }
@@ -39,7 +39,6 @@ class MovitAppShellStateTest {
                 hasActiveSession = false,
                 introSeen = false,
             ),
-            onboardingCompleted = true,
         )
         assertEquals(listOf(MovitInnerRoute.Auth), stack)
     }
@@ -52,22 +51,20 @@ class MovitAppShellStateTest {
                 hasActiveSession = true,
                 introSeen = false,
             ),
-            onboardingCompleted = true,
         )
         assertEquals(emptyList<MovitInnerRoute>(), stack)
     }
 
     @Test
-    fun resolveStartupInnerStack_signedInWithoutOnboarding_opensOnboarding() {
+    fun resolveStartupInnerStack_signedInWithoutLocalFlag_defersOnboardingToAsyncGate() {
         val stack = MovitAppShellViewModel.resolveStartupInnerStack(
             bootstrap = AuthBootstrapContext(
                 movitDataInstalled = true,
                 hasActiveSession = true,
                 introSeen = false,
             ),
-            onboardingCompleted = false,
         )
-        assertEquals(listOf(MovitInnerRoute.ProfileOnboarding), stack)
+        assertEquals(emptyList<MovitInnerRoute>(), stack)
     }
 
     @Test
@@ -421,18 +418,26 @@ class MovitAppShellStateTest {
     }
 
     @Test
-    fun exercisePrepareWithWorkoutId_start_pushesWorkoutRunRoute() {
+    fun exercisePrepareWithWorkoutId_start_pushesTrainingSessionRoute() {
         val viewModel = MovitAppShellViewModel()
         viewModel.onEvent(
             MovitAppShellEvent.InnerRoutePushed(
                 MovitInnerRoute.ExercisePrepare("bodyweight-squat", workoutId = "preview"),
             ),
         )
-        viewModel.onEvent(MovitAppShellEvent.InnerRoutePushed(MovitInnerRoute.WorkoutRun("preview")))
-        assertEquals(
-            MovitInnerRoute.WorkoutRun("preview"),
-            viewModel.state.value.currentInnerRoute,
+        viewModel.onEvent(
+            MovitAppShellEvent.InnerRoutePushed(
+                MovitInnerRoute.TrainingSession(
+                    exerciseSlug = "bodyweight-squat",
+                    exerciseName = "Squat",
+                    targetReps = 12,
+                    workoutId = "preview",
+                ),
+            ),
         )
+        val route = viewModel.state.value.currentInnerRoute
+        assertTrue(route is MovitInnerRoute.TrainingSession)
+        assertEquals("preview", (route as MovitInnerRoute.TrainingSession).workoutId)
     }
 
     @Test

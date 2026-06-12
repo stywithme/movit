@@ -15,7 +15,8 @@ class MovitShellPilotActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         attachMovitShellHost(
             exitToLegacyAuthOnLogout = false,
-            trainingKmpEnabled = BuildConfig.MOVIT_TRAINING_KMP_ENABLED,
+            // Pilot always exercises the KMP training path (Phase 07); release uses BuildConfig.
+            trainingKmpEnabled = true,
             launchIntent = intent,
         )
     }

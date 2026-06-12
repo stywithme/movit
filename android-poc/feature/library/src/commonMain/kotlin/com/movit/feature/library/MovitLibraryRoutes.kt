@@ -270,8 +270,9 @@ fun WeeklyReportRoute(
 fun ExercisePrepareRoute(
     exerciseId: String,
     onBack: () -> Unit,
-    onStart: (TrainingStartAction) -> Unit,
+    onStart: (TrainingStartAction?) -> Unit,
     modifier: Modifier = Modifier,
+    workoutId: String? = null,
     viewModel: ExercisePrepareViewModel = viewModel { ExercisePrepareViewModel(exerciseId) },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -280,7 +281,7 @@ fun ExercisePrepareRoute(
     ExercisePrepareScreen(
         state = state,
         onBack = onBack,
-        onStart = { viewModel.trainingStartAction()?.let(onStart) },
+        onStart = { onStart(viewModel.trainingStartAction(workoutId = workoutId)) },
         onSkipRest = viewModel::skipRest,
         onToggleRestPause = viewModel::toggleRestPause,
         onAddRestTime = viewModel::addRestTime,

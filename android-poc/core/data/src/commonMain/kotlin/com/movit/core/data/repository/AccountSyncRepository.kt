@@ -76,6 +76,7 @@ class AccountSyncRepository(
         val data = response.data ?: return AppResult.Failure("Registration response was empty.")
         val snapshot = data.toSnapshot()
         platform().persistAuthSession(snapshot)
+        platform().setOnboardingCompleted(false)
         return AppResult.Success(snapshot)
     }
 

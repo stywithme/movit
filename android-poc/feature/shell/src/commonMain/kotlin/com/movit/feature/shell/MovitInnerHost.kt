@@ -218,19 +218,15 @@ fun MovitInnerHost(
         is MovitInnerRoute.ExercisePrepare -> {
             ExercisePrepareRoute(
                 exerciseId = route.exerciseId,
+                workoutId = route.workoutId,
                 onBack = onBack,
                 onStart = { action ->
-                    val workoutId = route.workoutId
-                    if (workoutId != null) {
-                        onNavigate(MovitInnerRoute.WorkoutRun(workoutId))
-                    } else {
-                        handleTrainingStart(
-                            action = action,
-                            workoutId = null,
-                            onNavigate = onNavigate,
-                            onShellEffect = onShellEffect,
-                        )
-                    }
+                    handleTrainingStart(
+                        action = action,
+                        workoutId = route.workoutId,
+                        onNavigate = onNavigate,
+                        onShellEffect = onShellEffect,
+                    )
                 },
                 modifier = modifier,
             )
@@ -308,14 +304,11 @@ private fun handleTrainingStart(
                 ),
             )
         }
-        is TrainingStartAction.Legacy -> {
+        is TrainingStartAction.Legacy,
+        null,
+        -> {
             onShellEffect(
-                MovitAppShellEffect.ShowLocalizedMessage("prepare_training_bridge_unavailable"),
-            )
-        }
-        null -> {
-            onShellEffect(
-                MovitAppShellEffect.ShowLocalizedMessage("prepare_training_bridge_unavailable"),
+                MovitAppShellEffect.ShowLocalizedMessage("workout_live_config_unavailable"),
             )
         }
     }

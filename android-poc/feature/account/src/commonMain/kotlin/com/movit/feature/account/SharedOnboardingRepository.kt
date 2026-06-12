@@ -15,6 +15,17 @@ class SharedOnboardingRepository : OnboardingRepository {
         }
     }
 
+    override suspend fun resolveNeedsOnboarding(): Boolean {
+        if (!MovitData.isInstalled) return false
+        val platform = MovitData.requirePlatform()
+        return OnboardingCompletion.resolveNeedsOnboarding(platform) {
+            when (val result = MovitData.account.fetchTrainingProfile()) {
+                is AppResult.Success -> AppResult.Success(result.value)
+                is AppResult.Failure -> AppResult.Failure(result.message)
+            }
+        }
+    }
+
     private companion object {
         const val DATA_LAYER_NOT_INSTALLED = "App data layer is not installed."
     }

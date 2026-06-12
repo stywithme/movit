@@ -88,25 +88,30 @@ data class WorkoutRunUiState(
         }
 }
 
-/** Resolves Explore/Library/Workout training entry when [MovitTrainingKmpGate] is on. */
+/** Normalizes library/explore ids to training-config slugs (bundled aliases in [TrainingConfigRepository]). */
+fun normalizeTrainingSlug(slug: String): String = when {
+    slug.startsWith("ex-") -> legacySlug(slug)
+    else -> slug
+}
+
+/** Resolves shell training entry — KMP live when config exists; legacy path removed in Phase 07. */
 fun resolveTrainingStartAction(
     slug: String,
     exerciseName: String,
     targetReps: Int,
     workoutId: String? = null,
 ): TrainingStartAction? {
-    val kmpReady = com.movit.core.data.MovitData.isInstalled &&
-        com.movit.core.data.MovitData.trainingConfig.supports(slug)
-    return when {
-        kmpReady -> TrainingStartAction.KmpLive(
-            slug = slug,
-            exerciseName = exerciseName,
-            targetReps = targetReps,
-            workoutId = workoutId,
-        )
-        com.movit.core.data.MovitTrainingKmpGate.enabled -> null
-        else -> TrainingStartAction.Legacy(slug)
+    if (!com.movit.core.data.MovitData.isInstalled) return null
+    val normalized = normalizeTrainingSlug(slug)
+    if (!com.movit.core.data.MovitData.trainingConfig.supports(normalized)) {
+        return null
     }
+    return TrainingStartAction.KmpLive(
+        slug = normalized,
+        exerciseName = exerciseName,
+        targetReps = targetReps,
+        workoutId = workoutId,
+    )
 }
 
 /** Start path from workout run / prepare — KMP live camera or legacy [TrainingActivity]. */

@@ -4,6 +4,7 @@ import com.movit.shared.AppResult
 
 class FakeOnboardingRepository(
     private val shouldFail: Boolean = false,
+    private val needsOnboarding: Boolean = true,
 ) : OnboardingRepository {
     override suspend fun putTrainingProfile(data: OnboardingData): AppResult<Unit> {
         if (!data.isStepValid(OnboardingData.STEP_SUMMARY)) {
@@ -15,4 +16,6 @@ class FakeOnboardingRepository(
             AppResult.Success(Unit)
         }
     }
+
+    override suspend fun resolveNeedsOnboarding(): Boolean = needsOnboarding
 }

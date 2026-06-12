@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import com.movit.core.data.MovitData
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 enum class ExercisePrepareMode {
     Prepare,
@@ -76,6 +77,9 @@ class ExercisePrepareViewModel(
     }
 
     suspend fun load() {
+        if (MovitData.isInstalled) {
+            MovitData.bootstrapLocalCaches()
+        }
         _state.update { it.copy(isLoading = true, errorMessage = null) }
         val exercise = buildExercise(exerciseId)
         if (exercise == null) {
@@ -129,14 +133,31 @@ class ExercisePrepareViewModel(
     }
 
     fun trainingStartAction(workoutId: String? = null): TrainingStartAction? {
+        if (MovitData.isInstalled) {
+            runBlocking { MovitData.bootstrapLocalCaches() }
+        }
         val exercise = _state.value.displayExercise ?: return null
-        val slug = exercise.legacyFileName
+        val slug = normalizeTrainingSlug(
+            exercise.legacyFileName.ifBlank { exercise.exerciseSlug },
+        )
         val reps = exercise.reps.filter { it.isDigit() }.toIntOrNull() ?: 12
-        return resolveTrainingStartAction(
+        val base = resolveTrainingStartAction(
             slug = slug,
             exerciseName = exercise.name,
             targetReps = reps,
             workoutId = workoutId,
+        )
+        val kmp = base as? TrainingStartAction.KmpLive ?: return base
+        if (workoutId.isNullOrBlank()) return kmp
+        val plannedWorkout = resolvePlannedWorkoutLaunch(workoutId, sessionContext = null)
+        val config = WorkoutFlowCache.get(workoutId) ?: return kmp.copy(plannedWorkout = plannedWorkout)
+        val exerciseIndex = config.exercises.indexOfFirst { item ->
+            item.exerciseSlug.equals(slug, ignoreCase = true) || item.id == exercise.id
+        }.let { index -> if (index >= 0) index else 0 }
+        return kmp.copy(
+            flowItems = config.toTrainingFlowItems(exerciseIndex),
+            plannedWorkout = plannedWorkout,
+            startExerciseIndex = exerciseIndex,
         )
     }
 

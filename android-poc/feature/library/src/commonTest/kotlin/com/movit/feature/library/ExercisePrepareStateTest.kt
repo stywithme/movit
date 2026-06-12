@@ -61,6 +61,12 @@ class ExercisePrepareStateTest {
     }
 
     @Test
+    fun normalizeTrainingSlug_mapsExploreIds() {
+        assertEquals("bodyweight-squat", normalizeTrainingSlug("ex-squat"))
+        assertEquals("bodyweight-squat", normalizeTrainingSlug("bodyweight-squat"))
+    }
+
+    @Test
     fun restTick_decrementsAndReturnsToPrepareAtZero() {
         val resting = ExercisePrepareUiState(
             mode = ExercisePrepareMode.Rest,

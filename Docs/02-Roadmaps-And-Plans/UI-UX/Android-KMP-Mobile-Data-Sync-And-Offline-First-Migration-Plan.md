@@ -479,3 +479,66 @@ graph LR
 - تم إصلاح خطأ `@Composable` في `TrainingCameraHost.ios.kt` (pre-existing).
 - تمت إضافة `okhttp` dependency لـ `core:data` androidMain (مطلوب لـ AudioFileDownloader).
 - تمت إضافة SQLDelight `deleteAll` queries للجداول الثلاثة (JsonCacheEntry, Outbox, SyncMetadata).
+
+---
+
+## مراجعة ميدانية (2026-06-12) — لماذا يفشل offline-first عند «بدء التدريب» + خطة الإصلاح
+
+> مراجعة مستقلة بعد بلاغ مستخدم: «Exercise configuration is not available offline. Sync or try again later» رغم الاتصال. تتبّع كود كامل لسلسلة التغذية والمستهلكين.
+
+### أ) السبب الجذري للبلاغ — 4 أعطال متراكبة (كلها مؤكدة بالكود)
+
+| # | العطل | الموضع | الأثر |
+|---|-------|--------|-------|
+| **C1** 🔴 | **تسجيل الدخول لا يطلق مزامنة**: `handleAuthEffect → OpenShell = popInner()` فقط؛ المزامنة تعمل فقط عند init-بجلسة-قائمة أو `ON_RESUME` التالي | `MovitAppShellViewModel.handleAuthEffect` | مستخدم يسجّل دخوله ويذهب للتدريب مباشرة → مخزن التكوينات شبه فارغ (seed سكوات فقط) حتى وهو **أونلاين** |
+| **C2** 🔴 | **التثبيتات المُرقّاة لا تُعبَّأ أبداً**: `lastSyncTimestamp` قديم → `fetchSync(updatedAfter=ts)` يرجّع `exercises[]` فارغة (دلتا) → `applySyncExercises` لا يكتب شيئاً؛ و**drift لا يلتقطها** لأن `updateLocalEntityCounts` يقيس من **كاش Explore** (المُزامَن جيداً) لا من **مخزن التكوينات** | `MovitSyncOrchestrator.updateLocalEntityCounts` + `detectDrift` | كل من استخدم التطبيق قبل Phase 07 لن يحصل على أي config إلا بـ `fullRefresh()` — **الذي لا يستدعيه أي كود إنتاجي** |
+| **C3** 🔴 | **لا fallback أونلاين عند الطلب**: `trainingConfig.supports(slug)` يقرأ الكاش فقط؛ endpoint `workout-templates/{id}/training-config` موجود في `MovitMobileApi` منذ Pre-07 **وبلا أي مستهلك**؛ ولا يوجد مسار «config مفقود + شبكة متاحة → اجلب الآن» | `resolveTrainingStartAction` / `TrainingConfigRepository` | الرسالة تظهر للمتصل بالإنترنت — عكس مبدأ المستخدم المعلن |
+| **C4** 🟠 | **عودة الشبكة لا تُزامن**: `onConnectivityRestored()` معرَّفة في shell VM و**صفر مستدعين** (مراقب الشبكة موصول لـ Outbox replay فقط) | `ShellSyncLifecycleEffects` (ON_RESUME فقط) | أوفلاين عند الفتح ثم عادت الشبكة → لا مزامنة حتى يخرج ويعود |
+
+**مقارنة legacy (السلوك الذي فُقد):** `ExerciseRepository.initialize(autoSync=true)` عند كل إقلاع → تحميل الكاش + **full refresh تلقائي إن كان فارغاً/ناقصاً** عبر `SyncManager`؛ والعدّ للـ drift كان من نفس مخزن التكوينات.
+
+### ب) فجوات إضافية في طبقة الكاش (من نفس المراجعة)
+
+| # | الفجوة | الخطورة |
+|---|--------|---------|
+| C5 | `TrainingConfigRepository.supports()/getBySlug()` تفكّ JSON الـ config **كاملاً عند كل استدعاء** (تُستدعى لكل تمرين في القوائم) — لا طبقة ذاكرة | 🟠 أداء |
+| C6 | `SLUG_ALIASES` ثلاث قيم سكوات ثابتة — أي اختلاف slug بين الـ plan والـ exercises يسقط للـ«غير متاح» | 🟠 |
+| C7 | كاشات ذاكرة غير محدودة: `TrainingSessionReportCache` (ينمو بكل جلسة) · `WorkoutFlowCache` | 🟡 ذاكرة |
+| C8 | لا تنظيف لسجلات Outbox المكتملة (نموّ دائم في SQLDelight) — الـ journal يُحذف عند finalize ✅ | 🟡 |
+| C9 | رسالة الخطأ **طريق مسدود** بلا زر «زامِن الآن»/إعادة محاولة، ولا مؤشر «آخر مزامنة/أوفلاين» في الـ shell | 🟠 UX |
+| C10 | لا مزامنة خلفية دورية (WorkManager) — الاعتماد كلياً على فتح التطبيق | 🟡 |
+
+### ج) حجم التطبيق — تشريح APK الإصدار (230MB!) 🔴
+
+| المكوّن | الحجم | الحكم |
+|---------|-------|-------|
+| مكتبات native لـ **4 معماريات** (x86 + x86_64 + v7a + arm64) | **135.6MB** | x86/x86_64 للمحاكيات فقط — تُشحن للمستخدمين هدراً؛ `abiFilters`/AAB يقصّها |
+| **موديلات matting المؤجلة (D9)**: `modnet_photographic.onnx` 26MB + `selfie_multiclass` 16.4MB + `u2net` 4.6MB + `deeplab` 2.8MB + **libonnxruntime** (~75MB عبر الـ ABIs) | **~125MB مجتمعة** | الميزة مؤجلة رسمياً والموديلات+الـ runtime تُشحن! تُحذف حتى تعود D9 |
+| `pose_landmarker_heavy.task` | 30.7MB | وضع اختياري — مرشّح للتنزيل عند الطلب (I-23/N-15) |
+| `pose_landmarker_full.task` + dex + موارد | ~22MB | طبيعي |
+
+**التقدير بعد الإصلاح:** حذف matting/ONNX + قصر الـ ABIs على arm64-v8a(+v7a) ≈ **65–75MB** APK شامل، و≈ **40–50MB** للتسليم لكل جهاز عبر AAB، مع heavy عند الطلب ≈ **أقل من 40MB**.
+
+### د) خطة الإصلاح المرتّبة
+
+**P0 — يُغلق البلاغ (نفس الأسبوع):**
+1. **F1**: بعد نجاح login/register (وبعد إكمال onboarding) → `requestSyncIfNeeded(forceCheck=true)`.
+2. **F2 — backfill المُرقّى**: في `runSyncCycle`: إن كان `trainingConfig.allCachedSlugs()` ≤ حجم الـ seed بينما meta يشير لوجود تمارين → تصعيد تلقائي لـ `fullRefresh()` (مرة واحدة)؛ ونقل مصدر `EntityCounts.exercises` ليُقاس من **مخزن التكوينات** لا Explore.
+3. **F3 — fallback أونلاين عند الطلب**: `TrainingConfigRepository.ensure(slug)` suspend — إن غاب config والشبكة متاحة → `sync.syncIfNeeded(force)` ثم إعادة فحص، وإلا `fullRefresh()`؛ تستدعيها `resolveTrainingStartAction`/Prepare مع حالة تحميل قصيرة. (و/أو استهلاك endpoint الـ training-config القائم بلا مستهلك.)
+4. **F4**: ربط مراقب الشبكة بـ `ShellSyncCoordinator.requestSync(force=true)` (نفس قناة Outbox replay الموجودة).
+5. **F5 — UX**: الرسالة تصبح قابلة للفعل: زر «زامِن الآن» + مؤشر تقدم + سبب («أول استخدام يحتاج اتصالاً لمرة واحدة»)؛ وشارة «أوفلاين — آخر مزامنة HH:MM» في الـ shell.
+
+**P1 — صلابة وأداء:**
+6. F6: طبقة ذاكرة للتكوينات (فهرس slugs محفوظ + LRU ~8 configs مفكوكة) — يلغي فكّ JSON المتكرر (C5).
+7. F7: حدود للكاشات الذاكرية (تقارير: آخر 10 جلسات LRU · تنظيف WorkoutFlowCache عند مغادرة اليوم) + purge لـ Outbox المكتمل (>7 أيام).
+8. F8: **دفعة الحجم**: حذف موديلات matting وONNX runtime من الشحنة (تعود مع D9 كـ dynamic delivery) · `abiFilters` للإصدار أو اعتماد AAB · `heavy.task` تنزيل عند الطلب مع checksum · مراجعة `resConfigs ar,en`.
+9. F9: aliases من السيرفر بدل الثابتة (id→slug موجود أصلاً في المخزن — استكماله بخريطة أسماء بديلة من الـ sync payload إن وُجدت).
+
+**P2 — تجربة الأوفلاين الكاملة للمتدرب صاحب البرنامج:**
+10. F10: **«حزمة الأسبوع» بزر واحد** (N-25): configs كل تمارين الأسبوع + صوتياتها + صور الأغلفة عبر prefetch القائم — مؤشر «جاهز للأوفلاين ✓» على الأسبوع.
+11. F11: مزامنة خلفية دورية (WorkManager على Android، BGTask على iOS لاحقاً) + telemetry لنتائج المزامنة (يرتبط بـ N-14).
+12. F12: حد حجم لكاش صور Coil3 موثَّق (الافتراضي مقبول لكن يُثبَّت رقمياً).
+
+### هـ) ما هو سليم ويُبنى عليه (لا يُعاد)
+
+`MovitSyncOrchestrator` (drift/audio/manifest/replay) بنية صحيحة — العلّة في **المُطلِقات والمصادر** لا في المنسق · SWR مستخدمة في 5 repos · seed البارد موصول · Outbox replay على الشبكة يعمل · `enforceCacheLimit` للصوت مستدعى من الـ prefetch runner · حذف الـ journal عند الإنهاء.

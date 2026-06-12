@@ -12,6 +12,7 @@ import com.movit.feature.account.MovitAuthViewModel
 import com.movit.feature.account.MovitLevelEffect
 import com.movit.feature.account.MovitOnboardingEffect
 import com.movit.feature.account.MovitProfileEffect
+import com.movit.feature.account.defaultOnboardingRepository
 import com.movit.core.model.ExploreItemType
 import com.movit.feature.explore.MovitExploreEffect
 import com.movit.feature.home.MovitHomeEffect
@@ -53,10 +54,7 @@ class MovitAppShellViewModel(
             }
             val platform = MovitData.requirePlatform()
             val bootstrap = AuthBootstrapContext.fromMovitData()
-            val startupStack = resolveStartupInnerStack(
-                bootstrap = bootstrap,
-                onboardingCompleted = platform.isOnboardingCompleted(),
-            )
+            val startupStack = resolveStartupInnerStack(bootstrap = bootstrap)
             val deepLinkStack = MovitShellPendingNavigation.consume()
             _state.update {
                 it.copy(
@@ -66,6 +64,7 @@ class MovitAppShellViewModel(
             }
             if (bootstrap.hasActiveSession) {
                 requestSyncIfNeeded()
+                ensureOnboardingGateIfNeeded()
             }
         }
     }
@@ -76,6 +75,17 @@ class MovitAppShellViewModel(
 
     fun onConnectivityRestored() {
         requestSyncIfNeeded(forceCheck = true)
+    }
+
+    private fun ensureOnboardingGateIfNeeded() {
+        viewModelScope.launch {
+            if (!MovitData.isInstalled) return@launch
+            if (!AuthBootstrapContext.fromMovitData().hasActiveSession) return@launch
+            val needsOnboarding = defaultOnboardingRepository().resolveNeedsOnboarding()
+            if (needsOnboarding && _state.value.innerStack.none { it == MovitInnerRoute.ProfileOnboarding }) {
+                pushInner(MovitInnerRoute.ProfileOnboarding)
+            }
+        }
     }
 
     private fun requestSyncIfNeeded(forceCheck: Boolean = false) {
@@ -387,16 +397,9 @@ class MovitAppShellViewModel(
     companion object {
         internal fun resolveStartupInnerStack(
             bootstrap: AuthBootstrapContext,
-            onboardingCompleted: Boolean,
         ): List<MovitInnerRoute> {
             return when (MovitAuthViewModel.resolveBootstrapTarget(bootstrap)) {
-                AuthBootstrapTarget.ActiveSession -> {
-                    if (onboardingCompleted) {
-                        emptyList()
-                    } else {
-                        listOf(MovitInnerRoute.ProfileOnboarding)
-                    }
-                }
+                AuthBootstrapTarget.ActiveSession -> emptyList()
                 AuthBootstrapTarget.SignIn,
                 AuthBootstrapTarget.SplashThenIntro,
                 -> listOf(MovitInnerRoute.Auth)

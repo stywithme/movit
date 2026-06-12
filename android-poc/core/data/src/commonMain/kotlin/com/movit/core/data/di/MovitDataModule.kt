@@ -1,6 +1,7 @@
 package com.movit.core.data.di
 
 import com.movit.core.data.MovitData
+import com.movit.core.data.audio.AudioFileDownloadPort
 import com.movit.core.data.audio.AudioFileDownloader
 import com.movit.core.data.audio.AudioPrefetchRunner
 import com.movit.core.data.cache.AudioManifestCache
@@ -58,7 +59,7 @@ fun movitDataModule(
     }
     single { MovitSyncMetadataStore(get()) }
     single { AudioManifestCache(get()) }
-    single { AudioFileDownloader() }
+    single<AudioFileDownloadPort> { AudioFileDownloader() }
     single { AudioPrefetchRunner(get(), get()) }
     single { SystemMessageCache(get()) }
     single {
