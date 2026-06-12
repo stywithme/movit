@@ -10,7 +10,13 @@ import com.movit.core.data.preferences.MovitTrainingPreferences
 import com.movit.core.data.repository.TrainingConfigRepository
 import com.movit.core.data.repository.TrainingSessionWriteCoordinator
 import com.movit.core.network.dto.LocalizedNameDto
+import com.movit.core.training.config.getMessagesForState
 import com.movit.core.training.config.ExerciseConfig
+import com.movit.core.training.config.LocalizedText
+import com.movit.core.training.engine.ZoneType
+import com.movit.feature.reports.TrainingSessionReportCache
+import com.movit.core.training.engine.ErrorType
+import com.movit.core.training.engine.JointError
 import com.movit.core.training.engine.JointState
 import com.movit.core.training.engine.feedback.FeedbackRouter
 import com.movit.core.training.engine.feedback.FeedbackVisualMessage
@@ -23,6 +29,7 @@ import com.movit.core.training.journal.WorkoutUpload
 import com.movit.core.training.model.PoseFrame
 import com.movit.core.training.report.AssessmentTrainingResult
 import com.movit.core.training.report.MovitSessionReport
+import com.movit.core.training.report.MovitSessionReportBuilder
 import com.movit.core.training.session.CountdownController
 import com.movit.core.training.session.ExerciseWorkoutSummary
 import com.movit.core.training.session.HoldStatus
@@ -64,7 +71,9 @@ class TrainingSessionViewModel(
   private val sessionId: String = exerciseSlug,
   private val isAssessmentMode: Boolean = false,
   private val flowItems: List<TrainingFlowItem>? = null,
+  private val startExerciseIndex: Int = 0,
   private val uploadContext: WorkoutUploadContext? = null,
+  private val plannedWorkout: PlannedWorkoutContext? = null,
   private val configRepository: TrainingConfigRepository = MovitData.trainingConfig,
   private val writeCoordinator: TrainingSessionWriteCoordinator = MovitData.trainingWrites,
   private val trainingPreferences: MovitTrainingPreferences = MovitData.trainingPreferences,
@@ -102,6 +111,8 @@ class TrainingSessionViewModel(
   private var lastElapsedMs: Long = 0L
   private var visibilityWarningActive = false
   private var lastRandomMessageCheckMs = 0L
+  private var plannedWorkoutStarted = false
+  private var accumulatedDayReport: MovitSessionReport? = null
 
   private val _state = MutableStateFlow(
     TrainingSessionUiState(
@@ -126,6 +137,9 @@ class TrainingSessionViewModel(
     syncFlowUi()
     if (flowCoordinator == null) {
       supervisor.onExerciseLoaded()
+    }
+    if (plannedWorkout != null) {
+      viewModelScope.launch { startPlannedWorkoutIfNeeded() }
     }
   }
 
@@ -219,7 +233,8 @@ class TrainingSessionViewModel(
     val upload = writeHooks.finalizeUpload(lastFrameTimestampMs.takeIf { it > 0 } ?: sessionStartMs)
     if (upload != null) {
       viewModelScope.launch {
-        enqueueUpload(upload)
+        cachePostTrainingReport(upload, summary)
+        enqueueUpload(upload, summary)
         writeHooks.finalizeExercise(upload)
       }
     }
@@ -372,6 +387,86 @@ class TrainingSessionViewModel(
       }
     }
     engine?.onPresenceEvent = { event -> handlePresenceEvent(event) }
+    engine?.onJointStateMessage = { jointCode, state, zone ->
+      submitJointStateMessage(jointCode, state, zone)
+    }
+    engine?.onJointErrorFeedback = { error, message ->
+      submitJointErrorFeedback(error, message)
+    }
+  }
+
+  private fun submitJointStateMessage(
+    jointCode: String,
+    state: JointState,
+    zone: ZoneType,
+  ) {
+    val config = exerciseConfig ?: return
+    val tracked = config.poseVariants.firstOrNull()?.trackedJoints
+      ?.find { it.joint == jointCode }
+      ?: return
+    val phaseName = engine?.currentPhase?.name
+    val message = tracked.getMessagesForState(state, zone, phaseName).firstOrNull() ?: return
+    val text = message.get(language)
+    if (text.isBlank()) return
+    val severity = when (state) {
+      JointState.DANGER -> FeedbackSeverity.CRITICAL
+      JointState.WARNING -> FeedbackSeverity.WARNING
+      JointState.PAD -> FeedbackSeverity.TIP
+      JointState.NORMAL -> FeedbackSeverity.INFO
+      JointState.PERFECT -> FeedbackSeverity.MOTIVATION
+      JointState.TRANSITION -> FeedbackSeverity.INFO
+    }
+    feedback.submit(
+      FeedbackSignal(
+        kind = FeedbackKind.JOINT_QUALITY,
+        severity = severity,
+        text = text,
+        dedupeKey = "state:$jointCode:$state",
+        messageCode = jointCode,
+        activeKey = if (severity.priority >= FeedbackSeverity.WARNING.priority) "correction" else "state:$jointCode:$state",
+      ),
+    )
+  }
+
+  private fun submitJointErrorFeedback(error: JointError, message: LocalizedText?) {
+    val text = message?.get(language)?.takeIf { it.isNotBlank() }
+      ?: jointErrorFallbackText(error)
+    val severity = when (error.state) {
+      JointState.DANGER -> FeedbackSeverity.CRITICAL
+      JointState.WARNING -> FeedbackSeverity.WARNING
+      else -> FeedbackSeverity.ERROR
+    }
+    feedback.submit(
+      FeedbackSignal(
+        kind = FeedbackKind.JOINT_QUALITY,
+        severity = severity,
+        text = text,
+        dedupeKey = "joint:${error.jointCode}:${error.errorType}",
+        messageCode = error.jointCode,
+        activeKey = "correction",
+      ),
+    )
+  }
+
+  private fun jointErrorFallbackText(error: JointError): String {
+    val key = "joint:${error.jointCode}:${error.errorType}"
+    val (defaultAr, defaultEn) = when (error.errorType) {
+      ErrorType.TOO_HIGH -> "ارفع أكثر" to "Raise higher"
+      ErrorType.TOO_LOW -> "اخفض أكثر" to "Lower more"
+    }
+    return SystemMessageRegistry.get(key, defaultAr, defaultEn).display(language)
+  }
+
+  private suspend fun startPlannedWorkoutIfNeeded() {
+    val planned = plannedWorkout ?: return
+    if (plannedWorkoutStarted) return
+    plannedWorkoutStarted = true
+    writeHooks.startPlannedWorkout(
+      workoutId = planned.plannedWorkoutId,
+      programId = planned.programId,
+      weekNumber = planned.weekNumber,
+      dayNumber = planned.dayNumber,
+    )
   }
 
   private fun handleSupervisorAction(action: SupervisorAction) {
@@ -464,9 +559,13 @@ class TrainingSessionViewModel(
   private fun finalizeCurrentExercise() {
     val summary = engine?.stop()
     val upload = writeHooks.finalizeUpload(lastFrameTimestampMs.takeIf { it > 0 } ?: sessionStartMs)
+    val setsCompleted = _state.value.currentSetNumber
+    val totalSets = _state.value.totalSets
     viewModelScope.launch {
-      if (upload != null) {
-        enqueueUpload(upload)
+      if (upload != null && summary != null) {
+        accumulateDayReport(upload, summary, setsCompleted, totalSets)
+        cachePostTrainingReport(upload, summary)
+        enqueueUpload(upload, summary)
         writeHooks.finalizeExercise(upload)
       }
       if (flowCoordinator != null) {
@@ -478,11 +577,13 @@ class TrainingSessionViewModel(
         when (flowCoordinator.state.value) {
           TrainingSessionFlowCoordinator.State.WorkoutComplete -> {
             flushExploreBatchIfNeeded()
+            finalizePlannedWorkoutDay()
             _state.update {
               it.copy(
                 isComplete = true,
                 isWorkoutComplete = true,
                 runState = SessionRunState.COMPLETED,
+                reportDetailId = it.reportDetailId,
               )
             }
           }
@@ -496,12 +597,66 @@ class TrainingSessionViewModel(
           }
         }
       } else {
-        _state.update { it.copy(isComplete = true) }
+        finalizePlannedWorkoutDay()
+        _state.update {
+          it.copy(
+            isComplete = true,
+            reportDetailId = it.reportDetailId,
+          )
+        }
       }
     }
   }
 
-  private suspend fun enqueueUpload(upload: WorkoutUpload) {
+  private fun accumulateDayReport(
+    upload: WorkoutUpload,
+    summary: ExerciseWorkoutSummary,
+    setsCompleted: Int,
+    totalSets: Int,
+  ) {
+    val config = exerciseConfig ?: return
+    accumulatedDayReport = accumulatedDayReport?.let { existing ->
+      MovitSessionReportBuilder.mergeExercise(
+        existing = existing,
+        upload = upload,
+        summary = summary,
+        exerciseSlug = activeSlug,
+        exerciseName = config.name,
+        setsCompleted = setsCompleted,
+        totalSets = totalSets,
+      )
+    } ?: writeHooks.buildSessionReport(upload, summary, config)
+  }
+
+  private suspend fun finalizePlannedWorkoutDay() {
+    val planned = plannedWorkout ?: return
+    val report = accumulatedDayReport ?: return
+    writeHooks.completePlannedDay(
+      workoutId = planned.plannedWorkoutId,
+      report = report,
+      programId = planned.programId,
+      weekNumber = planned.weekNumber,
+      dayNumber = planned.dayNumber,
+    )
+    writeHooks.reportPlannedDay(
+      workoutId = planned.plannedWorkoutId,
+      report = report,
+      programId = planned.programId,
+      weekNumber = planned.weekNumber,
+      dayNumber = planned.dayNumber,
+    )
+  }
+
+  private fun cachePostTrainingReport(upload: WorkoutUpload, summary: ExerciseWorkoutSummary) {
+    val config = exerciseConfig ?: return
+    val report = writeHooks.buildPostTrainingReport(upload, summary, config)
+    TrainingSessionReportCache.put(upload.id, report)
+    markReportAvailable(upload.id)
+  }
+
+  private suspend fun enqueueUpload(upload: WorkoutUpload, summary: ExerciseWorkoutSummary) {
+    val config = exerciseConfig
+    val postReport = config?.let { writeHooks.buildPostTrainingReport(upload, summary, it) }
     val batch = exploreBatch
     if (batch != null) {
       batch.record(upload)
@@ -513,7 +668,16 @@ class TrainingSessionViewModel(
       context = uploadContext?.context,
       workoutGroupId = uploadContext?.workoutGroupId,
       workoutTemplateId = uploadContext?.workoutTemplateId,
+      legacyReport = postReport,
+      onEnqueued = { reportId ->
+        postReport?.let { TrainingSessionReportCache.put(reportId, it) }
+        markReportAvailable(reportId)
+      },
     )
+  }
+
+  private fun markReportAvailable(reportId: String) {
+    _state.update { it.copy(reportDetailId = reportId) }
   }
 
   private fun flushExploreBatchIfNeeded() {
@@ -523,6 +687,7 @@ class TrainingSessionViewModel(
       scope = viewModelScope,
       workoutGroupId = groupId,
       workoutTemplateId = uploadContext.workoutTemplateId,
+      onEachEnqueued = { markReportAvailable(activeSlug) },
     )
   }
 
@@ -839,6 +1004,7 @@ data class TrainingSessionUiState(
   val glassMessage: GlassMessageState? = null,
   val showVignette: Boolean = false,
   val elapsedLabel: String = "0:00",
+  val reportDetailId: String? = null,
 )
 
 private fun progressPercent(repCount: Int, targetReps: Int): Int =

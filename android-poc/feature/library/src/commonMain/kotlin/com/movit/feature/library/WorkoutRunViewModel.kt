@@ -16,6 +16,7 @@ class WorkoutRunViewModel(
 ) : ViewModel() {
     private val _state = MutableStateFlow(WorkoutRunUiState(isLoading = true))
     val state: StateFlow<WorkoutRunUiState> = _state.asStateFlow()
+    private var sessionContext: WorkoutSessionContextUi? = null
 
     fun loadInitial() {
         viewModelScope.launch { load() }
@@ -48,18 +49,30 @@ class WorkoutRunViewModel(
 
     private suspend fun loadFromSession(): WorkoutFlowConfigUi? =
         when (val result = sessionRepository.loadSession(workoutId)) {
-            is AppResult.Success -> WorkoutFlowMapper.fromSession(result.value)
+            is AppResult.Success -> {
+                sessionContext = result.value.context
+                WorkoutFlowMapper.fromSession(result.value)
+            }
             is AppResult.Failure -> null
         }
 
     fun trainingStartAction(): TrainingStartAction? {
+        val config = _state.value.config ?: return null
         val exercise = _state.value.currentExercise ?: return null
-        return resolveTrainingStartAction(
-            slug = exercise.exerciseSlug,
-            exerciseName = exercise.name,
-            targetReps = exercise.reps ?: 12,
-            workoutId = workoutId,
-        )
+        return when (
+            val action = resolveTrainingStartAction(
+                slug = exercise.exerciseSlug,
+                exerciseName = exercise.name,
+                targetReps = exercise.reps ?: 12,
+                workoutId = workoutId,
+            )
+        ) {
+            is TrainingStartAction.KmpLive -> action.copy(
+                flowItems = config.toTrainingFlowItems(_state.value.currentExerciseIndex),
+                plannedWorkout = resolvePlannedWorkoutLaunch(workoutId, sessionContext),
+            )
+            else -> action
+        }
     }
 
     /** @deprecated Use [trainingStartAction]; kept for tests. */

@@ -14,7 +14,10 @@ import com.movit.feature.library.ProgramWeekPlanRoute
 import com.movit.feature.library.WeeklyReportEffect
 import com.movit.feature.library.WeeklyReportRoute
 import com.movit.feature.training.ExerciseLiveRoute
+import com.movit.feature.training.PlannedWorkoutContext
 import com.movit.feature.training.TrainingSessionRoute
+import com.movit.feature.training.TrainingSessionRouteArgs
+import com.movit.feature.training.WorkoutUploadContext
 import com.movit.feature.library.TrainingStartAction
 import com.movit.feature.library.WorkoutCustomizeRoute
 import com.movit.feature.library.WorkoutRunRoute
@@ -153,9 +156,28 @@ fun MovitInnerHost(
         }
         is MovitInnerRoute.TrainingSession -> {
             TrainingSessionRoute(
-                exerciseSlug = route.exerciseSlug,
-                exerciseName = route.exerciseName,
-                targetReps = route.targetReps,
+                args = TrainingSessionRouteArgs(
+                    exerciseSlug = route.exerciseSlug,
+                    exerciseName = route.exerciseName,
+                    targetReps = route.targetReps,
+                    workoutId = route.workoutId,
+                    flowItems = route.flowItems,
+                    startExerciseIndex = route.startExerciseIndex,
+                    uploadContext = route.plannedWorkout?.let { planned ->
+                        WorkoutUploadContext(
+                            workoutGroupId = planned.plannedWorkoutId,
+                            context = "program",
+                        )
+                    },
+                    plannedWorkout = route.plannedWorkout?.let { planned ->
+                        PlannedWorkoutContext(
+                            plannedWorkoutId = planned.plannedWorkoutId,
+                            programId = planned.programId,
+                            weekNumber = planned.weekNumber,
+                            dayNumber = planned.dayNumber,
+                        )
+                    },
+                ),
                 onBack = onBack,
                 onFinish = {
                     val workoutId = route.workoutId
@@ -164,6 +186,9 @@ fun MovitInnerHost(
                     } else {
                         onBack()
                     }
+                },
+                onViewReport = { reportId ->
+                    onNavigate(MovitInnerRoute.ReportDetail(reportId))
                 },
                 modifier = modifier,
             )
@@ -239,6 +264,9 @@ private fun handleTrainingStart(
                     exerciseName = action.exerciseName,
                     targetReps = action.targetReps,
                     workoutId = action.workoutId ?: workoutId,
+                    flowItems = action.flowItems,
+                    plannedWorkout = action.plannedWorkout,
+                    startExerciseIndex = action.startExerciseIndex,
                 ),
             )
         }

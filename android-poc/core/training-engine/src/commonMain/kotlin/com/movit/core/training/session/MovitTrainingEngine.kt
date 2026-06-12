@@ -20,7 +20,9 @@ import com.movit.core.training.config.ExerciseConfig
 
 import com.movit.core.training.config.JointRole
 
+import com.movit.core.training.config.LocalizedText
 import com.movit.core.training.config.TrackedJoint
+import com.movit.core.training.engine.JointError
 
 import com.movit.core.training.config.phaseTimingConfig
 
@@ -340,6 +342,8 @@ class MovitTrainingEngine(
 
     var onMotionFrameRecorded: MotionFrameHook? = null
     var onRepCompletedForMotion: MotionRepCompletedHook? = null
+    var onJointStateMessage: ((jointCode: String, state: com.movit.core.training.engine.JointState, zone: com.movit.core.training.engine.ZoneType) -> Unit)? = null
+    var onJointErrorFeedback: ((JointError, LocalizedText?) -> Unit)? = null
 
 
 
@@ -486,39 +490,21 @@ class MovitTrainingEngine(
 
 
     fun pause() {
-
         isPaused = true
-
+        session.pause()
     }
-
-
 
     fun resume() {
-
         isPaused = false
-
+        session.resume()
     }
 
-
-
     fun stop(): ExerciseWorkoutSummary {
-
         isRunning = false
-
+        isPaused = false
         (deviceTiltPort as? AcquirableDeviceTiltPort)?.release(TILT_OWNER)
-
-        val duration = if (executionStartMs > 0L) {
-
-            (nowMs() - executionStartMs).coerceAtLeast(0L)
-
-        } else {
-
-            session.stop()
-
-        }
-
+        val duration = session.stop()
         return ExerciseWorkoutSummaryBuilder.build(exerciseConfig, repCounter, duration)
-
     }
 
 
@@ -646,9 +632,11 @@ class MovitTrainingEngine(
 
         lastJointStateInfos = frameResult.jointStateInfos
 
-        frameFeedback.emitThrottledStateMessages(frameResult.jointStateInfos) { _, _ -> }
-
-
+        frameFeedback.emitThrottledStateMessages(frameResult.jointStateInfos) { jointCode, state ->
+            val zone = frameResult.jointStateInfos[jointCode]?.currentZone
+                ?: com.movit.core.training.engine.ZoneType.TRANSITION
+            onJointStateMessage?.invoke(jointCode, state, zone)
+        }
 
         val shouldTrackState = if (isHoldExercise) {
 
@@ -683,9 +671,11 @@ class MovitTrainingEngine(
         val jointErrors = JointErrorCollection.collectJointErrors(frameResult.jointEvals)
 
         for (error in jointErrors) {
-
             repCounter.addError(error)
-
+            if (frameFeedback.shouldEmitJointError(error)) {
+                val message = frameResult.jointEvals[error.jointCode]?.messages?.firstOrNull()
+                onJointErrorFeedback?.invoke(error, message)
+            }
         }
 
 

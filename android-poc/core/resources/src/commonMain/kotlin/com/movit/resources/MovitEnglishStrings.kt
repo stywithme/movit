@@ -571,6 +571,7 @@ internal val movitEnglishStrings: Map<String, String> = mapOf(
     "training_session_rest_timer" to "%1\$d s",
     "training_session_rest_next" to "Next: %1\$s",
     "training_session_complete_title" to "Set complete",
+    "training_session_view_report" to "View report",
     "training_session_complete_summary" to "%1\$d reps · %2\$d%% form",
     "training_session_auto_pause_visibility" to "Move back into frame",
     "training_session_auto_pause_nopose" to "No pose detected",

@@ -42,6 +42,7 @@ fun TrainingSessionScreen(
     onResume: () -> Unit,
     onStop: () -> Unit,
     onFinish: () -> Unit,
+    onViewReport: () -> Unit = {},
     onSkipRest: () -> Unit,
     cameraSlot: @Composable () -> Unit,
     modifier: Modifier = Modifier,
@@ -126,6 +127,7 @@ fun TrainingSessionScreen(
                     TrainingSessionStateOverlay(
                         state = state,
                         localizedPhase = localizedPhase,
+                        onViewReport = onViewReport,
                         modifier = Modifier.fillMaxSize(),
                     )
 
@@ -146,6 +148,7 @@ fun TrainingSessionScreen(
                         onResume = onResume,
                         onStop = onStop,
                         onFinish = onFinish,
+                        onViewReport = onViewReport,
                         onSkipRest = onSkipRest,
                         modifier = Modifier.align(Alignment.BottomCenter),
                     )
@@ -159,6 +162,7 @@ fun TrainingSessionScreen(
 private fun TrainingSessionStateOverlay(
     state: TrainingSessionUiState,
     localizedPhase: String,
+    onViewReport: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
@@ -212,6 +216,8 @@ private fun TrainingSessionStateOverlay(
                     exerciseName = state.exerciseName,
                     repCount = state.repCount,
                     formPercent = state.liveFormPercent,
+                    showViewReport = state.reportDetailId != null,
+                    onViewReport = onViewReport,
                     modifier = Modifier.align(Alignment.Center),
                 )
             }
@@ -242,6 +248,7 @@ private fun TrainingSessionControls(
     onResume: () -> Unit,
     onStop: () -> Unit,
     onFinish: () -> Unit,
+    onViewReport: () -> Unit,
     onSkipRest: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -261,10 +268,22 @@ private fun TrainingSessionControls(
                 )
             }
             state.isComplete -> {
+                if (state.reportDetailId != null) {
+                    MovitButton(
+                        text = movitText("training_session_view_report"),
+                        onClick = onViewReport,
+                        variant = MovitButtonVariant.Filled,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
                 MovitButton(
                     text = movitText("workout_live_finish"),
                     onClick = onFinish,
-                    variant = MovitButtonVariant.Filled,
+                    variant = if (state.reportDetailId != null) {
+                        MovitButtonVariant.Outlined
+                    } else {
+                        MovitButtonVariant.Filled
+                    },
                     leadingIcon = Icons.Default.CheckCircle,
                     modifier = Modifier.fillMaxWidth(),
                 )

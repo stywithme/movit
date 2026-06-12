@@ -624,6 +624,7 @@
     <string name="training_session_rest_timer">%1$d ث</string>
     <string name="training_session_rest_next">التالي: %1$s</string>
     <string name="training_session_complete_title">اكتملت المجموعة</string>
+    <string name="training_session_view_report">عرض التقرير</string>
     <string name="training_session_complete_summary">%1$d تكرار · شكل %2$d%%</string>
     <string name="training_session_auto_pause_visibility">عد إلى إطار الكاميرا</string>
     <string name="training_session_auto_pause_nopose">لم يُكتشف وضعية</string>

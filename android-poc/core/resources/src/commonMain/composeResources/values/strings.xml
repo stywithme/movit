@@ -595,6 +595,7 @@
     <string name="training_session_rest_timer">%1$d s</string>
     <string name="training_session_rest_next">Next: %1$s</string>
     <string name="training_session_complete_title">Set complete</string>
+    <string name="training_session_view_report">View report</string>
     <string name="training_session_complete_summary">%1$d reps · %2$d%% form</string>
     <string name="training_session_auto_pause_visibility">Move back into frame</string>
     <string name="training_session_auto_pause_nopose">No pose detected</string>

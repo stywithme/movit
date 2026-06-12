@@ -21,6 +21,8 @@ import androidx.compose.ui.text.style.TextAlign
 import com.movit.designsystem.MovitMotion
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.components.GlassMessageSeverity
+import com.movit.designsystem.components.MovitButton
+import com.movit.designsystem.components.MovitButtonVariant
 import com.movit.designsystem.components.MovitGlassMessage
 import com.movit.designsystem.components.MovitProgressBar
 import com.movit.designsystem.components.MovitTag
@@ -149,6 +151,8 @@ fun WorkoutCompletePanel(
     exerciseName: String,
     repCount: Int,
     formPercent: Int,
+    showViewReport: Boolean = false,
+    onViewReport: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val reduceMotion = rememberPrefersReducedMotion()
@@ -196,5 +200,13 @@ fun WorkoutCompletePanel(
             color = MaterialTheme.movitColors.onInkVeil88,
             textAlign = TextAlign.Center,
         )
+        if (showViewReport) {
+            MovitButton(
+                text = movitText("training_session_view_report"),
+                onClick = onViewReport,
+                variant = MovitButtonVariant.Filled,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }

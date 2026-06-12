@@ -1,5 +1,8 @@
 package com.movit.feature.shell
 
+import com.movit.core.training.session.TrainingFlowItem
+import com.movit.feature.library.PlannedWorkoutLaunch
+
 /**
  * Stack entries for inner pages (no bottom nav — prototype sess-top + back).
  * Maps to library / training / account flows under the main tabs.
@@ -29,6 +32,9 @@ sealed interface MovitInnerRoute {
         val exerciseName: String,
         val targetReps: Int,
         val workoutId: String? = null,
+        val flowItems: List<TrainingFlowItem>? = null,
+        val plannedWorkout: PlannedWorkoutLaunch? = null,
+        val startExerciseIndex: Int = 0,
     ) : MovitInnerRoute
     data class ReportDetail(val reportId: String) : MovitInnerRoute
     data object Auth : MovitInnerRoute

@@ -29,6 +29,7 @@ kotlin {
             implementation(project(":feature:home"))
             implementation(project(":feature:train"))
             implementation(project(":feature:reports"))
+            implementation(project(":core:training-engine"))
             implementation(project(":feature:library"))
             implementation(project(":feature:training"))
             // Account effect types (e.g. MovitProfileEffect) are part of shell's public API

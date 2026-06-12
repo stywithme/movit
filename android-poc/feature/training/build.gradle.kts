@@ -20,6 +20,7 @@ kotlin {
             implementation(project(":core:resources"))
             implementation(project(":core:training-engine"))
             implementation(project(":core:pose-capture"))
+            implementation(project(":feature:reports"))
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)

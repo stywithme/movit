@@ -17,6 +17,10 @@ class SharedReportDetailRepository : ReportDetailRepository {
         val platform = MovitData.requirePlatform()
         val language = platform.preferredLanguage()
         val strings = ReportDetailStrings.load(language)
+
+        TrainingSessionReportCache.get(reportId)?.let { cached ->
+            return AppResult.Success(MovitSessionReportUiMapper.mapPostTraining(cached, strings))
+        }
         if (!platform.isProUser()) {
             return AppResult.Failure(REPORT_NOT_FOUND)
         }

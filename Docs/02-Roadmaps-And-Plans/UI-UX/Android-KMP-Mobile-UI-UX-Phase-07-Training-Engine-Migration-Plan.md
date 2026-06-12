@@ -1125,6 +1125,32 @@ Mac: MediaPipe Swift bridge + cinterop/QA؛ Windows: متابعة 07.7 shell cut
 
 بعدها يبدأ المسار المحجوب بالجهاز/Mac كما في §13.0.2.
 
-### 14.7 نتيجة `assembleRelease` (تُستكمل)
+### 14.7 نتيجة `assembleRelease`
 
-- `:app:assembleRelease -Pmovit.shell.launcher.enabled=true`: (قيد التشغيل وقت كتابة المراجعة)
+- `:app:assembleRelease -Pmovit.shell.launcher.enabled=true`: ✅ **BUILD SUCCESSFUL in 9m 8s** (إعادة تشغيل مستقلة — 694 مهمة، 140 منفَّذة) — يؤكد ادعاء 07.7. بهذا كل بنود §7 المتاحة على Windows مُعاد التحقق منها بشكل مستقل.
+
+### 14.8 حالة إغلاق الفجوات G1–G4 (2026-06-12)
+
+| # | الحالة | ملخص الإصلاح |
+|---|--------|--------------|
+| **G1** | ✅ مغلق | Shell يمرّر `flowItems`/`plannedWorkout`/`workoutId`/`startExerciseIndex` من `TrainingStartAction.KmpLive` → `TrainingSessionRouteArgs`؛ VM يستدعي `startPlannedWorkout`/`completePlannedDay`/`reportPlannedDay` مع تجميع `MovitSessionReport`. |
+| **G2** | ✅ مغلق | `MovitTrainingEngine.onJointStateMessage(joint, state, zone)` → VM يحل النص عبر `TrackedJoint.getMessagesForState` + `FeedbackRouter` (`JOINT_QUALITY`). |
+| **G3** | ✅ مغلق | `pause`/`resume`/`stop` تمر عبر `SessionOrchestrator` → `ExecutionClock`؛ اختبار `MovitTrainingEngineDurationTest`. |
+| **G4** | ✅ مغلق | `TrainingSessionReportCache` + زر «عرض التقرير» في `WorkoutCompletePanel`/`TrainingSessionControls`؛ `SharedReportDetailRepository` يقرأ الكاش قبل API. |
+
+### 14.8 إغلاق G1–G4 — تحقق مستقل (2026-06-12)
+
+| الفجوة | الحالة | الدليل المُتحقَّق منه |
+|--------|--------|------------------------|
+| **G1** planned lifecycle | ✅ **مغلقة** | `startPlannedWorkoutIfNeeded()` (idempotent) عند أول StartEngine + `finalizePlannedWorkoutDay()` → `completePlannedDay`+`reportPlannedDay`؛ الـ shell يمرّر `flowItems`/`plannedWorkout`/`uploadContext` (`MovitInnerRoute.TrainingSession` موسَّع + `PlannedWorkoutLaunch` من `WorkoutRunViewModel.resolvePlannedWorkoutLaunch`)؛ explore batch عبر `exploreBatch.record` |
+| **G2** joint stateMessages | ✅ **مغلقة** | `onJointStateMessage(jointCode, state, zone)` من المحرك → VM يحلّ النص من config (state+zone+phase) → `FeedbackRouter` بخريطة severity + `onJointErrorFeedback` إضافية. *ملاحظة صغرى:* الحلّ يقرأ `poseVariants.firstOrNull()` والمحرك يُبنى بـ `poseVariantIndex = 0` — متسقان اليوم؛ تمرين بـ variant>0 يحتاج تمرير الـ index لاحقاً |
+| **G3** خصم pause من المدة | ✅ **مغلقة** | `pause()/resume()` → `session.pause()/resume()` و`stop()` → `session.stop()` (ExecutionClock.finalizeDurationMs)؛ اختبار جديد `MovitTrainingEngineDurationTest` |
+| **G4** عرض التقرير | ✅ **مغلقة** | زر تقرير في لوحة الإكمال → `onViewReport` → `MovitInnerRoute.ReportDetail`؛ `TrainingSessionReportCache` (feature:reports) يُغذّى من VM و`SharedReportDetailRepository` يقرأه عبر `MovitSessionReportUiMapper` (لم يعد بلا مستهلك) + اختباران |
+
+**مشكلتان وُجدتا وأُصلحتا أثناء تدقيق الإغلاق:**
+1. اختبار جديد لا يُكمبَّل (`TrainingSessionWriteCoordinatorPlannedTest` — توقيع `ReportsSyncRepository` خاطئ) وكان يُفشل `:core:data` كاملاً → أُصلح ليطابق `SyncRepositoryTestSupport` (✅ أخضر).
+2. **حذف عرضي** لـ `scripts/generate-docs-stats.ps1` (كسر مهمة `docsStats`) و`scripts/phase06-smoke-adb.ps1` (لازم لـ smoke الجهاز القادم) → **استُعيدا** من git و`docsStats` يعمل.
+
+**التحقق النهائي (2026-06-12):** §7 suite + `:feature:shell`/`:feature:reports`/`:core:network` tests + `assembleDebug` + iOS compiles ×4 — **BUILD SUCCESSFUL** · `docsStats` → **443** اختبار KMP (+9).
+
+**المتبقي من ملاحظات §14.4 (نظافة، غير حاجز):** حذف `ExerciseLive*` dead code · حذف `Stub*` في pose-capture · توحيد تنسيق `MovitTrainingEngine.kt` · تمرير poseVariantIndex لرسائل G2 عند دعم variants متعددة.

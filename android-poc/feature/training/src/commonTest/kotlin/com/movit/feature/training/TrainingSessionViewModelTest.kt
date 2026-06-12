@@ -39,6 +39,26 @@ class TrainingSessionViewModelTest {
   }
 
   @Test
+  fun trainingSessionRouteArgs_carriesPlannedWorkoutAndStartIndex() {
+    val args = TrainingSessionRouteArgs(
+      exerciseSlug = "squat",
+      exerciseName = "Squat",
+      targetReps = 10,
+      workoutId = "session:prog:1:1:pw-1",
+      startExerciseIndex = 2,
+      plannedWorkout = PlannedWorkoutContext(
+        plannedWorkoutId = "pw-1",
+        programId = "prog-1",
+        weekNumber = 1,
+        dayNumber = 1,
+      ),
+    )
+    assertEquals(2, args.startExerciseIndex)
+    assertEquals("pw-1", args.plannedWorkout?.plannedWorkoutId)
+    assertEquals("prog-1", args.plannedWorkout?.programId)
+  }
+
+  @Test
   fun workoutFlowPhase_defaultsToNone() {
     val state = TrainingSessionUiState(
       exerciseSlug = "squat",

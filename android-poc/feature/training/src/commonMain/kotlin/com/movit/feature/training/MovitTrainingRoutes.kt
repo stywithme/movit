@@ -27,7 +27,9 @@ data class TrainingSessionRouteArgs(
   val targetReps: Int,
   val workoutId: String? = null,
   val flowItems: List<TrainingFlowItem>? = null,
+  val startExerciseIndex: Int = 0,
   val uploadContext: WorkoutUploadContext? = null,
+  val plannedWorkout: PlannedWorkoutContext? = null,
   val language: String = "en",
 )
 
@@ -64,6 +66,7 @@ fun TrainingSessionRoute(
   args: TrainingSessionRouteArgs,
   onBack: () -> Unit,
   onFinish: () -> Unit,
+  onViewReport: (String) -> Unit = {},
   modifier: Modifier = Modifier,
 ) {
   val feedbackPorts = rememberTrainingFeedbackPorts()
@@ -74,8 +77,11 @@ fun TrainingSessionRoute(
       targetReps = args.targetReps,
       exerciseNameOverride = args.exerciseName,
       language = args.language,
+      sessionId = args.workoutId ?: args.exerciseSlug,
       flowItems = args.flowItems,
       uploadContext = args.uploadContext,
+      plannedWorkout = args.plannedWorkout,
+      startExerciseIndex = args.startExerciseIndex,
       feedbackRouter = FeedbackRouter(
         coachIntensity = CoachIntensity.from(prefs.coachIntensity),
         speech = feedbackPorts.speech,
@@ -112,6 +118,9 @@ fun TrainingSessionRoute(
     onFinish = {
       viewModel.stopSession()
       onFinish()
+    },
+    onViewReport = {
+      viewModel.state.value.reportDetailId?.let(onViewReport)
     },
     onSkipRest = viewModel::skipRest,
     onFlipCamera = { useFrontCamera = !useFrontCamera },
