@@ -115,6 +115,19 @@ data class ProgramEditUiState(
     val isDirty: Boolean = false,
 )
 
+enum class WeekOfflineStatus {
+    Idle,
+    Downloading,
+    Ready,
+    Failed,
+}
+
+data class WeekOfflineUiState(
+    val status: WeekOfflineStatus = WeekOfflineStatus.Idle,
+    val progressPercent: Int = 0,
+    val errorMessage: String? = null,
+)
+
 data class ProgramDetailUiState(
     val isLoading: Boolean = false,
     val programId: String = "",
@@ -132,6 +145,7 @@ data class ProgramDetailUiState(
     val weeks: List<ProgramWeekUi> = emptyList(),
     val enrollment: ProgramEnrollmentUi = ProgramEnrollmentUi(isEnrolled = false),
     val nextSession: ProgramNextSessionUi? = null,
+    val weekOffline: WeekOfflineUiState = WeekOfflineUiState(),
     val edit: ProgramEditUiState = ProgramEditUiState(),
     val isStarting: Boolean = false,
     val errorMessage: String? = null,

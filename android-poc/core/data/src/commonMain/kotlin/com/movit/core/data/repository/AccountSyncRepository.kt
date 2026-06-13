@@ -1,5 +1,6 @@
 package com.movit.core.data.repository
 
+import com.movit.core.data.MovitData
 import com.movit.core.data.platform.AuthSessionSnapshot
 import com.movit.core.data.platform.MovitPlatformBindings
 import com.movit.core.data.platform.toSnapshot
@@ -96,6 +97,9 @@ class AccountSyncRepository(
         val auth = bindings.authHeader()
         if (auth != null && refresh != null) {
             api.logout(LogoutRequestDto(refresh), authorization = auth)
+        }
+        if (MovitData.isInstalled) {
+            MovitData.clearAllUserData()
         }
         bindings.clearAuthSession()
         return AppResult.Success(Unit)

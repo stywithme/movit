@@ -111,6 +111,7 @@ object MobileApiContractRegistry {
         "PUT api/mobile/user-programs/{id}",
         "POST api/mobile/auth/login",
         "POST api/mobile/auth/register",
+        "POST api/mobile/auth/google",
         "POST api/mobile/auth/forgot-password",
         "POST api/mobile/auth/refresh",
         "POST api/mobile/auth/logout",
@@ -152,7 +153,6 @@ object MobileApiContractRegistry {
     )
 
     val deferredEndpoints: List<DeferredEndpoint> = listOf(
-        DeferredEndpoint("POST", "api/mobile/auth/google", "Google bridge deferred"),
         DeferredEndpoint("POST", "api/mobile/auth/reset-password", "Reset-password flow not in Movit shell"),
         DeferredEndpoint("PATCH", "api/mobile/auth/profile", "Profile PATCH deferred; settings PATCH covered"),
         DeferredEndpoint("GET", "api/mobile/plans", "Subscriptions hidden (StoreKit)"),

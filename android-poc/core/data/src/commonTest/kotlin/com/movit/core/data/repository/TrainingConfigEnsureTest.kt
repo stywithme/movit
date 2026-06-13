@@ -41,15 +41,16 @@ class TrainingConfigEnsureTest {
     }
 
     @Test
-    fun ensure_returnsOffline_whenMissingAndNoNetwork() {
+    fun ensure_returnsOffline_whenUnknownSlugMissingAndNoNetwork() {
         runBlocking {
             val store = InMemoryMovitLocalStore()
             val repo = TrainingConfigRepository(store)
+            seedSquat(repo)
             val platform = object : FakeMovitPlatformBindings() {
                 override fun isNetworkAvailable(): Boolean = false
             }
             val result = repo.ensure(
-                slug = "bodyweight-squat",
+                slug = "walking-lunge",
                 sync = syncMustNotRunOrchestrator(store, platform),
                 api = testMobileApi(MockEngine { respond("{}", HttpStatusCode.NotFound) }),
                 platform = platform,
@@ -203,6 +204,10 @@ class TrainingConfigEnsureTest {
             ),
             offlineWrites = offlineWrites,
             trainingConfig = trainingConfig,
+            systemMessageCache = com.movit.core.data.cache.SystemMessageCache(localStore),
+            exercisePreferenceLocalStore = com.movit.core.data.repository.ExercisePreferenceLocalStore(localStore),
+            dayCustomizationLocalStore = com.movit.core.data.repository.DayCustomizationLocalStore(localStore),
+            messageLibraryCache = com.movit.core.data.cache.MessageLibraryCache(localStore),
         )
     }
 

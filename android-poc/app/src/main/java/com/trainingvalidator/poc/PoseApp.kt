@@ -12,15 +12,20 @@ import coil.ImageLoaderFactory
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import com.trainingvalidator.poc.network.ApiClient
+import com.movit.core.posecapture.android.PoseLandmarkerHeavyModelStore
 import com.trainingvalidator.poc.sensors.DeviceTiltProvider
 import com.trainingvalidator.poc.storage.SystemMessageStore
+import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.training.engine.PostureMlpClassifier
 import com.movit.MovitMainActivity
 import com.trainingvalidator.poc.ui.main.MainContainerActivity
 import com.trainingvalidator.poc.ui.theme.AppThemeManager
+import com.movit.core.data.local.MovitAndroidRuntime
+import com.movit.core.data.sync.BackgroundSyncScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 /**
  * PoseApp — Application class
@@ -65,11 +70,22 @@ class PoseApp : Application(), ImageLoaderFactory {
     override fun onCreate() {
         super.onCreate()
         _instance = this
+        MovitAndroidRuntime.applicationContext = applicationContext
+        BackgroundSyncScheduler.schedule()
         AppThemeManager.applySavedMode(this)
         ApiClient.init(this)
         PostureMlpClassifier.getOrNull(this)
         SystemMessageStore(this).loadIntoRegistry()
+        preloadHeavyPoseModelIfNeeded()
         registerImmersiveMode()
+    }
+
+    private fun preloadHeavyPoseModelIfNeeded() {
+        SettingsManager.initialize(this)
+        if (SettingsManager.getModelType() != "heavy") return
+        applicationScope.launch {
+            PoseLandmarkerHeavyModelStore.ensureCached(applicationContext)
+        }
     }
 
     /**

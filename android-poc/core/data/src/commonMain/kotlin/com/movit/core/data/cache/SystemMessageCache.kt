@@ -9,7 +9,7 @@ import kotlinx.serialization.builtins.ListSerializer
 /**
  * Persists system messages from sync or the cold-start bundle so they are available offline.
  */
-class SystemMessageCache(
+open class SystemMessageCache(
     private val store: MovitLocalStore,
 ) {
     fun read(): List<SyncSystemMessageDto> {
@@ -22,7 +22,7 @@ class SystemMessageCache(
         }.getOrElse { emptyList() }
     }
 
-    fun save(messages: List<SyncSystemMessageDto>) {
+    open fun save(messages: List<SyncSystemMessageDto>) {
         if (messages.isEmpty()) return
         store.writeJsonCache(
             MovitCacheKeys.SYSTEM_MESSAGE_STORE,
@@ -33,7 +33,7 @@ class SystemMessageCache(
     }
 
     /** Load persisted messages into [SystemMessageRegistry] (e.g. on app start). */
-    fun loadIntoRegistry() {
+    open fun loadIntoRegistry() {
         val messages = read()
         if (messages.isNotEmpty()) {
             SystemMessageRegistry.replaceAll(messages)

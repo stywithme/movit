@@ -152,6 +152,41 @@ object HomeApiMapper {
             catchUp = catchUp,
         )
     }
+
+    /** Honest first-launch UI when home cache is empty and sync cannot run (e.g. offline before first sync). */
+    fun coldStartOffline(
+        userDisplayName: String,
+        strings: HomeStrings,
+    ): HomeDashboardUi {
+        val displayName = userDisplayName.split(" ").firstOrNull()?.takeIf { it.isNotBlank() }
+            ?: userDisplayName
+        return HomeDashboardUi(
+            userName = displayName,
+            greetingEyebrow = greetingEyebrowFor(strings),
+            greetingTitle = displayName,
+            greetingSubtitle = strings.greetingNoPlan,
+            metricTiles = emptyList(),
+            levelCard = null,
+            alert = null,
+            activeProgram = null,
+            todayPlan = null,
+            showBodyScanCta = false,
+            showNoProgramEmpty = true,
+            journeyRows = emptyList(),
+            recentActivities = emptyList(),
+            progress = HomeProgressUi(
+                weeklyCompletionPercent = 0,
+                streakDays = 0,
+                activeMinutesLabel = strings.dash,
+                formScoreLabel = strings.dash,
+            ),
+            reportPreview = null,
+            quickActions = listOf(
+                HomeQuickActionUi("explore", strings.quickExplore, strings.quickExploreSub),
+                HomeQuickActionUi("reports", strings.quickReports, strings.quickReportsSub),
+            ),
+        )
+    }
 }
 
 private fun buildCatchUpUi(

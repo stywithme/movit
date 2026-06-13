@@ -12,13 +12,6 @@ class FakeProgramFlowRepository(
         return AppResult.Success(programs)
     }
 
-    override suspend fun loadWeekPlan(programId: String, weekNumber: Int): AppResult<ProgramWeekPlanUi> {
-        if (shouldFail) return AppResult.Failure("Unable to load week plan.")
-        val exists = programs.any { it.id == programId }
-        if (!exists) return AppResult.Failure("Program not found.")
-        return AppResult.Success(ProgramFlowPreviewData.weekPlan(programId, weekNumber))
-    }
-
     override suspend fun loadWeeklyReport(programId: String, weekNumber: Int): AppResult<WeeklyReportUi> {
         if (shouldFail) return AppResult.Failure("Unable to load weekly report.")
         val exists = programs.any { it.id == programId }

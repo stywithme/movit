@@ -3,7 +3,10 @@ package com.movit.core.data.repository
 import com.movit.core.data.cache.MovitCachePolicy
 import com.movit.core.data.cache.MovitLruCache
 import com.movit.core.data.local.MovitLocalStore
+import com.movit.core.data.sync.ExerciseMessageLibraryMerger
 import com.movit.core.network.MovitJson
+import com.movit.core.network.dto.MessageLibraryStatsDto
+import com.movit.core.network.dto.SyncMessageTemplateDto
 import com.movit.core.training.config.ExerciseConfig
 import com.movit.core.training.config.ExerciseConfigParser
 import com.movit.core.training.config.ExerciseConfigRecord
@@ -30,6 +33,23 @@ class TrainingConfigRepository(
         val canonical = resolveCanonicalSlug(slug)
         val index = readSlugIndexSet()
         return canonical in index || slug in index
+    }
+
+    fun resolveAvailableSlug(vararg candidates: String?): String? {
+        val index = readSlugIndexSet()
+        candidates
+            .asSequence()
+            .filterNotNull()
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .forEach { candidate ->
+                val canonical = resolveCanonicalSlug(candidate)
+                when {
+                    canonical in index -> return canonical
+                    candidate in index -> return candidate
+                }
+            }
+        return null
     }
 
     fun resolveBySlug(slug: String): ExerciseConfigRecord? {
@@ -91,6 +111,61 @@ class TrainingConfigRepository(
         invalidateMemoryCaches()
     }
 
+    /**
+     * Persists [messageLibrary] and merges template text into cached exercise configs (legacy parity).
+     * @return number of exercise records updated when merge ran on a non-empty cache.
+     */
+    fun applySyncMessageLibrary(
+        messageLibrary: List<SyncMessageTemplateDto>,
+    ): Int {
+        if (messageLibrary.isEmpty()) return 0
+
+        val slugs = readSlugIndex()
+        if (slugs.isEmpty()) return 0
+
+        val merged = ExerciseMessageLibraryMerger.resolveRecords(
+            records = slugs.mapNotNull { slug -> readRecordFromDisk(slug) },
+            messageLibrary = messageLibrary,
+        )
+        merged.forEach { record ->
+            if (record.slug.isBlank()) return@forEach
+            MovitCachePolicy.writeJson(
+                localStore,
+                MovitCacheKeys.EXERCISE_CONFIG_STORE,
+                MovitCacheKeys.exerciseConfigKey(record.slug),
+                record.withSanitizedConfig(),
+                ExerciseConfigRecord.serializer(),
+            )
+        }
+        invalidateMemoryCaches()
+        return merged.size
+    }
+
+    fun computeMessageLibraryStats(
+        messageLibrary: List<SyncMessageTemplateDto>,
+        assignmentsInCachedExercises: Int,
+    ): MessageLibraryStatsDto {
+        val withAudio = messageLibrary.count { template ->
+            val content = template.content
+            content.en.isNotBlank() || content.ar.isNotBlank()
+        }
+        return MessageLibraryStatsDto(
+            totalMessages = messageLibrary.size,
+            totalWithAudio = withAudio,
+            totalAssignments = assignmentsInCachedExercises,
+            fingerprint = messageLibrary
+                .sortedBy { it.id }
+                .joinToString("|") { "${it.id}:${it.code}" },
+        )
+    }
+
+    fun countMessageAssignmentsInCache(): Int =
+        readSlugIndex().sumOf { slug ->
+            readRecordFromDisk(slug)?.config?.poseVariants
+                ?.sumOf { variant -> variant.messageAssignments.size }
+                ?: 0
+        }
+
     fun seedRecord(record: ExerciseConfigRecord) {
         if (record.slug.isBlank()) return
         MovitCachePolicy.writeJson(
@@ -106,7 +181,6 @@ class TrainingConfigRepository(
 
     private fun resolveCanonicalSlug(slug: String): String {
         readSlugAliasMap()[slug]?.let { return it }
-        BUNDLED_SLUG_ALIASES[slug]?.let { return it }
         findSlugById(slug)?.let { return it }
         return slug
     }
@@ -204,11 +278,5 @@ class TrainingConfigRepository(
 
     companion object {
         private const val PARSED_RECORD_CACHE_SIZE = 8
-
-        /** Bundled seed aliases — kept until sync populates [EXERCISE_CONFIG_SLUG_ALIASES]. */
-        private val BUNDLED_SLUG_ALIASES = mapOf(
-            "squat" to "bodyweight-squat",
-            "barbell-squat" to "bodyweight-squat",
-        )
     }
 }

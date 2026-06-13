@@ -1,5 +1,6 @@
 package com.trainingvalidator.poc.training.engine.testing
 
+import com.trainingvalidator.poc.UnitTestApplication
 import com.trainingvalidator.poc.training.TrainingEngine
 import com.trainingvalidator.poc.training.loader.ExerciseLoader
 import org.junit.Assert.assertTrue
@@ -12,7 +13,7 @@ import org.robolectric.annotation.Config
  * Parity / regression harness: same fixture run twice on fresh engines must match.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(manifest = Config.DEFAULT_MANIFEST_NAME, sdk = [33])
+@Config(application = UnitTestApplication::class, manifest = Config.DEFAULT_MANIFEST_NAME, sdk = [33])
 class TrainingEngineParityTest {
 
     private fun resText(path: String): String =

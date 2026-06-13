@@ -10,17 +10,12 @@ import com.movit.resources.strings.SessionStrings
 import com.movit.shared.AppResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
 
 class SharedWorkoutSessionRepository(
     private val libraryRepository: LibraryRepository = defaultLibraryRepository(),
 ) : WorkoutSessionRepository {
 
     override fun observeSession(workoutId: String): Flow<CacheState<WorkoutSessionUi>> {
-        if (workoutId == "preview") {
-            return flowOf(CacheState.Fresh(WorkoutSessionPreviewData.preview))
-        }
-
         val parsed = WorkoutSessionKeys.parse(workoutId)
         return if (parsed != null) {
             observeProgramSession(parsed)
@@ -30,10 +25,6 @@ class SharedWorkoutSessionRepository(
     }
 
     override suspend fun loadSession(workoutId: String): AppResult<WorkoutSessionUi> {
-        if (workoutId == "preview") {
-            return AppResult.Failure("Workout preview is only available in design previews.")
-        }
-
         val parsed = WorkoutSessionKeys.parse(workoutId)
         return if (parsed != null) {
             loadProgramSession(parsed)
@@ -309,13 +300,8 @@ class SharedWorkoutSessionRepository(
         return syncTemplateSession(slugOrId)
     }
 
-    private suspend fun resolveExploreData(): ExploreDataDto? {
-        MovitData.explore.readCached()?.let { return it }
-        return when (val sync = MovitData.explore.sync()) {
-            is AppResult.Success -> sync.value
-            is AppResult.Failure -> null
-        }
-    }
+    private suspend fun resolveExploreData(): ExploreDataDto? =
+        MovitData.explore.readCached()
 
     private fun fallbackTemplateSession(
         slugOrId: String,

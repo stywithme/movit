@@ -6,7 +6,6 @@ import com.movit.feature.account.MovitAssessmentRoute
 import com.movit.feature.account.MovitAuthRoute
 import com.movit.feature.account.MovitLevelRoute
 import com.movit.feature.account.MovitOnboardingRoute
-import com.movit.feature.library.ExerciseDetailRoute
 import com.movit.feature.library.ExercisePrepareRoute
 import com.movit.feature.library.ExercisesLibraryRoute
 import com.movit.feature.library.WorkoutFlowCache
@@ -14,7 +13,6 @@ import com.movit.feature.library.WorkoutRunPostNav
 import com.movit.feature.library.WorkoutRunProgressStore
 import com.movit.feature.library.ProgramDetailRoute
 import com.movit.feature.library.ProgramListRoute
-import com.movit.feature.library.ProgramWeekPlanRoute
 import com.movit.feature.library.WeeklyReportEffect
 import com.movit.feature.library.WeeklyReportRoute
 import com.movit.feature.training.ExerciseLiveRoute
@@ -23,7 +21,6 @@ import com.movit.feature.training.TrainingSessionRoute
 import com.movit.feature.training.TrainingSessionRouteArgs
 import com.movit.feature.training.WorkoutUploadContext
 import com.movit.feature.library.TrainingStartAction
-import com.movit.feature.library.WorkoutRunRoute
 import com.movit.feature.library.WorkoutSessionRoute
 import com.movit.feature.library.WorkoutsLibraryRoute
 import com.movit.feature.reports.ReportDetailEffect
@@ -42,7 +39,7 @@ fun MovitInnerHost(
         MovitInnerRoute.ExercisesLibrary -> {
             ExercisesLibraryRoute(
                 onBack = onBack,
-                onItemClick = { onNavigate(MovitInnerRoute.ExerciseDetail(it)) },
+                onItemClick = { onNavigate(MovitInnerRoute.ExercisePrepare(it)) },
                 modifier = modifier,
             )
         }
@@ -58,25 +55,6 @@ fun MovitInnerHost(
                 onBack = onBack,
                 onProgramClick = { programId ->
                     onNavigate(MovitInnerRoute.ProgramDetail(programId = programId))
-                },
-                modifier = modifier,
-            )
-        }
-        is MovitInnerRoute.ProgramWeekPlan -> {
-            ProgramWeekPlanRoute(
-                programId = route.programId,
-                weekNumber = route.weekNumber,
-                onBack = onBack,
-                onOpenSession = { sessionKey ->
-                    onNavigate(MovitInnerRoute.WorkoutSession(sessionKey))
-                },
-                onViewWeeklyReport = {
-                    onNavigate(
-                        MovitInnerRoute.WeeklyReport(
-                            programId = route.programId,
-                            weekNumber = route.weekNumber,
-                        ),
-                    )
                 },
                 modifier = modifier,
             )
@@ -102,6 +80,7 @@ fun MovitInnerHost(
         is MovitInnerRoute.ProgramDetail -> {
             ProgramDetailRoute(
                 programId = route.programId,
+                initialWeekNumber = route.initialWeekNumber,
                 onBack = onBack,
                 onStartSession = { sessionKey ->
                     onNavigate(MovitInnerRoute.WorkoutSession(sessionKey))
@@ -120,31 +99,25 @@ fun MovitInnerHost(
                 modifier = modifier,
             )
         }
-        is MovitInnerRoute.ExerciseDetail -> {
-            ExerciseDetailRoute(
-                exerciseId = route.exerciseId,
-                onBack = onBack,
-                onStartExercise = {
-                    onNavigate(
-                        MovitInnerRoute.ExercisePrepare(
-                            exerciseId = route.exerciseId,
-                        ),
-                    )
-                },
-                modifier = modifier,
-            )
-        }
         is MovitInnerRoute.WorkoutSession -> {
             WorkoutSessionRoute(
                 workoutId = route.workoutId,
                 onBack = onBack,
                 onExerciseClick = {
                     onNavigate(
-                        MovitInnerRoute.ExerciseDetail(exerciseId = it),
+                        MovitInnerRoute.ExercisePrepare(
+                            exerciseId = it,
+                            workoutId = route.workoutId,
+                        ),
                     )
                 },
-                onStartWorkout = {
-                    onNavigate(MovitInnerRoute.WorkoutRun(route.workoutId))
+                onStartWorkout = { exerciseId ->
+                    onNavigate(
+                        MovitInnerRoute.ExercisePrepare(
+                            exerciseId = exerciseId,
+                            workoutId = route.workoutId,
+                        ),
+                    )
                 },
                 onSwitchWorkout = { sessionKey ->
                     onNavigate(MovitInnerRoute.WorkoutSession(sessionKey))
@@ -158,21 +131,6 @@ fun MovitInnerHost(
                 modifier = modifier,
             )
         }
-        is MovitInnerRoute.WorkoutRun -> {
-            WorkoutRunRoute(
-                workoutId = route.workoutId,
-                onBack = onBack,
-                onStartExercise = { exerciseId ->
-                    onNavigate(
-                        MovitInnerRoute.ExercisePrepare(
-                            exerciseId = exerciseId,
-                            workoutId = route.workoutId,
-                        ),
-                    )
-                },
-                modifier = modifier,
-            )
-        }
         is MovitInnerRoute.ExerciseLive -> {
             ExerciseLiveRoute(
                 exerciseSlug = route.exerciseSlug,
@@ -182,7 +140,7 @@ fun MovitInnerHost(
                 onFinish = {
                     val workoutId = route.workoutId
                     if (workoutId != null) {
-                        onNavigate(MovitInnerRoute.WorkoutRun(workoutId))
+                        onNavigate(MovitInnerRoute.WorkoutSession(workoutId))
                     } else {
                         onBack()
                     }
@@ -313,7 +271,7 @@ private fun handleWorkoutTrainingFinish(
     }
     val config = WorkoutFlowCache.get(workoutId)
     if (config == null) {
-        onNavigate(MovitInnerRoute.WorkoutRun(workoutId))
+        onNavigate(MovitInnerRoute.WorkoutSession(workoutId))
         return
     }
     when (
@@ -325,7 +283,7 @@ private fun handleWorkoutTrainingFinish(
     ) {
         WorkoutRunPostNav.BackToRun,
         WorkoutRunPostNav.Complete,
-        -> onNavigate(MovitInnerRoute.WorkoutRun(workoutId))
+        -> onNavigate(MovitInnerRoute.WorkoutSession(workoutId))
         is WorkoutRunPostNav.Rest -> onNavigate(
             MovitInnerRoute.ExercisePrepare(
                 exerciseId = nav.restingExerciseId,

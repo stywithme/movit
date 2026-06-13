@@ -63,36 +63,17 @@ fun WorkoutsLibraryRoute(
 }
 
 @Composable
-fun ExerciseDetailRoute(
-    exerciseId: String,
-    onBack: () -> Unit,
-    onStartExercise: () -> Unit,
-    modifier: Modifier = Modifier,
-    viewModel: ExerciseDetailViewModel = viewModel(key = "exercise-detail-$exerciseId") {
-        ExerciseDetailViewModel(exerciseId)
-    },
-) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
-    val scope = rememberCoroutineScope()
-    LaunchedEffect(viewModel) { viewModel.loadInitial() }
-    ExerciseDetailScreen(
-        state = state,
-        onBack = onBack,
-        onStartExercise = onStartExercise,
-        onRetry = { scope.launch { viewModel.load() } },
-        modifier = modifier,
-    )
-}
-
-@Composable
 fun ProgramDetailRoute(
     programId: String,
+    initialWeekNumber: Int? = null,
     onBack: () -> Unit,
     onStartSession: (String) -> Unit,
     onOpenDaySession: (String) -> Unit,
     onViewWeeklyReport: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: ProgramDetailViewModel = viewModel { ProgramDetailViewModel(programId) },
+    viewModel: ProgramDetailViewModel = viewModel(key = "program-detail-$programId-${initialWeekNumber ?: "current"}") {
+        ProgramDetailViewModel(programId = programId, initialWeekNumber = initialWeekNumber)
+    },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
@@ -120,6 +101,7 @@ fun ProgramDetailRoute(
         onResetEditDay = viewModel::onResetEditDay,
         onSaveEdit = viewModel::onSaveEdit,
         onViewWeeklyReport = { onViewWeeklyReport(state.selectedWeekNumber) },
+        onDownloadWeekOffline = viewModel::onDownloadWeekOffline,
         onRetry = { scope.launch { viewModel.load() } },
         modifier = modifier,
     )
@@ -130,7 +112,7 @@ fun WorkoutSessionRoute(
     workoutId: String,
     onBack: () -> Unit,
     onExerciseClick: (String) -> Unit,
-    onStartWorkout: () -> Unit,
+    onStartWorkout: (String) -> Unit,
     onSwitchWorkout: (String) -> Unit,
     onOpenCatchUpDay: (String) -> Unit,
     onSnackbar: (String) -> Unit = {},
@@ -150,14 +132,24 @@ fun WorkoutSessionRoute(
         state = state,
         onBack = onBack,
         onToggleEdit = viewModel::toggleEditMode,
-        onExerciseClick = onExerciseClick,
+        onExerciseClick = { exerciseId ->
+            state.session?.let { session ->
+                WorkoutFlowCache.put(workoutId, WorkoutFlowMapper.fromSession(session))
+            }
+            onExerciseClick(exerciseId)
+        },
         onSwapExercise = viewModel::openSwapSheet,
         onEditExercise = viewModel::openEditSheet,
         onDeleteExercise = viewModel::deleteExercise,
         onAddExercise = viewModel::openAddExerciseSheet,
         onAddRest = viewModel::addRestBlock,
         onStartWorkout = {
-            if (state.session != null) onStartWorkout()
+            val session = state.session ?: return@WorkoutSessionScreen
+            val config = WorkoutFlowMapper.fromSession(session)
+            val firstExercise = config.exercises.firstOrNull() ?: return@WorkoutSessionScreen
+            WorkoutFlowCache.put(workoutId, config)
+            WorkoutRunProgressStore.clear(workoutId)
+            onStartWorkout(firstExercise.id)
         },
         onRetry = { scope.launch { viewModel.load() } },
         onDismissSheet = viewModel::dismissSheet,
@@ -220,54 +212,6 @@ fun ProgramListRoute(
 }
 
 @Composable
-fun ProgramWeekPlanRoute(
-    programId: String,
-    weekNumber: Int,
-    onBack: () -> Unit,
-    onOpenSession: (String) -> Unit,
-    onViewWeeklyReport: () -> Unit,
-    modifier: Modifier = Modifier,
-    viewModel: ProgramWeekPlanViewModel = viewModel { ProgramWeekPlanViewModel(programId, weekNumber) },
-) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
-    val scope = rememberCoroutineScope()
-    LaunchedEffect(viewModel) { viewModel.loadInitial() }
-    ProgramWeekPlanScreen(
-        state = state,
-        onBack = onBack,
-        onDayClick = { day ->
-            val plan = state.weekPlan ?: return@ProgramWeekPlanScreen
-            val workoutId = day.plannedWorkoutId ?: return@ProgramWeekPlanScreen
-            onOpenSession(
-                WorkoutSessionKeys.encode(
-                    programId = plan.programId,
-                    weekNumber = plan.weekNumber,
-                    dayNumber = day.dayNumber,
-                    plannedWorkoutId = workoutId,
-                ),
-            )
-        },
-        onOpenTodaySession = {
-            val plan = state.weekPlan ?: return@ProgramWeekPlanScreen
-            val today = plan.days.firstOrNull { it.status == ProgramFlowDayStatus.Today }
-                ?: return@ProgramWeekPlanScreen
-            val workoutId = today.plannedWorkoutId ?: return@ProgramWeekPlanScreen
-            onOpenSession(
-                WorkoutSessionKeys.encode(
-                    programId = plan.programId,
-                    weekNumber = plan.weekNumber,
-                    dayNumber = today.dayNumber,
-                    plannedWorkoutId = workoutId,
-                ),
-            )
-        },
-        onViewWeeklyReport = onViewWeeklyReport,
-        onRetry = { scope.launch { viewModel.load() } },
-        modifier = modifier,
-    )
-}
-
-@Composable
 fun WeeklyReportRoute(
     programId: String,
     weekNumber: Int,
@@ -310,6 +254,7 @@ fun ExercisePrepareRoute(
     ) {
         ExercisePrepareViewModel(
             exerciseId = exerciseId,
+            workoutId = workoutId,
             initialMode = if (prepareMode == "rest") {
                 ExercisePrepareMode.Rest
             } else {
@@ -343,30 +288,6 @@ fun ExercisePrepareRoute(
             unavailable = state.trainingConfigUnavailable,
             onSyncNow = { viewModel.retryTrainingConfigSync(workoutId) },
             onDismiss = viewModel::dismissTrainingConfigUnavailable,
-            modifier = Modifier.fillMaxSize(),
-        )
-    }
-}
-
-@Composable
-fun WorkoutRunRoute(
-    workoutId: String,
-    onBack: () -> Unit,
-    onStartExercise: (String) -> Unit,
-    modifier: Modifier = Modifier,
-    viewModel: WorkoutRunViewModel = viewModel { WorkoutRunViewModel(workoutId) },
-) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
-    val scope = rememberCoroutineScope()
-    LaunchedEffect(viewModel) { viewModel.loadInitial() }
-    Box(modifier = modifier) {
-        WorkoutRunScreen(
-            state = state,
-            onBack = onBack,
-            onStartExercise = {
-                state.currentExercise?.id?.let(onStartExercise)
-            },
-            onRetry = { scope.launch { viewModel.load() } },
             modifier = Modifier.fillMaxSize(),
         )
     }

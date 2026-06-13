@@ -107,7 +107,7 @@ class QuickStartActivity : AppCompatActivity() {
             }
 
             val workoutConfig = buildWorkoutConfig()
-            MovitTrainingEntryNavigator.openWorkoutRunWithLocalConfig(
+            MovitTrainingEntryNavigator.openWorkoutSessionWithLocalConfig(
                 context = this,
                 workoutId = "quick-start-${System.currentTimeMillis()}",
                 workoutConfigJson = Gson().toJson(workoutConfig),

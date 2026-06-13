@@ -35,14 +35,16 @@ class MovitHomeStateTest {
     }
 
     @Test
-    fun repositoryFailure_setsErrorMessage() {
+    fun repositoryFailure_onColdStart_showsHonestNoProgramEmpty() {
         runBlocking {
             val viewModel = MovitHomeViewModel(
                 repository = FakeHomeRepository(shouldFail = true),
             )
             viewModel.load()
-            assertEquals("Unable to load home dashboard.", viewModel.state.value.errorMessage)
+            assertNull(viewModel.state.value.errorMessage)
             assertEquals(false, viewModel.state.value.isLoading)
+            assertTrue(viewModel.state.value.showNoProgramEmpty)
+            assertTrue(viewModel.state.value.metricTiles.isEmpty())
         }
     }
 

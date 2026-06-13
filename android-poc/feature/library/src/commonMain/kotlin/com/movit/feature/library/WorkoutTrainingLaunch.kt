@@ -1,5 +1,6 @@
 package com.movit.feature.library
 
+import com.movit.core.data.MovitData
 import com.movit.core.training.session.TrainingFlowItem
 
 /**
@@ -19,15 +20,28 @@ fun WorkoutFlowConfigUi.toTrainingFlowItems(
     return exercises
         .drop(startExerciseIndex.coerceAtLeast(0))
         .map { exercise ->
+            val exerciseRestMs = exercise.restSeconds.coerceAtLeast(0) * 1_000L
             TrainingFlowItem.Exercise(
-                slug = exercise.exerciseSlug,
+                slug = resolveFlowExerciseSlug(exercise),
                 displayName = exercise.name,
                 sets = exercise.sets.coerceAtLeast(1),
                 targetReps = exercise.reps ?: 12,
-                restBetweenSetsMs = restMs,
-                restAfterExerciseMs = restMs,
+                restBetweenSetsMs = exerciseRestMs.takeIf { it > 0 } ?: restMs,
+                restAfterExerciseMs = exerciseRestMs.takeIf { it > 0 } ?: restMs,
             )
         }
+}
+
+private fun resolveFlowExerciseSlug(exercise: WorkoutFlowExerciseUi): String {
+    if (MovitData.isInstalled) {
+        MovitData.trainingConfig.resolveAvailableSlug(
+            exercise.exerciseSlug,
+            exercise.id,
+            normalizeTrainingSlug(exercise.exerciseSlug),
+            normalizeTrainingSlug(exercise.id),
+        )?.let { return it }
+    }
+    return normalizeTrainingSlug(exercise.exerciseSlug.ifBlank { exercise.id })
 }
 
 fun WorkoutSessionContextUi.toPlannedLaunch(): PlannedWorkoutLaunch = PlannedWorkoutLaunch(

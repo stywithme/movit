@@ -53,4 +53,12 @@ class WeekOfflinePackPrefetcherTest {
         assertEquals("https://cdn.example/cover.jpg", plan.coverImageUrl)
         assertNull(WeekOfflinePackPrefetcher.planFromProgram(program, weekNumber = 99))
     }
+
+    @Test
+    fun offlineReadyKey_isStable() {
+        assertEquals(
+            "ready_prog-1_2",
+            WeekOfflinePackPrefetcher.offlineReadyKey("prog-1", weekNumber = 2),
+        )
+    }
 }

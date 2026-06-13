@@ -2,16 +2,19 @@ package com.movit.core.data.sync
 
 import com.movit.core.data.audio.AudioPrefetchRunner
 import com.movit.core.data.cache.AudioManifestCache
+import com.movit.core.data.cache.MessageLibraryCache
 import com.movit.core.data.cache.MovitCacheDriftDetector
 import com.movit.core.data.cache.MovitSyncMetadataStore
+import com.movit.core.data.cache.SystemMessageCache
 import com.movit.core.data.local.MovitLocalStore
 import com.movit.core.data.outbox.OfflineWriteQueue
 import com.movit.core.data.platform.MovitPlatformBindings
+import com.movit.core.data.repository.DayCustomizationLocalStore
+import com.movit.core.data.repository.ExercisePreferenceLocalStore
 import com.movit.core.data.repository.ExploreSyncRepository
 import com.movit.core.data.repository.HomeSyncRepository
 import com.movit.core.data.repository.PlanSyncRepository
 import com.movit.core.data.repository.ReportsSyncRepository
-import com.movit.core.data.repository.BUNDLED_TRAINING_SEED_SLUG_THRESHOLD
 import com.movit.core.data.repository.TrainingConfigRepository
 import com.movit.core.network.MovitMobileApi
 import com.movit.core.network.dto.ExploreDataDto
@@ -34,6 +37,10 @@ class MovitSyncOrchestrator(
     private val audioPrefetchRunner: AudioPrefetchRunner,
     private val offlineWrites: OfflineWriteQueue,
     private val trainingConfig: TrainingConfigRepository,
+    private val systemMessageCache: SystemMessageCache,
+    private val exercisePreferenceLocalStore: ExercisePreferenceLocalStore,
+    private val dayCustomizationLocalStore: DayCustomizationLocalStore,
+    private val messageLibraryCache: MessageLibraryCache,
 ) {
     sealed class SyncOutcome {
         data class Success(
@@ -134,32 +141,83 @@ class MovitSyncOrchestrator(
 
         val audioFullSync = applyAudioManifest(syncResponse, forceFullRefresh)
         audioPrefetchRunner.afterManifestApplied(audioFullSync)
-        metadataStore.writeFromSyncMeta(syncResponse.meta)
-        if (syncResponse.timestamp.isNotBlank()) {
-            metadataStore.writeLastSyncTimestamp(syncResponse.timestamp)
-        }
 
-        planSync.refreshActiveUserProgramId()
+        val isFullSync = forceFullRefresh || syncResponse.meta?.isFullSync == true
+        var exploreData = exploreSync.readCached()
         syncResponse.data?.let { payload ->
             trainingConfig.applySyncExercises(
                 exercises = payload.exercises,
                 deletedExerciseIds = payload.deletedExerciseIds,
-                isFullSync = forceFullRefresh || syncResponse.meta?.isFullSync == true,
+                isFullSync = isFullSync,
             )
+
+            val systemMessages = payload.systemMessages
+            if (systemMessages.isNotEmpty()) {
+                systemMessageCache.save(systemMessages)
+                systemMessageCache.loadIntoRegistry()
+            }
+
+            payload.userExercisePreferences?.let { preferences ->
+                val pendingIds = ExercisePreferenceLocalStore.pendingExerciseIdsFromOutbox(localStore)
+                exercisePreferenceLocalStore.hydrateFromSync(preferences, pendingIds)
+            }
+
+            if (payload.plannedWorkoutReports.isNotEmpty()) {
+                reportsSync.hydrateFromSync(payload.plannedWorkoutReports)
+            }
+
+            payload.userPrograms.forEach { userProgram ->
+                val programId = userProgram.programId
+                if (programId != null && userProgram.customizations != null) {
+                    dayCustomizationLocalStore.hydrateFromBackend(
+                        userProgramId = programId,
+                        customizations = userProgram.customizations,
+                        serverCustomizationsUpdatedAt = userProgram.customizationsUpdatedAt,
+                    )
+                }
+            }
+
+            if (payload.messageLibrary.isNotEmpty()) {
+                if (isFullSync) {
+                    messageLibraryCache.replaceFull(payload.messageLibrary)
+                } else {
+                    messageLibraryCache.mergePartial(payload.messageLibrary)
+                }
+                trainingConfig.applySyncMessageLibrary(
+                    messageLibrary = payload.messageLibrary,
+                )
+            }
+
+            exploreData = exploreSync.applyFromSync(payload, isFullSync)
         }
 
-        val exploreResult = if (forceFullRefresh) exploreSync.syncFull() else exploreSync.sync()
+        metadataStore.writeFromSyncMeta(syncResponse.meta)
+        if (syncResponse.timestamp.isNotBlank()) {
+            metadataStore.writeLastSyncTimestamp(syncResponse.timestamp)
+        }
+        syncResponse.meta?.messageLibraryStats?.let(metadataStore::writeMessageStats)
+            ?: syncResponse.data?.messageLibrary?.takeIf { it.isNotEmpty() }?.let { library ->
+                metadataStore.writeMessageStats(
+                    trainingConfig.computeMessageLibraryStats(
+                        messageLibrary = library,
+                        assignmentsInCachedExercises = trainingConfig.countMessageAssignmentsInCache(),
+                    ),
+                )
+            }
+
+        planSync.refreshActiveUserProgramId()
+
         val homeResult = homeSync.sync()
         val reportsResult = if (bindings.isProUser()) reportsSync.syncDashboard() else null
 
-        updateLocalEntityCounts(exploreSync.readCached())
+        updateLocalEntityCounts(exploreData)
         offlineWrites.replayPending()
 
         return SyncOutcome.Success(
             home = (homeResult as? AppResult.Success)?.value ?: homeSync.readCached(),
-            explore = (exploreResult as? AppResult.Success)?.value ?: exploreSync.readCached(),
+            explore = exploreData,
             reports = (reportsResult as? AppResult.Success)?.value ?: reportsSync.readCachedDashboard(),
-            isFullSync = forceFullRefresh || syncResponse.meta?.isFullSync == true,
+            isFullSync = isFullSync,
         )
     }
 
@@ -212,8 +270,8 @@ class MovitSyncOrchestrator(
     private fun needsTrainingConfigBackfill(meta: SyncMetaDto?): Boolean {
         if (meta == null) return false
         val serverExercises = meta.totalExercises
-        if (serverExercises <= BUNDLED_TRAINING_SEED_SLUG_THRESHOLD) return false
-        return trainingConfig.allCachedSlugs().size <= BUNDLED_TRAINING_SEED_SLUG_THRESHOLD
+        if (serverExercises <= 0) return false
+        return trainingConfig.allCachedSlugs().isEmpty()
     }
 
     private fun updateLocalEntityCounts(explore: ExploreDataDto?) {

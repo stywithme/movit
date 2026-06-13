@@ -16,11 +16,10 @@ object MovitTrainingEntryNavigator {
     const val EXTRA_WORKOUT_CONFIG_JSON = "movit.shell.workout_config_json"
 
     const val ROUTE_WORKOUT_SESSION = "workout_session"
-    const val ROUTE_WORKOUT_RUN = "workout_run"
-    const val ROUTE_WORKOUT_RUN_LOCAL = "workout_run_local"
+    const val ROUTE_WORKOUT_SESSION_LOCAL = "workout_session_local"
     const val ROUTE_EXERCISE_PREPARE = "exercise_prepare"
     const val ROUTE_ASSESSMENT = "assessment"
-    const val ROUTE_PROGRAM_WEEK_PLAN = "program_week_plan"
+    const val ROUTE_PROGRAM_DETAIL = "program_detail"
 
     fun openPlannedWorkout(
         context: Context,
@@ -33,17 +32,17 @@ object MovitTrainingEntryNavigator {
         context.startActivity(shellIntent(context, ROUTE_WORKOUT_SESSION, sessionKey))
     }
 
-    fun openWorkoutRun(context: Context, workoutId: String) {
-        context.startActivity(shellIntent(context, ROUTE_WORKOUT_RUN, workoutId))
+    fun openWorkoutSession(context: Context, workoutId: String) {
+        context.startActivity(shellIntent(context, ROUTE_WORKOUT_SESSION, workoutId))
     }
 
-    fun openWorkoutRunWithLocalConfig(
+    fun openWorkoutSessionWithLocalConfig(
         context: Context,
         workoutId: String,
         workoutConfigJson: String,
     ) {
         context.startActivity(
-            shellIntent(context, ROUTE_WORKOUT_RUN_LOCAL, workoutId).apply {
+            shellIntent(context, ROUTE_WORKOUT_SESSION_LOCAL, workoutId).apply {
                 putExtra(EXTRA_WORKOUT_CONFIG_JSON, workoutConfigJson)
             },
         )
@@ -61,9 +60,9 @@ object MovitTrainingEntryNavigator {
         context.startActivity(shellIntent(context, ROUTE_ASSESSMENT, ""))
     }
 
-    fun openProgramWeekPlan(context: Context, programId: String, weekNumber: Int) {
+    fun openProgramDetailWeek(context: Context, programId: String, weekNumber: Int) {
         context.startActivity(
-            shellIntent(context, ROUTE_PROGRAM_WEEK_PLAN, programId, weekNumber.toString()),
+            shellIntent(context, ROUTE_PROGRAM_DETAIL, programId, weekNumber.toString()),
         )
     }
 

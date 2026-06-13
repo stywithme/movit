@@ -11,6 +11,7 @@
         {
           "joint": "left_elbow",
           "role": "primary",
+          "trackingMode": "two_sides",
           "invertIndicator": true,
           "startPose": { "min": 140, "max": 180 },
           "upRange": {

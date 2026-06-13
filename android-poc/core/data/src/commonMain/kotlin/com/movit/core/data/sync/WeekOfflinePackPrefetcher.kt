@@ -10,8 +10,8 @@ import com.movit.shared.AppResult
 /**
  * F10 / N-25 — «حزمة الأسبوع» offline-readiness hook.
  *
- * Wires existing sync + audio prefetch to a program week. UI entry (button + badge) is deferred;
- * call [prefetchWeek] from the week-plan screen when that ships.
+ * Wires existing sync + audio prefetch to a program week. UI reads [isWeekReadyOffline]
+ * and triggers [prefetchWeek] from the program detail week panel.
  */
 class WeekOfflinePackPrefetcher(
     private val sync: MovitSyncOrchestrator,
@@ -31,6 +31,18 @@ class WeekOfflinePackPrefetcher(
         val configsCached: Int,
     )
 
+    data class WeekPrefetchProgress(
+        val phase: Phase,
+        val percent: Int,
+    ) {
+        enum class Phase {
+            Syncing,
+            LoadingPlans,
+            CachingAudio,
+            Finishing,
+        }
+    }
+
     sealed class PrefetchOutcome {
         data class Ready(val plan: WeekPrefetchPlan) : PrefetchOutcome()
         data object SkippedNoWeek : PrefetchOutcome()
@@ -40,8 +52,19 @@ class WeekOfflinePackPrefetcher(
     fun planFromProgram(program: ProgramExportDto, weekNumber: Int): WeekPrefetchPlan? =
         Companion.planFromProgram(program, weekNumber)
 
-    suspend fun prefetchWeek(program: ProgramExportDto, weekNumber: Int): PrefetchOutcome {
+    fun isWeekReadyOffline(programId: String, weekNumber: Int): Boolean {
+        val bindings = platform()
+        return bindings.readCache(OFFLINE_STORE, offlineReadyKey(programId, weekNumber)) == READY_MARKER
+    }
+
+    suspend fun prefetchWeek(
+        program: ProgramExportDto,
+        weekNumber: Int,
+        onProgress: (WeekPrefetchProgress) -> Unit = {},
+    ): PrefetchOutcome {
         val basePlan = Companion.planFromProgram(program, weekNumber) ?: return PrefetchOutcome.SkippedNoWeek
+
+        onProgress(WeekPrefetchProgress(WeekPrefetchProgress.Phase.Syncing, percent = 5))
 
         when (val syncOutcome = sync.syncIfNeeded(forceCheck = true)) {
             is MovitSyncOrchestrator.SyncOutcome.Error ->
@@ -49,14 +72,23 @@ class WeekOfflinePackPrefetcher(
             else -> Unit
         }
 
+        onProgress(WeekPrefetchProgress(WeekPrefetchProgress.Phase.Syncing, percent = 25))
+
         val bindings = platform()
         val userProgramId = bindings.activeUserProgramId()
         val exerciseSlugs = linkedSetOf<String>()
         val imageUrls = linkedSetOf<String>()
         basePlan.coverImageUrl?.let { imageUrls += it }
 
-        if (userProgramId != null) {
-            for (dayNumber in basePlan.workoutDayNumbers) {
+        val workoutDays = basePlan.workoutDayNumbers
+        if (userProgramId != null && workoutDays.isNotEmpty()) {
+            workoutDays.forEachIndexed { index, dayNumber ->
+                onProgress(
+                    WeekPrefetchProgress(
+                        phase = WeekPrefetchProgress.Phase.LoadingPlans,
+                        percent = 25 + ((index + 1) * 45 / workoutDays.size),
+                    ),
+                )
                 when (
                     val result = workoutSession.syncEffectivePlan(
                         userProgramId = userProgramId,
@@ -77,25 +109,43 @@ class WeekOfflinePackPrefetcher(
                     is AppResult.Failure -> Unit
                 }
             }
+        } else {
+            onProgress(WeekPrefetchProgress(WeekPrefetchProgress.Phase.LoadingPlans, percent = 55))
         }
 
         val configsCached = exerciseSlugs.count { trainingConfig.supports(it) }
+
+        onProgress(WeekPrefetchProgress(WeekPrefetchProgress.Phase.CachingAudio, percent = 75))
         audioPrefetch.afterManifestApplied(isFullSync = false)
 
         // TODO(N-25): platform Coil3 prefetch for [imageUrls] once a common ImagePrefetchPort exists.
         // TODO(N-25): per-workout audio manifest fetch for [plannedWorkoutIds] when API consumer lands.
         // ProgramExportDto has no exercise slugs — enrollment + effective-plan sync above is required.
 
-        return PrefetchOutcome.Ready(
-            basePlan.copy(
-                exerciseSlugs = exerciseSlugs.toList(),
-                imageUrls = imageUrls.toList(),
-                configsCached = configsCached,
-            ),
+        onProgress(WeekPrefetchProgress(WeekPrefetchProgress.Phase.Finishing, percent = 95))
+
+        val readyPlan = basePlan.copy(
+            exerciseSlugs = exerciseSlugs.toList(),
+            imageUrls = imageUrls.toList(),
+            configsCached = configsCached,
         )
+        markWeekReady(readyPlan.programId, weekNumber)
+
+        onProgress(WeekPrefetchProgress(WeekPrefetchProgress.Phase.Finishing, percent = 100))
+        return PrefetchOutcome.Ready(readyPlan)
+    }
+
+    private fun markWeekReady(programId: String, weekNumber: Int) {
+        platform().writeCache(OFFLINE_STORE, offlineReadyKey(programId, weekNumber), READY_MARKER)
     }
 
     companion object {
+        const val OFFLINE_STORE = "week_offline_cache"
+        private const val READY_MARKER = "1"
+
+        fun offlineReadyKey(programId: String, weekNumber: Int): String =
+            "ready_${programId}_$weekNumber"
+
         fun planFromProgram(program: ProgramExportDto, weekNumber: Int): WeekPrefetchPlan? {
             val week = program.weeks.firstOrNull { it.weekNumber == weekNumber } ?: return null
             val workoutDays = week.days

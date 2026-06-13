@@ -1,5 +1,6 @@
 package com.movit.feature.reports
 
+import com.movit.shared.AppResult
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -11,7 +12,7 @@ class ReportDetailStateTest {
     fun loadPreview_populatesReport() = runBlocking {
         val viewModel = ReportDetailViewModel(
             reportId = "preview",
-            repository = DefaultReportDetailRepository(),
+            repository = PreviewReportDetailRepository,
         )
         viewModel.load()
         val report = viewModel.state.value.report
@@ -33,5 +34,13 @@ class ReportDetailStateTest {
         assertNotNull(report)
         assertEquals("الركبتان", report.joints.first().label)
         assertEquals("أفضل إنجاز شخصي", report.badgeLabel)
+    }
+}
+
+private object PreviewReportDetailRepository : ReportDetailRepository {
+    override suspend fun getReportDetail(reportId: String): AppResult<ReportDetailUi> {
+        return ReportDetailPreviewData.forId(reportId)
+            ?.let { AppResult.Success(it) }
+            ?: AppResult.Failure("Report not found.")
     }
 }

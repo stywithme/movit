@@ -5,6 +5,7 @@ import com.movit.core.data.local.MovitLocalStore
 import com.movit.core.data.platform.MovitPlatformBindings
 import com.movit.core.network.MovitMobileApi
 import com.movit.core.network.dto.ExploreDataDto
+import com.movit.core.network.dto.MobileSyncDataDto
 import com.movit.shared.AppResult
 
 class ExploreSyncRepository(
@@ -33,6 +34,38 @@ class ExploreSyncRepository(
 
     suspend fun syncFull(limit: Int = 50): AppResult<ExploreDataDto> =
         syncInternal(clearLastSync = true, limit = limit)
+
+    /**
+     * Hydrates the explore catalog cache from `/api/mobile/sync` (authoritative catalog source).
+     * Returns merged cache; skips write when partial sync has no catalog delta.
+     */
+    fun applyFromSync(
+        payload: MobileSyncDataDto,
+        isFullSync: Boolean,
+    ): ExploreDataDto {
+        val incoming = SyncCatalogMapper.mapSyncPayloadToExploreSlice(payload)
+        val hasCatalogDelta = incoming.workoutTemplates.isNotEmpty() ||
+            incoming.programs.isNotEmpty() ||
+            incoming.exercises.isNotEmpty() ||
+            incoming.levels.isNotEmpty() ||
+            incoming.deletedProgramIds.isNotEmpty() ||
+            incoming.deletedWorkoutTemplateIds.isNotEmpty() ||
+            incoming.deletedExerciseIds.isNotEmpty()
+
+        if (!hasCatalogDelta && !isFullSync) {
+            return readCached() ?: incoming
+        }
+
+        val merged = mergeExploreData(readCached(), incoming, isFullSync)
+        MovitCachePolicy.writeJson(
+            localStore(),
+            MovitCacheKeys.EXPLORE_STORE,
+            MovitCacheKeys.EXPLORE_DATA,
+            merged,
+            ExploreDataDto.serializer(),
+        )
+        return merged
+    }
 
     private suspend fun syncInternal(clearLastSync: Boolean, limit: Int): AppResult<ExploreDataDto> {
         val bindings = platform()

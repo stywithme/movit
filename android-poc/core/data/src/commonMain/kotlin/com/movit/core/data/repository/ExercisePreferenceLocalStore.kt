@@ -13,7 +13,7 @@ import com.movit.core.network.dto.UserExercisePreferenceUpsertRequest
 /**
  * KMP equivalent of legacy [com.trainingvalidator.poc.storage.UserExercisePreferenceStore].
  */
-class ExercisePreferenceLocalStore(
+open class ExercisePreferenceLocalStore(
     private val localStore: MovitLocalStore,
 ) {
     fun get(exerciseId: String): UserExercisePreferenceUpsertRequest? =
@@ -41,7 +41,7 @@ class ExercisePreferenceLocalStore(
         )
     }
 
-    suspend fun hydrateFromSync(
+    open suspend fun hydrateFromSync(
         rows: List<UserExercisePreferenceSyncDto>,
         pendingExerciseIds: Set<String> = emptySet(),
     ) {

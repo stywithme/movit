@@ -11,5 +11,6 @@ Alternative models:
 - Lite (faster, less accurate):
   https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task
 
-- Heavy (slower, more accurate):
+- Heavy (slower, more accurate) — NOT bundled in release (F8 on-demand via PoseLandmarkerHeavyModelStore):
   https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/latest/pose_landmarker_heavy.task
+  Debug: place pose_landmarker_heavy.task in src/debug/assets/ for offline dev.

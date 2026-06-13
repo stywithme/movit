@@ -330,7 +330,7 @@ class WorkoutDetailActivity : AppCompatActivity() {
 
     private fun launchWorkoutRun(config: WorkoutConfig) {
         val workoutId = config.fileName.ifBlank { config.name.en.ifBlank { "local-workout" } }
-        MovitTrainingEntryNavigator.openWorkoutRunWithLocalConfig(
+        MovitTrainingEntryNavigator.openWorkoutSessionWithLocalConfig(
             context = this,
             workoutId = workoutId,
             workoutConfigJson = Gson().toJson(config),

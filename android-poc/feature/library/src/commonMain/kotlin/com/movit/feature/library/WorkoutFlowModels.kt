@@ -10,6 +10,7 @@ data class WorkoutFlowExerciseUi(
     val sets: Int,
     val reps: Int?,
     val durationSeconds: Int?,
+    val restSeconds: Int = 60,
 )
 
 data class WorkoutFlowConfigUi(
@@ -98,7 +99,10 @@ fun resolveTrainingStartAction(
     workoutId: String? = null,
 ): TrainingStartAction? {
     if (!com.movit.core.data.MovitData.isInstalled) return null
-    val normalized = normalizeTrainingSlug(slug)
+    val normalized = com.movit.core.data.MovitData.trainingConfig.resolveAvailableSlug(
+        slug,
+        normalizeTrainingSlug(slug),
+    ) ?: return null
     if (!com.movit.core.data.MovitData.trainingConfig.supports(normalized)) {
         return null
     }
@@ -134,6 +138,10 @@ object WorkoutFlowCache {
         configs.put(config.workoutId, config)
     }
 
+    fun put(workoutId: String, config: WorkoutFlowConfigUi) {
+        configs.put(workoutId, config.copy(workoutId = workoutId))
+    }
+
     fun get(workoutId: String): WorkoutFlowConfigUi? = configs.get(workoutId)
 
     fun clear(workoutId: String) {
@@ -158,6 +166,7 @@ internal object WorkoutFlowMapper {
                     sets = block.sets,
                     reps = block.reps,
                     durationSeconds = block.durationSeconds,
+                    restSeconds = block.restSeconds,
                 )
             }
         return WorkoutFlowConfigUi(

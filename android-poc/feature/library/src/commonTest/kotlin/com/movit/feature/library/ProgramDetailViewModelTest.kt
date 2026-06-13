@@ -3,9 +3,12 @@ package com.movit.feature.library
 import com.movit.core.model.ExploreContent
 import com.movit.core.model.ExploreItemType
 import com.movit.core.model.ExploreItemUi
+import com.movit.core.data.sync.WeekOfflinePackPrefetcher
 import com.movit.core.network.dto.EffectivePlanItemDto
 import com.movit.core.network.dto.EffectivePlanPayloadDto
 import com.movit.core.network.dto.EffectivePlannedWorkoutDto
+import com.movit.core.network.dto.ProgramExportDto
+import com.movit.core.network.dto.ProgramExportWeekDto
 import com.movit.core.network.dto.UserProgramUpdateRequest
 import com.movit.shared.AppResult
 import kotlinx.coroutines.delay
@@ -15,6 +18,12 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ProgramDetailViewModelTest {
+
+    private val sampleProgramExport = ProgramExportDto(
+        id = "program-starter",
+        slug = "program-starter",
+        weeks = listOf(ProgramExportWeekDto(weekNumber = 1)),
+    )
 
     private val sampleProgram = ExploreItemUi(
         id = "program-starter",
@@ -193,6 +202,73 @@ class ProgramDetailViewModelTest {
         assertEquals(4, item.sets)
         assertEquals(10, item.targetReps)
         assertEquals(90_000, item.restBetweenSetsMs)
+    }
+
+    @Test
+    fun downloadWeekOffline_success_marksReady() = kotlinx.coroutines.runBlocking {
+        val viewModel = ProgramDetailViewModel(
+            programId = "program-starter",
+            repository = FakeProgramLibraryRepository(sampleProgram),
+            enrollProgram = { AppResult.Success("up-1") },
+            programExportLoader = { sampleProgramExport },
+            prefetchWeekOffline = { _, _, onProgress ->
+                onProgress(50)
+                WeekOfflinePackPrefetcher.PrefetchOutcome.Ready(
+                    WeekOfflinePackPrefetcher.WeekPrefetchPlan(
+                        programId = "program-starter",
+                        weekNumber = 1,
+                        plannedWorkoutIds = listOf("pw-1"),
+                        workoutDayNumbers = listOf(1),
+                        coverImageUrl = null,
+                        exerciseSlugs = listOf("squat"),
+                        imageUrls = emptyList(),
+                        configsCached = 1,
+                    ),
+                )
+            },
+            isWeekOfflineReady = { _, _ -> false },
+        )
+        viewModel.load()
+        viewModel.startProgramAndGetSessionKey()
+        viewModel.onDownloadWeekOffline()
+        delay(100)
+
+        assertEquals(WeekOfflineStatus.Ready, viewModel.state.value.weekOffline.status)
+        assertEquals(100, viewModel.state.value.weekOffline.progressPercent)
+    }
+
+    @Test
+    fun downloadWeekOffline_failure_showsMessage() = kotlinx.coroutines.runBlocking {
+        val viewModel = ProgramDetailViewModel(
+            programId = "program-starter",
+            repository = FakeProgramLibraryRepository(sampleProgram),
+            enrollProgram = { AppResult.Success("up-1") },
+            programExportLoader = { sampleProgramExport },
+            prefetchWeekOffline = { _, _, _ ->
+                WeekOfflinePackPrefetcher.PrefetchOutcome.Failed("Network unavailable.")
+            },
+            isWeekOfflineReady = { _, _ -> false },
+        )
+        viewModel.load()
+        viewModel.startProgramAndGetSessionKey()
+        viewModel.onDownloadWeekOffline()
+        delay(100)
+
+        assertEquals(WeekOfflineStatus.Failed, viewModel.state.value.weekOffline.status)
+        assertEquals("Network unavailable.", viewModel.state.value.weekOffline.errorMessage)
+    }
+
+    @Test
+    fun publish_reflectsPersistedOfflineReady() = kotlinx.coroutines.runBlocking {
+        val viewModel = ProgramDetailViewModel(
+            programId = "program-starter",
+            repository = FakeProgramLibraryRepository(sampleProgram),
+            isWeekOfflineReady = { programId, week -> programId == "program-starter" && week == 1 },
+        )
+        viewModel.load()
+        delay(50)
+
+        assertEquals(WeekOfflineStatus.Ready, viewModel.state.value.weekOffline.status)
     }
 }
 

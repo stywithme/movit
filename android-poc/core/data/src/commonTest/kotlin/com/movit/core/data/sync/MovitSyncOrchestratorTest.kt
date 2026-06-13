@@ -3,10 +3,14 @@ package com.movit.core.data.sync
 import com.movit.core.data.audio.AudioPrefetchRunner
 import com.movit.core.data.audio.FakeAudioFileDownloader
 import com.movit.core.data.cache.AudioManifestCache
+import com.movit.core.data.cache.MessageLibraryCache
 import com.movit.core.data.cache.MovitSyncMetadataStore
+import com.movit.core.data.cache.SystemMessageCache
 import com.movit.core.data.local.InMemoryMovitLocalStore
 import com.movit.core.data.local.MovitLocalStore
 import com.movit.core.data.outbox.OfflineWriteQueue
+import com.movit.core.data.repository.DayCustomizationLocalStore
+import com.movit.core.data.repository.ExercisePreferenceLocalStore
 import com.movit.core.data.repository.ExploreSyncRepository
 import com.movit.core.data.repository.FakeMovitPlatformBindings
 import com.movit.core.data.repository.HomeSyncRepository
@@ -253,6 +257,10 @@ class MovitSyncOrchestratorTest {
             audioPrefetchRunner = AudioPrefetchRunner(audioManifestCache, downloader),
             offlineWrites = queue,
             trainingConfig = TrainingConfigRepository(localStore),
+            systemMessageCache = SystemMessageCache(localStore),
+            exercisePreferenceLocalStore = ExercisePreferenceLocalStore(localStore),
+            dayCustomizationLocalStore = DayCustomizationLocalStore(localStore),
+            messageLibraryCache = MessageLibraryCache(localStore),
         )
     }
 

@@ -29,6 +29,7 @@ import com.trainingvalidator.poc.network.LogoutRequest
 import com.trainingvalidator.poc.network.UpdateSettingsRequest
 import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.storage.UserDataCleaner
+import com.movit.core.posecapture.android.PoseLandmarkerHeavyModelStore
 import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.ui.auth.SignInActivity
 import com.trainingvalidator.poc.ui.subscription.SubscriptionActivity
@@ -319,6 +320,11 @@ class ProfileActivity : AppCompatActivity() {
         dialogView.findViewById<MaterialButton>(R.id.btnApplySettings).setOnClickListener {
             SettingsManager.setIndicatorType(selectedIndicator)
             SettingsManager.setModelType(selectedModel)
+            if (selectedModel == "heavy") {
+                lifecycleScope.launch {
+                    PoseLandmarkerHeavyModelStore.ensureCached(applicationContext)
+                }
+            }
             SettingsManager.setCoachIntensity(selectedCoachIntensity)
             SettingsManager.setCameraCueMode("voice")
             dialog.dismiss()

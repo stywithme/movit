@@ -15,7 +15,7 @@ import com.movit.shared.AppResult
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
 
-class ReportsSyncRepository(
+open class ReportsSyncRepository(
     private val api: MovitMobileApi,
     private val platform: () -> MovitPlatformBindings,
     private val localStore: () -> MovitLocalStore,
@@ -60,7 +60,7 @@ class ReportsSyncRepository(
      * Mirrors legacy [com.trainingvalidator.poc.storage.SyncManager]: only backfill reports
      * that are not already present locally (pending offline completions win).
      */
-    fun hydrateFromSync(exports: List<PlannedWorkoutReportExportDto>) {
+    open fun hydrateFromSync(exports: List<PlannedWorkoutReportExportDto>) {
         if (exports.isEmpty()) return
         val store = localStore()
         val index = readPlannedWorkoutReportIndex(store).toMutableSet()

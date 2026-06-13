@@ -60,6 +60,9 @@ object MovitCacheKeys {
     const val SYSTEM_MESSAGE_STORE = "system_message_cache"
     const val SYSTEM_MESSAGES_JSON = "system_messages_json"
 
+    const val MESSAGE_LIBRARY_STORE = "message_library_cache"
+    const val MESSAGE_LIBRARY_JSON = "message_library_json"
+
     fun programKey(programId: String): String = "program_export_$programId"
 
     fun effectivePlanKey(userProgramId: String, weekNumber: Int, dayNumber: Int): String =

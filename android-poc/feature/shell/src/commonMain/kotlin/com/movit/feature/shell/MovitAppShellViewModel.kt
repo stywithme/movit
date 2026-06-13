@@ -143,7 +143,7 @@ class MovitAppShellViewModel(
             MovitAppShellEvent.InnerRoutePopped -> popInner()
             is MovitAppShellEvent.ExploreEffectReceived -> handleExploreEffect(event.effect)
             is MovitAppShellEvent.ExploreItemSelected -> {
-                pushInner(MovitInnerRoute.ExerciseDetail(event.itemId))
+                pushInner(MovitInnerRoute.ExercisePrepare(event.itemId))
             }
             is MovitAppShellEvent.HomeEffectReceived -> {
                 handleHomeEffect(event.effect)
@@ -325,10 +325,10 @@ class MovitAppShellViewModel(
             MovitTrainEffect.OpenProgramList -> pushInner(MovitInnerRoute.ProgramList)
             MovitTrainEffect.OpenAssessment -> pushInner(MovitInnerRoute.Assessment())
             is MovitTrainEffect.OpenProgramDetail -> pushInner(MovitInnerRoute.ProgramDetail(effect.programId))
-            is MovitTrainEffect.OpenProgramWeekPlan -> pushInner(
-                MovitInnerRoute.ProgramWeekPlan(
+            is MovitTrainEffect.OpenProgramWeek -> pushInner(
+                MovitInnerRoute.ProgramDetail(
                     programId = effect.programId,
-                    weekNumber = effect.weekNumber,
+                    initialWeekNumber = effect.weekNumber,
                 ),
             )
             is MovitTrainEffect.OpenWeeklyReport -> pushInner(
@@ -351,9 +351,6 @@ class MovitAppShellViewModel(
                     ),
                 )
             }
-            MovitTrainEffect.OpenSessionPreview -> {
-                pushInner(MovitInnerRoute.WorkoutSession("preview"))
-            }
             is MovitTrainEffect.ShowMessage -> {
                 _effects.tryEmit(MovitAppShellEffect.ShowMessage(effect.message))
             }
@@ -369,12 +366,12 @@ class MovitAppShellViewModel(
                 MovitInnerRoute.ProgramDetail(programId = effect.programId),
             )
             is MovitExploreEffect.OpenWorkoutSession -> pushInner(MovitInnerRoute.WorkoutSession(effect.workoutId))
-            is MovitExploreEffect.OpenExerciseDetail -> pushInner(
-                MovitInnerRoute.ExerciseDetail(exerciseId = effect.exerciseId),
+            is MovitExploreEffect.OpenExercisePrepare -> pushInner(
+                MovitInnerRoute.ExercisePrepare(exerciseId = effect.exerciseId),
             )
             is MovitExploreEffect.NavigateToItem -> {
                 when (effect.type) {
-                    ExploreItemType.Exercise -> pushInner(MovitInnerRoute.ExerciseDetail(effect.id))
+                    ExploreItemType.Exercise -> pushInner(MovitInnerRoute.ExercisePrepare(effect.id))
                     ExploreItemType.Workout -> pushInner(MovitInnerRoute.WorkoutSession(effect.id))
                     ExploreItemType.Program -> pushInner(
                         MovitInnerRoute.ProgramDetail(programId = effect.id),
@@ -382,7 +379,7 @@ class MovitAppShellViewModel(
                 }
             }
             is MovitExploreEffect.NavigateToExercise -> {
-                pushInner(MovitInnerRoute.ExerciseDetail(effect.id))
+                pushInner(MovitInnerRoute.ExercisePrepare(effect.id))
             }
             is MovitExploreEffect.ShowMessage -> {
                 _effects.tryEmit(MovitAppShellEffect.ShowMessage(effect.message))

@@ -75,6 +75,54 @@ class ColdOfflineBundleSeederTest {
     }
 
     @Test
+    fun seedIfNeeded_skipsHomeWhenBundledHomeIsNull() {
+        runBlocking {
+            val platform = FakeMovitPlatformBindings()
+            val localStore = testLocalStore(platform)
+            val api = testMobileApi(MockEngine { respond("{}", HttpStatusCode.OK) }, platform)
+            val home = HomeSyncRepository(api, { platform }, { localStore })
+            val explore = ExploreSyncRepository(api, { platform }, { localStore })
+            val systemMessages = SystemMessageCache(localStore)
+            val bundledJson = MovitJson.encodeToString(
+                BundledColdOfflineDto.serializer(),
+                BundledColdOfflineDto(
+                    home = null,
+                    explore = ExploreDataDto(
+                        programs = listOf(
+                            com.movit.core.network.dto.ExploreProgramDto(
+                                id = "real-program-id",
+                                slug = "real-slug",
+                                name = LocalizedNameDto(en = "Real Program"),
+                            ),
+                        ),
+                    ),
+                    systemMessages = listOf(
+                        SyncSystemMessageDto(
+                            code = "training_countdown_go",
+                            content = LocalizedNameDto(ar = "ابدأ!", en = "Go!"),
+                        ),
+                    ),
+                ),
+            )
+            val seeder = ColdOfflineBundleSeeder(
+                localStore = localStore,
+                homeSync = home,
+                exploreSync = explore,
+                systemMessageCache = systemMessages,
+                bundleJsonProvider = { bundledJson },
+            )
+
+            val seeded = seeder.seedIfNeeded()
+
+            assertTrue(seeded)
+            assertEquals(null, home.readCached())
+            assertNotNull(explore.readCached())
+            assertEquals(1, explore.readCached()?.programs?.size)
+            assertEquals(1, systemMessages.read().size)
+        }
+    }
+
+    @Test
     fun seedIfNeeded_skipsWhenCachesAlreadyPopulated() {
         runBlocking {
             val platform = FakeMovitPlatformBindings()

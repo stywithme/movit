@@ -78,7 +78,7 @@ class MovitTrainStateTest {
     }
 
     @Test
-    fun startWorkout_emitsOpenSessionPreview() {
+    fun startWorkoutWithoutLaunchTarget_emitsOpenProgramList() {
         runBlocking {
             val viewModel = MovitTrainViewModel()
             val effectDeferred = async {
@@ -88,7 +88,7 @@ class MovitTrainStateTest {
             }
             yield()
             viewModel.onEvent(MovitTrainEvent.StartWorkoutClicked)
-            assertEquals(MovitTrainEffect.OpenSessionPreview, effectDeferred.await())
+            assertEquals(MovitTrainEffect.OpenProgramList, effectDeferred.await())
         }
     }
 

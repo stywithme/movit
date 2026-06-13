@@ -13,6 +13,9 @@ import com.movit.resources.readBundledColdOfflineJson
 /**
  * Seeds local caches from the bundled cold-start JSON when no network cache exists yet.
  * Feeds [com.movit.core.data.sync.MovitSyncOrchestrator.readColdOfflineBundle] on first install offline.
+ *
+ * The bundled JSON ships real explore catalog + system messages only; [BundledColdOfflineDto.home]
+ * is intentionally null because home dashboard data is user-specific and must come from sync.
  */
 class ColdOfflineBundleSeeder(
     private val localStore: MovitLocalStore,

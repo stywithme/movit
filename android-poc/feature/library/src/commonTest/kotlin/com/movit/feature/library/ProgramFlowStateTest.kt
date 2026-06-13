@@ -3,7 +3,6 @@ package com.movit.feature.library
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class ProgramFlowStateTest {
@@ -34,23 +33,6 @@ class ProgramFlowStateTest {
     }
 
     @Test
-    fun weekPlan_loadsDays() {
-        runBlocking {
-            val viewModel = ProgramWeekPlanViewModel(
-                programId = "prog-full-body",
-                weekNumber = 2,
-                repository = FakeProgramFlowRepository(),
-            )
-            viewModel.load()
-            val plan = viewModel.state.value.weekPlan
-            assertNotNull(plan)
-            assertEquals(2, plan.weekNumber)
-            assertTrue(plan.days.isNotEmpty())
-            assertNotNull(plan.todayDayNumber)
-        }
-    }
-
-    @Test
     fun weeklyReport_loadsMetrics() {
         runBlocking {
             val viewModel = WeeklyReportViewModel(
@@ -61,7 +43,7 @@ class ProgramFlowStateTest {
             viewModel.load()
             val state = viewModel.state.value
             val report = state.report
-            assertNotNull(report)
+            kotlin.test.assertNotNull(report)
             assertEquals(4, report.sessionsCompleted)
             assertEquals(5, report.dailyScores.size)
             assertEquals(4, state.weekSummaries.size)

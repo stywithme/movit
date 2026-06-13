@@ -24,6 +24,7 @@
         {
           "joint": "right_elbow",
           "role": "primary",
+          "trackingMode": "two_sides",
           "startPose": { "min": 0, "max": 180 },
           "range": {
             "perfect": { "min": 0, "max": 180 }

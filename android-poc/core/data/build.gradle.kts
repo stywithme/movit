@@ -42,6 +42,7 @@ kotlin {
         }
         androidMain.dependencies {
             implementation(libs.androidx.security.crypto)
+            implementation(libs.androidx.work.runtime.ktx)
             implementation(libs.sqldelight.android.driver)
             implementation(libs.okhttp)
         }

@@ -160,7 +160,7 @@ class MovitExploreStateTest {
     }
 
     @Test
-    fun viewModel_itemClicked_emitsExerciseDetailEffect() {
+    fun viewModel_itemClicked_emitsExercisePrepareEffect() {
         runBlocking {
             val viewModel = MovitExploreViewModel(FakeExploreRepository())
             val effectDeferred = async {
@@ -168,7 +168,7 @@ class MovitExploreStateTest {
             }
             yield()
             viewModel.onEvent(MovitExploreEvent.ItemClicked("ex-squat", ExploreItemType.Exercise))
-            assertEquals(MovitExploreEffect.OpenExerciseDetail("ex-squat"), effectDeferred.await())
+            assertEquals(MovitExploreEffect.OpenExercisePrepare("ex-squat"), effectDeferred.await())
         }
     }
 

@@ -17,18 +17,11 @@ class SharedExploreRepository(
         val platform = MovitData.requirePlatform()
         val language = platform.preferredLanguage()
         val strings = ExploreStrings.load(language)
-        return when (val result = MovitData.explore.sync()) {
-            is AppResult.Success -> AppResult.Success(
-                ExploreApiMapper.map(result.value, language, strings),
-            )
-            is AppResult.Failure -> {
-                val cached = MovitData.explore.readCached()
-                if (cached != null) {
-                    AppResult.Success(ExploreApiMapper.map(cached, language, strings))
-                } else {
-                    fallback.getExploreContent()
-                }
-            }
+        val cached = MovitData.explore.readCached()
+        return if (cached != null) {
+            AppResult.Success(ExploreApiMapper.map(cached, language, strings))
+        } else {
+            fallback.getExploreContent()
         }
     }
 }

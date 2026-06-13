@@ -90,11 +90,11 @@ class MovitAppShellStateTest {
     }
 
     @Test
-    fun exploreItemSelected_pushesExerciseDetailInnerRoute() {
+    fun exploreItemSelected_pushesExercisePrepareInnerRoute() {
         val viewModel = MovitAppShellViewModel()
         viewModel.onEvent(MovitAppShellEvent.ExploreItemSelected("ex-squat"))
         assertEquals(
-            MovitInnerRoute.ExerciseDetail("ex-squat"),
+            MovitInnerRoute.ExercisePrepare("ex-squat"),
             viewModel.state.value.currentInnerRoute,
         )
     }
@@ -158,16 +158,6 @@ class MovitAppShellStateTest {
     }
 
     @Test
-    fun trainOpenSessionPreview_pushesWorkoutSessionInnerRoute() {
-        val viewModel = MovitAppShellViewModel()
-        viewModel.onEvent(MovitAppShellEvent.TrainEffectReceived(MovitTrainEffect.OpenSessionPreview))
-        assertEquals(
-            MovitInnerRoute.WorkoutSession("preview"),
-            viewModel.state.value.currentInnerRoute,
-        )
-    }
-
-    @Test
     fun exploreOpenExercisesLibrary_pushesInnerRoute() {
         val viewModel = MovitAppShellViewModel()
         viewModel.onEvent(
@@ -191,15 +181,15 @@ class MovitAppShellStateTest {
     }
 
     @Test
-    fun exploreOpenExerciseDetail_pushesExerciseDetailInnerRoute() {
+    fun exploreOpenExercisePrepare_pushesExercisePrepareInnerRoute() {
         val viewModel = MovitAppShellViewModel()
         viewModel.onEvent(
             MovitAppShellEvent.ExploreEffectReceived(
-                MovitExploreEffect.OpenExerciseDetail("ex-squat"),
+                MovitExploreEffect.OpenExercisePrepare("ex-squat"),
             ),
         )
         assertEquals(
-            MovitInnerRoute.ExerciseDetail("ex-squat"),
+            MovitInnerRoute.ExercisePrepare("ex-squat"),
             viewModel.state.value.currentInnerRoute,
         )
     }
@@ -403,16 +393,16 @@ class MovitAppShellStateTest {
     }
 
     @Test
-    fun workoutSessionExerciseCard_pushesStandaloneExerciseDetail() {
+    fun workoutSessionExerciseCard_pushesStandaloneExercisePrepare() {
         val viewModel = MovitAppShellViewModel()
         viewModel.onEvent(MovitAppShellEvent.InnerRoutePushed(MovitInnerRoute.WorkoutSession("preview")))
         viewModel.onEvent(
             MovitAppShellEvent.InnerRoutePushed(
-                MovitInnerRoute.ExerciseDetail("bodyweight-squat"),
+                MovitInnerRoute.ExercisePrepare("bodyweight-squat"),
             ),
         )
         assertEquals(
-            MovitInnerRoute.ExerciseDetail("bodyweight-squat"),
+            MovitInnerRoute.ExercisePrepare("bodyweight-squat"),
             viewModel.state.value.currentInnerRoute,
         )
     }
@@ -450,12 +440,16 @@ class MovitAppShellStateTest {
     }
 
     @Test
-    fun workoutSessionStart_pushesWorkoutRunRoute() {
+    fun workoutSessionStart_pushesExercisePrepareRoute() {
         val viewModel = MovitAppShellViewModel()
         viewModel.onEvent(MovitAppShellEvent.InnerRoutePushed(MovitInnerRoute.WorkoutSession("preview")))
-        viewModel.onEvent(MovitAppShellEvent.InnerRoutePushed(MovitInnerRoute.WorkoutRun("preview")))
+        viewModel.onEvent(
+            MovitAppShellEvent.InnerRoutePushed(
+                MovitInnerRoute.ExercisePrepare("bodyweight-squat", workoutId = "preview"),
+            ),
+        )
         assertEquals(
-            MovitInnerRoute.WorkoutRun("preview"),
+            MovitInnerRoute.ExercisePrepare("bodyweight-squat", workoutId = "preview"),
             viewModel.state.value.currentInnerRoute,
         )
     }

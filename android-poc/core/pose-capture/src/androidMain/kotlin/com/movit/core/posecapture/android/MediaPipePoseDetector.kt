@@ -1,6 +1,7 @@
 package com.movit.core.posecapture.android
 
 import android.content.Context
+import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.util.Log
 import androidx.camera.core.ImageProxy
@@ -17,6 +18,11 @@ import com.movit.core.training.geometry.PoseFrameAssembler
 import com.movit.core.training.model.Landmark
 import com.movit.core.training.model.PoseFrame
 import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import java.io.File
 
 class MediaPipePoseDetector(
     private val context: Context,
@@ -40,14 +46,19 @@ class MediaPipePoseDetector(
         private const val MIN_DETECTION = 0.5f
         private const val MIN_TRACKING = 0.5f
         private const val MIN_PRESENCE = 0.5f
+        private const val MODEL_TYPE_HEAVY = "heavy"
     }
 
     private var landmarker: PoseLandmarker? = null
-    private var modelAsset = "pose_landmarker_full.task"
+    private var modelLabel = PoseLandmarkerHeavyModelStore.FULL_MODEL_ASSET
     private var useGpu = true
     private val frameCameraState = ConcurrentHashMap<Long, Boolean>()
     private val landmarkSmoother = LandmarkSmoother()
     private var listener: Listener? = null
+    private var lastConfiguration: PoseDetectorConfiguration? = null
+    private var heavyUpgradeInFlight = false
+    private val initLock = Any()
+    private val backgroundScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     var lastInferenceTimeMs: Long = 0L
         private set
@@ -57,29 +68,40 @@ class MediaPipePoseDetector(
     }
 
     override fun warmUp(configuration: PoseDetectorConfiguration) {
-        modelAsset = configuration.modelAssetName ?: modelAsset
-        useGpu = configuration.useGpu
-        shutdown()
-        try {
-            val base = BaseOptions.builder().setModelAssetPath(modelAsset)
-            if (useGpu) base.setDelegate(Delegate.GPU) else base.setDelegate(Delegate.CPU)
-            val options = PoseLandmarker.PoseLandmarkerOptions.builder()
-                .setBaseOptions(base.build())
-                .setRunningMode(RunningMode.LIVE_STREAM)
-                .setNumPoses(1)
-                .setMinPoseDetectionConfidence(configuration.minDetectionConfidence)
-                .setMinTrackingConfidence(configuration.minTrackingConfidence)
-                .setMinPosePresenceConfidence(MIN_PRESENCE)
-                .setResultListener(this::onPoseResult)
-                .setErrorListener { e -> listener?.onError(e.message ?: "Pose error") }
-                .build()
-            landmarker = PoseLandmarker.createFromOptions(context, options)
-            Log.d(TAG, "Pose landmarker ready gpu=$useGpu model=$modelAsset")
-        } catch (e: Exception) {
-            if (useGpu) {
-                warmUp(configuration.copy(useGpu = false))
-            } else {
-                listener?.onError("Failed to initialize pose detection: ${e.message}")
+        lastConfiguration = configuration
+        synchronized(initLock) {
+            useGpu = configuration.useGpu
+            shutdownLandmarkerOnly()
+            try {
+                val baseBuilder = BaseOptions.builder()
+                val resolved = applyModelToBaseOptions(baseBuilder, configuration)
+                modelLabel = resolved.label
+                if (useGpu) {
+                    baseBuilder.setDelegate(Delegate.GPU)
+                } else {
+                    baseBuilder.setDelegate(Delegate.CPU)
+                }
+                val options = PoseLandmarker.PoseLandmarkerOptions.builder()
+                    .setBaseOptions(baseBuilder.build())
+                    .setRunningMode(RunningMode.LIVE_STREAM)
+                    .setNumPoses(1)
+                    .setMinPoseDetectionConfidence(configuration.minDetectionConfidence)
+                    .setMinTrackingConfidence(configuration.minTrackingConfidence)
+                    .setMinPosePresenceConfidence(MIN_PRESENCE)
+                    .setResultListener(this::onPoseResult)
+                    .setErrorListener { e -> listener?.onError(e.message ?: "Pose error") }
+                    .build()
+                landmarker = PoseLandmarker.createFromOptions(context, options)
+                Log.d(TAG, "Pose landmarker ready gpu=$useGpu model=$modelLabel")
+                if (resolved.scheduleHeavyUpgrade) {
+                    scheduleHeavyUpgrade(configuration)
+                }
+            } catch (e: Exception) {
+                if (useGpu) {
+                    warmUp(configuration.copy(useGpu = false))
+                } else {
+                    listener?.onError("Failed to initialize pose detection: ${e.message}")
+                }
             }
         }
     }
@@ -138,10 +160,87 @@ class MediaPipePoseDetector(
     }
 
     override fun shutdown() {
+        synchronized(initLock) {
+            shutdownLandmarkerOnly()
+        }
+    }
+
+    private fun shutdownLandmarkerOnly() {
         landmarker?.close()
         landmarker = null
         frameCameraState.clear()
         landmarkSmoother.reset()
+        heavyUpgradeInFlight = false
+    }
+
+    private data class ResolvedModel(
+        val label: String,
+        val scheduleHeavyUpgrade: Boolean = false,
+    )
+
+    private fun applyModelToBaseOptions(
+        baseBuilder: BaseOptions.Builder,
+        configuration: PoseDetectorConfiguration,
+    ): ResolvedModel {
+        configuration.modelAssetName?.let { explicitAsset ->
+            baseBuilder.setModelAssetPath(explicitAsset)
+            return ResolvedModel(label = explicitAsset)
+        }
+
+        val modelType = PoseModelTypePreference.getModelType(context)
+        if (modelType != MODEL_TYPE_HEAVY) {
+            baseBuilder.setModelAssetPath(PoseLandmarkerHeavyModelStore.FULL_MODEL_ASSET)
+            return ResolvedModel(label = PoseLandmarkerHeavyModelStore.FULL_MODEL_ASSET)
+        }
+
+        return when (val resolved = PoseLandmarkerHeavyModelStore.resolveHeavyOrFallback(context)) {
+            is PoseLandmarkerHeavyModelStore.ResolveResult.HeavyFile -> {
+                applyHeavyFileToBaseOptions(baseBuilder, File(resolved.absolutePath))
+                ResolvedModel(label = resolved.absolutePath)
+            }
+            is PoseLandmarkerHeavyModelStore.ResolveResult.HeavyAsset -> {
+                baseBuilder.setModelAssetPath(resolved.assetName)
+                ResolvedModel(label = resolved.assetName)
+            }
+            is PoseLandmarkerHeavyModelStore.ResolveResult.FallbackFullAsset -> {
+                baseBuilder.setModelAssetPath(resolved.assetName)
+                Log.i(
+                    TAG,
+                    "Heavy model unavailable — using bundled full; download will run in background",
+                )
+                ResolvedModel(
+                    label = "${resolved.assetName} (heavy pending)",
+                    scheduleHeavyUpgrade = true,
+                )
+            }
+        }
+    }
+
+    private fun applyHeavyFileToBaseOptions(baseBuilder: BaseOptions.Builder, modelFile: File) {
+        ParcelFileDescriptor.open(modelFile, ParcelFileDescriptor.MODE_READ_ONLY).use { pfd ->
+            baseBuilder.setModelAssetFileDescriptor(pfd.detachFd())
+        }
+    }
+
+    private fun scheduleHeavyUpgrade(configuration: PoseDetectorConfiguration) {
+        if (heavyUpgradeInFlight) return
+        if (PoseModelTypePreference.getModelType(context) != MODEL_TYPE_HEAVY) return
+        heavyUpgradeInFlight = true
+        backgroundScope.launch {
+            try {
+                val cached = PoseLandmarkerHeavyModelStore.ensureCached(context)
+                if (!cached) return@launch
+                if (PoseModelTypePreference.getModelType(context) != MODEL_TYPE_HEAVY) return@launch
+                val resolved = PoseLandmarkerHeavyModelStore.resolveHeavyOrFallback(context)
+                if (resolved is PoseLandmarkerHeavyModelStore.ResolveResult.FallbackFullAsset) {
+                    return@launch
+                }
+                Log.i(TAG, "Heavy model cached — re-initializing pose landmarker")
+                warmUp(lastConfiguration ?: configuration)
+            } finally {
+                heavyUpgradeInFlight = false
+            }
+        }
     }
 
     private fun mapWorldLandmarks(

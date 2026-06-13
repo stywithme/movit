@@ -54,6 +54,12 @@ android {
     }
 
     buildTypes {
+        debug {
+            // F8 — emulators (x86/x86_64) stay available in debug only.
+            ndk {
+                abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+            }
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -61,7 +67,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // F8 — real devices only; debug keeps x86/x86_64 for emulators.
+            // F8 — real devices only; no x86/x86_64 in release APK/AAB.
             ndk {
                 abiFilters += listOf("arm64-v8a", "armeabi-v7a")
             }
@@ -70,6 +76,9 @@ android {
 
     bundle {
         abi {
+            enableSplit = true
+        }
+        language {
             enableSplit = true
         }
     }

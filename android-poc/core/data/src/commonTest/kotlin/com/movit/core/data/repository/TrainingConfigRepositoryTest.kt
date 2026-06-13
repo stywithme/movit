@@ -18,7 +18,7 @@ import kotlin.test.assertTrue
 class TrainingConfigRepositoryTest {
 
     @Test
-    fun seedAndResolveSquatAliases() {
+    fun seedRecord_supportsOnlySeededSlugWithoutStaticAliases() {
         val store = InMemoryMovitLocalStore()
         val repo = TrainingConfigRepository(store)
         val json = readSquatFixture()
@@ -33,8 +33,8 @@ class TrainingConfigRepositoryTest {
         )
 
         assertEquals(CountingMethod.UP_DOWN, repo.getExercise("bodyweight-squat")?.countingMethod)
-        assertEquals(CountingMethod.UP_DOWN, repo.resolveBySlug("squat")?.config?.countingMethod)
-        assertTrue(repo.supports("barbell-squat"))
+        assertFalse(repo.supports("squat"))
+        assertFalse(repo.supports("barbell-squat"))
     }
 
     @Test
@@ -74,6 +74,8 @@ class TrainingConfigRepositoryTest {
                 MovitCacheKeys.exerciseIdToSlugKey("ex-001"),
             ),
         )
+        assertEquals("bodyweight-squat", repo.resolveAvailableSlug("ex-001"))
+        assertEquals("bodyweight-squat", repo.resolveAvailableSlug("missing", "ex-001"))
     }
 
     private fun readSquatFixture(): String {

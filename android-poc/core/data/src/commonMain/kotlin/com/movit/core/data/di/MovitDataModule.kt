@@ -6,6 +6,7 @@ import com.movit.core.data.audio.AudioFileDownloader
 import com.movit.core.data.audio.AudioPrefetchRunner
 import com.movit.core.data.cache.AudioManifestCache
 import com.movit.core.data.cache.ColdOfflineBundleSeeder
+import com.movit.core.data.cache.MessageLibraryCache
 import com.movit.core.data.cache.MovitSyncMetadataStore
 import com.movit.core.data.cache.SystemMessageCache
 import com.movit.core.data.local.DefaultMovitLocalStoreFactory
@@ -15,6 +16,8 @@ import com.movit.core.data.outbox.OfflineWriteQueue
 import com.movit.core.data.platform.MovitPlatformBindings
 import com.movit.core.data.platform.PlatformMovitAuthTokenStore
 import com.movit.core.data.repository.AccountSyncRepository
+import com.movit.core.data.repository.DayCustomizationLocalStore
+import com.movit.core.data.repository.ExercisePreferenceLocalStore
 import com.movit.core.data.repository.ExploreSyncRepository
 import com.movit.core.data.repository.HomeSyncRepository
 import com.movit.core.data.repository.MobileWriteSyncRepository
@@ -116,6 +119,9 @@ fun movitDataModule(
         )
     }
     single { AccountSyncRepository(api = get(), platform = { get() }) }
+    single { ExercisePreferenceLocalStore(get()) }
+    single { DayCustomizationLocalStore(get()) }
+    single { MessageLibraryCache(get()) }
     single { TrainingConfigRepository(localStore = get()) }
     single { MovitTrainingPreferences(localStore = get()) }
     single {
@@ -132,6 +138,10 @@ fun movitDataModule(
             audioPrefetchRunner = get(),
             offlineWrites = get(),
             trainingConfig = get(),
+            systemMessageCache = get(),
+            exercisePreferenceLocalStore = get(),
+            dayCustomizationLocalStore = get(),
+            messageLibraryCache = get(),
         )
     }
     single {

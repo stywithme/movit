@@ -264,10 +264,10 @@ internal fun MovitCatalogMediaCardsBlock() {
 internal fun MovitCatalogExerciseCardsBlock() {
     CatalogSection(title = "Exercise cards") {
         MovitExerciseCard(
-            title = "Bodyweight Squat",
-            subtitle = "Quads, glutes and core control.",
+            title = "Sample Exercise",
+            subtitle = "Guided movement with form cues.",
             badge = "Popular",
-            metadata = listOf("Legs", "Beginner"),
+            metadata = listOf("Mobility", "Beginner"),
             onClick = {},
         )
     }

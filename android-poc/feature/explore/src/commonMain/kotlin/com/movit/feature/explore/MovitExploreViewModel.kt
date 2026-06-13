@@ -89,7 +89,7 @@ class MovitExploreViewModel(
                     ExploreItemType.Workout ->
                         _effects.tryEmit(MovitExploreEffect.OpenWorkoutSession(event.id))
                     ExploreItemType.Exercise ->
-                        _effects.tryEmit(MovitExploreEffect.OpenExerciseDetail(event.id))
+                        _effects.tryEmit(MovitExploreEffect.OpenExercisePrepare(event.id))
                     ExploreItemType.Program ->
                         _effects.tryEmit(MovitExploreEffect.OpenProgramDetail(event.id))
                 }

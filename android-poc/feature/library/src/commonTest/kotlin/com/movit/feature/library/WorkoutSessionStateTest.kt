@@ -1,5 +1,6 @@
 package com.movit.feature.library
 
+import com.movit.shared.AppResult
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -34,7 +35,7 @@ class WorkoutSessionStateTest {
     fun preview_loadsSections() {
         val viewModel = WorkoutSessionViewModel(
             workoutId = "preview",
-            repository = DefaultWorkoutSessionRepository(),
+            repository = PreviewWorkoutSessionRepository,
         )
         kotlinx.coroutines.runBlocking { viewModel.load() }
         val session = viewModel.state.value.session
@@ -47,7 +48,7 @@ class WorkoutSessionStateTest {
     fun editDetails_updatesExerciseMetrics() {
         val viewModel = WorkoutSessionViewModel(
             workoutId = "preview",
-            repository = DefaultWorkoutSessionRepository(),
+            repository = PreviewWorkoutSessionRepository,
         )
         kotlinx.coroutines.runBlocking { viewModel.load() }
         viewModel.toggleEditMode()
@@ -74,7 +75,7 @@ class WorkoutSessionStateTest {
     fun deleteExercise_removesBlockAndRecalculates() {
         val viewModel = WorkoutSessionViewModel(
             workoutId = "preview",
-            repository = DefaultWorkoutSessionRepository(),
+            repository = PreviewWorkoutSessionRepository,
         )
         kotlinx.coroutines.runBlocking { viewModel.load() }
         val before = viewModel.state.value.session?.exerciseCount ?: 0
@@ -88,7 +89,7 @@ class WorkoutSessionStateTest {
     fun moveBlock_reordersWithinSection() {
         val viewModel = WorkoutSessionViewModel(
             workoutId = "preview",
-            repository = DefaultWorkoutSessionRepository(),
+            repository = PreviewWorkoutSessionRepository,
         )
         kotlinx.coroutines.runBlocking { viewModel.load() }
         viewModel.toggleEditMode()
@@ -109,7 +110,7 @@ class WorkoutSessionStateTest {
     fun skipWarmup_setsFlagWithoutRemovingPersistedSections() {
         val viewModel = WorkoutSessionViewModel(
             workoutId = "preview",
-            repository = DefaultWorkoutSessionRepository(),
+            repository = PreviewWorkoutSessionRepository,
         )
         kotlinx.coroutines.runBlocking { viewModel.load() }
         viewModel.skipWarmup()
@@ -124,7 +125,7 @@ class WorkoutSessionStateTest {
     fun addRestBlock_appendsRestToMainSection() {
         val viewModel = WorkoutSessionViewModel(
             workoutId = "preview",
-            repository = DefaultWorkoutSessionRepository(),
+            repository = PreviewWorkoutSessionRepository,
         )
         kotlinx.coroutines.runBlocking { viewModel.load() }
         viewModel.toggleEditMode()
@@ -141,4 +142,23 @@ class WorkoutSessionStateTest {
             ?: 0
         assertEquals(before + 1, after)
     }
+}
+
+private object PreviewWorkoutSessionRepository : WorkoutSessionRepository {
+    override suspend fun loadSession(workoutId: String): AppResult<WorkoutSessionUi> =
+        AppResult.Success(WorkoutSessionPreviewData.preview)
+
+    override suspend fun loadDayContext(workoutId: String): SessionDayContext = SessionDayContext()
+
+    override suspend fun saveSession(session: WorkoutSessionUi): AppResult<Unit> = AppResult.Success(Unit)
+
+    override suspend fun saveFlowCustomization(workoutId: String, config: WorkoutFlowConfigUi): AppResult<Unit> =
+        AppResult.Success(Unit)
+
+    override suspend fun sessionKeyForDay(programId: String, weekNumber: Int, dayNumber: Int): String? = null
+
+    override suspend fun findSwapCandidates(query: String, replacingSlug: String): List<SessionSwapCandidateUi> =
+        emptyList()
+
+    override suspend fun findAddExerciseCandidates(query: String): List<SessionSwapCandidateUi> = emptyList()
 }

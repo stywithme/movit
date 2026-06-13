@@ -1,90 +1,1096 @@
 {
-  "home": {
-    "user": {
-      "name": "Movit",
-      "level": 1,
-      "levelCode": "L1",
-      "bodyScore": 50.0,
-      "levelProgress": 20
-    },
-    "trainMode": {
-      "status": "active",
-      "activeProgram": {
-        "id": "offline-up-001",
-        "name": { "en": "Strength Base", "ar": "أساس القوة" },
-        "weekNumber": 1,
-        "dayNumber": 1,
-        "totalWeeks": 8,
-        "weekProgress": { "completed": 0, "total": 4 }
-      },
-      "todayWorkout": {
-        "plannedWorkoutId": "offline-pw-001",
-        "name": { "en": "Quick Legs", "ar": "أرجل سريعة" },
-        "exerciseCount": 4,
-        "estimatedMinutes": 20,
-        "workoutTemplateId": "wt-001",
-        "isCompleted": false,
-        "allWorkoutsCount": 1,
-        "completedWorkoutsCount": 0
-      },
-      "dayType": "training",
-      "isPaused": false,
-      "isTrainingDay": true
-    },
-    "stats": {
-      "totalWorkoutExecutions": 0,
-      "avgFormScore": 0,
-      "streak": 0,
-      "thisWeekExecutions": 0,
-      "totalMinutes": 0
-    },
-    "recentWorkouts": [],
-    "alerts": [],
-    "levelProfile": {
-      "overallLevel": 1,
-      "bodyScore": 50.0,
-      "levelInfo": { "name": { "en": "Getting started", "ar": "البداية" } }
-    }
-  },
+  "home": null,
   "explore": {
     "levels": [
       {
         "number": 1,
-        "code": "L1",
-        "name": { "en": "Beginner", "ar": "مبتدئ" }
+        "code": "foundation",
+        "name": {
+          "en": "Foundation",
+          "ar": "أساسي"
+        }
+      },
+      {
+        "number": 2,
+        "code": "building",
+        "name": {
+          "en": "Building",
+          "ar": "بناء"
+        }
+      },
+      {
+        "number": 3,
+        "code": "intermediate",
+        "name": {
+          "en": "Intermediate",
+          "ar": "متوسط"
+        }
+      },
+      {
+        "number": 4,
+        "code": "advanced",
+        "name": {
+          "en": "Advanced",
+          "ar": "متقدم"
+        }
+      },
+      {
+        "number": 5,
+        "code": "elite",
+        "name": {
+          "en": "Elite",
+          "ar": "نخبة"
+        }
       }
     ],
     "programs": [
       {
-        "id": "prog-001",
-        "slug": "strength-base",
-        "name": { "en": "Strength Base", "ar": "أساس القوة" },
-        "durationWeeks": 8,
-        "coverImageUrl": "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=400&q=70",
-        "updatedAt": "1970-01-01T00:00:00.000Z"
+        "id": "d9f0655e-732d-49e9-9277-44df99978181",
+        "slug": "push_pull_leg_mpzdrbsg",
+        "name": {
+          "en": "push pull leg",
+          "ar": "دفع سحب رجل"
+        },
+        "levelMin": {
+          "number": 1,
+          "code": "foundation",
+          "name": {
+            "en": "Foundation",
+            "ar": "أساسي"
+          }
+        },
+        "levelMax": {
+          "number": 1,
+          "code": "foundation",
+          "name": {
+            "en": "Foundation",
+            "ar": "أساسي"
+          }
+        },
+        "durationWeeks": 1,
+        "coverImageUrl": null,
+        "updatedAt": "2026-06-06T10:07:19.795Z"
+      },
+      {
+        "id": "dac7b7ee-e47b-4abc-9012-74cef6f918fd",
+        "slug": "push_pull_test_mpy6jml6",
+        "name": {
+          "en": "Push Pull Test",
+          "ar": "دفع سحب تست"
+        },
+        "levelMin": {
+          "number": 1,
+          "code": "foundation",
+          "name": {
+            "en": "Foundation",
+            "ar": "أساسي"
+          }
+        },
+        "levelMax": {
+          "number": 1,
+          "code": "foundation",
+          "name": {
+            "en": "Foundation",
+            "ar": "أساسي"
+          }
+        },
+        "durationWeeks": 1,
+        "coverImageUrl": null,
+        "updatedAt": "2026-06-04T09:28:22.330Z"
+      },
+      {
+        "id": "cf2a7d72-4eba-4b9f-af22-d9f8693b9405",
+        "slug": "test_program_moplkoan",
+        "name": {
+          "en": "Test Program",
+          "ar": "برنامج تست"
+        },
+        "levelMin": {
+          "number": 1,
+          "code": "foundation",
+          "name": {
+            "en": "Foundation",
+            "ar": "أساسي"
+          }
+        },
+        "levelMax": {
+          "number": 1,
+          "code": "foundation",
+          "name": {
+            "en": "Foundation",
+            "ar": "أساسي"
+          }
+        },
+        "durationWeeks": 1,
+        "coverImageUrl": null,
+        "updatedAt": "2026-05-03T11:37:55.669Z"
+      },
+      {
+        "id": "330a6ccf-d57c-4574-a0eb-c1370eeb24cf",
+        "slug": "test_beginner_mol9du4o",
+        "name": {
+          "en": "Test Beginner",
+          "ar": "تست للمبتدأين"
+        },
+        "levelMin": {
+          "number": 1,
+          "code": "foundation",
+          "name": {
+            "en": "Foundation",
+            "ar": "أساسي"
+          }
+        },
+        "levelMax": {
+          "number": 5,
+          "code": "elite",
+          "name": {
+            "en": "Elite",
+            "ar": "نخبة"
+          }
+        },
+        "durationWeeks": 1,
+        "coverImageUrl": null,
+        "updatedAt": "2026-04-30T16:09:31.147Z"
+      },
+      {
+        "id": "2e500ebc-121e-48f1-b62c-f880fc90da07",
+        "slug": "starter-4-weeks",
+        "name": {
+          "en": "Starter 4-Week Program",
+          "ar": "برنامج البداية 4 أسابيع"
+        },
+        "levelMin": {
+          "number": 1,
+          "code": "foundation",
+          "name": {
+            "en": "Foundation",
+            "ar": "أساسي"
+          }
+        },
+        "levelMax": {
+          "number": 2,
+          "code": "building",
+          "name": {
+            "en": "Building",
+            "ar": "بناء"
+          }
+        },
+        "durationWeeks": 4,
+        "coverImageUrl": null,
+        "updatedAt": "2026-04-21T00:39:31.176Z"
+      },
+      {
+        "id": "67fdadc7-da4a-4195-a620-3d6a7744c07b",
+        "slug": "system-general_health-l45",
+        "name": {
+          "en": "System general health (l45)",
+          "ar": "صحة عامة نظام (l45)"
+        },
+        "levelMin": {
+          "number": 4,
+          "code": "advanced",
+          "name": {
+            "en": "Advanced",
+            "ar": "متقدم"
+          }
+        },
+        "levelMax": {
+          "number": 5,
+          "code": "elite",
+          "name": {
+            "en": "Elite",
+            "ar": "نخبة"
+          }
+        },
+        "durationWeeks": 2,
+        "coverImageUrl": null,
+        "updatedAt": "2026-04-21T00:39:31.136Z"
+      },
+      {
+        "id": "41f1845b-3d1c-4510-866c-8f3379126845",
+        "slug": "system-general_health-l34",
+        "name": {
+          "en": "System general health (l34)",
+          "ar": "صحة عامة نظام (l34)"
+        },
+        "levelMin": {
+          "number": 3,
+          "code": "intermediate",
+          "name": {
+            "en": "Intermediate",
+            "ar": "متوسط"
+          }
+        },
+        "levelMax": {
+          "number": 4,
+          "code": "advanced",
+          "name": {
+            "en": "Advanced",
+            "ar": "متقدم"
+          }
+        },
+        "durationWeeks": 2,
+        "coverImageUrl": null,
+        "updatedAt": "2026-04-21T00:39:31.089Z"
+      },
+      {
+        "id": "97bd713d-b554-45ec-824c-668907814b89",
+        "slug": "system-general_health-l23",
+        "name": {
+          "en": "System general health (l23)",
+          "ar": "صحة عامة نظام (l23)"
+        },
+        "levelMin": {
+          "number": 2,
+          "code": "building",
+          "name": {
+            "en": "Building",
+            "ar": "بناء"
+          }
+        },
+        "levelMax": {
+          "number": 3,
+          "code": "intermediate",
+          "name": {
+            "en": "Intermediate",
+            "ar": "متوسط"
+          }
+        },
+        "durationWeeks": 2,
+        "coverImageUrl": null,
+        "updatedAt": "2026-04-21T00:39:31.046Z"
+      },
+      {
+        "id": "a73e59c8-69a7-46b5-a094-1796ecefd787",
+        "slug": "system-general_health-l12",
+        "name": {
+          "en": "System general health (l12)",
+          "ar": "صحة عامة نظام (l12)"
+        },
+        "levelMin": {
+          "number": 1,
+          "code": "foundation",
+          "name": {
+            "en": "Foundation",
+            "ar": "أساسي"
+          }
+        },
+        "levelMax": {
+          "number": 2,
+          "code": "building",
+          "name": {
+            "en": "Building",
+            "ar": "بناء"
+          }
+        },
+        "durationWeeks": 2,
+        "coverImageUrl": null,
+        "updatedAt": "2026-04-21T00:39:31.006Z"
+      },
+      {
+        "id": "e4f7dc76-e33d-4efe-ac19-5c328ed5abc2",
+        "slug": "system-power-l45",
+        "name": {
+          "en": "System power (l45)",
+          "ar": "قدرة نظام (l45)"
+        },
+        "levelMin": {
+          "number": 4,
+          "code": "advanced",
+          "name": {
+            "en": "Advanced",
+            "ar": "متقدم"
+          }
+        },
+        "levelMax": {
+          "number": 5,
+          "code": "elite",
+          "name": {
+            "en": "Elite",
+            "ar": "نخبة"
+          }
+        },
+        "durationWeeks": 2,
+        "coverImageUrl": null,
+        "updatedAt": "2026-04-21T00:39:30.961Z"
+      },
+      {
+        "id": "a9c02e60-2a90-4493-b7c2-6cc445214479",
+        "slug": "system-power-l34",
+        "name": {
+          "en": "System power (l34)",
+          "ar": "قدرة نظام (l34)"
+        },
+        "levelMin": {
+          "number": 3,
+          "code": "intermediate",
+          "name": {
+            "en": "Intermediate",
+            "ar": "متوسط"
+          }
+        },
+        "levelMax": {
+          "number": 4,
+          "code": "advanced",
+          "name": {
+            "en": "Advanced",
+            "ar": "متقدم"
+          }
+        },
+        "durationWeeks": 2,
+        "coverImageUrl": null,
+        "updatedAt": "2026-04-21T00:39:30.914Z"
+      },
+      {
+        "id": "8a0eb184-c488-4d0b-b950-2250755da013",
+        "slug": "system-power-l23",
+        "name": {
+          "en": "System power (l23)",
+          "ar": "قدرة نظام (l23)"
+        },
+        "levelMin": {
+          "number": 2,
+          "code": "building",
+          "name": {
+            "en": "Building",
+            "ar": "بناء"
+          }
+        },
+        "levelMax": {
+          "number": 3,
+          "code": "intermediate",
+          "name": {
+            "en": "Intermediate",
+            "ar": "متوسط"
+          }
+        },
+        "durationWeeks": 2,
+        "coverImageUrl": null,
+        "updatedAt": "2026-04-21T00:39:30.869Z"
+      },
+      {
+        "id": "92446ad5-b7ba-446f-bdd1-5d3f7622bf81",
+        "slug": "system-power-l12",
+        "name": {
+          "en": "System power (l12)",
+          "ar": "قدرة نظام (l12)"
+        },
+        "levelMin": {
+          "number": 1,
+          "code": "foundation",
+          "name": {
+            "en": "Foundation",
+            "ar": "أساسي"
+          }
+        },
+        "levelMax": {
+          "number": 2,
+          "code": "building",
+          "name": {
+            "en": "Building",
+            "ar": "بناء"
+          }
+        },
+        "durationWeeks": 2,
+        "coverImageUrl": null,
+        "updatedAt": "2026-04-21T00:39:30.825Z"
+      },
+      {
+        "id": "6b5e6870-d732-4fce-9540-2cbd2783f4a9",
+        "slug": "system-hypertrophy-l45",
+        "name": {
+          "en": "System hypertrophy (l45)",
+          "ar": "تضخم نظام (l45)"
+        },
+        "levelMin": {
+          "number": 4,
+          "code": "advanced",
+          "name": {
+            "en": "Advanced",
+            "ar": "متقدم"
+          }
+        },
+        "levelMax": {
+          "number": 5,
+          "code": "elite",
+          "name": {
+            "en": "Elite",
+            "ar": "نخبة"
+          }
+        },
+        "durationWeeks": 2,
+        "coverImageUrl": null,
+        "updatedAt": "2026-04-21T00:39:30.776Z"
+      },
+      {
+        "id": "e9b7429f-0898-4a71-982a-295ff7ec3c28",
+        "slug": "system-hypertrophy-l34",
+        "name": {
+          "en": "System hypertrophy (l34)",
+          "ar": "تضخم نظام (l34)"
+        },
+        "levelMin": {
+          "number": 3,
+          "code": "intermediate",
+          "name": {
+            "en": "Intermediate",
+            "ar": "متوسط"
+          }
+        },
+        "levelMax": {
+          "number": 4,
+          "code": "advanced",
+          "name": {
+            "en": "Advanced",
+            "ar": "متقدم"
+          }
+        },
+        "durationWeeks": 2,
+        "coverImageUrl": null,
+        "updatedAt": "2026-04-21T00:39:30.721Z"
+      },
+      {
+        "id": "d6ae7fe1-bff5-4cae-963d-13e37e044ce2",
+        "slug": "system-hypertrophy-l23",
+        "name": {
+          "en": "System hypertrophy (l23)",
+          "ar": "تضخم نظام (l23)"
+        },
+        "levelMin": {
+          "number": 2,
+          "code": "building",
+          "name": {
+            "en": "Building",
+            "ar": "بناء"
+          }
+        },
+        "levelMax": {
+          "number": 3,
+          "code": "intermediate",
+          "name": {
+            "en": "Intermediate",
+            "ar": "متوسط"
+          }
+        },
+        "durationWeeks": 2,
+        "coverImageUrl": null,
+        "updatedAt": "2026-04-21T00:39:30.664Z"
+      },
+      {
+        "id": "257cc79b-87e2-48b6-82a8-ec26416d4024",
+        "slug": "system-hypertrophy-l12",
+        "name": {
+          "en": "System hypertrophy (l12)",
+          "ar": "تضخم نظام (l12)"
+        },
+        "levelMin": {
+          "number": 1,
+          "code": "foundation",
+          "name": {
+            "en": "Foundation",
+            "ar": "أساسي"
+          }
+        },
+        "levelMax": {
+          "number": 2,
+          "code": "building",
+          "name": {
+            "en": "Building",
+            "ar": "بناء"
+          }
+        },
+        "durationWeeks": 2,
+        "coverImageUrl": null,
+        "updatedAt": "2026-04-21T00:39:30.623Z"
+      },
+      {
+        "id": "286105f8-3e6d-4e18-b834-db0240b009eb",
+        "slug": "system-strength-l45",
+        "name": {
+          "en": "System strength (l45)",
+          "ar": "قوة نظام (l45)"
+        },
+        "levelMin": {
+          "number": 4,
+          "code": "advanced",
+          "name": {
+            "en": "Advanced",
+            "ar": "متقدم"
+          }
+        },
+        "levelMax": {
+          "number": 5,
+          "code": "elite",
+          "name": {
+            "en": "Elite",
+            "ar": "نخبة"
+          }
+        },
+        "durationWeeks": 2,
+        "coverImageUrl": null,
+        "updatedAt": "2026-04-21T00:39:30.574Z"
+      },
+      {
+        "id": "18abcd25-2d59-4ad5-9de3-78a63e450651",
+        "slug": "system-strength-l34",
+        "name": {
+          "en": "System strength (l34)",
+          "ar": "قوة نظام (l34)"
+        },
+        "levelMin": {
+          "number": 3,
+          "code": "intermediate",
+          "name": {
+            "en": "Intermediate",
+            "ar": "متوسط"
+          }
+        },
+        "levelMax": {
+          "number": 4,
+          "code": "advanced",
+          "name": {
+            "en": "Advanced",
+            "ar": "متقدم"
+          }
+        },
+        "durationWeeks": 2,
+        "coverImageUrl": null,
+        "updatedAt": "2026-04-21T00:39:30.523Z"
+      },
+      {
+        "id": "6d1b271e-5977-4a50-8c46-8107843d1853",
+        "slug": "system-strength-l23",
+        "name": {
+          "en": "System strength (l23)",
+          "ar": "قوة نظام (l23)"
+        },
+        "levelMin": {
+          "number": 2,
+          "code": "building",
+          "name": {
+            "en": "Building",
+            "ar": "بناء"
+          }
+        },
+        "levelMax": {
+          "number": 3,
+          "code": "intermediate",
+          "name": {
+            "en": "Intermediate",
+            "ar": "متوسط"
+          }
+        },
+        "durationWeeks": 2,
+        "coverImageUrl": null,
+        "updatedAt": "2026-04-21T00:39:30.481Z"
+      },
+      {
+        "id": "9d83743d-17af-4a27-81be-5659ff8e98a6",
+        "slug": "system-strength-l12",
+        "name": {
+          "en": "System strength (l12)",
+          "ar": "قوة نظام (l12)"
+        },
+        "levelMin": {
+          "number": 1,
+          "code": "foundation",
+          "name": {
+            "en": "Foundation",
+            "ar": "أساسي"
+          }
+        },
+        "levelMax": {
+          "number": 2,
+          "code": "building",
+          "name": {
+            "en": "Building",
+            "ar": "بناء"
+          }
+        },
+        "durationWeeks": 2,
+        "coverImageUrl": null,
+        "updatedAt": "2026-04-21T00:39:30.439Z"
+      },
+      {
+        "id": "965b89b9-a20e-48be-8506-3a8ef6ab5764",
+        "slug": "coach-template-4w",
+        "name": {
+          "en": "Coach template (4 weeks)",
+          "ar": "قالب مدرب 4 أسابيع"
+        },
+        "levelMin": {
+          "number": 2,
+          "code": "building",
+          "name": {
+            "en": "Building",
+            "ar": "بناء"
+          }
+        },
+        "levelMax": {
+          "number": 4,
+          "code": "advanced",
+          "name": {
+            "en": "Advanced",
+            "ar": "متقدم"
+          }
+        },
+        "durationWeeks": 4,
+        "coverImageUrl": null,
+        "updatedAt": "2026-04-21T00:39:30.386Z"
+      },
+      {
+        "id": "bde544d5-b3e8-4393-b723-dcaa7412ece9",
+        "slug": "therapeutic-shoulder-grade-1",
+        "name": {
+          "en": "Shoulder grade-1 (conservative)",
+          "ar": "كتف مرحلي (محافظ)"
+        },
+        "levelMin": {
+          "number": 1,
+          "code": "foundation",
+          "name": {
+            "en": "Foundation",
+            "ar": "أساسي"
+          }
+        },
+        "levelMax": {
+          "number": 2,
+          "code": "building",
+          "name": {
+            "en": "Building",
+            "ar": "بناء"
+          }
+        },
+        "durationWeeks": 2,
+        "coverImageUrl": null,
+        "updatedAt": "2026-04-21T00:39:30.360Z"
+      },
+      {
+        "id": "6bb19237-a76b-41b1-aa39-663f4b870253",
+        "slug": "therapeutic-low-back-foundation",
+        "name": {
+          "en": "Low-back foundation (conservative)",
+          "ar": "أساس أسفل الظهر (محافظ)"
+        },
+        "levelMin": {
+          "number": 1,
+          "code": "foundation",
+          "name": {
+            "en": "Foundation",
+            "ar": "أساسي"
+          }
+        },
+        "levelMax": {
+          "number": 3,
+          "code": "intermediate",
+          "name": {
+            "en": "Intermediate",
+            "ar": "متوسط"
+          }
+        },
+        "durationWeeks": 2,
+        "coverImageUrl": null,
+        "updatedAt": "2026-04-21T00:39:30.321Z"
+      },
+      {
+        "id": "be396970-f529-48ab-9d50-5cc298f2c1bb",
+        "slug": "intermediate-strength-4w",
+        "name": {
+          "en": "Intermediate Strength Program",
+          "ar": "برنامج القوة المتوسط"
+        },
+        "levelMin": {
+          "number": 2,
+          "code": "building",
+          "name": {
+            "en": "Building",
+            "ar": "بناء"
+          }
+        },
+        "levelMax": {
+          "number": 4,
+          "code": "advanced",
+          "name": {
+            "en": "Advanced",
+            "ar": "متقدم"
+          }
+        },
+        "durationWeeks": 4,
+        "coverImageUrl": null,
+        "updatedAt": "2026-04-21T00:39:30.242Z"
+      },
+      {
+        "id": "742e23f8-5cc1-4fcf-afbe-bf88e5957fdb",
+        "slug": "mobility-focus-3w",
+        "name": {
+          "en": "Mobility Focus Program",
+          "ar": "برنامج المرونة والحركة"
+        },
+        "levelMin": {
+          "number": 1,
+          "code": "foundation",
+          "name": {
+            "en": "Foundation",
+            "ar": "أساسي"
+          }
+        },
+        "levelMax": {
+          "number": 3,
+          "code": "intermediate",
+          "name": {
+            "en": "Intermediate",
+            "ar": "متوسط"
+          }
+        },
+        "durationWeeks": 3,
+        "coverImageUrl": null,
+        "updatedAt": "2026-04-21T00:39:30.188Z"
       }
     ],
     "workoutTemplates": [
       {
-        "id": "wt-001",
-        "slug": "quick-legs",
-        "name": { "en": "Quick Legs", "ar": "أرجل سريعة" },
+        "id": "68eac398-11c1-49d7-86ad-e6be904022ea",
+        "slug": "triple_alternating",
+        "name": {
+          "en": "Triple Alternating",
+          "ar": "تبادل ثلاثي"
+        },
+        "level": null,
+        "estimatedDurationMin": null,
+        "coverImageUrl": null,
+        "exerciseCount": 3,
+        "updatedAt": "2026-06-07T07:33:43.437Z"
+      },
+      {
+        "id": "5fdea2a6-f957-4ae4-972e-d3ecfc1f154d",
+        "slug": "easy_workout_motxx94w",
+        "name": {
+          "en": "Easy Workout",
+          "ar": "تمرين خفيف"
+        },
+        "level": null,
+        "estimatedDurationMin": null,
+        "coverImageUrl": null,
+        "exerciseCount": 2,
+        "updatedAt": "2026-06-07T07:33:43.437Z"
+      },
+      {
+        "id": "817e6278-e14f-443c-8c4d-c9387da6bcd6",
+        "slug": "be_workout_mofke6dc",
+        "name": {
+          "en": "BE Workout",
+          "ar": "تمرينة بي"
+        },
+        "level": null,
+        "estimatedDurationMin": null,
+        "coverImageUrl": "https://storage.googleapis.com/waytofix/workouts/images/e0c2dacf-f0b9-4999-aaf6-85be995a7a20-whatsapp-image-2026-04-01-at-4.08.33-pm.jpeg",
+        "exerciseCount": 6,
+        "updatedAt": "2026-06-07T07:33:43.437Z"
+      },
+      {
+        "id": "b2fb88e1-f4b3-4c54-a7ff-80cf7cece898",
+        "slug": "arm_alternating",
+        "name": {
+          "en": "Alternating Arms - Bicep Curl",
+          "ar": "تبادل الذراعين - بايسبس"
+        },
+        "level": null,
+        "estimatedDurationMin": null,
+        "coverImageUrl": null,
+        "exerciseCount": 2,
+        "updatedAt": "2026-06-07T07:33:43.437Z"
+      },
+      {
+        "id": "ed6f0a35-4350-4d7e-81f3-ff72c7467a37",
+        "slug": "body_scan",
+        "name": {
+          "en": "Body Scan Assessment",
+          "ar": "فحص الجسم الشامل"
+        },
+        "level": null,
+        "estimatedDurationMin": null,
+        "coverImageUrl": null,
+        "exerciseCount": 3,
+        "updatedAt": "2026-06-07T07:33:43.437Z"
+      },
+      {
+        "id": "6b7f6392-5a84-4ae9-9c49-a0fd28674a54",
+        "slug": "alternating_arms",
+        "name": {
+          "en": "Alternating Arms - Per Rep",
+          "ar": "تبادل الذراعين - كل عدة"
+        },
+        "level": null,
+        "estimatedDurationMin": null,
+        "coverImageUrl": null,
+        "exerciseCount": 2,
+        "updatedAt": "2026-06-07T07:33:43.437Z"
+      },
+      {
+        "id": "de62c918-721a-433d-80c0-a28f4068663f",
+        "slug": "core_burner",
+        "name": {
+          "en": "Core Burner",
+          "ar": "تمرين حرق عضلات البطن"
+        },
+        "level": null,
+        "estimatedDurationMin": null,
+        "coverImageUrl": null,
+        "exerciseCount": 3,
+        "updatedAt": "2026-06-07T07:33:43.437Z"
+      },
+      {
+        "id": "ba6a71db-df70-48bc-9d16-8d9cba3bfd9c",
+        "slug": "full_body_circuit",
+        "name": {
+          "en": "Full Body Circuit",
+          "ar": "تمرين شامل للجسم"
+        },
+        "level": null,
+        "estimatedDurationMin": null,
+        "coverImageUrl": null,
         "exerciseCount": 4,
-        "estimatedDurationMin": 20,
-        "coverImageUrl": "https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&w=320&q=70",
-        "updatedAt": "1970-01-01T00:00:00.000Z"
+        "updatedAt": "2026-06-07T07:33:43.437Z"
+      },
+      {
+        "id": "68fd6e44-82fb-4ef7-ad6c-ffe3c6dea75b",
+        "slug": "superset_mix",
+        "name": {
+          "en": "Mixed Superset",
+          "ar": "سوبر ست مختلط"
+        },
+        "level": null,
+        "estimatedDurationMin": null,
+        "coverImageUrl": null,
+        "exerciseCount": 2,
+        "updatedAt": "2026-06-07T07:33:43.437Z"
+      },
+      {
+        "id": "91ec8866-3513-491a-b6e2-54dae7eff94c",
+        "slug": "pw_0a648bd93fd04abf991538253e4e6f6c",
+        "name": {
+          "en": "My workout",
+          "ar": "تمريني"
+        },
+        "level": null,
+        "estimatedDurationMin": null,
+        "coverImageUrl": null,
+        "exerciseCount": 1,
+        "updatedAt": "2026-06-07T07:33:43.437Z"
+      },
+      {
+        "id": "ea9479f9-efec-4026-9989-985d9868e57d",
+        "slug": "pw_cc168797d345483c94019f784feff332",
+        "name": {
+          "en": "Mood",
+          "ar": "Mood"
+        },
+        "level": null,
+        "estimatedDurationMin": null,
+        "coverImageUrl": null,
+        "exerciseCount": 2,
+        "updatedAt": "2026-06-07T07:33:43.437Z"
+      },
+      {
+        "id": "79519791-c21f-43dc-81ad-e7de5e23633a",
+        "slug": "pw_deb8927509d2455bb9cf692d13f61988",
+        "name": {
+          "en": "Test",
+          "ar": "Test"
+        },
+        "level": null,
+        "estimatedDurationMin": null,
+        "coverImageUrl": null,
+        "exerciseCount": 3,
+        "updatedAt": "2026-06-07T07:33:43.437Z"
+      },
+      {
+        "id": "966b1ed6-84c6-4f98-9b2c-c04c59b7c30d",
+        "slug": "pw_c2e1f704f0544eaabe6c987e2978a795",
+        "name": {
+          "en": "عبدالل",
+          "ar": "عبدالل"
+        },
+        "level": null,
+        "estimatedDurationMin": null,
+        "coverImageUrl": null,
+        "exerciseCount": 3,
+        "updatedAt": "2026-06-07T07:33:43.437Z"
+      },
+      {
+        "id": "64a7d108-94d6-44b4-a4dc-577bd4b563e7",
+        "slug": "pw_aeacda35694440f880dc7ba705e6833f",
+        "name": {
+          "en": "Alternating Arms - Bicep Curl",
+          "ar": "تبادل الذراعين - بايسبس"
+        },
+        "level": null,
+        "estimatedDurationMin": null,
+        "coverImageUrl": null,
+        "exerciseCount": 6,
+        "updatedAt": "2026-06-07T07:33:43.437Z"
       }
     ],
     "exercises": [
       {
-        "id": "ex-001",
-        "slug": "bodyweight-squat",
-        "name": { "en": "Bodyweight Squat", "ar": "قرفصاء" },
-        "categoryCode": "lower_body",
-        "categoryName": { "en": "Lower body", "ar": "الجزء السفلي" },
+        "id": "0693572a-eecd-4d83-896e-9418dac17967",
+        "slug": "bicebs-mo8j7gg1",
+        "name": {
+          "en": "Biceps Curl",
+          "ar": "بايسيبس"
+        },
+        "categoryCode": "arms",
+        "categoryName": {
+          "en": "Arms",
+          "ar": "تمارين الذراعين"
+        },
+        "musclesCount": 0,
+        "imageUrl": "https://storage.googleapis.com/waytofix/exercises/images/08eaf7d8-451d-4f71-909c-b5f6bbd78eb1-hf_20260531_100008_f67b2f41-fb61-42ab-b6dd-6631d8ad9c51-3-.gif",
+        "updatedAt": "2026-06-03T12:37:25.361Z"
+      },
+      {
+        "id": "a59f5c1a-6e06-494b-9faf-c77e65ee501d",
+        "slug": "be-dumbbell-romanian-deadlift-mo8j28de",
+        "name": {
+          "en": "BE Dumbell romanian deadlift",
+          "ar": "ديدلفت بالأوزان الحرة"
+        },
+        "categoryCode": "legs",
+        "categoryName": {
+          "en": "Legs",
+          "ar": "تمارين الأرجل"
+        },
         "musclesCount": 2,
-        "imageUrl": "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=400&q=70",
-        "updatedAt": "1970-01-01T00:00:00.000Z"
+        "imageUrl": "https://storage.googleapis.com/waytofix/exercises/images/f51046c0-a7b2-4f24-8f45-8e01a1b43a1e-hf_20260524_104934_16b25692-5981-49da-bd27-537f5ad38be3-1-.gif",
+        "updatedAt": "2026-06-03T09:34:16.428Z"
+      },
+      {
+        "id": "abfac336-a3ac-4e79-a993-367fd34f6730",
+        "slug": "straight-arm-pulldown-mplbnzli",
+        "name": {
+          "en": "Straight arm pulldown",
+          "ar": "سحب اليد المستقيمة"
+        },
+        "categoryCode": "shoulders",
+        "categoryName": {
+          "en": "Shoulders",
+          "ar": "تمارين الأكتاف"
+        },
+        "musclesCount": 0,
+        "imageUrl": "https://storage.googleapis.com/waytofix/exercises/images/499913f2-ce18-42b3-a4c0-0f23461dd632-straight-arm-pulldown.gif",
+        "updatedAt": "2026-05-31T18:54:49.727Z"
+      },
+      {
+        "id": "5b02bec6-25e9-4264-b978-a8481a987c71",
+        "slug": "ex026_plank",
+        "name": {
+          "en": "Plank",
+          "ar": "بلانك"
+        },
+        "categoryCode": "abs",
+        "categoryName": {
+          "en": "Abs",
+          "ar": "تمارين البطن"
+        },
+        "musclesCount": 3,
+        "imageUrl": "https://storage.googleapis.com/waytofix/exercises/images/f6e60c18-db2e-4404-a924-e58734458e93-plank.gif",
+        "updatedAt": "2026-05-31T12:50:14.672Z"
+      },
+      {
+        "id": "6de3bbe9-5d85-4cfb-a1e1-c1d5be97e6a1",
+        "slug": "ex020_dumbbell_front_raise",
+        "name": {
+          "en": "Dumbbell front raise",
+          "ar": "رفع أمامي بالدمبل"
+        },
+        "categoryCode": "shoulders",
+        "categoryName": {
+          "en": "Shoulders",
+          "ar": "تمارين الأكتاف"
+        },
+        "musclesCount": 2,
+        "imageUrl": "https://storage.googleapis.com/waytofix/exercises/images/0a46cdf6-d090-47cc-aee2-3fa00b425667-front-raise.gif",
+        "updatedAt": "2026-05-31T11:53:35.783Z"
+      },
+      {
+        "id": "11296fcb-c428-45d0-b752-095224549da1",
+        "slug": "be-split-squat-mo8idkag",
+        "name": {
+          "en": "BE Split Squat",
+          "ar": "سكوات القدم الواحدة"
+        },
+        "categoryCode": "legs",
+        "categoryName": {
+          "en": "Legs",
+          "ar": "تمارين الأرجل"
+        },
+        "musclesCount": 2,
+        "imageUrl": "https://storage.googleapis.com/waytofix/exercises/images/03e25d6c-d7fa-4c51-9a3d-1f69e219fc8e-hf_20260524_104441_573ee5fc-50c0-48a7-8c0d-1dea66d4183a-1-.gif",
+        "updatedAt": "2026-05-31T11:53:31.625Z"
+      },
+      {
+        "id": "ea617bfb-e97d-4e45-ad39-51c6b64cd4f1",
+        "slug": "lats-pulldown-mp8gbvwj",
+        "name": {
+          "en": "Lats Pulldown",
+          "ar": "سحب علوي"
+        },
+        "categoryCode": "back",
+        "categoryName": {
+          "en": "Back",
+          "ar": "تمارين الظهر"
+        },
+        "musclesCount": 2,
+        "imageUrl": "https://storage.googleapis.com/waytofix/exercises/images/de3d21b9-518b-4e34-b08c-cd09221b9511-hf_20260524_104054_6a638cee-d493-498b-9575-6b4852c2ee5e-2-.gif",
+        "updatedAt": "2026-05-31T11:53:17.437Z"
+      },
+      {
+        "id": "6c3cd310-de43-4ed1-8862-c6e7fb20859e",
+        "slug": "cable-face-pull-mp8hv429",
+        "name": {
+          "en": "Cable Face Pull",
+          "ar": "سحب بالحبل للوجه"
+        },
+        "categoryCode": "shoulders",
+        "categoryName": {
+          "en": "Shoulders",
+          "ar": "تمارين الأكتاف"
+        },
+        "musclesCount": 1,
+        "imageUrl": "https://storage.googleapis.com/waytofix/exercises/images/d529bfa8-1d5d-44c0-b580-5e0198b3ab73-hf_20260524_102926_a5aa179c-3e06-4c6f-aa72-d0dc9579798d-1-.gif",
+        "updatedAt": "2026-05-31T11:53:13.413Z"
+      },
+      {
+        "id": "ac40754e-3ecd-4115-b2ca-f67c6bbd3a6b",
+        "slug": "pallof-press-mp9qfpxv",
+        "name": {
+          "en": "Pallof Press",
+          "ar": "تمرين بولوف بريس"
+        },
+        "categoryCode": "full_body",
+        "categoryName": {
+          "en": "Full Body",
+          "ar": "تمارين الجسم كامل"
+        },
+        "musclesCount": 0,
+        "imageUrl": "https://storage.googleapis.com/waytofix/exercises/images/3831f59d-c045-4730-b701-ac504bb027ee-hf_20260524_103704_94afdf03-2e4f-427c-b60a-09d58ea9acbb.gif",
+        "updatedAt": "2026-05-31T11:53:09.222Z"
+      },
+      {
+        "id": "4221d63b-bade-4c36-83f9-f2a71a9acecc",
+        "slug": "be-lateral-raise-mo8iqcmi",
+        "name": {
+          "en": "BE Lateral Raise",
+          "ar": "رفرفة جانبي"
+        },
+        "categoryCode": "shoulders",
+        "categoryName": {
+          "en": "Shoulders",
+          "ar": "تمارين الأكتاف"
+        },
+        "musclesCount": 0,
+        "imageUrl": "https://storage.googleapis.com/waytofix/exercises/images/158f5abb-2fa2-4e82-bcb8-1ca10ca24730-hf_20260525_133144_eefc7f1a-901e-4068-bf81-ce31459fbb8d-1-.gif",
+        "updatedAt": "2026-05-31T11:52:15.118Z"
       }
     ],
     "deletedProgramIds": [],
@@ -93,49 +1099,2572 @@
   },
   "systemMessages": [
     {
-      "code": "training_countdown_3",
-      "content": { "ar": "3", "en": "3" },
-      "updatedAt": "1970-01-01T00:00:00.000Z"
+      "code": "setup_axis_direction_any",
+      "content": {
+        "en": "Film",
+        "ar": "صوّر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.629Z"
     },
     {
-      "code": "training_countdown_2",
-      "content": { "ar": "2", "en": "2" },
-      "updatedAt": "1970-01-01T00:00:00.000Z"
+      "code": "setup_axis_direction_back",
+      "content": {
+        "en": "Film from the back",
+        "ar": "صوّر من الخلف"
+      },
+      "updatedAt": "2026-05-31T15:14:04.264Z"
+    },
+    {
+      "code": "setup_axis_direction_back_diagonal",
+      "content": {
+        "en": "Film from the back or an angle",
+        "ar": "صوّر من الخلف أو بزاوية مائلة"
+      },
+      "updatedAt": "2026-05-31T15:14:04.280Z"
+    },
+    {
+      "code": "setup_axis_direction_back_diagonal_front",
+      "content": {
+        "en": "Film from the back or an angle or the front",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الأمام"
+      },
+      "updatedAt": "2026-05-31T15:14:04.307Z"
+    },
+    {
+      "code": "setup_axis_direction_back_diagonal_front_side_any",
+      "content": {
+        "en": "Film from the back or an angle or the front or the side",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الأمام أو الجانب"
+      },
+      "updatedAt": "2026-05-31T15:14:04.359Z"
+    },
+    {
+      "code": "setup_axis_direction_back_diagonal_front_side_any_side_left",
+      "content": {
+        "en": "Film from the back or an angle or the front or the side or the left side",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الأمام أو الجانب أو الجانب الأيسر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.481Z"
+    },
+    {
+      "code": "setup_axis_direction_back_diagonal_front_side_any_side_left_side_right",
+      "content": {
+        "en": "Film from the back or an angle or the front or the side or the left side or the right side",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الأمام أو الجانب أو الجانب الأيسر أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.625Z"
+    },
+    {
+      "code": "setup_axis_direction_back_diagonal_front_side_any_side_right",
+      "content": {
+        "en": "Film from the back or an angle or the front or the side or the right side",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الأمام أو الجانب أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.559Z"
+    },
+    {
+      "code": "setup_axis_direction_back_diagonal_front_side_left",
+      "content": {
+        "en": "Film from the back or an angle or the front or the left side",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الأمام أو الجانب الأيسر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.427Z"
+    },
+    {
+      "code": "setup_axis_direction_back_diagonal_front_side_left_side_right",
+      "content": {
+        "en": "Film from the back or an angle or the front or the left side or the right side",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الأمام أو الجانب الأيسر أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.590Z"
+    },
+    {
+      "code": "setup_axis_direction_back_diagonal_front_side_right",
+      "content": {
+        "en": "Film from the back or an angle or the front or the right side",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الأمام أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.520Z"
+    },
+    {
+      "code": "setup_axis_direction_back_diagonal_side_any",
+      "content": {
+        "en": "Film from the back or an angle or the side",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الجانب"
+      },
+      "updatedAt": "2026-05-31T15:14:04.335Z"
+    },
+    {
+      "code": "setup_axis_direction_back_diagonal_side_any_side_left",
+      "content": {
+        "en": "Film from the back or an angle or the side or the left side",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الجانب أو الجانب الأيسر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.458Z"
+    },
+    {
+      "code": "setup_axis_direction_back_diagonal_side_any_side_left_side_right",
+      "content": {
+        "en": "Film from the back or an angle or the side or the left side or the right side",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الجانب أو الجانب الأيسر أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.604Z"
+    },
+    {
+      "code": "setup_axis_direction_back_diagonal_side_any_side_right",
+      "content": {
+        "en": "Film from the back or an angle or the side or the right side",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الجانب أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.542Z"
+    },
+    {
+      "code": "setup_axis_direction_back_diagonal_side_left",
+      "content": {
+        "en": "Film from the back or an angle or the left side",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الجانب الأيسر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.392Z"
+    },
+    {
+      "code": "setup_axis_direction_back_diagonal_side_left_side_right",
+      "content": {
+        "en": "Film from the back or an angle or the left side or the right side",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الجانب الأيسر أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.575Z"
+    },
+    {
+      "code": "setup_axis_direction_back_diagonal_side_right",
+      "content": {
+        "en": "Film from the back or an angle or the right side",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.500Z"
+    },
+    {
+      "code": "setup_axis_direction_back_front",
+      "content": {
+        "en": "Film from the back or the front",
+        "ar": "صوّر من الخلف أو الأمام"
+      },
+      "updatedAt": "2026-05-31T15:14:04.293Z"
+    },
+    {
+      "code": "setup_axis_direction_back_front_side_any",
+      "content": {
+        "en": "Film from the back or the front or the side",
+        "ar": "صوّر من الخلف أو الأمام أو الجانب"
+      },
+      "updatedAt": "2026-05-31T15:14:04.350Z"
+    },
+    {
+      "code": "setup_axis_direction_back_front_side_any_side_left",
+      "content": {
+        "en": "Film from the back or the front or the side or the left side",
+        "ar": "صوّر من الخلف أو الأمام أو الجانب أو الجانب الأيسر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.470Z"
+    },
+    {
+      "code": "setup_axis_direction_back_front_side_any_side_left_side_right",
+      "content": {
+        "en": "Film from the back or the front or the side or the left side or the right side",
+        "ar": "صوّر من الخلف أو الأمام أو الجانب أو الجانب الأيسر أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.616Z"
+    },
+    {
+      "code": "setup_axis_direction_back_front_side_any_side_right",
+      "content": {
+        "en": "Film from the back or the front or the side or the right side",
+        "ar": "صوّر من الخلف أو الأمام أو الجانب أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.550Z"
+    },
+    {
+      "code": "setup_axis_direction_back_front_side_left",
+      "content": {
+        "en": "Film from the back or the front or the left side",
+        "ar": "صوّر من الخلف أو الأمام أو الجانب الأيسر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.406Z"
+    },
+    {
+      "code": "setup_axis_direction_back_front_side_left_side_right",
+      "content": {
+        "en": "Film from the back or the front or the left side or the right side",
+        "ar": "صوّر من الخلف أو الأمام أو الجانب الأيسر أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.583Z"
+    },
+    {
+      "code": "setup_axis_direction_back_front_side_right",
+      "content": {
+        "en": "Film from the back or the front or the right side",
+        "ar": "صوّر من الخلف أو الأمام أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.512Z"
+    },
+    {
+      "code": "setup_axis_direction_back_side_any",
+      "content": {
+        "en": "Film from the back or the side",
+        "ar": "صوّر من الخلف أو الجانب"
+      },
+      "updatedAt": "2026-05-31T15:14:04.324Z"
+    },
+    {
+      "code": "setup_axis_direction_back_side_any_side_left",
+      "content": {
+        "en": "Film from the back or the side or the left side",
+        "ar": "صوّر من الخلف أو الجانب أو الجانب الأيسر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.443Z"
+    },
+    {
+      "code": "setup_axis_direction_back_side_any_side_left_side_right",
+      "content": {
+        "en": "Film from the back or the side or the left side or the right side",
+        "ar": "صوّر من الخلف أو الجانب أو الجانب الأيسر أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.596Z"
+    },
+    {
+      "code": "setup_axis_direction_back_side_any_side_right",
+      "content": {
+        "en": "Film from the back or the side or the right side",
+        "ar": "صوّر من الخلف أو الجانب أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.528Z"
+    },
+    {
+      "code": "setup_axis_direction_back_side_left",
+      "content": {
+        "en": "Film from the back or the left side",
+        "ar": "صوّر من الخلف أو الجانب الأيسر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.375Z"
+    },
+    {
+      "code": "setup_axis_direction_back_side_left_side_right",
+      "content": {
+        "en": "Film from the back or the left side or the right side",
+        "ar": "صوّر من الخلف أو الجانب الأيسر أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.566Z"
+    },
+    {
+      "code": "setup_axis_direction_back_side_right",
+      "content": {
+        "en": "Film from the back or the right side",
+        "ar": "صوّر من الخلف أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.493Z"
+    },
+    {
+      "code": "setup_axis_direction_diagonal",
+      "content": {
+        "en": "Film from an angle",
+        "ar": "صوّر من بزاوية مائلة"
+      },
+      "updatedAt": "2026-05-31T15:14:04.272Z"
+    },
+    {
+      "code": "setup_axis_direction_diagonal_front",
+      "content": {
+        "en": "Film from an angle or the front",
+        "ar": "صوّر من بزاوية مائلة أو الأمام"
+      },
+      "updatedAt": "2026-05-31T15:14:04.298Z"
+    },
+    {
+      "code": "setup_axis_direction_diagonal_front_side_any",
+      "content": {
+        "en": "Film from an angle or the front or the side",
+        "ar": "صوّر من بزاوية مائلة أو الأمام أو الجانب"
+      },
+      "updatedAt": "2026-05-31T15:14:04.355Z"
+    },
+    {
+      "code": "setup_axis_direction_diagonal_front_side_any_side_left",
+      "content": {
+        "en": "Film from an angle or the front or the side or the left side",
+        "ar": "صوّر من بزاوية مائلة أو الأمام أو الجانب أو الجانب الأيسر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.476Z"
+    },
+    {
+      "code": "setup_axis_direction_diagonal_front_side_any_side_left_side_right",
+      "content": {
+        "en": "Film from an angle or the front or the side or the left side or the right side",
+        "ar": "صوّر من بزاوية مائلة أو الأمام أو الجانب أو الجانب الأيسر أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.620Z"
+    },
+    {
+      "code": "setup_axis_direction_diagonal_front_side_any_side_right",
+      "content": {
+        "en": "Film from an angle or the front or the side or the right side",
+        "ar": "صوّر من بزاوية مائلة أو الأمام أو الجانب أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.555Z"
+    },
+    {
+      "code": "setup_axis_direction_diagonal_front_side_left",
+      "content": {
+        "en": "Film from an angle or the front or the left side",
+        "ar": "صوّر من بزاوية مائلة أو الأمام أو الجانب الأيسر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.418Z"
+    },
+    {
+      "code": "setup_axis_direction_diagonal_front_side_left_side_right",
+      "content": {
+        "en": "Film from an angle or the front or the left side or the right side",
+        "ar": "صوّر من بزاوية مائلة أو الأمام أو الجانب الأيسر أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.586Z"
+    },
+    {
+      "code": "setup_axis_direction_diagonal_front_side_right",
+      "content": {
+        "en": "Film from an angle or the front or the right side",
+        "ar": "صوّر من بزاوية مائلة أو الأمام أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.516Z"
+    },
+    {
+      "code": "setup_axis_direction_diagonal_side_any",
+      "content": {
+        "en": "Film from an angle or the side",
+        "ar": "صوّر من بزاوية مائلة أو الجانب"
+      },
+      "updatedAt": "2026-05-31T15:14:04.331Z"
+    },
+    {
+      "code": "setup_axis_direction_diagonal_side_any_side_left",
+      "content": {
+        "en": "Film from an angle or the side or the left side",
+        "ar": "صوّر من بزاوية مائلة أو الجانب أو الجانب الأيسر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.449Z"
+    },
+    {
+      "code": "setup_axis_direction_diagonal_side_any_side_left_side_right",
+      "content": {
+        "en": "Film from an angle or the side or the left side or the right side",
+        "ar": "صوّر من بزاوية مائلة أو الجانب أو الجانب الأيسر أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.601Z"
+    },
+    {
+      "code": "setup_axis_direction_diagonal_side_any_side_right",
+      "content": {
+        "en": "Film from an angle or the side or the right side",
+        "ar": "صوّر من بزاوية مائلة أو الجانب أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.535Z"
+    },
+    {
+      "code": "setup_axis_direction_diagonal_side_left",
+      "content": {
+        "en": "Film from an angle or the left side",
+        "ar": "صوّر من بزاوية مائلة أو الجانب الأيسر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.381Z"
+    },
+    {
+      "code": "setup_axis_direction_diagonal_side_left_side_right",
+      "content": {
+        "en": "Film from an angle or the left side or the right side",
+        "ar": "صوّر من بزاوية مائلة أو الجانب الأيسر أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.571Z"
+    },
+    {
+      "code": "setup_axis_direction_diagonal_side_right",
+      "content": {
+        "en": "Film from an angle or the right side",
+        "ar": "صوّر من بزاوية مائلة أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.497Z"
+    },
+    {
+      "code": "setup_axis_direction_front",
+      "content": {
+        "en": "Film from the front",
+        "ar": "صوّر من الأمام"
+      },
+      "updatedAt": "2026-05-31T15:14:04.288Z"
+    },
+    {
+      "code": "setup_axis_direction_front_side_any",
+      "content": {
+        "en": "Film from the front or the side",
+        "ar": "صوّر من الأمام أو الجانب"
+      },
+      "updatedAt": "2026-05-31T15:14:04.342Z"
+    },
+    {
+      "code": "setup_axis_direction_front_side_any_side_left",
+      "content": {
+        "en": "Film from the front or the side or the left side",
+        "ar": "صوّر من الأمام أو الجانب أو الجانب الأيسر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.465Z"
+    },
+    {
+      "code": "setup_axis_direction_front_side_any_side_left_side_right",
+      "content": {
+        "en": "Film from the front or the side or the left side or the right side",
+        "ar": "صوّر من الأمام أو الجانب أو الجانب الأيسر أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.608Z"
+    },
+    {
+      "code": "setup_axis_direction_front_side_any_side_right",
+      "content": {
+        "en": "Film from the front or the side or the right side",
+        "ar": "صوّر من الأمام أو الجانب أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.546Z"
+    },
+    {
+      "code": "setup_axis_direction_front_side_left",
+      "content": {
+        "en": "Film from the front or the left side",
+        "ar": "صوّر من الأمام أو الجانب الأيسر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.400Z"
+    },
+    {
+      "code": "setup_axis_direction_front_side_left_side_right",
+      "content": {
+        "en": "Film from the front or the left side or the right side",
+        "ar": "صوّر من الأمام أو الجانب الأيسر أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.579Z"
+    },
+    {
+      "code": "setup_axis_direction_front_side_right",
+      "content": {
+        "en": "Film from the front or the right side",
+        "ar": "صوّر من الأمام أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.507Z"
+    },
+    {
+      "code": "setup_axis_direction_side_any",
+      "content": {
+        "en": "Film from the side",
+        "ar": "صوّر من الجانب"
+      },
+      "updatedAt": "2026-05-31T15:14:04.315Z"
+    },
+    {
+      "code": "setup_axis_direction_side_any_side_left",
+      "content": {
+        "en": "Film from the side or the left side",
+        "ar": "صوّر من الجانب أو الجانب الأيسر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.434Z"
+    },
+    {
+      "code": "setup_axis_direction_side_any_side_left_side_right",
+      "content": {
+        "en": "Film from the side or the left side or the right side",
+        "ar": "صوّر من الجانب أو الجانب الأيسر أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.593Z"
+    },
+    {
+      "code": "setup_axis_direction_side_any_side_right",
+      "content": {
+        "en": "Film from the side or the right side",
+        "ar": "صوّر من الجانب أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.524Z"
+    },
+    {
+      "code": "setup_axis_direction_side_left",
+      "content": {
+        "en": "Film from the left side",
+        "ar": "صوّر من الجانب الأيسر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.368Z"
+    },
+    {
+      "code": "setup_axis_direction_side_left_side_right",
+      "content": {
+        "en": "Film from the left side or the right side",
+        "ar": "صوّر من الجانب الأيسر أو الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.562Z"
+    },
+    {
+      "code": "setup_axis_direction_side_right",
+      "content": {
+        "en": "Film from the right side",
+        "ar": "صوّر من الجانب الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.487Z"
+    },
+    {
+      "code": "setup_axis_posture_any",
+      "content": {
+        "en": "",
+        "ar": ""
+      },
+      "updatedAt": "2026-05-31T15:14:04.752Z"
+    },
+    {
+      "code": "setup_axis_posture_lying_prone",
+      "content": {
+        "en": "Lie face down",
+        "ar": "استلقِ على وجهك"
+      },
+      "updatedAt": "2026-05-31T15:14:04.633Z"
+    },
+    {
+      "code": "setup_axis_posture_lying_prone_lying_side",
+      "content": {
+        "en": "Lie face down or Lie on your side",
+        "ar": "استلقِ على وجهك أو استلقِ على جنبك"
+      },
+      "updatedAt": "2026-05-31T15:14:04.641Z"
+    },
+    {
+      "code": "setup_axis_posture_lying_prone_lying_side_lying_supine",
+      "content": {
+        "en": "Lie face down or Lie on your side or Lie face up",
+        "ar": "استلقِ على وجهك أو استلقِ على جنبك أو استلقِ على ظهرك"
+      },
+      "updatedAt": "2026-05-31T15:14:04.656Z"
+    },
+    {
+      "code": "setup_axis_posture_lying_prone_lying_side_lying_supine_sitting",
+      "content": {
+        "en": "Lie face down or Lie on your side or Lie face up or Sit down",
+        "ar": "استلقِ على وجهك أو استلقِ على جنبك أو استلقِ على ظهرك أو اجلس"
+      },
+      "updatedAt": "2026-05-31T15:14:04.684Z"
+    },
+    {
+      "code": "setup_axis_posture_lying_prone_lying_side_lying_supine_sitting_standing",
+      "content": {
+        "en": "Lie face down or Lie on your side or Lie face up or Sit down or Stand upright",
+        "ar": "استلقِ على وجهك أو استلقِ على جنبك أو استلقِ على ظهرك أو اجلس أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.748Z"
+    },
+    {
+      "code": "setup_axis_posture_lying_prone_lying_side_lying_supine_standing",
+      "content": {
+        "en": "Lie face down or Lie on your side or Lie face up or Stand upright",
+        "ar": "استلقِ على وجهك أو استلقِ على جنبك أو استلقِ على ظهرك أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.719Z"
+    },
+    {
+      "code": "setup_axis_posture_lying_prone_lying_side_sitting",
+      "content": {
+        "en": "Lie face down or Lie on your side or Sit down",
+        "ar": "استلقِ على وجهك أو استلقِ على جنبك أو اجلس"
+      },
+      "updatedAt": "2026-05-31T15:14:04.670Z"
+    },
+    {
+      "code": "setup_axis_posture_lying_prone_lying_side_sitting_standing",
+      "content": {
+        "en": "Lie face down or Lie on your side or Sit down or Stand upright",
+        "ar": "استلقِ على وجهك أو استلقِ على جنبك أو اجلس أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.733Z"
+    },
+    {
+      "code": "setup_axis_posture_lying_prone_lying_side_standing",
+      "content": {
+        "en": "Lie face down or Lie on your side or Stand upright",
+        "ar": "استلقِ على وجهك أو استلقِ على جنبك أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.704Z"
+    },
+    {
+      "code": "setup_axis_posture_lying_prone_lying_supine",
+      "content": {
+        "en": "Lie face down or Lie face up",
+        "ar": "استلقِ على وجهك أو استلقِ على ظهرك"
+      },
+      "updatedAt": "2026-05-31T15:14:04.649Z"
+    },
+    {
+      "code": "setup_axis_posture_lying_prone_lying_supine_sitting",
+      "content": {
+        "en": "Lie face down or Lie face up or Sit down",
+        "ar": "استلقِ على وجهك أو استلقِ على ظهرك أو اجلس"
+      },
+      "updatedAt": "2026-05-31T15:14:04.677Z"
+    },
+    {
+      "code": "setup_axis_posture_lying_prone_lying_supine_sitting_standing",
+      "content": {
+        "en": "Lie face down or Lie face up or Sit down or Stand upright",
+        "ar": "استلقِ على وجهك أو استلقِ على ظهرك أو اجلس أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.741Z"
+    },
+    {
+      "code": "setup_axis_posture_lying_prone_lying_supine_standing",
+      "content": {
+        "en": "Lie face down or Lie face up or Stand upright",
+        "ar": "استلقِ على وجهك أو استلقِ على ظهرك أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.711Z"
+    },
+    {
+      "code": "setup_axis_posture_lying_prone_sitting",
+      "content": {
+        "en": "Lie face down or Sit down",
+        "ar": "استلقِ على وجهك أو اجلس"
+      },
+      "updatedAt": "2026-05-31T15:14:04.664Z"
+    },
+    {
+      "code": "setup_axis_posture_lying_prone_sitting_standing",
+      "content": {
+        "en": "Lie face down or Sit down or Stand upright",
+        "ar": "استلقِ على وجهك أو اجلس أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.726Z"
+    },
+    {
+      "code": "setup_axis_posture_lying_prone_standing",
+      "content": {
+        "en": "Lie face down or Stand upright",
+        "ar": "استلقِ على وجهك أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.695Z"
+    },
+    {
+      "code": "setup_axis_posture_lying_side",
+      "content": {
+        "en": "Lie on your side",
+        "ar": "استلقِ على جنبك"
+      },
+      "updatedAt": "2026-05-31T15:14:04.637Z"
+    },
+    {
+      "code": "setup_axis_posture_lying_side_lying_supine",
+      "content": {
+        "en": "Lie on your side or Lie face up",
+        "ar": "استلقِ على جنبك أو استلقِ على ظهرك"
+      },
+      "updatedAt": "2026-05-31T15:14:04.653Z"
+    },
+    {
+      "code": "setup_axis_posture_lying_side_lying_supine_sitting",
+      "content": {
+        "en": "Lie on your side or Lie face up or Sit down",
+        "ar": "استلقِ على جنبك أو استلقِ على ظهرك أو اجلس"
+      },
+      "updatedAt": "2026-05-31T15:14:04.680Z"
+    },
+    {
+      "code": "setup_axis_posture_lying_side_lying_supine_sitting_standing",
+      "content": {
+        "en": "Lie on your side or Lie face up or Sit down or Stand upright",
+        "ar": "استلقِ على جنبك أو استلقِ على ظهرك أو اجلس أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.744Z"
+    },
+    {
+      "code": "setup_axis_posture_lying_side_lying_supine_standing",
+      "content": {
+        "en": "Lie on your side or Lie face up or Stand upright",
+        "ar": "استلقِ على جنبك أو استلقِ على ظهرك أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.715Z"
+    },
+    {
+      "code": "setup_axis_posture_lying_side_sitting",
+      "content": {
+        "en": "Lie on your side or Sit down",
+        "ar": "استلقِ على جنبك أو اجلس"
+      },
+      "updatedAt": "2026-05-31T15:14:04.667Z"
+    },
+    {
+      "code": "setup_axis_posture_lying_side_sitting_standing",
+      "content": {
+        "en": "Lie on your side or Sit down or Stand upright",
+        "ar": "استلقِ على جنبك أو اجلس أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.729Z"
+    },
+    {
+      "code": "setup_axis_posture_lying_side_standing",
+      "content": {
+        "en": "Lie on your side or Stand upright",
+        "ar": "استلقِ على جنبك أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.699Z"
+    },
+    {
+      "code": "setup_axis_posture_lying_supine",
+      "content": {
+        "en": "Lie face up",
+        "ar": "استلقِ على ظهرك"
+      },
+      "updatedAt": "2026-05-31T15:14:04.645Z"
+    },
+    {
+      "code": "setup_axis_posture_lying_supine_sitting",
+      "content": {
+        "en": "Lie face up or Sit down",
+        "ar": "استلقِ على ظهرك أو اجلس"
+      },
+      "updatedAt": "2026-05-31T15:14:04.674Z"
+    },
+    {
+      "code": "setup_axis_posture_lying_supine_sitting_standing",
+      "content": {
+        "en": "Lie face up or Sit down or Stand upright",
+        "ar": "استلقِ على ظهرك أو اجلس أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.737Z"
+    },
+    {
+      "code": "setup_axis_posture_lying_supine_standing",
+      "content": {
+        "en": "Lie face up or Stand upright",
+        "ar": "استلقِ على ظهرك أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.708Z"
+    },
+    {
+      "code": "setup_axis_posture_sitting",
+      "content": {
+        "en": "Sit down",
+        "ar": "اجلس"
+      },
+      "updatedAt": "2026-05-31T15:14:04.660Z"
+    },
+    {
+      "code": "setup_axis_posture_sitting_standing",
+      "content": {
+        "en": "Sit down or Stand upright",
+        "ar": "اجلس أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.722Z"
+    },
+    {
+      "code": "setup_axis_posture_standing",
+      "content": {
+        "en": "Stand upright",
+        "ar": "قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.691Z"
+    },
+    {
+      "code": "setup_axis_region_any",
+      "content": {
+        "en": "Show",
+        "ar": "أظهر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.780Z"
+    },
+    {
+      "code": "setup_axis_region_full_body",
+      "content": {
+        "en": "Show your full body",
+        "ar": "أظهر الجسم بالكامل"
+      },
+      "updatedAt": "2026-05-31T15:14:04.755Z"
+    },
+    {
+      "code": "setup_axis_region_full_body_lower_body",
+      "content": {
+        "en": "Show your full body or your lower body",
+        "ar": "أظهر الجسم بالكامل أو الجزء السفلي"
+      },
+      "updatedAt": "2026-05-31T15:14:04.763Z"
+    },
+    {
+      "code": "setup_axis_region_full_body_lower_body_upper_body",
+      "content": {
+        "en": "Show your full body or your lower body or your upper body",
+        "ar": "أظهر الجسم بالكامل أو الجزء السفلي أو الجزء العلوي"
+      },
+      "updatedAt": "2026-05-31T15:14:04.777Z"
+    },
+    {
+      "code": "setup_axis_region_full_body_upper_body",
+      "content": {
+        "en": "Show your full body or your upper body",
+        "ar": "أظهر الجسم بالكامل أو الجزء العلوي"
+      },
+      "updatedAt": "2026-05-31T15:14:04.770Z"
+    },
+    {
+      "code": "setup_axis_region_lower_body",
+      "content": {
+        "en": "Show your lower body",
+        "ar": "أظهر الجزء السفلي"
+      },
+      "updatedAt": "2026-05-31T15:14:04.758Z"
+    },
+    {
+      "code": "setup_axis_region_lower_body_upper_body",
+      "content": {
+        "en": "Show your lower body or your upper body",
+        "ar": "أظهر الجزء السفلي أو الجزء العلوي"
+      },
+      "updatedAt": "2026-05-31T15:14:04.774Z"
+    },
+    {
+      "code": "setup_axis_region_upper_body",
+      "content": {
+        "en": "Show your upper body",
+        "ar": "أظهر الجزء العلوي"
+      },
+      "updatedAt": "2026-05-31T15:14:04.767Z"
+    },
+    {
+      "code": "setup_direction_any",
+      "content": {
+        "en": "Film ↻",
+        "ar": "صوّر ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.627Z"
+    },
+    {
+      "code": "setup_direction_back",
+      "content": {
+        "en": "Film from the back ↻",
+        "ar": "صوّر من الخلف ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.262Z"
+    },
+    {
+      "code": "setup_direction_back_diagonal",
+      "content": {
+        "en": "Film from the back or an angle ↻",
+        "ar": "صوّر من الخلف أو بزاوية مائلة ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.276Z"
+    },
+    {
+      "code": "setup_direction_back_diagonal_front",
+      "content": {
+        "en": "Film from the back or an angle or the front ↻",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الأمام ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.301Z"
+    },
+    {
+      "code": "setup_direction_back_diagonal_front_side_any",
+      "content": {
+        "en": "Film from the back or an angle or the front or the side ↻",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الأمام أو الجانب ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.357Z"
+    },
+    {
+      "code": "setup_direction_back_diagonal_front_side_any_side_left",
+      "content": {
+        "en": "Film from the back or an angle or the front or the side or the left side ↻",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الأمام أو الجانب أو الجانب الأيسر ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.479Z"
+    },
+    {
+      "code": "setup_direction_back_diagonal_front_side_any_side_left_side_right",
+      "content": {
+        "en": "Film from the back or an angle or the front or the side or the left side or the right side ↻",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الأمام أو الجانب أو الجانب الأيسر أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.623Z"
+    },
+    {
+      "code": "setup_direction_back_diagonal_front_side_any_side_right",
+      "content": {
+        "en": "Film from the back or an angle or the front or the side or the right side ↻",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الأمام أو الجانب أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.557Z"
+    },
+    {
+      "code": "setup_direction_back_diagonal_front_side_left",
+      "content": {
+        "en": "Film from the back or an angle or the front or the left side ↻",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الأمام أو الجانب الأيسر ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.424Z"
+    },
+    {
+      "code": "setup_direction_back_diagonal_front_side_left_side_right",
+      "content": {
+        "en": "Film from the back or an angle or the front or the left side or the right side ↻",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الأمام أو الجانب الأيسر أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.588Z"
+    },
+    {
+      "code": "setup_direction_back_diagonal_front_side_right",
+      "content": {
+        "en": "Film from the back or an angle or the front or the right side ↻",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الأمام أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.518Z"
+    },
+    {
+      "code": "setup_direction_back_diagonal_side_any",
+      "content": {
+        "en": "Film from the back or an angle or the side ↻",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الجانب ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.333Z"
+    },
+    {
+      "code": "setup_direction_back_diagonal_side_any_side_left",
+      "content": {
+        "en": "Film from the back or an angle or the side or the left side ↻",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الجانب أو الجانب الأيسر ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.454Z"
+    },
+    {
+      "code": "setup_direction_back_diagonal_side_any_side_left_side_right",
+      "content": {
+        "en": "Film from the back or an angle or the side or the left side or the right side ↻",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الجانب أو الجانب الأيسر أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.602Z"
+    },
+    {
+      "code": "setup_direction_back_diagonal_side_any_side_right",
+      "content": {
+        "en": "Film from the back or an angle or the side or the right side ↻",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الجانب أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.539Z"
+    },
+    {
+      "code": "setup_direction_back_diagonal_side_left",
+      "content": {
+        "en": "Film from the back or an angle or the left side ↻",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الجانب الأيسر ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.386Z"
+    },
+    {
+      "code": "setup_direction_back_diagonal_side_left_side_right",
+      "content": {
+        "en": "Film from the back or an angle or the left side or the right side ↻",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الجانب الأيسر أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.573Z"
+    },
+    {
+      "code": "setup_direction_back_diagonal_side_right",
+      "content": {
+        "en": "Film from the back or an angle or the right side ↻",
+        "ar": "صوّر من الخلف أو بزاوية مائلة أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.499Z"
+    },
+    {
+      "code": "setup_direction_back_front",
+      "content": {
+        "en": "Film from the back or the front ↻",
+        "ar": "صوّر من الخلف أو الأمام ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.291Z"
+    },
+    {
+      "code": "setup_direction_back_front_side_any",
+      "content": {
+        "en": "Film from the back or the front or the side ↻",
+        "ar": "صوّر من الخلف أو الأمام أو الجانب ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.344Z"
+    },
+    {
+      "code": "setup_direction_back_front_side_any_side_left",
+      "content": {
+        "en": "Film from the back or the front or the side or the left side ↻",
+        "ar": "صوّر من الخلف أو الأمام أو الجانب أو الجانب الأيسر ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.467Z"
+    },
+    {
+      "code": "setup_direction_back_front_side_any_side_left_side_right",
+      "content": {
+        "en": "Film from the back or the front or the side or the left side or the right side ↻",
+        "ar": "صوّر من الخلف أو الأمام أو الجانب أو الجانب الأيسر أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.611Z"
+    },
+    {
+      "code": "setup_direction_back_front_side_any_side_right",
+      "content": {
+        "en": "Film from the back or the front or the side or the right side ↻",
+        "ar": "صوّر من الخلف أو الأمام أو الجانب أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.548Z"
+    },
+    {
+      "code": "setup_direction_back_front_side_left",
+      "content": {
+        "en": "Film from the back or the front or the left side ↻",
+        "ar": "صوّر من الخلف أو الأمام أو الجانب الأيسر ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.402Z"
+    },
+    {
+      "code": "setup_direction_back_front_side_left_side_right",
+      "content": {
+        "en": "Film from the back or the front or the left side or the right side ↻",
+        "ar": "صوّر من الخلف أو الأمام أو الجانب الأيسر أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.581Z"
+    },
+    {
+      "code": "setup_direction_back_front_side_right",
+      "content": {
+        "en": "Film from the back or the front or the right side ↻",
+        "ar": "صوّر من الخلف أو الأمام أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.509Z"
+    },
+    {
+      "code": "setup_direction_back_side_any",
+      "content": {
+        "en": "Film from the back or the side ↻",
+        "ar": "صوّر من الخلف أو الجانب ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.322Z"
+    },
+    {
+      "code": "setup_direction_back_side_any_side_left",
+      "content": {
+        "en": "Film from the back or the side or the left side ↻",
+        "ar": "صوّر من الخلف أو الجانب أو الجانب الأيسر ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.438Z"
+    },
+    {
+      "code": "setup_direction_back_side_any_side_left_side_right",
+      "content": {
+        "en": "Film from the back or the side or the left side or the right side ↻",
+        "ar": "صوّر من الخلف أو الجانب أو الجانب الأيسر أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.595Z"
+    },
+    {
+      "code": "setup_direction_back_side_any_side_right",
+      "content": {
+        "en": "Film from the back or the side or the right side ↻",
+        "ar": "صوّر من الخلف أو الجانب أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.526Z"
+    },
+    {
+      "code": "setup_direction_back_side_left",
+      "content": {
+        "en": "Film from the back or the left side ↻",
+        "ar": "صوّر من الخلف أو الجانب الأيسر ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.371Z"
+    },
+    {
+      "code": "setup_direction_back_side_left_side_right",
+      "content": {
+        "en": "Film from the back or the left side or the right side ↻",
+        "ar": "صوّر من الخلف أو الجانب الأيسر أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.564Z"
+    },
+    {
+      "code": "setup_direction_back_side_right",
+      "content": {
+        "en": "Film from the back or the right side ↻",
+        "ar": "صوّر من الخلف أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.490Z"
+    },
+    {
+      "code": "setup_direction_diagonal",
+      "content": {
+        "en": "Film from an angle ↻",
+        "ar": "صوّر من بزاوية مائلة ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.268Z"
+    },
+    {
+      "code": "setup_direction_diagonal_front",
+      "content": {
+        "en": "Film from an angle or the front ↻",
+        "ar": "صوّر من بزاوية مائلة أو الأمام ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.295Z"
+    },
+    {
+      "code": "setup_direction_diagonal_front_side_any",
+      "content": {
+        "en": "Film from an angle or the front or the side ↻",
+        "ar": "صوّر من بزاوية مائلة أو الأمام أو الجانب ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.352Z"
+    },
+    {
+      "code": "setup_direction_diagonal_front_side_any_side_left",
+      "content": {
+        "en": "Film from an angle or the front or the side or the left side ↻",
+        "ar": "صوّر من بزاوية مائلة أو الأمام أو الجانب أو الجانب الأيسر ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.474Z"
+    },
+    {
+      "code": "setup_direction_diagonal_front_side_any_side_left_side_right",
+      "content": {
+        "en": "Film from an angle or the front or the side or the left side or the right side ↻",
+        "ar": "صوّر من بزاوية مائلة أو الأمام أو الجانب أو الجانب الأيسر أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.618Z"
+    },
+    {
+      "code": "setup_direction_diagonal_front_side_any_side_right",
+      "content": {
+        "en": "Film from an angle or the front or the side or the right side ↻",
+        "ar": "صوّر من بزاوية مائلة أو الأمام أو الجانب أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.552Z"
+    },
+    {
+      "code": "setup_direction_diagonal_front_side_left",
+      "content": {
+        "en": "Film from an angle or the front or the left side ↻",
+        "ar": "صوّر من بزاوية مائلة أو الأمام أو الجانب الأيسر ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.414Z"
+    },
+    {
+      "code": "setup_direction_diagonal_front_side_left_side_right",
+      "content": {
+        "en": "Film from an angle or the front or the left side or the right side ↻",
+        "ar": "صوّر من بزاوية مائلة أو الأمام أو الجانب الأيسر أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.584Z"
+    },
+    {
+      "code": "setup_direction_diagonal_front_side_right",
+      "content": {
+        "en": "Film from an angle or the front or the right side ↻",
+        "ar": "صوّر من بزاوية مائلة أو الأمام أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.514Z"
+    },
+    {
+      "code": "setup_direction_diagonal_side_any",
+      "content": {
+        "en": "Film from an angle or the side ↻",
+        "ar": "صوّر من بزاوية مائلة أو الجانب ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.328Z"
+    },
+    {
+      "code": "setup_direction_diagonal_side_any_side_left",
+      "content": {
+        "en": "Film from an angle or the side or the left side ↻",
+        "ar": "صوّر من بزاوية مائلة أو الجانب أو الجانب الأيسر ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.446Z"
+    },
+    {
+      "code": "setup_direction_diagonal_side_any_side_left_side_right",
+      "content": {
+        "en": "Film from an angle or the side or the left side or the right side ↻",
+        "ar": "صوّر من بزاوية مائلة أو الجانب أو الجانب الأيسر أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.599Z"
+    },
+    {
+      "code": "setup_direction_diagonal_side_any_side_right",
+      "content": {
+        "en": "Film from an angle or the side or the right side ↻",
+        "ar": "صوّر من بزاوية مائلة أو الجانب أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.532Z"
+    },
+    {
+      "code": "setup_direction_diagonal_side_left",
+      "content": {
+        "en": "Film from an angle or the left side ↻",
+        "ar": "صوّر من بزاوية مائلة أو الجانب الأيسر ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.377Z"
+    },
+    {
+      "code": "setup_direction_diagonal_side_left_side_right",
+      "content": {
+        "en": "Film from an angle or the left side or the right side ↻",
+        "ar": "صوّر من بزاوية مائلة أو الجانب الأيسر أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.569Z"
+    },
+    {
+      "code": "setup_direction_diagonal_side_right",
+      "content": {
+        "en": "Film from an angle or the right side ↻",
+        "ar": "صوّر من بزاوية مائلة أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.495Z"
+    },
+    {
+      "code": "setup_direction_front",
+      "content": {
+        "en": "Film from the front ↻",
+        "ar": "صوّر من الأمام ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.285Z"
+    },
+    {
+      "code": "setup_direction_front_side_any",
+      "content": {
+        "en": "Film from the front or the side ↻",
+        "ar": "صوّر من الأمام أو الجانب ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.338Z"
+    },
+    {
+      "code": "setup_direction_front_side_any_side_left",
+      "content": {
+        "en": "Film from the front or the side or the left side ↻",
+        "ar": "صوّر من الأمام أو الجانب أو الجانب الأيسر ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.462Z"
+    },
+    {
+      "code": "setup_direction_front_side_any_side_left_side_right",
+      "content": {
+        "en": "Film from the front or the side or the left side or the right side ↻",
+        "ar": "صوّر من الأمام أو الجانب أو الجانب الأيسر أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.606Z"
+    },
+    {
+      "code": "setup_direction_front_side_any_side_right",
+      "content": {
+        "en": "Film from the front or the side or the right side ↻",
+        "ar": "صوّر من الأمام أو الجانب أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.544Z"
+    },
+    {
+      "code": "setup_direction_front_side_left",
+      "content": {
+        "en": "Film from the front or the left side ↻",
+        "ar": "صوّر من الأمام أو الجانب الأيسر ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.396Z"
+    },
+    {
+      "code": "setup_direction_front_side_left_side_right",
+      "content": {
+        "en": "Film from the front or the left side or the right side ↻",
+        "ar": "صوّر من الأمام أو الجانب الأيسر أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.577Z"
+    },
+    {
+      "code": "setup_direction_front_side_right",
+      "content": {
+        "en": "Film from the front or the right side ↻",
+        "ar": "صوّر من الأمام أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.502Z"
+    },
+    {
+      "code": "setup_direction_side_any",
+      "content": {
+        "en": "Film from the side ↻",
+        "ar": "صوّر من الجانب ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.310Z"
+    },
+    {
+      "code": "setup_direction_side_any_side_left",
+      "content": {
+        "en": "Film from the side or the left side ↻",
+        "ar": "صوّر من الجانب أو الجانب الأيسر ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.430Z"
+    },
+    {
+      "code": "setup_direction_side_any_side_left_side_right",
+      "content": {
+        "en": "Film from the side or the left side or the right side ↻",
+        "ar": "صوّر من الجانب أو الجانب الأيسر أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.591Z"
+    },
+    {
+      "code": "setup_direction_side_any_side_right",
+      "content": {
+        "en": "Film from the side or the right side ↻",
+        "ar": "صوّر من الجانب أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.522Z"
+    },
+    {
+      "code": "setup_direction_side_left",
+      "content": {
+        "en": "Film from the left side ↻",
+        "ar": "صوّر من الجانب الأيسر ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.363Z"
+    },
+    {
+      "code": "setup_direction_side_left_side_right",
+      "content": {
+        "en": "Film from the left side or the right side ↻",
+        "ar": "صوّر من الجانب الأيسر أو الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.561Z"
+    },
+    {
+      "code": "setup_direction_side_right",
+      "content": {
+        "en": "Film from the right side ↻",
+        "ar": "صوّر من الجانب الأيمن ↻"
+      },
+      "updatedAt": "2026-05-31T15:14:04.485Z"
+    },
+    {
+      "code": "setup_guidance_ankle_lower",
+      "content": {
+        "en": "Lower your ankle",
+        "ar": "اخفض الكاحل"
+      },
+      "updatedAt": "2026-05-31T15:14:04.877Z"
+    },
+    {
+      "code": "setup_guidance_ankle_raise",
+      "content": {
+        "en": "Raise your ankle",
+        "ar": "ارفع الكاحل"
+      },
+      "updatedAt": "2026-05-31T15:14:04.875Z"
+    },
+    {
+      "code": "setup_guidance_elbow_lower",
+      "content": {
+        "en": "Lower your elbow more",
+        "ar": "اخفض الكوع أكثر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.857Z"
+    },
+    {
+      "code": "setup_guidance_elbow_raise",
+      "content": {
+        "en": "Raise your elbow more",
+        "ar": "ارفع الكوع أكثر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.855Z"
+    },
+    {
+      "code": "setup_guidance_hip_lower",
+      "content": {
+        "en": "Bend your hip more",
+        "ar": "اثني الورك أكثر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.874Z"
+    },
+    {
+      "code": "setup_guidance_hip_raise",
+      "content": {
+        "en": "Extend your hip",
+        "ar": "افرد الورك"
+      },
+      "updatedAt": "2026-05-31T15:14:04.872Z"
+    },
+    {
+      "code": "setup_guidance_knee_lower",
+      "content": {
+        "en": "Bend your knee more",
+        "ar": "اثني الركبة أكثر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.870Z"
+    },
+    {
+      "code": "setup_guidance_knee_raise",
+      "content": {
+        "en": "Straighten your knee more",
+        "ar": "افرد الركبة أكثر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.868Z"
+    },
+    {
+      "code": "setup_guidance_left_ankle_lower",
+      "content": {
+        "en": "Lower your left ankle",
+        "ar": "اخفض الكاحل الأيسر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.812Z"
+    },
+    {
+      "code": "setup_guidance_left_ankle_raise",
+      "content": {
+        "en": "Raise your left ankle",
+        "ar": "ارفع الكاحل الأيسر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.810Z"
+    },
+    {
+      "code": "setup_guidance_left_elbow_lower",
+      "content": {
+        "en": "Lower your left elbow more",
+        "ar": "اخفض الكوع الأيسر أكثر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.783Z"
+    },
+    {
+      "code": "setup_guidance_left_elbow_raise",
+      "content": {
+        "en": "Raise your left elbow more",
+        "ar": "ارفع الكوع الأيسر أكثر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.781Z"
+    },
+    {
+      "code": "setup_guidance_left_hip_lower",
+      "content": {
+        "en": "Bend your left hip more",
+        "ar": "اثني الورك الأيسر أكثر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.802Z"
+    },
+    {
+      "code": "setup_guidance_left_hip_raise",
+      "content": {
+        "en": "Extend your left hip",
+        "ar": "افرد الورك الأيسر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.801Z"
+    },
+    {
+      "code": "setup_guidance_left_knee_lower",
+      "content": {
+        "en": "Bend your left knee more",
+        "ar": "اثني الركبة الأيسر أكثر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.796Z"
+    },
+    {
+      "code": "setup_guidance_left_knee_raise",
+      "content": {
+        "en": "Straighten your left knee more",
+        "ar": "افرد الركبة الأيسر أكثر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.794Z"
+    },
+    {
+      "code": "setup_guidance_left_shoulder_lower",
+      "content": {
+        "en": "Lower your left shoulder",
+        "ar": "اخفض الكتف الأيسر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.789Z"
+    },
+    {
+      "code": "setup_guidance_left_shoulder_raise",
+      "content": {
+        "en": "Raise your left shoulder",
+        "ar": "ارفع الكتف الأيسر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.788Z"
+    },
+    {
+      "code": "setup_guidance_left_wrist_lower",
+      "content": {
+        "en": "Lower your left wrist",
+        "ar": "اخفض المعصم الأيسر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.818Z"
+    },
+    {
+      "code": "setup_guidance_left_wrist_raise",
+      "content": {
+        "en": "Raise your left wrist",
+        "ar": "ارفع المعصم الأيسر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.817Z"
+    },
+    {
+      "code": "setup_guidance_neck_lower",
+      "content": {
+        "en": "Lower your head",
+        "ar": "اخفض رأسك"
+      },
+      "updatedAt": "2026-05-31T15:14:04.838Z"
+    },
+    {
+      "code": "setup_guidance_neck_raise",
+      "content": {
+        "en": "Lift your head",
+        "ar": "ارفع رأسك"
+      },
+      "updatedAt": "2026-05-31T15:14:04.828Z"
+    },
+    {
+      "code": "setup_guidance_ok",
+      "content": {
+        "en": "✓ Good",
+        "ar": "✓ ممتاز"
+      },
+      "updatedAt": "2026-05-31T15:14:04.091Z"
+    },
+    {
+      "code": "setup_guidance_other_lower",
+      "content": {
+        "en": "Lower more",
+        "ar": "اخفض أكثر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.853Z"
+    },
+    {
+      "code": "setup_guidance_other_raise",
+      "content": {
+        "en": "Raise more",
+        "ar": "ارفع أكثر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.849Z"
+    },
+    {
+      "code": "setup_guidance_right_ankle_lower",
+      "content": {
+        "en": "Lower your right ankle",
+        "ar": "اخفض الكاحل الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.815Z"
+    },
+    {
+      "code": "setup_guidance_right_ankle_raise",
+      "content": {
+        "en": "Raise your right ankle",
+        "ar": "ارفع الكاحل الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.813Z"
+    },
+    {
+      "code": "setup_guidance_right_elbow_lower",
+      "content": {
+        "en": "Lower your right elbow more",
+        "ar": "اخفض الكوع الأيمن أكثر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.786Z"
+    },
+    {
+      "code": "setup_guidance_right_elbow_raise",
+      "content": {
+        "en": "Raise your right elbow more",
+        "ar": "ارفع الكوع الأيمن أكثر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.784Z"
+    },
+    {
+      "code": "setup_guidance_right_hip_lower",
+      "content": {
+        "en": "Bend your right hip more",
+        "ar": "اثني الورك الأيمن أكثر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.807Z"
+    },
+    {
+      "code": "setup_guidance_right_hip_raise",
+      "content": {
+        "en": "Extend your right hip",
+        "ar": "افرد الورك الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.804Z"
+    },
+    {
+      "code": "setup_guidance_right_knee_lower",
+      "content": {
+        "en": "Bend your right knee more",
+        "ar": "اثني الركبة الأيمن أكثر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.799Z"
+    },
+    {
+      "code": "setup_guidance_right_knee_raise",
+      "content": {
+        "en": "Straighten your right knee more",
+        "ar": "افرد الركبة الأيمن أكثر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.797Z"
+    },
+    {
+      "code": "setup_guidance_right_shoulder_lower",
+      "content": {
+        "en": "Lower your right shoulder",
+        "ar": "اخفض الكتف الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.793Z"
+    },
+    {
+      "code": "setup_guidance_right_shoulder_raise",
+      "content": {
+        "en": "Raise your right shoulder",
+        "ar": "ارفع الكتف الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.791Z"
+    },
+    {
+      "code": "setup_guidance_right_wrist_lower",
+      "content": {
+        "en": "Lower your right wrist",
+        "ar": "اخفض المعصم الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.822Z"
+    },
+    {
+      "code": "setup_guidance_right_wrist_raise",
+      "content": {
+        "en": "Raise your right wrist",
+        "ar": "ارفع المعصم الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.820Z"
+    },
+    {
+      "code": "setup_guidance_shoulder_lower",
+      "content": {
+        "en": "Lower your shoulder",
+        "ar": "اخفض الكتف"
+      },
+      "updatedAt": "2026-05-31T15:14:04.863Z"
+    },
+    {
+      "code": "setup_guidance_shoulder_raise",
+      "content": {
+        "en": "Raise your shoulder",
+        "ar": "ارفع الكتف"
+      },
+      "updatedAt": "2026-05-31T15:14:04.861Z"
+    },
+    {
+      "code": "setup_guidance_spine_lower",
+      "content": {
+        "en": "Bend forward more",
+        "ar": "انحني للأمام أكثر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.826Z"
+    },
+    {
+      "code": "setup_guidance_spine_raise",
+      "content": {
+        "en": "Straighten your back more",
+        "ar": "افرد ظهرك أكثر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.823Z"
+    },
+    {
+      "code": "setup_guidance_wrist_lower",
+      "content": {
+        "en": "Lower your wrist",
+        "ar": "اخفض المعصم"
+      },
+      "updatedAt": "2026-05-31T15:14:04.881Z"
+    },
+    {
+      "code": "setup_guidance_wrist_raise",
+      "content": {
+        "en": "Raise your wrist",
+        "ar": "ارفع المعصم"
+      },
+      "updatedAt": "2026-05-31T15:14:04.879Z"
+    },
+    {
+      "code": "setup_posture_any",
+      "content": {
+        "en": "",
+        "ar": ""
+      },
+      "updatedAt": "2026-05-31T15:14:04.750Z"
+    },
+    {
+      "code": "setup_posture_lying_prone",
+      "content": {
+        "en": "Lie face down",
+        "ar": "استلقِ على وجهك"
+      },
+      "updatedAt": "2026-05-31T15:14:04.631Z"
+    },
+    {
+      "code": "setup_posture_lying_prone_lying_side",
+      "content": {
+        "en": "Lie face down or Lie on your side",
+        "ar": "استلقِ على وجهك أو استلقِ على جنبك"
+      },
+      "updatedAt": "2026-05-31T15:14:04.639Z"
+    },
+    {
+      "code": "setup_posture_lying_prone_lying_side_lying_supine",
+      "content": {
+        "en": "Lie face down or Lie on your side or Lie face up",
+        "ar": "استلقِ على وجهك أو استلقِ على جنبك أو استلقِ على ظهرك"
+      },
+      "updatedAt": "2026-05-31T15:14:04.655Z"
+    },
+    {
+      "code": "setup_posture_lying_prone_lying_side_lying_supine_sitting",
+      "content": {
+        "en": "Lie face down or Lie on your side or Lie face up or Sit down",
+        "ar": "استلقِ على وجهك أو استلقِ على جنبك أو استلقِ على ظهرك أو اجلس"
+      },
+      "updatedAt": "2026-05-31T15:14:04.683Z"
+    },
+    {
+      "code": "setup_posture_lying_prone_lying_side_lying_supine_sitting_standing",
+      "content": {
+        "en": "Lie face down or Lie on your side or Lie face up or Sit down or Stand upright",
+        "ar": "استلقِ على وجهك أو استلقِ على جنبك أو استلقِ على ظهرك أو اجلس أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.746Z"
+    },
+    {
+      "code": "setup_posture_lying_prone_lying_side_lying_supine_standing",
+      "content": {
+        "en": "Lie face down or Lie on your side or Lie face up or Stand upright",
+        "ar": "استلقِ على وجهك أو استلقِ على جنبك أو استلقِ على ظهرك أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.717Z"
+    },
+    {
+      "code": "setup_posture_lying_prone_lying_side_sitting",
+      "content": {
+        "en": "Lie face down or Lie on your side or Sit down",
+        "ar": "استلقِ على وجهك أو استلقِ على جنبك أو اجلس"
+      },
+      "updatedAt": "2026-05-31T15:14:04.669Z"
+    },
+    {
+      "code": "setup_posture_lying_prone_lying_side_sitting_standing",
+      "content": {
+        "en": "Lie face down or Lie on your side or Sit down or Stand upright",
+        "ar": "استلقِ على وجهك أو استلقِ على جنبك أو اجلس أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.731Z"
+    },
+    {
+      "code": "setup_posture_lying_prone_lying_side_standing",
+      "content": {
+        "en": "Lie face down or Lie on your side or Stand upright",
+        "ar": "استلقِ على وجهك أو استلقِ على جنبك أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.702Z"
+    },
+    {
+      "code": "setup_posture_lying_prone_lying_supine",
+      "content": {
+        "en": "Lie face down or Lie face up",
+        "ar": "استلقِ على وجهك أو استلقِ على ظهرك"
+      },
+      "updatedAt": "2026-05-31T15:14:04.647Z"
+    },
+    {
+      "code": "setup_posture_lying_prone_lying_supine_sitting",
+      "content": {
+        "en": "Lie face down or Lie face up or Sit down",
+        "ar": "استلقِ على وجهك أو استلقِ على ظهرك أو اجلس"
+      },
+      "updatedAt": "2026-05-31T15:14:04.675Z"
+    },
+    {
+      "code": "setup_posture_lying_prone_lying_supine_sitting_standing",
+      "content": {
+        "en": "Lie face down or Lie face up or Sit down or Stand upright",
+        "ar": "استلقِ على وجهك أو استلقِ على ظهرك أو اجلس أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.739Z"
+    },
+    {
+      "code": "setup_posture_lying_prone_lying_supine_standing",
+      "content": {
+        "en": "Lie face down or Lie face up or Stand upright",
+        "ar": "استلقِ على وجهك أو استلقِ على ظهرك أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.710Z"
+    },
+    {
+      "code": "setup_posture_lying_prone_sitting",
+      "content": {
+        "en": "Lie face down or Sit down",
+        "ar": "استلقِ على وجهك أو اجلس"
+      },
+      "updatedAt": "2026-05-31T15:14:04.662Z"
+    },
+    {
+      "code": "setup_posture_lying_prone_sitting_standing",
+      "content": {
+        "en": "Lie face down or Sit down or Stand upright",
+        "ar": "استلقِ على وجهك أو اجلس أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.724Z"
+    },
+    {
+      "code": "setup_posture_lying_prone_standing",
+      "content": {
+        "en": "Lie face down or Stand upright",
+        "ar": "استلقِ على وجهك أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.693Z"
+    },
+    {
+      "code": "setup_posture_lying_side",
+      "content": {
+        "en": "Lie on your side",
+        "ar": "استلقِ على جنبك"
+      },
+      "updatedAt": "2026-05-31T15:14:04.635Z"
+    },
+    {
+      "code": "setup_posture_lying_side_lying_supine",
+      "content": {
+        "en": "Lie on your side or Lie face up",
+        "ar": "استلقِ على جنبك أو استلقِ على ظهرك"
+      },
+      "updatedAt": "2026-05-31T15:14:04.651Z"
+    },
+    {
+      "code": "setup_posture_lying_side_lying_supine_sitting",
+      "content": {
+        "en": "Lie on your side or Lie face up or Sit down",
+        "ar": "استلقِ على جنبك أو استلقِ على ظهرك أو اجلس"
+      },
+      "updatedAt": "2026-05-31T15:14:04.679Z"
+    },
+    {
+      "code": "setup_posture_lying_side_lying_supine_sitting_standing",
+      "content": {
+        "en": "Lie on your side or Lie face up or Sit down or Stand upright",
+        "ar": "استلقِ على جنبك أو استلقِ على ظهرك أو اجلس أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.743Z"
+    },
+    {
+      "code": "setup_posture_lying_side_lying_supine_standing",
+      "content": {
+        "en": "Lie on your side or Lie face up or Stand upright",
+        "ar": "استلقِ على جنبك أو استلقِ على ظهرك أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.713Z"
+    },
+    {
+      "code": "setup_posture_lying_side_sitting",
+      "content": {
+        "en": "Lie on your side or Sit down",
+        "ar": "استلقِ على جنبك أو اجلس"
+      },
+      "updatedAt": "2026-05-31T15:14:04.665Z"
+    },
+    {
+      "code": "setup_posture_lying_side_sitting_standing",
+      "content": {
+        "en": "Lie on your side or Sit down or Stand upright",
+        "ar": "استلقِ على جنبك أو اجلس أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.727Z"
+    },
+    {
+      "code": "setup_posture_lying_side_standing",
+      "content": {
+        "en": "Lie on your side or Stand upright",
+        "ar": "استلقِ على جنبك أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.697Z"
+    },
+    {
+      "code": "setup_posture_lying_supine",
+      "content": {
+        "en": "Lie face up",
+        "ar": "استلقِ على ظهرك"
+      },
+      "updatedAt": "2026-05-31T15:14:04.643Z"
+    },
+    {
+      "code": "setup_posture_lying_supine_sitting",
+      "content": {
+        "en": "Lie face up or Sit down",
+        "ar": "استلقِ على ظهرك أو اجلس"
+      },
+      "updatedAt": "2026-05-31T15:14:04.672Z"
+    },
+    {
+      "code": "setup_posture_lying_supine_sitting_standing",
+      "content": {
+        "en": "Lie face up or Sit down or Stand upright",
+        "ar": "استلقِ على ظهرك أو اجلس أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.735Z"
+    },
+    {
+      "code": "setup_posture_lying_supine_standing",
+      "content": {
+        "en": "Lie face up or Stand upright",
+        "ar": "استلقِ على ظهرك أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.706Z"
+    },
+    {
+      "code": "setup_posture_sitting",
+      "content": {
+        "en": "Sit down",
+        "ar": "اجلس"
+      },
+      "updatedAt": "2026-05-31T15:14:04.659Z"
+    },
+    {
+      "code": "setup_posture_sitting_standing",
+      "content": {
+        "en": "Sit down or Stand upright",
+        "ar": "اجلس أو قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.721Z"
+    },
+    {
+      "code": "setup_posture_standing",
+      "content": {
+        "en": "Stand upright",
+        "ar": "قف مستقيماً"
+      },
+      "updatedAt": "2026-05-31T15:14:04.686Z"
+    },
+    {
+      "code": "setup_region_any",
+      "content": {
+        "en": "Show",
+        "ar": "أظهر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.778Z"
+    },
+    {
+      "code": "setup_region_full_body",
+      "content": {
+        "en": "Show your full body",
+        "ar": "أظهر الجسم بالكامل"
+      },
+      "updatedAt": "2026-05-31T15:14:04.753Z"
+    },
+    {
+      "code": "setup_region_full_body_lower_body",
+      "content": {
+        "en": "Show your full body or your lower body",
+        "ar": "أظهر الجسم بالكامل أو الجزء السفلي"
+      },
+      "updatedAt": "2026-05-31T15:14:04.760Z"
+    },
+    {
+      "code": "setup_region_full_body_lower_body_upper_body",
+      "content": {
+        "en": "Show your full body or your lower body or your upper body",
+        "ar": "أظهر الجسم بالكامل أو الجزء السفلي أو الجزء العلوي"
+      },
+      "updatedAt": "2026-05-31T15:14:04.775Z"
+    },
+    {
+      "code": "setup_region_full_body_upper_body",
+      "content": {
+        "en": "Show your full body or your upper body",
+        "ar": "أظهر الجسم بالكامل أو الجزء العلوي"
+      },
+      "updatedAt": "2026-05-31T15:14:04.769Z"
+    },
+    {
+      "code": "setup_region_lower_body",
+      "content": {
+        "en": "Show your lower body",
+        "ar": "أظهر الجزء السفلي"
+      },
+      "updatedAt": "2026-05-31T15:14:04.757Z"
+    },
+    {
+      "code": "setup_region_lower_body_upper_body",
+      "content": {
+        "en": "Show your lower body or your upper body",
+        "ar": "أظهر الجزء السفلي أو الجزء العلوي"
+      },
+      "updatedAt": "2026-05-31T15:14:04.772Z"
+    },
+    {
+      "code": "setup_region_upper_body",
+      "content": {
+        "en": "Show your upper body",
+        "ar": "أظهر الجزء العلوي"
+      },
+      "updatedAt": "2026-05-31T15:14:04.765Z"
     },
     {
       "code": "training_countdown_1",
-      "content": { "ar": "1", "en": "1" },
-      "updatedAt": "1970-01-01T00:00:00.000Z"
+      "content": {
+        "en": "1",
+        "ar": "1"
+      },
+      "updatedAt": "2026-05-31T15:14:03.839Z"
+    },
+    {
+      "code": "training_countdown_10",
+      "content": {
+        "en": "10",
+        "ar": "10"
+      },
+      "updatedAt": "2026-05-31T15:14:04.142Z"
+    },
+    {
+      "code": "training_countdown_11",
+      "content": {
+        "en": "11",
+        "ar": "11"
+      },
+      "updatedAt": "2026-05-31T15:14:04.148Z"
+    },
+    {
+      "code": "training_countdown_12",
+      "content": {
+        "en": "12",
+        "ar": "12"
+      },
+      "updatedAt": "2026-05-31T15:14:04.152Z"
+    },
+    {
+      "code": "training_countdown_13",
+      "content": {
+        "en": "13",
+        "ar": "13"
+      },
+      "updatedAt": "2026-05-31T15:14:04.156Z"
+    },
+    {
+      "code": "training_countdown_14",
+      "content": {
+        "en": "14",
+        "ar": "14"
+      },
+      "updatedAt": "2026-05-31T15:14:04.159Z"
+    },
+    {
+      "code": "training_countdown_15",
+      "content": {
+        "en": "15",
+        "ar": "15"
+      },
+      "updatedAt": "2026-05-31T15:14:04.162Z"
+    },
+    {
+      "code": "training_countdown_16",
+      "content": {
+        "en": "16",
+        "ar": "16"
+      },
+      "updatedAt": "2026-05-31T15:14:04.166Z"
+    },
+    {
+      "code": "training_countdown_17",
+      "content": {
+        "en": "17",
+        "ar": "17"
+      },
+      "updatedAt": "2026-05-31T15:14:04.169Z"
+    },
+    {
+      "code": "training_countdown_18",
+      "content": {
+        "en": "18",
+        "ar": "18"
+      },
+      "updatedAt": "2026-05-31T15:14:04.173Z"
+    },
+    {
+      "code": "training_countdown_19",
+      "content": {
+        "en": "19",
+        "ar": "19"
+      },
+      "updatedAt": "2026-05-31T15:14:04.176Z"
+    },
+    {
+      "code": "training_countdown_2",
+      "content": {
+        "en": "2",
+        "ar": "2"
+      },
+      "updatedAt": "2026-05-31T15:14:03.834Z"
+    },
+    {
+      "code": "training_countdown_20",
+      "content": {
+        "en": "20",
+        "ar": "20"
+      },
+      "updatedAt": "2026-05-31T15:14:04.183Z"
+    },
+    {
+      "code": "training_countdown_21",
+      "content": {
+        "en": "21",
+        "ar": "21"
+      },
+      "updatedAt": "2026-05-31T15:14:04.190Z"
+    },
+    {
+      "code": "training_countdown_22",
+      "content": {
+        "en": "22",
+        "ar": "22"
+      },
+      "updatedAt": "2026-05-31T15:14:04.199Z"
+    },
+    {
+      "code": "training_countdown_23",
+      "content": {
+        "en": "23",
+        "ar": "23"
+      },
+      "updatedAt": "2026-05-31T15:14:04.211Z"
+    },
+    {
+      "code": "training_countdown_24",
+      "content": {
+        "en": "24",
+        "ar": "24"
+      },
+      "updatedAt": "2026-05-31T15:14:04.219Z"
+    },
+    {
+      "code": "training_countdown_25",
+      "content": {
+        "en": "25",
+        "ar": "25"
+      },
+      "updatedAt": "2026-05-31T15:14:04.227Z"
+    },
+    {
+      "code": "training_countdown_26",
+      "content": {
+        "en": "26",
+        "ar": "26"
+      },
+      "updatedAt": "2026-05-31T15:14:04.232Z"
+    },
+    {
+      "code": "training_countdown_27",
+      "content": {
+        "en": "27",
+        "ar": "27"
+      },
+      "updatedAt": "2026-05-31T15:14:04.236Z"
+    },
+    {
+      "code": "training_countdown_28",
+      "content": {
+        "en": "28",
+        "ar": "28"
+      },
+      "updatedAt": "2026-05-31T15:14:04.243Z"
+    },
+    {
+      "code": "training_countdown_29",
+      "content": {
+        "en": "29",
+        "ar": "29"
+      },
+      "updatedAt": "2026-05-31T15:14:04.251Z"
+    },
+    {
+      "code": "training_countdown_3",
+      "content": {
+        "en": "3",
+        "ar": "3"
+      },
+      "updatedAt": "2026-05-31T15:14:03.796Z"
+    },
+    {
+      "code": "training_countdown_30",
+      "content": {
+        "en": "30",
+        "ar": "30"
+      },
+      "updatedAt": "2026-05-31T15:14:04.259Z"
+    },
+    {
+      "code": "training_countdown_4",
+      "content": {
+        "en": "4",
+        "ar": "4"
+      },
+      "updatedAt": "2026-05-31T15:14:04.097Z"
+    },
+    {
+      "code": "training_countdown_5",
+      "content": {
+        "en": "5",
+        "ar": "5"
+      },
+      "updatedAt": "2026-05-31T15:14:04.102Z"
+    },
+    {
+      "code": "training_countdown_6",
+      "content": {
+        "en": "6",
+        "ar": "6"
+      },
+      "updatedAt": "2026-05-31T15:14:04.109Z"
+    },
+    {
+      "code": "training_countdown_7",
+      "content": {
+        "en": "7",
+        "ar": "7"
+      },
+      "updatedAt": "2026-05-31T15:14:04.113Z"
+    },
+    {
+      "code": "training_countdown_8",
+      "content": {
+        "en": "8",
+        "ar": "8"
+      },
+      "updatedAt": "2026-05-31T15:14:04.122Z"
+    },
+    {
+      "code": "training_countdown_9",
+      "content": {
+        "en": "9",
+        "ar": "9"
+      },
+      "updatedAt": "2026-05-31T15:14:04.130Z"
     },
     {
       "code": "training_countdown_go",
-      "content": { "ar": "ابدأ!", "en": "Go!" },
-      "updatedAt": "1970-01-01T00:00:00.000Z"
+      "content": {
+        "en": "Go!",
+        "ar": "ابدأ!"
+      },
+      "updatedAt": "2026-05-31T15:14:03.845Z"
     },
     {
       "code": "training_go_overlay",
-      "content": { "ar": "انطلق!", "en": "GO!" },
-      "updatedAt": "1970-01-01T00:00:00.000Z"
+      "content": {
+        "en": "GO!",
+        "ar": "انطلق!"
+      },
+      "updatedAt": "2026-05-31T15:14:03.850Z"
     },
     {
-      "code": "training_pose_confirmed",
-      "content": { "ar": "ممتاز، استعد!", "en": "Great, get ready!" },
-      "updatedAt": "1970-01-01T00:00:00.000Z"
+      "code": "training_hold_completed",
+      "content": {
+        "en": "Great job! Held for {n} seconds",
+        "ar": "أحسنت! ثبات {n} ثانية"
+      },
+      "updatedAt": "2026-05-31T15:14:03.913Z"
     },
     {
-      "code": "training_streak_good",
-      "content": { "ar": "جيد!", "en": "Good!" },
-      "updatedAt": "1970-01-01T00:00:00.000Z"
-    },
-    {
-      "code": "training_hold_stay",
-      "content": { "ar": "ابق ثابتاً!", "en": "Stay in position!" },
-      "updatedAt": "1970-01-01T00:00:00.000Z"
+      "code": "training_hold_failed",
+      "content": {
+        "en": "Position lost. Try again",
+        "ar": "فقدت الوضعية. حاول مجدداً"
+      },
+      "updatedAt": "2026-05-31T15:14:03.917Z"
     },
     {
       "code": "training_hold_resumed",
-      "content": { "ar": "أحسنت، استمر", "en": "Good, keep holding" },
-      "updatedAt": "1970-01-01T00:00:00.000Z"
+      "content": {
+        "en": "Good, keep holding",
+        "ar": "أحسنت، استمر"
+      },
+      "updatedAt": "2026-05-31T15:14:03.903Z"
+    },
+    {
+      "code": "training_hold_stay",
+      "content": {
+        "en": "Stay in position!",
+        "ar": "ابق ثابتاً!"
+      },
+      "updatedAt": "2026-05-31T15:14:03.893Z"
+    },
+    {
+      "code": "training_no_pose_countdown_warning",
+      "content": {
+        "en": "No pose detected! Return in {seconds}s...",
+        "ar": "لم يتم اكتشاف وضعية! العودة خلال {seconds}ث..."
+      },
+      "updatedAt": "2026-05-31T15:14:03.994Z"
+    },
+    {
+      "code": "training_no_pose_return_camera",
+      "content": {
+        "en": "Return to the camera",
+        "ar": "عد إلى الكاميرا"
+      },
+      "updatedAt": "2026-05-31T15:14:03.983Z"
+    },
+    {
+      "code": "training_pause_manual",
+      "content": {
+        "en": "Training paused",
+        "ar": "تم إيقاف التمرين مؤقتاً"
+      },
+      "updatedAt": "2026-05-31T15:14:03.976Z"
+    },
+    {
+      "code": "training_pause_no_pose_long",
+      "content": {
+        "en": "No pose detected for too long",
+        "ar": "لم يتم اكتشاف وضعية لفترة طويلة"
+      },
+      "updatedAt": "2026-05-31T15:14:03.972Z"
+    },
+    {
+      "code": "training_pause_visibility_joints",
+      "content": {
+        "en": "Required joints not visible",
+        "ar": "المفاصل المطلوبة غير مرئية"
+      },
+      "updatedAt": "2026-05-31T15:14:03.965Z"
+    },
+    {
+      "code": "training_pose_confirmed",
+      "content": {
+        "en": "Great, get ready!",
+        "ar": "ممتاز، استعد!"
+      },
+      "updatedAt": "2026-05-31T15:14:03.856Z"
+    },
+    {
+      "code": "training_rep_incomplete_depth",
+      "content": {
+        "en": "You didn't reach the target. Complete the full range.",
+        "ar": "لم تصل إلى الوضع المطلوب، أكمل المدى كاملاً"
+      },
+      "updatedAt": "2026-05-31T15:15:23.434Z"
+    },
+    {
+      "code": "training_rep_incomplete_return",
+      "content": {
+        "en": "Return fully to the start position.",
+        "ar": "أكمل الرجوع إلى وضع البداية"
+      },
+      "updatedAt": "2026-05-31T15:15:29.710Z"
+    },
+    {
+      "code": "training_rep_too_fast",
+      "content": {
+        "en": "Too fast — slow down.",
+        "ar": "حركة سريعة جداً، تمهّل قليلاً"
+      },
+      "updatedAt": "2026-05-31T15:15:36.127Z"
+    },
+    {
+      "code": "training_rep_too_slow",
+      "content": {
+        "en": "Too slow — keep a steady pace.",
+        "ar": "تجاوزت الوقت المحدد، حافظ على الإيقاع"
+      },
+      "updatedAt": "2026-05-31T15:15:42.844Z"
+    },
+    {
+      "code": "training_setup_return_start_pose",
+      "content": {
+        "en": "Return to the start pose",
+        "ar": "عد إلى وضعية البداية"
+      },
+      "updatedAt": "2026-05-31T15:14:04.000Z"
+    },
+    {
+      "code": "training_setup_scene_to_visibility",
+      "content": {
+        "en": "Position correct – checking visibility",
+        "ar": "الوضع صحيح – جاري التحقق من الرؤية"
+      },
+      "updatedAt": "2026-05-31T15:18:31.358Z"
+    },
+    {
+      "code": "training_streak_excellent",
+      "content": {
+        "en": "Excellent! Keep going!",
+        "ar": "ممتاز! استمر!"
+      },
+      "updatedAt": "2026-05-31T15:14:03.870Z"
+    },
+    {
+      "code": "training_streak_good",
+      "content": {
+        "en": "Good!",
+        "ar": "جيد!"
+      },
+      "updatedAt": "2026-05-31T15:14:03.885Z"
+    },
+    {
+      "code": "training_streak_great",
+      "content": {
+        "en": "Great form!",
+        "ar": "أداء رائع!"
+      },
+      "updatedAt": "2026-05-31T15:14:03.878Z"
+    },
+    {
+      "code": "training_target_reached",
+      "content": {
+        "en": "Great job! {n} reps completed",
+        "ar": "أحسنت! اكتملت {n} تكرار"
+      },
+      "updatedAt": "2026-05-31T15:14:03.862Z"
+    },
+    {
+      "code": "visibility_joint_left_ankle",
+      "content": {
+        "en": "Left Ankle",
+        "ar": "الكاحل الأيسر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.076Z"
+    },
+    {
+      "code": "visibility_joint_left_elbow",
+      "content": {
+        "en": "Left Elbow",
+        "ar": "الكوع الأيسر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.008Z"
+    },
+    {
+      "code": "visibility_joint_left_hip",
+      "content": {
+        "en": "Left Hip",
+        "ar": "الورك الأيسر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.034Z"
+    },
+    {
+      "code": "visibility_joint_left_hip_cross",
+      "content": {
+        "en": "Left Hip Cross",
+        "ar": "الورك الأيسر (تقاطع)"
+      },
+      "updatedAt": "2026-05-31T15:18:37.152Z"
+    },
+    {
+      "code": "visibility_joint_left_knee",
+      "content": {
+        "en": "Left Knee",
+        "ar": "الركبة اليسرى"
+      },
+      "updatedAt": "2026-05-31T15:14:04.061Z"
+    },
+    {
+      "code": "visibility_joint_left_shoulder",
+      "content": {
+        "en": "Left Shoulder",
+        "ar": "الكتف الأيسر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.021Z"
+    },
+    {
+      "code": "visibility_joint_left_shoulder_cross",
+      "content": {
+        "en": "Left Shoulder Cross",
+        "ar": "الكتف الأيسر (تقاطع)"
+      },
+      "updatedAt": "2026-05-31T15:18:43.412Z"
+    },
+    {
+      "code": "visibility_joint_left_wrist",
+      "content": {
+        "en": "Left Wrist",
+        "ar": "المعصم الأيسر"
+      },
+      "updatedAt": "2026-05-31T15:14:04.066Z"
+    },
+    {
+      "code": "visibility_joint_right_ankle",
+      "content": {
+        "en": "Right Ankle",
+        "ar": "الكاحل الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.084Z"
+    },
+    {
+      "code": "visibility_joint_right_elbow",
+      "content": {
+        "en": "Right Elbow",
+        "ar": "الكوع الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.011Z"
+    },
+    {
+      "code": "visibility_joint_right_hip",
+      "content": {
+        "en": "Right Hip",
+        "ar": "الورك الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.040Z"
+    },
+    {
+      "code": "visibility_joint_right_hip_cross",
+      "content": {
+        "en": "Right Hip Cross",
+        "ar": "الورك الأيمن (تقاطع)"
+      },
+      "updatedAt": "2026-05-31T15:18:49.065Z"
+    },
+    {
+      "code": "visibility_joint_right_knee",
+      "content": {
+        "en": "Right Knee",
+        "ar": "الركبة اليمنى"
+      },
+      "updatedAt": "2026-05-31T15:14:04.063Z"
+    },
+    {
+      "code": "visibility_joint_right_shoulder",
+      "content": {
+        "en": "Right Shoulder",
+        "ar": "الكتف الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.027Z"
+    },
+    {
+      "code": "visibility_joint_right_shoulder_cross",
+      "content": {
+        "en": "Right Shoulder Cross",
+        "ar": "الكتف الأيمن (تقاطع)"
+      },
+      "updatedAt": "2026-05-31T15:18:54.921Z"
+    },
+    {
+      "code": "visibility_joint_right_wrist",
+      "content": {
+        "en": "Right Wrist",
+        "ar": "المعصم الأيمن"
+      },
+      "updatedAt": "2026-05-31T15:14:04.072Z"
+    },
+    {
+      "code": "visibility_joints_not_visible",
+      "content": {
+        "en": "⚠️ {joints} not visible",
+        "ar": "⚠️ {joints} غير مرئية"
+      },
+      "updatedAt": "2026-05-31T15:14:03.949Z"
+    },
+    {
+      "code": "visibility_pause_full_body",
+      "content": {
+        "en": "⏸️ Make sure your full body is visible in frame",
+        "ar": "⏸️ تأكد من ظهور جسمك بالكامل في الإطار"
+      },
+      "updatedAt": "2026-05-31T15:14:03.957Z"
     }
   ]
 }

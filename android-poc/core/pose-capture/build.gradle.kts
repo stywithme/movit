@@ -32,6 +32,8 @@ kotlin {
 
             implementation(project(":core:data"))
 
+            implementation(libs.okhttp)
+
             implementation(libs.androidx.core.ktx)
 
             implementation(libs.camera.core)

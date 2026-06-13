@@ -1,4 +1,4 @@
-﻿package com.trainingvalidator.poc.ui.home
+package com.trainingvalidator.poc.ui.home
 
 import android.content.Intent
 import android.os.Bundle
@@ -602,7 +602,7 @@ class HomeFragment : Fragment() {
                 plannedWorkoutId = workoutId,
             )
         } else if (programInfo != null) {
-            MovitTrainingEntryNavigator.openProgramWeekPlan(
+            MovitTrainingEntryNavigator.openProgramDetailWeek(
                 context = requireContext(),
                 programId = programInfo.id,
                 weekNumber = weekNumber,

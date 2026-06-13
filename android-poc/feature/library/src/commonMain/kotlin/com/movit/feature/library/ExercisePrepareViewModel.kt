@@ -67,6 +67,7 @@ data class ExercisePrepareUiState(
 
 class ExercisePrepareViewModel(
     private val exerciseId: String,
+    private val workoutId: String? = null,
     private val initialMode: ExercisePrepareMode = ExercisePrepareMode.Prepare,
     private val initialRestSeconds: Int? = null,
     private val upNextExerciseId: String? = null,
@@ -90,14 +91,17 @@ class ExercisePrepareViewModel(
             MovitData.bootstrapLocalCaches()
         }
         _state.update { it.copy(isLoading = true, errorMessage = null) }
-        val exercise = ExerciseContentMapper.loadExercise(exerciseId, repository)
+        val exercise = ExerciseContentMapper.loadWorkoutExercise(exerciseId, workoutId)
+            ?: ExerciseContentMapper.loadExercise(exerciseId, repository)
         if (exercise == null) {
             _state.update {
                 it.copy(isLoading = false, errorMessage = "prepare_not_found")
             }
         } else {
-            val upNext = upNextExerciseId?.let { ExerciseContentMapper.loadExercise(it, repository) }
-                ?: ExercisePreparePreviewData.restUpNext
+            val upNext = upNextExerciseId?.let {
+                ExerciseContentMapper.loadWorkoutExercise(it, workoutId)
+                    ?: ExerciseContentMapper.loadExercise(it, repository)
+            }
             val restSeconds = initialRestSeconds ?: parseRestSeconds(exercise.rest)
             _state.update {
                 it.copy(
@@ -158,9 +162,7 @@ class ExercisePrepareViewModel(
                     trainingConfigUnavailable = null,
                 )
             }
-            val slug = normalizeTrainingSlug(
-                exercise.legacyFileName.ifBlank { exercise.exerciseSlug },
-            )
+            val slug = exercise.legacyFileName.ifBlank { exercise.exerciseSlug }
             val reps = exercise.reps.filter { it.isDigit() }.toIntOrNull() ?: 12
             val flowConfig = workoutId?.let { WorkoutFlowCache.get(it) }
             val progress = workoutId?.let { WorkoutRunProgressStore.read(it) }
@@ -254,7 +256,6 @@ internal fun transitionRestToPrepare(state: ExercisePrepareUiState): ExercisePre
     )
 
 internal fun legacySlug(exerciseId: String): String = when (exerciseId) {
-    "ex-squat", "ex-squat-warm" -> "bodyweight-squat"
     else -> exerciseId.removePrefix("ex-")
 }
 
@@ -279,56 +280,3 @@ internal fun applyRestSecondTick(state: ExercisePrepareUiState): ExercisePrepare
 }
 
 private const val REST_TICK_MS = 1_000L
-
-internal object ExercisePreparePreviewData {
-    fun byId(id: String): ExercisePrepareUi? = when (id) {
-        "ex-squat", "ex-squat-warm" -> squat.copy(id = id)
-        "preview" -> squat
-        else -> null
-    }
-
-    val squat = ExercisePrepareUi(
-        id = "ex-squat",
-        exerciseSlug = "bodyweight-squat",
-        name = "Bodyweight Squat",
-        category = "Lower Body · Quads & Glutes focus",
-        sets = "3",
-        reps = "15",
-        rest = "30s",
-        equipment = "None",
-        axesLabel = "Left Side - Standing - Full Body",
-        distanceTip = "Place your phone 2m away at waist level.",
-        instructions = listOf(
-            "Stand with feet shoulder-width apart, chest upright.",
-            "Lower your hips back and down as if sitting in a chair. Keep knees aligned with toes.",
-            "Drive through your heels to return to the starting position. Keep core engaged.",
-        ),
-        targetMuscles = listOf("Quads", "Glutes", "Hamstrings"),
-        sessionProgressPercent = 20,
-        sessionSummary = "6 exercises · ~45 min",
-        legacyFileName = "bodyweight-squat",
-    )
-
-    val restUpNext = ExercisePrepareUi(
-        id = "ex-leg-swings",
-        exerciseSlug = "leg-swings",
-        name = "Leg Swings",
-        category = "Lower Body · Hips & Glutes mobility",
-        sets = "2",
-        reps = "20s",
-        repsLabelKey = "prepare_stat_duration",
-        rest = "20s",
-        equipment = "None",
-        axesLabel = "Front View - Standing - Full Body",
-        distanceTip = "Place phone 2.5m away, directly in front at chest level.",
-        instructions = listOf(
-            "Stand tall near a wall or chair for light balance support.",
-            "Swing one leg forward and backward smoothly in a controlled arc.",
-            "Keep your torso upright and avoid arching your lower back. Swap legs after 20s.",
-        ),
-        targetMuscles = listOf("Hips", "Glutes", "Hamstrings"),
-        sessionProgressPercent = 40,
-        sessionSummary = "6 exercises · ~45 min",
-        legacyFileName = "leg-swings",
-    )
-}

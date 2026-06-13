@@ -19,7 +19,6 @@ import com.movit.core.data.repository.ProgramFlowSyncRepository
 import com.movit.core.data.repository.ReportsSyncRepository
 import com.movit.core.data.preferences.MovitTrainingPreferences
 import com.movit.core.data.repository.TrainingConfigRepository
-import com.movit.core.data.repository.seedBundledDefaultsIfEmpty
 import com.movit.core.data.repository.TrainingSessionWriteCoordinator
 import com.movit.core.data.repository.WorkoutSessionSyncRepository
 import com.movit.core.data.sync.MovitSyncOrchestrator
@@ -28,6 +27,7 @@ import org.koin.core.Koin
 import org.koin.core.KoinApplication
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
+import kotlinx.coroutines.runBlocking
 import org.koin.core.module.Module
 
 /**
@@ -73,10 +73,12 @@ object MovitData {
         val koin = koin()
         koin.get<ColdOfflineBundleSeeder>().seedIfNeeded()
         koin.get<SystemMessageCache>().loadIntoRegistry()
-        koin.get<TrainingConfigRepository>().seedBundledDefaultsIfEmpty()
     }
 
     internal fun notifySessionExpired() {
+        if (isInstalled) {
+            runBlocking { clearAllUserData() }
+        }
         onSessionExpired?.invoke()
     }
 

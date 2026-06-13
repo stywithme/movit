@@ -20,28 +20,6 @@ data class ProgramListItemUi(
     val isActive: Boolean = false,
 )
 
-data class ProgramFlowDayUi(
-    val dayNumber: Int,
-    val title: String,
-    val subtitle: String,
-    val status: ProgramFlowDayStatus,
-    val exerciseCount: Int = 0,
-    val durationMinutes: Int? = null,
-    val plannedWorkoutId: String? = null,
-    val isRestDay: Boolean = false,
-)
-
-data class ProgramWeekPlanUi(
-    val programId: String,
-    val programSlug: String,
-    val programName: String,
-    val weekNumber: Int,
-    val weekTitle: String,
-    val weekSubtitle: String,
-    val days: List<ProgramFlowDayUi>,
-    val todayDayNumber: Int?,
-)
-
 data class WeeklyReportDayScoreUi(
     val label: String,
     val scorePercent: Int,

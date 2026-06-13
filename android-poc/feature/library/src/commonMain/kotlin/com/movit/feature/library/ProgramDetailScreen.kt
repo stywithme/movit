@@ -31,6 +31,7 @@ import com.movit.feature.library.components.ProgramStartDock
 import com.movit.feature.library.components.ProgramStatGrid
 import com.movit.feature.library.components.ProgramDaySessionsPanel
 import com.movit.feature.library.components.ProgramWeekCard
+import com.movit.feature.library.components.ProgramWeekOfflinePanel
 import com.movit.feature.library.components.ProgramWeekStrip
 import com.movit.resources.movitText
 
@@ -61,6 +62,7 @@ fun ProgramDetailScreen(
     onResetEditDay: () -> Unit,
     onSaveEdit: () -> Unit,
     onViewWeeklyReport: () -> Unit,
+    onDownloadWeekOffline: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -183,6 +185,7 @@ fun ProgramDetailScreen(
                             onDaySelected = onDaySelected,
                             onOpenDaySession = onOpenDaySession,
                             onViewWeeklyReport = onViewWeeklyReport,
+                            onDownloadWeekOffline = onDownloadWeekOffline,
                         )
                     } else {
                         ProgramEditPanel(
@@ -212,6 +215,7 @@ private fun ProgramOverviewContent(
     onDaySelected: (Int) -> Unit,
     onOpenDaySession: (String) -> Unit,
     onViewWeeklyReport: () -> Unit,
+    onDownloadWeekOffline: () -> Unit,
 ) {
     MovitSectionHeader(
         title = movitText("program_journey_title"),
@@ -224,6 +228,12 @@ private fun ProgramOverviewContent(
         selectedWeekNumber = state.selectedWeekNumber,
         onWeekSelected = onWeekSelected,
     )
+    if (state.enrollment.isEnrolled && state.weeks.isNotEmpty()) {
+        ProgramWeekOfflinePanel(
+            weekOffline = state.weekOffline,
+            onDownload = onDownloadWeekOffline,
+        )
+    }
     val selectedWeek = state.weeks.firstOrNull { it.weekNumber == state.selectedWeekNumber }
         ?: state.weeks.firstOrNull()
     if (selectedWeek != null) {

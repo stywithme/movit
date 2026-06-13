@@ -93,7 +93,7 @@ class MovitTrainViewModel(
                 if (launchTarget != null) {
                     _effects.tryEmit(MovitTrainEffect.OpenProgramWorkout(launchTarget))
                 } else {
-                    _effects.tryEmit(MovitTrainEffect.OpenSessionPreview)
+                    _effects.tryEmit(MovitTrainEffect.OpenProgramList)
                 }
             }
             MovitTrainEvent.ExploreProgramsClicked,

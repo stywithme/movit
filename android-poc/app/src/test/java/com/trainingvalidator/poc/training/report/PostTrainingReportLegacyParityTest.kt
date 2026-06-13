@@ -2,6 +2,7 @@ package com.trainingvalidator.poc.training.report
 
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.trainingvalidator.poc.UnitTestApplication
 import com.trainingvalidator.poc.training.models.CategoryInfo
 import com.trainingvalidator.poc.training.models.CountingMethod
 import com.trainingvalidator.poc.training.models.ExerciseConfig
@@ -12,11 +13,16 @@ import com.trainingvalidator.poc.training.models.RepResult
 import com.trainingvalidator.poc.training.models.WorkoutExecutionMetrics
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /**
  * Golden parity anchor: legacy [ReportGenerator] summary fields vs KMP builder inputs.
  * Full KMP JSON comparison lives in `MovitPostTrainingReportBuilderTest`.
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(application = UnitTestApplication::class)
 class PostTrainingReportLegacyParityTest {
 
   private val gson: Gson = GsonBuilder().serializeNulls().create()
@@ -47,7 +53,7 @@ class PostTrainingReportLegacyParityTest {
       avgRom = 920,
       avgSymmetry = null,
       avgStability = 780,
-      avgTempo = listOf(1100, 350, 850),
+      avgTempo = intArrayOf(1100, 350, 850),
       avgVelocity = 42,
       avgFormScore = 850,
       avgAlignmentAccuracy = 880,
@@ -55,6 +61,8 @@ class PostTrainingReportLegacyParityTest {
       totalVolume = null,
       maxWeight = null,
       est1RM = null,
+      formConsistency = null,
+      fatigueIndex = null,
     )
     val report = ReportGenerator.generate(
       workoutId = "workout-golden-001",

@@ -38,36 +38,6 @@ object ProgramFlowPreviewData {
         ),
     )
 
-    fun weekPlan(programId: String, weekNumber: Int): ProgramWeekPlanUi {
-        val program = programs.firstOrNull { it.id == programId } ?: programs.first()
-        val days = when (weekNumber) {
-            2 -> listOf(
-                day(1, "Lower Body A", "Completed · 92% form", ProgramFlowDayStatus.Done, 6, 32, "pw-lower-a"),
-                day(2, "Upper Push", "Completed", ProgramFlowDayStatus.Done, 5, 28, "pw-upper-push"),
-                day(3, "Upper Body Strength", "Today · 5 exercises · 38 min", ProgramFlowDayStatus.Today, 5, 38, "pw-upper-strength"),
-                day(4, "Rest / Mobility", "Optional light session", ProgramFlowDayStatus.Rest, isRestDay = true),
-                day(5, "Full Body B", "Scheduled Sat", ProgramFlowDayStatus.Planned, 6, 35, "pw-full-b"),
-            )
-            else -> listOf(
-                day(1, "Foundation A", "Completed", ProgramFlowDayStatus.Done, 5, 30, "pw-foundation-a"),
-                day(2, "Foundation B", "Completed", ProgramFlowDayStatus.Done, 5, 28, "pw-foundation-b"),
-                day(3, "Active recovery", "Optional mobility", ProgramFlowDayStatus.Rest, isRestDay = true),
-                day(4, "Full Body Intro", "Today · 4 exercises · 25 min", ProgramFlowDayStatus.Today, 4, 25, "pw-intro"),
-                day(5, "Core + stability", "Scheduled", ProgramFlowDayStatus.Planned, 4, 22, "pw-core"),
-            )
-        }
-        return ProgramWeekPlanUi(
-            programId = program.id,
-            programSlug = program.slug,
-            programName = program.title,
-            weekNumber = weekNumber,
-            weekTitle = "Week $weekNumber",
-            weekSubtitle = "${days.count { !it.isRestDay }} workouts · ${days.count { it.isRestDay }} rest",
-            days = days,
-            todayDayNumber = days.firstOrNull { it.status == ProgramFlowDayStatus.Today }?.dayNumber,
-        )
-    }
-
     fun weeklyReport(programId: String, weekNumber: Int): WeeklyReportUi {
         val program = programs.firstOrNull { it.id == programId } ?: programs.first()
         return WeeklyReportUi(
@@ -92,23 +62,4 @@ object ProgramFlowPreviewData {
         )
     }
 
-    private fun day(
-        dayNumber: Int,
-        title: String,
-        subtitle: String,
-        status: ProgramFlowDayStatus,
-        exerciseCount: Int = 0,
-        durationMinutes: Int? = null,
-        plannedWorkoutId: String? = null,
-        isRestDay: Boolean = false,
-    ) = ProgramFlowDayUi(
-        dayNumber = dayNumber,
-        title = title,
-        subtitle = subtitle,
-        status = status,
-        exerciseCount = exerciseCount,
-        durationMinutes = durationMinutes,
-        plannedWorkoutId = plannedWorkoutId,
-        isRestDay = isRestDay,
-    )
 }

@@ -42,7 +42,6 @@ class DefaultWorkoutSessionRepository(
 ) : WorkoutSessionRepository {
     override suspend fun loadSession(workoutId: String): AppResult<WorkoutSessionUi> {
         return when {
-            workoutId == "preview" -> AppResult.Success(WorkoutSessionPreviewData.preview)
             WorkoutSessionKeys.parse(workoutId) != null -> {
                 AppResult.Failure("Session bridge not installed.")
             }

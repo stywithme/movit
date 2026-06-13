@@ -11,6 +11,7 @@
         {
           "joint": "right_knee",
           "role": "primary",
+          "trackingMode": "two_sides",
           "startPose": { "min": 150, "max": 180 },
           "upRange": {
             "perfect": { "min": 160, "max": 180 },

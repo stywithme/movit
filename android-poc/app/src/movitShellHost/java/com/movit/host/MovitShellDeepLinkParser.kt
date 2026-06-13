@@ -23,19 +23,17 @@ object MovitShellDeepLinkParser {
         val innerRoute = when (route) {
             MovitTrainingEntryNavigator.ROUTE_WORKOUT_SESSION ->
                 MovitInnerRoute.WorkoutSession(arg)
-            MovitTrainingEntryNavigator.ROUTE_WORKOUT_RUN ->
-                MovitInnerRoute.WorkoutRun(arg)
-            MovitTrainingEntryNavigator.ROUTE_WORKOUT_RUN_LOCAL -> {
+            MovitTrainingEntryNavigator.ROUTE_WORKOUT_SESSION_LOCAL -> {
                 seedLocalWorkoutCache(intent, arg)
-                MovitInnerRoute.WorkoutRun(arg)
+                MovitInnerRoute.WorkoutSession(arg)
             }
             MovitTrainingEntryNavigator.ROUTE_EXERCISE_PREPARE ->
                 MovitInnerRoute.ExercisePrepare(exerciseId = arg, workoutId = arg2)
             MovitTrainingEntryNavigator.ROUTE_ASSESSMENT ->
                 MovitInnerRoute.Assessment()
-            MovitTrainingEntryNavigator.ROUTE_PROGRAM_WEEK_PLAN -> {
+            MovitTrainingEntryNavigator.ROUTE_PROGRAM_DETAIL -> {
                 val week = arg2?.toIntOrNull() ?: 1
-                MovitInnerRoute.ProgramWeekPlan(programId = arg, weekNumber = week)
+                MovitInnerRoute.ProgramDetail(programId = arg, initialWeekNumber = week)
             }
             else -> return
         }

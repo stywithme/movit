@@ -30,7 +30,9 @@ class ProgramFlowSyncRepository(
             ProgramExportDto.serializer(),
         )
 
-    suspend fun syncExplore(): AppResult<ExploreDataDto> = exploreSync.sync()
+    suspend fun syncExplore(): AppResult<ExploreDataDto> =
+        exploreSync.readCached()?.let { AppResult.Success(it) }
+            ?: AppResult.Failure("Catalog not synced yet.")
 
     suspend fun syncHome(): AppResult<HomeDataDto> = homeSync.sync()
 

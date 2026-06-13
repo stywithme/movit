@@ -50,8 +50,33 @@ class MovitHomeViewModel(
             when (cacheState) {
                 is CacheState.Cached -> applyDashboard(cacheState.value)
                 is CacheState.Fresh -> applyDashboard(cacheState.value)
-                is CacheState.Error -> _state.update {
-                    it.copy(isLoading = false, errorMessage = cacheState.message)
+                is CacheState.Error -> {
+                    if (_state.value.metricTiles.isEmpty() &&
+                        _state.value.activeProgram == null &&
+                        _state.value.todayPlan == null
+                    ) {
+                        val language = if (MovitData.isInstalled) {
+                            MovitData.requirePlatform().preferredLanguage()
+                        } else {
+                            "en"
+                        }
+                        val strings = HomeStrings.load(language)
+                        val userDisplayName = if (MovitData.isInstalled) {
+                            MovitData.requirePlatform().userDisplayName()
+                        } else {
+                            _state.value.userName
+                        }
+                        applyDashboard(
+                            HomeApiMapper.coldStartOffline(
+                                userDisplayName = userDisplayName,
+                                strings = strings,
+                            ),
+                        )
+                    } else {
+                        _state.update {
+                            it.copy(isLoading = false, errorMessage = cacheState.message)
+                        }
+                    }
                 }
                 is CacheState.Loading -> Unit
             }

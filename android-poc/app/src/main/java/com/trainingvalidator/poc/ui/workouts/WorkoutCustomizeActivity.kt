@@ -116,7 +116,7 @@ class WorkoutCustomizeActivity : AppCompatActivity() {
 
             val customizedConfig = originalConfig.copy(exercises = exercises.toList())
             val workoutId = customizedConfig.fileName.ifBlank { "custom-workout" }
-            MovitTrainingEntryNavigator.openWorkoutRunWithLocalConfig(
+            MovitTrainingEntryNavigator.openWorkoutSessionWithLocalConfig(
                 context = this,
                 workoutId = workoutId,
                 workoutConfigJson = Gson().toJson(customizedConfig),

@@ -55,43 +55,6 @@ class SharedProgramFlowRepository : ProgramFlowRepository {
         )
     }
 
-    override fun observeWeekPlan(
-        programId: String,
-        weekNumber: Int,
-    ): Flow<CacheState<ProgramWeekPlanUi>> {
-        if (!MovitData.isInstalled) {
-            return flowOf(CacheState.Error(DATA_LAYER_NOT_INSTALLED))
-        }
-
-        val repo = MovitData.programFlow
-
-        return staleWhileRevalidate(
-            screenId = "program_week_plan",
-            readCached = {
-                val platform = MovitData.requirePlatform()
-                val language = platform.preferredLanguage()
-                val strings = ProgramFlowStrings.load(language)
-                val program = repo.readCachedProgram(programId) ?: return@staleWhileRevalidate null
-                val home = repo.readCachedHome()
-                ProgramFlowApiMapper.mapWeekPlan(program, weekNumber, home, language, strings)
-            },
-            syncFresh = {
-                val platform = MovitData.requirePlatform()
-                val language = platform.preferredLanguage()
-                val strings = ProgramFlowStrings.load(language)
-                val program = when (val result = repo.syncProgram(programId)) {
-                    is AppResult.Success -> result.value
-                    is AppResult.Failure -> repo.readCachedProgram(programId)
-                        ?: return@staleWhileRevalidate AppResult.Failure(result.message)
-                }
-                val home = loadHome(repo)
-                val plan = ProgramFlowApiMapper.mapWeekPlan(program, weekNumber, home, language, strings)
-                    ?: return@staleWhileRevalidate AppResult.Failure(strings.programNotFound)
-                AppResult.Success(plan)
-            },
-        )
-    }
-
     override suspend fun loadPrograms(): AppResult<List<ProgramListItemUi>> {
         if (!MovitData.isInstalled) {
             return AppResult.Failure(DATA_LAYER_NOT_INSTALLED)
@@ -120,32 +83,6 @@ class SharedProgramFlowRepository : ProgramFlowRepository {
         } else {
             AppResult.Failure(strings.programNotFound)
         }
-    }
-
-    override suspend fun loadWeekPlan(
-        programId: String,
-        weekNumber: Int,
-    ): AppResult<ProgramWeekPlanUi> {
-        if (!MovitData.isInstalled) {
-            return AppResult.Failure(DATA_LAYER_NOT_INSTALLED)
-        }
-
-        val platform = MovitData.requirePlatform()
-        val language = platform.preferredLanguage()
-        val strings = ProgramFlowStrings.load(language)
-        val repo = MovitData.programFlow
-
-        val program = when (val result = repo.syncProgram(programId)) {
-            is AppResult.Success -> result.value
-            is AppResult.Failure -> repo.readCachedProgram(programId)
-                ?: return AppResult.Failure(result.message)
-        }
-
-        val home = loadHome(repo)
-        val plan = ProgramFlowApiMapper.mapWeekPlan(program, weekNumber, home, language, strings)
-            ?: return AppResult.Failure(strings.programNotFound)
-
-        return AppResult.Success(plan)
     }
 
     override suspend fun loadWeeklyReport(

@@ -149,21 +149,4 @@ object MovitExplorePreviewData {
         exercises = exerciseOnly,
         programs = programs,
     )
-
-    /** Arabic sample block for RTL/catalog previews */
-    val featuredAr: List<ExploreItemUi> = listOf(
-        ExploreItemUi(
-            id = "workout-ar-1",
-            title = "قوة الجزء السفلي",
-            subtitle = "جلسة متوازنة تجمع السكوات والاندفاع وتمارين الحركة.",
-            type = ExploreItemType.Workout,
-            imageUrl = IMG_SQUAT,
-            badge = "مقترح",
-            badgeVariant = MovitTagVariant.Lime,
-            focusLabel = "الأرجل",
-            metadata = listOf("6 تمارين", "~24 دقيقة", "الأرجل"),
-            levelNumber = 1,
-            durationMinutes = 24,
-        ),
-    )
 }

@@ -151,7 +151,7 @@ flowchart TB
 
 ---
 
-## 5. المسارات الداخلية (`MovitInnerRoute`) — 17 نوعاً
+## 5. المسارات الداخلية (`MovitInnerRoute`) — 14 نوعاً
 
 الملف: `feature/shell/.../MovitInnerRoute.kt`  
 **الوصول:** `pushInner()` من ViewModel أو deep link.  
@@ -164,13 +164,10 @@ flowchart TB
 | `ExercisesLibrary` | `ExercisesLibraryScreen` | `ExercisesLibraryRoute` | قائمة تمارين قابلة للبحث والفلترة |
 | `WorkoutsLibrary` | `WorkoutsLibraryScreen` | `WorkoutsLibraryRoute` | قائمة تمارين مجمّعة (workouts) |
 | `ProgramList` | `ProgramListScreen` | `ProgramListRoute` | قائمة البرامج التدريبية |
-| `ProgramDetail(id)` | `ProgramDetailScreen` | `ProgramDetailRoute` | تفاصيل برنامج + أيام الأسبوع |
-| `ProgramWeekPlan(id, week)` | `ProgramWeekPlanScreen` | `ProgramWeekPlanRoute` | خطة أسبوع محدد (أيام + جلسات) |
+| `ProgramDetail(id, week?)` | `ProgramDetailScreen` | `ProgramDetailRoute` | تفاصيل برنامج + اختيار أسبوع/يوم وجلسات اليوم |
 | `WeeklyReport(id, week)` | `WeeklyReportScreen` | `WeeklyReportRoute` | تقرير أسبوعي + مشاركة |
-| `ExerciseDetail(id)` | `ExerciseDetailScreen` | `ExerciseDetailRoute` | تفاصيل تمرين + بدء |
 | `WorkoutSession(workoutId)` | `WorkoutSessionScreen` | `WorkoutSessionRoute` | جلسة مخطّطة (برنامج أو workout) |
-| `WorkoutRun(workoutId)` | `WorkoutRunScreen` | `WorkoutRunRoute` | تدفق التمرين: قائمة تمارين + تقدم |
-| `ExercisePrepare(...)` | `ExercisePrepareScreen` | `ExercisePrepareRoute` | تحضير قبل التمرين أو **راحة** (`prepareMode=rest`) |
+| `ExercisePrepare(...)` | `ExercisePrepareScreen` | `ExercisePrepareRoute` | تفاصيل/تحضير التمرين وبدء التدريب أو **راحة** (`prepareMode=rest`) |
 
 **مفتاح الجلسة المخططة:** `session:{programId}:{week}:{day}:{plannedWorkoutId}` — `WorkoutSessionKeys.kt`  
 **معاينة:** `workoutId = "preview"` من Train (وضع dev/QA).
@@ -179,18 +176,14 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-    EL[ExercisesLibrary] --> ED[ExerciseDetail]
+    EL[ExercisesLibrary] --> EP[ExercisePrepare]
     WL[WorkoutsLibrary] --> WS[WorkoutSession]
     PL[ProgramList] --> PD[ProgramDetail]
     PD --> WS
-    PWP[ProgramWeekPlan] --> WS
     PD --> WR[WeeklyReport]
-    WS --> WRun[WorkoutRun]
-    WS --> ED
-    WRun --> EP[ExercisePrepare]
-    ED --> EP
+    WS --> EP
     EP --> TS[TrainingSession]
-    TS -->|انتهاء| WRun
+    TS -->|انتهاء| WS
     TS -->|راحة| EP
     TS -->|تقرير| RD[ReportDetail]
 ```
@@ -301,7 +294,7 @@ flowchart LR
 | جلسة اليوم | `WorkoutSession` أو `preview` |
 | قائمة البرامج | `ProgramList` |
 | تفاصيل برنامج | `ProgramDetail` |
-| خطة الأسبوع | `ProgramWeekPlan` |
+| أسبوع محدد داخل البرنامج | `ProgramDetail(id, week)` |
 | تقرير أسبوعي | `WeeklyReport` |
 | Assessment | `Assessment` |
 | explore / reports | تبويب |
@@ -310,7 +303,7 @@ flowchart LR
 
 | الإجراء | الوجهة |
 |---------|--------|
-| مكتبة التمارين | `ExercisesLibrary` → `ExerciseDetail` |
+| مكتبة التمارين | `ExercisesLibrary` → `ExercisePrepare` |
 | مكتبة الـ workouts | `WorkoutsLibrary` → `WorkoutSession` |
 | البرامج | `ProgramList` → `ProgramDetail` |
 | عنصر في الشبكة | حسب النوع: Exercise / Workout / Program |
@@ -360,11 +353,10 @@ flowchart LR
 | route constant | القيمة | المعاملات | InnerRoute |
 |----------------|--------|-----------|------------|
 | `ROUTE_WORKOUT_SESSION` | `workout_session` | sessionKey | `WorkoutSession` |
-| `ROUTE_WORKOUT_RUN` | `workout_run` | workoutId | `WorkoutRun` |
-| `ROUTE_WORKOUT_RUN_LOCAL` | `workout_run_local` | workoutId + JSON config | `WorkoutRun` (+ seed cache) |
+| `ROUTE_WORKOUT_SESSION_LOCAL` | `workout_session_local` | workoutId + JSON config | `WorkoutSession` (+ seed cache) |
 | `ROUTE_EXERCISE_PREPARE` | `exercise_prepare` | exerciseId, workoutId? | `ExercisePrepare` |
 | `ROUTE_ASSESSMENT` | `assessment` | — | `Assessment` |
-| `ROUTE_PROGRAM_WEEK_PLAN` | `program_week_plan` | programId, week | `ProgramWeekPlan` |
+| `ROUTE_PROGRAM_DETAIL` | `program_detail` | programId, week? | `ProgramDetail` |
 
 **Extras:** `movit.shell.route` · `movit.shell.arg` · `movit.shell.arg2` · `movit.shell.workout_config_json`
 
@@ -389,8 +381,7 @@ flowchart LR
 | `MovitPlaceholderScreen` | `feature/shell` | **لا مراجع** في composables |
 | `MovitComponentsRoute` | `feature/shell` | غير موصول — الكتالوج يُستدعى مباشرة من Activity |
 | `MovitAppShellEvent.ExploreItemSelected` | shell | يُعالج في ViewModel لكن **لا يُصدَر من UI** (اختبارات فقط) |
-| `MovitTrainingEntryNavigator.openWorkoutRun()` | app | **لا مستدعين** — يُستخدم `openWorkoutRunWithLocalConfig` فقط |
-| `WorkoutCustomizeScreen` + `WorkoutCustomizeViewModel` | `feature/library` | ملفات KMP **بدون Route** — النسخة الفعالة legacy فقط |
+| `WorkoutCustomizeScreen` + `WorkoutCustomizeViewModel` | `feature/library` | حُذفا من KMP؛ النسخة الفعالة legacy فقط |
 | `ReportPagerActivity` | `app/.../report/` | كود موجود · **غير مسجّل** في Manifest (استُبدل بـ `WorkoutReportActivity`) |
 | `ProgramSessionReportActivity` | `app/.../programs/` | نفس الحالة |
 | `movitShellDisabled/MovitMainActivity` | app | stub إعادة توجيه فقط |
@@ -508,8 +499,8 @@ flowchart LR
 | الفئة | العدد |
 |-------|-------|
 | تبويبات KMP رئيسية | **5** |
-| أنواع `MovitInnerRoute` | **17** (16 نشطة + 1 ميتة `ExerciseLive`) |
-| شاشات KMP (Screen composables) | **~35** شاشة/لوحة رئيسية |
+| أنواع `MovitInnerRoute` | **14** (13 نشطة + 1 ميتة `ExerciseLive`) |
+| شاشات KMP (Screen composables) | **~32** شاشة/لوحة رئيسية |
 | شاشات فرعية (enum داخل شاشة) | **~25** حالة/خطوة |
 | Activities legacy (Manifest) | **~22** |
 | Fragments legacy | **~25** |

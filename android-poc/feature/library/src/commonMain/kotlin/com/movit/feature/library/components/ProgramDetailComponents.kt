@@ -68,6 +68,9 @@ import com.movit.feature.library.ProgramEditUiState
 import com.movit.feature.library.ProgramEnrollmentUi
 import com.movit.feature.library.ProgramStatUi
 import com.movit.feature.library.ProgramWeekUi
+import com.movit.feature.library.WeekOfflineStatus
+import com.movit.feature.library.WeekOfflineUiState
+import com.movit.feature.library.ProgramWeekOfflineCopy
 import com.movit.resources.movitText
 
 @Composable
@@ -355,6 +358,96 @@ fun ProgramWeekStrip(
                     MovitProgressBar(
                         progressPercent = week.progressPercent,
                         modifier = Modifier.padding(top = MovitSpacing.sm),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ProgramWeekOfflinePanel(
+    weekOffline: WeekOfflineUiState,
+    onDownload: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val movit = MaterialTheme.movitColors
+    val scheme = MaterialTheme.colorScheme
+    MovitCard(
+        modifier = modifier.fillMaxWidth(),
+        variant = when (weekOffline.status) {
+            WeekOfflineStatus.Ready -> MovitCardVariant.Outlined
+            else -> MovitCardVariant.Filled
+        },
+    ) {
+        Column(
+            modifier = Modifier.padding(MovitSpacing.lg),
+            verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
+        ) {
+            when (weekOffline.status) {
+                WeekOfflineStatus.Ready -> {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Surface(
+                            modifier = Modifier.size(34.dp),
+                            shape = RoundedCornerShape(13.dp),
+                            color = movit.successTint,
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = movit.success,
+                                )
+                            }
+                        }
+                        Text(
+                            text = ProgramWeekOfflineCopy.ready,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.W800,
+                            color = movit.success,
+                        )
+                    }
+                }
+                WeekOfflineStatus.Downloading -> {
+                    Text(
+                        text = ProgramWeekOfflineCopy.downloading,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.W700,
+                    )
+                    MovitProgressBar(
+                        progressPercent = weekOffline.progressPercent.coerceIn(0, 100),
+                    )
+                    Text(
+                        text = "${weekOffline.progressPercent.coerceIn(0, 100)}%",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = movit.textTertiary,
+                    )
+                }
+                WeekOfflineStatus.Failed -> {
+                    Text(
+                        text = weekOffline.errorMessage ?: ProgramWeekOfflineCopy.downloadFailed,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = scheme.error,
+                    )
+                    MovitButton(
+                        text = ProgramWeekOfflineCopy.retry,
+                        onClick = onDownload,
+                        variant = MovitButtonVariant.Outlined,
+                    )
+                }
+                WeekOfflineStatus.Idle -> {
+                    Text(
+                        text = ProgramWeekOfflineCopy.downloadAction,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = movit.textSecondary,
+                    )
+                    MovitButton(
+                        text = ProgramWeekOfflineCopy.downloadAction,
+                        onClick = onDownload,
+                        variant = MovitButtonVariant.Outlined,
                     )
                 }
             }

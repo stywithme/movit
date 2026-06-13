@@ -48,7 +48,12 @@ suspend fun resolveTrainingStartWithEnsure(
     }
     MovitData.bootstrapLocalCaches()
 
-    val normalized = normalizeTrainingSlug(slug)
+    val normalized = MovitData.trainingConfig.resolveAvailableSlug(
+        slug,
+        exerciseId,
+        normalizeTrainingSlug(slug),
+        exerciseId?.let(::normalizeTrainingSlug),
+    ) ?: normalizeTrainingSlug(slug)
     when (val ensureResult = MovitData.trainingConfig.ensure(
         slug = normalized,
         workoutTemplateId = workoutId,
@@ -59,7 +64,7 @@ suspend fun resolveTrainingStartWithEnsure(
     }
 
     val base = resolveTrainingStartAction(
-        slug = slug,
+        slug = normalized,
         exerciseName = exerciseName,
         targetReps = targetReps,
         workoutId = workoutId,

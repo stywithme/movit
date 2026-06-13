@@ -11,12 +11,12 @@ sealed interface MovitInnerRoute {
     data object ExercisesLibrary : MovitInnerRoute
     data object WorkoutsLibrary : MovitInnerRoute
     data object ProgramList : MovitInnerRoute
-    data class ProgramWeekPlan(val programId: String, val weekNumber: Int = 1) : MovitInnerRoute
     data class WeeklyReport(val programId: String, val weekNumber: Int = 1) : MovitInnerRoute
-    data class ProgramDetail(val programId: String) : MovitInnerRoute
+    data class ProgramDetail(
+        val programId: String,
+        val initialWeekNumber: Int? = null,
+    ) : MovitInnerRoute
     data class WorkoutSession(val workoutId: String) : MovitInnerRoute
-    data class WorkoutRun(val workoutId: String) : MovitInnerRoute
-    data class ExerciseDetail(val exerciseId: String) : MovitInnerRoute
     data class ExercisePrepare(
         val exerciseId: String,
         val workoutId: String? = null,

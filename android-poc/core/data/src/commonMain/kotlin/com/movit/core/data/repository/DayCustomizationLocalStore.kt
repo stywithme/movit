@@ -17,7 +17,7 @@ import kotlinx.serialization.json.jsonObject
  * Offline-first day customization overrides on [MovitLocalStore].
  * Ported from legacy [com.trainingvalidator.poc.storage.DayCustomizationStore].
  */
-class DayCustomizationLocalStore(
+open class DayCustomizationLocalStore(
     private val localStore: MovitLocalStore,
 ) {
     fun get(
@@ -76,7 +76,7 @@ class DayCustomizationLocalStore(
         )
     }
 
-    fun hydrateFromBackend(
+    open fun hydrateFromBackend(
         userProgramId: String,
         customizations: JsonElement?,
         serverCustomizationsUpdatedAt: String? = null,

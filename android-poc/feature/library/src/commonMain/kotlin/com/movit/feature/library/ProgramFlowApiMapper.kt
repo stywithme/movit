@@ -4,7 +4,6 @@ import com.movit.core.network.dto.ExploreDataDto
 import com.movit.core.network.dto.ExploreProgramDto
 import com.movit.core.network.dto.HomeDataDto
 import com.movit.core.network.dto.LocalizedNameDto
-import com.movit.core.network.dto.ProgramExportDayDto
 import com.movit.core.network.dto.ProgramExportDto
 import com.movit.core.network.dto.ProgramProgressMetricsPayloadDto
 import com.movit.core.network.dto.ReportDashboardSummaryDto
@@ -24,54 +23,6 @@ object ProgramFlowApiMapper {
         return explore.programs.map { program ->
             program.toListItem(language, strings, isActive = program.id == activeProgramId)
         }
-    }
-
-    suspend fun mapWeekPlan(
-        program: ProgramExportDto,
-        weekNumber: Int,
-        home: HomeDataDto?,
-        language: String,
-        strings: ProgramFlowStrings,
-    ): ProgramWeekPlanUi? {
-        val week = program.weeks.firstOrNull { it.weekNumber == weekNumber } ?: return null
-        val active = home?.trainMode?.activeProgram
-        val isActiveProgram = active?.id == program.id
-        val activeWeek = active?.weekNumber ?: 1
-        val activeDay = active?.dayNumber ?: 1
-        val completedDays = active?.weekProgress?.completed ?: 0
-        val isRestDay = home?.trainMode?.status == "rest_day"
-
-        val days = buildList {
-            week.days.sortedBy { it.dayNumber }.forEach { day ->
-                val status = resolveDayStatus(
-                    dayNumber = day.dayNumber,
-                    isRestDay = day.isRestDay,
-                    isActiveProgram = isActiveProgram,
-                    activeWeek = activeWeek,
-                    viewingWeek = weekNumber,
-                    activeDay = activeDay,
-                    completedDays = completedDays,
-                    isTodayRestDay = isRestDay && isActiveProgram && weekNumber == activeWeek,
-                )
-                add(mapDay(day, language, strings, status))
-            }
-        }
-
-        val weekTitle = week.target?.localized(language)?.takeIf { it.isNotBlank() }
-            ?: strings.weekTitle(weekNumber)
-        val workoutDays = days.count { !it.isRestDay }
-        val restDays = days.count { it.isRestDay }
-
-        return ProgramWeekPlanUi(
-            programId = program.id,
-            programSlug = program.slug,
-            programName = program.name.localized(language),
-            weekNumber = weekNumber,
-            weekTitle = weekTitle,
-            weekSubtitle = strings.weekSubtitle(workoutDays, restDays),
-            days = days,
-            todayDayNumber = days.firstOrNull { it.status == ProgramFlowDayStatus.Today }?.dayNumber,
-        )
     }
 
     suspend fun mapWeekSummaries(
@@ -170,62 +121,6 @@ object ProgramFlowApiMapper {
     }
 
     private fun ExploreProgramDto.weeklyWorkoutTargetFromExplore(): Int = 5
-
-    private suspend fun mapDay(
-        day: ProgramExportDayDto,
-        language: String,
-        strings: ProgramFlowStrings,
-        status: ProgramFlowDayStatus,
-    ): ProgramFlowDayUi {
-        val workout = day.plannedWorkouts.firstOrNull()
-        val dayLabel = strings.dayShort(day.dayNumber)
-        val title = when {
-            day.isRestDay -> strings.daySubtitleRest
-            workout != null -> workout.name.localized(language).ifBlank { dayLabel }
-            else -> dayLabel
-        }
-        val exerciseCount = workout?.let { 1 } ?: 0
-        val durationMinutes = workout?.estimatedDurationMin
-        val subtitle = when (status) {
-            ProgramFlowDayStatus.Done -> strings.daySubtitleCompleted
-            ProgramFlowDayStatus.Today -> strings.daySubtitleTodayDetail(exerciseCount, durationMinutes)
-            ProgramFlowDayStatus.Rest -> strings.daySubtitleRest
-            ProgramFlowDayStatus.Planned -> strings.daySubtitlePlanned
-        }
-        return ProgramFlowDayUi(
-            dayNumber = day.dayNumber,
-            title = title,
-            subtitle = subtitle,
-            status = status,
-            exerciseCount = exerciseCount,
-            durationMinutes = durationMinutes,
-            plannedWorkoutId = workout?.id?.takeIf { it.isNotBlank() },
-            isRestDay = day.isRestDay,
-        )
-    }
-
-    private fun resolveDayStatus(
-        dayNumber: Int,
-        isRestDay: Boolean,
-        isActiveProgram: Boolean,
-        activeWeek: Int,
-        viewingWeek: Int,
-        activeDay: Int,
-        completedDays: Int,
-        isTodayRestDay: Boolean,
-    ): ProgramFlowDayStatus {
-        if (isRestDay) return ProgramFlowDayStatus.Rest
-        if (!isActiveProgram || viewingWeek != activeWeek) {
-            return ProgramFlowDayStatus.Planned
-        }
-        return when {
-            dayNumber < activeDay && dayNumber <= completedDays -> ProgramFlowDayStatus.Done
-            dayNumber == activeDay && isTodayRestDay -> ProgramFlowDayStatus.Rest
-            dayNumber == activeDay -> ProgramFlowDayStatus.Today
-            dayNumber < activeDay -> ProgramFlowDayStatus.Done
-            else -> ProgramFlowDayStatus.Planned
-        }
-    }
 
     private fun estimateCompletedSessions(
         weekMetrics: WeekProgressPointDto?,

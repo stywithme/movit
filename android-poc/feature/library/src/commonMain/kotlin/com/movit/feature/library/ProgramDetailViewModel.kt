@@ -8,6 +8,8 @@ import androidx.lifecycle.viewModelScope
 
 import com.movit.core.data.MovitData
 
+import com.movit.core.data.sync.WeekOfflinePackPrefetcher
+
 import com.movit.core.network.dto.EffectivePlanPayloadDto
 
 import com.movit.core.network.dto.ProgramExportDto
@@ -47,6 +49,7 @@ import kotlinx.coroutines.launch
 class ProgramDetailViewModel(
 
     private val programId: String,
+    initialWeekNumber: Int? = null,
 
     private val repository: LibraryRepository = defaultLibraryRepository(),
 
@@ -64,6 +67,24 @@ class ProgramDetailViewModel(
 
     ) -> AppResult<Unit> = defaultSaveDayCustomizations(),
 
+    private val prefetchWeekOffline: suspend (
+
+        ProgramExportDto,
+
+        Int,
+
+        (Int) -> Unit,
+
+    ) -> WeekOfflinePackPrefetcher.PrefetchOutcome = defaultPrefetchWeekOffline(),
+
+    private val isWeekOfflineReady: (String, Int) -> Boolean = defaultIsWeekOfflineReady(),
+
+    private val programExportLoader: suspend (String) -> ProgramExportDto? = { programId ->
+
+        loadProgramExportForDetail(programId)
+
+    },
+
 ) : ViewModel() {
 
     private val toastScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -80,11 +101,14 @@ class ProgramDetailViewModel(
 
     private var enrollment = ProgramEnrollmentUi(isEnrolled = false)
 
-    private var selectedWeekNumber = 1
+    private var selectedWeekNumber = initialWeekNumber ?: 1
 
     private var selectedDayNumber: Int? = null
 
-    private var editState = ProgramEditUiState(startDateLabel = "Jun 2")
+    private var editState = ProgramEditUiState(
+        startDateLabel = "Jun 2",
+        editingWeekNumber = selectedWeekNumber,
+    )
 
 
 
@@ -128,7 +152,7 @@ class ProgramDetailViewModel(
 
                     loadedProgram = program
 
-                    loadedProgramExport = loadProgramExport(program.id)
+                    loadedProgramExport = programExportLoader(program.id)
 
                     enrollment = resolveEnrollment(program.id)
 
@@ -217,6 +241,138 @@ class ProgramDetailViewModel(
                 publish(program)
 
             }
+
+        }
+
+    }
+
+
+
+    fun onDownloadWeekOffline() {
+
+        val program = loadedProgram ?: return
+
+        val export = loadedProgramExport
+
+        if (export == null) {
+
+            _state.update {
+
+                it.copy(
+
+                    weekOffline = WeekOfflineUiState(
+
+                        status = WeekOfflineStatus.Failed,
+
+                        errorMessage = ProgramWeekOfflineCopy.programNotLoaded,
+
+                    ),
+
+                )
+
+            }
+
+            return
+
+        }
+
+        if (!enrollment.isEnrolled) {
+
+            _state.update {
+
+                it.copy(
+
+                    weekOffline = WeekOfflineUiState(
+
+                        status = WeekOfflineStatus.Failed,
+
+                        errorMessage = ProgramWeekOfflineCopy.enrollFirst,
+
+                    ),
+
+                )
+
+            }
+
+            return
+
+        }
+
+        toastScope.launch {
+
+            _state.update {
+
+                it.copy(
+
+                    weekOffline = WeekOfflineUiState(
+
+                        status = WeekOfflineStatus.Downloading,
+
+                        progressPercent = 0,
+
+                        errorMessage = null,
+
+                    ),
+
+                )
+
+            }
+
+            val outcome = prefetchWeekOffline(export, selectedWeekNumber) { percent ->
+
+                _state.update { current ->
+
+                    current.copy(
+
+                        weekOffline = current.weekOffline.copy(
+
+                            status = WeekOfflineStatus.Downloading,
+
+                            progressPercent = percent,
+
+                        ),
+
+                    )
+
+                }
+
+            }
+
+            val weekOffline = when (outcome) {
+
+                is WeekOfflinePackPrefetcher.PrefetchOutcome.Ready ->
+
+                    WeekOfflineUiState(
+
+                        status = WeekOfflineStatus.Ready,
+
+                        progressPercent = 100,
+
+                    )
+
+                is WeekOfflinePackPrefetcher.PrefetchOutcome.SkippedNoWeek ->
+
+                    WeekOfflineUiState(
+
+                        status = WeekOfflineStatus.Failed,
+
+                        errorMessage = ProgramWeekOfflineCopy.weekUnavailable,
+
+                    )
+
+                is WeekOfflinePackPrefetcher.PrefetchOutcome.Failed ->
+
+                    WeekOfflineUiState(
+
+                        status = WeekOfflineStatus.Failed,
+
+                        errorMessage = outcome.message.ifBlank { ProgramWeekOfflineCopy.downloadFailed },
+
+                    )
+
+            }
+
+            _state.update { it.copy(weekOffline = weekOffline) }
 
         }
 
@@ -636,7 +792,7 @@ class ProgramDetailViewModel(
 
                 is AppResult.Success -> {
 
-                    loadedProgramExport = loadProgramExport(program.id) ?: loadedProgramExport
+                    loadedProgramExport = programExportLoader(program.id) ?: loadedProgramExport
 
                     enrollment = resolveEnrollment(program.id).copy(
 
@@ -806,24 +962,6 @@ class ProgramDetailViewModel(
 
 
 
-    private suspend fun loadProgramExport(programId: String): ProgramExportDto? {
-
-        if (!MovitData.isInstalled) return null
-
-        val repo = MovitData.programFlow
-
-        return when (val result = repo.syncProgram(programId)) {
-
-            is AppResult.Success -> result.value
-
-            is AppResult.Failure -> repo.readCachedProgram(programId)
-
-        }
-
-    }
-
-
-
     private fun resolveEnrollment(programId: String): ProgramEnrollmentUi {
 
         if (!MovitData.isInstalled) {
@@ -976,9 +1114,99 @@ class ProgramDetailViewModel(
 
             subtitle = program.subtitle,
 
+            weekOffline = resolveWeekOfflineState(program.id, selectedWeekNumber),
+
         )
 
     }
+
+
+
+    private fun resolveWeekOfflineState(programId: String, weekNumber: Int): WeekOfflineUiState {
+
+        val current = _state.value.weekOffline
+
+        if (current.status == WeekOfflineStatus.Downloading) return current
+
+        return if (isWeekOfflineReady(programId, weekNumber)) {
+
+            WeekOfflineUiState(status = WeekOfflineStatus.Ready, progressPercent = 100)
+
+        } else {
+
+            WeekOfflineUiState(
+
+                status = if (current.status == WeekOfflineStatus.Failed) {
+
+                    WeekOfflineStatus.Failed
+
+                } else {
+
+                    WeekOfflineStatus.Idle
+
+                },
+
+                errorMessage = current.errorMessage,
+
+            )
+
+        }
+
+    }
+
+}
+
+
+
+private suspend fun loadProgramExportForDetail(programId: String): ProgramExportDto? {
+
+    if (!MovitData.isInstalled) return null
+
+    val repo = MovitData.programFlow
+
+    return when (val result = repo.syncProgram(programId)) {
+
+        is AppResult.Success -> result.value
+
+        is AppResult.Failure -> repo.readCachedProgram(programId)
+
+    }
+
+}
+
+
+
+private fun defaultPrefetchWeekOffline(): suspend (
+
+    ProgramExportDto,
+
+    Int,
+
+    (Int) -> Unit,
+
+) -> WeekOfflinePackPrefetcher.PrefetchOutcome = { program, weekNumber, onProgress ->
+
+    if (!MovitData.isInstalled) {
+
+        WeekOfflinePackPrefetcher.PrefetchOutcome.Failed(ProgramWeekOfflineCopy.signInRequired)
+
+    } else {
+
+        MovitData.weekOfflinePrefetch.prefetchWeek(program, weekNumber) { progress ->
+
+            onProgress(progress.percent)
+
+        }
+
+    }
+
+}
+
+
+
+private fun defaultIsWeekOfflineReady(): (String, Int) -> Boolean = { programId, weekNumber ->
+
+    MovitData.isInstalled && MovitData.weekOfflinePrefetch.isWeekReadyOffline(programId, weekNumber)
 
 }
 

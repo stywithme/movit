@@ -3,6 +3,7 @@ package com.trainingvalidator.poc.sensors
 import android.content.Context
 import android.hardware.SensorEventListener
 import androidx.test.core.app.ApplicationProvider
+import com.trainingvalidator.poc.UnitTestApplication
 import com.trainingvalidator.poc.training.config.DeviceTiltSettings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -10,10 +11,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import kotlin.math.cos
 import kotlin.math.sin
 
 @RunWith(RobolectricTestRunner::class)
+@Config(application = UnitTestApplication::class)
 class DeviceTiltProviderTest {
 
     @Test
