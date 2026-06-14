@@ -71,6 +71,7 @@ internal fun testWorkoutSessionRepository(
         platform = { platform },
         localStore = { localStore },
         mobileWrites = testMobileWriteRepository(engine, platform, localStore),
+        trainingConfig = TrainingConfigRepository(localStore),
     )
 }
 

@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import com.movit.core.data.MovitData
+import com.movit.core.data.repository.TrainingConfigEnsureResult
+import com.movit.core.data.repository.ensure
 import kotlinx.coroutines.launch
 
 enum class ExercisePrepareMode {
@@ -43,14 +45,14 @@ data class ExercisePrepareUi(
 
 data class ExercisePrepareUiState(
     val isLoading: Boolean = false,
-    val isEnsuringConfig: Boolean = false,
-    val trainingConfigUnavailable: TrainingConfigUnavailableUi? = null,
     val mode: ExercisePrepareMode = ExercisePrepareMode.Prepare,
     val exercise: ExercisePrepareUi? = null,
     val upNextExercise: ExercisePrepareUi? = null,
     val restSeconds: Int = 30,
     val isRestPaused: Boolean = false,
     val errorMessage: String? = null,
+    val isEnsuringConfig: Boolean = false,
+    val trainingConfigUnavailableMessage: String? = null,
 ) {
     val displayExercise: ExercisePrepareUi?
         get() = when (mode) {
@@ -90,7 +92,14 @@ class ExercisePrepareViewModel(
         if (MovitData.isInstalled) {
             MovitData.bootstrapLocalCaches()
         }
-        _state.update { it.copy(isLoading = true, errorMessage = null) }
+        _state.update {
+            it.copy(
+                isLoading = true,
+                errorMessage = null,
+                isEnsuringConfig = false,
+                trainingConfigUnavailableMessage = null,
+            )
+        }
         val exercise = ExerciseContentMapper.loadWorkoutExercise(exerciseId, workoutId)
             ?: ExerciseContentMapper.loadExercise(exerciseId, repository)
         if (exercise == null) {
@@ -113,6 +122,16 @@ class ExercisePrepareViewModel(
                     isRestPaused = false,
                 )
             }
+            val configSlug = exercise.legacyFileName.ifBlank { exercise.exerciseSlug }
+            logTrainingConfigCache(
+                context = "enter_prepare",
+                snapshot = inspectTrainingConfigCache(
+                    slug = configSlug,
+                    exerciseId = exercise.id,
+                    exerciseName = exercise.name,
+                ),
+                workoutId = workoutId,
+            )
             if (initialMode == ExercisePrepareMode.Rest) {
                 startRestTimer()
             }
@@ -154,59 +173,111 @@ class ExercisePrepareViewModel(
     }
 
     fun requestTrainingStart(workoutId: String? = null) {
+        if (_state.value.isEnsuringConfig) return
         val exercise = _state.value.displayExercise ?: return
         viewModelScope.launch {
+            val slug = exercise.legacyFileName.ifBlank { exercise.exerciseSlug }
+            val cacheSnapshot = inspectTrainingConfigCache(
+                slug = slug,
+                exerciseId = exercise.id,
+                exerciseName = exercise.name,
+            )
+            logTrainingConfigCache(
+                context = "start_pressed",
+                snapshot = cacheSnapshot,
+                workoutId = workoutId,
+            )
             _state.update {
                 it.copy(
                     isEnsuringConfig = true,
-                    trainingConfigUnavailable = null,
+                    trainingConfigUnavailableMessage = null,
                 )
             }
-            val slug = exercise.legacyFileName.ifBlank { exercise.exerciseSlug }
+            val ensured = runCatching {
+                ensureTrainingConfig(
+                    slug = slug,
+                    workoutTemplateId = workoutId,
+                )
+            }.getOrElse {
+                TrainingConfigEnsureResult.Unavailable(
+                    TrainingConfigEnsureResult.Unavailable.Reason.NotFoundAfterSync,
+                )
+            }
+            val resolvedSnapshot = inspectTrainingConfigCache(
+                slug = slug,
+                exerciseId = exercise.id,
+                exerciseName = exercise.name,
+            )
+            if (ensured is TrainingConfigEnsureResult.Unavailable) {
+                val message = when (ensured.reason) {
+                    TrainingConfigEnsureResult.Unavailable.Reason.Offline ->
+                        "training_config_offline_unavailable"
+                    TrainingConfigEnsureResult.Unavailable.Reason.NotFoundAfterSync ->
+                        "training_config_first_use_online"
+                }
+                _state.update {
+                    it.copy(
+                        isEnsuringConfig = false,
+                        trainingConfigUnavailableMessage = message,
+                    )
+                }
+                logTrainingConfigCache(
+                    context = "start_blocked",
+                    snapshot = resolvedSnapshot,
+                    workoutId = workoutId,
+                    extra = "reason=${ensured.reason}",
+                )
+                return@launch
+            }
             val reps = exercise.reps.filter { it.isDigit() }.toIntOrNull() ?: 12
             val flowConfig = workoutId?.let { WorkoutFlowCache.get(it) }
             val progress = workoutId?.let { WorkoutRunProgressStore.read(it) }
             val startIndex = progress?.exerciseIndex ?: 0
             val flowItems = flowConfig?.toTrainingFlowItems(startIndex)
-            when (
-                val result = resolveTrainingStartWithEnsure(
-                    slug = slug,
-                    exerciseName = exercise.name,
-                    targetReps = reps,
+            val action = resolveTrainingStart(
+                slug = slug,
+                exerciseName = exercise.name,
+                targetReps = reps,
+                workoutId = workoutId,
+                flowItems = flowItems,
+                startExerciseIndex = startIndex,
+                exerciseId = exercise.id,
+            )
+            if (action == null) {
+                _state.update {
+                    it.copy(
+                        isEnsuringConfig = false,
+                        trainingConfigUnavailableMessage = "training_config_first_use_online",
+                    )
+                }
+                logTrainingConfigCache(
+                    context = "start_blocked",
+                    snapshot = resolvedSnapshot,
                     workoutId = workoutId,
-                    flowItems = flowItems,
-                    startExerciseIndex = startIndex,
-                    exerciseId = exercise.id,
+                    extra = "reason=no_cached_config",
                 )
-            ) {
-                is TrainingStartResolveResult.Ready -> {
-                    val action = when (val resolved = result.action) {
-                        is TrainingStartAction.KmpLive -> resolved.copy(
-                            plannedWorkout = workoutId?.let { resolvePlannedWorkoutLaunch(it, null) },
-                        )
-                        else -> resolved
-                    }
-                    _state.update { it.copy(isEnsuringConfig = false) }
-                    _startEffects.emit(action)
-                }
-                is TrainingStartResolveResult.Unavailable -> {
-                    _state.update {
-                        it.copy(
-                            isEnsuringConfig = false,
-                            trainingConfigUnavailable = result.reason.toUi(),
-                        )
-                    }
-                }
+                return@launch
             }
+            _state.update {
+                it.copy(
+                    isEnsuringConfig = false,
+                    trainingConfigUnavailableMessage = null,
+                )
+            }
+            logTrainingConfigCache(
+                context = "start_launching",
+                snapshot = resolvedSnapshot,
+                workoutId = workoutId,
+                extra = "launchSlug=${(action as? TrainingStartAction.KmpLive)?.slug}",
+            )
+            val resolved = when (action) {
+                is TrainingStartAction.KmpLive -> action.copy(
+                    plannedWorkout = workoutId?.let { resolvePlannedWorkoutLaunch(it, null) },
+                )
+                else -> action
+            }
+            _startEffects.emit(resolved)
         }
-    }
-
-    fun retryTrainingConfigSync(workoutId: String? = null) {
-        requestTrainingStart(workoutId)
-    }
-
-    fun dismissTrainingConfigUnavailable() {
-        _state.update { it.copy(trainingConfigUnavailable = null) }
     }
 
     fun legacyFileNameForStart(): String? = _state.value.exercise?.legacyFileName
@@ -243,6 +314,21 @@ class ExercisePrepareViewModel(
 
     private fun prepareLanguage(): String =
         if (MovitData.isInstalled) MovitData.requirePlatform().preferredLanguage() else "en"
+
+    private suspend fun ensureTrainingConfig(
+        slug: String,
+        workoutTemplateId: String?,
+    ): TrainingConfigEnsureResult {
+        if (!MovitData.isInstalled) {
+            return TrainingConfigEnsureResult.Unavailable(
+                TrainingConfigEnsureResult.Unavailable.Reason.NotFoundAfterSync,
+            )
+        }
+        return MovitData.trainingConfig.ensure(
+            slug = slug,
+            workoutTemplateId = workoutTemplateId,
+        )
+    }
 
 }
 

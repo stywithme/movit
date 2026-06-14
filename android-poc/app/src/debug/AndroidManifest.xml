@@ -14,18 +14,13 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
 
+        <!-- No LAUNCHER — debug uses merged [MovitMainActivity] from main manifest (Phase A). -->
         <activity
             android:name="com.movit.debug.MovitShellPilotActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="Movit KMP Shell"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.WayToFix" />
     </application>
 
 </manifest>

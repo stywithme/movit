@@ -50,8 +50,6 @@ data class WorkoutRunSequenceItemUi(
 
 data class WorkoutRunUiState(
     val isLoading: Boolean = false,
-    val isEnsuringConfig: Boolean = false,
-    val trainingConfigUnavailable: TrainingConfigUnavailableUi? = null,
     val config: WorkoutFlowConfigUi? = null,
     val currentExerciseIndex: Int = 0,
     val currentSet: Int = 1,
@@ -91,21 +89,16 @@ fun normalizeTrainingSlug(slug: String): String = when {
     else -> slug
 }
 
-/** Resolves shell training entry — KMP live when config exists; legacy path removed in Phase 07. */
+/** Resolves shell training entry from local cache — KMP live when a config record exists. */
 fun resolveTrainingStartAction(
     slug: String,
     exerciseName: String,
     targetReps: Int,
     workoutId: String? = null,
+    exerciseId: String? = null,
 ): TrainingStartAction? {
     if (!com.movit.core.data.MovitData.isInstalled) return null
-    val normalized = com.movit.core.data.MovitData.trainingConfig.resolveAvailableSlug(
-        slug,
-        normalizeTrainingSlug(slug),
-    ) ?: return null
-    if (!com.movit.core.data.MovitData.trainingConfig.supports(normalized)) {
-        return null
-    }
+    val normalized = resolveCachedTrainingSlug(slug, exerciseId) ?: return null
     return TrainingStartAction.KmpLive(
         slug = normalized,
         exerciseName = exerciseName,

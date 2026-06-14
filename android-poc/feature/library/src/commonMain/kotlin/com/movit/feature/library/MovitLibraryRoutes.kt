@@ -271,25 +271,16 @@ fun ExercisePrepareRoute(
     LaunchedEffect(viewModel) {
         viewModel.startEffects.collect(onStart)
     }
-    Box(modifier = modifier) {
-        ExercisePrepareScreen(
-            state = state,
-            onBack = onBack,
-            onStart = { viewModel.requestTrainingStart(workoutId = workoutId) },
-            onSkipRest = viewModel::skipRest,
-            onToggleRestPause = viewModel::toggleRestPause,
-            onAddRestTime = viewModel::addRestTime,
-            onRetry = { scope.launch { viewModel.load() } },
-            onPoseVariantSelected = viewModel::selectPoseVariant,
-            modifier = Modifier.fillMaxSize(),
-        )
-        TrainingConfigEnsureOverlay(
-            isEnsuring = state.isEnsuringConfig,
-            unavailable = state.trainingConfigUnavailable,
-            onSyncNow = { viewModel.retryTrainingConfigSync(workoutId) },
-            onDismiss = viewModel::dismissTrainingConfigUnavailable,
-            modifier = Modifier.fillMaxSize(),
-        )
-    }
+    ExercisePrepareScreen(
+        state = state,
+        onBack = onBack,
+        onStart = { viewModel.requestTrainingStart(workoutId = workoutId) },
+        onSkipRest = viewModel::skipRest,
+        onToggleRestPause = viewModel::toggleRestPause,
+        onAddRestTime = viewModel::addRestTime,
+        onRetry = { scope.launch { viewModel.load() } },
+        onPoseVariantSelected = viewModel::selectPoseVariant,
+        modifier = modifier,
+    )
 }
 

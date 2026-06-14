@@ -72,6 +72,8 @@ fun movitDataModule(
             homeSync = get(),
             exploreSync = get(),
             systemMessageCache = get(),
+            trainingConfig = get(),
+            messageLibraryCache = get(),
         )
     }
     single {
@@ -108,6 +110,7 @@ fun movitDataModule(
             platform = { get() },
             localStore = { get() },
             mobileWrites = get(),
+            trainingConfig = get(),
         )
     }
     single { SessionJournalStore(localStore = get()) }

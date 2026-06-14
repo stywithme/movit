@@ -2,7 +2,7 @@
 /**
  * Build-time generator for cold_offline_bundle.json (FIX-4).
  *
- * Fetches REAL catalog + system messages from GET /api/mobile/sync and writes the
+ * Fetches REAL catalog, exercise configs, message library, and system messages from GET /api/mobile/sync and writes the
  * bundled first-install seed. Home is intentionally omitted (user-specific; comes from sync after login).
  *
  * Usage:
@@ -190,6 +190,19 @@ function mapSystemMessages(messages) {
     .sort((a, b) => a.code.localeCompare(b.code));
 }
 
+function mapMessageLibrary(messages) {
+  return (messages ?? [])
+    .map((m) => ({
+      id: str(m, 'id'),
+      code: str(m, 'code'),
+      category: str(m, 'category'),
+      context: typeof m.context === 'string' ? m.context : null,
+      content: localizedName(m, 'content'),
+    }))
+    .filter((m) => m.id.length > 0 && m.code.length > 0)
+    .sort((a, b) => a.code.localeCompare(b.code));
+}
+
 async function main() {
   const { baseUrl, out } = parseArgs(process.argv);
   const url = `${baseUrl.replace(/\/$/, '')}/api/mobile/sync`;
@@ -206,11 +219,18 @@ async function main() {
   }
 
   const explore = mapSyncPayloadToExploreSlice(body.data);
+  const exercises = body.data.exercises ?? [];
+  const messageLibrary = mapMessageLibrary(body.data.messageLibrary);
   const systemMessages = mapSystemMessages(body.data.systemMessages);
+  if (exercises.length === 0) {
+    throw new Error('Sync response contained no exercise configs; refusing to write an incomplete offline bundle.');
+  }
 
   const bundle = {
     home: null,
     explore,
+    exercises,
+    messageLibrary,
     systemMessages,
   };
 
@@ -219,7 +239,8 @@ async function main() {
   console.log('Wrote', out);
   console.log(
     `  programs=${explore.programs.length} workouts=${explore.workoutTemplates.length} ` +
-      `exercises=${explore.exercises.length} systemMessages=${systemMessages.length}`,
+      `exploreExercises=${explore.exercises.length} trainingConfigs=${exercises.length} ` +
+      `messageLibrary=${messageLibrary.length} systemMessages=${systemMessages.length}`,
   );
   console.log('  home=null (user-specific; not bundled)');
 }

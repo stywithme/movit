@@ -106,7 +106,8 @@ fun ExercisePrepareScreen(
                     PrepareStartDock(
                         sessionSummary = state.exercise.sessionSummary,
                         onStart = onStart,
-                        startEnabled = !state.isEnsuringConfig,
+                        enabled = !state.isEnsuringConfig,
+                        isEnsuringConfig = state.isEnsuringConfig,
                         modifier = Modifier.padding(MovitSpacing.lg),
                     )
                 }
@@ -126,11 +127,18 @@ fun ExercisePrepareScreen(
     ) { padding ->
         when {
             state.isLoading -> MovitLoadingState(message = movitText("prepare_loading"))
+            state.isEnsuringConfig -> MovitLoadingState(message = movitText("training_config_ensuring"))
             state.errorMessage != null -> MovitErrorState(
                 title = movitText("common_error_title"),
                 message = movitText(state.errorMessage),
                 actionLabel = movitText("common_retry"),
                 onRetry = onRetry,
+            )
+            state.trainingConfigUnavailableMessage != null -> MovitErrorState(
+                title = movitText("training_config_unavailable_title"),
+                message = movitText(state.trainingConfigUnavailableMessage),
+                actionLabel = movitText("training_config_sync_now"),
+                onRetry = onStart,
             )
             exercise != null -> {
                 Column(
@@ -439,7 +447,8 @@ private fun TargetMusclesRow(
 private fun PrepareStartDock(
     sessionSummary: String,
     onStart: () -> Unit,
-    startEnabled: Boolean = true,
+    enabled: Boolean,
+    isEnsuringConfig: Boolean,
     modifier: Modifier = Modifier,
 ) {
     MovitCard(
@@ -465,11 +474,11 @@ private fun PrepareStartDock(
                 )
             }
             MovitButton(
-                text = movitText("session_start"),
+                text = movitText(if (isEnsuringConfig) "training_config_ensuring" else "session_start"),
                 onClick = onStart,
                 variant = MovitButtonVariant.Filled,
+                enabled = enabled,
                 leadingIcon = Icons.Default.PlayArrow,
-                enabled = startEnabled,
             )
         }
     }

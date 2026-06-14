@@ -19,6 +19,7 @@ class WorkoutSessionSyncRepository(
     private val platform: () -> MovitPlatformBindings,
     private val localStore: () -> MovitLocalStore,
     private val mobileWrites: MobileWriteSyncRepository,
+    private val trainingConfig: TrainingConfigRepository,
 ) {
     fun readCachedEffectivePlan(
         userProgramId: String,
@@ -106,6 +107,10 @@ class WorkoutSessionSyncRepository(
         val payload = decodeTrainingConfig(response.data)
             ?: return cached?.let { AppResult.Success(it) }
                 ?: AppResult.Failure("Workout template response was empty.")
+
+        extractTrainingConfigExercises(response)?.let { exercises ->
+            trainingConfig.applySyncExercises(exercises = exercises, isFullSync = false)
+        }
 
         MovitCachePolicy.writeJson(
             localStore(),

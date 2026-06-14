@@ -7,10 +7,10 @@ plugins {
 }
 
 val movitShellLauncherEnabled =
-    providers.gradleProperty("movit.shell.launcher.enabled").orNull?.toBoolean() ?: false
+    providers.gradleProperty("movit.shell.launcher.enabled").orNull?.toBoolean() ?: true
 
 val movitTrainingKmpEnabled =
-    providers.gradleProperty("movit.training.kmp.enabled").orNull?.toBoolean() ?: false
+    providers.gradleProperty("movit.training.kmp.enabled").orNull?.toBoolean() ?: true
 
 // Read API config from local.properties (machine-specific) with optional api.properties defaults.
 val localProps = rootProject.file("local.properties")

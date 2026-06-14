@@ -1097,6 +1097,3194 @@
     "deletedWorkoutTemplateIds": [],
     "deletedExerciseIds": []
   },
+  "exercises": [
+    {
+      "name": {
+        "ar": "بايسيبس",
+        "en": "Biceps Curl"
+      },
+      "category": {
+        "code": "arms",
+        "name": {
+          "ar": "تمارين الذراعين",
+          "en": "Arms"
+        }
+      },
+      "countingMethod": "up_down",
+      "muscles": [],
+      "equipment": [
+        "dumbbell"
+      ],
+      "tags": [
+        "upper_body"
+      ],
+      "repCountingConfig": {
+        "reps": 6,
+        "minRepIntervalMs": 1500,
+        "maxRepIntervalMs": 5000
+      },
+      "poseVariants": [
+        {
+          "name": {
+            "ar": "بايسيبس",
+            "en": "Biceps Curl"
+          },
+          "posePosition": "standing_side_upper",
+          "expectedPostures": [
+            "standing"
+          ],
+          "expectedDirections": [
+            "side"
+          ],
+          "expectedRegions": [
+            "upper_body"
+          ],
+          "trackedJoints": [
+            {
+              "joint": "left_elbow",
+              "role": "primary",
+              "startPose": {
+                "max": 180,
+                "min": 150
+              },
+              "stateMessages": {
+                "pad": {
+                  "up": {
+                    "ar": "مقبول اساسي",
+                    "en": "primary acceptable",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1778754757840_jnjy65.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1778754749840_n2xzvw.wav"
+                  },
+                  "down": {
+                    "ar": "عدة مقبولة, حاول رفع يدك اكثر.",
+                    "en": "Acceptable rep. Try raising your hand a little higher.",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1780488186444_ued69c.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1780488194168_baem51.wav"
+                  }
+                },
+                "danger": {
+                  "ar": "توقف! وضع خطير",
+                  "en": "Stop! Dangerous position"
+                },
+                "normal": {
+                  "up": {
+                    "ar": "جيد اساسي",
+                    "en": "primary good",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1778754707860_jxx7xf.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1778754701056_xhp9k9.wav"
+                  },
+                  "down": {
+                    "ar": "جيد، حاول رفع الذراع أكثر",
+                    "en": "Good, try raising arm more",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1775507857712_hnrp4v.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1775507860950_pcq3zs.wav"
+                  }
+                },
+                "perfect": {
+                  "up": {
+                    "ar": "مدى حركة ممتاز",
+                    "en": "Excellent range of motion",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1775508688740_fhj8hs.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1775508691750_dp8y2q.wav"
+                  },
+                  "down": {
+                    "ar": "ممتاز! رفع مثالي",
+                    "en": "Perfect! Great raise",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1775388637660_og93z9.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1775388628517_n78weg.wav"
+                  }
+                },
+                "warning": {
+                  "ar": "تحقق من وضعك",
+                  "en": "Check your position"
+                }
+              },
+              "pairedWith": "right_elbow",
+              "invertIndicator": true,
+              "trackingMode": "any_side",
+              "upRange": {
+                "perfect": {
+                  "max": 180,
+                  "min": 130
+                }
+              },
+              "downRange": {
+                "pad": {
+                  "max": 120,
+                  "min": 100
+                },
+                "normal": {
+                  "max": 100,
+                  "min": 80
+                },
+                "perfect": {
+                  "max": 80,
+                  "min": 60
+                }
+              }
+            },
+            {
+              "joint": "right_elbow",
+              "role": "primary",
+              "startPose": {
+                "max": 180,
+                "min": 150
+              },
+              "stateMessages": {
+                "pad": {
+                  "up": {
+                    "ar": "مقبول اساسي",
+                    "en": "primary acceptable",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1778754757840_jnjy65.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1778754749840_n2xzvw.wav"
+                  },
+                  "down": {
+                    "ar": "عدة مقبولة, حاول رفع يدك اكثر.",
+                    "en": "Acceptable rep. Try raising your hand a little higher.",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1780488186444_ued69c.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1780488194168_baem51.wav"
+                  }
+                },
+                "danger": {
+                  "ar": "توقف! وضع خطير",
+                  "en": "Stop! Dangerous position"
+                },
+                "normal": {
+                  "up": {
+                    "ar": "جيد اساسي",
+                    "en": "primary good",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1778754707860_jxx7xf.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1778754701056_xhp9k9.wav"
+                  },
+                  "down": {
+                    "ar": "جيد، حاول رفع الذراع أكثر",
+                    "en": "Good, try raising arm more",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1775507857712_hnrp4v.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1775507860950_pcq3zs.wav"
+                  }
+                },
+                "perfect": {
+                  "up": {
+                    "ar": "مدى حركة ممتاز",
+                    "en": "Excellent range of motion",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1775508688740_fhj8hs.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1775508691750_dp8y2q.wav"
+                  },
+                  "down": {
+                    "ar": "ممتاز! رفع مثالي",
+                    "en": "Perfect! Great raise",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1775388637660_og93z9.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1775388628517_n78weg.wav"
+                  }
+                },
+                "warning": {
+                  "ar": "تحقق من وضعك",
+                  "en": "Check your position"
+                }
+              },
+              "pairedWith": "left_elbow",
+              "invertIndicator": true,
+              "trackingMode": "any_side",
+              "upRange": {
+                "perfect": {
+                  "max": 180,
+                  "min": 130
+                }
+              },
+              "downRange": {
+                "pad": {
+                  "max": 120,
+                  "min": 100
+                },
+                "normal": {
+                  "max": 100,
+                  "min": 80
+                },
+                "perfect": {
+                  "max": 80,
+                  "min": 60
+                }
+              }
+            },
+            {
+              "joint": "left_shoulder",
+              "role": "secondary",
+              "startPose": {
+                "max": 30,
+                "min": 0
+              },
+              "stateMessages": {
+                "pad": {
+                  "ar": "مقبول",
+                  "en": "Acceptable"
+                },
+                "danger": {
+                  "ar": "توقف! وضع خطير",
+                  "en": "Stop! Dangerous position"
+                },
+                "normal": {
+                  "ar": "جيد , حاول تقريب كوعك من جسمك اثناء التمرين",
+                  "en": "good, try to get your elbow closer to your body",
+                  "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1780490120232_z1ftph.wav",
+                  "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1780490112885_zt6jp0.wav"
+                },
+                "perfect": {
+                  "ar": "ممتاز! وضعية مثالية",
+                  "en": "Perfect! Great position",
+                  "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1775388602812_jvtlqp.wav",
+                  "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1775388594454_bx6j1s.wav"
+                },
+                "warning": {
+                  "ar": "كتفك عالي , قرب كوعك من جسمك اثناء التمرين",
+                  "en": "your shoulder is high, get your elbows close to your body"
+                }
+              },
+              "pairedWith": "right_shoulder",
+              "trackingMode": "any_side",
+              "range": {
+                "normal": {
+                  "max": 30,
+                  "min": 20
+                },
+                "perfect": {
+                  "max": 20,
+                  "min": 0
+                },
+                "warning": {
+                  "max": 180,
+                  "min": 30
+                }
+              }
+            },
+            {
+              "joint": "right_shoulder",
+              "role": "secondary",
+              "startPose": {
+                "max": 30,
+                "min": 0
+              },
+              "stateMessages": {
+                "pad": {
+                  "ar": "مقبول",
+                  "en": "Acceptable"
+                },
+                "danger": {
+                  "ar": "توقف! وضع خطير",
+                  "en": "Stop! Dangerous position"
+                },
+                "normal": {
+                  "ar": "جيد , حاول تقريب كوعك من جسمك اثناء التمرين",
+                  "en": "good, try to get your elbow closer to your body",
+                  "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1780490120232_z1ftph.wav",
+                  "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1780490112885_zt6jp0.wav"
+                },
+                "perfect": {
+                  "ar": "ممتاز! وضعية مثالية",
+                  "en": "Perfect! Great position",
+                  "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1775388602812_jvtlqp.wav",
+                  "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1775388594454_bx6j1s.wav"
+                },
+                "warning": {
+                  "ar": "كتفك عالي , قرب كوعك من جسمك اثناء التمرين",
+                  "en": "your shoulder is high, get your elbows close to your body"
+                }
+              },
+              "pairedWith": "left_shoulder",
+              "trackingMode": "any_side",
+              "range": {
+                "normal": {
+                  "max": 30,
+                  "min": 20
+                },
+                "perfect": {
+                  "max": 20,
+                  "min": 0
+                },
+                "warning": {
+                  "max": 180,
+                  "min": 30
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "imageUrl": "https://storage.googleapis.com/waytofix/exercises/images/08eaf7d8-451d-4f71-909c-b5f6bbd78eb1-hf_20260531_100008_f67b2f41-fb61-42ab-b6dd-6631d8ad9c51-3-.gif",
+      "description": {
+        "ar": "تمرين للجزء العلوي يستهدف عضلة البايسبس من خلال رفع الدمبل للأعلى أثناء الوقوف.",
+        "en": "An upper-body exercise that targets the biceps by curling dumbbells upward while standing."
+      },
+      "instructions": {
+        "ar": "1. قف بشكل مستقيم ممسكًا دمبل في كل يد.\n2. حافظ على المرفقين قريبين من الجسم.\n3. ارفع الدمبل باتجاه الكتفين.\n4. اضغط على عضلة البايسبس في الأعلى.\n5. أنزل الأوزان ببطء للأسفل.",
+        "en": "1. Stand upright holding a dumbbell in each hand.\n2. Keep your elbows close to your sides.\n3. Curl the dumbbells up toward your shoulders.\n4. Squeeze your biceps at the top.\n5. Lower the weights slowly back down."
+      },
+      "reportMetrics": {
+        "primary": [
+          "FORM_SCORE"
+        ],
+        "excluded": [
+          "HOLD_DURATION",
+          "WEIGHT",
+          "VOLUME",
+          "EST_1RM",
+          "ALIGNMENT"
+        ]
+      },
+      "isBilateral": true,
+      "bilateralConfig": {
+        "switchMode": "every_rep",
+        "switchEvery": 1,
+        "startSide": "left"
+      },
+      "id": "0693572a-eecd-4d83-896e-9418dac17967",
+      "slug": "bicebs-mo8j7gg1",
+      "updatedAt": "2026-06-03T12:37:25.361Z"
+    },
+    {
+      "name": {
+        "ar": "ديدلفت بالأوزان الحرة",
+        "en": "BE Dumbell romanian deadlift"
+      },
+      "category": {
+        "code": "legs",
+        "name": {
+          "ar": "تمارين الأرجل",
+          "en": "Legs"
+        }
+      },
+      "countingMethod": "up_down",
+      "muscles": [
+        "hamstrings",
+        "glutes"
+      ],
+      "equipment": [
+        "dumbbell"
+      ],
+      "tags": [
+        "lower_body"
+      ],
+      "repCountingConfig": {
+        "reps": 10,
+        "minRepIntervalMs": 1000,
+        "maxRepIntervalMs": 5000
+      },
+      "poseVariants": [
+        {
+          "name": {
+            "ar": "ديدلفت بالأوزان الحرة",
+            "en": "BE Dumbell romanian deadlift"
+          },
+          "posePosition": "standing_side",
+          "expectedPostures": [
+            "standing"
+          ],
+          "expectedDirections": [
+            "side"
+          ],
+          "expectedRegions": [
+            "full_body"
+          ],
+          "trackedJoints": [
+            {
+              "joint": "left_hip",
+              "role": "primary",
+              "startPose": {
+                "max": 180,
+                "min": 150
+              },
+              "stateMessages": {
+                "danger": {
+                  "down": {
+                    "ar": "توقف! وضع خطير",
+                    "en": "Stop! Dangerous position"
+                  }
+                },
+                "normal": {
+                  "up": {
+                    "ar": "جيد",
+                    "en": "Good"
+                  },
+                  "down": {
+                    "ar": "جيد",
+                    "en": "Good"
+                  }
+                },
+                "perfect": {
+                  "up": {
+                    "ar": "ممتاز!",
+                    "en": "Perfect!"
+                  },
+                  "down": {
+                    "ar": "ممتاز!",
+                    "en": "Perfect!"
+                  }
+                },
+                "warning": {
+                  "up": {
+                    "ar": "تحقق من وضعك",
+                    "en": "Check your position"
+                  },
+                  "down": {
+                    "ar": "تحقق من وضعك",
+                    "en": "Check your position"
+                  }
+                }
+              },
+              "pairedWith": "right_hip",
+              "trackingMode": "any_side",
+              "upRange": {
+                "perfect": {
+                  "max": 180,
+                  "min": 160
+                }
+              },
+              "downRange": {
+                "pad": {
+                  "max": 120,
+                  "min": 110
+                },
+                "normal": {
+                  "max": 110,
+                  "min": 100
+                },
+                "perfect": {
+                  "max": 100,
+                  "min": 70
+                }
+              }
+            },
+            {
+              "joint": "right_hip",
+              "role": "primary",
+              "startPose": {
+                "max": 180,
+                "min": 150
+              },
+              "stateMessages": {
+                "danger": {
+                  "down": {
+                    "ar": "توقف! وضع خطير",
+                    "en": "Stop! Dangerous position"
+                  }
+                },
+                "normal": {
+                  "up": {
+                    "ar": "جيد",
+                    "en": "Good"
+                  },
+                  "down": {
+                    "ar": "جيد",
+                    "en": "Good"
+                  }
+                },
+                "perfect": {
+                  "up": {
+                    "ar": "ممتاز!",
+                    "en": "Perfect!"
+                  },
+                  "down": {
+                    "ar": "ممتاز!",
+                    "en": "Perfect!"
+                  }
+                },
+                "warning": {
+                  "up": {
+                    "ar": "تحقق من وضعك",
+                    "en": "Check your position"
+                  },
+                  "down": {
+                    "ar": "تحقق من وضعك",
+                    "en": "Check your position"
+                  }
+                }
+              },
+              "pairedWith": "left_hip",
+              "trackingMode": "any_side",
+              "upRange": {
+                "perfect": {
+                  "max": 180,
+                  "min": 160
+                }
+              },
+              "downRange": {
+                "pad": {
+                  "max": 120,
+                  "min": 110
+                },
+                "normal": {
+                  "max": 110,
+                  "min": 100
+                },
+                "perfect": {
+                  "max": 100,
+                  "min": 70
+                }
+              }
+            },
+            {
+              "joint": "left_knee",
+              "role": "secondary",
+              "startPose": {
+                "max": 180,
+                "min": 150
+              },
+              "stateMessages": {
+                "pad": {
+                  "ar": "مقبول",
+                  "en": "Acceptable"
+                },
+                "danger": {
+                  "ar": "توقف! وضع خطير",
+                  "en": "Stop! Dangerous position"
+                },
+                "normal": {
+                  "ar": "جيد",
+                  "en": "Good"
+                },
+                "perfect": {
+                  "ar": "ممتاز!",
+                  "en": "Perfect!"
+                },
+                "warning": {
+                  "ar": "تحقق من وضعك",
+                  "en": "Check your position"
+                }
+              },
+              "pairedWith": "right_knee",
+              "trackingMode": "any_side",
+              "range": {
+                "perfect": {
+                  "max": 150,
+                  "min": 130
+                }
+              }
+            },
+            {
+              "joint": "right_knee",
+              "role": "secondary",
+              "startPose": {
+                "max": 180,
+                "min": 150
+              },
+              "stateMessages": {
+                "pad": {
+                  "ar": "مقبول",
+                  "en": "Acceptable"
+                },
+                "danger": {
+                  "ar": "توقف! وضع خطير",
+                  "en": "Stop! Dangerous position"
+                },
+                "normal": {
+                  "ar": "جيد",
+                  "en": "Good"
+                },
+                "perfect": {
+                  "ar": "ممتاز!",
+                  "en": "Perfect!"
+                },
+                "warning": {
+                  "ar": "تحقق من وضعك",
+                  "en": "Check your position"
+                }
+              },
+              "pairedWith": "left_knee",
+              "trackingMode": "any_side",
+              "range": {
+                "perfect": {
+                  "max": 150,
+                  "min": 130
+                }
+              }
+            }
+          ],
+          "positionChecks": [
+            {
+              "id": "custom_1776770234939",
+              "type": "horizontal_alignment",
+              "landmarks": {
+                "primary": "left_wrist",
+                "secondary": "left_knee"
+              },
+              "condition": {
+                "operator": "approximately_equal",
+                "threshold": 0.05
+              },
+              "activePhases": [
+                "bottom"
+              ],
+              "errorMessage": {
+                "ar": "انزل بيدك اسفل مستوي الركبة ",
+                "en": "Lower your hand below knee level",
+                "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1779023143309_u470hr.wav",
+                "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1779023152849_0tu1ah.wav"
+              },
+              "severity": "warning",
+              "cooldownMs": 2000,
+              "minErrorFrames": 3
+            }
+          ]
+        }
+      ],
+      "imageUrl": "https://storage.googleapis.com/waytofix/exercises/images/f51046c0-a7b2-4f24-8f45-8e01a1b43a1e-hf_20260524_104934_16b25692-5981-49da-bd27-537f5ad38be3-1-.gif",
+      "description": {
+        "ar": "تمرين يعتمد على مفصل الورك ويستهدف الخلفية والغلوت من خلال إنزال الوزن مع ظهر مستقيم ثم الرفع مرة أخرى.",
+        "en": "A hip hinge exercise that targets the hamstrings and glutes by lowering the weight along the legs with a straight back and lifting back up."
+      },
+      "instructions": {
+        "ar": "1. قف بشكل مستقيم ممسكًا بالبار أو الدمبل أمام الفخذين.\n2. حافظ على استقامة ظهرك ورفع صدرك.\n3. اثنِ الركبتين بشكل خفيف.\n4. انحنِ من مفصل الورك وأنزل الوزن بمحاذاة الساقين.\n5. توقف عند الشعور بشد في عضلات الخلفية.\n6. ادفع الورك للأمام للعودة إلى وضع الوقوف.",
+        "en": "1. Stand tall holding a barbell or dumbbells in front of your thighs.\n2. Keep your back straight and chest up.\n3. Slightly bend your knees.\n4. Hinge at your hips and lower the weight down along your legs.\n5. Stop when you feel a stretch in your hamstrings.\n6. Push your hips forward to return to standing."
+      },
+      "supportsWeight": true,
+      "minWeight": 2,
+      "reportMetrics": {
+        "primary": [
+          "FORM_SCORE"
+        ],
+        "excluded": [
+          "HOLD_DURATION"
+        ]
+      },
+      "hasPositionChecks": true,
+      "id": "a59f5c1a-6e06-494b-9faf-c77e65ee501d",
+      "slug": "be-dumbbell-romanian-deadlift-mo8j28de",
+      "updatedAt": "2026-06-03T09:34:16.428Z"
+    },
+    {
+      "name": {
+        "ar": "سحب اليد المستقيمة",
+        "en": "Straight arm pulldown"
+      },
+      "category": {
+        "code": "shoulders",
+        "name": {
+          "ar": "تمارين الأكتاف",
+          "en": "Shoulders"
+        }
+      },
+      "countingMethod": "up_down",
+      "muscles": [],
+      "equipment": [],
+      "tags": [],
+      "repCountingConfig": {
+        "reps": 10,
+        "minRepIntervalMs": 1500,
+        "maxRepIntervalMs": 5000
+      },
+      "poseVariants": [
+        {
+          "name": {
+            "ar": "سحب اليد المستقيمة",
+            "en": "Straight arm pulldown"
+          },
+          "posePosition": "standing_side_upper",
+          "expectedPostures": [
+            "standing"
+          ],
+          "expectedDirections": [
+            "side"
+          ],
+          "expectedRegions": [
+            "upper_body"
+          ],
+          "trackedJoints": [
+            {
+              "joint": "left_shoulder",
+              "role": "primary",
+              "startPose": {
+                "max": 120,
+                "min": 80
+              },
+              "stateMessages": {
+                "danger": {
+                  "down": {
+                    "ar": "توقف! وضع خطير",
+                    "en": "Stop! Dangerous position"
+                  }
+                },
+                "normal": {
+                  "up": {
+                    "ar": "جيد",
+                    "en": "Good"
+                  },
+                  "down": {
+                    "ar": "جيد",
+                    "en": "Good"
+                  }
+                },
+                "perfect": {
+                  "up": {
+                    "ar": "ممتاز!",
+                    "en": "Perfect!"
+                  },
+                  "down": {
+                    "ar": "ممتاز!",
+                    "en": "Perfect!"
+                  }
+                },
+                "warning": {
+                  "up": {
+                    "ar": "تحقق من وضعك",
+                    "en": "Check your position"
+                  },
+                  "down": {
+                    "ar": "تحقق من وضعك",
+                    "en": "Check your position"
+                  }
+                }
+              },
+              "pairedWith": "right_shoulder",
+              "trackingMode": "any_side",
+              "upRange": {
+                "perfect": {
+                  "max": 110,
+                  "min": 80
+                }
+              },
+              "downRange": {
+                "pad": {
+                  "max": 70,
+                  "min": 60
+                },
+                "normal": {
+                  "max": 60,
+                  "min": 40
+                },
+                "perfect": {
+                  "max": 40,
+                  "min": 15
+                }
+              }
+            },
+            {
+              "joint": "right_shoulder",
+              "role": "primary",
+              "startPose": {
+                "max": 120,
+                "min": 80
+              },
+              "stateMessages": {
+                "danger": {
+                  "down": {
+                    "ar": "توقف! وضع خطير",
+                    "en": "Stop! Dangerous position"
+                  }
+                },
+                "normal": {
+                  "up": {
+                    "ar": "جيد",
+                    "en": "Good"
+                  },
+                  "down": {
+                    "ar": "جيد",
+                    "en": "Good"
+                  }
+                },
+                "perfect": {
+                  "up": {
+                    "ar": "ممتاز!",
+                    "en": "Perfect!"
+                  },
+                  "down": {
+                    "ar": "ممتاز!",
+                    "en": "Perfect!"
+                  }
+                },
+                "warning": {
+                  "up": {
+                    "ar": "تحقق من وضعك",
+                    "en": "Check your position"
+                  },
+                  "down": {
+                    "ar": "تحقق من وضعك",
+                    "en": "Check your position"
+                  }
+                }
+              },
+              "pairedWith": "left_shoulder",
+              "trackingMode": "any_side",
+              "upRange": {
+                "perfect": {
+                  "max": 110,
+                  "min": 80
+                }
+              },
+              "downRange": {
+                "pad": {
+                  "max": 70,
+                  "min": 60
+                },
+                "normal": {
+                  "max": 60,
+                  "min": 40
+                },
+                "perfect": {
+                  "max": 40,
+                  "min": 15
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "imageUrl": "https://storage.googleapis.com/waytofix/exercises/images/499913f2-ce18-42b3-a4c0-0f23461dd632-straight-arm-pulldown.gif",
+      "description": {
+        "ar": "",
+        "en": ""
+      },
+      "instructions": {
+        "ar": "",
+        "en": ""
+      },
+      "reportMetrics": {
+        "primary": [
+          "FORM_SCORE"
+        ],
+        "excluded": [
+          "HOLD_DURATION",
+          "WEIGHT",
+          "VOLUME",
+          "EST_1RM",
+          "ALIGNMENT"
+        ]
+      },
+      "id": "abfac336-a3ac-4e79-a993-367fd34f6730",
+      "slug": "straight-arm-pulldown-mplbnzli",
+      "updatedAt": "2026-05-31T18:54:49.727Z"
+    },
+    {
+      "name": {
+        "ar": "بلانك",
+        "en": "Plank"
+      },
+      "category": {
+        "code": "abs",
+        "name": {
+          "ar": "تمارين البطن",
+          "en": "Abs"
+        }
+      },
+      "countingMethod": "hold",
+      "muscles": [
+        "abs_muscle",
+        "obliques",
+        "glutes"
+      ],
+      "equipment": [
+        "bodyweight"
+      ],
+      "tags": [
+        "group_3",
+        "core",
+        "isometric",
+        "tag_bodyweight",
+        "no_equipment"
+      ],
+      "repCountingConfig": {
+        "duration": 30,
+        "gracePeriodMs": 2500
+      },
+      "poseVariants": [
+        {
+          "name": {
+            "ar": "بلانك",
+            "en": "Plank"
+          },
+          "posePosition": "prone_side",
+          "expectedPostures": [
+            "lying_prone"
+          ],
+          "expectedDirections": [
+            "side"
+          ],
+          "expectedRegions": [
+            "full_body"
+          ],
+          "trackedJoints": [
+            {
+              "joint": "left_shoulder",
+              "role": "primary",
+              "startPose": {
+                "max": 120,
+                "min": 0
+              },
+              "stateMessages": {
+                "pad": {
+                  "ar": "مقبول",
+                  "en": "Acceptable"
+                },
+                "danger": {
+                  "ar": "توقف! وضع خطير",
+                  "en": "Stop! Dangerous position"
+                },
+                "normal": {
+                  "ar": "جيد",
+                  "en": "Good"
+                },
+                "perfect": {
+                  "ar": "ممتاز!",
+                  "en": "Perfect!"
+                },
+                "warning": {
+                  "ar": "تحقق من وضعك",
+                  "en": "Check your position"
+                }
+              },
+              "pairedWith": "right_shoulder",
+              "trackingMode": "any_side",
+              "range": {
+                "normal": {
+                  "max": 110,
+                  "min": 70
+                },
+                "perfect": {
+                  "max": 100,
+                  "min": 80
+                }
+              }
+            },
+            {
+              "joint": "right_shoulder",
+              "role": "primary",
+              "startPose": {
+                "max": 120,
+                "min": 0
+              },
+              "stateMessages": {
+                "pad": {
+                  "ar": "مقبول",
+                  "en": "Acceptable"
+                },
+                "danger": {
+                  "ar": "توقف! وضع خطير",
+                  "en": "Stop! Dangerous position"
+                },
+                "normal": {
+                  "ar": "جيد",
+                  "en": "Good"
+                },
+                "perfect": {
+                  "ar": "ممتاز!",
+                  "en": "Perfect!"
+                },
+                "warning": {
+                  "ar": "تحقق من وضعك",
+                  "en": "Check your position"
+                }
+              },
+              "pairedWith": "left_shoulder",
+              "trackingMode": "any_side",
+              "range": {
+                "normal": {
+                  "max": 110,
+                  "min": 70
+                },
+                "perfect": {
+                  "max": 100,
+                  "min": 80
+                }
+              }
+            },
+            {
+              "joint": "left_hip",
+              "role": "primary",
+              "startPose": {
+                "max": 180,
+                "min": 0
+              },
+              "stateMessages": {
+                "pad": {
+                  "ar": "مقبول",
+                  "en": "Acceptable"
+                },
+                "danger": {
+                  "ar": "توقف! وضع خطير",
+                  "en": "Stop! Dangerous position"
+                },
+                "normal": {
+                  "ar": "جيد",
+                  "en": "Good"
+                },
+                "perfect": {
+                  "ar": "ممتاز!",
+                  "en": "Perfect!"
+                },
+                "warning": {
+                  "ar": "تحقق من وضعك",
+                  "en": "Check your position"
+                }
+              },
+              "pairedWith": "right_hip",
+              "trackingMode": "any_side",
+              "range": {
+                "normal": {
+                  "max": 150,
+                  "min": 140
+                },
+                "perfect": {
+                  "max": 180,
+                  "min": 150
+                }
+              }
+            },
+            {
+              "joint": "right_hip",
+              "role": "primary",
+              "startPose": {
+                "max": 180,
+                "min": 0
+              },
+              "stateMessages": {
+                "pad": {
+                  "ar": "مقبول",
+                  "en": "Acceptable"
+                },
+                "danger": {
+                  "ar": "توقف! وضع خطير",
+                  "en": "Stop! Dangerous position"
+                },
+                "normal": {
+                  "ar": "جيد",
+                  "en": "Good"
+                },
+                "perfect": {
+                  "ar": "ممتاز!",
+                  "en": "Perfect!"
+                },
+                "warning": {
+                  "ar": "تحقق من وضعك",
+                  "en": "Check your position"
+                }
+              },
+              "pairedWith": "left_hip",
+              "trackingMode": "any_side",
+              "range": {
+                "normal": {
+                  "max": 150,
+                  "min": 140
+                },
+                "perfect": {
+                  "max": 180,
+                  "min": 150
+                }
+              }
+            },
+            {
+              "joint": "left_knee",
+              "role": "primary",
+              "startPose": {
+                "max": 180,
+                "min": 0
+              },
+              "stateMessages": {
+                "pad": {
+                  "ar": "مقبول",
+                  "en": "Acceptable"
+                },
+                "danger": {
+                  "ar": "توقف! وضع خطير",
+                  "en": "Stop! Dangerous position"
+                },
+                "normal": {
+                  "ar": "جيد",
+                  "en": "Good"
+                },
+                "perfect": {
+                  "ar": "ممتاز!",
+                  "en": "Perfect!"
+                },
+                "warning": {
+                  "ar": "تحقق من وضعك",
+                  "en": "Check your position"
+                }
+              },
+              "pairedWith": "right_knee",
+              "trackingMode": "any_side",
+              "range": {
+                "perfect": {
+                  "max": 180,
+                  "min": 150
+                }
+              }
+            },
+            {
+              "joint": "right_knee",
+              "role": "primary",
+              "startPose": {
+                "max": 180,
+                "min": 0
+              },
+              "stateMessages": {
+                "pad": {
+                  "ar": "مقبول",
+                  "en": "Acceptable"
+                },
+                "danger": {
+                  "ar": "توقف! وضع خطير",
+                  "en": "Stop! Dangerous position"
+                },
+                "normal": {
+                  "ar": "جيد",
+                  "en": "Good"
+                },
+                "perfect": {
+                  "ar": "ممتاز!",
+                  "en": "Perfect!"
+                },
+                "warning": {
+                  "ar": "تحقق من وضعك",
+                  "en": "Check your position"
+                }
+              },
+              "pairedWith": "left_knee",
+              "trackingMode": "any_side",
+              "range": {
+                "perfect": {
+                  "max": 180,
+                  "min": 150
+                }
+              }
+            },
+            {
+              "joint": "left_elbow",
+              "role": "primary",
+              "startPose": {
+                "max": 180,
+                "min": 0
+              },
+              "stateMessages": {
+                "pad": {
+                  "ar": "مقبول",
+                  "en": "Acceptable"
+                },
+                "danger": {
+                  "ar": "توقف! وضع خطير",
+                  "en": "Stop! Dangerous position"
+                },
+                "normal": {
+                  "ar": "جيد",
+                  "en": "Good"
+                },
+                "perfect": {
+                  "ar": "ممتاز!",
+                  "en": "Perfect!"
+                },
+                "warning": {
+                  "ar": "تحقق من وضعك",
+                  "en": "Check your position"
+                }
+              },
+              "pairedWith": "right_elbow",
+              "trackingMode": "any_side",
+              "range": {
+                "perfect": {
+                  "max": 100,
+                  "min": 70
+                }
+              }
+            },
+            {
+              "joint": "right_elbow",
+              "role": "primary",
+              "startPose": {
+                "max": 180,
+                "min": 0
+              },
+              "stateMessages": {
+                "pad": {
+                  "ar": "مقبول",
+                  "en": "Acceptable"
+                },
+                "danger": {
+                  "ar": "توقف! وضع خطير",
+                  "en": "Stop! Dangerous position"
+                },
+                "normal": {
+                  "ar": "جيد",
+                  "en": "Good"
+                },
+                "perfect": {
+                  "ar": "ممتاز!",
+                  "en": "Perfect!"
+                },
+                "warning": {
+                  "ar": "تحقق من وضعك",
+                  "en": "Check your position"
+                }
+              },
+              "pairedWith": "left_elbow",
+              "trackingMode": "any_side",
+              "range": {
+                "perfect": {
+                  "max": 100,
+                  "min": 70
+                }
+              }
+            }
+          ],
+          "positionChecks": [
+            {
+              "id": "ex026_plank_check_1",
+              "type": "vertical_alignment",
+              "landmarks": {
+                "primary": "left_shoulder",
+                "tertiary": "left_knee",
+                "secondary": "left_hip",
+                "quaternary": "left_ankle"
+              },
+              "condition": {
+                "operator": "approximately_equal",
+                "threshold": 0.08
+              },
+              "activePhases": [
+                "count"
+              ],
+              "errorMessage": {
+                "ar": "حافظ على المحاذاة المطلوبة أثناء التمرين.",
+                "en": "Keep the required alignment during the exercise."
+              },
+              "severity": "error",
+              "cooldownMs": 2200,
+              "minErrorFrames": 4
+            }
+          ],
+          "messageAssignments": [
+            {
+              "messageId": "13343b53-4ac9-4cb9-a248-ceaee6a8819d",
+              "target": "feedback",
+              "context": "motivational",
+              "sortOrder": 1
+            },
+            {
+              "messageId": "e2f2ab71-fec0-4d10-a9ff-ed60b3d6b497",
+              "target": "feedback",
+              "context": "tip",
+              "sortOrder": 2
+            }
+          ]
+        }
+      ],
+      "imageUrl": "https://storage.googleapis.com/waytofix/exercises/images/f6e60c18-db2e-4404-a924-e58734458e93-plank.gif",
+      "description": {
+        "ar": "بلانك تمرين ضمن مجموعة 3، تم تحويله من ملف الإكسل مع ربط المدى الحركي والفحوصات بواسطة Exercise_ID.",
+        "en": "Plank from exercise group 3, converted from the spreadsheet with ROM and checks linked by Exercise_ID."
+      },
+      "instructions": {
+        "ar": "1. جهز وضع البداية: Laying supported on forearms and toes.\n2. تحرك بسلاسة خلال المدى المطلوب.\n3. حافظ على المفاصل الثانوية تحت التحكم وتجنب التعويض.\n4. توقف إذا ظهر ألم حاد أو فقدت التحكم.",
+        "en": "1. Set up in the listed start position: Laying supported on forearms and toes.\n2. Move smoothly through the target range.\n3. Keep the secondary joints controlled and avoid compensation.\n4. Stop if sharp pain appears or control is lost."
+      },
+      "reportMetrics": {
+        "primary": [
+          "FORM_SCORE"
+        ],
+        "excluded": [
+          "REP_COUNT",
+          "TEMPO",
+          "TUT",
+          "ROM",
+          "FORM_CONSISTENCY",
+          "FATIGUE_INDEX",
+          "VELOCITY",
+          "VELOCITY_LOSS",
+          "TEMPO_CONSISTENCY",
+          "WEIGHT",
+          "VOLUME",
+          "EST_1RM"
+        ]
+      },
+      "hasPositionChecks": true,
+      "id": "5b02bec6-25e9-4264-b978-a8481a987c71",
+      "slug": "ex026_plank",
+      "updatedAt": "2026-05-31T12:50:14.672Z"
+    },
+    {
+      "name": {
+        "ar": "رفع أمامي بالدمبل",
+        "en": "Dumbbell front raise"
+      },
+      "category": {
+        "code": "shoulders",
+        "name": {
+          "ar": "تمارين الأكتاف",
+          "en": "Shoulders"
+        }
+      },
+      "countingMethod": "up_down",
+      "muscles": [
+        "front_delts",
+        "upper_pectoral"
+      ],
+      "equipment": [
+        "dumbbell"
+      ],
+      "tags": [
+        "isolation",
+        "upper_body",
+        "group_2"
+      ],
+      "repCountingConfig": {
+        "reps": 10,
+        "minRepIntervalMs": 1500,
+        "maxRepIntervalMs": 3000
+      },
+      "poseVariants": [
+        {
+          "name": {
+            "ar": "رفع أمامي بالدمبل",
+            "en": "Dumbbell front raise"
+          },
+          "posePosition": "standing_side_upper",
+          "expectedPostures": [
+            "standing"
+          ],
+          "expectedDirections": [
+            "side"
+          ],
+          "expectedRegions": [
+            "upper_body"
+          ],
+          "trackedJoints": [
+            {
+              "joint": "left_shoulder",
+              "role": "primary",
+              "startPose": {
+                "max": 20,
+                "min": 0
+              },
+              "stateMessages": {
+                "perfect": {
+                  "up": {
+                    "ar": "ممتاز! الذراع تصل لمستوى مناسب أمام الجسم",
+                    "en": "Perfect! The arm reaches a strong front-raise height"
+                  },
+                  "down": {
+                    "ar": "ممتاز! نزول هادئ تحت تحكم",
+                    "en": "Perfect! Smooth controlled lowering"
+                  }
+                },
+                "warning": {
+                  "up": {
+                    "ar": "ارفع أكثر قليلاً إذا بقي الجذع ثابتاً",
+                    "en": "Lift a little higher if the torso stays stable"
+                  }
+                }
+              },
+              "pairedWith": "right_shoulder",
+              "upRange": {
+                "pad": {
+                  "max": 70,
+                  "min": 60
+                },
+                "normal": {
+                  "max": 80,
+                  "min": 70
+                },
+                "perfect": {
+                  "max": 100,
+                  "min": 80
+                },
+                "warning": {
+                  "max": 60,
+                  "min": 50
+                }
+              },
+              "downRange": {
+                "pad": {
+                  "max": 40,
+                  "min": 30
+                },
+                "normal": {
+                  "max": 30,
+                  "min": 20
+                },
+                "perfect": {
+                  "max": 20,
+                  "min": 0
+                }
+              }
+            },
+            {
+              "joint": "left_elbow",
+              "role": "secondary",
+              "startPose": {
+                "max": 10,
+                "min": 0
+              },
+              "stateMessages": {
+                "perfect": {
+                  "ar": "المرفق ثابت تقريباً أثناء الرفع",
+                  "en": "The elbow stays nearly fixed during the raise"
+                }
+              },
+              "range": {
+                "normal": {
+                  "max": 10,
+                  "min": 0
+                },
+                "perfect": {
+                  "max": 10,
+                  "min": 0
+                },
+                "warning": {
+                  "max": 25,
+                  "min": 10
+                }
+              }
+            },
+            {
+              "joint": "left_wrist",
+              "role": "secondary",
+              "startPose": {
+                "max": 10,
+                "min": 0
+              },
+              "stateMessages": {
+                "perfect": {
+                  "ar": "المعصم ثابت ومحايد",
+                  "en": "The wrist stays neutral and steady"
+                }
+              },
+              "range": {
+                "normal": {
+                  "max": 12,
+                  "min": 0
+                },
+                "perfect": {
+                  "max": 10,
+                  "min": 0
+                }
+              }
+            }
+          ],
+          "positionChecks": [
+            {
+              "id": "front_raise_torso_line",
+              "type": "vertical_alignment",
+              "landmarks": {
+                "primary": "left_shoulder",
+                "tertiary": "left_knee",
+                "secondary": "left_hip",
+                "quaternary": "left_ankle"
+              },
+              "condition": {
+                "operator": "approximately_equal",
+                "threshold": 0.1
+              },
+              "activePhases": [
+                "up"
+              ],
+              "errorMessage": {
+                "ar": "لا ترجّح الجذع للخلف أثناء الرفع.",
+                "en": "Do not lean the torso backward during the raise."
+              },
+              "severity": "tip",
+              "cooldownMs": 2200,
+              "minErrorFrames": 4
+            }
+          ],
+          "messageAssignments": [
+            {
+              "messageId": "0225595b-637f-4759-bec8-583d45d2777c",
+              "target": "feedback",
+              "context": "motivational",
+              "sortOrder": 1
+            },
+            {
+              "messageId": "8be9e3cc-0019-4d47-bea7-274e3a4247af",
+              "target": "feedback",
+              "context": "tip",
+              "sortOrder": 2
+            }
+          ]
+        }
+      ],
+      "imageUrl": "https://storage.googleapis.com/waytofix/exercises/images/0a46cdf6-d090-47cc-aee2-3fa00b425667-front-raise.gif",
+      "description": {
+        "ar": "هذا الإعداد يتتبع الرفع الأمامي بالدمبل للذراع اليسرى من الجانب؛ ضع الكاميرا بحيث يظهر الجانب الأيسر بوضوح. التمرين عزل للدالية الأمامية ويحتاج تحكماً جيداً لتجنب الزخم أو ميل الجذع للخلف.",
+        "en": "This configuration tracks a dumbbell front raise for the left arm in side view; set the camera so the left side is clearly visible. It is an anterior-deltoid isolation that needs solid control to avoid momentum or leaning backward."
+      },
+      "instructions": {
+        "ar": "0. استخدم ذراعاً واحدة (يسرى) مع الدمبل، ووجّه الجانب الأيسر للكاميرا.\n1. قف منتصباً والدمبل أمام الفخذين.\n2. شد الجذع وابقَ ثابتاً قبل بداية الرفع.\n3. ارفع الذراع أمام الجسم حتى مستوى قريب من الكتف.\n4. لا تندفع بالجذع للخلف ولا تثنِ المرفق أكثر من اللازم.\n5. انزل ببطء حتى يعود الدمبل لوضع البداية.\n6. استخدم وزناً أخف إذا بدأ الجذع يتحرك مع كل عدة.",
+        "en": "0. Use a single dumbbell in the left hand and face your left side to the camera.\n1. Stand tall with the dumbbell in front of the thighs.\n2. Brace the trunk and become still before the lift starts.\n3. Raise the arm in front of the body to roughly shoulder height.\n4. Do not lean backward and do not over-bend the elbow.\n5. Lower slowly until the dumbbell returns to the start.\n6. Use a lighter load if the torso starts moving on every rep."
+      },
+      "supportsWeight": true,
+      "reportMetrics": {
+        "primary": [
+          "FORM_SCORE"
+        ],
+        "excluded": [
+          "HOLD_DURATION"
+        ]
+      },
+      "hasPositionChecks": true,
+      "id": "6de3bbe9-5d85-4cfb-a1e1-c1d5be97e6a1",
+      "slug": "ex020_dumbbell_front_raise",
+      "updatedAt": "2026-05-31T11:53:35.783Z"
+    },
+    {
+      "name": {
+        "ar": "سكوات القدم الواحدة",
+        "en": "BE Split Squat"
+      },
+      "category": {
+        "code": "legs",
+        "name": {
+          "ar": "تمارين الأرجل",
+          "en": "Legs"
+        }
+      },
+      "countingMethod": "up_down",
+      "muscles": [
+        "quadriceps",
+        "glutes"
+      ],
+      "equipment": [
+        "dumbbell"
+      ],
+      "tags": [
+        "lower_body",
+        "unilateral"
+      ],
+      "repCountingConfig": {
+        "reps": 10,
+        "minRepIntervalMs": 1500,
+        "maxRepIntervalMs": 5000
+      },
+      "poseVariants": [
+        {
+          "name": {
+            "ar": "سكوات القدم الواحدة",
+            "en": "BE Split Squat"
+          },
+          "posePosition": "standing_side",
+          "expectedPostures": [
+            "standing"
+          ],
+          "expectedDirections": [
+            "side"
+          ],
+          "expectedRegions": [
+            "full_body"
+          ],
+          "trackedJoints": [
+            {
+              "joint": "right_knee",
+              "role": "primary",
+              "startPose": {
+                "max": 180,
+                "min": 150
+              },
+              "stateMessages": {
+                "danger": {
+                  "down": {
+                    "ar": "توقف! قد تؤذي ركبتك",
+                    "en": "Stop! This may hurt your knee",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1775511114438_etphr6.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1775511118464_6rlb9a.wav"
+                  }
+                },
+                "normal": {
+                  "up": {
+                    "ar": "جيد",
+                    "en": "Good"
+                  },
+                  "down": {
+                    "ar": "جيد",
+                    "en": "Good"
+                  }
+                },
+                "perfect": {
+                  "up": {
+                    "ar": "ممتاز!",
+                    "en": "Perfect!"
+                  },
+                  "down": {
+                    "ar": "ممتاز!",
+                    "en": "Perfect!"
+                  }
+                },
+                "warning": {
+                  "up": {
+                    "ar": "تحقق من وضعك",
+                    "en": "Check your position"
+                  },
+                  "down": {
+                    "ar": "لا تثني ركبتك كثيراً",
+                    "en": "Don't bend your knee too much",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1775511108239_j5j0kv.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1775511111276_q3pkrx.wav"
+                  }
+                }
+              },
+              "upRange": {
+                "perfect": {
+                  "max": 180,
+                  "min": 140
+                }
+              },
+              "downRange": {
+                "danger": {
+                  "max": 50,
+                  "min": 0
+                },
+                "normal": {
+                  "max": 110,
+                  "min": 70
+                },
+                "perfect": {
+                  "max": 100,
+                  "min": 80
+                },
+                "warning": {
+                  "max": 70,
+                  "min": 50
+                }
+              }
+            },
+            {
+              "joint": "right_hip",
+              "role": "secondary",
+              "startPose": {
+                "max": 180,
+                "min": 140
+              },
+              "stateMessages": {
+                "pad": {
+                  "ar": "مقبول",
+                  "en": "Acceptable"
+                },
+                "danger": {
+                  "ar": "توقف! وضع خطير",
+                  "en": "Stop! Dangerous position"
+                },
+                "normal": {
+                  "ar": "جيد",
+                  "en": "Good"
+                },
+                "perfect": {
+                  "ar": "ممتاز!",
+                  "en": "Perfect!"
+                },
+                "warning": {
+                  "ar": "تحقق من وضعك",
+                  "en": "Check your position"
+                }
+              },
+              "range": {
+                "normal": {
+                  "max": 180,
+                  "min": 155
+                },
+                "perfect": {
+                  "max": 180,
+                  "min": 160
+                },
+                "warning": {
+                  "max": 155,
+                  "min": 140
+                }
+              },
+              "phaseRanges": {
+                "top": {
+                  "normal": {
+                    "max": 150,
+                    "min": 140
+                  },
+                  "perfect": {
+                    "max": 180,
+                    "min": 150
+                  },
+                  "warning": {
+                    "max": 140,
+                    "min": 130
+                  }
+                },
+                "bottom": {
+                  "danger": {
+                    "max": 55,
+                    "min": 0
+                  },
+                  "normal": {
+                    "max": 120,
+                    "min": 100
+                  },
+                  "perfect": {
+                    "max": 100,
+                    "min": 80
+                  },
+                  "warning": {
+                    "max": 80,
+                    "min": 55
+                  }
+                }
+              },
+              "phaseStateMessages": {
+                "top": {
+                  "pad": {
+                    "ar": "مقبول",
+                    "en": "Acceptable"
+                  },
+                  "danger": {
+                    "ar": "توقف! وضع خطير",
+                    "en": "Stop! Dangerous position"
+                  },
+                  "normal": {
+                    "ar": "جيد",
+                    "en": "Good"
+                  },
+                  "perfect": {
+                    "ar": "ممتاز - الورك ثابت",
+                    "en": "Great - hips are stable",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1775511363099_umn5sx.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1775511366526_ir8zln.wav"
+                  },
+                  "warning": {
+                    "ar": "عدل من وضعية ظهرك",
+                    "en": "change your back position",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1775732607999_7ze1oz.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1775732598944_chbqnl.wav"
+                  }
+                },
+                "bottom": {
+                  "pad": {
+                    "ar": "مقبول",
+                    "en": "Acceptable"
+                  },
+                  "danger": {
+                    "ar": "وسطك منخفض جداً! قد يؤذي ظهرك",
+                    "en": "Hips too low! May hurt your back",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1775511149739_f26zf8.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1775511152948_8rtlr0.wav"
+                  },
+                  "normal": {
+                    "ar": "جيد",
+                    "en": "Good"
+                  },
+                  "perfect": {
+                    "ar": "ممتاز!",
+                    "en": "Perfect!"
+                  },
+                  "warning": {
+                    "ar": "ارفع وسطك قليلاً",
+                    "en": "Raise your hips slightly",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1775511262766_8nsqn8.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1775511266063_5qi8op.wav"
+                  }
+                }
+              }
+            }
+          ],
+          "positionChecks": [
+            {
+              "id": "back_straight_1779025069656",
+              "type": "vertical_alignment",
+              "landmarks": {
+                "primary": "left_shoulder",
+                "secondary": "left_hip"
+              },
+              "condition": {
+                "operator": "approximately_equal",
+                "threshold": 0.08
+              },
+              "activePhases": [
+                "all"
+              ],
+              "errorMessage": {
+                "ar": "حافظ على استقامة ظهرك - لا تقوسه",
+                "en": "Keep back straight - don't round it",
+                "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1775507476595_cpsv5d.wav",
+                "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1775507479874_6j17v9.wav"
+              },
+              "severity": "warning",
+              "cooldownMs": 2000,
+              "minErrorFrames": 4
+            },
+            {
+              "id": "back_straight_1779025069656_mirror",
+              "type": "vertical_alignment",
+              "landmarks": {
+                "primary": "right_shoulder",
+                "secondary": "right_hip"
+              },
+              "condition": {
+                "operator": "approximately_equal",
+                "threshold": 0.08
+              },
+              "activePhases": [
+                "all"
+              ],
+              "errorMessage": {
+                "ar": "حافظ على استقامة ظهرك - لا تقوسه",
+                "en": "Keep back straight - don't round it",
+                "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1775507476595_cpsv5d.wav",
+                "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1775507479874_6j17v9.wav"
+              },
+              "severity": "warning",
+              "cooldownMs": 2000,
+              "minErrorFrames": 4
+            }
+          ]
+        }
+      ],
+      "imageUrl": "https://storage.googleapis.com/waytofix/exercises/images/03e25d6c-d7fa-4c51-9a3d-1f69e219fc8e-hf_20260524_104441_573ee5fc-50c0-48a7-8c0d-1dea66d4183a-1-.gif",
+      "description": {
+        "ar": "",
+        "en": ""
+      },
+      "instructions": {
+        "ar": "",
+        "en": ""
+      },
+      "supportsWeight": true,
+      "minWeight": 2.5,
+      "maxWeight": 100,
+      "defaultWeight": 5,
+      "reportMetrics": {
+        "primary": [
+          "FORM_SCORE"
+        ],
+        "excluded": [
+          "HOLD_DURATION"
+        ]
+      },
+      "isBilateral": true,
+      "bilateralConfig": {
+        "switchMode": "after_all_reps",
+        "switchEvery": 10,
+        "startSide": "right"
+      },
+      "hasPositionChecks": true,
+      "id": "11296fcb-c428-45d0-b752-095224549da1",
+      "slug": "be-split-squat-mo8idkag",
+      "updatedAt": "2026-05-31T11:53:31.625Z"
+    },
+    {
+      "name": {
+        "ar": "سحب علوي",
+        "en": "Lats Pulldown"
+      },
+      "category": {
+        "code": "back",
+        "name": {
+          "ar": "تمارين الظهر",
+          "en": "Back"
+        }
+      },
+      "countingMethod": "up_down",
+      "muscles": [
+        "lats",
+        "biceps"
+      ],
+      "equipment": [
+        "cable_machine"
+      ],
+      "tags": [
+        "upper_body",
+        "strength",
+        "bilateral"
+      ],
+      "repCountingConfig": {
+        "reps": 10,
+        "minRepIntervalMs": 1000,
+        "maxRepIntervalMs": 4000
+      },
+      "poseVariants": [
+        {
+          "name": {
+            "ar": "سحب علوي",
+            "en": "Lats Pulldown"
+          },
+          "posePosition": "standing_back_upper",
+          "expectedPostures": [
+            "standing"
+          ],
+          "expectedDirections": [
+            "back"
+          ],
+          "expectedRegions": [
+            "upper_body"
+          ],
+          "trackedJoints": [
+            {
+              "joint": "left_shoulder",
+              "role": "primary",
+              "startPose": {
+                "max": 180,
+                "min": 140
+              },
+              "stateMessages": {
+                "pad": {
+                  "down": {
+                    "ar": "حاول النزول اكثر",
+                    "en": "try to go lower",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1778943542880_vit47a.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1778943536399_bcls6i.wav"
+                  }
+                },
+                "danger": {
+                  "down": {
+                    "ar": "توقف! وضع خطير",
+                    "en": "Stop! Dangerous position"
+                  }
+                },
+                "normal": {
+                  "up": {
+                    "ar": "جيد",
+                    "en": "Good"
+                  },
+                  "down": {
+                    "ar": "مدى حركي جيد للكتف",
+                    "en": "Shoulder good Range of motion",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1778943481102_gvr4ye.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1778943506182_yq9y0o.wav"
+                  }
+                },
+                "perfect": {
+                  "up": {
+                    "ar": "ممتاز - وضعية الكتف مثالية",
+                    "en": "Great - shoulder position is perfect",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1775511156552_88apri.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1775511160255_sy7spq.wav"
+                  },
+                  "down": {
+                    "ar": "ممتاز للاسفل",
+                    "en": "down perfect",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1778754887527_25j0i1.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1778754881733_7oatyu.wav"
+                  }
+                },
+                "warning": {
+                  "up": {
+                    "ar": "تحقق من وضعك",
+                    "en": "Check your position"
+                  },
+                  "down": {
+                    "ar": "تحقق من وضعك",
+                    "en": "Check your position"
+                  }
+                }
+              },
+              "pairedWith": "right_shoulder",
+              "trackingMode": "two_sides",
+              "upRange": {
+                "perfect": {
+                  "max": 180,
+                  "min": 140
+                }
+              },
+              "downRange": {
+                "pad": {
+                  "max": 120,
+                  "min": 110
+                },
+                "normal": {
+                  "max": 110,
+                  "min": 90
+                },
+                "perfect": {
+                  "max": 90,
+                  "min": 70
+                }
+              }
+            },
+            {
+              "joint": "right_shoulder",
+              "role": "primary",
+              "startPose": {
+                "max": 180,
+                "min": 140
+              },
+              "stateMessages": {
+                "pad": {
+                  "down": {
+                    "ar": "حاول النزول اكثر",
+                    "en": "try to go lower",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1778943542880_vit47a.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1778943536399_bcls6i.wav"
+                  }
+                },
+                "danger": {
+                  "down": {
+                    "ar": "توقف! وضع خطير",
+                    "en": "Stop! Dangerous position"
+                  }
+                },
+                "normal": {
+                  "up": {
+                    "ar": "جيد",
+                    "en": "Good"
+                  },
+                  "down": {
+                    "ar": "مدى حركي جيد للكتف",
+                    "en": "Shoulder good Range of motion",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1778943481102_gvr4ye.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1778943506182_yq9y0o.wav"
+                  }
+                },
+                "perfect": {
+                  "up": {
+                    "ar": "ممتاز - وضعية الكتف مثالية",
+                    "en": "Great - shoulder position is perfect",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1775511156552_88apri.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1775511160255_sy7spq.wav"
+                  },
+                  "down": {
+                    "ar": "ممتاز للاسفل",
+                    "en": "down perfect",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1778754887527_25j0i1.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1778754881733_7oatyu.wav"
+                  }
+                },
+                "warning": {
+                  "up": {
+                    "ar": "تحقق من وضعك",
+                    "en": "Check your position"
+                  },
+                  "down": {
+                    "ar": "تحقق من وضعك",
+                    "en": "Check your position"
+                  }
+                }
+              },
+              "pairedWith": "left_shoulder",
+              "trackingMode": "two_sides",
+              "upRange": {
+                "perfect": {
+                  "max": 180,
+                  "min": 140
+                }
+              },
+              "downRange": {
+                "pad": {
+                  "max": 120,
+                  "min": 110
+                },
+                "normal": {
+                  "max": 110,
+                  "min": 90
+                },
+                "perfect": {
+                  "max": 90,
+                  "min": 70
+                }
+              }
+            },
+            {
+              "joint": "left_elbow",
+              "role": "secondary",
+              "startPose": {
+                "max": 180,
+                "min": 140
+              },
+              "stateMessages": {
+                "pad": {
+                  "ar": "مقبول",
+                  "en": "Acceptable"
+                },
+                "danger": {
+                  "ar": "توقف! وضع خطير",
+                  "en": "Stop! Dangerous position"
+                },
+                "normal": {
+                  "ar": "جيد",
+                  "en": "Good"
+                },
+                "perfect": {
+                  "ar": "ممتاز!",
+                  "en": "Perfect!"
+                },
+                "warning": {
+                  "ar": "تحقق من وضعك",
+                  "en": "Check your position"
+                }
+              },
+              "pairedWith": "right_elbow",
+              "trackingMode": "two_sides",
+              "range": {
+                "normal": {
+                  "max": 180,
+                  "min": 40
+                },
+                "perfect": {
+                  "max": 180,
+                  "min": 50
+                },
+                "warning": {
+                  "max": 40,
+                  "min": 0
+                }
+              },
+              "phaseRanges": {
+                "top": {
+                  "perfect": {
+                    "max": 180,
+                    "min": 140
+                  }
+                },
+                "bottom": {
+                  "perfect": {
+                    "max": 90,
+                    "min": 70
+                  }
+                }
+              },
+              "phaseStateMessages": {
+                "top": {
+                  "pad": {
+                    "ar": "مقبول",
+                    "en": "Acceptable"
+                  },
+                  "danger": {
+                    "ar": "توقف! وضع خطير",
+                    "en": "Stop! Dangerous position"
+                  },
+                  "normal": {
+                    "ar": "جيد",
+                    "en": "Good"
+                  },
+                  "perfect": {
+                    "ar": "ممتاز!",
+                    "en": "Perfect!"
+                  },
+                  "warning": {
+                    "ar": "تحقق من وضعك",
+                    "en": "Check your position"
+                  }
+                },
+                "bottom": {
+                  "pad": {
+                    "ar": "مقبول",
+                    "en": "Acceptable"
+                  },
+                  "danger": {
+                    "ar": "توقف! وضع خطير",
+                    "en": "Stop! Dangerous position"
+                  },
+                  "normal": {
+                    "ar": "جيد",
+                    "en": "Good"
+                  },
+                  "perfect": {
+                    "ar": "ممتاز!",
+                    "en": "Perfect!"
+                  },
+                  "warning": {
+                    "ar": "تحقق من وضعك",
+                    "en": "Check your position"
+                  }
+                }
+              }
+            },
+            {
+              "joint": "right_elbow",
+              "role": "secondary",
+              "startPose": {
+                "max": 180,
+                "min": 140
+              },
+              "stateMessages": {
+                "pad": {
+                  "ar": "مقبول",
+                  "en": "Acceptable"
+                },
+                "danger": {
+                  "ar": "توقف! وضع خطير",
+                  "en": "Stop! Dangerous position"
+                },
+                "normal": {
+                  "ar": "جيد",
+                  "en": "Good"
+                },
+                "perfect": {
+                  "ar": "ممتاز!",
+                  "en": "Perfect!"
+                },
+                "warning": {
+                  "ar": "تحقق من وضعك",
+                  "en": "Check your position"
+                }
+              },
+              "pairedWith": "left_elbow",
+              "trackingMode": "two_sides",
+              "range": {
+                "normal": {
+                  "max": 180,
+                  "min": 40
+                },
+                "perfect": {
+                  "max": 180,
+                  "min": 50
+                },
+                "warning": {
+                  "max": 40,
+                  "min": 0
+                }
+              },
+              "phaseRanges": {
+                "top": {
+                  "perfect": {
+                    "max": 180,
+                    "min": 140
+                  }
+                },
+                "bottom": {
+                  "perfect": {
+                    "max": 90,
+                    "min": 70
+                  }
+                }
+              },
+              "phaseStateMessages": {
+                "top": {
+                  "pad": {
+                    "ar": "مقبول",
+                    "en": "Acceptable"
+                  },
+                  "danger": {
+                    "ar": "توقف! وضع خطير",
+                    "en": "Stop! Dangerous position"
+                  },
+                  "normal": {
+                    "ar": "جيد",
+                    "en": "Good"
+                  },
+                  "perfect": {
+                    "ar": "ممتاز!",
+                    "en": "Perfect!"
+                  },
+                  "warning": {
+                    "ar": "تحقق من وضعك",
+                    "en": "Check your position"
+                  }
+                },
+                "bottom": {
+                  "pad": {
+                    "ar": "مقبول",
+                    "en": "Acceptable"
+                  },
+                  "danger": {
+                    "ar": "توقف! وضع خطير",
+                    "en": "Stop! Dangerous position"
+                  },
+                  "normal": {
+                    "ar": "جيد",
+                    "en": "Good"
+                  },
+                  "perfect": {
+                    "ar": "ممتاز!",
+                    "en": "Perfect!"
+                  },
+                  "warning": {
+                    "ar": "تحقق من وضعك",
+                    "en": "Check your position"
+                  }
+                }
+              }
+            }
+          ],
+          "positionChecks": [
+            {
+              "id": "back_straight_1778943171406",
+              "type": "vertical_alignment",
+              "landmarks": {
+                "primary": "left_shoulder",
+                "secondary": "left_hip"
+              },
+              "condition": {
+                "operator": "approximately_equal",
+                "threshold": 0.2
+              },
+              "activePhases": [
+                "all"
+              ],
+              "errorMessage": {
+                "ar": "حافظ على استقامة ظهرك",
+                "en": "Keep your back straight",
+                "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1778943274061_bab4vm.wav",
+                "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1778943245280_jrx76k.wav"
+              },
+              "severity": "warning",
+              "cooldownMs": 2000,
+              "minErrorFrames": 4
+            }
+          ]
+        }
+      ],
+      "imageUrl": "https://storage.googleapis.com/waytofix/exercises/images/de3d21b9-518b-4e34-b08c-cd09221b9511-hf_20260524_104054_6a638cee-d493-498b-9575-6b4852c2ee5e-2-.gif",
+      "description": {
+        "ar": "",
+        "en": ""
+      },
+      "instructions": {
+        "ar": "",
+        "en": ""
+      },
+      "supportsWeight": true,
+      "minWeight": 5,
+      "maxWeight": 120,
+      "defaultWeight": 20,
+      "reportMetrics": {
+        "primary": [
+          "FORM_SCORE"
+        ],
+        "excluded": [
+          "HOLD_DURATION"
+        ]
+      },
+      "hasPositionChecks": true,
+      "id": "ea617bfb-e97d-4e45-ad39-51c6b64cd4f1",
+      "slug": "lats-pulldown-mp8gbvwj",
+      "updatedAt": "2026-05-31T11:53:17.437Z"
+    },
+    {
+      "name": {
+        "ar": "سحب بالحبل للوجه",
+        "en": "Cable Face Pull"
+      },
+      "category": {
+        "code": "shoulders",
+        "name": {
+          "ar": "تمارين الأكتاف",
+          "en": "Shoulders"
+        }
+      },
+      "countingMethod": "up_down",
+      "muscles": [
+        "rear_delts"
+      ],
+      "equipment": [
+        "cable_machine"
+      ],
+      "tags": [
+        "strength"
+      ],
+      "repCountingConfig": {
+        "reps": 10,
+        "minRepIntervalMs": 1000,
+        "maxRepIntervalMs": 4000
+      },
+      "poseVariants": [
+        {
+          "name": {
+            "ar": "سحب بالحبل للوجه",
+            "en": "Cable Face Pull"
+          },
+          "posePosition": "standing_side_upper",
+          "expectedPostures": [
+            "standing"
+          ],
+          "expectedDirections": [
+            "side"
+          ],
+          "expectedRegions": [
+            "upper_body"
+          ],
+          "trackedJoints": [
+            {
+              "joint": "left_elbow",
+              "role": "primary",
+              "startPose": {
+                "max": 180,
+                "min": 140
+              },
+              "stateMessages": {
+                "danger": {
+                  "down": {
+                    "ar": "توقف! وضع خطير",
+                    "en": "Stop! Dangerous position"
+                  }
+                },
+                "normal": {
+                  "up": {
+                    "ar": "جيد",
+                    "en": "Good"
+                  },
+                  "down": {
+                    "ar": "جيد",
+                    "en": "Good"
+                  }
+                },
+                "perfect": {
+                  "up": {
+                    "ar": "ممتاز!",
+                    "en": "Perfect!"
+                  },
+                  "down": {
+                    "ar": "ممتاز!",
+                    "en": "Perfect!"
+                  }
+                },
+                "warning": {
+                  "up": {
+                    "ar": "تحقق من وضعك",
+                    "en": "Check your position"
+                  },
+                  "down": {
+                    "ar": "تحقق من وضعك",
+                    "en": "Check your position"
+                  }
+                }
+              },
+              "pairedWith": "right_elbow",
+              "trackingMode": "any_side",
+              "upRange": {
+                "perfect": {
+                  "max": 180,
+                  "min": 130
+                }
+              },
+              "downRange": {
+                "pad": {
+                  "max": 100,
+                  "min": 80
+                },
+                "normal": {
+                  "max": 80,
+                  "min": 60
+                },
+                "perfect": {
+                  "max": 60,
+                  "min": 40
+                }
+              }
+            },
+            {
+              "joint": "right_elbow",
+              "role": "primary",
+              "startPose": {
+                "max": 180,
+                "min": 140
+              },
+              "stateMessages": {
+                "danger": {
+                  "down": {
+                    "ar": "توقف! وضع خطير",
+                    "en": "Stop! Dangerous position"
+                  }
+                },
+                "normal": {
+                  "up": {
+                    "ar": "جيد",
+                    "en": "Good"
+                  },
+                  "down": {
+                    "ar": "جيد",
+                    "en": "Good"
+                  }
+                },
+                "perfect": {
+                  "up": {
+                    "ar": "ممتاز!",
+                    "en": "Perfect!"
+                  },
+                  "down": {
+                    "ar": "ممتاز!",
+                    "en": "Perfect!"
+                  }
+                },
+                "warning": {
+                  "up": {
+                    "ar": "تحقق من وضعك",
+                    "en": "Check your position"
+                  },
+                  "down": {
+                    "ar": "تحقق من وضعك",
+                    "en": "Check your position"
+                  }
+                }
+              },
+              "pairedWith": "left_elbow",
+              "trackingMode": "any_side",
+              "upRange": {
+                "perfect": {
+                  "max": 180,
+                  "min": 130
+                }
+              },
+              "downRange": {
+                "pad": {
+                  "max": 100,
+                  "min": 80
+                },
+                "normal": {
+                  "max": 80,
+                  "min": 60
+                },
+                "perfect": {
+                  "max": 60,
+                  "min": 40
+                }
+              }
+            },
+            {
+              "joint": "left_shoulder",
+              "role": "secondary",
+              "startPose": {
+                "max": 120,
+                "min": 70
+              },
+              "stateMessages": {
+                "pad": {
+                  "ar": "مقبول",
+                  "en": "Acceptable"
+                },
+                "danger": {
+                  "ar": "توقف! وضع خطير",
+                  "en": "Stop! Dangerous position"
+                },
+                "normal": {
+                  "ar": "جيد",
+                  "en": "Good"
+                },
+                "perfect": {
+                  "ar": "ممتاز!",
+                  "en": "Perfect!"
+                },
+                "warning": {
+                  "ar": "ارفع كتفك اعلي",
+                  "en": "raise your shoulder",
+                  "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1779024332539_o4mqd1.wav",
+                  "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1779024349028_cmy7er.wav"
+                }
+              },
+              "pairedWith": "right_shoulder",
+              "trackingMode": "any_side",
+              "range": {
+                "perfect": {
+                  "max": 120,
+                  "min": 90
+                },
+                "warning": {
+                  "max": 90,
+                  "min": 0
+                }
+              }
+            },
+            {
+              "joint": "right_shoulder",
+              "role": "secondary",
+              "startPose": {
+                "max": 120,
+                "min": 70
+              },
+              "stateMessages": {
+                "pad": {
+                  "ar": "مقبول",
+                  "en": "Acceptable"
+                },
+                "danger": {
+                  "ar": "توقف! وضع خطير",
+                  "en": "Stop! Dangerous position"
+                },
+                "normal": {
+                  "ar": "جيد",
+                  "en": "Good"
+                },
+                "perfect": {
+                  "ar": "ممتاز!",
+                  "en": "Perfect!"
+                },
+                "warning": {
+                  "ar": "ارفع كتفك اعلي",
+                  "en": "raise your shoulder",
+                  "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1779024332539_o4mqd1.wav",
+                  "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1779024349028_cmy7er.wav"
+                }
+              },
+              "pairedWith": "left_shoulder",
+              "trackingMode": "any_side",
+              "range": {
+                "perfect": {
+                  "max": 120,
+                  "min": 90
+                },
+                "warning": {
+                  "max": 90,
+                  "min": 0
+                }
+              }
+            }
+          ],
+          "positionChecks": [
+            {
+              "id": "custom_1779019473101",
+              "type": "horizontal_alignment",
+              "landmarks": {
+                "primary": "left_wrist",
+                "secondary": "nose"
+              },
+              "condition": {
+                "operator": "approximately_equal",
+                "threshold": 0.03
+              },
+              "activePhases": [
+                "bottom"
+              ],
+              "errorMessage": {
+                "ar": "اسحب يدك نحو انفك",
+                "en": "pull your hand towards your nose",
+                "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1779021644224_q4y8hn.wav",
+                "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1779021650064_g5kyjn.wav"
+              },
+              "severity": "warning",
+              "cooldownMs": 2000,
+              "minErrorFrames": 3
+            }
+          ]
+        }
+      ],
+      "imageUrl": "https://storage.googleapis.com/waytofix/exercises/images/d529bfa8-1d5d-44c0-b580-5e0198b3ab73-hf_20260524_102926_a5aa179c-3e06-4c6f-aa72-d0dc9579798d-1-.gif",
+      "description": {
+        "ar": "",
+        "en": ""
+      },
+      "instructions": {
+        "ar": "",
+        "en": ""
+      },
+      "reportMetrics": {
+        "primary": [
+          "FORM_SCORE"
+        ],
+        "excluded": [
+          "HOLD_DURATION",
+          "WEIGHT",
+          "VOLUME",
+          "EST_1RM"
+        ]
+      },
+      "hasPositionChecks": true,
+      "id": "6c3cd310-de43-4ed1-8862-c6e7fb20859e",
+      "slug": "cable-face-pull-mp8hv429",
+      "updatedAt": "2026-05-31T11:53:13.413Z"
+    },
+    {
+      "name": {
+        "ar": "تمرين بولوف بريس",
+        "en": "Pallof Press"
+      },
+      "category": {
+        "code": "full_body",
+        "name": {
+          "ar": "تمارين الجسم كامل",
+          "en": "Full Body"
+        }
+      },
+      "countingMethod": "up_down",
+      "muscles": [],
+      "equipment": [
+        "bands"
+      ],
+      "tags": [
+        "core"
+      ],
+      "repCountingConfig": {
+        "reps": 10,
+        "minRepIntervalMs": 1000,
+        "maxRepIntervalMs": 5000
+      },
+      "poseVariants": [
+        {
+          "name": {
+            "ar": "تمرين بولوف بريس",
+            "en": "Pallof Press"
+          },
+          "posePosition": "standing_side_upper",
+          "expectedPostures": [
+            "standing"
+          ],
+          "expectedDirections": [
+            "side"
+          ],
+          "expectedRegions": [
+            "upper_body"
+          ],
+          "trackedJoints": [
+            {
+              "joint": "left_elbow",
+              "role": "primary",
+              "startPose": {
+                "max": 100,
+                "min": 60
+              },
+              "stateMessages": {
+                "danger": {
+                  "down": {
+                    "ar": "توقف! وضع خطير",
+                    "en": "Stop! Dangerous position"
+                  }
+                },
+                "normal": {
+                  "up": {
+                    "ar": "جيد",
+                    "en": "Good"
+                  },
+                  "down": {
+                    "ar": "جيد",
+                    "en": "Good"
+                  }
+                },
+                "perfect": {
+                  "up": {
+                    "ar": "ممتاز!",
+                    "en": "Perfect!"
+                  },
+                  "down": {
+                    "ar": "ممتاز!",
+                    "en": "Perfect!"
+                  }
+                },
+                "warning": {
+                  "up": {
+                    "ar": "تحقق من وضعك",
+                    "en": "Check your position"
+                  },
+                  "down": {
+                    "ar": "تحقق من وضعك",
+                    "en": "Check your position"
+                  }
+                }
+              },
+              "pairedWith": "right_elbow",
+              "trackingMode": "any_side",
+              "upRange": {
+                "pad": {
+                  "max": 140,
+                  "min": 120
+                },
+                "normal": {
+                  "max": 160,
+                  "min": 140
+                },
+                "perfect": {
+                  "max": 180,
+                  "min": 160
+                }
+              },
+              "downRange": {
+                "perfect": {
+                  "max": 100,
+                  "min": 70
+                }
+              }
+            },
+            {
+              "joint": "right_elbow",
+              "role": "primary",
+              "startPose": {
+                "max": 100,
+                "min": 60
+              },
+              "stateMessages": {
+                "danger": {
+                  "down": {
+                    "ar": "توقف! وضع خطير",
+                    "en": "Stop! Dangerous position"
+                  }
+                },
+                "normal": {
+                  "up": {
+                    "ar": "جيد",
+                    "en": "Good"
+                  },
+                  "down": {
+                    "ar": "جيد",
+                    "en": "Good"
+                  }
+                },
+                "perfect": {
+                  "up": {
+                    "ar": "ممتاز!",
+                    "en": "Perfect!"
+                  },
+                  "down": {
+                    "ar": "ممتاز!",
+                    "en": "Perfect!"
+                  }
+                },
+                "warning": {
+                  "up": {
+                    "ar": "تحقق من وضعك",
+                    "en": "Check your position"
+                  },
+                  "down": {
+                    "ar": "تحقق من وضعك",
+                    "en": "Check your position"
+                  }
+                }
+              },
+              "pairedWith": "left_elbow",
+              "trackingMode": "any_side",
+              "upRange": {
+                "pad": {
+                  "max": 140,
+                  "min": 120
+                },
+                "normal": {
+                  "max": 160,
+                  "min": 140
+                },
+                "perfect": {
+                  "max": 180,
+                  "min": 160
+                }
+              },
+              "downRange": {
+                "perfect": {
+                  "max": 100,
+                  "min": 70
+                }
+              }
+            }
+          ],
+          "positionChecks": [
+            {
+              "id": "back_straight_1779021344876",
+              "type": "vertical_alignment",
+              "landmarks": {
+                "primary": "left_shoulder",
+                "secondary": "left_hip"
+              },
+              "condition": {
+                "operator": "approximately_equal",
+                "threshold": 0.08
+              },
+              "activePhases": [
+                "all"
+              ],
+              "errorMessage": {
+                "ar": "حافظ على استقامة ظهرك",
+                "en": "Keep your back straight"
+              },
+              "severity": "warning",
+              "cooldownMs": 2000,
+              "minErrorFrames": 4
+            }
+          ]
+        }
+      ],
+      "imageUrl": "https://storage.googleapis.com/waytofix/exercises/images/3831f59d-c045-4730-b701-ac504bb027ee-hf_20260524_103704_94afdf03-2e4f-427c-b60a-09d58ea9acbb.gif",
+      "description": {
+        "ar": "",
+        "en": ""
+      },
+      "instructions": {
+        "ar": "",
+        "en": ""
+      },
+      "reportMetrics": {
+        "primary": [
+          "FORM_SCORE"
+        ],
+        "excluded": [
+          "HOLD_DURATION",
+          "WEIGHT",
+          "VOLUME",
+          "EST_1RM"
+        ]
+      },
+      "hasPositionChecks": true,
+      "id": "ac40754e-3ecd-4115-b2ca-f67c6bbd3a6b",
+      "slug": "pallof-press-mp9qfpxv",
+      "updatedAt": "2026-05-31T11:53:09.222Z"
+    },
+    {
+      "name": {
+        "ar": "رفرفة جانبي",
+        "en": "BE Lateral Raise"
+      },
+      "category": {
+        "code": "shoulders",
+        "name": {
+          "ar": "تمارين الأكتاف",
+          "en": "Shoulders"
+        }
+      },
+      "countingMethod": "up_down",
+      "muscles": [],
+      "equipment": [],
+      "tags": [
+        "upper_body"
+      ],
+      "repCountingConfig": {
+        "reps": 10,
+        "minRepIntervalMs": 1500,
+        "maxRepIntervalMs": 5000
+      },
+      "poseVariants": [
+        {
+          "name": {
+            "ar": "رفرفة جانبي",
+            "en": "BE Lateral Raise"
+          },
+          "posePosition": "standing_front_upper",
+          "expectedPostures": [
+            "standing"
+          ],
+          "expectedDirections": [
+            "front"
+          ],
+          "expectedRegions": [
+            "upper_body"
+          ],
+          "trackedJoints": [
+            {
+              "joint": "left_shoulder",
+              "role": "primary",
+              "startPose": {
+                "max": 40,
+                "min": 0
+              },
+              "stateMessages": {
+                "pad": {
+                  "up": {
+                    "ar": "مقبول اساسي",
+                    "en": "primary acceptable",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1778754757840_jnjy65.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1778754749840_n2xzvw.wav"
+                  }
+                },
+                "danger": {
+                  "up": {
+                    "ar": "خطر اساسي",
+                    "en": "primary danger",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1778754836969_mbuyfc.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1778754829273_87zagj.wav"
+                  }
+                },
+                "normal": {
+                  "up": {
+                    "ar": "جيد اساسي",
+                    "en": "primary good",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1778754707860_jxx7xf.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1778754701056_xhp9k9.wav"
+                  },
+                  "down": {
+                    "ar": "جيد",
+                    "en": "Good"
+                  }
+                },
+                "perfect": {
+                  "up": {
+                    "ar": "ممتاز اساسي",
+                    "en": "primary perfect",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1778754662873_pyszgn.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1778754652369_alqm5p.wav"
+                  },
+                  "down": {
+                    "ar": "ممتاز للاسفل",
+                    "en": "down perfect",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1778754887527_25j0i1.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1778754881733_7oatyu.wav"
+                  }
+                },
+                "warning": {
+                  "up": {
+                    "ar": "تحذير اساسي",
+                    "en": "primary warning",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1778754796050_8rbmcz.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1778754790006_fr6ufm.wav"
+                  },
+                  "down": {
+                    "ar": "تحقق من وضعك",
+                    "en": "Check your position"
+                  }
+                }
+              },
+              "pairedWith": "right_shoulder",
+              "upRange": {
+                "pad": {
+                  "max": 70,
+                  "min": 50
+                },
+                "danger": {
+                  "max": 180,
+                  "min": 130
+                },
+                "normal": {
+                  "max": 90,
+                  "min": 70
+                },
+                "perfect": {
+                  "max": 110,
+                  "min": 90
+                },
+                "warning": {
+                  "max": 130,
+                  "min": 110
+                }
+              },
+              "downRange": {
+                "perfect": {
+                  "max": 40,
+                  "min": 0
+                }
+              }
+            },
+            {
+              "joint": "right_shoulder",
+              "role": "primary",
+              "startPose": {
+                "max": 40,
+                "min": 0
+              },
+              "stateMessages": {
+                "pad": {
+                  "up": {
+                    "ar": "مقبول اساسي",
+                    "en": "primary acceptable",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1778754757840_jnjy65.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1778754749840_n2xzvw.wav"
+                  }
+                },
+                "danger": {
+                  "up": {
+                    "ar": "خطر اساسي",
+                    "en": "primary danger",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1778754836969_mbuyfc.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1778754829273_87zagj.wav"
+                  }
+                },
+                "normal": {
+                  "up": {
+                    "ar": "جيد اساسي",
+                    "en": "primary good",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1778754707860_jxx7xf.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1778754701056_xhp9k9.wav"
+                  },
+                  "down": {
+                    "ar": "جيد",
+                    "en": "Good"
+                  }
+                },
+                "perfect": {
+                  "up": {
+                    "ar": "ممتاز اساسي",
+                    "en": "primary perfect",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1778754662873_pyszgn.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1778754652369_alqm5p.wav"
+                  },
+                  "down": {
+                    "ar": "ممتاز للاسفل",
+                    "en": "down perfect",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1778754887527_25j0i1.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1778754881733_7oatyu.wav"
+                  }
+                },
+                "warning": {
+                  "up": {
+                    "ar": "تحذير اساسي",
+                    "en": "primary warning",
+                    "audioAr": "https://storage.googleapis.com/waytofix/exercises/audio/tts_ar_1778754796050_8rbmcz.wav",
+                    "audioEn": "https://storage.googleapis.com/waytofix/exercises/audio/tts_en_1778754790006_fr6ufm.wav"
+                  },
+                  "down": {
+                    "ar": "تحقق من وضعك",
+                    "en": "Check your position"
+                  }
+                }
+              },
+              "pairedWith": "left_shoulder",
+              "upRange": {
+                "pad": {
+                  "max": 70,
+                  "min": 50
+                },
+                "danger": {
+                  "max": 180,
+                  "min": 130
+                },
+                "normal": {
+                  "max": 90,
+                  "min": 70
+                },
+                "perfect": {
+                  "max": 110,
+                  "min": 90
+                },
+                "warning": {
+                  "max": 130,
+                  "min": 110
+                }
+              },
+              "downRange": {
+                "perfect": {
+                  "max": 40,
+                  "min": 0
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "imageUrl": "https://storage.googleapis.com/waytofix/exercises/images/158f5abb-2fa2-4e82-bcb8-1ca10ca24730-hf_20260525_133144_eefc7f1a-901e-4068-bf81-ce31459fbb8d-1-.gif",
+      "description": {
+        "ar": "تمرين الرفرفة الجانبي هو تمرين للكتف يستهدف العضلة الجانبية عن طريق رفع الذراعين على الجانبين حتى مستوى الكتف. ",
+        "en": "Lateral Raise is a shoulder exercise that targets the middle deltoid by lifting the arms sideways up to shoulder level."
+      },
+      "instructions": {
+        "ar": "1.قف بشكل مستقيم وامسك دمبل في كل يد\n2.اجعل ذراعيك بجانب جسمك مع ثني بسيط في الكوع\n3.ارفع ذراعيك على الجانبين حتى مستوى الكتف\n4.توقف لحظة في الأعلى\n5.انزل ببطء\n6.كرر الحركة",
+        "en": "1.Stand straight holding a dumbbell in each hand\n2.Keep arms at your sides with a slight bend in the elbows\n3.Raise your arms sideways until shoulder level\n4.Pause briefly at the top\n5.Lower your arms slowly\n6.Repeat"
+      },
+      "reportMetrics": {
+        "primary": [
+          "FORM_SCORE"
+        ],
+        "excluded": [
+          "HOLD_DURATION",
+          "WEIGHT",
+          "VOLUME",
+          "EST_1RM",
+          "ALIGNMENT"
+        ]
+      },
+      "id": "4221d63b-bade-4c36-83f9-f2a71a9acecc",
+      "slug": "be-lateral-raise-mo8iqcmi",
+      "updatedAt": "2026-05-31T11:52:15.118Z"
+    }
+  ],
+  "messageLibrary": [
+    {
+      "id": "0225595b-637f-4759-bec8-583d45d2777c",
+      "code": "exmsg_ex020_dumbbell_front_raise_pv_1_mot_0",
+      "category": "motivational",
+      "context": "motivational",
+      "content": {
+        "en": "Excellent front raise",
+        "ar": "رفع أمامي ممتاز"
+      }
+    },
+    {
+      "id": "8be9e3cc-0019-4d47-bea7-274e3a4247af",
+      "code": "exmsg_ex020_dumbbell_front_raise_pv_1_tip_0",
+      "category": "tip",
+      "context": "tip",
+      "content": {
+        "en": "Raise with the shoulder, not with momentum from the back.",
+        "ar": "ارفع الذراع بالكتف لا بالزخم من الظهر."
+      }
+    },
+    {
+      "id": "13343b53-4ac9-4cb9-a248-ceaee6a8819d",
+      "code": "exmsg_ex026_plank_pv_1_mot_0",
+      "category": "motivational",
+      "context": "motivational",
+      "content": {
+        "en": "Excellent controlled Plank",
+        "ar": "أداء ممتاز في بلانك"
+      }
+    },
+    {
+      "id": "e2f2ab71-fec0-4d10-a9ff-ed60b3d6b497",
+      "code": "exmsg_ex026_plank_pv_1_tip_0",
+      "category": "tip",
+      "context": "tip",
+      "content": {
+        "en": "Keep the movement controlled and breathe steadily.",
+        "ar": "حافظ على التحكم في الحركة والتنفس الهادئ."
+      }
+    }
+  ],
   "systemMessages": [
     {
       "code": "setup_axis_direction_any",

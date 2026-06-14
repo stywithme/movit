@@ -1186,3 +1186,77 @@ BUILD SUCCESSFUL
 
 الفحص الشامل النهائي كشف فشلين **سابقين** (committed-broken، مُثبَت بـ git أنهما خارج تغييرات الهجرة): سجلّ عقد `:core:network` (نقص `POST api/mobile/auth/google`) واختبارات legacy لا تُجمّع/Robolectric WorkManager. أُصلحت كلها في **مصادر الاختبار فقط** (دون لمس كود الإنتاج) لتسليم suite أخضر. تأثير FIX‑6 الوحيد على الاختبارات (تهيئة WorkManager في Robolectric) عُزل عبر `UnitTestApplication`.
 
+---
+
+## سجل التنفيذ — الإغلاق المرحلة A (قلب اللانشر)
+
+**التاريخ:** 2026-06-13  
+**النطاق:** قلب اللانcher الافتراضي إلى shell KMP Compose — **إضافي/قابل للعكس**، **بدون حذف** أي ملف legacy.
+
+### آلية الأعلام ومجموعات المصدر (قبل التنفيذ — مرجع)
+
+| العلم | الموقع | الافتراضي السابق | BuildConfig | تأثير المصدر |
+|-------|--------|------------------|-------------|--------------|
+| `movit.shell.launcher.enabled` | `gradle.properties` + `app/build.gradle.kts:9–10` | `false` | `MOVIT_SHELL_LAUNCHER_ENABLED` | `true` → `main` يضمّ `src/movitShellEnabled/java` + `src/movitShellHost/java`؛ `false` → `movitShellDisabled` في main و`movitShellHost` في debug فقط |
+| `movit.training.kmp.enabled` | `gradle.properties:22` + `app/build.gradle.kts:12–13` | `false` (fallback) / `true` (properties) | `MOVIT_TRAINING_KMP_ENABLED` | يمرّر إلى `attachMovitShellHost(trainingKmpEnabled=…)` → `TrainingSession` الحي vs snackbar |
+
+عند `movit.shell.launcher.enabled=true`: موديولات Movit KMP على **release classpath** (`app/build.gradle.kts:168–170`).
+
+### التغييرات المنفَّذة (ملف:سطر)
+
+| المهمة | الملف | السطور | التغيير |
+|--------|-------|--------|---------|
+| **A1** | `android-poc/gradle.properties` | 17–19 | `movit.shell.launcher.enabled=true` (مع تعليق rollback) |
+| **A1** | `android-poc/app/build.gradle.kts` | 9–10 | fallback `?: true` عند غياب الخاصية |
+| **A2** | `android-poc/gradle.properties` | 22 | `movit.training.kmp.enabled=true` (كان مفعّلاً مسبقاً) |
+| **A2** | `android-poc/app/build.gradle.kts` | 12–13 | fallback `?: true` |
+| **A3** | `app/src/main/AndroidManifest.xml` | 40–57 | `com.movit.MovitMainActivity` → `exported=true` + `MAIN`/`LAUNCHER`؛ `SplashActivity` → `exported=false` بدون intent-filter |
+| **A3 (debug)** | `app/src/debug/AndroidManifest.xml` | 17–23 | إزالة LAUNCHER من `MovitShellPilotActivity` لتفادي launcher مزدوج في الدمج |
+| **A4 / G8** | `app/src/movitShellEnabled/.../MovitMainActivity.kt` | 19 | `exitToLegacyAuthOnLogout = false` |
+
+**تأكيد LAUNCHER:** في `main/AndroidManifest.xml` يوجد **نشاط launcher واحد فقط** (`MovitMainActivity`). بعد دمج debug: launcher واحد (`MovitMainActivity` من main)؛ `MovitShellPilotActivity` ما زال قابلاً للتشغيل عبر `adb`/component لكن ليس أيقونة التطبيق.
+
+### كيف يُحلّ اللانcher الآن
+
+```
+أيقونة التطبيق → MovitMainActivity (LAUNCHER)
+  → attachMovitShellHost (movitShellHost)
+  → MovitAppShellHost → MovitAppShellViewModel
+  → Auth bootstrap داخل الشل إن لزم (MovitInnerRoute.Auth)
+  → التبويبات الأربعة + المسارات الداخلية (library / training / …)
+```
+
+مسارات legacy (`SplashActivity` → `SignInActivity` → `MovitPostLoginNavigator`) **محفوظة** لكن `SplashActivity` لم يعد LAUNCHER؛ `MovitPostLoginNavigator.homeActivityClass()` ما زال يوجّه إلى `MovitMainActivity` عندما `MOVIT_SHELL_LAUNCHER_ENABLED=true`.
+
+### G8 — تسجيل الخروج
+
+مع `exitToLegacyAuthOnLogout=false`: `MovitAppShellViewModel` يدفع `MovitInnerRoute.Auth` داخل الشل (`legacyAuthExitEnabled=false`، انظر `MovitAppShellViewModel.kt:52–56` و`:221–225`) بدلاً من `NavigateToLegacyAuth` → `SplashActivity`.
+
+### G2 / G3 — جسور legacy
+
+| الفجوة | النشاط legacy | الحالة |
+|--------|---------------|--------|
+| **G2** Quick Start (بناء تمرين حر) | `QuickStartActivity` | **فجوة مقبولة موثّقة** — لا زر/حدث في `MovitExploreScreen` أو effects يطابق Quick Start؛ حتى `ExploreFragment` legacy لا يستدعيه حالياً. النشاط والمانيفست محفوظان؛ يُستعاد لاحقاً بشاشة KMP أو جسر `startActivity` عند وجود trigger نظيف. **TODO:** ربط Explore → QuickStart عند تصميم UX KMP. |
+| **G3** تخصيص ما قبل التدريب | `WorkoutCustomizeActivity` | **تغطية وظيفية في الشل** — المسار KMP: Explore/مكتبة → `WorkoutSessionScreen` (وضع تحرير مدمج) بدلاً من `WorkoutDetailActivity` → Customize. النشاط legacy **لم يُحذف** ويبقى لمسارات legacy/deep link. جسر Intent **غير مطلوب** لأن الشل لا يطلق مسار Customize legacy. |
+
+لم يُحذف أي ملف legacy.
+
+### خطوات الـ rollback (سطر واحد + manifest)
+
+1. في `gradle.properties`: `movit.shell.launcher.enabled=false` و`movit.training.kmp.enabled=false` (إن رُغب).
+2. في `app/build.gradle.kts`: يمكن إبقاء fallback أو إرجاعه إلى `false`.
+3. في `main/AndroidManifest.xml`: إعادة LAUNCHER إلى `SplashActivity` و`exported=false` على `MovitMainActivity`.
+4. في `movitShellEnabled/.../MovitMainActivity.kt`: `exitToLegacyAuthOnLogout=true` (اختياري لسلوك Strategy B).
+5. في `debug/AndroidManifest.xml`: إعادة LAUNCHER لـ `MovitShellPilotActivity` إن رُغب بسلوك pilot السابق.
+
+### نتائج البناء (من `android-poc`، PowerShell)
+
+| الأمر | النتيجة |
+|-------|---------|
+| `.\gradlew :app:assembleDebug` | ✅ **PASS** (~65s) |
+| `.\gradlew :app:assembleRelease` | ✅ **PASS** (~4m 13s) |
+| `.\gradlew :feature:shell:compileKotlinIosSimulatorArm64` | ✅ **PASS** (~54s) |
+| `.\gradlew testDebugUnitTest` | ✅ **PASS** (~51s) |
+
+**حجم APK release:** `app/build/outputs/apk/release/app-release-unsigned.apk` ≈ **40.3 MB** (42 248 605 بايت).
+

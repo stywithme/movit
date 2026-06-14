@@ -91,6 +91,7 @@ class SharedWorkoutSessionRepository(
                     )
                 ) {
                     is AppResult.Success -> {
+                        prefetchTrainingConfigForProgramSession(parsed)
                         val session = WorkoutSessionApiMapper.mapSession(
                             parsed = parsed,
                             plan = planResult.value,
@@ -254,6 +255,7 @@ class SharedWorkoutSessionRepository(
 
         return when (planResult) {
             is AppResult.Success -> {
+                prefetchTrainingConfigForProgramSession(parsed)
                 val session = WorkoutSessionApiMapper.mapSession(
                     parsed = parsed,
                     plan = planResult.value,
@@ -541,5 +543,18 @@ class SharedWorkoutSessionRepository(
             query = query,
             imageUrlForSlug = imageResolver,
         )
+    }
+
+    private suspend fun prefetchTrainingConfigForProgramSession(parsed: ParsedSessionKey) {
+        resolveWorkoutTemplateIdForPrefetch(
+            WorkoutSessionKeys.encode(
+                programId = parsed.programId,
+                weekNumber = parsed.weekNumber,
+                dayNumber = parsed.dayNumber,
+                plannedWorkoutId = parsed.plannedWorkoutId,
+            ),
+        )?.let { templateId ->
+            MovitData.workoutSession.syncTrainingConfig(templateId)
+        }
     }
 }

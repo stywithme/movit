@@ -47,13 +47,23 @@ suspend fun TrainingConfigRepository.ensure(
         return TrainingConfigEnsureResult.Unavailable(TrainingConfigEnsureResult.Unavailable.Reason.Offline)
     }
 
+    val templateId = workoutTemplateId?.sanitizeWorkoutTemplateId()
+    if (templateId != null) {
+        fetchAndApplyWorkoutTemplateConfigs(
+            templateId = templateId,
+            api = resolvedApi,
+            platform = resolvedPlatform,
+            repository = this,
+        )
+        if (supports(normalized)) return TrainingConfigEnsureResult.Available
+    }
+
     runSyncAttempt(resolvedSync, forceCheck = true)
     if (supports(normalized)) return TrainingConfigEnsureResult.Available
 
     runSyncAttempt(resolvedSync, forceFullRefresh = true)
     if (supports(normalized)) return TrainingConfigEnsureResult.Available
 
-    val templateId = workoutTemplateId?.takeIf { it.isNotBlank() }
     if (templateId != null) {
         fetchAndApplyWorkoutTemplateConfigs(
             templateId = templateId,
@@ -97,6 +107,12 @@ private suspend fun fetchAndApplyWorkoutTemplateConfigs(
     repository.applySyncExercises(exercises = exercises, isFullSync = false)
     return true
 }
+
+/** Session workout keys (`session:…`) are not valid workout-template API ids. */
+internal fun String.sanitizeWorkoutTemplateId(): String? =
+    trim().takeIf { it.isNotBlank() && !it.startsWith(SESSION_WORKOUT_KEY_PREFIX) }
+
+private const val SESSION_WORKOUT_KEY_PREFIX = "session:"
 
 internal fun extractTrainingConfigExercises(response: TrainingConfigApiResponse): List<JsonElement>? {
     val data = response.data?.jsonObject ?: return null

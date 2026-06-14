@@ -1,38 +1,12 @@
 package com.movit.feature.library
 
 import com.movit.core.data.MovitData
-import com.movit.core.data.repository.TrainingConfigEnsureResult
-import com.movit.core.data.repository.ensure
 import com.movit.core.training.session.TrainingFlowItem
 
-sealed interface TrainingStartResolveResult {
-    data class Ready(val action: TrainingStartAction) : TrainingStartResolveResult
-
-    data class Unavailable(
-        val reason: TrainingConfigEnsureResult.Unavailable.Reason,
-    ) : TrainingStartResolveResult
-}
-
-data class TrainingConfigUnavailableUi(
-    val messageKey: String,
-    val canSync: Boolean,
-)
-
-fun TrainingConfigEnsureResult.Unavailable.Reason.toUi(): TrainingConfigUnavailableUi =
-    when (this) {
-        TrainingConfigEnsureResult.Unavailable.Reason.Offline ->
-            TrainingConfigUnavailableUi(
-                messageKey = "training_config_offline_unavailable",
-                canSync = false,
-            )
-        TrainingConfigEnsureResult.Unavailable.Reason.NotFoundAfterSync ->
-            TrainingConfigUnavailableUi(
-                messageKey = "training_config_first_use_online",
-                canSync = true,
-            )
-    }
-
-suspend fun resolveTrainingStartWithEnsure(
+/**
+ * Resolves training launch from local cache only — no sync/ensure on the Start path.
+ */
+suspend fun resolveTrainingStart(
     slug: String,
     exerciseName: String,
     targetReps: Int,
@@ -40,50 +14,34 @@ suspend fun resolveTrainingStartWithEnsure(
     flowItems: List<TrainingFlowItem>? = null,
     startExerciseIndex: Int = 0,
     exerciseId: String? = null,
-): TrainingStartResolveResult {
-    if (!MovitData.isInstalled) {
-        return TrainingStartResolveResult.Unavailable(
-            TrainingConfigEnsureResult.Unavailable.Reason.NotFoundAfterSync,
-        )
-    }
+): TrainingStartAction? {
+    if (!MovitData.isInstalled) return null
     MovitData.bootstrapLocalCaches()
 
-    val normalized = MovitData.trainingConfig.resolveAvailableSlug(
-        slug,
-        exerciseId,
-        normalizeTrainingSlug(slug),
-        exerciseId?.let(::normalizeTrainingSlug),
-    ) ?: normalizeTrainingSlug(slug)
-    when (val ensureResult = MovitData.trainingConfig.ensure(
-        slug = normalized,
-        workoutTemplateId = workoutId,
-    )) {
-        is TrainingConfigEnsureResult.Available -> Unit
-        is TrainingConfigEnsureResult.Unavailable ->
-            return TrainingStartResolveResult.Unavailable(ensureResult.reason)
-    }
-
+    val normalized = resolveCachedTrainingSlug(slug, exerciseId) ?: return null
     val base = resolveTrainingStartAction(
         slug = normalized,
         exerciseName = exerciseName,
         targetReps = targetReps,
         workoutId = workoutId,
-    ) ?: return TrainingStartResolveResult.Unavailable(
-        TrainingConfigEnsureResult.Unavailable.Reason.NotFoundAfterSync,
+        exerciseId = exerciseId,
+    ) ?: TrainingStartAction.KmpLive(
+        slug = normalized,
+        exerciseName = exerciseName,
+        targetReps = targetReps,
+        workoutId = workoutId,
     )
 
-    val kmp = base as? TrainingStartAction.KmpLive ?: return TrainingStartResolveResult.Ready(base)
-    if (workoutId.isNullOrBlank()) return TrainingStartResolveResult.Ready(kmp)
+    val kmp = base as? TrainingStartAction.KmpLive ?: return base
+    if (workoutId.isNullOrBlank()) return kmp
 
     val plannedWorkout = resolvePlannedWorkoutLaunch(workoutId, sessionContext = null)
     val config = WorkoutFlowCache.get(workoutId)
     if (config == null) {
-        return TrainingStartResolveResult.Ready(
-            kmp.copy(
-                flowItems = flowItems,
-                plannedWorkout = plannedWorkout,
-                startExerciseIndex = startExerciseIndex,
-            ),
+        return kmp.copy(
+            flowItems = flowItems,
+            plannedWorkout = plannedWorkout,
+            startExerciseIndex = startExerciseIndex,
         )
     }
 
@@ -96,11 +54,24 @@ suspend fun resolveTrainingStartWithEnsure(
         }.let { index -> if (index >= 0) index else 0 }
     }
 
-    return TrainingStartResolveResult.Ready(
-        kmp.copy(
-            flowItems = flowItems ?: config.toTrainingFlowItems(resolvedIndex),
-            plannedWorkout = plannedWorkout,
-            startExerciseIndex = resolvedIndex,
-        ),
+    return kmp.copy(
+        flowItems = flowItems ?: config.toTrainingFlowItems(resolvedIndex),
+        plannedWorkout = plannedWorkout,
+        startExerciseIndex = resolvedIndex,
     )
+}
+
+/** Finds a slug with a cached training config (index or on-disk record). */
+fun resolveCachedTrainingSlug(slug: String, exerciseId: String? = null): String? {
+    if (!MovitData.isInstalled) return null
+    val candidates = listOfNotNull(
+        slug,
+        exerciseId,
+        normalizeTrainingSlug(slug),
+        exerciseId?.let(::normalizeTrainingSlug),
+    )
+    MovitData.trainingConfig.resolveAvailableSlug(*candidates.toTypedArray())?.let { return it }
+    return candidates.firstNotNullOfOrNull { candidate ->
+        MovitData.trainingConfig.getBySlug(candidate)?.slug?.takeIf { it.isNotBlank() }
+    }
 }

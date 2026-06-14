@@ -37,24 +37,24 @@
         <!-- AUTH FLOW -->
         <!-- ═══════════════════════════════════════════════════ -->
         
-        <!-- Movit KMP shell — production launcher target (Pre-06 WS-C); no LAUNCHER until flip -->
+        <!-- Movit KMP shell — production LAUNCHER (Phase A closure; reversible via gradle flag + manifest) -->
         <activity
             android:name="com.movit.MovitMainActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
-
-        <!-- Splash Screen - LAUNCHER (legacy production entry) -->
-        <activity
-            android:name=".ui.auth.SplashActivity"
             android:exported="true"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix.Splash">
+            android:theme="@style/Theme.WayToFix">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Splash Screen — legacy auth entry (kept; no longer LAUNCHER) -->
+        <activity
+            android:name=".ui.auth.SplashActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix.Splash" />
         
         <!-- Onboarding (intro slides) -->
         <activity
