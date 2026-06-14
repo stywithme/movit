@@ -137,13 +137,16 @@ fun MovitInnerHost(
                 exerciseName = route.exerciseName,
                 targetReps = route.targetReps,
                 onBack = onBack,
-                onFinish = {
+                onFinish = { _ ->
                     val workoutId = route.workoutId
                     if (workoutId != null) {
                         onNavigate(MovitInnerRoute.WorkoutSession(workoutId))
                     } else {
                         onBack()
                     }
+                },
+                onViewReport = { reportId ->
+                    onNavigate(MovitInnerRoute.ReportDetail(reportId))
                 },
                 modifier = modifier,
             )
@@ -173,10 +176,11 @@ fun MovitInnerHost(
                     },
                 ),
                 onBack = onBack,
-                onFinish = {
+                onFinish = { isWorkoutFlowComplete ->
                     handleWorkoutTrainingFinish(
                         workoutId = route.workoutId,
                         completedExerciseIndex = route.startExerciseIndex,
+                        isWorkoutFlowComplete = isWorkoutFlowComplete,
                         onNavigate = onNavigate,
                         onBack = onBack,
                     )
@@ -262,6 +266,7 @@ fun MovitInnerHost(
 private fun handleWorkoutTrainingFinish(
     workoutId: String?,
     completedExerciseIndex: Int,
+    isWorkoutFlowComplete: Boolean,
     onNavigate: (MovitInnerRoute) -> Unit,
     onBack: () -> Unit,
 ) {
@@ -270,15 +275,12 @@ private fun handleWorkoutTrainingFinish(
         return
     }
     val config = WorkoutFlowCache.get(workoutId)
-    if (config == null) {
-        onNavigate(MovitInnerRoute.WorkoutSession(workoutId))
-        return
-    }
     when (
-        val nav = WorkoutRunProgressStore.advanceAfterExercise(
+        val nav = WorkoutRunProgressStore.onTrainingSessionFinish(
             workoutId = workoutId,
             config = config,
             completedExerciseIndex = completedExerciseIndex,
+            isWorkoutFlowComplete = isWorkoutFlowComplete,
         )
     ) {
         WorkoutRunPostNav.BackToRun,

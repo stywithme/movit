@@ -435,6 +435,11 @@
     <string name="report_detail_preview_tip2_title">حافظ على محاذاة الركبتين مع أصابع القدم</string>
     <string name="report_detail_preview_tip2_message">انحراف طفيف للداخل في المجموعة 4 — ركّز على دفع الركبتين للخارج.</string>
     <string name="report_detail_preview_fatigue_message">انخفض الأداء 6% من المجموعة 1 إلى 4 — ضمن المعدل الطبيعي.</string>
+    <string name="report_detail_frame_danger">تكرار خطر %1$d</string>
+    <string name="report_detail_frame_best">أفضل تكرار %1$d</string>
+    <string name="report_detail_frame_form_issue">مشكلة أداء تكرار %1$d</string>
+    <string name="report_detail_frame_peak">ذروة تكرار %1$d</string>
+    <string name="report_detail_frame_hold_sample">عينة ثبات</string>
 
     <!-- Workout session -->
     <string name="session_back">رجوع</string>
@@ -710,6 +715,7 @@
     <string name="training_session_setup_title">خذ وضعية البداية</string>
     <string name="training_session_setup_phase">الخطوة: %1$s</string>
     <string name="training_session_setup_progress">جاهزية %1$d%%</string>
+    <string name="training_session_setup_no_pose">قف أمام الكاميرا وتأكد أن جسمك كاملاً ظاهر</string>
     <string name="training_session_countdown_frozen">ثبّت وضعيتك</string>
     <string name="training_session_rest_title">راحة</string>
     <string name="training_session_rest_timer">%1$d ث</string>
@@ -742,6 +748,7 @@
     <string name="training_session_open_settings">فتح الإعدادات</string>
     <string name="training_session_camera_unavailable">التقاط الوضعية غير متاح. أعد تشغيل التطبيق.</string>
     <string name="training_session_flip_camera_a11y">تبديل الكاميرا</string>
+    <string name="training_session_camera_switch_failed">تعذّر تبديل الكاميرا. حاول مرة أخرى.</string>
     <string name="training_session_debug_fps">إطار/ث %1$d</string>
 
     <string name="auth_app_name">WayToFix</string>

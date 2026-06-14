@@ -1,29 +1,24 @@
 # Phase 06 — release APK smoke helper (adb checklist)
 # Usage (from android-poc/):
-#   .\scripts\phase06-smoke-adb.ps1 -BuildFlagOn
-#   .\scripts\phase06-smoke-adb.ps1 -BuildFlagOn -SkipBuild
+#   .\scripts\phase06-smoke-adb.ps1
+#   .\scripts\phase06-smoke-adb.ps1 -SkipBuild
 #
 # Prerequisites: USB debugging enabled, device/emulator connected (`adb devices`).
 
 param(
-    [switch]$BuildFlagOn,
     [switch]$SkipBuild
 )
 
 $ErrorActionPreference = "Stop"
 $AppId = "com.trainingvalidator.poc"
+$LauncherActivity = "com.movit.MovitMainActivity"
 $ApkPath = "app\build\outputs\apk\release\app-release.apk"
 
 Set-Location (Split-Path $PSScriptRoot -Parent)
 
 if (-not $SkipBuild) {
-    if ($BuildFlagOn) {
-        Write-Host ">> Building release APK (movit.shell.launcher.enabled=true)..." -ForegroundColor Cyan
-        .\gradlew.bat --console=plain -Pmovit.shell.launcher.enabled=true :app:assembleRelease
-    } else {
-        Write-Host ">> Building release APK (flag off — legacy)..." -ForegroundColor Cyan
-        .\gradlew.bat --console=plain :app:assembleRelease
-    }
+    Write-Host ">> Building release APK..." -ForegroundColor Cyan
+    .\gradlew.bat --console=plain :app:assembleRelease
 }
 
 if (-not (Test-Path $ApkPath)) {
@@ -40,31 +35,35 @@ $steps = @(
         Cmd   = "adb install -r `"$ApkPath`""
     },
     @{
-        Title = "2. Launch app (SplashActivity = LAUNCHER)"
-        Cmd   = "adb shell am start -n $AppId/com.trainingvalidator.poc.ui.auth.SplashActivity"
+        Title = "2. Launch app (MovitMainActivity = LAUNCHER)"
+        Cmd   = "adb shell am start -n $AppId/$LauncherActivity"
     },
     @{
-        Title = "3. (flag on) Sign in — email or Google via legacy auth"
-        Cmd   = "# Complete login on device; expect navigation to MovitMainActivity / 5 tabs"
+        Title = "3. Sign in — email or Google (auth inside KMP shell)"
+        Cmd   = "# Complete login on device; expect 5-tab shell"
     },
     @{
-        Title = "4. (flag on) Shell — verify Home / Train / Explore / Reports / Profile tabs"
+        Title = "4. Shell — verify Home / Train / Explore / Reports / Profile tabs"
         Cmd   = "# Tap through tabs on device"
     },
     @{
-        Title = "5. (flag on) Train → Program → Session → Start exercise → TrainingActivity (camera)"
-        Cmd   = "# Start an exercise; confirm legacy camera opens"
+        Title = "5. Train → exercise session → camera training flow"
+        Cmd   = "# Start an exercise; confirm KMP training screen + camera"
     },
     @{
-        Title = "6. (flag on) Profile → logout → returns to SplashActivity"
-        Cmd   = "# Logout from shell; confirm legacy auth screen"
+        Title = "6. Profile → logout → returns to in-shell auth"
+        Cmd   = "# Logout; confirm auth screen inside shell (not legacy Splash)"
     },
     @{
-        Title = "7. (QA pilot, flag off build) Debug shell entry"
-        Cmd   = "adb shell am start -n $AppId/com.movit.debug.MovitShellPilotActivity"
+        Title = "7. Subscription deep-link (optional)"
+        Cmd   = "adb shell am start -a android.intent.action.VIEW -d waytofix://subscription/result"
     },
     @{
-        Title = "8. Capture logcat on failure"
+        Title = "8. (debug build only) Design system catalog"
+        Cmd   = "adb shell am start -n $AppId/com.movit.debug.MovitDesignSystemCatalogActivity"
+    },
+    @{
+        Title = "9. Capture logcat on failure"
         Cmd   = "adb logcat -d | Select-String -Pattern 'FATAL|AndroidRuntime|Movit'"
     }
 )
@@ -78,9 +77,9 @@ foreach ($step in $steps) {
 $install = Read-Host "Run step 1 (adb install) now? [y/N]"
 if ($install -eq "y" -or $install -eq "Y") {
     adb install -r $ApkPath
-    $launch = Read-Host "Run step 2 (launch SplashActivity)? [y/N]"
+    $launch = Read-Host "Run step 2 (launch MovitMainActivity)? [y/N]"
     if ($launch -eq "y" -or $launch -eq "Y") {
-        adb shell am start -n "$AppId/com.trainingvalidator.poc.ui.auth.SplashActivity"
+        adb shell am start -n "$AppId/$LauncherActivity"
     }
 }
 

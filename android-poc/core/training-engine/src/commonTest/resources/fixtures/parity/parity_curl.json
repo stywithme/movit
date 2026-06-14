@@ -1,0 +1,29 @@
+{
+  "name": { "en": "Parity Curl", "ar": "ت" },
+  "category": { "code": "test", "name": { "en": "Test", "ar": "ت" } },
+  "countingMethod": "up_down",
+  "repCountingConfig": { "reps": 2 },
+  "poseVariants": [
+    {
+      "name": { "en": "Front", "ar": "أ" },
+      "cameraPosition": "front_view",
+      "trackedJoints": [
+        {
+          "joint": "left_elbow",
+          "role": "primary",
+          "trackingMode": "two_sides",
+          "invertIndicator": true,
+          "startPose": { "min": 140, "max": 180 },
+          "upRange": {
+            "perfect": { "min": 140, "max": 175 },
+            "normal": { "min": 120, "max": 180 }
+          },
+          "downRange": {
+            "perfect": { "min": 30, "max": 80 },
+            "normal": { "min": 20, "max": 100 }
+          }
+        }
+      ]
+    }
+  ]
+}

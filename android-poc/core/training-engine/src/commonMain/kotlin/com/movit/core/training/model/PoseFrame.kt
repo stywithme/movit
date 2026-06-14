@@ -12,6 +12,10 @@ data class PoseFrame(
     val worldLandmarks: List<Landmark>? = null,
     val isFrontCamera: Boolean,
     val timestampMs: Long,
+    /** Width of the upright bitmap sent to pose detection (0 = unknown). */
+    val analysisImageWidth: Int = 0,
+    /** Height of the upright bitmap sent to pose detection (0 = unknown). */
+    val analysisImageHeight: Int = 0,
 ) {
     val hasPose: Boolean get() = landmarks != null
 

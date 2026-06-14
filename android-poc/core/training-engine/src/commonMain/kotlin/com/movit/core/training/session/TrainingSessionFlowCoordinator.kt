@@ -106,6 +106,17 @@ class TrainingSessionFlowCoordinator(
         else -> null
     }
 
+    /** Progress over counting exercises only (excludes warmup/activation/cooldown). */
+    fun workoutProgressPercent(): Int {
+        val completedSetsInCurrent = when (val state = _state.value) {
+            is State.PreExercise -> (state.setNumber - 1).coerceAtLeast(0)
+            is State.Rest -> (state.setNumber - 1).coerceAtLeast(0)
+            State.Training -> (setIndex - 1).coerceAtLeast(0)
+            else -> 0
+        }
+        return WorkoutFlowProgress.percentComplete(items, itemIndex, completedSetsInCurrent)
+    }
+
     private fun enterRest(
         durationMs: Long,
         context: RestContext,
@@ -220,6 +231,8 @@ sealed class TrainingFlowItem {
         val restBetweenSetsMs: Long = 30_000L,
         val restAfterExerciseMs: Long = 60_000L,
         val tip: String? = null,
+        /** WARMUP / ACTIVATION / COOLDOWN / MAIN — drives progress exclusion when set. */
+        val phaseRole: String? = null,
     ) : TrainingFlowItem()
 
     data class Rest(val durationMs: Long) : TrainingFlowItem()

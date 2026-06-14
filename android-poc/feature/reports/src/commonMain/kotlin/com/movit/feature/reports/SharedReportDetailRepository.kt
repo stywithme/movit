@@ -21,6 +21,9 @@ class SharedReportDetailRepository : ReportDetailRepository {
         TrainingSessionReportCache.get(reportId)?.let { cached ->
             return AppResult.Success(MovitSessionReportUiMapper.mapPostTraining(cached, strings))
         }
+        TrainingSessionReportCache.getSession(reportId)?.let { session ->
+            return AppResult.Success(MovitSessionReportUiMapper.mapSessionOverview(session, strings, reportId))
+        }
         if (!platform.isProUser()) {
             return AppResult.Failure(REPORT_NOT_FOUND)
         }

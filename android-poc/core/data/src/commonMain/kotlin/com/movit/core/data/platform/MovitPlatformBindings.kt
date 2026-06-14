@@ -2,8 +2,8 @@ package com.movit.core.data.platform
 
 /**
  * Platform hooks for auth, API base URL, and offline cache.
- * Android delegates to legacy AuthManager (EncryptedSharedPreferences for tokens).
- * iOS uses Keychain for tokens and NSUserDefaults for non-sensitive profile metadata.
+ * Android: [AndroidMovitPlatform] (SecureSessionStore + SharedPreferences profile).
+ * iOS: [IosMovitPlatform] (Keychain + NSUserDefaults).
  */
 interface MovitPlatformBindings {
     fun apiBaseUrl(): String
@@ -84,4 +84,14 @@ object MovitThemeModeStorage {
     const val LIGHT = "light"
     const val DARK = "dark"
     const val SYSTEM = "system"
+
+    /** Android legacy `appearance_preferences` store — kept for upgrade compatibility. */
+    const val ANDROID_PREFS_NAME = "appearance_preferences"
+    const val KEY_THEME_MODE = "theme_mode"
+
+    fun normalize(mode: String): String = when (mode.lowercase()) {
+        LIGHT -> LIGHT
+        DARK -> DARK
+        else -> SYSTEM
+    }
 }

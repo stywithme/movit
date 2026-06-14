@@ -2,23 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Camera Permission -->
     <uses-feature android:name="android.hardware.camera" android:required="true" />
     <uses-permission android:name="android.permission.CAMERA" />
-    
-    <!-- Network Permissions (for API sync and audio download) -->
+
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    
-    <!-- Vibration Permission (for haptic feedback) -->
     <uses-permission android:name="android.permission.VIBRATE" />
-    
-    <!-- Video/Media Permissions for video analysis -->
-    <!-- Android 13+ (API 33+) -->
-    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
-    <!-- Android 12 and below -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" 
-        android:maxSdkVersion="32" />
 
     <application
         android:name=".PoseApp"
@@ -32,12 +21,7 @@
         android:usesCleartextTraffic="true"
         android:localeConfig="@xml/locales_config"
         tools:targetApi="34">
-        
-        <!-- ═══════════════════════════════════════════════════ -->
-        <!-- AUTH FLOW -->
-        <!-- ═══════════════════════════════════════════════════ -->
-        
-        <!-- Movit KMP shell — production LAUNCHER (Phase A closure; reversible via gradle flag + manifest) -->
+
         <activity
             android:name="com.movit.MovitMainActivity"
             android:exported="true"
@@ -49,65 +33,8 @@
             </intent-filter>
         </activity>
 
-        <!-- Splash Screen — legacy auth entry (kept; no longer LAUNCHER) -->
         <activity
-            android:name=".ui.auth.SplashActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix.Splash" />
-        
-        <!-- Onboarding (intro slides) -->
-        <activity
-            android:name=".ui.auth.OnboardingActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
-
-        <!-- Profile Onboarding (trainee data collection) -->
-        <activity
-            android:name=".ui.onboarding.ProfileOnboardingActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix"
-            android:windowSoftInputMode="adjustResize" />
-        
-        <!-- Sign In -->
-        <activity
-            android:name=".ui.auth.SignInActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix"
-            android:windowSoftInputMode="adjustResize" />
-        
-        <!-- Sign Up -->
-        <activity
-            android:name=".ui.auth.SignUpActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix"
-            android:windowSoftInputMode="adjustResize" />
-        
-        <!-- Forgot Password -->
-        <activity
-            android:name=".ui.auth.ForgotPasswordActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix"
-            android:windowSoftInputMode="adjustResize" />
-        
-        <!-- ═══════════════════════════════════════════════════ -->
-        <!-- PROFILE -->
-        <!-- ═══════════════════════════════════════════════════ -->
-        
-        <!-- Profile -->
-        <activity
-            android:name=".ui.profile.ProfileActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
-
-        <activity
-            android:name=".ui.subscription.SubscriptionActivity"
+            android:name="com.movit.billing.SubscriptionActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:screenOrientation="portrait"
@@ -122,145 +49,7 @@
                     android:scheme="waytofix" />
             </intent-filter>
         </activity>
-        
-        <!-- ═══════════════════════════════════════════════════ -->
-        <!-- MAIN CONTAINER (Bottom Navigation) -->
-        <!-- ═══════════════════════════════════════════════════ -->
-        
-        <activity
-            android:name=".ui.main.MainContainerActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
-        
-        <!-- ═══════════════════════════════════════════════════ -->
-        <!-- EXERCISE & TRAINING FLOW -->
-        <!-- ═══════════════════════════════════════════════════ -->
-        
-        <!-- Exercise List (Legacy - kept for compatibility) -->
-        <activity
-            android:name=".ui.exercises.ExerciseListActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
-        
-        <!-- Exercise Detail -->
-        <activity
-            android:name=".ui.exercises.ExerciseDetailActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
-        
-        
-        <!-- Workout Detail Activity (Timeline before start) -->
-        <activity
-            android:name=".ui.workouts.WorkoutDetailActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
 
-        <!-- Workout List Activity -->
-        <activity
-            android:name=".ui.workouts.WorkoutListActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
-
-        <!-- Workout Customize Activity — Pre-training customization -->
-        <activity
-            android:name=".ui.workouts.WorkoutCustomizeActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
-
-        <!-- Quick Start Activity — Build a free workout from the exercise library -->
-        <activity
-            android:name=".ui.workouts.QuickStartActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
-
-        <!-- Program List Activity -->
-        <activity
-            android:name=".ui.programs.ProgramListActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
-
-        <!-- Program Detail Activity -->
-        <activity
-            android:name=".ui.programs.ProgramDetailActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
-
-        <!-- Program Day Activity -->
-        <activity
-            android:name=".ui.programs.ProgramDayActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
-
-        <!-- (Removed: ProgramWorkoutReportActivity — replaced by WorkoutReportActivity) -->
-
-        <!-- Weekly Report Activity -->
-        <activity
-            android:name=".ui.programs.WeeklyReportActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
-        
-        <!-- Exercise History Activity -->
-        <activity
-            android:name=".ui.exercises.ExerciseHistoryActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
-
-        <!-- Unified Workout Report Activity (replaces ReportPagerActivity + ProgramWorkoutReportActivity) -->
-        <activity
-            android:name=".ui.report.WorkoutReportActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
-
-        <!-- ═══════════════════════════════════════════════════ -->
-        <!-- BODY SCAN / ASSESSMENT -->
-        <!-- ═══════════════════════════════════════════════════ -->
-
-        <!-- PAR-Q+ Pre-Screening -->
-        <activity
-            android:name=".assessment.ui.PreScreeningActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
-
-        <!-- Assessment Results -->
-        <activity
-            android:name=".assessment.ui.AssessmentResultActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
-
-        <!-- ═══════════════════════════════════════════════════ -->
-        <!-- LEVEL SYSTEM -->
-        <!-- ═══════════════════════════════════════════════════ -->
-
-        <!-- Level Profile -->
-        <activity
-            android:name=".ui.level.LevelProfileActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
-
-        <!-- Plan Overview (Timeline) -->
-        <activity
-            android:name=".ui.programs.PlanOverviewActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
-
-        <!-- FileProvider for screenshot sharing -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

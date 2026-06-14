@@ -8,4 +8,8 @@ actual interface CameraFrameSource {
     actual fun stop()
 
     actual fun setFrameListener(listener: ((PoseFrame?) -> Unit)?)
+
+    actual fun setErrorListener(listener: ((String) -> Unit)?)
+
+    actual fun setOnCameraBoundListener(listener: (() -> Unit)?)
 }

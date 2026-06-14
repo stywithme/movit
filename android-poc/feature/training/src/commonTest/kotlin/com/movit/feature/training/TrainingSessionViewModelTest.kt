@@ -1,5 +1,6 @@
 package com.movit.feature.training
 
+import com.movit.core.training.session.SessionRunState
 import com.movit.core.training.session.TrainingFlowItem
 import com.movit.core.training.session.TrainingSessionFlowCoordinator
 import kotlin.test.Test
@@ -83,5 +84,23 @@ class TrainingSessionViewModelTest {
     )
     assertTrue(state.isResting)
     assertEquals(25, state.restSecondsRemaining)
+  }
+
+  @Test
+  fun requiresCamera_falseWhenCompleteOrResting() {
+    val base = TrainingSessionUiState(
+      exerciseSlug = "squat",
+      exerciseName = "Squat",
+      targetReps = 10,
+    )
+    assertTrue(base.requiresCamera())
+    assertFalse(base.copy(isComplete = true).requiresCamera())
+    assertFalse(base.copy(runState = SessionRunState.COMPLETED).requiresCamera())
+    assertFalse(
+      base.copy(
+        workoutFlowPhase = WorkoutFlowPhase.REST,
+        isResting = true,
+      ).requiresCamera(),
+    )
   }
 }

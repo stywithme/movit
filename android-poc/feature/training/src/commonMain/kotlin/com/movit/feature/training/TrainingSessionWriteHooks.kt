@@ -5,6 +5,7 @@ import com.movit.core.training.config.ExerciseConfig
 import com.movit.core.training.journal.TrainingMotionSession
 import com.movit.core.training.journal.WorkoutUpload
 import com.movit.core.training.report.AssessmentTrainingResult
+import com.movit.core.training.report.MovitPeakFrameCapture
 import com.movit.core.training.report.MovitPostTrainingReport
 import com.movit.core.training.report.MovitPostTrainingReportBuilder
 import com.movit.core.training.report.MovitSessionReport
@@ -27,6 +28,7 @@ class TrainingSessionWriteHooks(
     private val timeProvider: () -> Long = { 0L },
 ) {
     private var motionSession: TrainingMotionSession? = null
+    var peakFrameCaptures: List<MovitPeakFrameCapture> = emptyList()
 
     fun attach(engine: MovitTrainingEngine, exerciseConfig: ExerciseConfig) {
         if (motionSession != null) return
@@ -49,17 +51,38 @@ class TrainingSessionWriteHooks(
         motionSession = null
     }
 
+    fun resolveSessionQualityMeta(
+        visibilityPauseCount: Int = 0,
+        cameraWarningCount: Int = 0,
+        ingressFramesDropped: Int = 0,
+    ): SessionQualityMeta? {
+        val base = motionSession?.sessionQualityMeta(
+            visibilityPauseCount = visibilityPauseCount,
+            cameraWarningCount = cameraWarningCount,
+        ) ?: return null
+        if (ingressFramesDropped <= 0) return base
+        return SessionQualityMeta.fromFrameStats(
+            framesOffered = base.framesOffered + ingressFramesDropped,
+            framesRecorded = base.framesRecorded,
+            framesDropped = base.framesDropped + ingressFramesDropped,
+            jointCoverageRatio = base.jointCoverageRatio,
+            visibilityPauseCount = visibilityPauseCount,
+            cameraWarningCount = cameraWarningCount,
+        )
+    }
+
     fun buildPostTrainingReport(
         upload: WorkoutUpload,
         summary: ExerciseWorkoutSummary,
         exerciseConfig: ExerciseConfig,
-        sessionQuality: SessionQualityMeta? = motionSession?.sessionQualityMeta(),
+        sessionQuality: SessionQualityMeta? = null,
     ): MovitPostTrainingReport = MovitPostTrainingReportBuilder.build(
         upload = upload,
         summary = summary,
         exerciseConfig = exerciseConfig,
         exerciseSlug = exerciseSlug,
-        sessionQuality = sessionQuality,
+        sessionQuality = sessionQuality ?: motionSession?.sessionQualityMeta(),
+        peakFrameCaptures = peakFrameCaptures,
     )
 
     suspend fun enqueueExecutionUpload(
@@ -70,15 +93,18 @@ class TrainingSessionWriteHooks(
         workoutTemplateId: String? = null,
         legacyReport: MovitPostTrainingReport? = null,
         onEnqueued: (String) -> Unit = {},
+        onOutcome: (AppResult<String>) -> Unit = {},
     ) {
         scope.launch {
-            when (val result = writes.uploadWorkoutExecution(
+            val result = writes.uploadWorkoutExecution(
                 upload = upload,
                 context = context,
                 workoutGroupId = workoutGroupId,
                 workoutTemplateId = workoutTemplateId,
                 legacyReport = legacyReport?.let(writes::encodePostTrainingReport),
-            )) {
+            )
+            onOutcome(result)
+            when (result) {
                 is AppResult.Success -> onEnqueued(result.value)
                 is AppResult.Failure -> Unit
             }
@@ -133,21 +159,28 @@ class TrainingSessionWriteHooks(
         weekNumber: Int,
         dayNumber: Int,
         rpe: Int? = null,
+        onOutcome: (AppResult<String>) -> Unit = {},
     ): AppResult<String> {
         val request = writes.buildPlannedCompleteRequest(
             report = report,
             completedAt = timeProvider(),
             rpe = rpe,
         )
-        return writes.completePlannedWorkout(
+        val result = writes.completePlannedWorkout(
             workoutId = workoutId,
             request = request,
             programId = programId,
             weekNumber = weekNumber,
             dayNumber = dayNumber,
         )
+        onOutcome(result)
+        return result
     }
 
+    /**
+     * Legacy `/report` partial update — do not pair with [completePlannedDay] on the same session.
+     * See [TrainingSessionPlannedWritePolicy].
+     */
     suspend fun reportPlannedDay(
         workoutId: String,
         report: MovitSessionReport,

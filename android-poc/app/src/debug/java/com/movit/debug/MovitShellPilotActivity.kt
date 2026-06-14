@@ -3,7 +3,6 @@ package com.movit.debug
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import com.movit.host.attachMovitShellHost
-import com.trainingvalidator.poc.BuildConfig
 
 /**
  * Debug-only entry for Movit shell visual QA (adb / debug launcher).
@@ -13,11 +12,6 @@ class MovitShellPilotActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        attachMovitShellHost(
-            exitToLegacyAuthOnLogout = false,
-            // Pilot always exercises the KMP training path (Phase 07); release uses BuildConfig.
-            trainingKmpEnabled = true,
-            launchIntent = intent,
-        )
+        attachMovitShellHost(launchIntent = intent)
     }
 }

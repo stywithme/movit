@@ -2,6 +2,8 @@ package com.movit.feature.reports
 
 import com.movit.core.training.config.LocalizedText
 import com.movit.core.training.journal.WorkoutUpload
+import com.movit.core.training.report.MovitPeakCaptureType
+import com.movit.core.training.report.MovitPeakFrameCapture
 import com.movit.core.training.report.MovitPerformanceRating
 import com.movit.core.training.report.MovitPerformanceSummary
 import com.movit.core.training.report.MovitPostTrainingReport
@@ -18,6 +20,29 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
 class MovitSessionReportUiMapperTest {
+
+    @Test
+    fun mapPostTraining_mapsPeakFrameEvidence() {
+        runBlocking {
+            val strings = ReportDetailStrings.load("en")
+            val report = samplePostTrainingReport().copy(
+                peakFrameCaptures = listOf(
+                    MovitPeakFrameCapture(
+                        id = "cap-1",
+                        repNumber = 2,
+                        phaseCode = 3,
+                        capturedAtMs = 1L,
+                        captureType = MovitPeakCaptureType.DANGER_FRAME,
+                        localPath = "/tmp/danger.jpg",
+                        thumbnailPath = "/tmp/danger-thumb.jpg",
+                    ),
+                ),
+            )
+            val ui = MovitSessionReportUiMapper.mapPostTraining(report, strings)
+            assertEquals(1, ui.frameEvidence.size)
+            assertEquals("file:///tmp/danger-thumb.jpg", ui.heroFramePath)
+        }
+    }
 
     @Test
     fun mapPostTraining_doesNotMutateDomainModel() {

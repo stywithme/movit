@@ -73,4 +73,15 @@ class TrainingSessionFlowCoordinatorTest {
 
         assertEquals(TrainingSessionFlowCoordinator.State.WorkoutComplete, coordinator.state.value)
     }
+
+    @Test
+    fun workoutProgressPercent_excludesWarmupFromDenominator() {
+        val mainOnly = listOf(squat.copy(sets = 2, phaseRole = "MAIN"))
+        val coordinator = TrainingSessionFlowCoordinator(mainOnly)
+        coordinator.start()
+        assertEquals(0, coordinator.workoutProgressPercent())
+        coordinator.markExercising()
+        coordinator.onExerciseCompleted()
+        assertEquals(50, coordinator.workoutProgressPercent())
+    }
 }

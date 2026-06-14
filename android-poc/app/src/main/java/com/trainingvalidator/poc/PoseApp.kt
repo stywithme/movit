@@ -2,26 +2,18 @@ package com.trainingvalidator.poc
 
 import android.app.Activity
 import android.app.Application
-import android.os.Build
 import android.os.Bundle
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import coil.ImageLoader
-import coil.ImageLoaderFactory
-import coil.decode.GifDecoder
-import coil.decode.ImageDecoderDecoder
-import com.trainingvalidator.poc.network.ApiClient
-import com.movit.core.posecapture.android.PoseLandmarkerHeavyModelStore
-import com.trainingvalidator.poc.sensors.DeviceTiltProvider
-import com.trainingvalidator.poc.storage.SystemMessageStore
-import com.trainingvalidator.poc.training.config.SettingsManager
-import com.trainingvalidator.poc.training.engine.PostureMlpClassifier
-import com.movit.MovitMainActivity
-import com.trainingvalidator.poc.ui.main.MainContainerActivity
-import com.trainingvalidator.poc.ui.theme.AppThemeManager
+import com.movit.billing.installBillingHost
 import com.movit.core.data.local.MovitAndroidRuntime
 import com.movit.core.data.sync.BackgroundSyncScheduler
+import com.movit.core.posecapture.android.PoseLandmarkerHeavyModelStore
+import com.movit.MovitMainActivity
+import com.trainingvalidator.poc.network.ApiClient
+import com.trainingvalidator.poc.training.config.SettingsManager
+import com.trainingvalidator.poc.ui.theme.AppThemeManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -32,39 +24,16 @@ import kotlinx.coroutines.launch
  *
  * Provides [applicationScope]: a CoroutineScope tied to the process lifetime,
  * not to any individual Activity. Use it for fire-and-forget background operations
- * (e.g. uploading workout execution data) that must survive Activity destruction.
+ * that must survive Activity destruction.
  */
-class PoseApp : Application(), ImageLoaderFactory {
+class PoseApp : Application() {
 
-    /**
-     * Process-wide coroutine scope.
-     * Never cancelled except when the process terminates.
-     * Uses [SupervisorJob] so one failed child does not cancel siblings.
-     */
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
-    val tiltProvider: DeviceTiltProvider by lazy {
-        DeviceTiltProvider(applicationContext)
-    }
 
     companion object {
         private lateinit var _instance: PoseApp
 
-        /** Safe accessor — always valid after [onCreate] */
         val instance: PoseApp get() = _instance
-    }
-
-    override fun newImageLoader(): ImageLoader {
-        return ImageLoader.Builder(this)
-            .crossfade(true)
-            .components {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    add(ImageDecoderDecoder.Factory())
-                } else {
-                    add(GifDecoder.Factory())
-                }
-            }
-            .build()
     }
 
     override fun onCreate() {
@@ -74,8 +43,7 @@ class PoseApp : Application(), ImageLoaderFactory {
         BackgroundSyncScheduler.schedule()
         AppThemeManager.applySavedMode(this)
         ApiClient.init(this)
-        PostureMlpClassifier.getOrNull(this)
-        SystemMessageStore(this).loadIntoRegistry()
+        installBillingHost(this)
         preloadHeavyPoseModelIfNeeded()
         registerImmersiveMode()
     }
@@ -88,15 +56,10 @@ class PoseApp : Application(), ImageLoaderFactory {
         }
     }
 
-    /**
-     * Applies immersive fullscreen to every Activity except shell home hosts
-     * ([MainContainerActivity], [MovitMainActivity]) which need visible system bars.
-     * System bars auto-hide and reappear transiently on swipe.
-     */
     private fun registerImmersiveMode() {
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-                if (activity is MainContainerActivity || activity is MovitMainActivity) return
+                if (activity is MovitMainActivity) return
                 WindowCompat.setDecorFitsSystemWindows(activity.window, false)
                 WindowInsetsControllerCompat(activity.window, activity.window.decorView).apply {
                     hide(WindowInsetsCompat.Type.systemBars())

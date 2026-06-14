@@ -7,11 +7,12 @@ import com.movit.core.training.boundary.NoOpHapticsPort
 import com.movit.core.training.boundary.SpeechSynthesizer
 
 @Composable
-actual fun rememberTrainingFeedbackPorts(): TrainingFeedbackPorts {
-    return remember {
+actual fun rememberTrainingFeedbackPorts(language: String): TrainingFeedbackPorts {
+    return remember(language) {
         TrainingFeedbackPorts(
             speech = SpeechSynthesizer(),
             haptics = NoOpHapticsPort(),
+            audioPlayer = null,
         )
     }
 }

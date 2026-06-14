@@ -2,7 +2,7 @@
 <resources>
     <!-- Splash Screen Theme for Android 12+ (API 31+)
          Minimizes system splash to just show background color,
-         then immediately shows our custom SplashActivity -->
+         then hands off to MovitMainActivity (KMP shell). -->
     <style name="Theme.WayToFix.Splash" parent="Theme.WayToFix">
         <!-- Use solid background color (no icon) -->
         <item name="android:windowSplashScreenBackground">@color/background</item>

@@ -163,6 +163,7 @@ object MovitPostTrainingReportBuilder {
         exerciseConfig: ExerciseConfig,
         exerciseSlug: String = upload.exerciseId,
         sessionQuality: SessionQualityMeta? = null,
+        peakFrameCaptures: List<MovitPeakFrameCapture> = emptyList(),
         reportId: String = upload.id,
         workoutId: String = upload.id,
         timestamp: Long = upload.timestamp,
@@ -205,6 +206,7 @@ object MovitPostTrainingReportBuilder {
             summary = performanceSummary,
             executionQuality = executionQuality,
             sessionQuality = sessionQuality,
+            peakFrameCaptures = peakFrameCaptures,
         )
     }
 

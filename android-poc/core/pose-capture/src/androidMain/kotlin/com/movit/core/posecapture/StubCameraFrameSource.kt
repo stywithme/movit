@@ -11,4 +11,8 @@ class StubCameraFrameSource : CameraFrameSource {
     override fun stop() = Unit
 
     override fun setFrameListener(listener: ((PoseFrame?) -> Unit)?) = Unit
+
+    override fun setErrorListener(listener: ((String) -> Unit)?) = Unit
+
+    override fun setOnCameraBoundListener(listener: (() -> Unit)?) = Unit
 }

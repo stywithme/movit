@@ -28,6 +28,7 @@ fun WorkoutFlowConfigUi.toTrainingFlowItems(
                 targetReps = exercise.reps ?: 12,
                 restBetweenSetsMs = exerciseRestMs.takeIf { it > 0 } ?: restMs,
                 restAfterExerciseMs = exerciseRestMs.takeIf { it > 0 } ?: restMs,
+                phaseRole = exercise.phaseRole,
             )
         }
 }

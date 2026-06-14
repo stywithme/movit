@@ -1,6 +1,8 @@
 # Android / KMP Mobile UI/UX Professional Plan
 
-آخر تحديث: 2026-06-09 (post Pre-06 CLOSED + دفعة Account في Phase 05)
+آخر تحديث: 2026-06-14 (Phase 07 device smoke + `TrainingPipeline`)
+
+> **Phase 07 — تحديث جهاز (2026-06-14):** أول جلسة KMP **مستقرة** على جهاز حقيقي (12/12 reps، تقرير، إيقاف كاميرا). التفاصيل في [فرق Legacy §29–§33](Android-KMP-Training-Engine-Legacy-MO-vs-Current-Difference-Audit.md) و[`Training.log.md`](Training.log.md). الأداء أبطأ من Legacy (~7 fps فعلي) — قرار محافظ مؤقت.
 
 > **Phase Pre-06 مغلقة (2026-06-09):** [`Android-KMP-Mobile-UI-UX-Phase-Pre-06-Completion-Report.md`](Android-KMP-Mobile-UI-UX-Phase-Pre-06-Completion-Report.md) — navigation/back · training-engine · secure session · launcher gate · scorecards · visual QA.
 
@@ -58,7 +60,8 @@ feature:home  → Body scan → Assessment · بطاقة المستوى → Leve
 |-------|--------|
 | Google Sign-In | يحتاج جسر Android/iOS (Credentials) — الزر UI فقط حالياً |
 | كاميرا Assessment الحية | Phase 07 (camera/ML) |
-| Smoke release على جهاز | Phase 06 — مسار الإنتاج جاهز؛ smoke يدوي + لقطات قبل شحن تجريبي ([Phase 06](Android-KMP-Mobile-UI-UX-Phase-06-Production-Launcher-Plan.md)) |
+| **تدريب حي KMP على جهاز** | ✅ **smoke أولي ناجح** (2026-06-14) — 12/12 · `TrainingPipeline` · مرجع [فرق Legacy](Android-KMP-Training-Engine-Legacy-MO-vs-Current-Difference-Audit.md) §29–§32 |
+| Smoke release على جهاز | Phase 06 — مسار الإنتاج جاهز؛ **تدريب KMP** smoke ✅؛ لقطات قبل شحن تجريبي |
 | مطابقة بصرية 100% مع prototypes | فجوات UX ثانوية (صور، animations) |
 
 ### المراجع التفصيلية
@@ -66,7 +69,9 @@ feature:home  → Body scan → Assessment · بطاقة المستوى → Leve
 - حالة صفحة بصفحة: [`Android-UI-UX-Modernization-Status.md`](Android-UI-UX-Modernization-Status.md)
 - خطة Phase 05 (Train + Account): [`Android-KMP-Mobile-UI-UX-Phase-05-Page-By-Page-Modernization-Plan.md`](Android-KMP-Mobile-UI-UX-Phase-05-Page-By-Page-Modernization-Plan.md)
 - Pre-05 (مغلقة): [`Android-KMP-Mobile-UI-UX-Phase-Pre-05-Stabilization-And-Debt-Closure-Plan.md`](Android-KMP-Mobile-UI-UX-Phase-Pre-05-Stabilization-And-Debt-Closure-Plan.md)
-- **خطة Phase 07 (محرك التدريب الحي → KMP):** [`Android-KMP-Mobile-UI-UX-Phase-07-Training-Engine-Migration-Plan.md`](Android-KMP-Mobile-UI-UX-Phase-07-Training-Engine-Migration-Plan.md)
+- **خطة Phase 07 (محرك التدريب الحي → KMP):** [`Android-KMP-Mobile-UI-UX-Phase-07-Training-Engine-Migration-Plan.md`](Android-KMP-Mobile-UI-UX-Phase-07-Training-Engine-Migration-Plan.md) — §14.9 hotfixes جهاز
+- **فرق Legacy vs KMP (تشخيص جهاز):** [`Android-KMP-Training-Engine-Legacy-MO-vs-Current-Difference-Audit.md`](Android-KMP-Training-Engine-Legacy-MO-vs-Current-Difference-Audit.md) — §29–§33
+- **لوج جهاز مرجعي:** [`Training.log.md`](Training.log.md)
 
 ## الهدف
 

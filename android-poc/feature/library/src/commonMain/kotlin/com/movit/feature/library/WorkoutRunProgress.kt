@@ -77,4 +77,22 @@ object WorkoutRunProgressStore {
         clear(workoutId)
         return WorkoutRunPostNav.Complete
     }
+
+    /**
+     * When [TrainingSessionFlowCoordinator] finished the full workout in-session,
+     * clear progress instead of advancing a single exercise in the run store.
+     */
+    fun onTrainingSessionFinish(
+        workoutId: String,
+        config: WorkoutFlowConfigUi?,
+        completedExerciseIndex: Int,
+        isWorkoutFlowComplete: Boolean,
+    ): WorkoutRunPostNav {
+        if (isWorkoutFlowComplete) {
+            clear(workoutId)
+            return WorkoutRunPostNav.Complete
+        }
+        if (config == null) return WorkoutRunPostNav.BackToRun
+        return advanceAfterExercise(workoutId, config, completedExerciseIndex)
+    }
 }

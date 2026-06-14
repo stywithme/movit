@@ -64,7 +64,7 @@ class SetupReadinessGate(
             else -> SetupPhase.ANGLES
         }
 
-        val inStartPose = startPoseGate?.isInStartPosition(angles.toMap()) == true
+        val inStartPose = startPoseGate?.isInStartPose(angles.toMap()) == true
         val primaryReady = phase == SetupPhase.ANGLES && inStartPose &&
             variant.trackedJoints
                 .filter { it.role == JointRole.PRIMARY }
@@ -88,20 +88,31 @@ class SetupReadinessGate(
         }
 
         val angleMap = angles.toMap()
-        val worstJoint = if (phase == SetupPhase.ANGLES) {
-            SetupJointGuidanceResolver.resolveWorstJoint(
+        val jointGuidanceRows = if (phase == SetupPhase.ANGLES) {
+            SetupJointGuidanceResolver.resolveAllJoints(
                 angles = angleMap,
                 joints = variant.trackedJoints,
                 closeThresholdDegrees = config.closeThresholdDegrees,
             )
         } else {
-            null
+            emptyList()
         }
+        val worstJoint = jointGuidanceRows.firstOrNull()
+            ?: if (phase == SetupPhase.ANGLES) {
+                SetupJointGuidanceResolver.resolveWorstJoint(
+                    angles = angleMap,
+                    joints = variant.trackedJoints,
+                    closeThresholdDegrees = config.closeThresholdDegrees,
+                )
+            } else {
+                null
+            }
         val cameraTip = SetupJointGuidanceResolver.resolveCameraTip(
             phase = phase,
             cameraTipEnabled = config.cameraTipEnabled,
             regions = expectation.regions,
         )
+        val axisStatuses = resolveSetupAxisStatuses(phase, axisMatch)
 
         return SetupReadinessResult(
             phase = phase,
@@ -112,10 +123,13 @@ class SetupReadinessGate(
             worstJointGuidance = worstJoint,
             cameraTip = cameraTip,
             inStartPose = inStartPose,
+            axisStatuses = axisStatuses,
+            jointGuidanceRows = jointGuidanceRows,
+            referenceImageUrl = variant.positionImageUrl,
         )
     }
 
-    /** Countdown pose check — same [StartPoseGate] semantics as legacy PoseSetupGuide. */
+    /** Countdown pose check — uses config [TrackedJoint.startPose] box, not UP-zone counted state. */
     fun isCountdownPoseValid(
         angles: JointAngles?,
         exerciseConfig: ExerciseConfig,
@@ -124,7 +138,7 @@ class SetupReadinessGate(
         if (angles == null) return false
         val variant = exerciseConfig.poseVariants.getOrNull(poseVariantIndex) ?: return false
         val gate = startPoseGate ?: StartPoseGate(variant.trackedJoints).also { startPoseGate = it }
-        return gate.isInStartPosition(angles.toMap())
+        return gate.isInStartPose(angles.toMap())
     }
 
     private fun getTiltCorrectedLandmarks(landmarks: List<Landmark>): List<Landmark> {
@@ -152,6 +166,13 @@ data class SetupReadinessResult(
     val worstJointGuidance: JointSetupGuidance? = null,
     val cameraTip: LocalizedText? = null,
     val inStartPose: Boolean = false,
+    val axisStatuses: SetupAxisStatuses = SetupAxisStatuses(
+        region = SetupAxisStatus.PENDING,
+        posture = SetupAxisStatus.PENDING,
+        direction = SetupAxisStatus.PENDING,
+    ),
+    val jointGuidanceRows: List<JointSetupGuidance> = emptyList(),
+    val referenceImageUrl: String? = null,
 ) {
     companion object {
         fun empty() = SetupReadinessResult(

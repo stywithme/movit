@@ -12,6 +12,8 @@ data class FeedbackSignal(
     val activeKey: String = dedupeKey,
     val cooldownGroup: String = dedupeKey,
     val messageCode: String? = null,
+    /** Optional cached coaching clip URL (filename used for on-disk lookup). */
+    val audioUrl: String? = null,
     val interruptPolicy: FeedbackInterruptPolicy = FeedbackInterruptPolicy.defaultFor(severity),
     val forceAudible: Boolean = false,
     val allowVoice: Boolean = true,

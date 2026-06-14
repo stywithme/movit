@@ -30,6 +30,45 @@ data class JointSetupGuidance(
 )
 
 object SetupJointGuidanceResolver {
+    fun resolveAllJoints(
+        angles: Map<String, Double>,
+        joints: List<TrackedJoint>,
+        closeThresholdDegrees: Double,
+        maxRows: Int = 4,
+    ): List<JointSetupGuidance> {
+        val candidates = joints
+            .filter { it.role == JointRole.PRIMARY }
+            .ifEmpty { joints }
+            .mapNotNull { joint ->
+                val angle = angles[joint.joint] ?: return@mapNotNull null
+                if (joint.isInStartPose(angle)) return@mapNotNull null
+                val below = joint.startPose.min - angle
+                val above = angle - joint.startPose.max
+                val direction = when {
+                    below > 0 -> SetupGuidanceDirection.RAISE
+                    above > 0 -> SetupGuidanceDirection.LOWER
+                    else -> null
+                }
+                val distance = maxOf(below, above, 0.0)
+                val level = when {
+                    distance <= closeThresholdDegrees -> SetupGuidanceLevel.YELLOW
+                    else -> SetupGuidanceLevel.RED
+                }
+                JointSetupGuidance(
+                    jointCode = joint.joint,
+                    level = level,
+                    currentAngle = angle,
+                    targetMin = joint.startPose.min,
+                    targetMax = joint.startPose.max,
+                    distance = distance,
+                    direction = direction,
+                    message = resolveMessage(joint.joint, direction, level),
+                    isPrimary = joint.role == JointRole.PRIMARY,
+                )
+            }
+        return candidates.sortedByDescending { it.distance }.take(maxRows)
+    }
+
     fun resolveWorstJoint(
         angles: Map<String, Double>,
         joints: List<TrackedJoint>,

@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:background="@drawable/bg_gradient_main"
     android:orientation="vertical"
-    tools:context=".ui.subscription.SubscriptionActivity">
+    tools:context="com.movit.billing.SubscriptionActivity">
 
     <LinearLayout
         android:layout_width="match_parent"

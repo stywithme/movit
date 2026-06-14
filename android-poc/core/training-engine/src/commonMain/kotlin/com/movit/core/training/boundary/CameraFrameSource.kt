@@ -11,4 +11,9 @@ expect interface CameraFrameSource {
     fun stop()
 
     fun setFrameListener(listener: ((PoseFrame?) -> Unit)?)
+
+    fun setErrorListener(listener: ((String) -> Unit)?)
+
+    /** Invoked after a successful bind (initial start or lens switch). */
+    fun setOnCameraBoundListener(listener: (() -> Unit)?)
 }

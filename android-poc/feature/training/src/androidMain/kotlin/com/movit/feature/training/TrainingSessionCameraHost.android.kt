@@ -27,7 +27,7 @@ import org.koin.core.component.get
 
 @Composable
 actual fun TrainingSessionCameraHost(
-    onFrame: (PoseFrame) -> Unit,
+    onFrame: (PoseFrame?) -> Unit,
     onCameraReady: () -> Unit,
     onError: (String) -> Unit,
     modifier: Modifier,
@@ -79,26 +79,29 @@ actual fun TrainingSessionCameraHost(
 
     var frameCounter by remember { mutableIntStateOf(0) }
     var fpsWindowStart by remember { mutableStateOf(0L) }
+    var previewBound by remember { mutableStateOf(false) }
 
     DisposableEffect(cameraSource) {
         val source = cameraSource ?: return@DisposableEffect onDispose {}
+        source.setErrorListener(onError)
+        source.setOnCameraBoundListener(onCameraReady)
         source.setFrameListener { frame ->
-            frame?.let { poseFrame ->
-                if (onDebugFps != null && isTrainingDebugBuild()) {
-                    frameCounter++
-                    val now = System.currentTimeMillis()
-                    if (fpsWindowStart == 0L) fpsWindowStart = now
-                    if (now - fpsWindowStart >= 1_000L) {
-                        onDebugFps(frameCounter)
-                        frameCounter = 0
-                        fpsWindowStart = now
-                    }
+            if (onDebugFps != null && isTrainingDebugBuild()) {
+                frameCounter++
+                val now = System.currentTimeMillis()
+                if (fpsWindowStart == 0L) fpsWindowStart = now
+                if (now - fpsWindowStart >= 1_000L) {
+                    onDebugFps(frameCounter)
+                    frameCounter = 0
+                    fpsWindowStart = now
                 }
-                onFrame(poseFrame)
             }
+            onFrame(frame)
         }
         onDispose {
             source.setFrameListener(null)
+            source.setErrorListener(null)
+            source.setOnCameraBoundListener(null)
             source.stop()
         }
     }
@@ -111,10 +114,11 @@ actual fun TrainingSessionCameraHost(
         return
     }
 
-    LaunchedEffect(useFrontCamera, cameraSource) {
+    LaunchedEffect(useFrontCamera, previewBound, cameraSource) {
+        if (!previewBound) return@LaunchedEffect
         val androidSource = cameraSource as? CameraXFrameSource
         androidSource?.setDebugFpsEnabled(isTrainingDebugBuild())
-        cameraSource.start(CameraSourceConfiguration(useFrontCamera = useFrontCamera))
+        cameraSource.start(CameraSourceConfiguration(useFrontCamera = useFrontCamera, targetFps = 10))
     }
 
     TrainingCameraSurface(
@@ -122,7 +126,7 @@ actual fun TrainingSessionCameraHost(
         onPreviewReady = { preview ->
             val androidSource = cameraSource as? CameraXFrameSource ?: return@TrainingCameraSurface
             androidSource.bindPreview(preview, lifecycleOwner)
-            onCameraReady()
+            previewBound = true
         },
     )
 }

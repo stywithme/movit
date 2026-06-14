@@ -4,6 +4,7 @@ import com.movit.core.training.config.ExerciseConfigParser
 import com.movit.core.training.geometry.PoseFrameAssembler
 import com.movit.core.training.model.Landmark
 import com.movit.core.training.model.PoseLandmarkIndices
+import com.movit.core.training.session.SetupReadinessGate
 import com.movit.core.training.testing.readExerciseFixture
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -26,13 +27,28 @@ class SetupReadinessGateTest {
     }
 
     @Test
-    fun countdownPoseValid_matchesStartPoseGate() {
+    fun countdownPoseValid_usesStartPoseSemantics() {
         val config = ExerciseConfigParser.parseConfigJson(readExerciseFixture("squat.json"))
         val gate = SetupReadinessGate()
         val good = squatFrame(kneeAngle = 170.0)
         val bad = squatFrame(kneeAngle = 90.0)
         assertTrue(gate.isCountdownPoseValid(good.angles, config, 0))
         assertTrue(!gate.isCountdownPoseValid(bad.angles, config, 0))
+    }
+
+    @Test
+    fun validate_populatesAxisStatuses() {
+        val config = ExerciseConfigParser.parseConfigJson(readExerciseFixture("squat.json"))
+        val gate = SetupReadinessGate()
+        val frame = squatFrame(kneeAngle = 90.0)
+        val result = gate.validate(
+            angles = frame.angles,
+            landmarks = frame.landmarks,
+            exerciseConfig = config,
+            poseVariantIndex = 0,
+        )
+        assertNotNull(result.axisStatuses)
+        assertEquals(result.inStartPose, frame.angles.leftKnee?.let { it in 120.0..180.0 } == true)
     }
 
     private fun squatFrame(kneeAngle: Double) = run {

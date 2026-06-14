@@ -62,6 +62,9 @@ sealed class SupervisorSignal {
     
     /** PoseSetupGuide detected invalid pose during countdown */
     object PoseInvalid : SupervisorSignal()
+
+    /** Start-pose validation passed during COUNTDOWN / RESUME_COUNTDOWN */
+    object CountdownPoseValid : SupervisorSignal()
     
     // ==================== Engine Events ====================
     

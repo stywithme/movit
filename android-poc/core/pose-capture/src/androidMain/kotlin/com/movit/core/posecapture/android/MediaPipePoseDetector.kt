@@ -1,6 +1,10 @@
 package com.movit.core.posecapture.android
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Matrix
+import android.graphics.RectF
 import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.util.Log
@@ -12,20 +16,30 @@ import com.google.mediapipe.tasks.core.Delegate
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult
+import com.movit.core.posecapture.boundary.NoOpPoseRefiner
+import com.movit.core.posecapture.boundary.PoseRefiner
 import com.movit.core.training.boundary.PoseDetector
 import com.movit.core.training.boundary.PoseDetectorConfiguration
+import com.movit.core.training.diagnostics.TrainingPipelineDiagnostics
 import com.movit.core.training.geometry.PoseFrameAssembler
 import com.movit.core.training.model.Landmark
 import com.movit.core.training.model.PoseFrame
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import java.io.ByteArrayOutputStream
 import java.io.File
+import kotlin.math.max
+import kotlin.math.roundToInt
 
 class MediaPipePoseDetector(
     private val context: Context,
+    private val poseRefiner: PoseRefiner = NoOpPoseRefiner,
 ) : PoseDetector {
     data class DetectionResult(
         val landmarks: List<Landmark>,
@@ -33,6 +47,8 @@ class MediaPipePoseDetector(
         val timestampMs: Long,
         val inferenceTimeMs: Long,
         val isFrontCamera: Boolean,
+        val analysisImageWidth: Int,
+        val analysisImageHeight: Int,
     )
 
     interface Listener {
@@ -47,6 +63,7 @@ class MediaPipePoseDetector(
         private const val MIN_TRACKING = 0.5f
         private const val MIN_PRESENCE = 0.5f
         private const val MODEL_TYPE_HEAVY = "heavy"
+        private const val INFERENCE_STALL_TIMEOUT_MS = 1_500L
     }
 
     private var landmarker: PoseLandmarker? = null
@@ -58,10 +75,21 @@ class MediaPipePoseDetector(
     private var lastConfiguration: PoseDetectorConfiguration? = null
     private var heavyUpgradeInFlight = false
     private val initLock = Any()
+    private val bitmapLock = Any()
+    private var lastFrameBitmap: Bitmap? = null
+    private val transformMatrix = Matrix()
+    private val srcRect = RectF()
+    private val dstRect = RectF()
     private val backgroundScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val inferenceInFlight = AtomicBoolean(false)
+    private val lastSubmittedFrameMs = AtomicLong(0L)
+    private val lastStallWarningMs = AtomicLong(0L)
+    private val skippedBusyFrames = AtomicInteger(0)
 
     var lastInferenceTimeMs: Long = 0L
         private set
+
+    fun consumeBusySkipCount(): Int = skippedBusyFrames.getAndSet(0)
 
     fun setListener(listener: Listener?) {
         this.listener = listener
@@ -89,7 +117,10 @@ class MediaPipePoseDetector(
                     .setMinTrackingConfidence(configuration.minTrackingConfidence)
                     .setMinPosePresenceConfidence(MIN_PRESENCE)
                     .setResultListener(this::onPoseResult)
-                    .setErrorListener { e -> listener?.onError(e.message ?: "Pose error") }
+                    .setErrorListener { e ->
+                        inferenceInFlight.set(false)
+                        listener?.onError(e.message ?: "Pose error")
+                    }
                     .build()
                 landmarker = PoseLandmarker.createFromOptions(context, options)
                 Log.d(TAG, "Pose landmarker ready gpu=$useGpu model=$modelLabel")
@@ -112,17 +143,110 @@ class MediaPipePoseDetector(
             imageProxy.close()
             return
         }
-        try {
-            val frameTime = SystemClock.uptimeMillis()
-            frameCameraState[frameTime] = isFrontCamera
-            val bitmap = imageProxy.toBitmap()
+        val frameTime = SystemClock.uptimeMillis()
+        if (!tryAcquireInferenceSlot(frameTime)) {
             imageProxy.close()
-            val mpImage = BitmapImageBuilder(bitmap).build()
+            return
+        }
+        try {
+            frameCameraState[frameTime] = isFrontCamera
+            lastSubmittedFrameMs.set(frameTime)
+            val rotationDegrees = imageProxy.imageInfo.rotationDegrees
+            val sourceBitmap = imageProxy.toBitmap()
+            imageProxy.close()
+            val analysisBitmap = if (rotationDegrees == 0) {
+                sourceBitmap
+            } else {
+                val rotated = rotateBitmapForAnalysis(sourceBitmap, rotationDegrees)
+                sourceBitmap.recycle()
+                rotated
+            }
+            lastAnalysisWidth = analysisBitmap.width
+            lastAnalysisHeight = analysisBitmap.height
+            synchronized(bitmapLock) {
+                lastFrameBitmap?.takeIf { it !== analysisBitmap }?.recycle()
+                lastFrameBitmap = analysisBitmap
+            }
+            val mpImage = BitmapImageBuilder(analysisBitmap).build()
             marker.detectAsync(mpImage, frameTime)
         } catch (e: Exception) {
+            inferenceInFlight.set(false)
             Log.e(TAG, "detectAsync failed: ${e.message}")
             try { imageProxy.close() } catch (_: Exception) {}
         }
+    }
+
+    private fun tryAcquireInferenceSlot(nowMs: Long): Boolean {
+        if (inferenceInFlight.compareAndSet(false, true)) return true
+        val submittedAt = lastSubmittedFrameMs.get()
+        val stalled = submittedAt > 0L && nowMs - submittedAt > INFERENCE_STALL_TIMEOUT_MS
+        val lastWarning = lastStallWarningMs.get()
+        if (stalled && nowMs - lastWarning > INFERENCE_STALL_TIMEOUT_MS && lastStallWarningMs.compareAndSet(lastWarning, nowMs)) {
+            TrainingPipelineDiagnostics.recordInferenceStall()
+        }
+        skippedBusyFrames.incrementAndGet()
+        return false
+    }
+
+    private var lastAnalysisWidth: Int = 0
+    private var lastAnalysisHeight: Int = 0
+
+    /**
+     * Rotates the camera buffer to upright display orientation before MediaPipe.
+     * Front-camera horizontal mirror is **not** applied here — preview mirroring is handled
+     * in [com.movit.core.training.geometry.DisplayLandmarkTransform] so engine math stays on
+     * unmirrored landmarks + [com.movit.core.training.model.PoseFrame.mirrored].
+     */
+    internal fun rotateBitmapForAnalysis(source: Bitmap, rotationDegrees: Int): Bitmap {
+        transformMatrix.reset()
+        transformMatrix.postRotate(rotationDegrees.toFloat())
+        srcRect.set(0f, 0f, source.width.toFloat(), source.height.toFloat())
+        transformMatrix.mapRect(dstRect, srcRect)
+        val outWidth = dstRect.width().roundToInt().coerceAtLeast(1)
+        val outHeight = dstRect.height().roundToInt().coerceAtLeast(1)
+        val output = Bitmap.createBitmap(outWidth, outHeight, Bitmap.Config.ARGB_8888)
+        Canvas(output).apply {
+            translate(-dstRect.left, -dstRect.top)
+            concat(transformMatrix)
+            drawBitmap(source, 0f, 0f, null)
+        }
+        return output
+    }
+
+    /**
+     * Returns a downscaled JPEG of the most recent camera frame for report evidence.
+     * Held only until the next frame arrives — not persisted until the caller writes it.
+     */
+    fun takeSnapshotJpeg(maxDimension: Int, quality: Int): ByteArray? {
+        val source = synchronized(bitmapLock) { lastFrameBitmap } ?: return null
+        val working = source.copy(source.config ?: Bitmap.Config.ARGB_8888, false)
+        return try {
+            compressBitmapToJpeg(working, maxDimension, quality)
+        } finally {
+            working.recycle()
+        }
+    }
+
+    private fun compressBitmapToJpeg(bitmap: Bitmap, maxDimension: Int, quality: Int): ByteArray? {
+        val toCompress = scaleDown(bitmap, maxDimension)
+        return ByteArrayOutputStream().use { stream ->
+            if (!toCompress.compress(Bitmap.CompressFormat.JPEG, quality.coerceIn(1, 100), stream)) {
+                if (toCompress !== bitmap) toCompress.recycle()
+                return null
+            }
+            val bytes = stream.toByteArray()
+            if (toCompress !== bitmap) toCompress.recycle()
+            bytes
+        }
+    }
+
+    private fun scaleDown(bitmap: Bitmap, maxDimension: Int): Bitmap {
+        val longest = max(bitmap.width, bitmap.height)
+        if (longest <= maxDimension) return bitmap
+        val scale = maxDimension.toFloat() / longest.toFloat()
+        val width = (bitmap.width * scale).roundToInt().coerceAtLeast(1)
+        val height = (bitmap.height * scale).roundToInt().coerceAtLeast(1)
+        return Bitmap.createScaledBitmap(bitmap, width, height, true)
     }
 
     override fun buildPoseFrame(
@@ -140,28 +264,43 @@ class MediaPipePoseDetector(
         val frameTs = result.timestampMs()
         lastInferenceTimeMs = finishMs - frameTs
         val isFrontCamera = frameCameraState.remove(frameTs) ?: false
-        if (result.landmarks().isEmpty()) {
-            listener?.onNoPoseDetected()
-            return
+        try {
+            if (result.landmarks().isEmpty()) {
+                listener?.onNoPoseDetected()
+                return
+            }
+            val norm = result.landmarks()[0]
+            val world = result.worldLandmarks().firstOrNull()
+            val smoothed = landmarkSmoother.smooth(norm, frameTs)
+            val refinedLandmarks = if (poseRefiner.isAvailable) {
+                poseRefiner.refineLandmarks(smoothed)
+            } else {
+                smoothed
+            }
+            val smoothedWorld = world?.let(::mapWorldLandmarks)
+            listener?.onPoseDetected(
+                DetectionResult(
+                    landmarks = refinedLandmarks,
+                    worldLandmarks = smoothedWorld,
+                    timestampMs = frameTs,
+                    inferenceTimeMs = lastInferenceTimeMs,
+                    isFrontCamera = isFrontCamera,
+                    analysisImageWidth = lastAnalysisWidth,
+                    analysisImageHeight = lastAnalysisHeight,
+                ),
+            )
+        } finally {
+            inferenceInFlight.set(false)
         }
-        val norm = result.landmarks()[0]
-        val world = result.worldLandmarks().firstOrNull()
-        val smoothed = landmarkSmoother.smooth(norm, frameTs)
-        val smoothedWorld = world?.let(::mapWorldLandmarks)
-        listener?.onPoseDetected(
-            DetectionResult(
-                landmarks = smoothed,
-                worldLandmarks = smoothedWorld,
-                timestampMs = frameTs,
-                inferenceTimeMs = lastInferenceTimeMs,
-                isFrontCamera = isFrontCamera,
-            ),
-        )
     }
 
     override fun shutdown() {
         synchronized(initLock) {
             shutdownLandmarkerOnly()
+        }
+        synchronized(bitmapLock) {
+            lastFrameBitmap?.recycle()
+            lastFrameBitmap = null
         }
     }
 
@@ -170,6 +309,10 @@ class MediaPipePoseDetector(
         landmarker = null
         frameCameraState.clear()
         landmarkSmoother.reset()
+        inferenceInFlight.set(false)
+        lastSubmittedFrameMs.set(0L)
+        lastStallWarningMs.set(0L)
+        skippedBusyFrames.set(0)
         heavyUpgradeInFlight = false
     }
 

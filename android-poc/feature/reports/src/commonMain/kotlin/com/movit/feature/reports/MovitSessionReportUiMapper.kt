@@ -19,6 +19,8 @@ object MovitSessionReportUiMapper {
         val formScore = summary.averageScore.roundToInt().coerceIn(0, 100)
         val quality = report.sessionQuality
         val dropOff = quality?.frameDropRate ?: 0f
+        val frameEvidence = ReportFrameEvidenceMapper.mapCaptures(report.peakFrameCaptures, strings)
+        val heroFramePath = ReportFrameEvidenceMapper.heroFramePath(report.peakFrameCaptures)
         val fatigueTitle = when {
             dropOff >= 20f -> strings.fatigueElevated
             dropOff >= 10f -> strings.fatigueModerate
@@ -46,6 +48,8 @@ object MovitSessionReportUiMapper {
             formBySetValues = listOf(formScore.toFloat()),
             formBySetLabels = listOf(strings.setShort(1)),
             tips = emptyList(),
+            frameEvidence = frameEvidence,
+            heroFramePath = heroFramePath,
         )
     }
 
@@ -81,4 +85,34 @@ object MovitSessionReportUiMapper {
         report: MovitSessionReport,
         strings: ReportDetailStrings,
     ): List<ReportDetailUi> = report.exerciseReports.map { mapExerciseRow(it, strings) }
+
+    suspend fun mapSessionOverview(
+        report: MovitSessionReport,
+        strings: ReportDetailStrings,
+        reportId: String,
+    ): ReportDetailUi {
+        val formScore = report.averageFormScore.roundToInt().coerceIn(0, 100)
+        val primaryName = report.exerciseReports.firstOrNull()?.exerciseName ?: "Workout"
+        return ReportDetailUi(
+            id = reportId,
+            exerciseName = primaryName,
+            formScore = formScore,
+            badgeLabel = null,
+            sets = report.totalSetsCompleted.toString(),
+            reps = report.totalReps.toString(),
+            durationLabel = ReportsFormatting.formatDuration(report.totalDurationMs),
+            overviewInsightTitle = strings.sessionOverview,
+            overviewInsightMessage = strings.avgForm(formScore),
+            joints = emptyList(),
+            jointsEmptyReason = ReportJointsEmptyReason.SessionUntracked,
+            repCompare = emptyList(),
+            fatigueLabel = strings.fatigueLabel,
+            fatigueTitle = strings.fatigueLow,
+            fatigueMessage = strings.fatigueNotEnough,
+            fatigueProgressPercent = 0,
+            formBySetValues = emptyList(),
+            formBySetLabels = emptyList(),
+            tips = emptyList(),
+        )
+    }
 }

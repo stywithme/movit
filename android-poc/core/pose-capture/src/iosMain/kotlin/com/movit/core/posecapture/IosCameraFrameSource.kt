@@ -53,6 +53,10 @@ class IosCameraFrameSource(
         frameListener = listener
     }
 
+    override fun setErrorListener(listener: ((String) -> Unit)?) = Unit
+
+    override fun setOnCameraBoundListener(listener: (() -> Unit)?) = Unit
+
     fun attachPreview(host: UIView) {
         previewHost = host
         val session = captureSession ?: return

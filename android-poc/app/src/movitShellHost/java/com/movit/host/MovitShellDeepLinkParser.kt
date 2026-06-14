@@ -8,7 +8,7 @@ import com.movit.feature.shell.MovitInnerRoute
 import com.movit.feature.shell.MovitShellPendingNavigation
 import com.movit.navigation.MovitTrainingEntryNavigator
 import com.google.gson.Gson
-import com.trainingvalidator.poc.training.models.WorkoutConfig
+import com.movit.core.network.dto.WorkoutFlowConfigDto
 
 /**
  * Parses [MovitTrainingEntryNavigator] intent extras into shell inner routes.
@@ -42,25 +42,28 @@ object MovitShellDeepLinkParser {
 
     private fun seedLocalWorkoutCache(intent: Intent, workoutId: String) {
         val json = intent.getStringExtra(MovitTrainingEntryNavigator.EXTRA_WORKOUT_CONFIG_JSON) ?: return
-        val config = runCatching { Gson().fromJson(json, WorkoutConfig::class.java) }.getOrNull() ?: return
+        val config = runCatching {
+            Gson().fromJson(json, WorkoutFlowConfigDto::class.java)
+        }.getOrNull() ?: return
         val language = "en"
-        val title = config.name.get(language).ifBlank { config.name.en }.ifBlank { config.fileName }
+        val items = config.effectiveExercises()
+        val title = config.name.display(language).ifBlank { workoutId }
         WorkoutFlowCache.put(
             WorkoutFlowConfigUi(
                 workoutId = workoutId,
                 title = title,
-                subtitle = "${config.exercises.size} exercises",
-                exercises = config.exercises.mapIndexed { index, exercise ->
+                subtitle = "${items.size} exercises",
+                exercises = items.mapIndexed { index, exercise ->
                     WorkoutFlowExerciseUi(
                         id = "ex-$index",
                         exerciseSlug = exercise.exercise,
                         name = exercise.exercise.replace('-', ' ').replaceFirstChar { it.uppercase() },
                         sets = exercise.sets.coerceAtLeast(1),
                         reps = exercise.targetReps,
-                        durationSeconds = exercise.targetDurationSec,
+                        durationSeconds = exercise.targetDuration,
                     )
                 },
-                restBetweenSetsSeconds = config.exercises.firstOrNull()
+                restBetweenSetsSeconds = items.firstOrNull()
                     ?.restBetweenSetsMs?.let { (it / 1000).toInt() } ?: 60,
             ),
         )

@@ -36,6 +36,14 @@ data class ReportCoachingTipUi(
     val message: String,
 )
 
+data class ReportFrameEvidenceUi(
+    val label: String,
+    val localPath: String,
+    val thumbnailPath: String?,
+    val captureType: String,
+    val repNumber: Int,
+)
+
 data class ReportDetailUi(
     val id: String,
     val exerciseName: String,
@@ -56,5 +64,7 @@ data class ReportDetailUi(
     val formBySetValues: List<Float>,
     val formBySetLabels: List<String>,
     val tips: List<ReportCoachingTipUi>,
+    val frameEvidence: List<ReportFrameEvidenceUi> = emptyList(),
+    val heroFramePath: String? = null,
 )
 

@@ -1,7 +1,7 @@
 # Android / KMP Mobile UI/UX — Phase Pre-07: Stabilization Gate (Contract · Offline · Engine Boundary)
 
-آخر تحديث: **2026-06-10**
-الحالة: **مفتوحة (OPEN) — ~84%** (بوابة Pre-07 · تحقق Doc-Verify 2026-06-10 — P0/P1 بنية جاهزة؛ فجوات توصيل feature + phantom legacy)
+آخر تحديث: **2026-06-14**
+الحالة: **مغلقة (CLOSED)** — Pre-07 P0/P1 مكتملة؛ G1/G4 موصولان؛ smoke جهاز KMP أولي ناجح (مرجع [فرق Legacy §29–§33](Android-KMP-Training-Engine-Legacy-MO-vs-Current-Difference-Audit.md))
 المصدر: رأي متخصّص مستقل بعد إغلاق [Phase 06](Android-KMP-Mobile-UI-UX-Phase-06-Production-Launcher-Plan.md) — **«لا تدخل Phase 07 (كاميرا) مباشرة؛ ثبّت العقود + offline + حدود المحرك أولاً»** — مدعوماً بتحقّق كود مستقل (هذا المستند).
 
 المراجع:
@@ -361,9 +361,9 @@ cd android-poc
 | المحور | النسبة | الحكم |
 |--------|-------:|-------|
 | **P0** — عقود · تخزين · حدود المحرك | ~95% | ✅ جاهز لـ Phase 07 |
-| **P1** — Outbox · sync depth · contract tests | ~88% | 🔶 بنية مكتملة؛ replay شبكة ✅؛ **feature wiring** ناقص |
-| **P2** — DTO عمق · توصيل UI | ~75% | 🔶 `MobileWriteSyncRepository` في DI؛ `feature/*` لا تستدعي `start/complete/report` بعد |
-| **بوابة خروج Pre-07** | **OPEN** | يُسمح **بدء** Phase 07 (كاميرا/ML)؛ لا يُعتبر Outbox «مغلقاً» حتى يُوصَّل مسار التقرير في UI |
+| **P1** — Outbox · sync depth · contract tests | ~95% | ✅ بنية + **G1 wiring** في Phase 07 |
+| **P2** — DTO عمق · توصيل UI | ~90% | ✅ planned lifecycle من shell؛ smoke جهاز KMP ✅ (2026-06-14) |
+| **بوابة خروج Pre-07** | **CLOSED** | Phase 07 جارية — hotfixes جهاز موثَّقة في [فرق Legacy §29–§33](Android-KMP-Training-Engine-Legacy-MO-vs-Current-Difference-Audit.md) |
 
 **تحقق Doc-Verify (2026-06-10 — بعد توحيد pause/resume):**
 
@@ -453,7 +453,7 @@ cd android-poc
 | WS-4 P0 SQLDelight | ✅ |
 | WS-5 P0 حدود المحرك | ✅ |
 | WS-2 Outbox بنية + replay شبكة | ✅ |
-| WS-2 Outbox **مسار تقرير/إكمال في UI** | ❌ — يُغلق في Phase 07 عند ربط الجلسة |
+| WS-2 Outbox **مسار تقرير/إكمال في UI** | ✅ — G1/G4 + smoke جهاز 2026-06-14 |
 | WS-3 sync parity كامل | 🔶 |
 | WS-6 contract tests | ✅ |
 | `assembleDebug` + iOS compile | ✅ |
@@ -461,11 +461,21 @@ cd android-poc
 
 ### ما تبقى قبل Phase 07 «مغلقة بالكامل»
 
-1. **توصيل** `MovitData.mobileWrites.start/complete/reportPlannedWorkout` من `feature/train` (أو shell route) — أولوية عند أول جلسة KMP.
+1. ~~**توصيل** `MovitData.mobileWrites.start/complete/reportPlannedWorkout`~~ — ✅ **مُغلق G1** (2026-06-12).
 2. **تنظيف legacy:** إخفاء pause/resume في `ProgramDetailViewModel` أو توثيق 404 المتوقع.
 3. **18 قراءة parity** — عند الحاجة في UI (لا تحجز الكاميرا).
 4. **`@Url` audio download** — platform adapter في Phase 07.
 5. **هجرة AGP 9** — عند الترقية.
+6. **استعادة throughput الكاميرا** تدريجياً مع `TrainingPipeline` — مرجع [§14.9](Android-KMP-Mobile-UI-UX-Phase-07-Training-Engine-Migration-Plan.md) و[فرق Legacy §30.4](Android-KMP-Training-Engine-Legacy-MO-vs-Current-Difference-Audit.md).
+
+### تحقق جهاز KMP (2026-06-14)
+
+| البند | النتيجة |
+|-------|---------|
+| جلسة تمرين كاملة 12/12 | ✅ لوج `Training.log.md` 15:28 |
+| `TrainingPipeline` | ✅ قناة تشخيص موحّدة |
+| إيقاف كاميرا بعد الإكمال | ✅ §31 |
+| parity fps مع Legacy | 🔶 ~7 fps فعلي vs ~15+ — مؤجَّل |
 
 ---
 
@@ -478,7 +488,7 @@ cd android-poc
 | **الحالة** | ✅ `WORKOUT_EXECUTION_UPLOAD` في Outbox + `MobileWriteSyncRepository.uploadWorkoutExecution()` |
 | **ملفات** | `OutboxModels.kt` · `OutboxDispatcher.kt` · `OfflineWriteQueue.kt` · `MobileWriteSyncRepository.kt` |
 | **قرار** | idempotency = `WorkoutExecutionUploadRequestDto.id` · legacy `WorkoutSyncService` (OkHttp) ما زال يملك الإنتاج حتى ربط جلسة KMP في Phase 07 |
-| **متبقٍ** | استدعاء من `feature/train` / shell بعد الكاميرا — لا يُعتبر offline-safe end-to-end قبل ذلك |
+| **متبقٍ** | ~~استدعاء من feature/train~~ ✅ G1؛ استعادة fps/دقة تدريجياً (§14.9 Phase 07) |
 
 ### [P2] Contract registry — `workout-executions` ليس KMP-only — ✅
 

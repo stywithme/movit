@@ -6,10 +6,15 @@ class FakeAudioFileDownloader : AudioFileDownloadPort {
     val downloadedBatches = mutableListOf<Pair<String, List<AudioFileInfoDto>>>()
     var orphanCleanupCalls = 0
     var enforceLimitCalls = 0
+    private val paths = mutableMapOf<String, String>()
 
-    override fun hasAudio(filename: String): Boolean = false
+    fun seedFile(filename: String, absolutePath: String) {
+        paths[filename] = absolutePath
+    }
 
-    override fun localPath(filename: String): String? = null
+    override fun hasAudio(filename: String): Boolean = paths.containsKey(filename)
+
+    override fun localPath(filename: String): String? = paths[filename]
 
     override suspend fun downloadFiles(files: List<AudioFileInfoDto>, baseUrl: String): Int {
         downloadedBatches += baseUrl to files

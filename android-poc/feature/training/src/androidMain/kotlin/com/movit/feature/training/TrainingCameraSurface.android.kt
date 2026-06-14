@@ -13,7 +13,10 @@ fun TrainingCameraSurface(
     AndroidView(
         modifier = modifier,
         factory = { context ->
-            PreviewView(context).also(onPreviewReady)
+            PreviewView(context).apply {
+                // Explicit FILL_CENTER — must match [DisplayLandmarkTransform] FILL_CENTER math.
+                scaleType = PreviewView.ScaleType.FILL_CENTER
+            }.also(onPreviewReady)
         },
     )
 }

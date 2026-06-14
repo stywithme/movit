@@ -13,9 +13,12 @@ import com.movit.core.network.dto.LocalizedNameDto
 import com.movit.core.training.config.getMessagesForState
 import com.movit.core.training.config.ExerciseConfig
 import com.movit.core.training.config.LocalizedText
+import com.movit.core.training.diagnostics.TrainingPipelineDiagnostics
+import com.movit.core.training.engine.Phase
 import com.movit.core.training.engine.ZoneType
 import com.movit.feature.reports.TrainingSessionReportCache
 import com.movit.core.training.engine.ErrorType
+import com.movit.core.training.boundary.TrainingFrameSnapshotPort
 import com.movit.core.training.engine.JointError
 import com.movit.core.training.engine.JointState
 import com.movit.core.training.engine.feedback.FeedbackRouter
@@ -30,6 +33,7 @@ import com.movit.core.training.model.PoseFrame
 import com.movit.core.training.report.AssessmentTrainingResult
 import com.movit.core.training.report.MovitSessionReport
 import com.movit.core.training.report.MovitSessionReportBuilder
+import com.movit.core.training.boundary.DeviceTiltPort
 import com.movit.core.training.session.CountdownController
 import com.movit.core.training.session.ExerciseWorkoutSummary
 import com.movit.core.training.session.HoldStatus
@@ -50,6 +54,8 @@ import com.movit.designsystem.components.SkeletonJointQuality
 import com.movit.designsystem.components.SkeletonJointVisual
 import com.movit.designsystem.components.SkeletonLandmarkPoint
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -59,6 +65,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * KMP session VM: supervisor + readiness gate + countdown + engine + feedback (WS-5/WS-7/07.8-B).
@@ -80,6 +87,8 @@ class TrainingSessionViewModel(
   private val audioPrefetchRunner: AudioPrefetchRunner = MovitData.audioPrefetch,
   private val audioManifestCache: AudioManifestCache = MovitData.audioManifest,
   private val setupValidation: SetupValidationConfig = SetupValidationConfig(),
+  private val deviceTiltPort: DeviceTiltPort? = null,
+  private val frameSnapshotPort: TrainingFrameSnapshotPort = defaultTrainingFrameSnapshotPort(),
   feedbackRouter: FeedbackRouter = FeedbackRouter(coachIntensity = CoachIntensity.STANDARD),
 ) : ViewModel() {
   private var activeSlug: String = exerciseSlug
@@ -93,16 +102,22 @@ class TrainingSessionViewModel(
 
   private var lastFrameTimestampMs: Long = 0L
   private var writeHooks = createWriteHooks()
+  private val writeDiagnostics = TrainingSessionWriteDiagnostics()
   private val exploreBatch = uploadContext?.let {
-    WorkoutExecutionBatchCoordinator(writeCoordinator, context = it.context)
+    WorkoutExecutionBatchCoordinator(
+      writes = writeCoordinator,
+      context = it.context,
+      onWriteOutcome = ::recordWriteOutcome,
+    )
   }
+  private var phasePauseSnapshot: PhasePauseSnapshot? = null
 
   private val flowCoordinator = flowItems?.let { TrainingSessionFlowCoordinator(it) }
   private var restTimerJob: Job? = null
   private var restNearEndAnnounced = false
 
   private val supervisor = SessionSupervisor(setupValidation = setupValidation)
-  private val readinessGate = SetupReadinessGate(setupValidation)
+  private val readinessGate = SetupReadinessGate(setupValidation, deviceTiltPort)
   private val countdown = CountdownController()
   private val feedback = feedbackRouter
   private var engine: MovitTrainingEngine? = buildEngine()
@@ -110,9 +125,14 @@ class TrainingSessionViewModel(
   private var sessionStartMs: Long = 0L
   private var lastElapsedMs: Long = 0L
   private var visibilityWarningActive = false
+  private var visibilityPauseCount = 0
+  private var cameraWarningCount = 0
   private var lastRandomMessageCheckMs = 0L
   private var plannedWorkoutStarted = false
   private var accumulatedDayReport: MovitSessionReport? = null
+  private var frameCaptureCoordinator = createFrameCaptureCoordinator()
+  private val poseFrameChannel = Channel<PoseFrame?>(capacity = Channel.CONFLATED)
+  private var poseFrameWorker: Job? = null
 
   private val _state = MutableStateFlow(
     TrainingSessionUiState(
@@ -132,6 +152,7 @@ class TrainingSessionViewModel(
     wireSupervisor()
     wireCountdown()
     wireEngineCallbacks()
+    startPoseFrameWorker()
     exerciseConfig?.poseVariants?.firstOrNull()?.feedbackMessages?.let(feedback::setRandomMessages)
     flowCoordinator?.start()
     syncFlowUi()
@@ -161,25 +182,47 @@ class TrainingSessionViewModel(
     return engine?.stop()?.durationMs ?: 0L
   }
 
-  fun onPoseFrame(frame: PoseFrame) {
-    if (_state.value.isResting) return
+  fun onPoseFrame(frame: PoseFrame?) {
+    if (!_state.value.requiresCamera()) return
+    TrainingPipelineDiagnostics.recordVmIngress(wasConflated = false)
+    poseFrameChannel.trySend(frame)
+  }
 
-    if (frame.hasPose) {
-      _state.update {
-        it.copy(
-          landmarks = frame.landmarks?.map { lm ->
-            SkeletonLandmarkPoint(lm.x, lm.y, lm.isVisible())
-          },
-        )
+  private fun startPoseFrameWorker() {
+    poseFrameWorker?.cancel()
+    poseFrameWorker = viewModelScope.launch(Dispatchers.Default) {
+      for (frame in poseFrameChannel) {
+        processPoseFrameOnWorker(frame)
       }
     }
+  }
 
-    if (!frame.hasPose) {
+  private fun processPoseFrameOnWorker(frame: PoseFrame?) {
+    TrainingPipelineDiagnostics.recordVmProcessed()
+    emitPipelineDiagnostics(frame?.timestampMs ?: lastFrameTimestampMs)
+    if (frame == null || !frame.hasPose) {
+      _state.update { it.copy(landmarks = emptyList()) }
       if (!visibilityWarningActive) {
-        supervisor.processSignal(SupervisorSignal.NoPoseFrame(frame.timestampMs))
+        val timestampMs = frame?.timestampMs?.takeIf { it > 0L }
+          ?: lastFrameTimestampMs.takeIf { it > 0 }
+          ?: sessionStartMs
+        supervisor.processSignal(SupervisorSignal.NoPoseFrame(timestampMs))
       }
       return
     }
+
+    applyPoseLandmarksToUi(frame)
+
+    val runState = supervisor.state.value
+    if (runState == SessionRunState.TRAINING) {
+      supervisor.onTrainingPoseFrameProcessed()
+      updateSessionElapsed(frame.timestampMs)
+      engine?.processFrame(frame)
+      refreshSkeletonJointStates()
+      maybeDeliverRandomMessage(frame.timestampMs)
+      return
+    }
+
     val angles = frame.angles
     val landmarks = frame.landmarks
     supervisor.processSignal(
@@ -190,43 +233,153 @@ class TrainingSessionViewModel(
         timestampMs = frame.timestampMs,
       ),
     )
-    val runState = supervisor.state.value
     if (runState.shouldValidatePose() && exerciseConfig != null) {
+      val config = exerciseConfig!!
       val readiness = readinessGate.validate(
         angles = angles,
         landmarks = landmarks,
-        exerciseConfig = exerciseConfig!!,
+        exerciseConfig = config,
         poseVariantIndex = 0,
         isFrontCamera = frame.isFrontCamera,
       )
+      val guidance = readiness.toSetupGuidanceUi(language)
       _state.update {
         it.copy(
-          setupProgressPercent = readiness.progressPercent,
-          setupPhase = readiness.phase.name,
-          setupGuidance = readiness.phaseMessage?.get(language),
+          setupProgressPercent = guidance.progressPercent,
+          setupPhase = guidance.phase,
+          setupGuidance = guidance.actionMessage,
+          setupActionMessage = guidance.actionMessage,
+          setupCameraTip = guidance.cameraTip,
+          setupRegionStatus = guidance.regionStatus,
+          setupPostureStatus = guidance.postureStatus,
+          setupDirectionStatus = guidance.directionStatus,
+          setupJointRows = guidance.jointRows,
+          setupReferenceImageUrl = guidance.referenceImageUrl,
+          setupInStartPose = guidance.inStartPose,
         )
       }
-      if (readiness.isConfirmed) {
+      val isCountdown = runState == SessionRunState.COUNTDOWN ||
+        runState == SessionRunState.RESUME_COUNTDOWN
+      if (isCountdown) {
+        if (!readinessGate.isCountdownPoseValid(angles, config, 0)) {
+          supervisor.processSignal(SupervisorSignal.PoseInvalid)
+        }
+      } else if (readiness.isConfirmed) {
         supervisor.processSignal(SupervisorSignal.PoseConfirmed)
-      } else if (runState == SessionRunState.COUNTDOWN || runState == SessionRunState.RESUME_COUNTDOWN) {
-        supervisor.processSignal(SupervisorSignal.PoseInvalid)
       }
     }
     refreshSkeletonJointStates()
     maybeDeliverRandomMessage(frame.timestampMs)
   }
 
+  private fun applyPoseLandmarksToUi(frame: PoseFrame) {
+    _state.update {
+      it.copy(
+        landmarks = frame.landmarks?.map { lm ->
+          SkeletonLandmarkPoint(lm.x, lm.y, lm.isVisible())
+        },
+        skeletonAnalysisWidth = frame.analysisImageWidth,
+        skeletonAnalysisHeight = frame.analysisImageHeight,
+        skeletonMirrorPreview = frame.isFrontCamera,
+      )
+    }
+  }
+
+  private fun updateSessionElapsed(timestampMs: Long) {
+    if (timestampMs > 0L) lastFrameTimestampMs = timestampMs
+    if (sessionStartMs == 0L && timestampMs > 0L) {
+      sessionStartMs = timestampMs
+    }
+    if (sessionStartMs > 0L) {
+      lastElapsedMs = (timestampMs - sessionStartMs).coerceAtLeast(0L)
+      _state.update { it.copy(elapsedLabel = formatElapsed(lastElapsedMs)) }
+    }
+  }
+
+  private fun emitPipelineDiagnostics(timestampMs: Long) {
+    val nowMs = timestampMs.takeIf { it > 0L } ?: System.currentTimeMillis()
+    val engineSnapshot = engine?.metricsSnapshot()
+    TrainingPipelineDiagnostics.maybeEmitPeriodic(
+      nowMs = nowMs,
+      runState = supervisor.state.value,
+      phase = engineSnapshot?.phase?.name,
+      repCount = engineSnapshot?.repCount ?: _state.value.repCount,
+      targetReps = engineSnapshot?.targetReps ?: _state.value.targetReps,
+      formScore = engineSnapshot?.liveFormScore?.toInt() ?: _state.value.liveFormPercent,
+      droppedEngine = engine?.droppedFrameCount() ?: 0,
+      droppedSupervisor = supervisor.droppedActionCount,
+      cameraActive = _state.value.requiresCamera(),
+    )
+  }
+
   fun onCameraReady() {
-    _state.update { it.copy(isCameraReady = true, errorMessage = null) }
+    TrainingPipelineDiagnostics.logMilestone("camera bound")
+    _state.update { it.copy(isCameraReady = true, isCameraSwitching = false, errorMessage = null) }
+  }
+
+  fun onCameraSwitchStarted() {
+    _state.update { it.copy(isCameraSwitching = true, errorMessage = null) }
   }
 
   fun onCameraError(message: String) {
-    _state.update { it.copy(errorMessage = message, isCameraReady = false) }
+    _state.update {
+      it.copy(
+        errorMessage = message,
+        isCameraReady = false,
+        isCameraSwitching = false,
+      )
+    }
   }
 
   fun pause() = supervisor.processSignal(SupervisorSignal.PauseRequested)
   fun resume() = supervisor.processSignal(SupervisorSignal.ResumeRequested)
   fun stop() = supervisor.processSignal(SupervisorSignal.StopRequested)
+
+  /** Host lifecycle: app moved to background while training. */
+  fun onHostBackgrounded(nowMs: Long = lastFrameTimestampMs.takeIf { it > 0 } ?: sessionStartMs) {
+    val wasTraining = _state.value.runState == SessionRunState.TRAINING
+    phasePauseSnapshot = TrainingSessionLifecyclePolicy.onHostPaused(
+      wasTraining = wasTraining,
+      nowMs = nowMs,
+    )
+    if (wasTraining) {
+      pause()
+    }
+  }
+
+  /** Host lifecycle: app returned to foreground — apply legacy-style phase continue policy. */
+  fun onHostForegrounded(nowMs: Long = lastFrameTimestampMs.takeIf { it > 0 } ?: sessionStartMs) {
+    when (
+      TrainingSessionLifecyclePolicy.onHostResumed(phasePauseSnapshot, nowMs)
+    ) {
+      PhaseResumeAction.RESUMED -> if (phasePauseSnapshot?.wasTraining == true) resume()
+      PhaseResumeAction.PHASE_RESTARTED_NO_CONTINUE,
+      PhaseResumeAction.PHASE_RESTARTED_TIMEOUT,
+      -> {
+        supervisor.processSignal(SupervisorSignal.StopRequested)
+        supervisor.reset()
+        readinessGate.reset()
+        countdown.release()
+        flowCoordinator?.currentExerciseOrNull()?.let {
+          _state.update { state ->
+            state.copy(
+              runState = SessionRunState.IDLE,
+              glassMessage = GlassMessageState(
+                text = systemMessage(
+                  "training_session_phase_restarted",
+                  "أُعيدت الجولة — ابدأ من جديد",
+                  "Set restarted — begin again",
+                ),
+                severity = GlassMessageSeverity.WARNING,
+              ),
+            )
+          }
+        }
+      }
+      PhaseResumeAction.NONE -> Unit
+    }
+    phasePauseSnapshot = null
+  }
 
   fun stopAndFinalize(): ExerciseWorkoutSummary? {
     val summary = engine?.stop() ?: return null
@@ -275,7 +428,13 @@ class TrainingSessionViewModel(
 
   private fun wireSupervisor() {
     supervisor.actions.onEach { handleSupervisorAction(it) }.launchIn(viewModelScope)
+    var previousRunState: SessionRunState? = null
     supervisor.state.onEach { runState ->
+      val prev = previousRunState
+      previousRunState = runState
+      if (prev != null && prev != runState) {
+        TrainingPipelineDiagnostics.logMilestone("supervisor $prev -> $runState")
+      }
       _state.update {
         it.copy(
           runState = runState,
@@ -357,8 +516,10 @@ class TrainingSessionViewModel(
   private fun wireEngineCallbacks() {
     engine?.onHoldStatusChanged = { status ->
       _state.update { it.copy(holdStatus = status) }
+      status?.let { frameCaptureCoordinator.onHoldStatus(it, engine?.currentPhase ?: Phase.IDLE) }
     }
-    engine?.onRepCountChanged = { count, score, _ ->
+    engine?.onRepCountChanged = { count, score, isCounted ->
+      frameCaptureCoordinator.onRepCompleted(count, isCounted)
       _state.update {
         it.copy(
           repCount = count,
@@ -369,6 +530,7 @@ class TrainingSessionViewModel(
     }
     engine?.onPhaseChanged = { phase ->
       _state.update { it.copy(phaseLabel = phase.toDisplayLabel()) }
+      frameCaptureCoordinator.onPhaseChanged(phase, repInProgress())
     }
     engine?.onTargetReached = {
       supervisor.processSignal(SupervisorSignal.TargetReached)
@@ -382,15 +544,18 @@ class TrainingSessionViewModel(
             text = top.message.get(language),
             dedupeKey = "position:${top.checkId}",
             messageCode = top.checkId,
+            audioUrl = top.message.getAudioUrl(language),
           ),
         )
       }
     }
     engine?.onPresenceEvent = { event -> handlePresenceEvent(event) }
     engine?.onJointStateMessage = { jointCode, state, zone ->
+      frameCaptureCoordinator.onJointState(jointCode, state, repInProgress(), engine?.currentPhase ?: Phase.IDLE)
       submitJointStateMessage(jointCode, state, zone)
     }
     engine?.onJointErrorFeedback = { error, message ->
+      frameCaptureCoordinator.onJointError(error, repInProgress(), engine?.currentPhase ?: Phase.IDLE)
       submitJointErrorFeedback(error, message)
     }
   }
@@ -423,6 +588,7 @@ class TrainingSessionViewModel(
         text = text,
         dedupeKey = "state:$jointCode:$state",
         messageCode = jointCode,
+        audioUrl = message.getAudioUrl(language),
         activeKey = if (severity.priority >= FeedbackSeverity.WARNING.priority) "correction" else "state:$jointCode:$state",
       ),
     )
@@ -443,6 +609,7 @@ class TrainingSessionViewModel(
         text = text,
         dedupeKey = "joint:${error.jointCode}:${error.errorType}",
         messageCode = error.jointCode,
+        audioUrl = message?.getAudioUrl(language),
         activeKey = "correction",
       ),
     )
@@ -549,6 +716,19 @@ class TrainingSessionViewModel(
           ),
         )
       }
+      is SupervisorAction.ShowSetupNoPoseHint -> {
+        _state.update {
+          it.copy(
+            setupGuidance = systemMessage(
+              "training_session_setup_no_pose",
+              "قف أمام الكاميرا وتأكد أن جسمك كاملاً ظاهر",
+              "Stand in front of the camera with your full body visible",
+            ),
+            setupProgressPercent = 0,
+            landmarks = emptyList(),
+          )
+        }
+      }
       is SupervisorAction.ShowCompleted -> {
         finalizeCurrentExercise()
       }
@@ -562,6 +742,9 @@ class TrainingSessionViewModel(
     val setsCompleted = _state.value.currentSetNumber
     val totalSets = _state.value.totalSets
     viewModelScope.launch {
+      withContext(Dispatchers.Default) {
+        frameCaptureCoordinator.awaitPendingCaptures()
+      }
       if (upload != null && summary != null) {
         accumulateDayReport(upload, summary, setsCompleted, totalSets)
         cachePostTrainingReport(upload, summary)
@@ -637,29 +820,81 @@ class TrainingSessionViewModel(
       programId = planned.programId,
       weekNumber = planned.weekNumber,
       dayNumber = planned.dayNumber,
+      onOutcome = { recordWriteOutcome(it, TrainingSessionWriteDiagnostics.WriteKind.PLANNED_COMPLETE) },
     )
-    writeHooks.reportPlannedDay(
-      workoutId = planned.plannedWorkoutId,
-      report = report,
-      programId = planned.programId,
-      weekNumber = planned.weekNumber,
-      dayNumber = planned.dayNumber,
-    )
+    TrainingSessionReportCache.putSession(planned.plannedWorkoutId, report)
+    markReportAvailable(planned.plannedWorkoutId)
+    applyWriteStatus()
   }
 
-  private fun cachePostTrainingReport(upload: WorkoutUpload, summary: ExerciseWorkoutSummary) {
+  private fun recordWriteOutcome(
+    result: com.movit.shared.AppResult<String>,
+    kind: TrainingSessionWriteDiagnostics.WriteKind,
+  ) {
+    writeDiagnostics.recordEnqueue(result, kind)
+    applyWriteStatus()
+  }
+
+  private fun applyWriteStatus() {
+    val status = writeDiagnostics.snapshot()
+    _state.update {
+      it.copy(
+        writeStatus = status,
+        uploadNotice = status.userNoticeKey?.let { key -> resolveUploadNotice(key) },
+      )
+    }
+  }
+
+  private fun resolveUploadNotice(key: String): String = when (key) {
+    TrainingSessionWriteDiagnostics.USER_NOTICE_UPLOAD_PENDING -> systemMessage(
+      key,
+      "ستُرفع النتائج عند الاتصال",
+      "Results will upload when you're back online",
+    )
+    TrainingSessionWriteDiagnostics.USER_NOTICE_UPLOAD_FAILED -> systemMessage(
+      key,
+      "تعذّر حفظ النتائج — سجّل الدخول وحاول مجدداً",
+      "Could not save results — sign in and try again",
+    )
+    else -> key
+  }
+
+  private fun resolveSessionQualityMeta() = writeHooks.resolveSessionQualityMeta(
+    visibilityPauseCount = visibilityPauseCount,
+    cameraWarningCount = cameraWarningCount,
+    ingressFramesDropped = engine?.droppedFrameCount() ?: 0,
+  )
+
+  private suspend fun cachePostTrainingReport(upload: WorkoutUpload, summary: ExerciseWorkoutSummary) {
     val config = exerciseConfig ?: return
-    val report = writeHooks.buildPostTrainingReport(upload, summary, config)
+    writeHooks.peakFrameCaptures = frameCaptureCoordinator.captures()
+    val report = writeHooks.buildPostTrainingReport(
+      upload,
+      summary,
+      config,
+      sessionQuality = resolveSessionQualityMeta(),
+    )
     TrainingSessionReportCache.put(upload.id, report)
-    markReportAvailable(upload.id)
+    if (exploreBatch == null) {
+      markReportAvailable(upload.id)
+    }
   }
 
   private suspend fun enqueueUpload(upload: WorkoutUpload, summary: ExerciseWorkoutSummary) {
     val config = exerciseConfig
-    val postReport = config?.let { writeHooks.buildPostTrainingReport(upload, summary, it) }
+    writeHooks.peakFrameCaptures = frameCaptureCoordinator.captures()
+    val postReport = config?.let {
+      writeHooks.buildPostTrainingReport(
+        upload,
+        summary,
+        it,
+        sessionQuality = resolveSessionQualityMeta(),
+      )
+    }
+    val legacyJson = postReport?.let { writeCoordinator.encodePostTrainingReport(it) }
     val batch = exploreBatch
     if (batch != null) {
-      batch.record(upload)
+      batch.record(upload, legacyJson)
       return
     }
     writeHooks.enqueueExecutionUpload(
@@ -670,24 +905,30 @@ class TrainingSessionViewModel(
       workoutTemplateId = uploadContext?.workoutTemplateId,
       legacyReport = postReport,
       onEnqueued = { reportId ->
-        postReport?.let { TrainingSessionReportCache.put(reportId, it) }
+        TrainingSessionReportCache.rekeyPostTraining(upload.id, reportId)
+        postReport?.let { TrainingSessionReportCache.put(reportId, it.copy(id = reportId, workoutId = reportId)) }
         markReportAvailable(reportId)
       },
+      onOutcome = { recordWriteOutcome(it, TrainingSessionWriteDiagnostics.WriteKind.EXECUTION_UPLOAD) },
     )
   }
 
   private fun markReportAvailable(reportId: String) {
+    TrainingPipelineDiagnostics.logMilestone("report ready id=$reportId")
     _state.update { it.copy(reportDetailId = reportId) }
   }
 
-  private fun flushExploreBatchIfNeeded() {
+  private suspend fun flushExploreBatchIfNeeded() {
     val batch = exploreBatch ?: return
     val groupId = uploadContext?.workoutGroupId ?: return
-    batch.flush(
-      scope = viewModelScope,
+    batch.flushAwait(
       workoutGroupId = groupId,
       workoutTemplateId = uploadContext.workoutTemplateId,
-      onEachEnqueued = { markReportAvailable(activeSlug) },
+      onEachEnqueued = { uploadId, reportId ->
+        TrainingSessionReportCache.rekeyPostTraining(uploadId, reportId)
+        markReportAvailable(reportId)
+      },
+      onComplete = { _, _ -> applyWriteStatus() },
     )
   }
 
@@ -700,6 +941,7 @@ class TrainingSessionViewModel(
     engine?.stop()
     writeHooks.detach()
     writeHooks = createWriteHooks()
+    frameCaptureCoordinator = createFrameCaptureCoordinator()
     engine = buildEngine()
     wireEngineCallbacks()
     exerciseConfig?.poseVariants?.firstOrNull()?.feedbackMessages?.let(feedback::setRandomMessages)
@@ -756,6 +998,7 @@ class TrainingSessionViewModel(
 
   private fun syncFlowUi() {
     val flowState = flowCoordinator?.state?.value ?: return
+    val flowProgress = flowCoordinator.workoutProgressPercent()
     when (flowState) {
       is TrainingSessionFlowCoordinator.State.PreExercise -> {
         _state.update {
@@ -767,6 +1010,7 @@ class TrainingSessionViewModel(
             restSecondsRemaining = 0,
             nextExerciseName = "",
             restTip = flowState.item.tip,
+            workoutFlowProgressPercent = flowProgress,
           )
         }
       }
@@ -781,11 +1025,18 @@ class TrainingSessionViewModel(
             nextExerciseName = flowState.nextExercise.displayName,
             restTip = flowState.tip,
             restContext = flowState.restContext.name,
+            workoutFlowProgressPercent = flowProgress,
           )
         }
       }
       TrainingSessionFlowCoordinator.State.Training -> {
-        _state.update { it.copy(workoutFlowPhase = WorkoutFlowPhase.TRAINING, isResting = false) }
+        _state.update {
+          it.copy(
+            workoutFlowPhase = WorkoutFlowPhase.TRAINING,
+            isResting = false,
+            workoutFlowProgressPercent = flowProgress,
+          )
+        }
       }
       TrainingSessionFlowCoordinator.State.WorkoutComplete -> {
         _state.update {
@@ -793,6 +1044,7 @@ class TrainingSessionViewModel(
             workoutFlowPhase = WorkoutFlowPhase.WORKOUT_COMPLETE,
             isWorkoutComplete = true,
             isComplete = true,
+            workoutFlowProgressPercent = 100,
           )
         }
       }
@@ -805,6 +1057,7 @@ class TrainingSessionViewModel(
     when (event) {
       is PresenceSupervisorEvent.VisibilityWarning -> {
         visibilityWarningActive = true
+        cameraWarningCount++
         _state.update {
           it.copy(
             visibilityWarningMs = event.remainingBeforePauseMs,
@@ -834,6 +1087,7 @@ class TrainingSessionViewModel(
       }
       is PresenceSupervisorEvent.VisibilityPaused -> {
         visibilityWarningActive = true
+        visibilityPauseCount++
       }
       is PresenceSupervisorEvent.NoPoseWarning -> {
         if (visibilityWarningActive) return
@@ -912,6 +1166,7 @@ class TrainingSessionViewModel(
     return MovitTrainingEngine(
       exerciseConfig = config,
       targetRepsOverride = activeTargetReps,
+      deviceTiltPort = deviceTiltPort,
       timingPolicy = timingPolicy,
     )
   }
@@ -931,6 +1186,15 @@ class TrainingSessionViewModel(
     timeProvider = { lastFrameTimestampMs.takeIf { it > 0 } ?: sessionStartMs },
   )
 
+  private fun createFrameCaptureCoordinator(): TrainingFrameCaptureCoordinator =
+    TrainingFrameCaptureCoordinator(
+      sessionId = "$sessionId:$activeSlug",
+      scope = viewModelScope,
+      snapshotPort = frameSnapshotPort,
+    )
+
+  private fun repInProgress(): Int = (engine?.repCount ?: 0) + 1
+
   private fun resolveExerciseName(): String =
     activeExerciseName.ifBlank { exerciseConfig?.displayName(language).orEmpty() }
 
@@ -939,6 +1203,9 @@ class TrainingSessionViewModel(
 
   override fun onCleared() {
     restTimerJob?.cancel()
+    poseFrameChannel.close()
+    poseFrameWorker?.cancel()
+    TrainingPipelineDiagnostics.reset()
     writeHooks.detach()
     countdown.release()
     readinessGate.reset()
@@ -990,6 +1257,14 @@ data class TrainingSessionUiState(
   val setupProgressPercent: Int = 0,
   val setupPhase: String = "",
   val setupGuidance: String? = null,
+  val setupActionMessage: String? = null,
+  val setupCameraTip: String? = null,
+  val setupRegionStatus: SetupAxisStatusUi = SetupAxisStatusUi.PENDING,
+  val setupPostureStatus: SetupAxisStatusUi = SetupAxisStatusUi.PENDING,
+  val setupDirectionStatus: SetupAxisStatusUi = SetupAxisStatusUi.PENDING,
+  val setupJointRows: List<SetupJointGuidanceUi> = emptyList(),
+  val setupReferenceImageUrl: String? = null,
+  val setupInStartPose: Boolean = false,
   val countdownValue: Int? = null,
   val countdownFrozen: Boolean = false,
   val holdStatus: HoldStatus? = null,
@@ -998,14 +1273,31 @@ data class TrainingSessionUiState(
   val visibilityWarningMs: Long = 0L,
   val isComplete: Boolean = false,
   val isCameraReady: Boolean = false,
+  val isCameraSwitching: Boolean = false,
   val errorMessage: String? = null,
   val landmarks: List<SkeletonLandmarkPoint>? = null,
+  /** Upright analysis frame width for skeleton overlay projection (0 = stretch fallback). */
+  val skeletonAnalysisWidth: Int = 0,
+  /** Upright analysis frame height for skeleton overlay projection (0 = stretch fallback). */
+  val skeletonAnalysisHeight: Int = 0,
+  /** When true, mirror normalized X to match front-camera PreviewView. */
+  val skeletonMirrorPreview: Boolean = true,
   val jointVisuals: Map<String, SkeletonJointVisual> = emptyMap(),
   val glassMessage: GlassMessageState? = null,
   val showVignette: Boolean = false,
   val elapsedLabel: String = "0:00",
   val reportDetailId: String? = null,
+  val workoutFlowProgressPercent: Int = 0,
+  val writeStatus: TrainingSessionWriteStatus = TrainingSessionWriteStatus(),
+  val uploadNotice: String? = null,
 )
+
+/** Camera is only needed during live setup/training — not after completion or rest. */
+fun TrainingSessionUiState.requiresCamera(): Boolean =
+  !isComplete &&
+    runState != SessionRunState.COMPLETED &&
+    !isResting &&
+    workoutFlowPhase != WorkoutFlowPhase.REST
 
 private fun progressPercent(repCount: Int, targetReps: Int): Int =
   if (targetReps <= 0) 0 else ((repCount.toFloat() / targetReps) * 100).toInt().coerceIn(0, 100)

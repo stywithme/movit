@@ -27,6 +27,21 @@ data class ReportDetailStrings(
     suspend fun formDropped(delta: Int, lastSet: Int): String =
         localizedString(language, "report_detail_form_dropped", delta, lastSet)
 
+    suspend fun frameEvidenceDanger(repNumber: Int): String =
+        localizedString(language, "report_detail_frame_danger", repNumber)
+
+    suspend fun frameEvidenceBest(repNumber: Int): String =
+        localizedString(language, "report_detail_frame_best", repNumber)
+
+    suspend fun frameEvidenceFormIssue(repNumber: Int): String =
+        localizedString(language, "report_detail_frame_form_issue", repNumber)
+
+    suspend fun frameEvidencePeak(repNumber: Int): String =
+        localizedString(language, "report_detail_frame_peak", repNumber)
+
+    suspend fun frameEvidenceHoldSample(): String =
+        localizedString(language, "report_detail_frame_hold_sample")
+
     companion object {
         suspend fun load(language: String): ReportDetailStrings = ReportDetailStrings(
             language = language,

@@ -57,11 +57,13 @@ object JointLandmarkMapping {
         val indices = getLandmarksForAngle(jointCode)
         if (indices.isEmpty() || landmarks.isEmpty()) return 0f
         var minV = 1f
+        var found = 0
         for (rawIdx in indices) {
             val idx = if (isFrontCamera) PoseLandmarkMirroring.mirroredIndex(rawIdx) else rawIdx
-            if (idx < 0 || idx >= landmarks.size) return 0f
-            minV = kotlin.math.min(minV, landmarks[idx].visibility)
+            val landmark = landmarks.getOrNull(idx) ?: continue
+            found++
+            minV = kotlin.math.min(minV, landmark.visibility)
         }
-        return minV
+        return if (found == 0) 0f else minV
     }
 }

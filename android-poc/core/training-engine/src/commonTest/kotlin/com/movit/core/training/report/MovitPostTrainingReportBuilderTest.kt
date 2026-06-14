@@ -52,6 +52,42 @@ class MovitPostTrainingReportBuilderTest {
     }
 
     @Test
+    fun legacyJson_encodesPeakFrameCaptures() {
+        val config = ExerciseConfigParser.parseConfigJson(readExerciseFixture("squat.json"))
+        val upload = sampleUpload()
+        val summary = ExerciseWorkoutSummary(
+            exerciseName = config.name.en,
+            totalReps = 3,
+            countedReps = 3,
+            invalidatedReps = 0,
+            averageScore = 85f,
+            countedRatio = 1f,
+            durationMs = 84_000L,
+        )
+        val captures = listOf(
+            MovitPeakFrameCapture(
+                id = "cap-danger-1",
+                repNumber = 2,
+                phaseCode = 3,
+                capturedAtMs = 1_700_000_000_100L,
+                captureType = MovitPeakCaptureType.DANGER_FRAME,
+                localPath = "/data/frame.jpg",
+                thumbnailPath = "/data/frame_thumb.jpg",
+            ),
+        )
+        val report = MovitPostTrainingReportBuilder.build(
+            upload = upload,
+            summary = summary,
+            exerciseConfig = config,
+            peakFrameCaptures = captures,
+        )
+        val encoded = PostTrainingReportLegacyJson.encode(report).toString()
+        assertTrue(encoded.contains("cap-danger-1"))
+        assertTrue(encoded.contains("DANGER_FRAME"))
+        assertTrue(encoded.contains("/data/frame.jpg"))
+    }
+
+    @Test
     fun legacyJson_matchesGoldenParityFields() {
         val config = ExerciseConfigParser.parseConfigJson(readExerciseFixture("squat.json"))
         val upload = sampleUpload()

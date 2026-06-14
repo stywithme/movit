@@ -4,10 +4,9 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import com.movit.MovitMainActivity
-import com.trainingvalidator.poc.BuildConfig
 
 /**
- * WS-10 — routes legacy Android training entry points into the KMP shell.
+ * Routes legacy Android training entry points into the KMP shell.
  */
 object MovitTrainingEntryNavigator {
     const val EXTRA_SHELL_ROUTE = "movit.shell.route"
@@ -90,14 +89,5 @@ object MovitTrainingEntryNavigator {
         }
     }
 
-    private fun resolveShellActivityClass(): Class<out Activity> {
-        if (BuildConfig.MOVIT_SHELL_LAUNCHER_ENABLED) {
-            return MovitMainActivity::class.java
-        }
-        if (BuildConfig.DEBUG) {
-            @Suppress("UNCHECKED_CAST")
-            return Class.forName("com.movit.debug.MovitShellPilotActivity") as Class<out Activity>
-        }
-        return MovitMainActivity::class.java
-    }
+    private fun resolveShellActivityClass(): Class<out Activity> = MovitMainActivity::class.java
 }

@@ -53,6 +53,7 @@ import com.movit.designsystem.components.MovitInsightCard
 import com.movit.designsystem.components.MovitInsightVariant
 import com.movit.designsystem.components.MovitLoadingState
 import com.movit.designsystem.components.MovitProgressBar
+import com.movit.designsystem.components.MovitRemoteImage
 import com.movit.designsystem.components.MovitSectionHeader
 import com.movit.designsystem.components.MovitStatTileData
 import com.movit.designsystem.components.MovitStatTileRow
@@ -260,6 +261,17 @@ private fun ReportOverviewPage(report: ReportDetailUi) {
             icon = Icons.Default.Check,
             variant = MovitInsightVariant.Success,
         )
+        report.heroFramePath?.let { heroPath ->
+            MovitRemoteImage(
+                imageUrl = heroPath,
+                contentDescription = report.exerciseName,
+                placeholderLabel = report.exerciseName.take(1),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .clip(RoundedCornerShape(MovitRadius.xl)),
+            )
+        }
     }
 }
 
@@ -267,6 +279,9 @@ private fun ReportOverviewPage(report: ReportDetailUi) {
 private fun ReportFormPage(report: ReportDetailUi) {
     val movit = MaterialTheme.movitColors
     Column(verticalArrangement = Arrangement.spacedBy(MovitSpacing.lg)) {
+        if (report.frameEvidence.isNotEmpty()) {
+            ReportFrameEvidenceSection(report.frameEvidence)
+        }
         MovitSectionHeader(title = movitText("report_detail_joint_analysis"))
         if (report.joints.isEmpty()) {
             val jointsMessageKey = when (report.jointsEmptyReason) {
@@ -301,6 +316,40 @@ private fun ReportFormPage(report: ReportDetailUi) {
         ) {
             report.repCompare.forEach { compare ->
                 RepCompareCard(compare = compare)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReportFrameEvidenceSection(evidence: List<ReportFrameEvidenceUi>) {
+    Column(verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm)) {
+        Text(
+            text = "Key moments",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.W700,
+        )
+        evidence.forEach { frame ->
+            MovitCard(variant = MovitCardVariant.Filled) {
+                Column(
+                    modifier = Modifier.padding(MovitSpacing.md),
+                    verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
+                ) {
+                    Text(
+                        text = frame.label,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.W600,
+                    )
+                    MovitRemoteImage(
+                        imageUrl = frame.thumbnailPath ?: frame.localPath,
+                        contentDescription = frame.label,
+                        placeholderLabel = frame.captureType.take(1),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(160.dp)
+                            .clip(RoundedCornerShape(MovitRadius.lg)),
+                    )
+                }
             }
         }
     }

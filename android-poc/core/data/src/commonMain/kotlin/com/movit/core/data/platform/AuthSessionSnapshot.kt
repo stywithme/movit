@@ -1,6 +1,7 @@
 package com.movit.core.data.platform
 
 import com.movit.core.network.dto.AuthDataDto
+import com.movit.core.network.dto.AuthTokensDto
 import com.movit.core.network.dto.UserPublicDto
 
 data class AuthSessionSnapshot(
@@ -35,6 +36,30 @@ fun AuthDataDto.toSnapshot(): AuthSessionSnapshot = AuthSessionSnapshot(
     subscriptionExpiry = user.subscriptionExpiry,
     totalWorkouts = user.totalWorkoutExecutions,
     totalMinutes = user.totalMinutes,
+)
+
+fun AuthSessionSnapshot.toAuthDataDto(): AuthDataDto = AuthDataDto(
+    user = UserPublicDto(
+        id = userId,
+        email = email,
+        name = name,
+        avatarUrl = avatarUrl,
+        provider = "email",
+        preferredLanguage = preferredLanguage,
+        voiceFeedback = voiceFeedback,
+        notifications = notifications,
+        isPro = isPro,
+        subscriptionExpiry = subscriptionExpiry,
+        totalWorkoutExecutions = totalWorkouts,
+        totalMinutes = totalMinutes,
+        emailVerified = true,
+        createdAt = "",
+    ),
+    tokens = AuthTokensDto(
+        accessToken = accessToken,
+        refreshToken = refreshToken,
+        expiresIn = expiresInSeconds,
+    ),
 )
 
 fun UserPublicDto.toSnapshot(

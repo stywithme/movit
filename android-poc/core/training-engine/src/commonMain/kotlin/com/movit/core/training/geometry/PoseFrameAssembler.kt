@@ -16,19 +16,24 @@ object PoseFrameAssembler {
         timestampMs: Long,
         isFrontCamera: Boolean,
         worldLandmarks: List<Landmark>? = null,
+        analysisImageWidth: Int = 0,
+        analysisImageHeight: Int = 0,
         visibilityThreshold: Float = 0.5f,
         applyElbowCorrection: Boolean = true,
     ): PoseFrame {
-        var angles = calculateAngles(landmarks, visibilityThreshold, worldLandmarks)
+        val resolvedLandmarks = VirtualLandmarks.ensureAppended(landmarks)
+        var angles = calculateAngles(resolvedLandmarks, visibilityThreshold, worldLandmarks)
         if (applyElbowCorrection && worldLandmarks != null && worldLandmarks.size >= 33) {
-            angles = elbowEstimator.correct(angles, worldLandmarks, landmarks, timestampMs)
+            angles = elbowEstimator.correct(angles, worldLandmarks, resolvedLandmarks, timestampMs)
         }
         return PoseFrame(
             angles = angles,
-            landmarks = landmarks,
+            landmarks = resolvedLandmarks,
             worldLandmarks = worldLandmarks,
             isFrontCamera = isFrontCamera,
             timestampMs = timestampMs,
+            analysisImageWidth = analysisImageWidth,
+            analysisImageHeight = analysisImageHeight,
         )
     }
 
@@ -43,14 +48,14 @@ object PoseFrameAssembler {
         return JointAngles(
         leftElbow = angleAt3D(world, landmarks, PoseLandmarkIndices.LEFT_SHOULDER, PoseLandmarkIndices.LEFT_ELBOW, PoseLandmarkIndices.LEFT_WRIST, visibilityThreshold),
         rightElbow = angleAt3D(world, landmarks, PoseLandmarkIndices.RIGHT_SHOULDER, PoseLandmarkIndices.RIGHT_ELBOW, PoseLandmarkIndices.RIGHT_WRIST, visibilityThreshold),
-        leftShoulder = angleAt(landmarks, PoseLandmarkIndices.LEFT_ELBOW, PoseLandmarkIndices.LEFT_SHOULDER, PoseLandmarkIndices.LEFT_HIP, visibilityThreshold),
-        rightShoulder = angleAt(landmarks, PoseLandmarkIndices.RIGHT_ELBOW, PoseLandmarkIndices.RIGHT_SHOULDER, PoseLandmarkIndices.RIGHT_HIP, visibilityThreshold),
-        leftHip = angleAt(landmarks, PoseLandmarkIndices.LEFT_SHOULDER, PoseLandmarkIndices.LEFT_HIP, PoseLandmarkIndices.LEFT_KNEE, visibilityThreshold),
-        rightHip = angleAt(landmarks, PoseLandmarkIndices.RIGHT_SHOULDER, PoseLandmarkIndices.RIGHT_HIP, PoseLandmarkIndices.RIGHT_KNEE, visibilityThreshold),
-        leftKnee = angleAt(landmarks, PoseLandmarkIndices.LEFT_HIP, PoseLandmarkIndices.LEFT_KNEE, PoseLandmarkIndices.LEFT_ANKLE, visibilityThreshold),
-        rightKnee = angleAt(landmarks, PoseLandmarkIndices.RIGHT_HIP, PoseLandmarkIndices.RIGHT_KNEE, PoseLandmarkIndices.RIGHT_ANKLE, visibilityThreshold),
-        leftAnkle = angleAt(landmarks, PoseLandmarkIndices.LEFT_KNEE, PoseLandmarkIndices.LEFT_ANKLE, PoseLandmarkIndices.LEFT_FOOT_INDEX, visibilityThreshold),
-        rightAnkle = angleAt(landmarks, PoseLandmarkIndices.RIGHT_KNEE, PoseLandmarkIndices.RIGHT_ANKLE, PoseLandmarkIndices.RIGHT_FOOT_INDEX, visibilityThreshold),
+        leftShoulder = angleAt3D(world, landmarks, PoseLandmarkIndices.LEFT_ELBOW, PoseLandmarkIndices.LEFT_SHOULDER, PoseLandmarkIndices.LEFT_HIP, visibilityThreshold),
+        rightShoulder = angleAt3D(world, landmarks, PoseLandmarkIndices.RIGHT_ELBOW, PoseLandmarkIndices.RIGHT_SHOULDER, PoseLandmarkIndices.RIGHT_HIP, visibilityThreshold),
+        leftHip = angleAt3D(world, landmarks, PoseLandmarkIndices.LEFT_SHOULDER, PoseLandmarkIndices.LEFT_HIP, PoseLandmarkIndices.LEFT_KNEE, visibilityThreshold),
+        rightHip = angleAt3D(world, landmarks, PoseLandmarkIndices.RIGHT_SHOULDER, PoseLandmarkIndices.RIGHT_HIP, PoseLandmarkIndices.RIGHT_KNEE, visibilityThreshold),
+        leftKnee = angleAt3D(world, landmarks, PoseLandmarkIndices.LEFT_HIP, PoseLandmarkIndices.LEFT_KNEE, PoseLandmarkIndices.LEFT_ANKLE, visibilityThreshold),
+        rightKnee = angleAt3D(world, landmarks, PoseLandmarkIndices.RIGHT_HIP, PoseLandmarkIndices.RIGHT_KNEE, PoseLandmarkIndices.RIGHT_ANKLE, visibilityThreshold),
+        leftAnkle = angleAt3D(world, landmarks, PoseLandmarkIndices.LEFT_KNEE, PoseLandmarkIndices.LEFT_ANKLE, PoseLandmarkIndices.LEFT_FOOT_INDEX, visibilityThreshold),
+        rightAnkle = angleAt3D(world, landmarks, PoseLandmarkIndices.RIGHT_KNEE, PoseLandmarkIndices.RIGHT_ANKLE, PoseLandmarkIndices.RIGHT_FOOT_INDEX, visibilityThreshold),
         )
     }
 

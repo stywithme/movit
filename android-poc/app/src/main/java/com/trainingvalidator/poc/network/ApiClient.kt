@@ -3,8 +3,6 @@ package com.trainingvalidator.poc.network
 import android.util.Log
 import com.google.gson.GsonBuilder
 import com.google.gson.Strictness
-import com.trainingvalidator.poc.training.models.StateMessageValue
-import com.trainingvalidator.poc.training.models.StateMessageValueTypeAdapter
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -15,7 +13,7 @@ import java.util.concurrent.TimeUnit
  * API Client Singleton
  * 
  * Provides configured Retrofit instance for API calls.
- * Uses OkHttp with logging and custom Gson for StateMessageValue parsing.
+ * Uses OkHttp with logging and lenient Gson.
  */
 object ApiClient {
     
@@ -27,7 +25,6 @@ object ApiClient {
     private val gson by lazy {
         GsonBuilder()
             .setStrictness(Strictness.LENIENT)
-            .registerTypeAdapter(StateMessageValue::class.java, StateMessageValueTypeAdapter())
             .create()
     }
     
@@ -165,47 +162,10 @@ object ApiClient {
             .build()
     }
     
-    /**
-     * Mobile Sync API instance
-     */
-    val mobileSyncApi: MobileSyncApi by lazy {
-        retrofit.create(MobileSyncApi::class.java)
-    }
-
-    /**
-     * Auth API instance
-     */
+    /** Auth API instance (billing host token refresh + profile sync). */
     val authApi: AuthApi by lazy {
         retrofit.create(AuthApi::class.java)
     }
 
-    /**
-     * User booking API (sessions, rules)
-     */
-    val bookingApi: BookingApi by lazy {
-        retrofit.create(BookingApi::class.java)
-    }
-
-    val subscriptionApi: SubscriptionApi by lazy {
-        retrofit.create(SubscriptionApi::class.java)
-    }
-    
-    /**
-     * Get OkHttpClient for direct downloads
-     */
     fun getOkHttpClient(): OkHttpClient = httpClient
-    
-    /**
-     * Rebuild client with new base URL
-     * Call this when switching between emulator and physical device testing
-     */
-    fun rebuildWithBaseUrl(baseUrl: String): MobileSyncApi {
-        val newRetrofit = Retrofit.Builder()
-            .baseUrl(baseUrl)
-            .client(httpClient)
-            .addConverterFactory(GsonConverterFactory.create(gson))
-            .build()
-        
-        return newRetrofit.create(MobileSyncApi::class.java)
-    }
 }

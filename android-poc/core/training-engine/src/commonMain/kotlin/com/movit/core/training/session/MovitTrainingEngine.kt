@@ -64,6 +64,7 @@ import com.movit.core.training.engine.policy.StabilityPolicy
 import com.movit.core.training.engine.policy.TimingPolicy
 
 import com.movit.core.training.geometry.JointLandmarkMapping
+import com.movit.core.training.geometry.VirtualLandmarks
 
 import com.movit.core.training.model.PoseFrame
 
@@ -497,6 +498,7 @@ class MovitTrainingEngine(
     fun resume() {
         isPaused = false
         session.resume()
+        session.pauseController.onUserOrSupervisorResume(visibilityMonitor)
     }
 
     fun stop(): ExerciseWorkoutSummary {
@@ -530,6 +532,8 @@ class MovitTrainingEngine(
     }
 
     fun droppedFrameCount(): Int = frameIngress.droppedFrameCount
+
+    internal fun testPauseController(): PauseController = session.pauseController
 
     private fun processPoseFrame(frame: PoseFrame) {
         if (!session.shouldProcessFrame()) return
@@ -567,7 +571,7 @@ class MovitTrainingEngine(
         )
         onVisibilityCheck?.invoke(visibilityResult)
         presenceBridge.mapVisibilityCheck(visibilityResult)?.let { emitPresence(it) }
-        session.pauseController.processVisibilityResult(
+        val skipCounting = session.pauseController.processVisibilityResult(
             result = visibilityResult,
             emit = { event ->
                 onVisibilityEvent?.invoke(event)
@@ -580,11 +584,7 @@ class MovitTrainingEngine(
                 emitPresence(presenceBridge.mapVisibilityEvent(resumed))
             },
         )
-        if (session.pauseController.isVisibilityPaused ||
-            session.pauseController.visibilityResumeCountdown != null
-        ) {
-            return
-        }
+        if (skipCounting) return
 
         val pipelineResult = framePipeline.runMainPath(
 
@@ -750,13 +750,15 @@ class MovitTrainingEngine(
 
         if (landmarks == null) return emptyMap()
 
+        val resolved = VirtualLandmarks.ensureAppended(landmarks)
+
         return trackedJoints.associate { joint ->
 
             joint.joint to JointLandmarkMapping.computeJointVisibility(
 
                 joint.joint,
 
-                landmarks,
+                resolved,
 
                 isFrontCamera,
 

@@ -442,6 +442,11 @@
     <string name="report_detail_preview_tip2_title">Keep knees tracking toes</string>
     <string name="report_detail_preview_tip2_message">Slight inward drift on set 4 — focus on pushing knees out.</string>
     <string name="report_detail_preview_fatigue_message">Form dropped 6% from set 1 to set 4 — within normal range.</string>
+    <string name="report_detail_frame_danger">Danger rep %1$d</string>
+    <string name="report_detail_frame_best">Best rep %1$d</string>
+    <string name="report_detail_frame_form_issue">Form issue rep %1$d</string>
+    <string name="report_detail_frame_peak">Peak rep %1$d</string>
+    <string name="report_detail_frame_hold_sample">Hold sample</string>
 
     <!-- Workout session -->
     <string name="session_back">Back</string>
@@ -681,6 +686,7 @@
     <string name="training_session_setup_title">Get into position</string>
     <string name="training_session_setup_phase">Step: %1$s</string>
     <string name="training_session_setup_progress">%1$d%% ready</string>
+    <string name="training_session_setup_no_pose">Stand in front of the camera with your full body visible</string>
     <string name="training_session_countdown_frozen">Hold your pose</string>
     <string name="training_session_rest_title">Rest</string>
     <string name="training_session_rest_timer">%1$d s</string>
@@ -713,6 +719,7 @@
     <string name="training_session_open_settings">Open Settings</string>
     <string name="training_session_camera_unavailable">Pose capture is not available. Restart the app.</string>
     <string name="training_session_flip_camera_a11y">Switch camera</string>
+    <string name="training_session_camera_switch_failed">Could not switch camera. Try again.</string>
     <string name="training_session_debug_fps">FPS %1$d</string>
 
     <!-- Program flow (15) -->

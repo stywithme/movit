@@ -49,8 +49,10 @@ class SessionSupervisor(
     
     private val _actions = MutableSharedFlow<SupervisorAction>(
         replay = 0,
-        extraBufferCapacity = 16
+        extraBufferCapacity = 64,
     )
+    var droppedActionCount: Int = 0
+        private set
     val actions: SharedFlow<SupervisorAction> = _actions.asSharedFlow()
     
     // ==================== Configuration ====================
@@ -77,6 +79,9 @@ class SessionSupervisor(
 
     /** Whether the countdown is currently frozen (pose lost, waiting for recovery). */
     private var countdownFrozen: Boolean = false
+
+    /** Whether setup no-pose hint was already shown (cleared on PoseFrame). */
+    private var setupNoPoseHintActive: Boolean = false
     
     // ==================== Public API ====================
     
@@ -139,6 +144,15 @@ class SessionSupervisor(
         isVideoMode = false
         countdownInvalidStartMs = 0L
         countdownFrozen = false
+        setupNoPoseHintActive = false
+    }
+
+    /**
+     * Some high-frequency training frames are processed directly by the VM to avoid
+     * SharedFlow back-pressure. Keep the supervisor's no-pose timer in sync.
+     */
+    fun onTrainingPoseFrameProcessed() {
+        noPoseStartTime = 0L
     }
     
     // ==================== Global Signal Handler ====================
@@ -206,11 +220,13 @@ class SessionSupervisor(
     private fun handleSetupPose(signal: SupervisorSignal) {
         when (signal) {
             is SupervisorSignal.PoseFrame -> {
+                setupNoPoseHintActive = false
                 // Forward to PoseSetupGuide (carries landmarks for camera check)
                 emit(SupervisorAction.ValidatePose(signal.angles, signal.landmarks, signal.isFrontCamera))
             }
 
             is SupervisorSignal.PoseConfirmed -> {
+                setupNoPoseHintActive = false
                 // Rolling window confirmed - start countdown
                 countdownInvalidStartMs = 0L
                 countdownFrozen = false
@@ -226,7 +242,10 @@ class SessionSupervisor(
             }
 
             is SupervisorSignal.NoPoseFrame -> {
-                // UI can show a "stand in front of camera" hint
+                if (!setupNoPoseHintActive) {
+                    setupNoPoseHintActive = true
+                    emit(SupervisorAction.ShowSetupNoPoseHint)
+                }
             }
 
             else -> {}
@@ -250,22 +269,23 @@ class SessionSupervisor(
             }
 
             is SupervisorSignal.PoseFrame -> {
-                // Valid frame ? reset tolerance
+                emit(SupervisorAction.ValidatePose(signal.angles, signal.landmarks, signal.isFrontCamera))
+            }
+
+            is SupervisorSignal.CountdownPoseValid -> {
                 countdownInvalidStartMs = 0L
                 if (countdownFrozen) {
                     countdownFrozen = false
                     emit(SupervisorAction.UnfreezeCountdown)
                 }
-                // Lightweight validation ? ViewModel will send PoseInvalid if angles are off
-                emit(SupervisorAction.ValidatePose(signal.angles, signal.landmarks, signal.isFrontCamera))
             }
 
             is SupervisorSignal.PoseInvalid -> {
-                handleCountdownPoseLost(cfg)
+                handleCountdownPoseLost(cfg, signalTimestampMs = timeProvider())
             }
 
             is SupervisorSignal.NoPoseFrame -> {
-                handleCountdownPoseLost(cfg)
+                handleCountdownPoseLost(cfg, signalTimestampMs = signal.timestampMs)
             }
 
             else -> {}
@@ -279,9 +299,10 @@ class SessionSupervisor(
      * - = cancelMs     ? cancel countdown, back to SETUP_POSE
      */
     private fun handleCountdownPoseLost(
-        cfg: com.movit.core.training.session.SetupValidationConfig
+        cfg: com.movit.core.training.session.SetupValidationConfig,
+        signalTimestampMs: Long,
     ) {
-        val now = timeProvider()
+        val now = effectivePresenceNow(signalTimestampMs)
         if (countdownInvalidStartMs == 0L) {
             countdownInvalidStartMs = now
         }
@@ -445,16 +466,19 @@ class SessionSupervisor(
             }
 
             is SupervisorSignal.PoseFrame -> {
+                emit(SupervisorAction.ValidatePose(signal.angles, signal.landmarks, signal.isFrontCamera))
+            }
+
+            is SupervisorSignal.CountdownPoseValid -> {
                 countdownInvalidStartMs = 0L
                 if (countdownFrozen) {
                     countdownFrozen = false
                     emit(SupervisorAction.UnfreezeCountdown)
                 }
-                emit(SupervisorAction.ValidatePose(signal.angles, signal.landmarks, signal.isFrontCamera))
             }
 
             is SupervisorSignal.PoseInvalid -> {
-                handleCountdownPoseLost(cfg)
+                handleCountdownPoseLost(cfg, signalTimestampMs = timeProvider())
                 if (_state.value == SessionRunState.SETUP_POSE) {
                     transitionTo(SessionRunState.AUTO_PAUSED)
                     emit(SupervisorAction.ShowAutoPaused(pauseReason ?: PauseReason.VISIBILITY))
@@ -462,7 +486,7 @@ class SessionSupervisor(
             }
 
             is SupervisorSignal.NoPoseFrame -> {
-                handleCountdownPoseLost(cfg)
+                handleCountdownPoseLost(cfg, signalTimestampMs = signal.timestampMs)
                 if (_state.value == SessionRunState.SETUP_POSE) {
                     transitionTo(SessionRunState.AUTO_PAUSED)
                     emit(SupervisorAction.ShowAutoPaused(PauseReason.NO_POSE))
@@ -484,14 +508,14 @@ class SessionSupervisor(
     /**
      * Handle NoPose frames during TRAINING with 4s timeout
      */
-    private fun handleNoPoseDuringTraining(now: Long) {
-        
-        // Start timer if not already started
+    private fun handleNoPoseDuringTraining(signalTimestampMs: Long) {
+        val now = effectivePresenceNow(signalTimestampMs)
+
         if (noPoseStartTime == 0L) {
             noPoseStartTime = now
             return
         }
-        
+
         val duration = now - noPoseStartTime
         
         when {
@@ -514,14 +538,28 @@ class SessionSupervisor(
     
     // ==================== Helpers ====================
     
+    internal fun testEffectivePresenceNow(signalMs: Long): Long = effectivePresenceNow(signalMs)
+
+    internal var testNoPoseStartTimeMs: Long
+        get() = noPoseStartTime
+        set(value) { noPoseStartTime = value }
+
+    private fun effectivePresenceNow(signalMs: Long): Long {
+        val wall = timeProvider()
+        if (signalMs <= 0L) return wall
+        if (noPoseStartTime > 0L && signalMs <= noPoseStartTime) return wall
+        if (countdownInvalidStartMs > 0L && signalMs <= countdownInvalidStartMs) return wall
+        return signalMs
+    }
+
     private fun transitionTo(newState: SessionRunState) {
         val oldState = _state.value
         _state.value = newState
     }
     
     private fun emit(action: SupervisorAction) {
-        val emitted = _actions.tryEmit(action)
-        if (!emitted) {
+        if (!_actions.tryEmit(action)) {
+            droppedActionCount++
         }
     }
 }

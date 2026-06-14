@@ -10,6 +10,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.movit.core.data.MovitData
@@ -39,7 +42,7 @@ fun TrainingSessionRoute(
   exerciseName: String,
   targetReps: Int,
   onBack: () -> Unit,
-  onFinish: () -> Unit,
+  onFinish: (isWorkoutFlowComplete: Boolean) -> Unit,
   modifier: Modifier = Modifier,
   language: String = "en",
   flowItems: List<TrainingFlowItem>? = null,
@@ -65,11 +68,12 @@ fun TrainingSessionRoute(
 fun TrainingSessionRoute(
   args: TrainingSessionRouteArgs,
   onBack: () -> Unit,
-  onFinish: () -> Unit,
+  onFinish: (isWorkoutFlowComplete: Boolean) -> Unit,
   onViewReport: (String) -> Unit = {},
   modifier: Modifier = Modifier,
 ) {
-  val feedbackPorts = rememberTrainingFeedbackPorts()
+  val feedbackPorts = rememberTrainingFeedbackPorts(language = args.language)
+  val deviceTiltPort = remember { resolveTrainingDeviceTiltPort() }
   val prefs = MovitData.trainingPreferences.snapshot()
   val viewModel: TrainingSessionViewModel = viewModel {
     TrainingSessionViewModel(
@@ -82,14 +86,17 @@ fun TrainingSessionRoute(
       uploadContext = args.uploadContext,
       plannedWorkout = args.plannedWorkout,
       startExerciseIndex = args.startExerciseIndex,
+      deviceTiltPort = deviceTiltPort,
       feedbackRouter = FeedbackRouter(
         coachIntensity = CoachIntensity.from(prefs.coachIntensity),
         speech = feedbackPorts.speech,
         haptics = feedbackPorts.haptics,
+        audioPlayer = feedbackPorts.audioPlayer,
       ),
     )
   }
   val state by viewModel.state.collectAsStateWithLifecycle()
+  TrainingKeepScreenOnEffect()
   var useFrontCamera by remember { mutableStateOf(true) }
   var debugFps by remember { mutableIntStateOf(0) }
   var previousFlowPhase by remember { mutableStateOf<WorkoutFlowPhase?>(null) }
@@ -103,8 +110,25 @@ fun TrainingSessionRoute(
       viewModel.startWorkoutExercise()
     }
   }
+  LaunchedEffect(state.isComplete, state.reportDetailId) {
+    val reportId = state.reportDetailId ?: return@LaunchedEffect
+    if (!state.isComplete) return@LaunchedEffect
+    onViewReport(reportId)
+  }
   DisposableEffect(viewModel) {
     onDispose { viewModel.stopSession() }
+  }
+  val lifecycleOwner = LocalLifecycleOwner.current
+  DisposableEffect(lifecycleOwner, viewModel) {
+    val observer = LifecycleEventObserver { _, event ->
+      when (event) {
+        Lifecycle.Event.ON_STOP -> viewModel.onHostBackgrounded()
+        Lifecycle.Event.ON_START -> viewModel.onHostForegrounded()
+        else -> Unit
+      }
+    }
+    lifecycleOwner.lifecycle.addObserver(observer)
+    onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
   }
   TrainingSessionScreen(
     state = state,
@@ -117,27 +141,32 @@ fun TrainingSessionRoute(
     onStop = viewModel::stop,
     onFinish = {
       viewModel.stopSession()
-      onFinish()
+      onFinish(viewModel.state.value.isWorkoutComplete)
     },
     onViewReport = {
       viewModel.state.value.reportDetailId?.let(onViewReport)
     },
     onSkipRest = viewModel::skipRest,
-    onFlipCamera = { useFrontCamera = !useFrontCamera },
+    onFlipCamera = {
+      viewModel.onCameraSwitchStarted()
+      useFrontCamera = !useFrontCamera
+    },
     debugFps = debugFps.takeIf { isTrainingDebugBuild() },
     cameraSlot = {
-      TrainingSessionCameraHost(
-        onFrame = viewModel::onPoseFrame,
-        onCameraReady = viewModel::onCameraReady,
-        onError = viewModel::onCameraError,
-        useFrontCamera = useFrontCamera,
-        onDebugFps = if (isTrainingDebugBuild()) {
-          { fps -> debugFps = fps }
-        } else {
-          null
-        },
-        modifier = Modifier.fillMaxSize(),
-      )
+      if (state.requiresCamera()) {
+        TrainingSessionCameraHost(
+          onFrame = viewModel::onPoseFrame,
+          onCameraReady = viewModel::onCameraReady,
+          onError = viewModel::onCameraError,
+          useFrontCamera = useFrontCamera,
+          onDebugFps = if (isTrainingDebugBuild()) {
+            { fps -> debugFps = fps }
+          } else {
+            null
+          },
+          modifier = Modifier.fillMaxSize(),
+        )
+      }
     },
     modifier = modifier,
   )
@@ -150,15 +179,19 @@ fun ExerciseLiveRoute(
   exerciseName: String,
   targetReps: Int,
   onBack: () -> Unit,
-  onFinish: () -> Unit,
+  onFinish: (isWorkoutFlowComplete: Boolean) -> Unit,
+  onViewReport: (String) -> Unit = {},
   modifier: Modifier = Modifier,
 ) {
   TrainingSessionRoute(
-    exerciseSlug = exerciseSlug,
-    exerciseName = exerciseName,
-    targetReps = targetReps,
+    args = TrainingSessionRouteArgs(
+      exerciseSlug = exerciseSlug,
+      exerciseName = exerciseName,
+      targetReps = targetReps,
+    ),
     onBack = onBack,
     onFinish = onFinish,
+    onViewReport = onViewReport,
     modifier = modifier,
   )
 }

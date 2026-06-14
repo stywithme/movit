@@ -121,17 +121,13 @@ private val POSE_CONNECTIONS = listOf(
 
 
 @Composable
-
 fun MovitSkeletonOverlay(
-
     landmarks: List<SkeletonLandmarkPoint>?,
-
     modifier: Modifier = Modifier,
-
     jointStates: Map<String, SkeletonJointVisual> = emptyMap(),
-
     romIndicators: List<SkeletonRomIndicator> = emptyList(),
-
+    /** Maps normalized analysis coords to canvas pixels; null = stretch to full canvas. */
+    landmarkProjector: ((normalizedX: Float, normalizedY: Float, canvasWidth: Float, canvasHeight: Float) -> Offset)? = null,
 ) {
 
     val trackPath = remember { Path() }
@@ -147,14 +143,21 @@ fun MovitSkeletonOverlay(
 
 
         fun point(index: Int): Offset? {
-
             val lm = points.getOrNull(index) ?: return null
-
             if (!lm.visible) return null
-
-            return Offset(lm.x * size.width, lm.y * size.height)
-
+            return if (landmarkProjector != null) {
+                landmarkProjector(lm.x, lm.y, size.width, size.height)
+            } else {
+                Offset(lm.x * size.width, lm.y * size.height)
+            }
         }
+
+        fun projectNormalized(x: Float, y: Float): Offset =
+            if (landmarkProjector != null) {
+                landmarkProjector(x, y, size.width, size.height)
+            } else {
+                Offset(x * size.width, y * size.height)
+            }
 
 
 
@@ -196,7 +199,7 @@ fun MovitSkeletonOverlay(
 
         for (indicator in romIndicators) {
 
-            val center = Offset(indicator.centerX * size.width, indicator.centerY * size.height)
+            val center = projectNormalized(indicator.centerX, indicator.centerY)
 
             val markerColor = Color(indicator.markerColorArgb)
 
@@ -302,7 +305,7 @@ fun MovitSkeletonOverlay(
 
                 SkeletonRomIndicatorStyle.LINE -> {
 
-                    val end = Offset(indicator.limbEndX * size.width, indicator.limbEndY * size.height)
+                    val end = projectNormalized(indicator.limbEndX, indicator.limbEndY)
 
                     trackPath.reset()
 

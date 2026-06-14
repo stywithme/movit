@@ -11,6 +11,7 @@ data class WorkoutFlowExerciseUi(
     val reps: Int?,
     val durationSeconds: Int?,
     val restSeconds: Int = 60,
+    val phaseRole: String? = "MAIN",
 )
 
 data class WorkoutFlowConfigUi(
@@ -160,6 +161,7 @@ internal object WorkoutFlowMapper {
                     reps = block.reps,
                     durationSeconds = block.durationSeconds,
                     restSeconds = block.restSeconds,
+                    phaseRole = block.phaseRole,
                 )
             }
         return WorkoutFlowConfigUi(

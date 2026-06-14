@@ -14,55 +14,7 @@ object MobileApiContractRegistry {
 
     /** Normalized as METHOD + space + path (placeholders: {id}, {slug}, {workoutId}, {sessionId}, {overrideId}, {exerciseId}). */
     val legacyEndpoints: Set<String> = setOf(
-        // MobileSyncApi
-        "GET api/mobile/sync",
-        "GET api/mobile/exercises/{slug}/audio-manifest",
-        "GET api/mobile/workout-templates/{slug}/audio-manifest",
-        "GET api/mobile/explore",
-        "GET api/mobile/home",
-        "POST api/assessment",
-        "GET api/assessment/latest",
-        "GET api/assessment/progress",
-        "GET api/mobile/assessment-templates/resolve",
-        "GET api/mobile/level-profile",
-        "GET api/mobile/level-profile/history",
-        "GET api/mobile/level-profile/levels",
-        "GET api/mobile/workout-executions/stats",
-        "POST api/mobile/prescription/recommend",
-        "GET api/mobile/plan",
-        "GET api/mobile/plan/today",
-        "POST api/mobile/plan/enroll",
-        "POST api/mobile/plan/complete",
-        "GET api/mobile/plan/enrollment-check",
-        "POST api/mobile/plan/pause",
-        "POST api/mobile/plan/resume",
-        "GET api/mobile/progression/history",
-        "GET api/mobile/progression/recent",
-        "GET api/mobile/progression/session/{sessionId}",
-        "POST api/mobile/progression/mark-seen",
-        "GET api/mobile/workout-templates/{id}/training-config",
-        "POST api/mobile/workout-executions/explore",
-        "GET api/mobile/reassessment/upcoming",
-        "POST api/mobile/reassessment/request",
-        "GET api/mobile/reports/dashboard",
-        "GET api/mobile/reports/metrics",
-        "POST api/mobile/planned-workouts/{workoutId}/start",
-        "POST api/mobile/planned-workouts/{workoutId}/complete",
-        "POST api/mobile/planned-workouts/{workoutId}/report",
-        "PUT api/mobile/user-programs/{id}",
-        "GET api/mobile/user-programs/{id}/effective-plan",
-        "GET api/mobile/user-programs/{id}/overrides",
-        "POST api/mobile/user-programs/{id}/overrides",
-        "DELETE api/mobile/user-programs/{id}/overrides/{overrideId}",
-        "GET api/mobile/user-programs/{id}/progress-metrics",
-        "GET api/mobile/programs/{id}/preview",
-        "GET api/mobile/exercises/substitutions",
-        "GET api/exercises/{id}/substitutions",
-        "GET api/mobile/training-profile",
-        "PUT api/mobile/training-profile",
-        "PUT api/mobile/exercise-preferences/{exerciseId}",
-        "DELETE api/mobile/exercise-preferences/{exerciseId}",
-        // AuthApi
+        // AuthApi (poc — LegacyBillingHost token refresh)
         "POST api/mobile/auth/register",
         "POST api/mobile/auth/login",
         "POST api/mobile/auth/google",
@@ -73,7 +25,7 @@ object MobileApiContractRegistry {
         "GET api/mobile/auth/profile",
         "PATCH api/mobile/auth/profile",
         "PATCH api/mobile/auth/settings",
-        // SubscriptionApi
+        // SubscriptionApi (feature:billing — B6 platform billing)
         "GET api/mobile/plans",
         "GET api/mobile/subscriptions/status",
         "GET api/mobile/subscriptions/mine",
@@ -81,8 +33,6 @@ object MobileApiContractRegistry {
         "GET api/mobile/subscriptions/checkout/{id}",
         "POST api/mobile/subscriptions/google-play/verify",
         "POST api/mobile/subscriptions/cancel",
-        // BookingApi
-        "GET api/bookings/rules",
     )
 
     /**
@@ -162,7 +112,7 @@ object MobileApiContractRegistry {
         DeferredEndpoint("GET", "api/mobile/subscriptions/checkout/{id}", "Subscriptions hidden"),
         DeferredEndpoint("POST", "api/mobile/subscriptions/google-play/verify", "Subscriptions hidden"),
         DeferredEndpoint("POST", "api/mobile/subscriptions/cancel", "Subscriptions hidden"),
-        DeferredEndpoint("GET", "api/bookings/rules", "BookingApi out of Movit product scope"),
+        DeferredEndpoint("GET", "api/bookings/rules", "BookingApi removed in WS-5 — out of Movit product scope"),
         DeferredEndpoint("GET", "api/exercises/{id}/substitutions", "Admin id route; mobile slug route covered"),
         DeferredEndpoint("GET", "api/mobile/workout-executions/stats", "Home stats parity"),
         DeferredEndpoint("POST", "api/mobile/prescription/recommend", "Prescription parity"),

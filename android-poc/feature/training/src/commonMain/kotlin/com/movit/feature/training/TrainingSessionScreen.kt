@@ -52,6 +52,17 @@ fun TrainingSessionScreen(
     val romIndicators = remember(state.landmarks, state.jointVisuals) {
         buildSkeletonRomIndicators(state.landmarks, state.jointVisuals)
     }
+    val landmarkProjector = remember(
+        state.skeletonAnalysisWidth,
+        state.skeletonAnalysisHeight,
+        state.skeletonMirrorPreview,
+    ) {
+        skeletonLandmarkProjector(
+            analysisWidth = state.skeletonAnalysisWidth,
+            analysisHeight = state.skeletonAnalysisHeight,
+            mirrorPreview = state.skeletonMirrorPreview,
+        )
+    }
     val localizedPhase = localizedTrainingPhase(state.phaseLabel)
 
     Scaffold(
@@ -93,11 +104,12 @@ fun TrainingSessionScreen(
                 ) {
                     cameraSlot()
 
-                    if (!state.isResting) {
+                    if (state.requiresCamera()) {
                         MovitSkeletonOverlay(
                             landmarks = state.landmarks,
                             jointStates = state.jointVisuals,
                             romIndicators = romIndicators,
+                            landmarkProjector = landmarkProjector,
                             modifier = Modifier.fillMaxSize(),
                         )
 
@@ -117,7 +129,7 @@ fun TrainingSessionScreen(
                     if (onFlipCamera != null && !state.isComplete && !state.isResting) {
                         TrainingCameraFlipButton(
                             onClick = onFlipCamera,
-                            enabled = state.isCameraReady,
+                            enabled = !state.isCameraSwitching,
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
                                 .padding(top = MovitSpacing.xxl, end = MovitSpacing.md),
@@ -181,6 +193,13 @@ private fun TrainingSessionStateOverlay(
                     progressPercent = state.setupProgressPercent,
                     phaseLabel = localizedSetupPhase(state.setupPhase),
                     guidance = state.setupGuidance,
+                    actionMessage = state.setupActionMessage,
+                    cameraTip = state.setupCameraTip,
+                    regionStatus = state.setupRegionStatus,
+                    postureStatus = state.setupPostureStatus,
+                    directionStatus = state.setupDirectionStatus,
+                    jointRows = state.setupJointRows,
+                    referenceImageUrl = state.setupReferenceImageUrl,
                     modifier = Modifier.align(Alignment.Center),
                 )
             }
@@ -188,7 +207,7 @@ private fun TrainingSessionStateOverlay(
                 CountdownOverlay(
                     value = state.countdownValue,
                     frozen = state.countdownFrozen,
-                    freezeReason = state.setupGuidance?.takeIf { state.countdownFrozen },
+                    freezeReason = state.setupActionMessage?.takeIf { state.countdownFrozen },
                     modifier = Modifier.align(Alignment.Center),
                 )
             }
@@ -217,6 +236,7 @@ private fun TrainingSessionStateOverlay(
                     repCount = state.repCount,
                     formPercent = state.liveFormPercent,
                     showViewReport = state.reportDetailId != null,
+                    uploadNotice = state.uploadNotice,
                     onViewReport = onViewReport,
                     modifier = Modifier.align(Alignment.Center),
                 )

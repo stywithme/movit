@@ -81,6 +81,9 @@ sealed class SupervisorAction {
     
     /** Show warning when no pose detected (before auto-pause) */
     data class ShowNoPoseWarning(val elapsedMs: Long) : SupervisorAction()
+
+    /** Prompt user to stand in frame during setup (SETUP_POSE / RESUME_SETUP) */
+    object ShowSetupNoPoseHint : SupervisorAction()
     
     /** Show completed panel */
     object ShowCompleted : SupervisorAction()

@@ -42,4 +42,32 @@ class FeedbackRouterTest {
         assertTrue(router.submit(signal).shouldDeliver)
         assertEquals("cooldown", router.submit(signal).reason)
     }
+
+    @Test
+    fun routesVoiceThroughAudioPlayerWhenPresent() {
+        val player = RecordingAudioPlayer()
+        val router = FeedbackRouter(audioPlayer = player)
+        router.submit(
+            FeedbackSignal(
+                kind = FeedbackKind.JOINT_QUALITY,
+                severity = FeedbackSeverity.WARNING,
+                text = "Keep back straight",
+                dedupeKey = "back",
+                audioUrl = "/audio/tts_en_9.wav",
+            ),
+        )
+        assertEquals(1, player.played.size)
+        assertEquals("Keep back straight", player.played.single().text)
+        assertEquals("/audio/tts_en_9.wav", player.played.single().audioUrl)
+    }
+
+    private class RecordingAudioPlayer : com.movit.core.training.boundary.AudioFeedbackPlayer {
+        val played = mutableListOf<FeedbackSignal>()
+        override fun prepare() = Unit
+        override fun play(signal: FeedbackSignal) {
+            played += signal
+        }
+        override fun stopAll() = Unit
+        override fun release() = Unit
+    }
 }
