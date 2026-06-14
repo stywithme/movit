@@ -1,7 +1,11 @@
 package com.movit.core.training.engine
 
+import com.movit.core.training.config.CheckSeverity
+import com.movit.core.training.position.PositionError
+
 class RepCounter(
     private val minRepIntervalMs: Long,
+    /** Session completion target (may be `perSideTarget * 2` for bilateral AFTER_ALL_REPS). */
     private val targetReps: Int = 12,
     private val isHoldExercise: Boolean = false,
     private val primaryJoints: Set<String> = emptySet(),
@@ -98,7 +102,7 @@ class RepCounter(
     val repResults: List<RepResult> get() = _repResults.toList()
 
     private val currentRepErrors = mutableListOf<JointError>()
-    private val currentPositionErrorIds = mutableListOf<String>()
+    private val currentPositionErrors = mutableListOf<RepPositionErrorSnapshot>()
     private val currentPositionWarningIds = mutableSetOf<String>()
     private val currentPositionTipIds = mutableSetOf<String>()
     private var currentRepWorstState: JointState = JointState.PERFECT
@@ -214,10 +218,21 @@ class RepCounter(
         }
     }
 
-    fun addPositionError(checkId: String) {
-        if (!currentPositionErrorIds.contains(checkId)) {
-            currentPositionErrorIds.add(checkId)
+    fun addPositionError(error: PositionError) {
+        addPositionError(error.toRepSnapshot())
+    }
+
+    fun addPositionError(snapshot: RepPositionErrorSnapshot) {
+        if (snapshot.severity != CheckSeverity.ERROR) return
+        val exists = currentPositionErrors.any { it.checkId == snapshot.checkId }
+        if (!exists) {
+            currentPositionErrors.add(snapshot)
         }
+    }
+
+    /** Test/back-compat when only checkId is needed (no message/landmarks). */
+    fun addPositionError(checkId: String) {
+        addPositionError(RepPositionErrorSnapshot.minimalError(checkId))
     }
 
     fun addPositionWarning(checkId: String) {
@@ -292,12 +307,12 @@ class RepCounter(
             }
         }
 
-        val positionErrorPenalty = currentPositionErrorIds.size * POSITION_ERROR_PENALTY
+        val positionErrorPenalty = currentPositionErrors.size * POSITION_ERROR_PENALTY
         val positionWarningPenalty = currentPositionWarningIds.size * POSITION_WARNING_PENALTY
         if (positionErrorPenalty > 0f || positionWarningPenalty > 0f) {
             score = (score - positionErrorPenalty - positionWarningPenalty).coerceIn(0f, 100f)
         }
-        if (currentPositionErrorIds.isNotEmpty()) {
+        if (currentPositionErrors.isNotEmpty()) {
             if (JointState.WARNING.isWorseThan(resultWorstState)) {
                 resultWorstState = JointState.WARNING
             }
@@ -326,7 +341,8 @@ class RepCounter(
             isCounted = isCounted,
             isInvalidated = isInvalidated,
             errors = currentRepErrors.toList(),
-            positionErrorCheckIds = currentPositionErrorIds.toList(),
+            positionErrors = currentPositionErrors.toList(),
+            positionErrorCheckIds = currentPositionErrors.map { it.checkId },
             positionWarningCount = currentPositionWarningIds.size,
             positionTipCount = currentPositionTipIds.size,
             phaseTimings = currentPhaseTimings,
@@ -349,7 +365,7 @@ class RepCounter(
 
     private fun resetCurrentRepTracking() {
         currentRepErrors.clear()
-        currentPositionErrorIds.clear()
+        currentPositionErrors.clear()
         currentPositionWarningIds.clear()
         currentPositionTipIds.clear()
         currentPhaseTimings = emptyMap()
@@ -376,6 +392,15 @@ class RepCounter(
         _repResults
             .flatMap { it.errors }
             .groupingBy { "${it.jointCode}:${it.errorType}" }
+            .eachCount()
+            .toList()
+            .sortedByDescending { it.second }
+            .toMap()
+
+    fun getMostCommonPositionErrors(): Map<String, Int> =
+        _repResults
+            .flatMap { it.positionErrors }
+            .groupingBy { it.checkId }
             .eachCount()
             .toList()
             .sortedByDescending { it.second }

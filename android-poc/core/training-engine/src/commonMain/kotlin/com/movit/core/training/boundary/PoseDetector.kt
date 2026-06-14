@@ -10,6 +10,9 @@ import com.movit.core.training.model.PoseFrame
 expect interface PoseDetector {
     fun warmUp(configuration: PoseDetectorConfiguration)
 
+    /** Clears landmark smoothing / tracking state after a lens switch (Legacy parity). */
+    fun resetTrackingState()
+
     fun buildPoseFrame(
         landmarks: List<Landmark>,
         timestampMs: Long,

@@ -67,6 +67,19 @@ class CameraStartGateTest {
     }
 
     @Test
+    fun facingChangeAfterBind_keepsSessionBound() {
+        val gate = CameraStartGate()
+        gate.onStartRequested(useFrontCamera = true)
+        gate.onPreviewReady(useFrontCamera = true)
+        gate.markBound(useFrontCamera = true)
+        assertTrue(gate.isSessionBound())
+        val action = gate.onStartRequested(useFrontCamera = false)
+        assertIs<CameraStartGate.Action.SwitchFacing>(action)
+        assertTrue(gate.isSessionBound())
+        assertEquals(true, gate.boundFacing())
+    }
+
+    @Test
     fun markBound_tracksSessionFacing() {
         val gate = CameraStartGate()
         assertFalse(gate.isSessionBound())

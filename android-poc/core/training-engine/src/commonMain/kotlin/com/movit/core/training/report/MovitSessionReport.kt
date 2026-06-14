@@ -34,6 +34,7 @@ data class MovitExerciseSessionReport(
     val averageFormScore: Float,
     val reportId: String? = null,
     val workoutId: String? = null,
+    val poseVariantIndex: Int = 0,
 )
 
 /** Assessment-mode lightweight result returned to onboarding flow. */
@@ -56,6 +57,7 @@ object MovitSessionReportBuilder {
         setsCompleted: Int = 1,
         totalSets: Int = 1,
         reportId: String? = null,
+        poseVariantIndex: Int = summary.poseVariantIndex,
     ): MovitSessionReport {
         val exerciseReport = MovitExerciseSessionReport(
             exerciseSlug = exerciseSlug,
@@ -67,6 +69,7 @@ object MovitSessionReportBuilder {
             averageFormScore = summary.averageScore,
             reportId = reportId,
             workoutId = upload.id,
+            poseVariantIndex = poseVariantIndex,
         )
         return MovitSessionReport(
             totalExercises = 1,
@@ -91,6 +94,7 @@ object MovitSessionReportBuilder {
         setsCompleted: Int,
         totalSets: Int,
         reportId: String? = null,
+        poseVariantIndex: Int = summary.poseVariantIndex,
     ): MovitSessionReport {
         val nextExercise = MovitExerciseSessionReport(
             exerciseSlug = exerciseSlug,
@@ -102,6 +106,7 @@ object MovitSessionReportBuilder {
             averageFormScore = summary.averageScore,
             reportId = reportId,
             workoutId = upload.id,
+            poseVariantIndex = poseVariantIndex,
         )
         val exercises = existing.exerciseReports + nextExercise
         val totalReps = exercises.sumOf { it.totalReps }

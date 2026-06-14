@@ -34,6 +34,7 @@ data class TrainingSessionRouteArgs(
   val uploadContext: WorkoutUploadContext? = null,
   val plannedWorkout: PlannedWorkoutContext? = null,
   val language: String = "en",
+  val poseVariantIndex: Int = 0,
 )
 
 @Composable
@@ -86,6 +87,7 @@ fun TrainingSessionRoute(
       uploadContext = args.uploadContext,
       plannedWorkout = args.plannedWorkout,
       startExerciseIndex = args.startExerciseIndex,
+      routePoseVariantIndex = args.poseVariantIndex,
       deviceTiltPort = deviceTiltPort,
       feedbackRouter = FeedbackRouter(
         coachIntensity = CoachIntensity.from(prefs.coachIntensity),

@@ -10,6 +10,7 @@ import com.movit.core.training.feedback.FeedbackAudible
 import com.movit.core.training.feedback.FeedbackDeliveryPlan
 import com.movit.core.training.feedback.FeedbackKind
 import com.movit.core.training.feedback.FeedbackRuntimeMode
+import com.movit.core.training.feedback.SetupFeedbackSignals
 import com.movit.core.training.feedback.FeedbackScheduler
 import com.movit.core.training.feedback.FeedbackSeverity
 import com.movit.core.training.feedback.FeedbackSignal
@@ -64,6 +65,19 @@ class FeedbackRouter(
     ): FeedbackDeliveryPlan? {
         val signal = motivationalCoordinator.tryBuildSignal(hasActiveErrors, language) ?: return null
         return submit(signal)
+    }
+
+    fun submitSetup(signal: FeedbackSignal): FeedbackDeliveryPlan =
+        submit(
+            signal.copy(
+                kind = FeedbackKind.SETUP,
+                activeKey = SetupFeedbackSignals.SETUP_ACTIVE_KEY,
+                allowVisual = false,
+            ),
+        )
+
+    fun resetSetupFeedback() {
+        scheduler.resetCategory("setup")
     }
 
     fun resetAll() {

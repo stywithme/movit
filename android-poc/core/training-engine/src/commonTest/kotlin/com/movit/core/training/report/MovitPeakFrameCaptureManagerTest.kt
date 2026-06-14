@@ -108,10 +108,45 @@ class MovitPeakFrameCaptureManagerTest {
         assertFalse(mgr.markBestRep(4))
     }
 
+    @Test
+    fun tryRegister_persistsAnglesAndErrorMetadata() {
+        val mgr = manager()
+        val capture = mgr.tryRegister(
+            sampleRequest(
+                repNumber = 2,
+                type = MovitPeakCaptureType.ERROR_FRAME,
+                errorKey = "left_knee:WARNING",
+                angles = mapOf("left_knee" to 118.5, "right_knee" to 120.0),
+            ),
+        )
+        assertNotNull(capture)
+        assertEquals("left_knee:WARNING", capture.errorType)
+        assertTrue(capture.metadata.hasError)
+        assertEquals("left_knee:WARNING", capture.metadata.errorDetails)
+        assertEquals(118.5, capture.metadata.angles["left_knee"])
+    }
+
+    @Test
+    fun tryRegister_peakFrame_hasAnglesWithoutErrorFlag() {
+        val mgr = manager()
+        val capture = mgr.tryRegister(
+            sampleRequest(
+                repNumber = 1,
+                type = MovitPeakCaptureType.PEAK_FRAME,
+                angles = mapOf("left_hip" to 95.0),
+            ),
+        )
+        assertNotNull(capture)
+        assertFalse(capture.metadata.hasError)
+        assertNull(capture.metadata.errorDetails)
+        assertEquals(95.0, capture.metadata.angles["left_hip"])
+    }
+
     private fun sampleRequest(
         repNumber: Int,
         type: MovitPeakCaptureType,
         errorKey: String? = null,
+        angles: Map<String, Double> = emptyMap(),
     ): MovitPeakFrameCaptureManager.RegisterRequest = MovitPeakFrameCaptureManager.RegisterRequest(
         repNumber = repNumber,
         phaseCode = 3,
@@ -119,6 +154,7 @@ class MovitPeakFrameCaptureManagerTest {
         localPath = "/tmp/frame-$repNumber.jpg",
         thumbnailPath = "/tmp/frame-$repNumber-thumb.jpg",
         errorKey = errorKey,
+        angles = angles,
         capturedAtMs = nowMs,
         id = "cap-$repNumber-${type.name}",
     )

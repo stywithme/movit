@@ -19,7 +19,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.movit.core.data.MovitData
 import com.movit.core.posecapture.android.CameraXFrameSource
 import com.movit.core.training.boundary.CameraFrameSource
-import com.movit.core.training.boundary.CameraSourceConfiguration
 import com.movit.core.training.model.PoseFrame
 import com.movit.designsystem.components.MovitErrorState
 import com.movit.resources.movitText
@@ -118,7 +117,7 @@ actual fun TrainingSessionCameraHost(
         if (!previewBound) return@LaunchedEffect
         val androidSource = cameraSource as? CameraXFrameSource
         androidSource?.setDebugFpsEnabled(isTrainingDebugBuild())
-        cameraSource.start(CameraSourceConfiguration(useFrontCamera = useFrontCamera, targetFps = 10))
+        cameraSource.start(resolveTrainingCameraConfiguration(useFrontCamera))
     }
 
     TrainingCameraSurface(

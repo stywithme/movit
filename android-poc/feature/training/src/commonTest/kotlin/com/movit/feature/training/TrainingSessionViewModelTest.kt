@@ -60,6 +60,17 @@ class TrainingSessionViewModelTest {
   }
 
   @Test
+  fun trainingSessionRouteArgs_carriesPoseVariantIndex() {
+    val args = TrainingSessionRouteArgs(
+      exerciseSlug = "curl",
+      exerciseName = "Curl",
+      targetReps = 10,
+      poseVariantIndex = 2,
+    )
+    assertEquals(2, args.poseVariantIndex)
+  }
+
+  @Test
   fun workoutFlowPhase_defaultsToNone() {
     val state = TrainingSessionUiState(
       exerciseSlug = "squat",

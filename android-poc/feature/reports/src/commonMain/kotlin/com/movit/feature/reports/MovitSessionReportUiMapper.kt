@@ -21,33 +21,72 @@ object MovitSessionReportUiMapper {
         val dropOff = quality?.frameDropRate ?: 0f
         val frameEvidence = ReportFrameEvidenceMapper.mapCaptures(report.peakFrameCaptures, strings)
         val heroFramePath = ReportFrameEvidenceMapper.heroFramePath(report.peakFrameCaptures)
+            ?: report.heroFrame?.let { frame ->
+                val path = frame.thumbnailPath ?: frame.localPath
+                if (path.startsWith("file://")) path else "file://$path"
+            }
         val fatigueTitle = when {
             dropOff >= 20f -> strings.fatigueElevated
             dropOff >= 10f -> strings.fatigueModerate
             else -> strings.fatigueLow
         }
+        val joints = MovitSessionReportEnrichmentMapper.mapJoints(
+            report.errorAnalysis,
+            strings.language,
+        )
+        val repCompare = MovitSessionReportEnrichmentMapper.mapRepCompare(
+            bestReps = report.bestReps,
+            worstRep = report.worstRep,
+            repTimeline = report.repTimeline,
+            strings = strings,
+        )
+        val (formBySetValues, formBySetLabels) = if (report.repTimeline.isNotEmpty() || report.setSummaries.isNotEmpty()) {
+            MovitSessionReportEnrichmentMapper.mapFormBySet(
+                report.repTimeline,
+                report.setSummaries,
+                strings,
+            )
+        } else {
+            listOf(formScore.toFloat()) to listOf(strings.setShort(1))
+        }
+        val tips = MovitSessionReportEnrichmentMapper.mapTips(
+            improvementTips = report.improvementTips,
+            errorAnalysis = report.errorAnalysis,
+            language = strings.language,
+        )
+        val timelineFatigueMessage = MovitSessionReportEnrichmentMapper.buildFatigueMessage(
+            report.repTimeline,
+            strings,
+        )
+        val hold = report.holdSummary
+        val durationLabel = hold?.let(MovitSessionReportEnrichmentMapper::holdDurationLabel)
+            ?: ReportsFormatting.formatDuration(summary.durationMs)
+        val overviewInsightMessage = hold?.let { MovitSessionReportEnrichmentMapper.holdOverviewMessage(it, strings) }
+            ?: strings.avgForm(formScore)
+        val resolvedFormScore = hold?.formQuality?.roundToInt()?.coerceIn(0, 100)
+            ?: report.overallQuality?.score?.roundToInt()?.coerceIn(0, 100)
+            ?: formScore
         return ReportDetailUi(
             id = report.id,
-            exerciseName = report.exerciseName.en,
-            formScore = formScore,
+            exerciseName = report.exerciseName.get(strings.language),
+            formScore = resolvedFormScore,
             badgeLabel = summary.rating.name.takeIf { summary.shouldCelebrate },
-            sets = "1",
+            sets = formBySetLabels.size.takeIf { it > 0 }?.toString() ?: "1",
             reps = summary.totalReps.toString(),
-            durationLabel = ReportsFormatting.formatDuration(summary.durationMs),
+            durationLabel = durationLabel,
             overviewInsightTitle = strings.sessionOverview,
-            overviewInsightMessage = strings.avgForm(formScore),
-            joints = emptyList(),
-            jointsEmptyReason = ReportJointsEmptyReason.SessionUntracked,
-            repCompare = emptyList(),
+            overviewInsightMessage = overviewInsightMessage,
+            joints = joints,
+            jointsEmptyReason = MovitSessionReportEnrichmentMapper.jointsEmptyReason(joints, report),
+            repCompare = repCompare,
             fatigueLabel = strings.fatigueLabel,
             fatigueTitle = fatigueTitle,
-            fatigueMessage = quality?.let {
-                strings.fatigueNotEnough
-            } ?: strings.fatigueNotEnough,
+            fatigueMessage = timelineFatigueMessage
+                ?: strings.fatigueNotEnough,
             fatigueProgressPercent = dropOff.roundToInt().coerceIn(0, 100),
-            formBySetValues = listOf(formScore.toFloat()),
-            formBySetLabels = listOf(strings.setShort(1)),
-            tips = emptyList(),
+            formBySetValues = formBySetValues,
+            formBySetLabels = formBySetLabels,
+            tips = tips,
             frameEvidence = frameEvidence,
             heroFramePath = heroFramePath,
         )

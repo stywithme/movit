@@ -1,5 +1,6 @@
 package com.movit.core.training.diagnostics
 
+import com.movit.core.training.boundary.TrainingThroughputProfiles
 import com.movit.core.training.session.SessionRunState
 
 /**
@@ -19,6 +20,7 @@ object TrainingPipelineDiagnostics {
     private var cameraTargetFps = 0
     private var cameraAnalysisSize = "?"
     private var cameraAppliedFps = "?"
+    private var cameraThroughputProfile = TrainingThroughputProfiles.STABLE.id
 
     private var cameraAccepted = 0
     private var cameraSkipped = 0
@@ -40,15 +42,27 @@ object TrainingPipelineDiagnostics {
             cameraTargetFps = 0
             cameraAnalysisSize = "?"
             cameraAppliedFps = "?"
+            cameraThroughputProfile = TrainingThroughputProfiles.STABLE.id
         }
     }
 
-    fun setCameraConfig(targetFps: Int, analysisWidth: Int, analysisHeight: Int, appliedFpsRange: String) {
+    fun setCameraConfig(
+        targetFps: Int,
+        analysisWidth: Int,
+        analysisHeight: Int,
+        appliedFpsRange: String,
+        throughputProfileId: String = TrainingThroughputProfiles.STABLE.id,
+    ) {
         synchronized(lock) {
             cameraTargetFps = targetFps
             cameraAnalysisSize = "${analysisWidth}x$analysisHeight"
             cameraAppliedFps = appliedFpsRange
+            cameraThroughputProfile = throughputProfileId
         }
+        logMilestone(
+            "throughput profile=$throughputProfileId " +
+                "target=${targetFps}fps analysis=${analysisWidth}x$analysisHeight ae=$appliedFpsRange",
+        )
     }
 
     fun recordCameraFrame(acceptedForAnalysis: Boolean) {
@@ -145,6 +159,7 @@ object TrainingPipelineDiagnostics {
             append("window=${LOG_INTERVAL_MS / 1_000}s")
             append(" | cam=${camFps}fps")
             append("(skipThrottle=$camSkip")
+            append(" profile=$cameraThroughputProfile")
             append(" target=$cameraTargetFps")
             append(" ae=$cameraAppliedFps")
             append(" analysis=$cameraAnalysisSize)")
@@ -190,6 +205,7 @@ internal fun formatTrainingPipelinePeriodicForTest(
     cameraTargetFps: Int,
     cameraAnalysisSize: String,
     cameraAppliedFps: String,
+    cameraThroughputProfile: String = TrainingThroughputProfiles.STABLE.id,
     poseWithBody: Int,
     poseNoBody: Int,
     avgInferenceMs: Int,
@@ -212,6 +228,7 @@ internal fun formatTrainingPipelinePeriodicForTest(
         append("window=2s")
         append(" | cam=${cameraAccepted}fps")
         append("(skipThrottle=$cameraSkipped")
+        append(" profile=$cameraThroughputProfile")
         append(" target=$cameraTargetFps")
         append(" ae=$cameraAppliedFps")
         append(" analysis=$cameraAnalysisSize)")

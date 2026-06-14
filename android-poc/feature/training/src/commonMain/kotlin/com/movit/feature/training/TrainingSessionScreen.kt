@@ -1,14 +1,17 @@
 package com.movit.feature.training
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -19,6 +22,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import com.movit.core.training.session.PauseReason
 import com.movit.core.training.session.SessionRunState
 import com.movit.designsystem.MovitSpacing
@@ -49,8 +54,12 @@ fun TrainingSessionScreen(
     onFlipCamera: (() -> Unit)? = null,
     debugFps: Int? = null,
 ) {
-    val romIndicators = remember(state.landmarks, state.jointVisuals) {
-        buildSkeletonRomIndicators(state.landmarks, state.jointVisuals)
+    val romIndicators = remember(state.landmarks, state.skeletonOverlayParity) {
+        buildSkeletonRomIndicators(
+            landmarks = state.landmarks,
+            jointVisuals = state.skeletonOverlayParity.jointVisuals,
+            isBilateralFlipped = state.skeletonOverlayParity.isBilateralFlipped,
+        )
     }
     val landmarkProjector = remember(
         state.skeletonAnalysisWidth,
@@ -107,7 +116,7 @@ fun TrainingSessionScreen(
                     if (state.requiresCamera()) {
                         MovitSkeletonOverlay(
                             landmarks = state.landmarks,
-                            jointStates = state.jointVisuals,
+                            parity = state.skeletonOverlayParity,
                             romIndicators = romIndicators,
                             landmarkProjector = landmarkProjector,
                             modifier = Modifier.fillMaxSize(),
@@ -117,6 +126,21 @@ fun TrainingSessionScreen(
                             visible = state.showVignette,
                             modifier = Modifier.fillMaxSize(),
                         )
+
+                        if (state.isCameraSwitching) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Black.copy(alpha = 0.28f)),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(40.dp),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    strokeWidth = 3.dp,
+                                )
+                            }
+                        }
                     }
 
                     TrainingDebugFpsOverlay(

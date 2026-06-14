@@ -53,7 +53,7 @@ class MediaPipePoseDetector(
 
     interface Listener {
         fun onPoseDetected(result: DetectionResult)
-        fun onNoPoseDetected()
+        fun onNoPoseDetected(isFrontCamera: Boolean)
         fun onError(message: String)
     }
 
@@ -135,6 +135,11 @@ class MediaPipePoseDetector(
                 }
             }
         }
+    }
+
+    override fun resetTrackingState() {
+        landmarkSmoother.reset()
+        frameCameraState.clear()
     }
 
     fun detectAsync(imageProxy: ImageProxy, isFrontCamera: Boolean) {
@@ -266,7 +271,7 @@ class MediaPipePoseDetector(
         val isFrontCamera = frameCameraState.remove(frameTs) ?: false
         try {
             if (result.landmarks().isEmpty()) {
-                listener?.onNoPoseDetected()
+                listener?.onNoPoseDetected(isFrontCamera)
                 return
             }
             val norm = result.landmarks()[0]

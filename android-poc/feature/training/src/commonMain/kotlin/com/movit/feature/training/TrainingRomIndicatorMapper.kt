@@ -25,13 +25,16 @@ private const val RIGHT_WRIST = 16
 fun buildSkeletonRomIndicators(
     landmarks: List<SkeletonLandmarkPoint>?,
     jointVisuals: Map<String, SkeletonJointVisual>,
+    isBilateralFlipped: Boolean = false,
 ): List<SkeletonRomIndicator> {
     if (landmarks == null || landmarks.size < 33 || jointVisuals.isEmpty()) return emptyList()
     return jointVisuals.values.mapNotNull { visual ->
-        if (visual.quality == SkeletonJointQuality.NORMAL && !visual.dimmed) return@mapNotNull null
-        val anchor = jointAnchor(visual.jointCode, landmarks) ?: return@mapNotNull null
+        if (visual.dimmed) return@mapNotNull null
+        if (visual.quality == SkeletonJointQuality.NORMAL) return@mapNotNull null
+        val lookupCode = effectiveLandmarkJointCode(visual.jointCode, isBilateralFlipped)
+        val anchor = jointAnchor(lookupCode, landmarks) ?: return@mapNotNull null
         val (rangeMin, rangeMax, angle, color) = qualityBand(visual.quality)
-        val style = if (visual.jointCode.contains("knee", ignoreCase = true)) {
+        val style = if (lookupCode.contains("knee", ignoreCase = true)) {
             SkeletonRomIndicatorStyle.ARC
         } else {
             SkeletonRomIndicatorStyle.LINE
@@ -81,10 +84,11 @@ private fun anchorTriple(
 
 private fun qualityBand(quality: SkeletonJointQuality): Quadruple {
     return when (quality) {
-        SkeletonJointQuality.PERFECT -> Quadruple(85f, 110f, 95f, 0xFF7CFF6B)
-        SkeletonJointQuality.WARNING -> Quadruple(60f, 85f, 72f, 0xFFFFB020)
-        SkeletonJointQuality.DANGER -> Quadruple(30f, 60f, 45f, 0xFFFF5A5A)
-        SkeletonJointQuality.NORMAL -> Quadruple(70f, 100f, 85f, 0xFF4FC3F7)
+        SkeletonJointQuality.PERFECT -> Quadruple(85f, 110f, 95f, 0xFF00E676)
+        SkeletonJointQuality.PAD -> Quadruple(65f, 90f, 78f, 0xFFFFB74D)
+        SkeletonJointQuality.WARNING -> Quadruple(60f, 85f, 72f, 0xFFFFD54F)
+        SkeletonJointQuality.DANGER -> Quadruple(30f, 60f, 45f, 0xFFFF5252)
+        SkeletonJointQuality.NORMAL -> Quadruple(70f, 100f, 85f, 0xFF64B5F6)
     }
 }
 

@@ -412,6 +412,9 @@
     <string name="report_detail_fatigue_low">Low</string>
     <string name="report_detail_best_set">Best · Set %1$d</string>
     <string name="report_detail_worst_set">Worst · Set %1$d</string>
+    <string name="report_detail_best_rep">Best · Rep %1$d</string>
+    <string name="report_detail_worst_rep">Worst · Rep %1$d</string>
+    <string name="report_detail_hold_achievement">Held %1$d%% of target</string>
     <string name="report_detail_fatigue_not_enough">Not enough sets to estimate fatigue yet.</string>
     <string name="report_detail_form_dropped">Form dropped %1$d%% from set 1 to set %2$d.</string>
     <string name="report_detail_form_steady">Form held steady across sets.</string>

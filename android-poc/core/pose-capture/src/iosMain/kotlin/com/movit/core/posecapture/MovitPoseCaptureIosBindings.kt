@@ -10,20 +10,11 @@ import com.movit.core.training.boundary.PoseDetector
  * Factory bindings for iOS pose-capture (D6).
  *
  * **Integration decision (07.6):** Kotlin/Native actuals live here (AVFoundation, CoreMotion,
- * AVSpeech, haptics). MediaPipe Tasks Vision iOS is **not** linked via Gradle cinterop in this
- * module — instead, a Swift `MovitPoseLandmarkerBridge` in `iosApp` (CocoaPods:
- * `MediaPipeTasksVision`) should be registered through Koin at startup:
+ * AVSpeech, haptics). MediaPipe Tasks Vision iOS is **not** linked via Gradle cinterop — Swift
+ * `MovitPoseLandmarkerBridge` in `iosApp` (CocoaPods: `MediaPipeTasksVision`) registers via
+ * [installIosPoseLandmarkerBridge] from `iOSApp` init **before** `MainViewController`.
  *
- * ```kotlin
- * // feature/shell MainViewController — when MediaPipe bridge is ready:
- * MovitData.install(
- *     platform,
- *     additionalModules = listOf(movitPoseCaptureIosModule(/* optional swift bridge */)),
- * )
- * ```
- *
- * Until the bridge ships, [IosPoseDetector] is a compile-safe stub (preview + permissions work;
- * no landmarks). See plan §12 (07.6).
+ * Without a ready bridge, [IosPoseDetector] reports no-pose honestly (preview + permissions work).
  */
 object MovitPoseCaptureIosBindings {
     fun createPoseDetector(): IosPoseDetector = IosPoseDetector()

@@ -1,11 +1,11 @@
 # Android KMP Training Engine vs MO Legacy Difference Audit
 
-**تاريخ المراجعة:** 2026-06-14 (آخر تحديث: hotfixes الجهاز + `TrainingPipeline`)  
+**تاريخ المراجعة:** 2026-06-14 (آخر تحديث: مراجعة كود مستقلة بعد التجربة الحقيقية + `TrainingPipeline`)
 **مرجع Legacy:** فرع `MO` / commit `aceaef8e` (`MO Prototype`) عبر worktree قراءة فقط.  
 **مرجع الجديد:** الشجرة الحالية بعد Phase 07 وإصلاحات G1-G4 وhotfixes استقرار الجهاز (§29–§32).  
 **النطاق:** محرك التدريب الحي، بداية التمرين، الكاميرا، MediaPipe، الفيدباك، الأداء، تدفق الـ workout، التقارير، الرفع، الاختبارات، وأفكار موجودة في طرف دون الآخر.
 
-> الحكم المختصر (محدَّث 2026-06-14): المحرك الجديد أقوى بنيوياً وأكثر قابلية للاختبار والتوسع عبر KMP. بعد hotfixes الجهاز (§29–§32) أصبح المسار **مستقراً على جهاز حقيقي** (عدّ 12/12، تقرير، إيقاف كاميرا نظيف) لكنه **أبطأ من Legacy في throughput** (~7 إطار/ثانية فعلي مقابل ~15+ في MO) بسبب قرارات محافظة للاستقرار (`targetFps=10`، `analysis=320×240`، backpressure). Legacy ما زال أغنى في setup UX والتقارير المرئية؛ KMP أفضل في البنية، العزل، الاختبارات، offline writes، وKMP/iOS readiness.
+> الحكم المختصر (محدَّث 2026-06-14): المحرك الجديد أقوى بنيوياً وأكثر قابلية للاختبار والتوسع عبر KMP، وبعد hotfixes الجهاز (§29–§32) أصبح مسار Android مستقراً في smoke واحد. لكن قراءة الكود المستقلة في §34 تثبت وجود فروقات عميقة لا يجوز اعتبارها تحسينات مقبولة: أهمها regression في إنهاء تمارين bilateral بنمط `AFTER_ALL_REPS`، وفقدان كبير في مادة التقرير والتحليل، وغياب صوت setup parity، وفجوة iOS فعلية لأن detector/snapshot ما زالا غير منتجين. أي حكم أقدم في الوثيقة يتعارض مع §34 يُعتبر superseded.
 
 ---
 
@@ -853,7 +853,7 @@ data class SetupGuidanceUi(
 | طبقة | ملف/مكوّن | الدور |
 |---|---|---|
 | Domain | `MovitPeakFrameCaptureManager` | منطق القبول/الحدود (peak واحد/عدة، danger≤6، error per rep+key، hold≤3، best≤3) — مرآة آمنة لـ Legacy `FrameCaptureManager` بدون I/O |
-| Boundary | `TrainingFrameSnapshotPort` + `NoOpTrainingFrameSnapshotPort` | عقد حفظ JPEG محلي؛ iOS/common = no-op |
+| Boundary | `TrainingFrameSnapshotPort` + `NoOpTrainingFrameSnapshotPort` | عقد حفظ JPEG محلي؛ iOS كان no-op في v1، ثم صار `IosTrainingFrameSnapshotPort` عند جاهزية bridge في §36 |
 | Android | `MediaPipePoseDetector.takeSnapshotJpeg()` | يحتفظ بآخر إطار كاميرا مؤقتاً (يُستبدل كل frame) ويُصدّر JPEG عند الطلب فقط |
 | Android | `AndroidTrainingFrameSnapshotPort` | يكتب full+thumb تحت `filesDir/frame_captures/{sessionId}/` |
 | Feature | `TrainingFrameCaptureCoordinator` | يربط أحداث المحرك (BOTTOM/DANGER/WARNING/hold/rep complete) بالمدير + المنفذ |
@@ -877,7 +877,7 @@ data class SetupGuidanceUi(
 | `ReportGenerator` richness كامل | danger alerts، error analysis، rep timeline، improvement tips — ما زالت فارغة في `PostTrainingReportLegacyJson` |
 | مقارنة best/worst من الصور في Form | يعتمد replay أو set-level API metrics |
 | تنظيف ملفات `frame_captures` | يحتاج سياسة retention مثل Legacy `ReportStorage.deleteFrameCaptures` |
-| iOS snapshot فعلي | `NoOpTrainingFrameSnapshotPort` — المسارات تبقى فارغة |
+| iOS snapshot فعلي | كان `NoOpTrainingFrameSnapshotPort` في v1؛ تم تجاوزه في §36 عبر `IosTrainingFrameSnapshotPort` + Swift bridge |
 | Coil لـ `file://` على iOS | غير مُختبر؛ Android يستخدم `MovitRemoteImage` |
 
 ### الاختبارات المضافة/المحدَّثة
@@ -1034,7 +1034,7 @@ cd android-poc
 
 - ~~`isInStartPose` مقابل `isInStartPosition` في `SetupReadinessGate`~~ — **نُفّذ** في §22.5.
 - إرشادات setup الغنية (محاور، skeleton ملوّن، صوت) — **جزئياً** (chips + رسائل؛ الصوت والـ skeleton ما زالا مفتوحين).
-- iOS camera actual — ما زال placeholder.
+- iOS camera actual — كان placeholder؛ تم تجاوزه في §36 عبر `TrainingSessionCameraHost.ios` الفعلي.
 - `TrainingCameraHost` (غير session) ما زال يتجاهل `frame?.let` — لم يُلمس ضمن النطاق.
 - تحقق جهاز حقيقي: FPS>0، FOV أوسع، وتأثير high FPS على البطارية.
 
@@ -1701,5 +1701,890 @@ window=2s | cam=13fps(skipThrottle=7 target=10 ae=[10,10] analysis=320x240)
 | 2026-06-14 | إيقاف كاميرا عند الإكمال | ImageReader بعد COMPLETED |
 | 2026-06-14 | انتقال تلقائي للتقرير | بلاغ المستخدم |
 | 2026-06-14 | `TrainingPipeline` موحّد | تشخيص بدون ضوضاء |
-| مؤجَّل | رفع fps/دقة تدريجياً | بعد ثبات على أجهزة متعددة |
+| 2026-06-14 | Throughput profiles + flag (§35.2) | rollout تدريجي؛ افتراضي `stable` |
+| مؤجَّل | رفع fps/دقة تدريجياً | بعد ثبات على أجهزة متعددة (مراحل §35.2) |
+
+---
+
+## 34) مراجعة كود مستقلة بعد التجربة الحقيقية (2026-06-14)
+
+> هذا القسم مبني على قراءة مباشرة للكود في `D:/laragon/www/POSE-2` مقابل worktree `D:/laragon/www/POSE-2-MO-readonly`، وليس على افتراض صحة الأقسام السابقة. عند وجود تعارض بين هذا القسم وأي حكم سابق في الوثيقة، هذا القسم هو المرجع الأحدث. لم يتم تعديل worktree `MO`.
+
+### 34.1 الحكم التنفيذي
+
+KMP ليس مجرد نقل ناقص، وفيه تحسينات حقيقية: فصل common engine، اختبارات أكثر، backpressure أوضح، offline writes، `TrainingPipelineDiagnostics`، وتجميع أوضح لمسار الكاميرا/المحرك. لكن التجربة الحقيقية التي أظهرت فروقات في `Feedback` و`UI` و`Count Logic` و`Setup Pose` و`Count Metrics` متوافقة مع الكود: توجد فجوات correctness وUX وتقارير لا يجوز قبولها كتحسينات أثناء الهجرة.
+
+أخطر فرق مؤكد هو `AFTER_ALL_REPS` في تمارين bilateral: Legacy ينهي التمرين على `targetReps * 2` حتى يكتمل الجانبان، بينما KMP يستخدم `targetReps` نفسه للتبديل ولإنهاء الجلسة. هذا regression في منطق العد وليس اختلاف UX.
+
+### 34.2 فروقات مؤكدة وخطة المعالجة
+
+| الأولوية | المجال | Legacy MO | KMP الحالي | الأثر | المعالجة المطلوبة |
+|---|---|---|---|---|---|
+| P0 | Count Logic / bilateral completion | `TrainingEngine` يحسب `completionTargetReps = targetReps * 2` عندما يكون `switchMode == AFTER_ALL_REPS` أو `switchEvery == targetReps`، ويمرره إلى `RepCounter` و`SessionOrchestrator`. | `MovitTrainingEngine` يستخدم `targetReps` مباشرة في `RepCounter` و`SessionOrchestrator`، بينما `BilateralController` يبدل الجانب بعد نفس الرقم. | تمرين bilateral قد يكتمل بعد أول جانب فقط. هذا يفسر اختلافات عميقة في العد والتقدم والـ HOLD/side flow. | إضافة `completionTargetReps` في KMP بنفس semantics القديمة. يبقى `BilateralController.targetReps` هو target per-side، لكن session completion وprogress النهائي يستخدمان total target. إضافة اختبار `AFTER_ALL_REPS` يثبت أن 12 reps per side تعني 24 completion reps. |
+| P0 | Report richness / post-session analysis | `ReportGenerator` يبني `dangerAlerts`, `perfectMoments`, `bestReps`, `worstRep`, `errorAnalysis`, `repTimeline`, `consistency`, `improvementTips`, `holdSummary`, `heroFrame`, `performanceMetrics`, `overallQuality`, `exerciseConfig`, `setSummaries`. | ~~`MovitPostTrainingReport` أخف كثيرا، و`PostTrainingReportLegacyJson.encode` يضع أغلب هذه الحقول `empty` أو `null`.~~ **بعد §35.x P0 Report richness:** `MovitPostTrainingReportBuilderV2` يملأ النواة التحليلية من `repDetails` + captures؛ JSON لا يفرغ الحقول عند توفر البيانات. متبقٍ: `performanceMetrics`, `setSummaries`, `quickInsight`. | ~~التقرير بعد KMP يفقد معظم التفسير~~ — النواة مُستعادة؛ بطاقات metrics المتقدمة وmulti-set لاحقاً. | ✅ §35.x P0 Report richness؛ P1: `PerformanceMetricsBuilder`, multi-set `setSummaries`, `QuickInsightGenerator`. |
+| P0 | Count Metrics / per-rep summary | `ExerciseWorkoutSummary` في Legacy يحتوي `stateBreakdown`, `commonErrors`, `repDetails`, `weightKg`, `weightUnit`. | KMP `ExerciseWorkoutSummary` يحتوي totals فقط: reps, counted, invalidated, averageScore, countedRatio, duration. | لا يمكن بناء تحليل مفاصل، مقارنة عدات، fatigue حقيقي، أو tips محلية من summary الحالي. | توسيع summary في KMP بنفس المادة: state breakdown، common errors، rep details، weights. تحديث write hooks والتقرير والاختبارات. |
+| P1 | Position check details داخل العدة | Legacy `RepResult` يحتفظ بـ `positionErrors: List<PositionError>` مع الرسالة، landmarks، severity/type، والقيم. | KMP `RepResult` يحتفظ بـ `positionErrorCheckIds` فقط. | التقرير والـ feedback اللاحق يفقدان تفاصيل الخطأ، ويصبح تحليل common errors أقل دقة. | تخزين snapshot كامل أو DTO common من `PositionError` داخل `RepResult`، مع checkId فقط كحقل إضافي لا كبديل. |
+| P1 | Setup Pose confirmation / any-side | Legacy `PoseSetupGuide` يحسب readiness من `startPose` مع قبول paired any-side عندما ينجح أحد الجانبين، ويشترط presence مناسب لكل primary. | KMP `SetupReadinessGate` يستخدم `StartPoseGate.isInStartPose` على المفاصل primary الموجودة فقط، ويتجاوز الزوايا الغائبة، ولا يظهر فيه نفس منطق paired any-side الموجود في `PoseSetupGuide.allPrimaryJointsPresent`. | تمارين any-side أو bilateral قد تدخل setup مبكرا جدا عند ظهور مفصل واحد، أو تختلف عند tracking mode/side pairing. | نقل منطق `allPrimaryJointsPresent` وpaired any-side إلى KMP setup gate، مع حد أدنى لحضور المفاصل واختبارات لتمارين any-side وbilateral. |
+| P1 | Countdown pose validation | Legacy أثناء `COUNTDOWN` يستخدم `isStartPoseRoughlyValid`: سماحية `±10°`، ويقبل عند توفر 60% من primary joints تقريبا مع scene valid. | KMP `isCountdownPoseValid` يستخدم `StartPoseGate.isInStartPose`: صارم في الزاوية للمفاصل الموجودة، لكنه لا يفرض نفس نسبة الحضور. | العد التنازلي قد يتجمد عند انحراف بسيط كان Legacy يقبله، أو يستمر عند حضور مفاصل أقل من Legacy. | فصل شرط setup confirmation الصارم عن countdown guard. أضف `isStartPoseRoughlyValid` في KMP مع tolerance configurable ونسبة حضور مفاصل، واختبارات. |
+| P1 | Setup feedback الصوتي | Legacy ينطق phase guidance وworst joint guidance عبر `speakSetupPhaseGuidance` و`speakSetupGuidance` مع cooldown. | KMP يعرض `actionMessage`, `cameraTip`, `jointRows`, `referenceImageUrl` بصريا، لكن لا يرسل setup guidance الصوتي فعليا إلا pose-confirmed/countdown/system messages. | المستخدم يرى التعليمات ولا يسمع نفس توجيه Legacy في مرحلة الإعداد. | إضافة `FeedbackKind.SETUP` أو active-key setup route في `FeedbackRouter`، وربطه بتغير phase و`worstJointGuidance` مع cooldown من `SetupValidationConfig.voiceCooldownMs`. |
+| P1 | Setup skeleton guidance | Legacy يرسل `updateSetupGuidance` إلى `SkeletonOverlayView` لتلوين/إبراز مفاصل setup بجانب الصفوف النصية. | KMP يعرض صفوف joint guidance في panel، لكن لا يظهر مسار setup-specific skeleton arrows/highlights بنفس ثراء Legacy. | فرق UI واضح أثناء “ظبط الوضعية” حتى لو النص متاح. | توسيع `SkeletonOverlayMapper`/overlay state ليستقبل setup joint rows واتجاه `RAISE/LOWER` ويعرض highlight خفيف غير مزعج. |
+| P1 | Training session polish / overlay | Legacy `SkeletonOverlayView` يجمع state infos، position errors، setup scene-check mode، setup guidance، front-camera mirroring، bilateral flip، any-side dimming، وFILL_CENTER alignment في مكان واحد. | KMP عنده `MovitSkeletonOverlay`, `skeletonLandmarkProjector`, `romIndicators`, `VignetteEffect`، و`mirrorPreview` من frame، وهذا أساس جيد. لكن لا تظهر كل طبقات Legacy polish: setup scene-check overlay، setup arrows/highlights، position-error overlay الغني، any-side dimming، واختبار visual alignment بعد flip/resize. | قد يشعر المستخدم أن الجلسة أقل “مصقولة” حتى لو العد يعمل: skeleton أقل شرحا، ومحاذاة أو mirror bug صغير يغير الثقة في التصحيح. | تعريف overlay parity contract: live joint colors، setup highlights، position-error marks، any-side dimming، bilateral side hint، FILL_CENTER projection، mirror after flip. ثم إضافة screenshot/mapper tests على Android وCompose. |
+| P1 | Flip camera polish | Legacy `CameraTrainingInputController.applySwitchCameraFromSettings` يعيد binding الكاميرا، يحدّث overlay front-camera state، ويعمل reset لـ landmark smoother و`elbowAngleEstimator`. | KMP يبدل `useFrontCamera` في route، يعيد `CameraFrameSource.start(...)`، يعطل زر flip أثناء `isCameraSwitching`، ويحدث overlay mirror من أول frame جديد. لا يظهر reset صريح للـ smoothing/estimators عند flip، ولا اختبار يثبت أن setup gate/countdown/training لا يتلوثان بإطارات العدسة السابقة. | بعد flip ممكن يظهر frame/angle stale أو عدم محاذاة مؤقتة، وقد يتأثر setup gate أو العد إذا لم تُصفّر حالة smoothing/side/mirror في لحظة التبديل. | عند `onCameraSwitchStarted`: تصفير landmarks/joint visuals أو إظهار loading قصير، reset detector smoothing/elbow estimator عبر boundary، وتجميد setup/countdown حتى أول frame من العدسة الجديدة. إضافة tests/smoke: flip في setup، في countdown، وفي training بدون كسر العد أو overlay. |
+| P1 | RepIncomplete feedback | Legacy `PhaseStateMachine.onRepIncomplete` موصول إلى `FeedbackEvent.RepIncomplete` ثم `FeedbackManager` برسائل مثل العمق/الرجوع/السرعة. | ~~KMP `PhaseStateMachine` ما زال يملك callback، لكن لم يظهر أنه موصول من `MovitTrainingEngine` إلى `TrainingSessionViewModel`/`FeedbackRouter`.~~ **مُنفَّذ §35.1** | المستخدم قد لا يحصل على سبب “العدة لم تُحتسب” بنفس الوضوح. | ربط callback إلى feedback signal common، مع dedupe/cooldown واختبارات للأسباب الأربعة. |
+| P1 | Frame evidence / replay | Legacy `FrameCaptureManager` يحفظ danger/peak/error/best/hold مع metadata angles/errorDetails، ويجمع replay frames لكل rep حتى 16 frame. | KMP يحفظ still captures أساسية (`PEAK_FRAME`, `ERROR_FRAME`, `DANGER`, `HOLD_SAMPLE`) لكن capture model لا يحمل angles/errorDetails كاملة، وreplay burst خارج النطاق، وiOS snapshot NoOp. | تقارير KMP أقل إقناعا بصريا ولا تستطيع إعادة أفضل/أسوأ عدة كحركة قصيرة. | توسيع `MovitPeakFrameCapture` metadata، إضافة replay sampler platform-aware، وربط evidence بالتقرير الجديد. |
+| P1 | Report UI local mapping | Legacy report screens تعتمد على مادة التقرير الغنية. | `MovitSessionReportUiMapper.mapPostTraining` يملأ joint analysis/tips/rep compare بقوائم فارغة للتقارير المحلية. | حتى لو تم حفظ التقرير، واجهة التقارير لا تعرض نفس التحليل بعد الجلسة. | بعد توسيع التقرير، تحديث mapper ليقرأ `errorAnalysis`, `repTimeline`, `bestReps`, `worstRep`, `improvementTips`, `holdSummary`. |
+| P1 | iOS live training readiness | Legacy Android-only. | KMP يملك preview/camera boundaries على iOS؛ **بعد §35.x:** جسر Swift↔Kotlin + `IosTrainingFrameSnapshotPort` هيكليان؛ landmarks حية ما زالت تحتاج MediaPipe Pod + Mac smoke. | دعم iOS الحالي بنيوي وليس تجربة تدريب فعلية مكافئة حتى §35.x.3. | على Mac: CocoaPods + `.task` bundle + smoke §35.x.3؛ smoothing iOS اختياري لاحقاً. |
+| P2 | Pose variant index | Legacy يمرر `poseVariantIndex` في setup/report وبعض المسارات. | ~~KMP engine يدعم parameter، لكن `TrainingSessionViewModel` يبني `SetupReadinessGate` و`MovitTrainingEngine` بـ `poseVariantIndex = 0` فقط.~~ **مُنفَّذ §35.2** | تمارين لها أكثر من pose variant قد تعمل بvariant خاطئ، فتختلف setup/count/report. | تمرير `poseVariantIndex` من route/session context إلى VM/engine/setup/report، وتسجيله ضمن session summary. |
+| P2 | Throughput/performance | Legacy كان أعلى تقريبا في throughput ودقة التحليل. | KMP ثبت على `320×240` و`targetFps=10` وفعليا ~7fps في smoke واحد لحل GC/stall. | القرار مقبول مؤقتا للاستقرار، لكنه قد يغير حساسية العد والـ feedback مقارنة بـ MO. | ✅ بنية `TrainingThroughputProfiles` + flag `movit.training.throughput.profile` — انظر §35.2؛ الرفع التدريجي بعد قياسات `TrainingPipeline`. |
+| P2 | Feedback/UI event model | Legacy event stream موحد `FeedbackEvent` غني، و`TrainingFeedbackBinder` يربط vignette/captures/audio معا. | KMP callbacks و`FeedbackRouter` أنظف بنيويا، لكن بعض الأحداث غير مكتملة الربط أو موزعة بين VM/coordinator. | اختلافات ملموسة في توقيت الرسائل، أولوية الصوت، والتحفيز/التحذير. | ✅ §35.4 — `TrainingFeedbackEventRouter` + ربط rep/target/hold/countdown/visibility vignette؛ setup voice وRepIncomplete audio في §35.1/§35.2. |
+
+### 34.3 نقاط ليست regressions أو أصبحت أفضل في KMP
+
+| المجال | الحكم |
+|---|---|
+| Visual setup panel | الأقسام القديمة التي تقول إن KMP لا يعرض axis statuses أو `referenceImageUrl` أو joint rows أصبحت قديمة. الكود الحالي يعرض chips، image، camera tip، وصفوف مفاصل. المتبقي هو صوت setup وskeleton guidance وsetup gate semantics وpolish overlay. |
+| HoldTimer | KMP قريب من Legacy في state machine: `IDLE`, `HOLDING`, `GRACE_PERIOD`, `COMPLETED`, `FAILED`. لم يظهر regression مباشر في timer نفسه؛ الفروقات المحتملة تأتي من setup/visibility/feedback/report. |
+| Angle assembly على Android | KMP common `PoseFrameAssembler` يستخدم worldLandmarks عندما تتوفر ويحتوي `ElbowAngleEstimator` ported من Legacy، وAndroid module يربط `AndroidPoseRefiner`. هذا ليس فجوة رئيسية الآن، لكن iOS لا ينتج landmarks بعد. |
+| Stability fixes | `Channel.CONFLATED`, inference in-flight guard, camera shutdown after completion، و`TrainingPipelineDiagnostics` تحسينات حقيقية ولا يجب إزالتها أثناء استعادة parity. |
+| Data/offline architecture | KMP أفضل من Legacy في حدود write hooks/outbox/cache، بشرط أن لا تُفقر مادة التقرير والـ summary. |
+
+### 34.4 ترتيب التنفيذ المقترح
+
+1. [x] إصلاح `completionTargetReps` وتمارين bilateral `AFTER_ALL_REPS` أولا، لأنه correctness مباشر في العد. → §35.x P0 Bilateral
+2. [x] توسيع `RepResult`/`ExerciseWorkoutSummary` ليحملا `positionErrors`, `stateBreakdown`, `commonErrors`, `repDetails`, weight. → §35.1 Position snapshots · §35.x P0 Count metrics
+3. [x] بناء report generator KMP كامل بدلا من JSON فارغ، ثم تحديث report UI mapper. → §35.x P0 Report richness · §35.2 Report UI (نواة؛ `setSummaries`/`performanceMetrics` مؤجَّلة)
+4. [x] استعادة setup gate parity: any-side readiness، نسبة حضور المفاصل، countdown rough validation، وتجميد countdown الصحيح. → §35.1 Setup any-side · §35.3 Countdown rough
+5. [x] تلميع جلسة التدريب: overlay parity، setup skeleton guidance، flip camera reset/alignment. → §35.11 Overlay · §35.3 Setup skeleton · §35.2 Flip camera
+6. [x] ربط setup audio cooldown و`RepIncomplete` وباقي feedback event matrix. → §35.2 Setup voice · §35.1 RepIncomplete · §35.4 Feedback matrix
+7. [~] استكمال evidence/replay metadata وiOS snapshot. → §35.x Frame evidence (Android ✅) · §35.x iOS (بنيوي فقط)
+8. [x] تمرير `poseVariantIndex` من navigation/session context. → §35.2 Pose variant
+9. [~] بعد correctness، رفع الأداء تدريجيا بقياسات `TrainingPipeline` وليس بالتخمين. → §35.2 Throughput flags (افتراضي `stable` لم يتغيّر)
+
+> `[x]` مُنفَّذ · `[~]` جزئي/مؤجَّل تشغيلياً · `[ ]` لم يُغلق
+
+### 34.5 اختبارات قبول مطلوبة
+
+| الاختبار | المطلوب |
+|---|---|
+| Bilateral after-all-reps | تمرين target 12 لكل جانب لا يكتمل قبل 24 total reps، ويظل side switching عند 12. |
+| Any-side setup | تمرين any-side يؤكد setup عند نجاح أحد الجانبين المسموحين، ولا يؤكد setup بمجرد مفصل واحد غير كاف، ولا يفشل بسبب غياب الجانب الآخر إذا كان Legacy يقبله. |
+| Countdown rough pose | انحراف `±10°` أثناء العد التنازلي لا يلغي countdown إذا كانت scene valid و60% من primary joints موجودة، ولا يستمر countdown تحت هذه النسبة. |
+| Setup voice | phase guidance وworst joint guidance لا يتكرران spam، ويعملان عبر audio cache/TTS fallback. |
+| Overlay polish | live skeleton يحافظ على محاذاة FILL_CENTER، يعرض setup highlights، position-error marks، any-side dimming، وbilateral side hint بنفس intent الخاص بـ Legacy. |
+| Flip camera | flip في setup/countdown/training لا يترك landmarks قديمة، لا يكسر mirror، لا يغير العد، ويستأنف setup gate بعد أول frame من العدسة الجديدة. |
+| Rep incomplete | أسباب `NO_TARGET_DEPTH`, `NO_FULL_RETURN`, `TOO_FAST`, `TOO_SLOW` تصل إلى UI/audio. |
+| Report parity | تقرير KMP يحتوي best/worst/error/timeline/tips/hold/evidence عندما تحتوي session على نفس المادة. |
+| iOS smoke | camera preview + pose landmarks + setup progress + rep count + report evidence أو fallback واضح. |
+
+---
+
+## 35) تنفيذ مطابقة §34 — ملخص التكامل
+
+**التاريخ:** 2026-06-14 · **التحقق الآلي:** `assembleDebug` + `training-engine` / `feature:training` / `pose-capture` unit tests — **BUILD SUCCESSFUL** (بعد دمج إصلاحات التجميع والاختبارات أدناه).
+
+### 35.0 جدول §34.2 — الحالة بعد الدمج المتوازي
+
+| # | الأولوية | المجال | الحالة | قسم الوكيل / التفاصيل |
+|---|---|---|---|---|
+| 1 | P0 | Count Logic / bilateral `AFTER_ALL_REPS` | **done** | [§35.x P0 Bilateral](#35x-p0-bilateral-completiontargetreps-342-صف-1) |
+| 2 | P0 | Report richness / post-session analysis | **done** (نواة) | [§35.x P0 Report richness](#35x-p0-report-richness-342-صف-2) — `setSummaries` / `performanceMetrics` / `quickInsight` مؤجَّلة |
+| 3 | P0 | Count Metrics / per-rep summary | **done** | [§35.x P0 Count metrics](#35x-p0-count-metrics-summary-342-صف-3) |
+| 4 | P1 | Position check details في العدة | **done** | [§35.1 Position snapshots](#351-p1--position-error-snapshots-في-represult-342-صف-4) |
+| 5 | P1 | Setup Pose any-side | **done** | [§35.1 Setup any-side](#351-p1-setup-any-side-parity) |
+| 6 | P1 | Countdown rough validation | **done** | [§35.3 Countdown rough](#353-p1-countdown-rough-validation-342-صف-6) |
+| 7 | P1 | Setup feedback الصوتي | **done** | [§35.2 Setup voice](#352-p1-setup-voice-feedback) |
+| 8 | P1 | Setup skeleton guidance | **done** | [§35.3 Setup skeleton](#353-p1-setup-skeleton-guidance-342-صف-8) |
+| 9 | P1 | Training session polish / overlay | **done** (نواة) | [§35.11 Overlay polish](#3511-p1--training-session-overlay-polish-342-row-9-2026-06-14) — flow/glow مؤجَّل |
+| 10 | P1 | Flip camera polish | **done** | [§35.2 Flip camera](#352-p1-flip-camera-polish) |
+| 11 | P1 | RepIncomplete feedback | **done** | [§35.1 RepIncomplete](#351-p1-repincomplete-feedback) |
+| 12 | P1 | Frame evidence / replay | **done** (بنيوي) | [§35.x Frame evidence](#35x-p1-frame-evidence--replay-342-صف-12) — Android ✅؛ iOS JPEG/replay عبر Swift bridge عند جاهزية MediaPipe |
+| 13 | P1 | Report UI local mapping | **done** | [§35.2 Report UI](#352-p1-report-ui-local-mapping) |
+| 14 | P1 | iOS live training readiness | **done** (بنيوي) | [§35.x iOS](#35x-p1--ios-live-training-readiness-structural-wiring-2026-06-14) — Session camera/flip/bridge موصولة؛ يحتاج Mac + MediaPipe Pod smoke |
+| 15 | P2 | `poseVariantIndex` | **done** | [§35.2 Pose variant](#352-p2-pose-variant-index) |
+| 16 | P2 | Throughput/performance | **partial** | [§35.2 Throughput flags](#352-p2--throughputperformance-flags-342-صف-16) — flags جاهزة؛ الإنتاج `stable` |
+| 17 | P2 | Feedback/UI event model | **done** | [§35.4 Feedback matrix](#354-p2-feedbackui-event-model-parity-342-صف-17) |
+
+### 35.0.1 §34.5 اختبارات القبول — بعد الدمج
+
+| الاختبار | حالة الوحدة | تحقق جهاز |
+|---|---|---|
+| Bilateral after-all-reps | ✅ `BilateralCompletionTargetRepsTest` | ⏳ smoke bilateral 12+12 |
+| Any-side setup | ✅ `StartPoseGateTest` / `SetupReadinessGateTest` | ⏳ |
+| Countdown rough pose | ✅ `SetupReadinessGateTest` + `StartPoseGateTest` | ⏳ |
+| Setup voice | ✅ `SetupVoiceGuidanceGateTest` / `FeedbackRouterTest` | ⏳ صوت فعلي + cache |
+| Overlay polish | ✅ `SkeletonOverlayMapperTest` / `DisplayLandmarkTransformTest` | ⏳ محاذاة FILL_CENTER بعد flip |
+| Flip camera | ✅ `LensSwitchFrameGateTest` / `TrainingCameraSwitchPolicyTest` | ⏳ setup/countdown/training |
+| Rep incomplete | ✅ `RepIncompleteFeedbackTest` | ⏳ |
+| Report parity | ✅ `MovitPostTrainingReportBuilderTest` / `MovitSessionReportUiMapperTest` | ⏳ جلسة حقيقية + captures |
+| iOS smoke | — | ❌ محجوب (Mac + Pod + model) |
+
+### 35.0.2 متبقٍ لتحقق الجهاز فقط (لا يُغلق بالوحدة)
+
+- جلسة bilateral كاملة 24 rep مع تبديل جانب عند 12 دون إنهاء مبكر.
+- Setup voice على جهاز (TTS fallback + clips من cold bundle).
+- Flip كاميرا في setup / countdown / training: mirror، عدم تلويث العد، استئناف gate بعد أول إطار.
+- تقرير ما بعد الجلسة مع peak frames وreplay clips مرئية في UI.
+- iOS: preview + landmarks حية + تقرير (أو fallback واضح) بعد ربط MediaPipe على Mac.
+- رفع throughput فوق `stable` على 3+ أجهزة عبر `TrainingPipeline` (مراحل rollout في §35.2 Throughput).
+
+### 35.0.3 قرارات معمارية مُوحَّدة (بعد الدمج)
+
+| القرار | المبرر |
+|---|---|
+| `completionTargetReps` منفصل عن per-side `targetReps` | يطابق MO؛ `BilateralController` يبقى per-side للتبديل فقط. |
+| `RepPositionErrorSnapshot` بجانب `positionErrorCheckIds` | لا استبدال للـ IDs؛ مادة تقرير كاملة في common. |
+| `MovitPostTrainingReportBuilderV2` + `MovitPostTrainingReportEnrichment` | تحليل common؛ `MovitPostTrainingReportBuilder` يدمج V2 عند وجود `repDetails`. |
+| Setup صارم vs countdown متسامح | `isSetupPoseConfirmed` ≠ `isCountdownPoseValid` / `isStartPoseRoughlyValid`. |
+| `TrainingFeedbackEventRouter` + `FeedbackRouter` | مصفوفة أحداث موحّدة؛ setup/rep-incomplete مسارات فرعية مع dedupe خاص. |
+| `SkeletonOverlayParityState` | عقد overlay واحد لـ setup/training/position-errors/any-side/bilateral. |
+| `LensSwitchFrameGate` + reset tracking على flip | منع إطارات stale بعد تبديل العدسة. |
+| Throughput `stable` افتراضي + profiles في Gradle | استقرار §29–§32 أولاً؛ رفع تدريجي بقياس `TrainingPipeline`. |
+| iOS bridge registry + no-pose صادق | لا landmarks وهمية؛ snapshot/replay يتبعان `bridge.isAvailable`. |
+
+### 35.0.4 إصلاحات التكامل (هذه الجلسة)
+
+| المشكلة | الإصلاح |
+|---|---|
+| تعارض imports / `CountingMethod` في report enrichment | `com.movit.core.training.engine.CountingMethod` |
+| `TrainingFeedbackEventRouter` / `VignetteCue` / `TrainingSystemMessagePort` | أسماء enum + constructor `messages=` في الاختبارات |
+| `FeedbackRouterTest` streak عند rep#3 | بناء streak عبر reps 1–2 قبل rep 3 |
+| `RepIncompleteFeedback` + active slot | `INTERRUPT` لأربعة أسباب force-audible |
+| `MovitRepReplaySamplerTest` eviction | توقعات تطابق evict أعلى rep قديم (11) مع الإبقاء على 12 |
+| `SkeletonOverlayMapperTest` landmark indices | 26/28 لـ `right_knee`/`right_ankle` (MediaPipe) |
+| `ExerciseWorkoutSummaryBuilderTest` | `RepCounter(minRepIntervalMs = …)` |
+
+```bash
+cd android-poc
+./gradlew :app:assembleDebug \
+  :core:training-engine:testDebugUnitTest \
+  :feature:training:testDebugUnitTest \
+  :core:pose-capture:testDebugUnitTest
+```
+
+**النتيجة:** BUILD SUCCESSFUL (2026-06-14).
+
+> التفاصيل التنفيذية لكل وكيل متوازٍ تبقى في الأقسام الفرعية أدناه (§35.x / §35.1–§35.11).
+
+---
+
+## 35.x P1 — iOS live training readiness (structural wiring, 2026-06-14)
+
+> تنفيذ صف §34.2 row 14 (P1). الهدف: جاهزية بنيوية لربط MediaPipe-iOS مع صدق حول ما يعمل اليوم مقابل ما يحتاج Mac + جهاز.
+
+### 35.x.1 ما وُصِل في الكود
+
+| المكوّن | الحالة | الملاحظات |
+|---|---|---|
+| `IosPoseLandmarkerBridge` (Kotlin interface) | ✅ | `core/pose-capture/iosMain` — عقد `warmUp` / `detectAsync` / `takeSnapshotJpeg` / `bindResultHandler`. |
+| `IosPoseLandmarkerBridgeRegistry` + `installIosPoseLandmarkerBridge` | ✅ | تسجيل من Swift قبل `MainViewController`. |
+| `IosPoseDetector` | ✅ | يفوّض للجسر عند `READY`؛ `NOT_INSTALLED` / `INSTALLED_UNAVAILABLE` → `onNoPoseDetected()` بصدق (لا landmarks وهمية). |
+| `PoseLandmarkFlatCodec` | ✅ | ترميز 33×5 floats بين Swift وKotlin؛ اختبار JVM `PoseLandmarkFlatCodecTest`. |
+| `MovitPoseLandmarkerBridge.swift` | 🔶 هيكلي | يُجمَّع بدون CocoaPod (`#if canImport(MediaPipeTasksVision)`). `isAvailable == false` حتى Pod + `pose_landmarker_full.task`. |
+| `iOSApp.swift` | ✅ | يستدعي `IosPoseLandmarkerBridgeInstallKt.installIosPoseLandmarkerBridge` في `init`. |
+| `IosTrainingFrameSnapshotPort` | ✅ | يحفظ JPEG عند `bridge.isAvailable`؛ وإلا `NoOpTrainingFrameSnapshotPort` (metadata-only في coordinator). |
+| `TrainingFrameSnapshotPortBinding.ios` | ✅ | يربط `IosTrainingFrameSnapshotPort` عند جسر جاهز. |
+| `IosCameraFrameSource` | ✅ | يمرّر `worldLandmarks` + أبعاد التحليل إلى `PoseFrameAssembler`. |
+| `iosApp/README.md` | ✅ | خطوات Pod + model bundle موثّقة. |
+
+### 35.x.2 ما بقي محجوباً (يتطلب Mac)
+
+| البند | السبب |
+|---|---|
+| تجميع `compileKotlinIosSimulatorArm64` على Windows (هذه الجلسة) | `kotlin-native-prebuilt-windows` حُجب `callbacks.dll` بسياسة Application Control على الجهاز — ليس خطأ Kotlin في الكود. CI على `macos-15` هو المرجع. |
+| `xcodebuild` + Swift compile مع MediaPipe | CocoaPod `MediaPipeTasksVision` غير مضاف في `project.yml` بعد؛ يحتاج Mac + `pod install`. |
+| landmarks حية على Simulator/Device | يحتاج Pod + نموذج `.task` في bundle + تحقق على جهاز iOS فعلي (كاميرا + GPU/CPU inference). |
+| JPEG evidence في التقرير على iOS | `IosTrainingFrameSnapshotPort` جاهز؛ يعمل فقط بعد `takeSnapshotJpeg` من جسر MediaPipe حيّ. |
+| Landmark smoothing iOS | Android يستخدم `LandmarkSmoother` (One Euro)؛ iOS لم يُنقل بعد — اختياري بعد ثبات inference. |
+
+### 35.x.3 مسار التحقق على Mac (قبول §34.5 iOS smoke)
+
+1. `brew install xcodegen` · `cd android-poc/iosApp && xcodegen generate`
+2. أضف CocoaPods: `pod 'MediaPipeTasksVision'` · انسخ `pose_landmarker_full.task` إلى `iosApp/iosApp/`
+3. `./gradlew :feature:shell:embedAndSignAppleFrameworkForXcode` · `xcodebuild` simulator
+4. شغّل تدريباً حياً: preview + landmarks + setup progress + عدّ + تقرير (evidence أو fallback metadata واضح في UI)
+
+### 35.x.4 حكم الصف §34.2
+
+| قبل | بعد هذا التنفيذ |
+|---|---|
+| `IosPoseDetector` stub صامت (no-pose دائماً بدون مسار جسر) | مسار جسر Swift↔Kotlin موصول؛ no-pose **بصدق** حتى MediaPipe جاهز |
+| `TrainingFrameSnapshotPortBinding.ios` = NoOp دائماً | NoOp عند غياب جسر؛ `IosTrainingFrameSnapshotPort` عند `bridge.isAvailable` |
+| لا Swift bridge في repo | `MovitPoseLandmarkerBridge.swift` + تسجيل في `iOSApp` |
+
+**لم يُعلَن** iOS live training مكافئاً لـ Android — الجاهزية **بنيوية** حتى تحقق Mac smoke أعلاه.
+
+---
+
+## 35) تنفيذ فجوات §34.2 (P0/P1)
+
+> **المرجع:** §34.2 فروقات مؤكدة وخطة المعالجة. كل بند فرعي يُغلق هنا عند اكتمال التنفيذ والاختبارات.
+
+### 35.1 P1 — Position error snapshots في `RepResult` (§34.2 صف 4)
+
+> **الحالة:** ✅ مُنفَّذ.
+
+| المكوّن | التغيير |
+|---|---|
+| `RepPositionErrorSnapshot` | DTO common قابل للتسلسل: `checkId`, `type`, `severity`, `message`, `actualValue`, `threshold`, `landmark1`, `landmark2`. |
+| `PositionError.toRepSnapshot()` | تحويل من مسار `PositionValidator` إلى snapshot دائم داخل العدة. |
+| `RepResult` | حقل `positionErrors: List<RepPositionErrorSnapshot>` بجانب `positionErrorCheckIds` (إضافي، ليس بديلاً). `getTotalErrorCount()` للتقرير. |
+| `RepCounter` | `addPositionError(PositionError)` يخزّن snapshot كامل؛ `addPositionError(String)` للاختبارات فقط. `getMostCommonPositionErrors()` لتجميع التقرير. |
+| `MovitTrainingEngine` | `pv.errors.forEach { repCounter.addPositionError(it) }` بدل تمرير `checkId` فقط. |
+| `ExerciseWorkoutSummary` | `repDetails` يحمل `RepResult` كاملة — التقرير يقرأ `positionErrors` و`positionErrorRepCount()`. |
+| `MovitPostTrainingReportBuilderV2` | `worstRep` / `repTimeline` / ترتيب best reps يستخدمون `positionErrors` (رسالة، landmarks، عدّ) بدل `positionErrorCheckIds` فقط. |
+
+**اختبارات:** `RepCounterTest` (snapshot كامل، تجميع common position errors)، `ExerciseWorkoutSummaryPositionErrorsTest`.
+
+```bash
+cd android-poc
+./gradlew :core:training-engine:testDebugUnitTest
+```
+
+**ما بقي:** توسيع `MovitPostTrainingReportBuilder` / `ReportGenerator` V2 لاستخدام `positionErrors` في `errorAnalysis` و`worstRep` (§34.2 صف 2 — P0 report richness).
+
+---
+
+## 35) سجل إغلاق فجوات P1 (2026-06-14)
+
+### 35.1 P1 Setup any-side parity
+
+| البند | الحالة |
+|---|---|
+| **المصدر Legacy** | `PoseSetupGuide.allPrimaryJointsPresent` — يبني `startPoseReadyByJoint` من المفاصل ذات `GuidanceLevel.GREEN`، ثم يتحقق من كل primary مع paired any-side semantics. |
+| **التنفيذ KMP** | `StartPosePresence` (common) + `StartPoseGate.isInStartPose` + `SetupReadinessGate` rolling window. |
+| **المنطق المنقول** | لكل primary: `two_sides` يشترط زاوية حاضرة داخل `startPose`؛ زوج `any_side` صريح أو زوج bilateral على تمرين any-side يكفي نجاح جانب واحد؛ غياب الزاوية = غير حاضر (لا يُتخطى بـ `continue`). |
+| **الملفات** | `StartPosePresence.kt`, `StartPoseGate.kt`, `SetupReadinessGate.kt` |
+| **الاختبارات** | `StartPoseGateTest`: bilateral يشترط الركبتين؛ any-side يقبل كوعاً واحداً جاهزاً؛ يرفض زاوية واحدة خارج النطاق. `SetupReadinessGateTest`: `isCountdownPoseValid` بنفس semantics عبر البوابة المدمجة. |
+| **متبقٍ (P1 منفصل)** | ~~countdown rough validation (`±10°` + 60% presence)~~ — نُفِّذ في §35.3. |
+
+**حكم القبول (§34.5 Any-side setup):** تمرين any-side يؤكد عند نجاح جانب مسموح واحد؛ لا يؤكد بمفصل واحد غير كافٍ على تمارين bilateral؛ لا يفشل لغياب الجانب الآخر عندما يقبله Legacy.
+
+---
+
+## 35) تنفيذ P1 — مصفوفة feedback
+
+### 35.2 P1 Setup voice feedback
+
+**الحالة:** مُنفَّذ (2026-06-14).
+
+**المشكلة (§34.2 صف 7):** KMP يعرض `actionMessage` و`jointRows` بصرياً لكن لا ينطق phase guidance وworst-joint guidance مثل Legacy (`speakSetupPhaseGuidance` / `speakSetupGuidance`).
+
+**المرجع Legacy:** `SetupCountdownBinder.updateSetupGuidanceUI` → `FeedbackManager.speakSetupPhaseGuidance` / `speakSetupGuidance` مع `FeedbackKind.SETUP`, `activeKey = setup`, `WAIT_FOR_SLOT`, وcooldown من `PoseSetupGuide` (base `voiceCooldownMs`, 2× لنفس المفصل/المرحلة).
+
+**التنفيذ KMP:**
+
+| الطبقة | الملف | التغيير |
+|---|---|---|
+| Cooldown gate | `SetupVoiceGuidanceGate.kt` | منطق `shouldSpeakPhaseGuidance` / `shouldSpeakJointGuidance` مع `SetupValidationConfig.voiceCooldownMs`. |
+| Signals | `SetupFeedbackSignals.kt` | بناء `FeedbackSignal` لـ phase/joint (`dedupeKey` = `setup_phase:{hash}` / `setup:{jointCode}`). |
+| Router | `FeedbackRouter.kt` | `submitSetup()` + `resetSetupFeedback()` (`activeKey = setup`). |
+| VM | `TrainingSessionViewModel.kt` | `deliverSetupVoiceFeedback` عند كل frame في `SETUP_POSE`/`RESUME_SETUP`: transition إلى ANGLES، phase messages، worst joint RED. |
+| Messages | `PositionMessageResolver.resolveSetupSceneToVisibility()` + `SystemMessageRegistry` | نص الانتقال scene→angles؛ joint messages عبر TTS عند غياب clip. |
+
+**سلوك الصوت:**
+
+| الحدث | الشرط | المصدر |
+|---|---|---|
+| Scene → angles transition | `phase` أصبح `ANGLES` من مرحلة سابقة | `training_setup_scene_to_visibility` |
+| Phase guidance | `REGION`/`POSTURE`/`DIRECTION` + `phaseMessage` | `PositionMessageResolver` |
+| Worst joint | `ANGLES` + `worstJointGuidance.level == RED` | `SetupJointGuidanceResolver` |
+
+**Dedupe/cooldown:** طبقتان — `SetupVoiceGuidanceGate` (legacy `PoseSetupGuide`) ثم `FeedbackScheduler` عبر `submitSetup`. عند مغادرة setup: `resetSetupVoiceState()` يصفّر gate و`resetSetupFeedback()`.
+
+**Audio:** `CachedAudioFeedbackPlayer` يشغّل clip من `audioUrl` عند توفره؛ وإلا TTS على `FeedbackSignal.text`.
+
+**اختبارات:** `SetupVoiceGuidanceGateTest`, `SetupFeedbackSignalsTest`, `FeedbackRouterTest` (setup dedupe + `resetSetupFeedback`).
+
+**§34.5 Setup voice:** ✅ مغطى.
+
+### 35.1 P1 RepIncomplete feedback
+
+**الحالة:** مُنفَّذ (2026-06-14).
+
+**المشكلة (§34.2 صف 11):** `PhaseStateMachine.onRepIncomplete` كان موجوداً في KMP لكن غير موصول من `MovitTrainingEngine` إلى `TrainingSessionViewModel`/`FeedbackRouter`، فالمستخدم لا يسمع/يرى سبب عدم احتساب العدة.
+
+**المرجع Legacy:** `TrainingEngine` → `FeedbackEvent.RepIncomplete` → `FeedbackManager.handleRepIncomplete` مع `dedupeKey = rep_incomplete:{reason}`, `cooldownGroup` مطابق، `ERROR` + `REPLACE_LOWER`, `forceAudible = true`.
+
+**التنفيذ KMP:**
+
+| الطبقة | الملف | التغيير |
+|---|---|---|
+| Engine | `MovitTrainingEngine.kt` | `onRepIncomplete` callback يُمرَّر من `stateMachine.onRepIncomplete`. |
+| Mapping | `RepIncompleteFeedback.kt` | تحويل `RepIncompleteReason` → `FeedbackSignal` (`FeedbackKind.REP`, `ERROR`, dedupe/cooldown per reason). |
+| VM | `TrainingSessionViewModel.kt` | `wireEngineCallbacks` → `submitRepIncompleteFeedback` → `FeedbackRouter.submit`. |
+| رسائل | `cold_offline_bundle.json` / `SystemMessageRegistry` | `training_rep_incomplete_depth`, `training_rep_incomplete_return`, `training_rep_too_fast`, `training_rep_too_slow`. |
+
+**خرائط الأسباب الأربعة:**
+
+| `RepIncompleteReason` | message code | EN (افتراضي) |
+|---|---|---|
+| `NO_TARGET_DEPTH` | `training_rep_incomplete_depth` | You didn't reach the target. Complete the full range. |
+| `NO_FULL_RETURN` | `training_rep_incomplete_return` | Return fully to the start position. |
+| `TOO_FAST` | `training_rep_too_fast` | Too fast — slow down. |
+| `TOO_SLOW` | `training_rep_too_slow` | Too slow — keep a steady pace. |
+
+**Dedupe/cooldown:** `dedupeKey` و`cooldownGroup` = `rep_incomplete:{reason}`؛ `activeKey = correction`؛ `forceAudible = true`؛ `REPLACE_LOWER` لاستبدال تحذير مفصل أدنى أولوية.
+
+**اختبارات:** `RepIncompleteFeedbackTest` — mapping لكل سبب + تسليم `FeedbackRouter` مع cooldown.
+
+**§34.5 Rep incomplete:** ✅ مغطى.
+
+### 35.2 P2 Pose variant index
+
+**الحالة:** مُنفَّذ (2026-06-14).
+
+**المشكلة (§34.2 صف 15):** `TrainingSessionViewModel` كان يمرّر `poseVariantIndex = 0` ثابتاً إلى `SetupReadinessGate` و`MovitTrainingEngine` ورسائل G2، رغم أن Legacy/MO يمرّر الفهرس من Intent أو workout item أو شاشة الإعداد.
+
+**التنفيذ KMP:**
+
+| الطبقة | الملف | التغيير |
+|---|---|---|
+| Navigation | `TrainingSessionRouteArgs`, `MovitInnerRoute.TrainingSession`, `TrainingStartAction.KmpLive` | حقل `poseVariantIndex` من prepare/deep-link/workout flow. |
+| Library | `WorkoutFlowExerciseUi.variantIndex` → `TrainingFlowItem.Exercise.poseVariantIndex` | تمرير per-exercise variant في الجولات المتعددة. |
+| Prepare | `ExercisePrepareViewModel` | `selectedPoseVariantIndex` يُنسخ إلى `KmpLive.poseVariantIndex` عند Start. |
+| Resolver | `TrainingPoseVariantResolver` | route index أو flow item، مع clamp على `poseVariants.size`. |
+| VM | `TrainingSessionViewModel` | `activePoseVariantIndex` → setup gate، countdown validation، engine، joint messages، feedback random messages. |
+| Engine | `MovitTrainingEngine` | `val poseVariantIndex` عام؛ `stop()` يكتب الفهرس في `ExerciseWorkoutSummary`. |
+| Writes | `TrainingSessionWriteHooks` / `TrainingMotionSession` | journal يتتبع joints للـ variant النشط. |
+| Reports | `ExerciseWorkoutSummary`, `MovitExerciseSessionReport`, `MovitPostTrainingReport` | `poseVariantIndex` مسجّل في summary والتقارير. |
+
+**اختبارات:** `TrainingPoseVariantResolverTest`, `ExerciseWorkoutSummaryBuilderTest`, `WorkoutTrainingLaunchTest.toTrainingFlowItems_mapsVariantIndex`, `TrainingSessionViewModelTest.trainingSessionRouteArgs_carriesPoseVariantIndex`.
+
+**§34.2 Pose variant index:** ✅ مغلق.
+
+### 35.2 P1 Report UI local mapping
+
+**الحالة:** مُنفَّذ (2026-06-14).
+
+**المشكلة (§34.2 صف 13):** `MovitSessionReportUiMapper.mapPostTraining` كان يملأ `joints` و`repCompare` و`tips` بقوائم فارغة للتقارير المحلية من `TrainingSessionReportCache`، حتى لو احتوت الجلسة على تحليل غني.
+
+**التنفيذ KMP:**
+
+| الطبقة | الملف | الدور |
+|---|---|---|
+| Domain | `MovitPostTrainingReportEnrichment.kt` | أنواع `errorAnalysis`, `repTimeline`, `bestReps`, `worstRep`, `improvementTips`, `holdSummary`, `setSummaries`, `heroFrame`, … — حقول اختيارية على `MovitPostTrainingReport` (تُملأ تدريجياً عبر `MovitPostTrainingReportBuilderV2`). |
+| Encode | `PostTrainingReportLegacyJson` | يُصدّر الحقول الغنية عند توفرها بدل `empty`/`null` ثابت. |
+| Mapper | `MovitSessionReportEnrichmentMapper.kt` | يحوّل التحليل إلى `ReportJointScoreUi`, `ReportRepCompareUi`, `ReportCoachingTipUi`, `formBySet*`, fatigue من timeline، وhold insight. |
+| UI bridge | `MovitSessionReportUiMapper.mapPostTraining` | يستهلك الحقول عند الحضور؛ يبقى `SessionUntracked` فقط للتقارير الناقصة. |
+| Strings | `ReportDetailStrings` + `strings.xml` | `report_detail_best_rep`, `report_detail_worst_rep`, `report_detail_hold_achievement`. |
+
+**خرائط الحقول:**
+
+| مصدر التقرير | هدف UI |
+|---|---|
+| `errorAnalysis` (مجمّع per joint) | `joints` + tips ثانوية من `tip`/`message` |
+| `bestReps` + `worstRep` (أو min/max من `repTimeline`) | `repCompare` |
+| `repTimeline` (مجمّع per set) أو `setSummaries` | `formBySetValues` / `formBySetLabels` + `fatigueMessage` |
+| `improvementTips` | `tips` (مرتبة بـ `priority`) |
+| `holdSummary` | `durationLabel`, `formScore`, `overviewInsightMessage` |
+| `overallQuality` / `heroFrame` | `formScore` / `heroFramePath` عند الغياب في captures |
+
+**اختبارات:** `MovitSessionReportUiMapperTest` — fixture `post-training-enriched-squat.json` + hold + timeline-only rep compare + sparse fallback.
+
+**§34.5 Report parity (UI):** ✅ mapper جاهز؛ يعتمد على إثراء builder P0 لتعبئة الحقول في الإنتاج.
+
+### 35.2 P1 Flip camera polish
+
+**الحالة:** مُنفَّذ (2026-06-14).
+
+**المشكلة (§34.2 صف 10):** KMP كان يبدّل العدسة عبر `CameraFrameSource.start` و`isCameraSwitching` لكن بدون reset صريح لـ landmark smoothing و`ElbowAngleEstimator`، وبدون تجميد setup/countdown/training حتى أول إطار من العدسة الجديدة — ما يسمح بإطارات/زوايا stale وتلويث العد أو setup gate.
+
+**المرجع Legacy:** `CameraTrainingInputController.applySwitchCameraFromSettings` — `switchCamera` + `landmarkSmoother.reset()` + `elbowAngleEstimator.reset()` + `skeletonOverlay.updateFrontCameraState`.
+
+**التنفيذ KMP:**
+
+| الطبقة | الملف | التغيير |
+|---|---|---|
+| Gate | `LensSwitchFrameGate.kt` | يحجب إطارات العدسة السابقة حتى `isFrontCamera` يطابق الوجهة الجديدة؛ يُستدعى مع `CameraStartGate.Action.SwitchFacing`. |
+| Camera | `CameraXFrameSource.kt` | عند flip: `resetTrackingState` + `PoseFrameAssembler.resetElbowEstimator` + `emitPoseFrame`؛ `onCameraBound` مؤجَّل لأول إطار بعد التبديل (وليس عند bind فقط). |
+| Boundary | `PoseDetector.kt` | `resetTrackingState()` — Android يصفّر `LandmarkSmoother`. |
+| VM | `TrainingSessionViewModel.kt` + `TrainingCameraSwitchPolicy.kt` | `onCameraSwitchStarted` يمسح landmarks/joint visuals؛ المعالجة مجمّدة أثناء `isCameraSwitching`؛ `onCameraReady` (بعد أول إطار من العدسة الجديدة) يفك التجميد. |
+| UI | `TrainingSessionScreen.kt` | overlay تحميل قصير أثناء `isCameraSwitching`. |
+
+**اختبارات:** `LensSwitchFrameGateTest`, `CameraStartGateTest` (switch يحافظ على bind), `TrainingCameraSwitchPolicyTest`.
+
+**§34.5 Flip camera:** ✅ مغطى (وحدة + smoke policy؛ اختبار يدوي على جهاز للـ mirror/عد موصى به).
+
+### 35.3 P1 Setup skeleton guidance (§34.2 صف 8)
+
+**الحالة:** مُنفَّذ (2026-06-14).
+
+**المشكلة:** Legacy يرسل `SkeletonOverlayView.updateSetupGuidance` أثناء `SETUP_POSE` في مرحلة `ANGLES` لتلوين عظام المفاصل وإظهار أسهم `RAISE/LOWER` بجانب الزاوية. KMP كان يعرض `SetupJointGuidanceUi` في اللوحة النصية فقط.
+
+**المرجع Legacy:** `SetupCountdownBinder.updateSetupGuidanceUI` → `drawSetupGuidance`: عظام ملوّنة، دوائر حسب `GREEN/YELLOW/RED`، ملصق `%.0f° ↑/↓`.
+
+**التنفيذ KMP:**
+
+| المكوّن | التغيير |
+|---|---|
+| `SkeletonOverlayContract.kt` | `SkeletonOverlayParityState`, `SkeletonSetupJointHighlight`, `SkeletonOverlayMode.SETUP_ANGLES` / `SCENE_CHECK` |
+| `MovitSkeletonOverlay.drawSetupHighlights` | عظام + دوائر + ملصق زاوية/سهم عبر `TextMeasurer` |
+| `SetupJointGuidanceUi` | `direction`, `currentAngle`, `isPrimary` من `JointSetupGuidance` |
+| `SkeletonOverlayMapper` | `buildSkeletonOverlayParityState`, `mapSetupHighlights`, `resolveSkeletonOverlayMode` |
+| `JointLandmarkMapping.adjacentLandmarkIndices` | جيران العظام (منقول من Legacy) |
+| `TrainingSessionViewModel.refreshSkeletonOverlay` | يحدّث `skeletonOverlayParity` كل إطار (setup + training) |
+| `TrainingSessionScreen` | `parity = state.skeletonOverlayParity` → `MovitSkeletonOverlay` |
+
+**سلوك الوضع:**
+
+| `SkeletonOverlayMode` | متى | الرسم |
+|---|---|---|
+| `SCENE_CHECK` | setup `REGION`/`POSTURE`/`DIRECTION` | لا overlay (مثل Legacy `setSceneCheckMode`) |
+| `SETUP_ANGLES` | setup `ANGLES` + صفوف joint | highlights ملوّنة + `↑/↓` |
+| `PREVIEW` | countdown | هيكل خفيف |
+| `TRAINING` | تدريب حي | joint colors + ROM + position errors |
+
+**اختبارات:** `SkeletonOverlayMapperTest` (`parityState_setupAngles_*`, `resolveOverlayMode_*`), `SetupGuidanceMapperTest` (`jointRows` مع `direction`).
+
+**§34.2 صف 8:** ✅ مغلق. المتبقي ضمن «Training session polish» (position-error marks، any-side dimming أثناء training).
+
+---
+
+### 35.2 P2 — Throughput/performance flags (§34.2 صف 16)
+
+> **الحالة:** ✅ مُنفَّذ (2026-06-14). القيم الافتراضية لم تتغيّر — `stable` = `320×240` @ `targetFps=10`.
+
+**المشكلة:** KMP ثبّت دقة/معدل إطارات منخفضاً لاستقرار GC/stall (~7fps فعلي في smoke). Legacy كان أعلى؛ الفرق قد يغيّر حساسية العد والـ feedback. المطلوب: بنية rollout تدريجي دون رفع الإنتاج تلقائياً.
+
+**التنفيذ:**
+
+| المكوّن | الملف | الدور |
+|---|---|---|
+| Device profiles | `TrainingThroughputProfiles.kt` | `stable` (افتراضي)، `medium` (480×360@15)، `high` (640×480@20)، `legacy` (640×480@30). |
+| Camera config | `CameraSourceConfiguration.kt` | `analysisWidth/Height`, `throughputProfileId` — افتراضيات = `stable`. |
+| Feature flag | `gradle.properties` → `movit.training.throughput.profile` → `BuildConfig.TRAINING_THROUGHPUT_PROFILE` | Android فقط؛ iOS يبقى `stable` حتى يُربط AVFoundation بنفس العقد. |
+| Resolver | `TrainingThroughputFlags.kt` | `resolveTrainingCameraConfiguration(useFrontCamera)` في `TrainingSessionCameraHost`. |
+| Pipeline | `CameraXFrameSource.kt` | دقة التحليل من `configuration` بدل ثابت `320×240`. |
+| Diagnostics | `TrainingPipelineDiagnostics.kt` | `profile=` في السطر الدوري + milestone عند `setCameraConfig`. |
+
+**مثال لوج بعد الربط:**
+
+```text
+milestone | throughput profile=stable target=10fps analysis=320x240 ae=[10,10]
+window=2s | cam=7fps(skipThrottle=3 profile=stable target=10 ae=[10,10] analysis=320x240) | pose=7fps(...)
+```
+
+**تفعيل profile تجريبي (محلي/QA فقط):**
+
+```properties
+# android-poc/gradle.properties
+movit.training.throughput.profile=medium
+```
+
+ثم إعادة بناء `:feature:training` والتطبيق. لا تُرفع القيمة عن `stable` في CI/release حتى اكتمال مسار القبول أدناه.
+
+**مسار rollout المقترح:**
+
+| المرحلة | Profile | معايير قبول (`TrainingPipeline` على 3+ أجهزة) |
+|---|---|---|
+| 0 — الإنتاج الحالي | `stable` | `cam≈pose`، `busySkip=0`، `stalls=0`، `drop=0`، لا تجميد UI. |
+| 1 — QA داخلي | `medium` | `pose` ≥ 12fps متوسط، `inferMs` < 80، `busySkip` < 5% من `cam`، rep parity smoke على 3 تمارين. |
+| 2 — beta محدود | `high` | نفس المرحلة 1 + `stalls=0` لجلسة 12 rep كاملة على جهاز متوسط وآخر ضعيف. |
+| 3 — parity lab | `legacy` | مقارنة عد/feedback مع MO-readonly على نفس التمرين؛ لا يُفعَّل عاماً قبل إغلاق P0 count/report. |
+
+**اختبارات:**
+
+```bash
+cd android-poc
+./gradlew :core:training-engine:testDebugUnitTest --tests "*TrainingThroughputProfilesTest*"
+./gradlew :core:training-engine:testDebugUnitTest --tests "*TrainingPipelineDiagnosticsTest*"
+```
+
+**§34.2 صف 16:** ✅ بنية flags + diagnostics؛ الرفع التدريجي للقيم يبقى قرار تشغيلي بعد قياسات المراحل 1–2.
+
+---
+
+### 35.x P0 Count metrics summary (§34.2 صف 3)
+
+**الحالة:** ✅ مُنفَّذ (2026-06-14).
+
+| الحقل | Legacy MO | KMP بعد |
+|---|---|---|
+| `stateBreakdown` | `repCounter.getStateBreakdown()` | `Map<JointState, Int>` في `ExerciseWorkoutSummary` |
+| `commonErrors` | `repCounter.getMostCommonErrors()` | `Map<String, Int>` (`jointCode:errorType`) |
+| `repDetails` | `repCounter.repResults` | `List<RepResult>` |
+| `weightKg` / `weightUnit` | يُضاف في `ReportGenerator.generateFromEngine` | builder + `MovitTrainingEngine` session weight + write hooks enrichment |
+
+**الملفات:** `ExerciseWorkoutSummary.kt`, `MovitTrainingEngine.kt`, `MovitPostTrainingReport.kt`, `TrainingSessionWriteHooks.kt`.
+
+**اختبارات:** `ExerciseWorkoutSummaryBuilderTest` (جلسة squat اصطناعية + commonErrors)، `MovitPostTrainingReportBuilderTest.build_prefersSummaryRepDetailsForStateBreakdown`.
+
+```bash
+cd android-poc
+./gradlew :core:training-engine:testDebugUnitTest --tests "com.movit.core.training.session.ExerciseWorkoutSummaryBuilderTest" --tests "com.movit.core.training.report.MovitPostTrainingReportBuilderTest"
+```
+
+**متبقٍ:** تمرير `defaultWeightKg` من workout route إلى VM.
+
+---
+
+### 35.x P0 Report richness (§34.2 صف 2)
+
+> **الحالة:** ✅ مُنفَّذ (2026-06-14).
+
+**المشكلة:** `MovitPostTrainingReport` / `PostTrainingReportLegacyJson` كانا يملآن معظم حقول التحليل (`dangerAlerts`, `perfectMoments`, `errorAnalysis`, `repTimeline`, `consistency`, `improvementTips`, `heroFrame`, `overallQuality`, `exerciseConfig`, …) بقيم `empty` / `null` رغم توفر `repDetails` وcaptures بعد §35.x Count metrics.
+
+**التنفيذ KMP:**
+
+| المكوّن | الملف | الدور |
+|---|---|---|
+| محرّك التحليل | `MovitPostTrainingReportBuilderV2.kt` | منفذ common لمنطق `ReportGenerator`: danger/perfect/best/worst، error groups، timeline، consistency، tips، hold summary، hero frame، overall quality، exercise config snapshot. |
+| نماذج التقرير | `MovitPostTrainingReportEnrichment.kt` | توسيع DTOs (timeline، error analysis، tips، hold، overall quality، …). |
+| تسجيل | `ReportQualityScoring.kt` | Form/Safety/Control legs لـ `overallQuality` (من `PerformanceMetricsBuilder` / `ReportGenerator`). |
+| Builder | `MovitPostTrainingReportBuilder` | عند `summary.repDetails.isNotEmpty()` يستدعي V2 ويملأ `MovitPostTrainingReport`. |
+| JSON | `PostTrainingReportLegacyJson` | ترميز الحقول الغنية عند وجود بيانات (لا placeholders فارغة للنواة). |
+| Hold | `MovitTrainingEngine.snapshotHoldReportData()` | `holdSummary` لتمارين HOLD. |
+| VM | `TrainingSessionViewModel` + `TrainingSessionWriteHooks` | تمرير `holdData` إلى builder عند cache/upload. |
+
+**ما نُقل من Legacy MO:**
+
+| الحقل | الحالة |
+|---|---|
+| `dangerAlerts`, `perfectMoments`, `bestReps`, `worstRep` | ✅ |
+| `errorAnalysis`, `repTimeline`, `consistency`, `improvementTips` | ✅ |
+| `holdSummary`, `heroFrame`, `overallQuality`, `exerciseConfig` | ✅ |
+| `frameCaptures` (metadata angles/errorDetails) | ✅ عبر `MovitPeakFrameCapture` الموسّع |
+| `repReplayClips` | ✅ (sampler موجود؛ ربط write hooks) |
+| `setSummaries` | ⏸️ مؤجّل — يحتاج تجميع multi-set من workout flow (مثل `enrichWithSetData` في MO) |
+| `performanceMetrics` (`EnhancedPerformanceMetrics`) | ⏸️ مؤجّل — يعتمد على `PerformanceMetricsBuilder.build` كامل (بطاقات Form/Safety/Control) |
+| `quickInsight` | ⏸️ مؤجّل — `QuickInsightGenerator` لم يُنقل بعد |
+
+**قرارات:**
+
+- مصدر الحقيقة للتحليل: `ExerciseWorkoutSummary.repDetails` + `peakFrameCaptures` + `WorkoutUpload.executionMetrics` (لا إعادة قراءة journal عند الإمكان).
+- `MovitReportErrorAnalysis.state` يبقى `String` لتوافق mapper/UI الحالي؛ بقية الحقول موسّعة بصرياً (frames، ranges، icons).
+- بدون `repDetails` يبقى التقرير على summary الأساسي فقط (توافق رجعي).
+
+**اختبارات:**
+
+| اختبار | الملف |
+|---|---|
+| state breakdown من repDetails | `MovitPostTrainingReportBuilderTest.build_prefersSummaryRepDetailsForStateBreakdown` |
+| errorAnalysis / timeline / overallQuality / legacy JSON غير فارغ | `MovitPostTrainingReportBuilderTest.build_populatesRichAnalysisWhenRepDetailsPresent` |
+| golden parity للحقول الأساسية | `MovitPostTrainingReportBuilderTest.legacyJson_matchesGoldenParityFields` |
+
+```bash
+cd android-poc
+./gradlew :core:training-engine:testDebugUnitTest --tests "com.movit.core.training.report.MovitPostTrainingReportBuilderTest"
+```
+
+**§34.2 صف 2:** ✅ مغطى للنواة التحليلية؛ `performanceMetrics` / `setSummaries` / `quickInsight` في P1 لاحق.
+
+---
+
+### 35.3 P1 Countdown rough validation (§34.2 صف 6)
+
+> **الحالة:** ✅ مُنفَّذ (2026-06-14).
+
+**المشكلة:** KMP `isCountdownPoseValid` كان يستخدم `StartPoseGate.isInStartPose` الصارم (نفس شرط تأكيد SETUP)، فيجمّد العد التنازلي عند انحراف بسيط كان Legacy يقبله عبر `isStartPoseRoughlyValid` (`±10°` على الأقل، ونسبة حضور مفاصل).
+
+**المرجع Legacy:** `TrainingViewModel.isStartPoseRoughlyValid` — tolerance = `closeThreshold.coerceAtLeast(10°)`؛ يتخطى المفاصل غير المرئية؛ أي مفصل مرئي خارج النطاق الموسّع يُلغي العد؛ يشترط كل primary حاضراً؛ و`ceil(tracked × 0.6)` مفاصل مرئية (حد أدنى 2).
+
+**التنفيذ KMP:**
+
+| الطبقة | الملف | التغيير |
+|---|---|---|
+| Gate | `StartPoseGate.kt` | `isStartPoseRoughlyValid(toleranceDegrees, minJointPresenceRatio, requireAllPrimaryPresent)` — منطق Legacy المنقول. |
+| Config | `SetupValidationConfig.kt` | `countdownAngleToleranceDegrees` (افتراضي `max(closeThreshold, 10°)`)، `countdownMinJointPresenceRatio` (0.6)، `countdownRequireAllPrimaryPresent` (true). |
+| Setup | `SetupReadinessGate.kt` | `validate()` / `isSetupPoseConfirmed` → صارم؛ `isCountdownPoseValid` → rough فقط. |
+| VM | `TrainingSessionViewModel.kt` | أثناء COUNTDOWN: `sceneStillValid` (phase == ANGLES + landmarks ≥ 33) **و** `isCountdownPoseValid`؛ يُرسل `CountdownPoseValid` عند النجاح و`PoseInvalid` عند الفشل. |
+
+**فصل الصارم عن المتسامح:** تأكيد SETUP (`primaryReady` + rolling window) يبقى على `isInStartPose` / `StartPosePresence`؛ حارس العد التنازلي منفصل ولا يعيد استخدام نفس الشرط.
+
+**اختبارات (§34.5 Countdown rough pose):**
+
+| اختبار | الملف |
+|---|---|
+| انحراف `±10°` يُقبل في countdown ويُرفض في setup صارم | `SetupReadinessGateTest.countdownPoseValid_acceptsTenDegreeDeviationRejectedByStrictSetup` |
+| خرق جسيم خارج التسامح | `StartPoseGateTest.isStartPoseRoughlyValid_rejectsGrossViolation` |
+| حضور أقل من 60% من المفاصل المتتبعة | `StartPoseGateTest.isStartPoseRoughlyValid_rejectsBelowSixtyPercentJointPresence` |
+| bilateral يشترط الركبتين أثناء countdown | `SetupReadinessGateTest.countdownPoseValid_bilateralRequiresBothKnees` |
+
+```bash
+cd android-poc
+./gradlew :core:training-engine:testDebugUnitTest --tests "com.movit.core.training.engine.StartPoseGateTest" --tests "com.movit.core.training.session.SetupReadinessGateTest"
+```
+
+**§34.2 صف 6 / §34.5 Countdown rough pose:** ✅ مغطى.
+
+### 35.x P0 Bilateral completionTargetReps (§34.2 صف 1)
+
+> **الحالة:** ✅ مُنفَّذ.
+
+**المشكلة:** Legacy `TrainingEngine` يحسب `completionTargetReps = targetReps * 2` عند `AFTER_ALL_REPS` (أو `switchEvery == targetReps`) ويمرّره إلى `RepCounter` و`ExecutionSafetyGuards`؛ KMP كان يستخدم `targetReps` نفسه لإنهاء الجلسة فيتم إكمال تمرين bilateral بعد الجانب الأول فقط.
+
+**التغييرات:**
+
+| المكوّن | السلوك |
+|---|---|
+| `BilateralCompletion.kt` | `isAfterAllRepsBilateral()` + `completionTargetReps()` بنفس semantics Legacy MO. |
+| `MovitTrainingEngine` | `targetReps` = per-side؛ `completionTargetReps` → `RepCounter`, `SessionOrchestrator`, `metricsSnapshot().targetReps`. |
+| `BilateralController` | بدون تغيير — `targetReps` per-side لتبديل الجانب عند 12. |
+| `RepCounter` / `SessionOrchestrator` | توثيق أن `targetReps` هو session completion target (قد يكون `perSide * 2`). |
+
+**الملفات:** `bilateral/BilateralCompletion.kt`, `session/MovitTrainingEngine.kt`, `engine/RepCounter.kt`, `session/SessionOrchestrator.kt`, `bilateral/BilateralCompletionTargetRepsTest.kt`.
+
+**قرارات:** فصل per-side target عن completion target في helper مشترك قابل للاختبار؛ عدم تعديل `BilateralController` لأن تبديل الجانب يبقى عند `targetReps` per-side.
+
+**اختبارات:** `BilateralCompletionTargetRepsTest` — 12 reps per side → side switch عند 12، completion عند 24؛ + حالات `switchEvery == target` و`EVERY_REP`.
+
+```bash
+cd android-poc
+./gradlew :core:training-engine:testDebugUnitTest --tests "com.movit.core.training.bilateral.BilateralCompletionTargetRepsTest" --tests "com.movit.core.training.bilateral.BilateralControllerParityTest"
+```
+
+**نتيجة التشغيل (2026-06-14):** ✅ `BilateralCompletionTargetRepsTest` + بقية `:core:training-engine:testDebugUnitTest` ضمن BUILD SUCCESSFUL بعد §35.0.4.
+
+### 35.x P1 Frame evidence / replay (§34.2 صف 12)
+
+> **الحالة:** ✅ مُنفَّذ بنيوياً على Android وiOS؛ iOS runtime ينتظر Mac/MediaPipe smoke.
+
+**المشكلة:** Legacy `FrameCaptureManager` يحفظ still captures مع `metadata.angles` و`errorDetails`، ويجمع حتى 16 إطار replay لكل rep كل ~180ms. KMP كان يحفظ مسارات JPEG فقط بدون metadata كاملة، وبدون burst replay؛ و`TrainingFrameSnapshotPortBinding.ios` NoOp.
+
+**التغييرات:**
+
+| المكوّن | السلوك |
+|---|---|
+| `MovitPeakFrameCapture` | `errorType` + `MovitFrameCaptureMetadata` (`angles`, `hasError`, `errorDetails`). |
+| `MovitPeakFrameCaptureManager` | يمرّر الزوايا من `RegisterRequest` إلى metadata عند التسجيل. |
+| `MovitRepReplaySampler` | سجل common لـ burst (16 إطار/rep، 10 reps متتبعة، حد أدنى 2 إطار للـ clip) — يطابق حدود Legacy. |
+| `TrainingFrameSnapshotPort` | `persistReplaySnapshot` (540px / quality 82 على Android، ونفس الحدود على iOS عند وجود Swift bridge). |
+| `TrainingFrameCaptureCoordinator` | يمرّر `JointAngles` من الجلسة؛ يشغّل/يوقف sampler أثناء `TRAINING` (ليس hold). |
+| `MovitPostTrainingReport` | `repReplayClips` + ترميز `frameCaptures.metadata` و`repReplayClips` في `PostTrainingReportLegacyJson`. |
+| `TrainingSessionViewModel` / `TrainingSessionWriteHooks` | ربط captures + replay clips بمُنشئ التقرير. |
+
+**الملفات:** `report/MovitFrameCaptureMetadata.kt`, `report/MovitRepReplaySampler.kt`, `report/MovitPeakFrameCapture*.kt`, `boundary/TrainingFrameSnapshotPort.kt`, `feature/training/TrainingFrameCaptureCoordinator.kt`, `feature/training/AndroidTrainingFrameSnapshotPort.kt`, `report/MovitPostTrainingReport.kt`, `feature/training/TrainingSessionViewModel.kt`, `feature/training/TrainingSessionWriteHooks.kt`.
+
+**حالة iOS بعد التحقق النهائي (§36):**
+
+| البند | الحالة |
+|---|---|
+| still captures | `IosTrainingFrameSnapshotPort.persistSnapshot` يحفظ JPEG عند `bridge.isAvailable`؛ وإلا NoOp صريح. |
+| burst replay | `IosTrainingFrameSnapshotPort.persistReplaySnapshot` موصول بـ 540px / quality 82. |
+| التقرير المحلي | `repReplayClips` تُملأ عند وجود bridge حي؛ بدون MediaPipe تبقى فارغة بوضوح. |
+| التحقق | يحتاج Mac/Xcode + Pod + model smoke؛ Windows لا يبني Swift/iOS runtime. |
+
+**اختبارات:**
+
+| اختبار | الملف |
+|---|---|
+| metadata angles/error على peak/error | `MovitPeakFrameCaptureManagerTest` |
+| حدود replay burst وeviction | `MovitRepReplaySamplerTest` |
+| legacy JSON metadata + repReplayClips | `MovitPostTrainingReportBuilderTest.legacyJson_encodesPeakFrameCaptures` |
+| coordinator angles + sampler | `TrainingFrameCaptureCoordinatorTest` |
+
+```bash
+cd android-poc
+./gradlew :core:training-engine:testDebugUnitTest --tests "com.movit.core.training.report.MovitPeakFrameCaptureManagerTest" --tests "com.movit.core.training.report.MovitRepReplaySamplerTest" --tests "com.movit.core.training.report.MovitPostTrainingReportBuilderTest"
+./gradlew :feature:training:testDebugUnitTest --tests "com.movit.feature.training.TrainingFrameCaptureCoordinatorTest"
+```
+
+**§34.2 صف 12 / Frame evidence replay:** ✅ مغطى على Android؛ iOS موصول بنيوياً عبر snapshot bridge، واعتماده التشغيلي يحتاج smoke على Mac/iOS.
+
+**متبقٍ (P2):** `ReportFrameEvidenceMapper` / `RepReplayPlayer` في Compose report — عرض burst best/worst في UI التقرير (§34.2 صف Report UI local mapping).
+
+### 35.4 P2 Feedback/UI event model parity (§34.2 صف 17)
+
+> **الحالة:** ✅ مُنفَّذ (2026-06-14).
+
+**المشكلة:** Legacy يستخدم تدفقاً موحداً `FeedbackEvent` + `TrainingFeedbackBinder` يربط audio/vignette/captures. KMP كان يوزّع المسارات بين VM callbacks مباشرة، و`FeedbackKind.REP` / `TARGET` / `HOLD` لم تكن موصولة لعدة أحداث حيوية.
+
+**المرجع Legacy:**
+
+| `FeedbackEvent` | `FeedbackManager` (صوت) | `TrainingFeedbackBinder` (بصري/capture) |
+|---|---|---|
+| `RepCompleted` | كل 3 عدات + streak motivation | pulse العداد؛ `markAsBestRep` عند صحيحة |
+| `RepIncomplete` | 4 أسباب، `forceAudible` | vignette warning + shake |
+| `TargetReached` | `training_target_reached` | — |
+| `HoldGraceStarted` | `training_hold_stay` | shake |
+| `HoldResumed` | `training_hold_resumed` | — |
+| `HoldCompleted` | `training_hold_completed` | — |
+| `HoldFailed` | `training_hold_failed` | shake + reset timer |
+| `JointQuality` | per-frame | danger/error frame capture |
+| `PositionCheckFeedback` | per severity | — |
+| `VisibilityWarning` | عبر presence | vignette warning |
+| Countdown freeze | — | vignette warning (`showCountdownPoseIssue`) |
+| Setup guidance | `FeedbackKind.SETUP` | skeleton (P1 منفصل) |
+
+**مصفوفة التكافؤ KMP (بعد الإصلاح):**
+
+| الحدث | Legacy | KMP قبل | KMP بعد | ملاحظات |
+|---|---|---|---|---|
+| Setup voice | `speakSetupPhaseGuidance` | ❌ | ✅ | **P1 منفصل** — §35.2؛ `SetupFeedbackSignals` + `submitSetup` |
+| Countdown tick/go | numeral + Go | ✅ | ✅ | `FeedbackKind.COUNTDOWN` في `wireCountdown` |
+| Countdown pose freeze | vignette warning | ❌ | ✅ | `onFrozen`/`onUnfrozen` → `applyVignetteCue` |
+| Rep complete audio | كل 3 + streak | ❌ | ✅ | `TrainingFeedbackEventRouter.routeRepCompleted` |
+| Rep complete visual | pulse | جزئي | جزئي | pulse UI لاحقاً؛ capture عبر `FrameCaptureCoordinator` |
+| Rep incomplete | audio + vignette | ❌ | ✅ | **P1 منفصل** — `RepIncompleteFeedback` + vignette في `submitRepIncompleteFeedback` |
+| Target reached | motivation voice | ❌ | ✅ | `routeTargetReached` في `onTargetReached` |
+| Hold grace/resume/complete/fail | `FeedbackKind.HOLD` | ❌ | ✅ | `routeHoldFeedback` على انتقالات `HoldState` |
+| Hold started | log only | — | — | لا صوت Legacy؛ لا إجراء |
+| Joint quality | voice + capture | ✅ | ✅ | `submitJointStateMessage` / `submitJointErrorFeedback` |
+| Position check | voice | ✅ | ⚠️ | موصول؛ severity ERROR في VM ما زال WARNING فقط (P1 لاحق) |
+| Visibility warning | vignette + voice | صوت فقط | ✅ | `routeVisibilityWarning` vignette + `FeedbackKind.VISIBILITY` |
+| Visibility pause | vignette error | ✅ | ✅ | `ShowAutoPaused` + `showVignette` |
+| Random motivation | idle fill | ✅ | ✅ | `tryDeliverRandomMessage` |
+
+**التنفيذ:**
+
+| الطبقة | الملف | التغيير |
+|---|---|---|
+| Router | `TrainingFeedbackEventRouter.kt` | تحويل rep/target/hold/countdown/visibility → `FeedbackSignal` / `VignetteCue` مع نفس dedupe/severity Legacy. |
+| VM | `TrainingSessionViewModel.kt` | `wireEngineCallbacks`: rep/target/hold؛ countdown freeze vignette؛ visibility vignette؛ `applyVignetteCue`. |
+| Router tests | `TrainingFeedbackEventRouterTest.kt` | interval العد، streak، hold kinds، numeral keys. |
+| Integration tests | `FeedbackRouterTest.kt` | تسليم TARGET/HOLD/REP batch عبر `FeedbackRouter`. |
+
+**تداخل واعٍ (لا تكرار):**
+
+| البند | المالك | هذا القسم |
+|---|---|---|
+| Setup phase/joint voice | §35.2 P1 Setup voice | يُوثَّق فقط في المصفوفة |
+| Rep incomplete audio mapping | §35.1 P1 RepIncomplete | أضيف vignette warning فقط هنا |
+| Rep incomplete shake animation | UI polish | خارج نطاق P2 |
+
+**اختبارات:**
+
+```bash
+cd android-poc
+./gradlew :core:training-engine:testDebugUnitTest \
+  --tests "com.movit.core.training.engine.feedback.TrainingFeedbackEventRouterTest" \
+  --tests "com.movit.core.training.engine.feedback.FeedbackRouterTest" \
+  --tests "com.movit.core.training.feedback.RepIncompleteFeedbackTest"
+```
+
+**§34.2 صف 17 / Feedback event matrix:** ✅ مغطى للمسارات المحددة؛ متبقٍ: rep counter pulse animation، position ERROR severity في vignette، scene warnings (`FeedbackKind.SCENE`).
+
+---
+
+## 35.11 P1 — Training session overlay polish (§34.2 row 9, 2026-06-14)
+
+> تنفيذ عقد parity للـ skeleton overlay مقابل Legacy `SkeletonOverlayView` + ربط `TrainingSessionScreen` / `TrainingSessionViewModel`.
+
+### 35.11.1 عقد الـ overlay (`SkeletonOverlayParityState`)
+
+| الحقل | Legacy | KMP بعد التنفيذ |
+|---|---|---|
+| `SkeletonOverlayMode` | setup scene-check / setup guidance / training | `SCENE_CHECK` (REGION/POSTURE/DIRECTION)، `SETUP_ANGLES`، `TRAINING`، `PREVIEW` (countdown) |
+| `jointVisuals` + `dimmed` | `anySideDimmedJointCodes` من `TrainingEngine` | `EngineMetrics.anySideDimmedJointCodes` ← `JointAngleTracker.skippedJointCodes` |
+| `positionErrors` | `drawPositionErrors` (top 2 dashed brackets) | `mapPositionErrorMarks` → رسم ERROR/WARNING/TIP في `MovitSkeletonOverlay` |
+| `setupHighlights` | `updateSetupGuidance` (bones + ألوان + ↑/↓) | `mapSetupHighlights` من `setupJointRows` |
+| `bilateralSideHint` | flip للـ landmark lookup + side state | شارة "Left/Right side" أثناء `TRAINING` + `isBilateralFlipped` للـ ROM/joint lookup |
+| `landmarkProjector` | `FILL_CENTER` + `toScreenX/Y` | `SkeletonLandmarkProjector` (cached `DisplayLandmarkTransform`) |
+
+### 35.11.2 مصفوفة parity
+
+| طبقة Legacy | الحالة | ملاحظات |
+|---|---|---|
+| FILL_CENTER + front-camera mirrorX | ✅ | §25 + projector مُخزَّن لكل حجم canvas |
+| Live joint colors (PERFECT→DANGER + PAD) | ✅ | ألوان على المفاصل والأضلاع؛ glow خفيف عند PERFECT |
+| Position-error marks (top 2) | ✅ | خط متقطع + دوائر bracket |
+| Any-side dimming | ✅ | `dimmed` يخفّي ROM ويُبهت المفاصل/الأضلاع |
+| Bilateral side hint | ✅ | شارة نصية؛ flip للـ landmark lookup في overlay + ROM |
+| Setup scene-check blank overlay | ✅ | `SCENE_CHECK` لا يرسم فوق الكاميرا |
+| Setup angle highlights | ✅ | bones + تسميات زاوية + اتجاه |
+| Arc/line ROM indicators (primary) | 🔶 | موجود مسبقاً؛ يتخطى `dimmed`؛ نطاقات تقريبية حتى I-8 |
+| Flow animation / body-scale glow | ⏳ | متعمد تأجيله (تجميل ثانوي) |
+| Color lerp anti-flicker | ⏳ | ألوان فورية؛ يمكن إضافة lerp لاحقاً |
+
+### 35.11.3 ملفات رئيسية
+
+- `core/designsystem/.../SkeletonOverlayContract.kt` — عقد parity
+- `core/designsystem/.../MovitSkeletonOverlay.kt` — رسم الطبقات
+- `feature/training/.../SkeletonOverlayMapper.kt` — `buildSkeletonOverlayParityState`, projector, mappers
+- `feature/training/.../TrainingSessionViewModel.kt` — `skeletonOverlayParity` في UiState
+- `feature/training/.../TrainingSessionScreen.kt` — تمرير `parity` للـ overlay
+- `core/training-engine/.../MovitTrainingEngine.kt` — `lastAnySideDimmedJointCodes` + حقول `EngineMetrics`
+
+### 35.11.4 اختبارات
+
+```bash
+cd android-poc
+./gradlew :feature:training:testDebugUnitTest \
+  --tests "com.movit.feature.training.SkeletonOverlayMapperTest" \
+  :core:training-engine:testDebugUnitTest \
+  --tests "com.movit.core.training.geometry.DisplayLandmarkTransformTest"
+```
+
+| اختبار | يغطي |
+|---|---|
+| `SkeletonOverlayMapperTest` | FILL_CENTER projector، scene/setup/training modes، dimming، position marks، bilateral hint |
+| `DisplayLandmarkTransformTest` | crop/center/mirrorX |
+
+### 35.11.5 متبقٍ (خارج هذا الـ P1)
+
+| البند | المالك |
+|---|---|
+| Smoke بصري على جهاز (محاذاة + flip) | QA |
+| ROM ranges من `JointStateInfo.stateRanges` (I-8) | training-engine feed |
+| Flow shimmer + body-scale glow | polish لاحق |
+| Screenshot/regression Compose tests | CI اختياري |
+
+---
+
+## 36) تحقق نهائي بعد تنفيذ الخطة (2026-06-14)
+
+**الحكم:** التنفيذ الحالي مقبول بنيوياً لمحرك KMP بعد مراجعة مسارات العد، setup، feedback، overlay، flip camera، التقارير، وframe evidence. تم العثور أثناء التحقق على فجوات تكامل فعلية وتم إصلاحها في نفس الجولة قبل اعتماد النتيجة أدناه.
+
+### 36.1 ما تم التحقق منه في الكود
+
+| المحور | نتيجة المراجعة |
+|---|---|
+| Count logic / bilateral | `completionTargetReps` يضاعف الهدف في `AFTER_ALL_REPS` أو `switchEvery == targetReps`، مع بقاء `BilateralController` على target per-side. |
+| HOLD / metrics / summaries | `RepCounter` و`ExerciseWorkoutSummary` و`MovitPostTrainingReportBuilderV2` ينقلون per-rep details، position errors، state breakdown، hold summary، best/worst، tips، timeline، وquality metrics. |
+| Setup gate | `SetupReadinessGate` + `StartPosePresence` يغطيان any-side pairing، rough countdown validation، ومراحل REGION/POSTURE/DIRECTION/ANGLES. |
+| Setup feedback | `SetupVoiceGuidanceGate` + `SetupFeedbackSignals` + `FeedbackRouter` موصولة للـ ViewModel مع cooldown/dedupe. |
+| Overlay polish | `SkeletonOverlayParityState` موصول من engine metrics إلى `MovitSkeletonOverlay`: modes، dimming، position marks، setup highlights، bilateral side hint، وFILL_CENTER projector. |
+| Flip camera | Android يستخدم `LensSwitchFrameGate` ويمسح overlay أثناء switch؛ تم إصلاح no-pose frames كي تحمل اتجاه العدسة ولا تفتح الـ gate بإطار قديم. |
+| iOS session camera | `TrainingSessionCameraHost.ios` لم يعد placeholder؛ أصبح يستخدم `IosCameraFrameSource` مع preview، `useFrontCamera`، error/ready callbacks، وrestart عند flip. |
+| Frame evidence / replay | Android وiOS snapshot ports يدعمان still captures وreplay burst؛ iOS يعمل عند جاهزية Swift MediaPipe bridge. |
+| Throughput | Android يطبق analysis size + target FPS؛ iOS يطبق target FPS throttle بنيوياً، مع بقاء smoke الفعلي على جهاز iOS مطلوباً. |
+
+### 36.2 إصلاحات تمت أثناء التحقق
+
+| الإصلاح | الملفات |
+|---|---|
+| no-pose callback يحمل `isFrontCamera` على Android حتى لا تُقبل إطارات العدسة القديمة بعد flip. | `MediaPipePoseDetector.kt`, `CameraXFrameSource.kt` |
+| توحيد no-pose callback بين Kotlin/Native bridge وSwift bridge. | `IosPoseLandmarkerBridge.kt`, `IosPoseDetector.kt`, `MovitPoseLandmarkerBridge.swift` |
+| استبدال placeholder الخاص بجلسة التدريب على iOS بربط كاميرا حقيقي. | `TrainingSessionCameraHost.ios.kt`, `IosCameraFrameSource.kt` |
+| إضافة replay snapshot على iOS بنفس حدود Legacy/Android. | `IosTrainingFrameSnapshotPort.kt` |
+| تفعيل error/bound callbacks وtarget FPS throttle في iOS camera source. | `IosCameraFrameSource.kt` |
+
+### 36.3 أوامر التحقق
+
+```bash
+cd android-poc
+./gradlew :core:training-engine:testDebugUnitTest :core:pose-capture:testDebugUnitTest :feature:training:testDebugUnitTest :feature:reports:testDebugUnitTest :feature:library:testDebugUnitTest --no-daemon
+```
+
+**النتيجة:** ✅ `BUILD SUCCESSFUL` في 2026-06-14 بعد إصلاحات التحقق.
+
+```bash
+git diff --check -- android-poc/core/pose-capture/src/androidMain/kotlin/com/movit/core/posecapture/android/MediaPipePoseDetector.kt android-poc/core/pose-capture/src/androidMain/kotlin/com/movit/core/posecapture/android/CameraXFrameSource.kt android-poc/core/pose-capture/src/iosMain/kotlin/com/movit/core/posecapture/IosPoseDetector.kt android-poc/core/pose-capture/src/iosMain/kotlin/com/movit/core/posecapture/IosCameraFrameSource.kt android-poc/core/pose-capture/src/iosMain/kotlin/com/movit/core/posecapture/IosPoseLandmarkerBridge.kt android-poc/iosApp/iosApp/MovitPoseLandmarkerBridge.swift android-poc/feature/training/src/iosMain/kotlin/com/movit/feature/training/IosTrainingFrameSnapshotPort.kt android-poc/feature/training/src/iosMain/kotlin/com/movit/feature/training/TrainingSessionCameraHost.ios.kt
+```
+
+**النتيجة:** ✅ لا توجد أخطاء whitespace؛ ظهرت فقط تحذيرات CRLF الخاصة بـ Windows.
+
+### 36.4 حدود الاعتماد
+
+| البند | الحكم |
+|---|---|
+| Android/common | معتمد آلياً بالاختبارات أعلاه + مراجعة الكود. |
+| iOS Kotlin/Swift runtime | غير معتمد تشغيلياً من Windows؛ يحتاج Mac/Xcode + `MediaPipeTasksVision` Pod + `pose_landmarker_full.task` + smoke كاميرا فعلي. |
+| iOS compile attempt | `compileKotlinIosX64` غير موجود في المشروع؛ `compileKotlinIosArm64` لم يكتمل ضمن مهلة Windows، لذلك لا يُستخدم كدليل نجاح أو فشل. |
+| Device visual QA | ما زال مطلوباً لجلسة كاملة: setup gate، countdown، flip أثناء setup/training، overlay alignment، bilateral 12+12، وreport captures/replay. |
+
+### 36.5 قرار نهائي
+
+لا توجد حالياً نواقص بنيوية ظاهرة في المحاور التي تسببت في الاختلافات العميقة مع Legacy: feedback، UI overlay، count/HOLD logic، setup pose، count metrics، frame evidence، وflip camera. المتبقي ليس إعادة تصميم للمحرك، بل smoke تشغيلي على أجهزة فعلية، خصوصاً iOS لأن Windows لا يستطيع اعتماد Swift/MediaPipe runtime.
+
+### 36.6 توضيح خاص: Elbow correction / hysteresis
+
+| البند | الحالة |
+|---|---|
+| `ElbowAngleEstimator` القاعدي | ✅ منقول إلى KMP في `core/training-engine/.../geometry/ElbowAngleEstimator.kt` ومربوط داخل `PoseFrameAssembler.assemble` عند توفر `worldLandmarks`. |
+| reset عند تبديل العدسة | ✅ `CameraXFrameSource.prepareForLensSwitch` يستدعي `PoseFrameAssembler.resetElbowEstimator()` حتى لا تنتقل EMA/hold من العدسة القديمة. |
+| phase/state hysteresis | ✅ موجود في `PhaseStateMachine`, `JointEvaluator`, و`StabilityPolicy`. |
+| MLP/FIT3D elbow classifiers | ⚠️ غير منقولة ككود إلى KMP حالياً: Legacy يحتوي `ElbowCorrectionMlpClassifier`, `ElbowFit3dV2Classifier`, وfeature extractors؛ KMP الحالي يحتوي assets داخل `app/src/main/assets` لكن لا يحتوي classifiers/ports التي تستخدمها. |
+
+**الحكم:** إذا كان المقصود بالمصطلح “Hysteresis” العام أو مصحح `ElbowAngleEstimator` المستخدم في المسار الحي، فهو منقول ومستخدم. إذا كان المقصود نموذج ML/FIT3D الخاص بتصحيح الكوع، فهذا غير منقول وظيفياً ويجب فتحه كبند P1/P2 منفصل قبل اعتبار parity كاملة في elbow ML correction.
 

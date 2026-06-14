@@ -23,6 +23,15 @@ GitHub Actions workflow `.github/workflows/movit-kmp-ios.yml` runs:
 - `iosSimulatorArm64Test` on KMP modules with `commonTest`
 - `xcodebuild` for this target (after `xcodegen`)
 
+## MediaPipe pose bridge (P1 iOS live training)
+
+1. Add CocoaPods to `iosApp` (`pod 'MediaPipeTasksVision'`) on a Mac.
+2. Copy `pose_landmarker_full.task` into the iosApp bundle (same asset as Android).
+3. `MovitPoseLandmarkerBridge.swift` auto-enables when the pod + model are present.
+4. Bridge registers via `IosPoseLandmarkerBridgeInstallKt.installIosPoseLandmarkerBridge` in `iOSApp` init.
+
+Without the pod, the bridge compiles as a stub (`isAvailable == false`) — camera preview works, pose inference does not.
+
 ## StoreKit / subscriptions (TODO)
 
 In-app purchase is **not implemented** on iOS yet. The KMP profile screen hides purchase CTAs when `PlatformInfo.supportsInAppSubscription` is `false` and shows `profile_subscription_ios_unavailable` instead of a silent no-op.

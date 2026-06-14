@@ -16,6 +16,9 @@ data class SetupJointGuidanceUi(
     val jointCode: String,
     val message: String,
     val level: String,
+    val direction: String? = null,
+    val currentAngle: Double = 0.0,
+    val isPrimary: Boolean = true,
 )
 
 data class SetupGuidanceUi(
@@ -71,6 +74,9 @@ private fun JointSetupGuidance.toUi(language: String): SetupJointGuidanceUi =
         jointCode = jointCode,
         message = message.get(language),
         level = level.name,
+        direction = direction?.name,
+        currentAngle = currentAngle,
+        isPrimary = isPrimary,
     )
 
 private fun SetupAxisStatus.toUi(): SetupAxisStatusUi = when (this) {

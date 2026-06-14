@@ -5,7 +5,9 @@ import com.movit.core.training.config.ExerciseConfig
 import com.movit.core.training.journal.TrainingMotionSession
 import com.movit.core.training.journal.WorkoutUpload
 import com.movit.core.training.report.AssessmentTrainingResult
+import com.movit.core.training.report.MovitHoldReportData
 import com.movit.core.training.report.MovitPeakFrameCapture
+import com.movit.core.training.report.MovitRepReplayClip
 import com.movit.core.training.report.MovitPostTrainingReport
 import com.movit.core.training.report.MovitPostTrainingReportBuilder
 import com.movit.core.training.report.MovitSessionReport
@@ -24,17 +26,24 @@ class TrainingSessionWriteHooks(
     private val sessionId: String,
     private val exerciseSlug: String,
     private val writes: TrainingSessionWriteCoordinator,
+    private val poseVariantIndex: Int = 0,
     private val isAssessmentMode: Boolean = false,
+    private val defaultWeightKg: Float? = null,
+    private val weightUnit: String = "kg",
     private val timeProvider: () -> Long = { 0L },
 ) {
     private var motionSession: TrainingMotionSession? = null
     var peakFrameCaptures: List<MovitPeakFrameCapture> = emptyList()
+    var repReplayClips: List<MovitRepReplayClip> = emptyList()
 
     fun attach(engine: MovitTrainingEngine, exerciseConfig: ExerciseConfig) {
         if (motionSession != null) return
         val session = TrainingMotionSession(
             exerciseConfig = exerciseConfig,
             exerciseSlug = exerciseSlug,
+            poseVariantIndex = poseVariantIndex,
+            defaultWeightKg = defaultWeightKg,
+            weightUnit = weightUnit,
             sessionId = sessionId,
             isAssessmentMode = isAssessmentMode,
             timeProvider = timeProvider,
@@ -76,14 +85,33 @@ class TrainingSessionWriteHooks(
         summary: ExerciseWorkoutSummary,
         exerciseConfig: ExerciseConfig,
         sessionQuality: SessionQualityMeta? = null,
+        holdData: MovitHoldReportData? = null,
     ): MovitPostTrainingReport = MovitPostTrainingReportBuilder.build(
         upload = upload,
-        summary = summary,
+        summary = resolveSummaryForReport(summary, upload),
         exerciseConfig = exerciseConfig,
         exerciseSlug = exerciseSlug,
         sessionQuality = sessionQuality ?: motionSession?.sessionQualityMeta(),
         peakFrameCaptures = peakFrameCaptures,
+        repReplayClips = repReplayClips,
+        holdData = holdData,
     )
+
+    private fun resolveSummaryForReport(
+        summary: ExerciseWorkoutSummary,
+        upload: WorkoutUpload,
+    ): ExerciseWorkoutSummary {
+        val weight = summary.weightKg ?: upload.weightKg ?: defaultWeightKg
+        if (weight == null || weight <= 0f) return summary
+        return summary.copy(
+            weightKg = weight,
+            weightUnit = when {
+                summary.weightKg != null -> summary.weightUnit
+                upload.weightKg != null -> upload.weightUnit
+                else -> weightUnit
+            },
+        )
+    }
 
     suspend fun enqueueExecutionUpload(
         upload: WorkoutUpload,

@@ -3,6 +3,7 @@ package com.movit.core.training.session
 
 
 import com.movit.core.training.bilateral.BilateralConfigInput
+import com.movit.core.training.bilateral.completionTargetReps
 
 import com.movit.core.training.bilateral.BilateralController
 
@@ -23,6 +24,7 @@ import com.movit.core.training.config.JointRole
 import com.movit.core.training.config.LocalizedText
 import com.movit.core.training.config.TrackedJoint
 import com.movit.core.training.engine.JointError
+import com.movit.core.training.engine.RepIncompleteReason
 
 import com.movit.core.training.config.phaseTimingConfig
 
@@ -71,8 +73,9 @@ import com.movit.core.training.model.PoseFrame
 import com.movit.core.training.journal.MotionFrameHook
 import com.movit.core.training.journal.MotionRepCompletedHook
 
-import com.movit.core.training.position.PositionError
+import com.movit.core.training.report.MovitHoldReportData
 
+import com.movit.core.training.position.PositionError
 import com.movit.core.training.position.PositionValidator
 
 import com.movit.core.training.position.SceneAxisWarning
@@ -98,9 +101,13 @@ class MovitTrainingEngine(
 
     private val exerciseConfig: ExerciseConfig,
 
-    private val poseVariantIndex: Int = 0,
+    val poseVariantIndex: Int = 0,
 
     targetRepsOverride: Int? = null,
+
+    private val sessionWeightKg: Float? = null,
+
+    private val sessionWeightUnit: String = "kg",
 
     private val deviceTiltPort: DeviceTiltPort? = null,
 
@@ -125,6 +132,14 @@ class MovitTrainingEngine(
 
     private val targetReps: Int = targetRepsOverride ?: exerciseConfig.defaultTargetReps()
 
+    private val bilateralConfigInput = exerciseConfig.bilateralConfig?.toEngineInput()
+
+    private val completionTargetReps: Int = completionTargetReps(
+        isBilateral = exerciseConfig.isBilateral,
+        config = bilateralConfigInput,
+        perSideTargetReps = targetReps,
+    )
+
     private val isHoldExercise: Boolean = exerciseConfig.isHoldExercise()
 
     private val targetDurationMs: Long? = exerciseConfig.repCountingConfig.duration
@@ -139,7 +154,7 @@ class MovitTrainingEngine(
 
         isBilateral = exerciseConfig.isBilateral,
 
-        config = exerciseConfig.bilateralConfig?.toEngineInput(),
+        config = bilateralConfigInput,
 
         targetReps = targetReps,
 
@@ -153,7 +168,7 @@ class MovitTrainingEngine(
 
         isHoldExercise = isHoldExercise,
 
-        targetReps = targetReps,
+        targetReps = completionTargetReps,
 
         targetDurationMs = targetDurationMs,
 
@@ -242,7 +257,7 @@ class MovitTrainingEngine(
 
             .getMinRepInterval(exerciseConfig.phaseTimingConfig().minRepIntervalMs),
 
-        targetReps = targetReps,
+        targetReps = completionTargetReps,
 
         isHoldExercise = isHoldExercise,
 
@@ -345,6 +360,7 @@ class MovitTrainingEngine(
     var onRepCompletedForMotion: MotionRepCompletedHook? = null
     var onJointStateMessage: ((jointCode: String, state: com.movit.core.training.engine.JointState, zone: com.movit.core.training.engine.ZoneType) -> Unit)? = null
     var onJointErrorFeedback: ((JointError, LocalizedText?) -> Unit)? = null
+    var onRepIncomplete: ((RepIncompleteReason) -> Unit)? = null
 
 
 
@@ -361,11 +377,12 @@ class MovitTrainingEngine(
         private set
 
     var positionErrors: List<PositionError> = emptyList()
+        private set
 
+    var lastAnySideDimmedJointCodes: Set<String> = emptySet()
         private set
 
     var sceneWarnings: List<SceneAxisWarning> = emptyList()
-
         private set
 
 
@@ -380,8 +397,6 @@ class MovitTrainingEngine(
 
     private var lastSmoothedAngles: Map<String, Double> = emptyMap()
 
-    private var lastSkippedJointCodes: Set<String> = emptySet()
-
     private var lastInStartPosition = false
 
 
@@ -391,6 +406,8 @@ class MovitTrainingEngine(
         stateMachine.onPhaseChanged = { _, current -> onPhaseChanged?.invoke(current) }
 
         stateMachine.onRepCompleted = { repCompletion.onPhaseMachineWantsComplete() }
+
+        stateMachine.onRepIncomplete = { reason -> onRepIncomplete?.invoke(reason) }
 
         repCounter.onRepCountChanged = { count, score, isCounted ->
 
@@ -506,7 +523,27 @@ class MovitTrainingEngine(
         isPaused = false
         (deviceTiltPort as? AcquirableDeviceTiltPort)?.release(TILT_OWNER)
         val duration = session.stop()
-        return ExerciseWorkoutSummaryBuilder.build(exerciseConfig, repCounter, duration)
+        return ExerciseWorkoutSummaryBuilder.build(
+            config = exerciseConfig,
+            repCounter = repCounter,
+            durationMs = duration,
+            weightKg = sessionWeightKg,
+            weightUnit = sessionWeightUnit,
+            poseVariantIndex = poseVariantIndex,
+        )
+    }
+
+    fun snapshotHoldReportData(): MovitHoldReportData? {
+        if (!isHoldExercise) return null
+        val status = holdStatus ?: return null
+        val timer = session.holdTimer ?: return null
+        return MovitHoldReportData(
+            targetMs = timer.getTargetDurationMs(),
+            achievedMs = status.elapsedMs,
+            formQuality = status.formQuality,
+            gracePeriodsUsed = timer.gracePeriodCount,
+            jointErrorMap = status.jointErrorMap,
+        )
     }
 
 
@@ -557,6 +594,8 @@ class MovitTrainingEngine(
             isFrontCamera = frame.isFrontCamera,
 
         )
+
+        lastAnySideDimmedJointCodes = angleExtract.skippedJointCodes
 
         val visibilities = buildJointVisibilities(workingFrame.landmarks, frame.isFrontCamera)
 
@@ -682,7 +721,7 @@ class MovitTrainingEngine(
 
         pipelineResult.positionResult?.let { pv ->
 
-            pv.errors.forEach { repCounter.addPositionError(it.checkId) }
+            pv.errors.forEach { repCounter.addPositionError(it) }
 
             pv.warnings.forEach { repCounter.addPositionWarning(it.checkId) }
 
@@ -718,7 +757,7 @@ class MovitTrainingEngine(
 
         repCount = repCounter.count,
 
-        targetReps = targetReps,
+        targetReps = completionTargetReps,
 
         liveFormScore = repCounter.getPendingScore(),
 
@@ -733,6 +772,16 @@ class MovitTrainingEngine(
         jointStateInfos = lastJointStateInfos,
 
         holdStatus = holdStatus,
+
+        positionErrors = positionErrors,
+
+        anySideDimmedJointCodes = lastAnySideDimmedJointCodes,
+
+        bilateralSide = if (exerciseConfig.isBilateral) bilateral.currentSide else null,
+
+        isBilateralFlipped = bilateral.isFlipped,
+
+        isBilateralExercise = exerciseConfig.isBilateral,
 
         positionErrorCount = positionErrors.size,
 
@@ -815,6 +864,16 @@ class MovitTrainingEngine(
         val jointStateInfos: Map<String, JointStateInfo>,
 
         val holdStatus: HoldStatus? = null,
+
+        val positionErrors: List<PositionError> = emptyList(),
+
+        val anySideDimmedJointCodes: Set<String> = emptySet(),
+
+        val bilateralSide: BilateralSide? = null,
+
+        val isBilateralFlipped: Boolean = false,
+
+        val isBilateralExercise: Boolean = false,
 
         val positionErrorCount: Int = 0,
 

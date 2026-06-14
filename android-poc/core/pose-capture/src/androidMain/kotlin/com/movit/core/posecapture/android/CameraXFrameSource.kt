@@ -23,6 +23,7 @@ import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.movit.core.posecapture.CameraStartGate
+import com.movit.core.posecapture.LensSwitchFrameGate
 import com.movit.core.training.boundary.CameraFrameSource
 import com.movit.core.training.boundary.CameraSourceConfiguration
 import com.movit.core.training.boundary.PoseDetectorConfiguration
@@ -39,7 +40,6 @@ class CameraXFrameSource(
 ) : CameraFrameSource {
     companion object {
         private const val TAG = "CameraXFrameSource"
-        private val TRAINING_ANALYSIS_SIZE = Size(320, 240)
     }
 
     data class CameraDiagnostics(
@@ -60,6 +60,7 @@ class CameraXFrameSource(
     private var onCameraBoundListener: (() -> Unit)? = null
     private var configuration = CameraSourceConfiguration()
     private val startGate = CameraStartGate()
+    private val lensSwitchGate = LensSwitchFrameGate()
     private var analysisExecutor: ExecutorService? = null
     private val debugFpsEnabled = AtomicBoolean(false)
     private val providerInitializing = AtomicBoolean(false)
@@ -119,11 +120,32 @@ class CameraXFrameSource(
     }
 
     private fun switchCamera(useFrontCamera: Boolean) {
+        prepareForLensSwitch(useFrontCamera)
         if (!providerReady.get()) {
             ensureCameraProvider { bindUseCases(useFrontCamera, isSwitch = true) }
             return
         }
         bindUseCases(useFrontCamera, isSwitch = true)
+    }
+
+    private fun prepareForLensSwitch(useFrontCamera: Boolean) {
+        lensSwitchGate.beginAwaitingFrames(useFrontCamera)
+        switchingCamera.set(true)
+        poseDetector.resetTrackingState()
+        PoseFrameAssembler.resetElbowEstimator()
+    }
+
+    private fun emitPoseFrame(frame: PoseFrame?, facingOverride: Boolean? = null) {
+        val facing = facingOverride ?: frame?.isFrontCamera ?: configuration.useFrontCamera
+        when (lensSwitchGate.acceptFrame(facing)) {
+            LensSwitchFrameGate.FrameDecision.Suppress -> Unit
+            LensSwitchFrameGate.FrameDecision.Deliver -> frameListener?.invoke(frame)
+            LensSwitchFrameGate.FrameDecision.DeliverCompleteSwitch -> {
+                switchingCamera.set(false)
+                onCameraBoundListener?.invoke()
+                frameListener?.invoke(frame)
+            }
+        }
     }
 
     private fun ensurePoseDetectorReady() {
@@ -143,16 +165,16 @@ class CameraXFrameSource(
                     hasPose = true,
                     busySkippedSinceLastResult = poseDetector.consumeBusySkipCount(),
                 )
-                frameListener?.invoke(frame)
+                emitPoseFrame(frame)
             }
 
-            override fun onNoPoseDetected() {
+            override fun onNoPoseDetected(isFrontCamera: Boolean) {
                 TrainingPipelineDiagnostics.recordPoseResult(
                     inferenceMs = poseDetector.lastInferenceTimeMs,
                     hasPose = false,
                     busySkippedSinceLastResult = poseDetector.consumeBusySkipCount(),
                 )
-                frameListener?.invoke(null)
+                emitPoseFrame(null, facingOverride = isFrontCamera)
             }
 
             override fun onError(message: String) {
@@ -243,10 +265,14 @@ class CameraXFrameSource(
                 .setTargetRotation(rotation)
                 .build()
                 .also { it.surfaceProvider = preview.surfaceProvider }
+            val analysisSize = Size(
+                configuration.analysisWidth.coerceAtLeast(1),
+                configuration.analysisHeight.coerceAtLeast(1),
+            )
             val analysisResolutionSelector = ResolutionSelector.Builder()
                 .setResolutionStrategy(
                     ResolutionStrategy(
-                        TRAINING_ANALYSIS_SIZE,
+                        analysisSize,
                         ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER,
                     ),
                 )
@@ -280,9 +306,10 @@ class CameraXFrameSource(
             val analysisRes = runCatching { analysisUseCase.resolutionInfo?.resolution }.getOrNull()
             TrainingPipelineDiagnostics.setCameraConfig(
                 targetFps = configuration.targetFps,
-                analysisWidth = analysisRes?.width ?: TRAINING_ANALYSIS_SIZE.width,
-                analysisHeight = analysisRes?.height ?: TRAINING_ANALYSIS_SIZE.height,
+                analysisWidth = analysisRes?.width ?: configuration.analysisWidth,
+                analysisHeight = analysisRes?.height ?: configuration.analysisHeight,
                 appliedFpsRange = diagnostics.appliedFpsRange,
+                throughputProfileId = configuration.throughputProfileId,
             )
             if (debugFpsEnabled.get()) {
                 Log.d(
@@ -291,9 +318,11 @@ class CameraXFrameSource(
                         "zoom=${diagnostics.zoom} res=${diagnostics.resolution}",
                 )
             }
-            switchingCamera.set(false)
-            onCameraBoundListener?.invoke()
+            if (!isSwitch) {
+                onCameraBoundListener?.invoke()
+            }
         } catch (e: Exception) {
+            lensSwitchGate.clear()
             switchingCamera.set(false)
             reportError("Camera bind failed: ${e.message ?: "unknown error"}")
         } finally {
@@ -421,6 +450,7 @@ class CameraXFrameSource(
         analysisUseCase = null
         lastAcceptedAnalysisMs = 0L
         skippedAnalysisFrameCount = 0
+        lensSwitchGate.clear()
         startGate.reset()
     }
 

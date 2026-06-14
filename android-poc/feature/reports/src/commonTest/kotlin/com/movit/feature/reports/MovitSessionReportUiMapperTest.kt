@@ -6,8 +6,11 @@ import com.movit.core.training.report.MovitPeakCaptureType
 import com.movit.core.training.report.MovitPeakFrameCapture
 import com.movit.core.training.report.MovitPerformanceRating
 import com.movit.core.training.report.MovitPerformanceSummary
+import com.movit.core.training.report.MovitHoldSummary
 import com.movit.core.training.report.MovitPostTrainingReport
+import com.movit.core.training.report.MovitRepTimelineEntry
 import com.movit.core.training.report.MovitSessionReportBuilder
+import kotlinx.serialization.json.Json
 import com.movit.core.training.report.MovitStateBreakdown
 import com.movit.core.training.report.MovitTrackingQualityLevel
 import com.movit.core.training.report.MovitExecutionQuality
@@ -18,6 +21,7 @@ import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
 
 class MovitSessionReportUiMapperTest {
 
@@ -41,6 +45,82 @@ class MovitSessionReportUiMapperTest {
             val ui = MovitSessionReportUiMapper.mapPostTraining(report, strings)
             assertEquals(1, ui.frameEvidence.size)
             assertEquals("file:///tmp/danger-thumb.jpg", ui.heroFramePath)
+        }
+    }
+
+    @Test
+    fun mapPostTraining_enrichedReport_mapsAnalysisTipsAndRepCompare() {
+        runBlocking {
+            val strings = ReportDetailStrings.load("en")
+            val report = readEnrichedReportFixture()
+            val ui = MovitSessionReportUiMapper.mapPostTraining(report, strings)
+
+            assertEquals(2, ui.joints.size)
+            assertEquals("Left knee", ui.joints.first().label)
+            assertTrue(ui.joints.first().scorePercent in 1..100)
+
+            assertEquals(2, ui.repCompare.size)
+            assertEquals(95, ui.repCompare.first().score)
+            assertTrue(ui.repCompare.first().isBest)
+            assertEquals(72, ui.repCompare.last().score)
+            assertTrue(!ui.repCompare.last().isBest)
+
+            assertEquals(2, ui.formBySetLabels.size)
+            assertEquals(2, ui.formBySetValues.size)
+
+            assertTrue(ui.tips.isNotEmpty())
+            assertEquals("Depth focus", ui.tips.first().title)
+
+            assertTrue(ui.fatigueMessage.contains("Form dropped") || ui.fatigueMessage.contains("dropped"))
+            assertEquals(ReportJointsEmptyReason.Generic, ui.jointsEmptyReason)
+        }
+    }
+
+    @Test
+    fun mapPostTraining_holdSummary_mapsDurationAndOverview() {
+        runBlocking {
+            val strings = ReportDetailStrings.load("en")
+            val report = samplePostTrainingReport().copy(
+                holdSummary = MovitHoldSummary(
+                    targetMs = 30_000L,
+                    achievedMs = 24_000L,
+                    percentage = 80f,
+                    formQuality = 88f,
+                ),
+            )
+            val ui = MovitSessionReportUiMapper.mapPostTraining(report, strings)
+            assertEquals("24s", ui.durationLabel)
+            assertEquals(88, ui.formScore)
+            assertTrue(ui.overviewInsightMessage.contains("80"))
+        }
+    }
+
+    @Test
+    fun mapPostTraining_sparseReport_keepsSessionUntrackedJoints() {
+        runBlocking {
+            val strings = ReportDetailStrings.load("en")
+            val ui = MovitSessionReportUiMapper.mapPostTraining(samplePostTrainingReport(), strings)
+            assertTrue(ui.joints.isEmpty())
+            assertTrue(ui.repCompare.isEmpty())
+            assertTrue(ui.tips.isEmpty())
+            assertEquals(ReportJointsEmptyReason.SessionUntracked, ui.jointsEmptyReason)
+        }
+    }
+
+    @Test
+    fun mapPostTraining_enrichmentMapper_buildsRepCompareFromTimelineOnly() {
+        runBlocking {
+            val strings = ReportDetailStrings.load("en")
+            val report = samplePostTrainingReport().copy(
+                repTimeline = listOf(
+                    MovitRepTimelineEntry(repNumber = 1, durationMs = 2000, score = 90f, setNumber = 1),
+                    MovitRepTimelineEntry(repNumber = 2, durationMs = 2100, score = 60f, setNumber = 1),
+                ),
+            )
+            val ui = MovitSessionReportUiMapper.mapPostTraining(report, strings)
+            assertEquals(2, ui.repCompare.size)
+            assertEquals(90, ui.repCompare.first().score)
+            assertEquals(60, ui.repCompare.last().score)
         }
     }
 
@@ -102,6 +182,25 @@ class MovitSessionReportUiMapperTest {
             assertEquals(1, rows.size)
             assertEquals(82, rows.first().formScore)
         }
+    }
+
+    private fun readEnrichedReportFixture(): MovitPostTrainingReport {
+        val json = readReportFixture("post-training-enriched-squat.json")
+        return Json { ignoreUnknownKeys = true }.decodeFromString(MovitPostTrainingReport.serializer(), json)
+    }
+
+    private fun readReportFixture(name: String): String {
+        val resourcePath = "fixtures/reports/$name"
+        Thread.currentThread().contextClassLoader?.getResource(resourcePath)?.readText()?.let { return it }
+        val candidates = listOf(
+            "src/commonTest/resources/$resourcePath",
+            "feature/reports/src/commonTest/resources/$resourcePath",
+        )
+        for (relative in candidates) {
+            val file = java.io.File(relative)
+            if (file.isFile) return file.readText()
+        }
+        error("Missing fixture: $resourcePath")
     }
 
     private fun samplePostTrainingReport(): MovitPostTrainingReport = MovitPostTrainingReport(

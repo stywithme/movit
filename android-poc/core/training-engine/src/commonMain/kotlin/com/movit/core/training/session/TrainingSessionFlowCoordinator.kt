@@ -233,6 +233,8 @@ sealed class TrainingFlowItem {
         val tip: String? = null,
         /** WARMUP / ACTIVATION / COOLDOWN / MAIN — drives progress exclusion when set. */
         val phaseRole: String? = null,
+        /** Index into [com.movit.core.training.config.ExerciseConfig.poseVariants]. */
+        val poseVariantIndex: Int = 0,
     ) : TrainingFlowItem()
 
     data class Rest(val durationMs: Long) : TrainingFlowItem()

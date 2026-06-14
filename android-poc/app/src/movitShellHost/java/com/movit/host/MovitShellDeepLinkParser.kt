@@ -61,6 +61,7 @@ object MovitShellDeepLinkParser {
                         sets = exercise.sets.coerceAtLeast(1),
                         reps = exercise.targetReps,
                         durationSeconds = exercise.targetDuration,
+                        variantIndex = exercise.variantIndex,
                     )
                 },
                 restBetweenSetsSeconds = items.firstOrNull()

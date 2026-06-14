@@ -2,7 +2,6 @@ package com.movit.core.training.session
 
 import com.movit.core.training.boundary.DeviceTiltPort
 import com.movit.core.training.config.ExerciseConfig
-import com.movit.core.training.config.JointRole
 import com.movit.core.training.config.LocalizedText
 import com.movit.core.training.engine.StartPoseGate
 import com.movit.core.training.geometry.LandmarkTiltCorrector
@@ -65,11 +64,7 @@ class SetupReadinessGate(
         }
 
         val inStartPose = startPoseGate?.isInStartPose(angles.toMap()) == true
-        val primaryReady = phase == SetupPhase.ANGLES && inStartPose &&
-            variant.trackedJoints
-                .filter { it.role == JointRole.PRIMARY }
-                .ifEmpty { variant.trackedJoints }
-                .isNotEmpty()
+        val primaryReady = phase == SetupPhase.ANGLES && inStartPose
 
         jointWindow.add(primaryReady)
 
@@ -129,8 +124,8 @@ class SetupReadinessGate(
         )
     }
 
-    /** Countdown pose check — uses config [TrackedJoint.startPose] box, not UP-zone counted state. */
-    fun isCountdownPoseValid(
+    /** Strict setup confirmation — exact [TrackedJoint.startPose] box for rolling window. */
+    fun isSetupPoseConfirmed(
         angles: JointAngles?,
         exerciseConfig: ExerciseConfig,
         poseVariantIndex: Int,
@@ -139,6 +134,26 @@ class SetupReadinessGate(
         val variant = exerciseConfig.poseVariants.getOrNull(poseVariantIndex) ?: return false
         val gate = startPoseGate ?: StartPoseGate(variant.trackedJoints).also { startPoseGate = it }
         return gate.isInStartPose(angles.toMap())
+    }
+
+    /**
+     * Countdown guard — rough start pose (Legacy `isStartPoseRoughlyValid`), separate from
+     * strict [isSetupPoseConfirmed] used during SETUP_POSE confirmation.
+     */
+    fun isCountdownPoseValid(
+        angles: JointAngles?,
+        exerciseConfig: ExerciseConfig,
+        poseVariantIndex: Int,
+    ): Boolean {
+        if (angles == null) return false
+        val variant = exerciseConfig.poseVariants.getOrNull(poseVariantIndex) ?: return false
+        val gate = startPoseGate ?: StartPoseGate(variant.trackedJoints).also { startPoseGate = it }
+        return gate.isStartPoseRoughlyValid(
+            currentAngles = angles.toMap(),
+            toleranceDegrees = config.resolvedCountdownAngleToleranceDegrees(),
+            minJointPresenceRatio = config.countdownMinJointPresenceRatio,
+            requireAllPrimaryPresent = config.countdownRequireAllPrimaryPresent,
+        )
     }
 
     private fun getTiltCorrectedLandmarks(landmarks: List<Landmark>): List<Landmark> {

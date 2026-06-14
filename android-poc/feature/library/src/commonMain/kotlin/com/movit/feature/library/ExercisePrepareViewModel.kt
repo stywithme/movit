@@ -273,6 +273,7 @@ class ExercisePrepareViewModel(
             val resolved = when (action) {
                 is TrainingStartAction.KmpLive -> action.copy(
                     plannedWorkout = workoutId?.let { resolvePlannedWorkoutLaunch(it, null) },
+                    poseVariantIndex = exercise.selectedPoseVariantIndex,
                 )
                 else -> action
             }

@@ -2,12 +2,13 @@ package com.movit.core.training.session
 
 import com.movit.core.training.config.ExerciseConfigParser
 import com.movit.core.training.geometry.PoseFrameAssembler
+import com.movit.core.training.model.JointAngles
 import com.movit.core.training.model.Landmark
 import com.movit.core.training.model.PoseLandmarkIndices
-import com.movit.core.training.session.SetupReadinessGate
 import com.movit.core.training.testing.readExerciseFixture
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -27,13 +28,83 @@ class SetupReadinessGateTest {
     }
 
     @Test
-    fun countdownPoseValid_usesStartPoseSemantics() {
+    fun isSetupPoseConfirmed_anySideAcceptsSingleReadyElbow() {
+        val gate = SetupReadinessGate()
+        val config = anySideElbowExerciseConfig()
+
+        assertTrue(gate.isSetupPoseConfirmed(JointAngles(leftElbow = 165.0), config, 0))
+        assertFalse(gate.isSetupPoseConfirmed(JointAngles(leftElbow = 90.0), config, 0))
+    }
+
+    @Test
+    fun isSetupPoseConfirmed_bilateralRequiresBothKnees() {
         val config = ExerciseConfigParser.parseConfigJson(readExerciseFixture("squat.json"))
         val gate = SetupReadinessGate()
         val good = squatFrame(kneeAngle = 170.0)
-        val bad = squatFrame(kneeAngle = 90.0)
+
+        assertTrue(gate.isSetupPoseConfirmed(good.angles, config, 0))
+        assertFalse(
+            gate.isSetupPoseConfirmed(
+                good.angles.copy(leftKnee = 170.0, rightKnee = null),
+                config,
+                0,
+            ),
+        )
+    }
+
+    @Test
+    fun countdownPoseValid_bilateralRequiresBothKnees() {
+        val config = ExerciseConfigParser.parseConfigJson(readExerciseFixture("squat.json"))
+        val gate = SetupReadinessGate()
+        val good = squatFrame(kneeAngle = 170.0)
+
         assertTrue(gate.isCountdownPoseValid(good.angles, config, 0))
-        assertTrue(!gate.isCountdownPoseValid(bad.angles, config, 0))
+        assertFalse(
+            gate.isCountdownPoseValid(
+                good.angles.copy(leftKnee = 170.0, rightKnee = null),
+                config,
+                0,
+            ),
+        )
+    }
+
+    @Test
+    fun countdownPoseValid_acceptsTenDegreeDeviationRejectedByStrictSetup() {
+        val config = ExerciseConfigParser.parseConfigJson(readExerciseFixture("squat.json"))
+        val gate = SetupReadinessGate(
+            config = SetupValidationConfig(
+                closeThresholdDegrees = 15.0,
+                countdownAngleToleranceDegrees = 10.0,
+            ),
+        )
+        val drifted = squatFrame(kneeAngle = 110.0)
+
+        assertTrue(gate.isCountdownPoseValid(drifted.angles, config, 0))
+        assertFalse(gate.isSetupPoseConfirmed(drifted.angles, config, 0))
+    }
+
+    @Test
+    fun countdownPoseValid_rejectsGrossViolation() {
+        val config = ExerciseConfigParser.parseConfigJson(readExerciseFixture("squat.json"))
+        val gate = SetupReadinessGate()
+        val bad = squatFrame(kneeAngle = 90.0)
+
+        assertFalse(gate.isCountdownPoseValid(bad.angles, config, 0))
+        assertFalse(gate.isSetupPoseConfirmed(bad.angles, config, 0))
+    }
+
+    @Test
+    fun countdownPoseValid_rejectsInsufficientJointPresence() {
+        val config = ExerciseConfigParser.parseConfigJson(readExerciseFixture("squat.json"))
+        val gate = SetupReadinessGate(
+            config = SetupValidationConfig(countdownMinJointPresenceRatio = 0.6),
+        )
+        val kneesOnly = squatFrame(kneeAngle = 170.0).angles.copy(
+            leftHip = null,
+            spine = null,
+        )
+
+        assertFalse(gate.isCountdownPoseValid(kneesOnly, config, 0))
     }
 
     @Test
@@ -48,8 +119,43 @@ class SetupReadinessGateTest {
             poseVariantIndex = 0,
         )
         assertNotNull(result.axisStatuses)
-        assertEquals(result.inStartPose, frame.angles.leftKnee?.let { it in 120.0..180.0 } == true)
+        assertEquals(
+            result.inStartPose,
+            frame.angles.leftKnee?.let { it in 120.0..180.0 } == true &&
+                frame.angles.rightKnee?.let { it in 120.0..180.0 } == true,
+        )
     }
+
+    private fun anySideElbowExerciseConfig() = ExerciseConfigParser.parseConfigJson(
+        """
+        {
+          "name": {"ar": "اختبار", "en": "Test"},
+          "countingMethod": "up_down",
+          "poseVariants": [{
+            "trackedJoints": [
+              {
+                "joint": "left_elbow",
+                "role": "primary",
+                "startPose": {"min": 150, "max": 180},
+                "pairedWith": "right_elbow",
+                "trackingMode": "any_side",
+                "upRange": {"perfect": {"min": 130, "max": 180}},
+                "downRange": {"perfect": {"min": 60, "max": 100}}
+              },
+              {
+                "joint": "right_elbow",
+                "role": "primary",
+                "startPose": {"min": 150, "max": 180},
+                "pairedWith": "left_elbow",
+                "trackingMode": "any_side",
+                "upRange": {"perfect": {"min": 130, "max": 180}},
+                "downRange": {"perfect": {"min": 60, "max": 100}}
+              }
+            ]
+          }]
+        }
+        """.trimIndent(),
+    )
 
     private fun squatFrame(kneeAngle: Double) = run {
         val landmarks = List(33) { Landmark(0.5f, 0.5f, 0f, 1f, 1f) }.toMutableList()
@@ -61,6 +167,8 @@ class SetupReadinessGateTest {
             angles = frame.angles.copy(
                 leftKnee = kneeAngle,
                 rightKnee = kneeAngle,
+                leftHip = 170.0,
+                spine = 10.0,
             ),
         )
     }

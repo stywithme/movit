@@ -1,5 +1,6 @@
 package com.movit.feature.library
 
+import com.movit.core.training.session.TrainingFlowItem
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -35,6 +36,28 @@ class WorkoutTrainingLaunchTest {
         assertEquals(1, items.size)
         val exercise = items.first() as com.movit.core.training.session.TrainingFlowItem.Exercise
         assertEquals("lunge", exercise.slug)
+    }
+
+    @Test
+    fun toTrainingFlowItems_mapsVariantIndex() {
+        val config = WorkoutFlowConfigUi(
+            workoutId = "w-1",
+            title = "Day",
+            subtitle = "Arms",
+            exercises = listOf(
+                WorkoutFlowExerciseUi(
+                    id = "ex-1",
+                    exerciseSlug = "curl",
+                    name = "Curl",
+                    sets = 1,
+                    reps = 10,
+                    durationSeconds = null,
+                    variantIndex = 2,
+                ),
+            ),
+        )
+        val exercise = config.toTrainingFlowItems().first() as TrainingFlowItem.Exercise
+        assertEquals(2, exercise.poseVariantIndex)
     }
 
     @Test

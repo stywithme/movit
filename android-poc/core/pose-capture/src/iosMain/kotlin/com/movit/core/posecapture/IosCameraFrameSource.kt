@@ -34,7 +34,7 @@ import platform.darwin.dispatch_queue_create
 
 /**
  * AVFoundation camera source — 4:3 preset, front/back lens, live preview layer.
- * Pairs with [IosPoseDetector] (MediaPipe stub until Swift bridge lands).
+ * Pairs with [IosPoseDetector] + optional Swift [IosPoseLandmarkerBridge].
  */
 @OptIn(ExperimentalForeignApi::class)
 class IosCameraFrameSource(
@@ -46,16 +46,23 @@ class IosCameraFrameSource(
     private var videoOutput: AVCaptureVideoDataOutput? = null
     private var sampleDelegate: SampleBufferDelegate? = null
     private var frameListener: ((PoseFrame?) -> Unit)? = null
+    private var errorListener: ((String) -> Unit)? = null
+    private var onCameraBoundListener: (() -> Unit)? = null
     private var configuration = CameraSourceConfiguration()
+    private var lastSubmittedFrameMs = 0L
     private val outputQueue = dispatch_queue_create("com.movit.pose-capture.video", null)
 
     override fun setFrameListener(listener: ((PoseFrame?) -> Unit)?) {
         frameListener = listener
     }
 
-    override fun setErrorListener(listener: ((String) -> Unit)?) = Unit
+    override fun setErrorListener(listener: ((String) -> Unit)?) {
+        errorListener = listener
+    }
 
-    override fun setOnCameraBoundListener(listener: (() -> Unit)?) = Unit
+    override fun setOnCameraBoundListener(listener: (() -> Unit)?) {
+        onCameraBoundListener = listener
+    }
 
     fun attachPreview(host: UIView) {
         previewHost = host
@@ -84,6 +91,7 @@ class IosCameraFrameSource(
 
     override fun start(configuration: CameraSourceConfiguration) {
         this.configuration = configuration
+        lastSubmittedFrameMs = 0L
         stopSessionOnly()
         poseDetector.setListener(
             object : IosPoseDetector.Listener {
@@ -93,11 +101,13 @@ class IosCameraFrameSource(
                         timestampMs = result.timestampMs,
                         isFrontCamera = result.isFrontCamera,
                         worldLandmarks = result.worldLandmarks,
+                        analysisImageWidth = result.analysisImageWidth,
+                        analysisImageHeight = result.analysisImageHeight,
                     )
                     frameListener?.invoke(frame)
                 }
 
-                override fun onNoPoseDetected() {
+                override fun onNoPoseDetected(@Suppress("UNUSED_PARAMETER") isFrontCamera: Boolean) {
                     frameListener?.invoke(null)
                 }
 
@@ -111,19 +121,20 @@ class IosCameraFrameSource(
             sessionPreset = AVCaptureSessionPresetHigh
         }
         val device = discoverCamera(configuration.useFrontCamera) ?: run {
-            poseDetector.setListener(null)
+            failStart("Requested camera lens is not available")
             return
         }
         val input = AVCaptureDeviceInput.deviceInputWithDevice(device, error = null) ?: run {
-            poseDetector.setListener(null)
+            failStart("Camera input could not be created")
             return
         }
         if (!session.canAddInput(input)) {
-            poseDetector.setListener(null)
+            failStart("Camera input could not be added")
             return
         }
         session.addInput(input)
         val useFront = configuration.useFrontCamera
+        val minFrameIntervalMs = (1_000L / configuration.targetFps.coerceAtLeast(1)).coerceAtLeast(1L)
         val output = AVCaptureVideoDataOutput().apply {
             videoSettings = mapOf(
                 kCVPixelBufferPixelFormatTypeKey to kCVPixelFormatType_32BGRA,
@@ -131,12 +142,15 @@ class IosCameraFrameSource(
             alwaysDiscardsLateVideoFrames = true
         }
         val delegate = SampleBufferDelegate { buffer ->
+            val nowMs = IosPoseDetector.uptimeMillis()
+            if (nowMs - lastSubmittedFrameMs < minFrameIntervalMs) return@SampleBufferDelegate
+            lastSubmittedFrameMs = nowMs
             poseDetector.detectAsync(buffer, useFront)
         }
         sampleDelegate = delegate
         output.setSampleBufferDelegate(delegate, queue = outputQueue)
         if (!session.canAddOutput(output)) {
-            poseDetector.setListener(null)
+            failStart("Camera output could not be added")
             return
         }
         session.addOutput(output)
@@ -155,6 +169,7 @@ class IosCameraFrameSource(
             platform.darwin.dispatch_async(queue) {
                 session.startRunning()
                 previewHost?.let { attachPreview(it) }
+                onCameraBoundListener?.invoke()
             }
         }
     }
@@ -173,6 +188,11 @@ class IosCameraFrameSource(
         videoOutput = null
         sampleDelegate = null
         captureSession = null
+    }
+
+    private fun failStart(message: String) {
+        poseDetector.setListener(null)
+        errorListener?.invoke(message)
     }
 
     private fun layoutPreview(host: UIView, layer: AVCaptureVideoPreviewLayer) {

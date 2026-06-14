@@ -8,6 +8,12 @@ android {
     buildFeatures {
         buildConfig = true
     }
+    defaultConfig {
+        val throughputProfile =
+            (project.findProperty("movit.training.throughput.profile") as String?)?.trim().orEmpty()
+                .ifEmpty { "stable" }
+        buildConfigField("String", "TRAINING_THROUGHPUT_PROFILE", "\"$throughputProfile\"")
+    }
 }
 
 kotlin {

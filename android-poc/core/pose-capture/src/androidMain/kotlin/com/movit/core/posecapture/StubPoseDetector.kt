@@ -10,6 +10,8 @@ import com.movit.core.training.model.PoseFrame
 class StubPoseDetector : PoseDetector {
     override fun warmUp(configuration: PoseDetectorConfiguration) = Unit
 
+    override fun resetTrackingState() = Unit
+
     override fun buildPoseFrame(
         landmarks: List<Landmark>,
         timestampMs: Long,

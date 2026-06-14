@@ -15,6 +15,7 @@ import com.movit.core.training.config.ExerciseConfig
 import com.movit.core.training.config.LocalizedText
 import com.movit.core.training.diagnostics.TrainingPipelineDiagnostics
 import com.movit.core.training.engine.Phase
+import com.movit.core.training.engine.RepIncompleteReason
 import com.movit.core.training.engine.ZoneType
 import com.movit.feature.reports.TrainingSessionReportCache
 import com.movit.core.training.engine.ErrorType
@@ -23,17 +24,25 @@ import com.movit.core.training.engine.JointError
 import com.movit.core.training.engine.JointState
 import com.movit.core.training.engine.feedback.FeedbackRouter
 import com.movit.core.training.engine.feedback.FeedbackVisualMessage
+import com.movit.core.training.engine.feedback.TrainingFeedbackEventRouter
+import com.movit.core.training.engine.feedback.TrainingSystemMessagePort
+import com.movit.core.training.engine.feedback.VignetteCue
+import com.movit.core.training.session.HoldState
 import com.movit.core.training.engine.policy.TimingPolicy
 import com.movit.core.training.feedback.CoachIntensity
 import com.movit.core.training.feedback.FeedbackKind
+import com.movit.core.training.feedback.RepIncompleteFeedback
 import com.movit.core.training.feedback.FeedbackSeverity
 import com.movit.core.training.feedback.FeedbackSignal
+import com.movit.core.training.feedback.SetupFeedbackSignals
 import com.movit.core.training.journal.WorkoutUpload
+import com.movit.core.training.model.JointAngles
 import com.movit.core.training.model.PoseFrame
 import com.movit.core.training.report.AssessmentTrainingResult
 import com.movit.core.training.report.MovitSessionReport
 import com.movit.core.training.report.MovitSessionReportBuilder
 import com.movit.core.training.boundary.DeviceTiltPort
+import com.movit.core.training.position.PositionMessageResolver
 import com.movit.core.training.session.CountdownController
 import com.movit.core.training.session.ExerciseWorkoutSummary
 import com.movit.core.training.session.HoldStatus
@@ -43,7 +52,11 @@ import com.movit.core.training.session.PresenceSupervisorEvent
 import com.movit.core.training.session.toSupervisorSignal
 import com.movit.core.training.session.SessionRunState
 import com.movit.core.training.session.SessionSupervisor
+import com.movit.core.training.session.SetupPhase
+import com.movit.core.training.session.SetupGuidanceLevel
 import com.movit.core.training.session.SetupReadinessGate
+import com.movit.core.training.session.SetupReadinessResult
+import com.movit.core.training.session.SetupVoiceGuidanceGate
 import com.movit.core.training.session.SetupValidationConfig
 import com.movit.core.training.session.SupervisorAction
 import com.movit.core.training.session.SupervisorSignal
@@ -53,6 +66,7 @@ import com.movit.designsystem.components.GlassMessageSeverity
 import com.movit.designsystem.components.SkeletonJointQuality
 import com.movit.designsystem.components.SkeletonJointVisual
 import com.movit.designsystem.components.SkeletonLandmarkPoint
+import com.movit.designsystem.components.SkeletonOverlayParityState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -81,6 +95,7 @@ class TrainingSessionViewModel(
   private val startExerciseIndex: Int = 0,
   private val uploadContext: WorkoutUploadContext? = null,
   private val plannedWorkout: PlannedWorkoutContext? = null,
+  private val routePoseVariantIndex: Int = 0,
   private val configRepository: TrainingConfigRepository = MovitData.trainingConfig,
   private val writeCoordinator: TrainingSessionWriteCoordinator = MovitData.trainingWrites,
   private val trainingPreferences: MovitTrainingPreferences = MovitData.trainingPreferences,
@@ -94,6 +109,7 @@ class TrainingSessionViewModel(
   private var activeSlug: String = exerciseSlug
   private var activeTargetReps: Int = targetReps
   private var activeExerciseName: String = exerciseNameOverride
+  private var activePoseVariantIndex: Int = routePoseVariantIndex
   private var exerciseConfig: ExerciseConfig? = configRepository.getBySlug(activeSlug)?.config
 
   private var timingPolicy: TimingPolicy = TimingPolicy.withCoachIntensity(
@@ -118,9 +134,19 @@ class TrainingSessionViewModel(
 
   private val supervisor = SessionSupervisor(setupValidation = setupValidation)
   private val readinessGate = SetupReadinessGate(setupValidation, deviceTiltPort)
+  private val setupVoiceGate = SetupVoiceGuidanceGate(setupValidation.voiceCooldownMs)
+  private var lastSetupPhase: SetupPhase? = null
   private val countdown = CountdownController()
   private val feedback = feedbackRouter
-  private var engine: MovitTrainingEngine? = buildEngine()
+  private val feedbackEventRouter = TrainingFeedbackEventRouter(
+    TrainingSystemMessagePort { key, defaultAr, defaultEn, substitutions ->
+      SystemMessageRegistry
+        .substitute(SystemMessageRegistry.get(key, defaultAr, defaultEn), substitutions)
+        .display(language)
+    },
+  )
+  private var previousHoldState: HoldState? = null
+  private var engine: MovitTrainingEngine? = null
 
   private var sessionStartMs: Long = 0L
   private var lastElapsedMs: Long = 0L
@@ -131,6 +157,7 @@ class TrainingSessionViewModel(
   private var plannedWorkoutStarted = false
   private var accumulatedDayReport: MovitSessionReport? = null
   private var frameCaptureCoordinator = createFrameCaptureCoordinator()
+  private var latestTrainingAngles: JointAngles? = null
   private val poseFrameChannel = Channel<PoseFrame?>(capacity = Channel.CONFLATED)
   private var poseFrameWorker: Job? = null
 
@@ -146,6 +173,9 @@ class TrainingSessionViewModel(
   val state: StateFlow<TrainingSessionUiState> = _state.asStateFlow()
 
   init {
+    activePoseVariantIndex = resolveActivePoseVariantIndex()
+    writeHooks = createWriteHooks()
+    engine = buildEngine()
     feedback.onVisualMessage = { visual -> applyVisualMessage(visual) }
     wirePreferences()
     prefetchAudio()
@@ -153,7 +183,7 @@ class TrainingSessionViewModel(
     wireCountdown()
     wireEngineCallbacks()
     startPoseFrameWorker()
-    exerciseConfig?.poseVariants?.firstOrNull()?.feedbackMessages?.let(feedback::setRandomMessages)
+    exerciseConfig?.poseVariants?.getOrNull(activePoseVariantIndex)?.feedbackMessages?.let(feedback::setRandomMessages)
     flowCoordinator?.start()
     syncFlowUi()
     if (flowCoordinator == null) {
@@ -198,6 +228,7 @@ class TrainingSessionViewModel(
   }
 
   private fun processPoseFrameOnWorker(frame: PoseFrame?) {
+    if (_state.value.isCameraSwitching) return
     TrainingPipelineDiagnostics.recordVmProcessed()
     emitPipelineDiagnostics(frame?.timestampMs ?: lastFrameTimestampMs)
     if (frame == null || !frame.hasPose) {
@@ -217,8 +248,9 @@ class TrainingSessionViewModel(
     if (runState == SessionRunState.TRAINING) {
       supervisor.onTrainingPoseFrameProcessed()
       updateSessionElapsed(frame.timestampMs)
+      latestTrainingAngles = frame.angles
       engine?.processFrame(frame)
-      refreshSkeletonJointStates()
+      refreshSkeletonOverlay(runState)
       maybeDeliverRandomMessage(frame.timestampMs)
       return
     }
@@ -239,7 +271,7 @@ class TrainingSessionViewModel(
         angles = angles,
         landmarks = landmarks,
         exerciseConfig = config,
-        poseVariantIndex = 0,
+        poseVariantIndex = activePoseVariantIndex,
         isFrontCamera = frame.isFrontCamera,
       )
       val guidance = readiness.toSetupGuidanceUi(language)
@@ -258,17 +290,24 @@ class TrainingSessionViewModel(
           setupInStartPose = guidance.inStartPose,
         )
       }
+      refreshSkeletonOverlay(runState)
+      deliverSetupVoiceFeedback(readiness)
       val isCountdown = runState == SessionRunState.COUNTDOWN ||
         runState == SessionRunState.RESUME_COUNTDOWN
       if (isCountdown) {
-        if (!readinessGate.isCountdownPoseValid(angles, config, 0)) {
+        val hasSceneData = (landmarks?.size ?: 0) >= 33
+        val sceneStillValid = hasSceneData && readiness.phase == SetupPhase.ANGLES
+        val startPoseStillValid = readinessGate.isCountdownPoseValid(angles, config, activePoseVariantIndex)
+        if (!sceneStillValid || !startPoseStillValid) {
           supervisor.processSignal(SupervisorSignal.PoseInvalid)
+        } else {
+          supervisor.processSignal(SupervisorSignal.CountdownPoseValid)
         }
       } else if (readiness.isConfirmed) {
         supervisor.processSignal(SupervisorSignal.PoseConfirmed)
       }
     }
-    refreshSkeletonJointStates()
+    refreshSkeletonOverlay(runState)
     maybeDeliverRandomMessage(frame.timestampMs)
   }
 
@@ -314,11 +353,17 @@ class TrainingSessionViewModel(
 
   fun onCameraReady() {
     TrainingPipelineDiagnostics.logMilestone("camera bound")
-    _state.update { it.copy(isCameraReady = true, isCameraSwitching = false, errorMessage = null) }
+    _state.update {
+      it.copy(
+        isCameraReady = true,
+        isCameraSwitching = false,
+        errorMessage = null,
+      )
+    }
   }
 
   fun onCameraSwitchStarted() {
-    _state.update { it.copy(isCameraSwitching = true, errorMessage = null) }
+    _state.update { TrainingCameraSwitchPolicy.onSwitchStarted(it) }
   }
 
   fun onCameraError(message: String) {
@@ -358,6 +403,7 @@ class TrainingSessionViewModel(
       -> {
         supervisor.processSignal(SupervisorSignal.StopRequested)
         supervisor.reset()
+        resetSetupVoiceState()
         readinessGate.reset()
         countdown.release()
         flowCoordinator?.currentExerciseOrNull()?.let {
@@ -435,12 +481,16 @@ class TrainingSessionViewModel(
       if (prev != null && prev != runState) {
         TrainingPipelineDiagnostics.logMilestone("supervisor $prev -> $runState")
       }
+      if (prev?.isSetupPose() == true && !runState.isSetupPose()) {
+        resetSetupVoiceState()
+      }
       _state.update {
         it.copy(
           runState = runState,
           isComplete = it.isComplete || runState == SessionRunState.COMPLETED,
         )
       }
+      updateReplaySampler(runState)
     }.launchIn(viewModelScope)
 
     flowCoordinator?.state?.onEach { syncFlowUi() }?.launchIn(viewModelScope)
@@ -486,10 +536,12 @@ class TrainingSessionViewModel(
       }
 
       override fun onFrozen() {
+        applyVignetteCue(feedbackEventRouter.routeCountdownFrozen())
         _state.update { it.copy(countdownFrozen = true) }
       }
 
       override fun onUnfrozen() {
+        applyVignetteCue(feedbackEventRouter.routeCountdownUnfrozen())
         _state.update { it.copy(countdownFrozen = false) }
       }
     })
@@ -515,11 +567,19 @@ class TrainingSessionViewModel(
 
   private fun wireEngineCallbacks() {
     engine?.onHoldStatusChanged = { status ->
+      routeHoldFeedback(status)
       _state.update { it.copy(holdStatus = status) }
-      status?.let { frameCaptureCoordinator.onHoldStatus(it, engine?.currentPhase ?: Phase.IDLE) }
+      status?.let {
+        frameCaptureCoordinator.onHoldStatus(
+          it,
+          engine?.currentPhase ?: Phase.IDLE,
+          latestTrainingAngles,
+        )
+      }
     }
     engine?.onRepCountChanged = { count, score, isCounted ->
       frameCaptureCoordinator.onRepCompleted(count, isCounted)
+      feedbackEventRouter.routeRepCompleted(count, isCounted).signals.forEach(feedback::submit)
       _state.update {
         it.copy(
           repCount = count,
@@ -530,9 +590,10 @@ class TrainingSessionViewModel(
     }
     engine?.onPhaseChanged = { phase ->
       _state.update { it.copy(phaseLabel = phase.toDisplayLabel()) }
-      frameCaptureCoordinator.onPhaseChanged(phase, repInProgress())
+      frameCaptureCoordinator.onPhaseChanged(phase, repInProgress(), latestTrainingAngles)
     }
     engine?.onTargetReached = {
+      feedback.submit(feedbackEventRouter.routeTargetReached(_state.value.repCount))
       supervisor.processSignal(SupervisorSignal.TargetReached)
     }
     engine?.onPositionIssuesChanged = { errors, _ ->
@@ -551,13 +612,37 @@ class TrainingSessionViewModel(
     }
     engine?.onPresenceEvent = { event -> handlePresenceEvent(event) }
     engine?.onJointStateMessage = { jointCode, state, zone ->
-      frameCaptureCoordinator.onJointState(jointCode, state, repInProgress(), engine?.currentPhase ?: Phase.IDLE)
+      frameCaptureCoordinator.onJointState(
+        jointCode,
+        state,
+        repInProgress(),
+        engine?.currentPhase ?: Phase.IDLE,
+        latestTrainingAngles,
+      )
       submitJointStateMessage(jointCode, state, zone)
     }
     engine?.onJointErrorFeedback = { error, message ->
-      frameCaptureCoordinator.onJointError(error, repInProgress(), engine?.currentPhase ?: Phase.IDLE)
+      frameCaptureCoordinator.onJointError(
+        error,
+        repInProgress(),
+        engine?.currentPhase ?: Phase.IDLE,
+        latestTrainingAngles,
+      )
       submitJointErrorFeedback(error, message)
     }
+    engine?.onRepIncomplete = ::submitRepIncompleteFeedback
+  }
+
+  private fun submitRepIncompleteFeedback(reason: RepIncompleteReason) {
+    applyVignetteCue(VignetteCue.WARNING)
+    val copy = RepIncompleteFeedback.defaultCopy(reason)
+    val code = RepIncompleteFeedback.messageCode(reason)
+    feedback.submit(
+      RepIncompleteFeedback.toSignal(
+        reason = reason,
+        text = systemMessage(code, copy.ar, copy.en),
+      ),
+    )
   }
 
   private fun submitJointStateMessage(
@@ -566,7 +651,7 @@ class TrainingSessionViewModel(
     zone: ZoneType,
   ) {
     val config = exerciseConfig ?: return
-    val tracked = config.poseVariants.firstOrNull()?.trackedJoints
+    val tracked = config.poseVariants.getOrNull(activePoseVariantIndex)?.trackedJoints
       ?.find { it.joint == jointCode }
       ?: return
     val phaseName = engine?.currentPhase?.name
@@ -737,6 +822,7 @@ class TrainingSessionViewModel(
   }
 
   private fun finalizeCurrentExercise() {
+    frameCaptureCoordinator.stopReplaySampler()
     val summary = engine?.stop()
     val upload = writeHooks.finalizeUpload(lastFrameTimestampMs.takeIf { it > 0 } ?: sessionStartMs)
     val setsCompleted = _state.value.currentSetNumber
@@ -753,6 +839,7 @@ class TrainingSessionViewModel(
       }
       if (flowCoordinator != null) {
         supervisor.reset()
+        resetSetupVoiceState()
         readinessGate.reset()
         countdown.release()
         writeHooks.detach()
@@ -865,14 +952,28 @@ class TrainingSessionViewModel(
     ingressFramesDropped = engine?.droppedFrameCount() ?: 0,
   )
 
+  private fun updateReplaySampler(runState: SessionRunState) {
+    if (runState == SessionRunState.TRAINING && exerciseConfig?.isHoldExercise() != true) {
+      frameCaptureCoordinator.startReplaySampler { repInProgress() }
+    } else {
+      frameCaptureCoordinator.stopReplaySampler()
+    }
+  }
+
+  private fun syncFrameEvidenceToWriteHooks() {
+    writeHooks.peakFrameCaptures = frameCaptureCoordinator.captures()
+    writeHooks.repReplayClips = frameCaptureCoordinator.replayClips()
+  }
+
   private suspend fun cachePostTrainingReport(upload: WorkoutUpload, summary: ExerciseWorkoutSummary) {
     val config = exerciseConfig ?: return
-    writeHooks.peakFrameCaptures = frameCaptureCoordinator.captures()
+    syncFrameEvidenceToWriteHooks()
     val report = writeHooks.buildPostTrainingReport(
       upload,
       summary,
       config,
       sessionQuality = resolveSessionQualityMeta(),
+      holdData = engine?.snapshotHoldReportData(),
     )
     TrainingSessionReportCache.put(upload.id, report)
     if (exploreBatch == null) {
@@ -882,13 +983,14 @@ class TrainingSessionViewModel(
 
   private suspend fun enqueueUpload(upload: WorkoutUpload, summary: ExerciseWorkoutSummary) {
     val config = exerciseConfig
-    writeHooks.peakFrameCaptures = frameCaptureCoordinator.captures()
+    syncFrameEvidenceToWriteHooks()
     val postReport = config?.let {
       writeHooks.buildPostTrainingReport(
         upload,
         summary,
         it,
         sessionQuality = resolveSessionQualityMeta(),
+        holdData = engine?.snapshotHoldReportData(),
       )
     }
     val legacyJson = postReport?.let { writeCoordinator.encodePostTrainingReport(it) }
@@ -937,6 +1039,7 @@ class TrainingSessionViewModel(
     activeSlug = exercise.slug
     activeTargetReps = exercise.targetReps
     activeExerciseName = exercise.displayName
+    activePoseVariantIndex = resolveActivePoseVariantIndex(exercise)
     exerciseConfig = configRepository.getBySlug(activeSlug)?.config
     engine?.stop()
     writeHooks.detach()
@@ -944,8 +1047,10 @@ class TrainingSessionViewModel(
     frameCaptureCoordinator = createFrameCaptureCoordinator()
     engine = buildEngine()
     wireEngineCallbacks()
-    exerciseConfig?.poseVariants?.firstOrNull()?.feedbackMessages?.let(feedback::setRandomMessages)
+    exerciseConfig?.poseVariants?.getOrNull(activePoseVariantIndex)?.feedbackMessages?.let(feedback::setRandomMessages)
     feedback.resetAll()
+    feedbackEventRouter.reset()
+    previousHoldState = null
     _state.update {
       it.copy(
         exerciseSlug = activeSlug,
@@ -1071,6 +1176,7 @@ class TrainingSessionViewModel(
             ),
           )
         }
+        applyVignetteCue(feedbackEventRouter.routeVisibilityWarning())
         feedback.submit(
           FeedbackSignal(
             kind = FeedbackKind.VISIBILITY,
@@ -1129,6 +1235,44 @@ class TrainingSessionViewModel(
     feedback.tryDeliverRandomMessage(hasActiveErrors, language)
   }
 
+  private fun routeHoldFeedback(status: HoldStatus?) {
+    val current = status?.state
+    val previous = previousHoldState
+    previousHoldState = current
+    if (current == null || previous == current) return
+    val signal = when (current) {
+      HoldState.GRACE_PERIOD -> if (previous != HoldState.GRACE_PERIOD) {
+        feedbackEventRouter.routeHoldGraceStarted()
+      } else {
+        null
+      }
+      HoldState.HOLDING -> if (previous == HoldState.GRACE_PERIOD) {
+        feedbackEventRouter.routeHoldResumed()
+      } else {
+        null
+      }
+      HoldState.COMPLETED -> if (previous != HoldState.COMPLETED) {
+        feedbackEventRouter.routeHoldCompleted(status.elapsedMs)
+      } else {
+        null
+      }
+      HoldState.FAILED -> if (previous != HoldState.FAILED) {
+        feedbackEventRouter.routeHoldFailed()
+      } else {
+        null
+      }
+      HoldState.IDLE -> null
+    }
+    signal?.let(feedback::submit)
+  }
+
+  private fun applyVignetteCue(cue: VignetteCue) {
+    when (cue) {
+      VignetteCue.WARNING, VignetteCue.ERROR -> _state.update { it.copy(showVignette = true) }
+      VignetteCue.CLEAR -> _state.update { it.copy(showVignette = false) }
+    }
+  }
+
   private fun applyVisualMessage(visual: FeedbackVisualMessage) {
     _state.update {
       it.copy(
@@ -1145,26 +1289,28 @@ class TrainingSessionViewModel(
     }
   }
 
-  private fun refreshSkeletonJointStates() {
-    val metrics = engine?.metricsSnapshot() ?: return
-    val joints = metrics.jointStateInfos.mapValues { (_, info) ->
-      SkeletonJointVisual(
-        jointCode = info.jointCode,
-        quality = when (info.state) {
-          JointState.PERFECT -> SkeletonJointQuality.PERFECT
-          JointState.DANGER -> SkeletonJointQuality.DANGER
-          JointState.WARNING -> SkeletonJointQuality.WARNING
-          else -> SkeletonJointQuality.NORMAL
-        },
-      )
-    }
-    _state.update { it.copy(jointVisuals = joints) }
+  private fun refreshSkeletonOverlay(runState: SessionRunState = supervisor.state.value) {
+    val metrics = engine?.metricsSnapshot()
+    val parity = buildSkeletonOverlayParityState(
+      runState = runState,
+      setupPhase = _state.value.setupPhase,
+      jointStateInfos = metrics?.jointStateInfos ?: emptyMap(),
+      anySideDimmedJointCodes = metrics?.anySideDimmedJointCodes ?: emptySet(),
+      positionErrors = metrics?.positionErrors ?: emptyList(),
+      isBilateralExercise = metrics?.isBilateralExercise ?: (exerciseConfig?.isBilateral == true),
+      isBilateralFlipped = metrics?.isBilateralFlipped ?: (engine?.isBilateralFlipped == true),
+      bilateralSide = metrics?.bilateralSide ?: engine?.bilateralSide,
+      setupJointRows = _state.value.setupJointRows,
+      language = language,
+    )
+    _state.update { it.copy(skeletonOverlayParity = parity, jointVisuals = parity.jointVisuals) }
   }
 
   private fun buildEngine(): MovitTrainingEngine? {
     val config = exerciseConfig ?: return null
     return MovitTrainingEngine(
       exerciseConfig = config,
+      poseVariantIndex = activePoseVariantIndex,
       targetRepsOverride = activeTargetReps,
       deviceTiltPort = deviceTiltPort,
       timingPolicy = timingPolicy,
@@ -1182,6 +1328,7 @@ class TrainingSessionViewModel(
     sessionId = "$sessionId:$activeSlug",
     exerciseSlug = activeSlug,
     writes = writeCoordinator,
+    poseVariantIndex = activePoseVariantIndex,
     isAssessmentMode = isAssessmentMode,
     timeProvider = { lastFrameTimestampMs.takeIf { it > 0 } ?: sessionStartMs },
   )
@@ -1198,8 +1345,64 @@ class TrainingSessionViewModel(
   private fun resolveExerciseName(): String =
     activeExerciseName.ifBlank { exerciseConfig?.displayName(language).orEmpty() }
 
+  private fun resolveActivePoseVariantIndex(
+    flowExercise: TrainingFlowItem.Exercise? = flowCoordinator?.currentExerciseOrNull()
+      ?: flowItems?.firstOrNull() as? TrainingFlowItem.Exercise,
+  ): Int = TrainingPoseVariantResolver.resolve(
+    routePoseVariantIndex = routePoseVariantIndex,
+    flowExercise = flowExercise,
+    variantCount = exerciseConfig?.poseVariants?.size ?: 1,
+  )
+
   private fun systemMessage(key: String, defaultAr: String, defaultEn: String): String =
     SystemMessageRegistry.get(key, defaultAr, defaultEn).display(language)
+
+  private fun setupSceneToVisibilityMessage(): LocalizedText {
+    val remote = SystemMessageRegistry.get(
+      "training_setup_scene_to_visibility",
+      "الوضع صحيح – جاري التحقق من الرؤية",
+      "Position correct – checking visibility",
+    )
+    return LocalizedText(ar = remote.ar, en = remote.en)
+  }
+
+  private fun deliverSetupVoiceFeedback(readiness: SetupReadinessResult) {
+    if (!supervisor.state.value.isSetupPose()) return
+
+    val phase = readiness.phase
+    val previousPhase = lastSetupPhase
+    lastSetupPhase = phase
+
+    if (phase == SetupPhase.ANGLES && previousPhase != null && previousPhase != SetupPhase.ANGLES) {
+      SetupFeedbackSignals.phaseGuidance(setupSceneToVisibilityMessage(), language)?.let { signal ->
+        feedback.submitSetup(signal)
+      }
+    }
+
+    if (phase != SetupPhase.ANGLES) {
+      val phaseMessage = readiness.phaseMessage ?: return
+      if (!setupVoiceGate.shouldSpeakPhaseGuidance(phase)) return
+      val signal = SetupFeedbackSignals.phaseGuidance(phaseMessage, language) ?: return
+      if (feedback.submitSetup(signal).shouldDeliver) {
+        setupVoiceGate.onPhaseGuidanceSpoken(phase)
+      }
+      return
+    }
+
+    val joint = readiness.worstJointGuidance ?: return
+    if (joint.level != SetupGuidanceLevel.RED) return
+    if (!setupVoiceGate.shouldSpeakJointGuidance(joint)) return
+    val signal = SetupFeedbackSignals.jointGuidance(joint, language) ?: return
+    if (feedback.submitSetup(signal).shouldDeliver) {
+      setupVoiceGate.onJointGuidanceSpoken(joint)
+    }
+  }
+
+  private fun resetSetupVoiceState() {
+    lastSetupPhase = null
+    setupVoiceGate.reset()
+    feedback.resetSetupFeedback()
+  }
 
   override fun onCleared() {
     restTimerJob?.cancel()
@@ -1208,6 +1411,7 @@ class TrainingSessionViewModel(
     TrainingPipelineDiagnostics.reset()
     writeHooks.detach()
     countdown.release()
+    resetSetupVoiceState()
     readinessGate.reset()
     supervisor.reset()
     feedback.release()
@@ -1283,6 +1487,7 @@ data class TrainingSessionUiState(
   /** When true, mirror normalized X to match front-camera PreviewView. */
   val skeletonMirrorPreview: Boolean = true,
   val jointVisuals: Map<String, SkeletonJointVisual> = emptyMap(),
+  val skeletonOverlayParity: SkeletonOverlayParityState = SkeletonOverlayParityState(),
   val glassMessage: GlassMessageState? = null,
   val showVignette: Boolean = false,
   val elapsedLabel: String = "0:00",

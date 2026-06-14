@@ -31,10 +31,23 @@ class AndroidTrainingFrameSnapshotPort(
         )
     }
 
+    override suspend fun persistReplaySnapshot(
+        sessionId: String,
+        captureId: String,
+    ): PersistedFrameSnapshot? = withContext(Dispatchers.IO) {
+        val jpeg = detector.takeSnapshotJpeg(REPLAY_MAX_DIMENSION, REPLAY_JPEG_QUALITY) ?: return@withContext null
+        val dir = File(filesRoot, "frame_captures/$sessionId/replay").apply { mkdirs() }
+        val file = File(dir, "$captureId.jpg")
+        file.writeBytes(jpeg)
+        PersistedFrameSnapshot(localPath = file.absolutePath)
+    }
+
     private companion object {
         const val FULL_MAX_DIMENSION = 720
         const val THUMB_MAX_DIMENSION = 200
         const val FULL_JPEG_QUALITY = 85
         const val THUMB_JPEG_QUALITY = 80
+        const val REPLAY_MAX_DIMENSION = 540
+        const val REPLAY_JPEG_QUALITY = 82
     }
 }

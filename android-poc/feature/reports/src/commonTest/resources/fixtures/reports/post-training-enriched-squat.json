@@ -1,0 +1,82 @@
+{
+  "id": "report-enriched-001",
+  "workoutId": "workout-enriched-001",
+  "exerciseId": "bodyweight-squat",
+  "exerciseName": { "en": "Squat", "ar": "سكوات" },
+  "timestamp": 1700000000000,
+  "summary": {
+    "totalReps": 8,
+    "durationMs": 120000,
+    "rating": "GOOD",
+    "motivationalMessage": { "en": "Great job!", "ar": "عمل رائع!" },
+    "countedReps": 8,
+    "invalidatedReps": 0,
+    "averageScore": 82.0,
+    "countedRatio": 1.0,
+    "stateBreakdown": {
+      "perfectCount": 2,
+      "normalCount": 4,
+      "padCount": 0,
+      "warningCount": 2,
+      "dangerCount": 0
+    },
+    "shouldCelebrate": false
+  },
+  "executionQuality": {
+    "visibilityPauseCount": 0,
+    "totalInvisibleMs": 0,
+    "cameraWarningCount": 0,
+    "overallQuality": "EXCELLENT"
+  },
+  "errorAnalysis": [
+    {
+      "errorKey": "left_knee:WARNING",
+      "jointCode": "left_knee",
+      "jointName": { "en": "Left knee", "ar": "الركبة اليسرى" },
+      "state": "WARNING",
+      "count": 3,
+      "affectedReps": [2, 4, 6],
+      "message": { "en": "Knee tracking forward", "ar": "تقدم الركبة" },
+      "tip": { "en": "Push knees out over toes", "ar": "ادفع ركبتيك للخارج" }
+    },
+    {
+      "errorKey": "right_hip:WARNING",
+      "jointCode": "right_hip",
+      "jointName": { "en": "Right hip", "ar": "الورك الأيمن" },
+      "state": "WARNING",
+      "count": 1,
+      "affectedReps": [5],
+      "message": { "en": "Hip shift detected", "ar": "انحراف الورك" },
+      "tip": { "en": "Keep hips level", "ar": "حافظ على استواء الوركين" }
+    }
+  ],
+  "repTimeline": [
+    { "repNumber": 1, "durationMs": 2800, "score": 88.0, "setNumber": 1, "isBestRep": false, "isWorstRep": false },
+    { "repNumber": 2, "durationMs": 3000, "score": 72.0, "setNumber": 1, "isBestRep": false, "isWorstRep": true },
+    { "repNumber": 3, "durationMs": 2700, "score": 95.0, "setNumber": 1, "isBestRep": true, "isWorstRep": false },
+    { "repNumber": 4, "durationMs": 2900, "score": 80.0, "setNumber": 2, "isBestRep": false, "isWorstRep": false },
+    { "repNumber": 5, "durationMs": 3100, "score": 76.0, "setNumber": 2, "isBestRep": false, "isWorstRep": false },
+    { "repNumber": 6, "durationMs": 2850, "score": 70.0, "setNumber": 2, "isBestRep": false, "isWorstRep": false },
+    { "repNumber": 7, "durationMs": 2950, "score": 68.0, "setNumber": 2, "isBestRep": false, "isWorstRep": false },
+    { "repNumber": 8, "durationMs": 3000, "score": 65.0, "setNumber": 2, "isBestRep": false, "isWorstRep": false }
+  ],
+  "bestReps": [
+    { "repNumber": 3, "durationMs": 2700, "score": 95.0 }
+  ],
+  "worstRep": {
+    "repNumber": 2,
+    "durationMs": 3000,
+    "score": 72.0,
+    "errorCount": 2,
+    "primaryError": { "en": "Knee tracking forward", "ar": "تقدم الركبة" }
+  },
+  "improvementTips": [
+    {
+      "id": "tip-depth",
+      "title": { "en": "Depth focus", "ar": "عمق الحركة" },
+      "description": { "en": "Sit back before dropping", "ar": "اجلس للخلف قبل النزول" },
+      "priority": 1
+    }
+  ],
+  "holdSummary": null
+}

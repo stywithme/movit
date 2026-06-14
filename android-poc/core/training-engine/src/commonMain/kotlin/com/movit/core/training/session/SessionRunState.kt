@@ -56,6 +56,9 @@ enum class SessionRunState {
     fun shouldValidatePose(): Boolean = this in listOf(
         SETUP_POSE, COUNTDOWN, RESUME_SETUP, RESUME_COUNTDOWN
     )
+
+    /** Setup panel + voice guidance (excludes countdown pose guard). */
+    fun isSetupPose(): Boolean = this == SETUP_POSE || this == RESUME_SETUP
     
     /**
      * Check if the run is in a resumable state

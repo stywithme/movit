@@ -24,4 +24,6 @@ data class MovitPeakFrameCapture(
     val captureType: MovitPeakCaptureType,
     val localPath: String,
     val thumbnailPath: String? = null,
+    val errorType: String? = null,
+    val metadata: MovitFrameCaptureMetadata = MovitFrameCaptureMetadata(),
 )

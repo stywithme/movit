@@ -17,6 +17,7 @@ class MovitPeakFrameCaptureManager(
         val localPath: String,
         val thumbnailPath: String? = null,
         val errorKey: String? = null,
+        val angles: Map<String, Double> = emptyMap(),
         val capturedAtMs: Long? = null,
         val id: String? = null,
     )
@@ -62,6 +63,8 @@ class MovitPeakFrameCaptureManager(
             return null
         }
         val captureId: String = request.id ?: idGenerator()
+        val hasError = request.captureType == MovitPeakCaptureType.DANGER_FRAME ||
+            request.captureType == MovitPeakCaptureType.ERROR_FRAME
         val capture = MovitPeakFrameCapture(
             id = captureId,
             repNumber = request.repNumber,
@@ -70,6 +73,12 @@ class MovitPeakFrameCaptureManager(
             captureType = request.captureType,
             localPath = request.localPath,
             thumbnailPath = request.thumbnailPath,
+            errorType = request.errorKey,
+            metadata = MovitFrameCaptureMetadata(
+                angles = request.angles,
+                hasError = hasError,
+                errorDetails = if (hasError) request.errorKey else null,
+            ),
         )
         when (request.captureType) {
             MovitPeakCaptureType.DANGER_FRAME -> {

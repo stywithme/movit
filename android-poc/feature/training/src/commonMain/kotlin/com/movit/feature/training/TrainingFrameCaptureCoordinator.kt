@@ -5,58 +5,81 @@ import com.movit.core.training.boundary.TrainingFrameSnapshotPort
 import com.movit.core.training.engine.JointError
 import com.movit.core.training.engine.JointState
 import com.movit.core.training.engine.Phase
+import com.movit.core.training.model.JointAngles
 import com.movit.core.training.report.MovitPeakCaptureType
 import com.movit.core.training.report.MovitPeakFrameCapture
 import com.movit.core.training.report.MovitPeakFrameCaptureManager
+import com.movit.core.training.report.MovitRepReplayClip
+import com.movit.core.training.report.MovitRepReplaySampler
 import com.movit.core.training.session.HoldStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 
 /**
- * Wires engine moments to [MovitPeakFrameCaptureManager] + optional [TrainingFrameSnapshotPort].
- * Replay burst sampling is intentionally out of scope for v1.
+ * Wires engine moments to [MovitPeakFrameCaptureManager], [MovitRepReplaySampler],
+ * and optional [TrainingFrameSnapshotPort].
  */
 class TrainingFrameCaptureCoordinator(
     private val sessionId: String,
     private val scope: CoroutineScope,
     private val snapshotPort: TrainingFrameSnapshotPort = NoOpTrainingFrameSnapshotPort,
     private val manager: MovitPeakFrameCaptureManager = MovitPeakFrameCaptureManager(),
+    private val replaySampler: MovitRepReplaySampler = MovitRepReplaySampler(),
     private var captureSeq: Int = 0,
+    private var replaySeq: Int = 0,
 ) {
     private var lastHoldSampleElapsedMs = -1L
     private val pendingCaptureJobs = mutableListOf<Job>()
+    private var replaySamplerJob: Job? = null
+    private var replayRepProvider: (() -> Int)? = null
 
-    fun onPhaseChanged(phase: Phase, repInProgress: Int) {
+    fun onPhaseChanged(phase: Phase, repInProgress: Int, angles: JointAngles? = null) {
         if (phase == Phase.BOTTOM) {
             requestCapture(
                 repNumber = repInProgress,
                 phase = phase,
                 captureType = MovitPeakCaptureType.PEAK_FRAME,
+                angles = angles,
             )
         }
     }
 
-    fun onJointState(jointCode: String, state: JointState, repInProgress: Int, phase: Phase) {
+    fun onJointState(
+        jointCode: String,
+        state: JointState,
+        repInProgress: Int,
+        phase: Phase,
+        angles: JointAngles? = null,
+    ) {
         when (state) {
             JointState.DANGER -> requestCapture(
                 repNumber = repInProgress,
                 phase = phase,
                 captureType = MovitPeakCaptureType.DANGER_FRAME,
                 errorKey = "$jointCode:DANGER",
+                angles = angles,
             )
             JointState.WARNING -> requestCapture(
                 repNumber = repInProgress,
                 phase = phase,
                 captureType = MovitPeakCaptureType.ERROR_FRAME,
                 errorKey = "$jointCode:WARNING",
+                angles = angles,
             )
             else -> Unit
         }
     }
 
-    fun onJointError(error: JointError, repInProgress: Int, phase: Phase) {
+    fun onJointError(
+        error: JointError,
+        repInProgress: Int,
+        phase: Phase,
+        angles: JointAngles? = null,
+    ) {
         val errorKey = "${error.jointCode}:${error.state.name}:${error.errorType.name}"
         val captureType = when (error.state) {
             JointState.DANGER -> MovitPeakCaptureType.DANGER_FRAME
@@ -67,10 +90,11 @@ class TrainingFrameCaptureCoordinator(
             phase = phase,
             captureType = captureType,
             errorKey = errorKey,
+            angles = angles,
         )
     }
 
-    fun onHoldStatus(status: HoldStatus, phase: Phase) {
+    fun onHoldStatus(status: HoldStatus, phase: Phase, angles: JointAngles? = null) {
         val elapsed = status.elapsedMs
         if (elapsed < HOLD_SAMPLE_INTERVAL_MS) return
         if (lastHoldSampleElapsedMs >= 0 && elapsed - lastHoldSampleElapsedMs < HOLD_SAMPLE_INTERVAL_MS) {
@@ -82,6 +106,7 @@ class TrainingFrameCaptureCoordinator(
             phase = phase,
             captureType = MovitPeakCaptureType.HOLD_SAMPLE,
             errorKey = "hold_${elapsed}ms",
+            angles = angles,
         )
     }
 
@@ -91,7 +116,31 @@ class TrainingFrameCaptureCoordinator(
         }
     }
 
+    fun startReplaySampler(repInProgress: () -> Int) {
+        if (!snapshotPort.isAvailable) return
+        stopReplaySampler()
+        replayRepProvider = repInProgress
+        replaySamplerJob = scope.launch {
+            while (isActive) {
+                delay(MovitRepReplaySampler.SAMPLE_INTERVAL_MS)
+                val repNumber = replayRepProvider?.invoke() ?: continue
+                if (repNumber < 1 || !replaySampler.canSample(repNumber)) continue
+                val captureId = nextReplayCaptureId(repNumber)
+                val persisted = snapshotPort.persistReplaySnapshot(sessionId, captureId) ?: continue
+                replaySampler.tryRegisterFrame(repNumber, persisted.localPath)
+            }
+        }
+    }
+
+    fun stopReplaySampler() {
+        replaySamplerJob?.cancel()
+        replaySamplerJob = null
+        replayRepProvider = null
+    }
+
     fun captures(): List<MovitPeakFrameCapture> = manager.captures()
+
+    fun replayClips(): List<MovitRepReplayClip> = replaySampler.clips()
 
     /** Waits for in-flight snapshot jobs before building post-training reports. */
     suspend fun awaitPendingCaptures() {
@@ -99,9 +148,12 @@ class TrainingFrameCaptureCoordinator(
     }
 
     fun resetForNextExercise() {
+        stopReplaySampler()
         lastHoldSampleElapsedMs = -1L
         captureSeq = 0
+        replaySeq = 0
         pendingCaptureJobs.clear()
+        replaySampler.clear()
     }
 
     private fun requestCapture(
@@ -109,10 +161,12 @@ class TrainingFrameCaptureCoordinator(
         phase: Phase,
         captureType: MovitPeakCaptureType,
         errorKey: String? = null,
+        angles: JointAngles? = null,
     ) {
         if (!manager.canCapture(captureType, repNumber, errorKey)) return
         if (!snapshotPort.isAvailable) return
         val captureId = nextCaptureId()
+        val angleMap = angles?.toMap().orEmpty()
         val job = scope.launch {
             val persisted = snapshotPort.persistSnapshot(sessionId, captureId) ?: return@launch
             manager.tryRegister(
@@ -123,6 +177,7 @@ class TrainingFrameCaptureCoordinator(
                     localPath = persisted.localPath,
                     thumbnailPath = persisted.thumbnailPath,
                     errorKey = errorKey,
+                    angles = angleMap,
                     id = captureId,
                 ),
             )
@@ -134,6 +189,11 @@ class TrainingFrameCaptureCoordinator(
     private fun nextCaptureId(): String {
         captureSeq += 1
         return "frame-$sessionId-$captureSeq"
+    }
+
+    private fun nextReplayCaptureId(repNumber: Int): String {
+        replaySeq += 1
+        return "rep${repNumber}_replay_${replaySeq - 1}"
     }
 
     private companion object {

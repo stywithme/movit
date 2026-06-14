@@ -37,6 +37,12 @@ object PositionMessageResolver {
         return LocalizedText(ar = "أظهر $ar", en = "Show $en")
     }
 
+    /** Spoken when scene axes pass and setup moves into joint-angle validation (legacy MO). */
+    fun resolveSetupSceneToVisibility(): LocalizedText = LocalizedText(
+        ar = "الوضع صحيح – جاري التحقق من الرؤية",
+        en = "Position correct – checking visibility",
+    )
+
     private fun postureAr(posture: BodyPosture): String? = when (posture) {
         BodyPosture.STANDING -> "واقفاً"
         BodyPosture.SITTING -> "جالساً"

@@ -1,6 +1,10 @@
 package com.movit.core.training.report
 
 import com.movit.core.training.config.ExerciseConfigParser
+import com.movit.core.training.engine.ErrorType
+import com.movit.core.training.engine.JointError
+import com.movit.core.training.engine.JointState
+import com.movit.core.training.engine.RepResult
 import com.movit.core.training.journal.RepMetrics
 import com.movit.core.training.journal.RepMetricsData
 import com.movit.core.training.journal.StateCode
@@ -13,9 +17,47 @@ import kotlinx.serialization.json.jsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class MovitPostTrainingReportBuilderTest {
+
+    @Test
+    fun build_prefersSummaryRepDetailsForStateBreakdown() {
+        val config = ExerciseConfigParser.parseConfigJson(readExerciseFixture("squat.json"))
+        val upload = sampleUpload()
+        val summary = ExerciseWorkoutSummary(
+            exerciseName = config.name.en,
+            totalReps = 2,
+            countedReps = 2,
+            invalidatedReps = 0,
+            averageScore = 85f,
+            countedRatio = 1f,
+            durationMs = 84_000L,
+            repDetails = listOf(
+                com.movit.core.training.engine.RepResult(
+                    repNumber = 1,
+                    score = 90f,
+                    worstState = com.movit.core.training.engine.JointState.PERFECT,
+                    isCounted = true,
+                ),
+                com.movit.core.training.engine.RepResult(
+                    repNumber = 2,
+                    score = 70f,
+                    worstState = com.movit.core.training.engine.JointState.DANGER,
+                    isCounted = false,
+                    isInvalidated = true,
+                ),
+            ),
+        )
+        val report = MovitPostTrainingReportBuilder.build(
+            upload = upload,
+            summary = summary,
+            exerciseConfig = config,
+        )
+        assertEquals(1, report.summary.stateBreakdown.perfectCount)
+        assertEquals(1, report.summary.stateBreakdown.dangerCount)
+    }
 
     @Test
     fun build_mapsUploadMetricsToSummary() {
@@ -73,6 +115,21 @@ class MovitPostTrainingReportBuilderTest {
                 captureType = MovitPeakCaptureType.DANGER_FRAME,
                 localPath = "/data/frame.jpg",
                 thumbnailPath = "/data/frame_thumb.jpg",
+                errorType = "left_knee:DANGER:45",
+                metadata = MovitFrameCaptureMetadata(
+                    angles = mapOf("left_knee" to 45.0),
+                    hasError = true,
+                    errorDetails = "left_knee:DANGER:45",
+                ),
+            ),
+        )
+        val replayClips = listOf(
+            MovitRepReplayClip(
+                repNumber = 2,
+                frames = listOf(
+                    MovitReplayFrameRef("/data/replay-0.jpg", 0L),
+                    MovitReplayFrameRef("/data/replay-1.jpg", 180L),
+                ),
             ),
         )
         val report = MovitPostTrainingReportBuilder.build(
@@ -80,11 +137,16 @@ class MovitPostTrainingReportBuilderTest {
             summary = summary,
             exerciseConfig = config,
             peakFrameCaptures = captures,
+            repReplayClips = replayClips,
         )
         val encoded = PostTrainingReportLegacyJson.encode(report).toString()
         assertTrue(encoded.contains("cap-danger-1"))
         assertTrue(encoded.contains("DANGER_FRAME"))
         assertTrue(encoded.contains("/data/frame.jpg"))
+        assertTrue(encoded.contains("left_knee"))
+        assertTrue(encoded.contains("45.0"))
+        assertTrue(encoded.contains("repReplayClips"))
+        assertTrue(encoded.contains("/data/replay-1.jpg"))
     }
 
     @Test
@@ -112,6 +174,59 @@ class MovitPostTrainingReportBuilderTest {
         val golden = Json.parseToJsonElement(readReportFixture("post-training-squat-golden.json")).jsonObject
         PostTrainingReportFieldComparator.assertParityFields(golden, encoded.jsonObject)
         assertTrue(encoded.toString().contains("report-golden-001"))
+    }
+
+    @Test
+    fun build_populatesRichAnalysisWhenRepDetailsPresent() {
+        val config = ExerciseConfigParser.parseConfigJson(readExerciseFixture("squat.json"))
+        val upload = sampleUpload()
+        val kneeError = JointError(
+            jointCode = "left_knee",
+            errorType = ErrorType.TOO_LOW,
+            actualAngle = 55.0,
+            expectedMin = 70.0,
+            expectedMax = 100.0,
+            state = JointState.WARNING,
+        )
+        val summary = ExerciseWorkoutSummary(
+            exerciseName = config.name.en,
+            totalReps = 3,
+            countedReps = 2,
+            invalidatedReps = 1,
+            averageScore = 72f,
+            countedRatio = 2f / 3f,
+            durationMs = 12_000L,
+            repDetails = listOf(
+                RepResult(1, 88f, JointState.NORMAL, true, phaseTimings = mapOf("down" to 1200L)),
+                RepResult(
+                    2,
+                    40f,
+                    JointState.WARNING,
+                    false,
+                    errors = listOf(kneeError),
+                    phaseTimings = mapOf("down" to 900L),
+                ),
+                RepResult(3, 0f, JointState.DANGER, false, isInvalidated = true, phaseTimings = mapOf("down" to 800L)),
+            ),
+        )
+        val report = MovitPostTrainingReportBuilder.build(
+            upload = upload,
+            summary = summary,
+            exerciseConfig = config,
+        )
+        assertEquals(3, report.repTimeline.size)
+        assertTrue(report.errorAnalysis.isNotEmpty())
+        assertEquals("left_knee", report.errorAnalysis.first().jointCode)
+        assertTrue(report.improvementTips.isNotEmpty())
+        assertNotNull(report.overallQuality)
+        assertNotNull(report.exerciseConfig)
+        assertFalse(report.bestReps.isEmpty())
+        assertNotNull(report.worstRep)
+        val encoded = PostTrainingReportLegacyJson.encode(report).toString()
+        assertTrue(encoded.contains("\"errorAnalysis\":[{"))
+        assertTrue(encoded.contains("\"repTimeline\":[{"))
+        assertTrue(encoded.contains("\"overallQuality\":{"))
+        assertTrue(encoded.contains("\"exerciseConfig\":{"))
     }
 
     @Test

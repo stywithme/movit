@@ -12,6 +12,7 @@ data class WorkoutFlowExerciseUi(
     val durationSeconds: Int?,
     val restSeconds: Int = 60,
     val phaseRole: String? = "MAIN",
+    val variantIndex: Int = 0,
 )
 
 data class WorkoutFlowConfigUi(
@@ -118,6 +119,7 @@ sealed interface TrainingStartAction {
         val flowItems: List<TrainingFlowItem>? = null,
         val plannedWorkout: PlannedWorkoutLaunch? = null,
         val startExerciseIndex: Int = 0,
+        val poseVariantIndex: Int = 0,
     ) : TrainingStartAction
 
     data class Legacy(val exerciseFileName: String) : TrainingStartAction

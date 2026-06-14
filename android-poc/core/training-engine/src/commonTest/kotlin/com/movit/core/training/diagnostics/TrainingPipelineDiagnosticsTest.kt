@@ -13,6 +13,7 @@ class TrainingPipelineDiagnosticsTest {
             cameraTargetFps = 10,
             cameraAnalysisSize = "320x240",
             cameraAppliedFps = "[10,10]",
+            cameraThroughputProfile = "stable",
             poseWithBody = 7,
             poseNoBody = 1,
             avgInferenceMs = 44,
@@ -30,6 +31,7 @@ class TrainingPipelineDiagnosticsTest {
             droppedSupervisor = 0,
         )
         assertTrue("cam=10fps" in line)
+        assertTrue("profile=stable" in line)
         assertTrue("analysis=320x240" in line)
         assertTrue("pose=8fps" in line)
         assertTrue("inferMs=44" in line)

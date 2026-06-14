@@ -160,6 +160,7 @@ fun MovitInnerHost(
                     workoutId = route.workoutId,
                     flowItems = route.flowItems,
                     startExerciseIndex = route.startExerciseIndex,
+                    poseVariantIndex = route.poseVariantIndex,
                     uploadContext = route.plannedWorkout?.let { planned ->
                         WorkoutUploadContext(
                             workoutGroupId = planned.plannedWorkoutId,
@@ -315,6 +316,7 @@ private fun handleTrainingStart(
                     flowItems = action.flowItems,
                     plannedWorkout = action.plannedWorkout,
                     startExerciseIndex = action.startExerciseIndex,
+                    poseVariantIndex = action.poseVariantIndex,
                 ),
             )
         }

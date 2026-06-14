@@ -38,6 +38,7 @@ sealed interface MovitInnerRoute {
         val flowItems: List<TrainingFlowItem>? = null,
         val plannedWorkout: PlannedWorkoutLaunch? = null,
         val startExerciseIndex: Int = 0,
+        val poseVariantIndex: Int = 0,
     ) : MovitInnerRoute
     data class ReportDetail(val reportId: String) : MovitInnerRoute
     data object Auth : MovitInnerRoute
