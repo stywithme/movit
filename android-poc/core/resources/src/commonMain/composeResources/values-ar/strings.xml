@@ -91,6 +91,7 @@
     <string name="home_soon">قريباً</string>
     <string name="home_last_session">آخر جلسة</string>
     <string name="home_greeting_morning">صباح الخير</string>
+    <string name="home_greeting">مرحباً</string>
     <string name="home_greeting_afternoon">مساء الخير</string>
     <string name="home_greeting_evening">مساء الخير</string>
     <string name="home_greeting_active">مستعد لجلسة اليوم؟</string>
@@ -100,6 +101,7 @@
     <string name="home_greeting_program_complete">اكتمل البرنامج — حان إعادة التقييم.</string>
     <string name="home_greeting_reassessment">إعادة التقييم مستحقة — لنعيد المعايرة.</string>
     <string name="home_greeting_default">لنتحرك.</string>
+    <string name="home_notifications_coming_soon">الإشعارات قريباً.</string>
     <string name="home_quick_explore">استكشاف</string>
     <string name="home_quick_explore_sub">تصفّح التمارين والجلسات</string>
     <string name="home_quick_reports">تقارير</string>

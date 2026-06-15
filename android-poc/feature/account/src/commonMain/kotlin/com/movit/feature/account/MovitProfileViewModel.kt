@@ -103,6 +103,11 @@ class MovitProfileViewModel(
             is MovitProfileEvent.AppearanceSelected -> selectAppearance(event.themeMode)
             is MovitProfileEvent.AudioCuesChanged -> toggleAudioCues(event.enabled)
             is MovitProfileEvent.HapticChanged -> toggleHaptic(event.enabled)
+            MovitProfileEvent.TrainingDebugLabClicked -> {
+                if (PlatformInfo.supportsTrainingDebugLab) {
+                    _effects.tryEmit(MovitProfileEffect.OpenTrainingDebugLab)
+                }
+            }
         }
     }
 

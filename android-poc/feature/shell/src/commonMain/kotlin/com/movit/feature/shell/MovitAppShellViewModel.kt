@@ -137,7 +137,11 @@ class MovitAppShellViewModel(
         when (event) {
             MovitAppShellEvent.BackPressed -> handleSystemBack()
             is MovitAppShellEvent.DestinationSelected -> {
-                _state.update { it.copy(selectedDestination = event.destination) }
+                if (event.destination == MovitAppDestination.Profile) {
+                    pushInner(MovitInnerRoute.Profile)
+                } else {
+                    _state.update { it.copy(selectedDestination = event.destination) }
+                }
             }
             is MovitAppShellEvent.InnerRoutePushed -> pushInner(event.route)
             MovitAppShellEvent.InnerRoutePopped -> popInner()
@@ -157,6 +161,7 @@ class MovitAppShellViewModel(
             is MovitAppShellEvent.HeaderUserNameUpdated -> {
                 _state.update { it.copy(headerUserName = event.userName) }
             }
+            MovitAppShellEvent.TabProfileClicked -> pushInner(MovitInnerRoute.Profile)
             is MovitAppShellEvent.ProfileEffectReceived -> handleProfileEffect(event.effect)
             is MovitAppShellEvent.AuthEffectReceived -> handleAuthEffect(event.effect)
             is MovitAppShellEvent.OnboardingEffectReceived -> handleOnboardingEffect(event.effect)
@@ -170,7 +175,10 @@ class MovitAppShellViewModel(
             MovitHomeEffect.OpenTrain -> navigateTo(MovitAppDestination.Train)
             MovitHomeEffect.OpenExplore -> navigateTo(MovitAppDestination.Explore)
             MovitHomeEffect.OpenReports -> navigateTo(MovitAppDestination.Reports)
-            MovitHomeEffect.OpenProfile -> navigateTo(MovitAppDestination.Profile)
+            MovitHomeEffect.OpenProfile -> pushInner(MovitInnerRoute.Profile)
+            MovitHomeEffect.OpenNotifications -> {
+                _effects.tryEmit(MovitAppShellEffect.ShowLocalizedMessage("home_notifications_coming_soon"))
+            }
             MovitHomeEffect.OpenAssessment -> pushInner(MovitInnerRoute.Assessment())
             MovitHomeEffect.OpenLevel -> pushInner(MovitInnerRoute.LevelProfile)
             is MovitHomeEffect.OpenReportDetail -> pushInner(MovitInnerRoute.ReportDetail(effect.reportId))
@@ -233,6 +241,11 @@ class MovitAppShellViewModel(
             }
             is MovitProfileEffect.ShowMessage -> {
                 _effects.tryEmit(MovitAppShellEffect.ShowMessage(effect.message))
+            }
+            MovitProfileEffect.OpenTrainingDebugLab -> {
+                if (PlatformInfo.supportsTrainingDebugLab) {
+                    pushInner(MovitInnerRoute.TrainingDebugLab())
+                }
             }
         }
     }

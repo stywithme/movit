@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-android {
+movitKmp {
     namespace = "com.movit.core.training"
 }
 

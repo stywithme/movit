@@ -11,6 +11,7 @@ sealed interface MovitHomeEvent {
     data object ExploreClicked : MovitHomeEvent
     data object ReportsClicked : MovitHomeEvent
     data object ProfileClicked : MovitHomeEvent
+    data object NotificationClicked : MovitHomeEvent
     data object LevelCardClicked : MovitHomeEvent
     data class AlertClicked(val type: String) : MovitHomeEvent
     data class JourneyRowClicked(val rowId: String) : MovitHomeEvent

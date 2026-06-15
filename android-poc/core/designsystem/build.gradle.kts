@@ -4,7 +4,7 @@ plugins {
     id("movit.kmp.feature")
 }
 
-android {
+movitKmp {
     namespace = "com.movit.designsystem"
 }
 

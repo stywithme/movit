@@ -26,6 +26,7 @@ import com.movit.designsystem.components.MovitMediaCard
 import com.movit.designsystem.components.MovitProgramCard
 import com.movit.designsystem.components.MovitScaffold
 import com.movit.designsystem.components.MovitSectionHeader
+import com.movit.designsystem.components.movitFloatingNavScrollPadding
 import com.movit.designsystem.movitColors
 import com.movit.feature.explore.components.ExploreExerciseList
 import com.movit.feature.explore.components.ExploreFilterSection
@@ -40,6 +41,8 @@ fun MovitExploreScreen(
     state: MovitExploreUiState,
     onEvent: (MovitExploreEvent) -> Unit,
     modifier: Modifier = Modifier,
+    userName: String = "",
+    onProfileClick: () -> Unit = {},
 ) {
     val scrollState = rememberScrollState()
     val canRefresh = state.errorMessage == null && !state.isLoading
@@ -62,6 +65,8 @@ fun MovitExploreScreen(
         modifier = modifier,
         title = movitText("explore_title"),
         subtitle = movitText("explore_subtitle"),
+        userName = userName,
+        onProfileClick = onProfileClick,
     ) { padding ->
         PullToRefreshBox(
             isRefreshing = state.isRefreshing,
@@ -78,7 +83,8 @@ fun MovitExploreScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(scrollState)
-                    .padding(MovitSpacing.lg),
+                    .padding(MovitSpacing.lg)
+                    .movitFloatingNavScrollPadding(),
                 verticalArrangement = Arrangement.spacedBy(MovitSpacing.lg),
             ) {
             ExploreSearchSection(

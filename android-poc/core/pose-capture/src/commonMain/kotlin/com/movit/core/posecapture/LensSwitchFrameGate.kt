@@ -35,3 +35,11 @@ internal class LensSwitchFrameGate {
         return FrameDecision.DeliverCompleteSwitch
     }
 }
+
+/** Engine and debug consumers must share the same gate delivery policy. */
+internal fun LensSwitchFrameGate.FrameDecision.deliversToConsumers(): Boolean = when (this) {
+    LensSwitchFrameGate.FrameDecision.Deliver,
+    LensSwitchFrameGate.FrameDecision.DeliverCompleteSwitch,
+    -> true
+    LensSwitchFrameGate.FrameDecision.Suppress -> false
+}

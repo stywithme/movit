@@ -139,7 +139,6 @@ android-application = { id = "com.android.application", version.ref = "agp" }
 movit-kmp-core = { id = "movit.kmp.core" }
 movit-kmp-feature = { id = "movit.kmp.feature" }
 android-library = { id = "com.android.library", version.ref = "agp" }
-# Enable when upgrading to AGP 9.0+ (replaces android.library in KMP modules):
 android-kmp-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }

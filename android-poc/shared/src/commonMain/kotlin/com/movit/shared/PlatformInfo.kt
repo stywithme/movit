@@ -8,4 +8,7 @@ expect object PlatformInfo {
 
     /** Google Sign-In via Credential Manager (Android) or future iOS SDK bridge. */
     val supportsGoogleSignIn: Boolean
+
+    /** Training Debug Lab entry (debug/internal builds only). */
+    val supportsTrainingDebugLab: Boolean
 }

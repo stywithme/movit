@@ -14,4 +14,11 @@ internal object PoseModelTypePreference {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getString(KEY_MODEL_TYPE, "full")
             ?: "full"
+
+    fun setModelType(context: Context, modelType: String) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putString(KEY_MODEL_TYPE, modelType)
+            .apply()
+    }
 }

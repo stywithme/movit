@@ -35,7 +35,7 @@
     <string name="home_plan_adjusted">Training plan adjusted</string>
     <string name="home_active_program">Active program</string>
     <string name="home_program">Program</string>
-    <string name="home_todays_plan">Today\'s plan</string>
+    <string name="home_todays_plan">Today's plan</string>
     <string name="home_today">Today</string>
     <string name="home_body_scan">Body scan</string>
     <string name="home_body_scan_subtitle">Measure mobility &amp; posture to unlock your personalized level.</string>
@@ -94,6 +94,7 @@
     <string name="home_soon">Soon</string>
     <string name="home_last_session">Last session</string>
     <string name="home_greeting_morning">Good morning</string>
+    <string name="home_greeting">Hello</string>
     <string name="home_greeting_afternoon">Good afternoon</string>
     <string name="home_greeting_evening">Good evening</string>
     <string name="home_greeting_active">Ready for today\'s session?</string>
@@ -103,6 +104,7 @@
     <string name="home_greeting_program_complete">Program complete — time to reassess.</string>
     <string name="home_greeting_reassessment">Reassessment due — let\'s recalibrate.</string>
     <string name="home_greeting_default">Let\'s get moving.</string>
+    <string name="home_notifications_coming_soon">Notifications are coming soon.</string>
     <string name="home_quick_explore">Explore</string>
     <string name="home_quick_explore_sub">Browse workouts and exercises</string>
     <string name="home_quick_reports">Reports</string>

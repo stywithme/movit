@@ -14,6 +14,8 @@ import kotlinx.coroutines.launch
 fun MovitExploreRoute(
     modifier: Modifier = Modifier,
     viewModel: MovitExploreViewModel = viewModel { MovitExploreViewModel() },
+    userName: String = "",
+    onProfileClick: () -> Unit = {},
     onEffect: (MovitExploreEffect) -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -44,5 +46,7 @@ fun MovitExploreRoute(
             }
         },
         modifier = modifier,
+        userName = userName,
+        onProfileClick = onProfileClick,
     )
 }

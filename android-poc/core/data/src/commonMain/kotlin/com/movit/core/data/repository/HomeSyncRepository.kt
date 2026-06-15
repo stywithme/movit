@@ -35,7 +35,11 @@ class HomeSyncRepository(
                     if (!response.success || response.data == null) {
                         error(response.error ?: "Home sync failed.")
                     }
-                    response.data!!
+                    HomeTrainModeHydrator.hydrateIfNeeded(
+                        home = response.data!!,
+                        api = api,
+                        authorization = bindings.authHeader(),
+                    )
                 }
             },
             isSuccess = { true },

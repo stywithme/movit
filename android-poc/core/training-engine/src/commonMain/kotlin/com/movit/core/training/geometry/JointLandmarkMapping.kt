@@ -25,6 +25,19 @@ object JointLandmarkMapping {
 
     fun jointToLandmark(jointCode: String): Int? = jointToLandmarkMap[jointCode.lowercase()]
 
+    /** Joints selectable in Debug Lab angle diagnostics (legacy multi-joint picker parity). */
+    val trackedJointCodes: Set<String> = setOf(
+        "left_shoulder", "right_shoulder",
+        "left_shoulder_cross", "right_shoulder_cross",
+        "left_elbow", "right_elbow",
+        "left_wrist", "right_wrist",
+        "left_hip", "right_hip",
+        "left_hip_cross", "right_hip_cross",
+        "left_knee", "right_knee",
+        "left_ankle", "right_ankle",
+        "neck", "neck_left", "neck_right", "neck_spine", "spine",
+    )
+
     /** Bone neighbors for setup skeleton highlights (ported from legacy SkeletonOverlayView). */
     fun adjacentLandmarkIndices(jointCode: String): List<Int> = when (jointCode.lowercase()) {
         "left_elbow" -> listOf(11, 15)

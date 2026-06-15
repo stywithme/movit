@@ -407,7 +407,7 @@ private fun DrawScope.drawSetupHighlights(
         drawCircle(color = color.copy(alpha = 0.4f), radius = radius, center = center)
         drawCircle(color = color.copy(alpha = 0.9f), radius = radius, center = center, style = Stroke(width = jointStroke))
 
-        val angleLabel = highlight.currentAngleDeg?.let { "%.0f°".format(it) } ?: ""
+        val angleLabel = highlight.currentAngleDeg?.let { "${it.toInt()}°" } ?: ""
         val arrow = when (highlight.direction) {
             SkeletonSetupDirection.RAISE -> " ↑"
             SkeletonSetupDirection.LOWER -> " ↓"

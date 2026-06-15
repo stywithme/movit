@@ -21,6 +21,13 @@
             android:label="Movit KMP Shell"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
+
+        <activity
+            android:name="com.movit.debug.TrainingDebugActivity"
+            android:exported="true"
+            android:label="Training Debug Lab"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix" />
     </application>
 
 </manifest>

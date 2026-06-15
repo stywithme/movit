@@ -6,11 +6,8 @@ plugins {
 }
 
 movitKmp {
-    includeIosX64 = true
-}
-
-android {
     namespace = "com.movit.shared"
+    includeIosX64 = true
 }
 
 kotlin {

@@ -11,4 +11,6 @@ sealed interface MovitProfileEffect {
     data class ThemeModeChanged(val themeMode: String) : MovitProfileEffect
     data class ShowMessage(val message: String) : MovitProfileEffect
     data class ShowLocalizedMessage(val key: String) : MovitProfileEffect
+    /** Hidden debug entry (Profile → Training Debug Lab). */
+    data object OpenTrainingDebugLab : MovitProfileEffect
 }

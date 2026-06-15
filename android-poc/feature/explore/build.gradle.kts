@@ -3,7 +3,7 @@ plugins {
     id("movit.kmp.feature")
 }
 
-android {
+movitKmp {
     namespace = "com.movit.feature.explore"
 }
 
@@ -31,8 +31,10 @@ kotlin {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.core)
         }
-        androidUnitTest.dependencies {
-            implementation(kotlin("test"))
+        sourceSets.named("androidHostTest") {
+            dependencies {
+                implementation(kotlin("test"))
+            }
         }
     }
 }

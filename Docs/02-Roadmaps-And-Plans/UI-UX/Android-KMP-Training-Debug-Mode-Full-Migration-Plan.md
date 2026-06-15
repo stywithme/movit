@@ -1,7 +1,7 @@
 # Android KMP Training Debug Mode Full Migration Plan
 
 آخر تحديث: **2026-06-14**
-الحالة: **خطة جديدة مطلوبة للنقل الكامل**
+الحالة: **قيد التنفيذ — Android أساسي جاهز؛ iOS live-camera + tests + docs (D10/D11) مكتملة جزئياً**
 النطاق: نقل Debug Mode القديم الخاص بمحرك التدريب من Legacy Android `MO` إلى KMP/Compose، مع الحفاظ على قدرته كأداة قياس وتحليل وليست مجرد شاشة عرض.
 
 المراجع التي تمت مراجعتها مباشرة:
@@ -790,23 +790,23 @@ iOS:
 
 يعتبر النقل كاملا فقط عند تحقق الآتي:
 
-- [ ] Debug Lab يفتح في Android debug build.
-- [ ] Camera mode يعمل مع flip camera وpermission gate.
-- [ ] Image mode يعمل مع EXIF rotation وfit-center overlay.
-- [ ] Video mode يعمل مع play/pause/seek/reset deterministic analysis.
-- [ ] Full/Heavy model selector يغير detector فعليا أو يعرض fallback بوضوح.
-- [ ] Angle tab يعرض selected joints وraw/smoothed/world diagnostics.
-- [ ] Elbow diagnostics موجودة وتعرض `strategy` و`HOLD`.
-- [ ] Position tab يبني synthetic checks ويعرض PASS/FAIL/FAIL_PENDING/SKIPPED.
-- [ ] Tilt correction مدعوم أو disabled بوضوح في modes التي لا تدعمه.
-- [ ] Camera tab يعرض posture/direction/region/facing/depth/match.
-- [ ] Setup Gate probe موجود لقياس gate الجديد في KMP.
-- [ ] Overlay يدعم angle highlight وposition line وscene state.
-- [ ] Copy/export يعطي نصا قابلا للإرسال للفريق.
-- [ ] common analyzer بلا Android imports.
-- [ ] Android-specific media/camera code محصور في androidMain/app debug.
-- [ ] iOS route موجود على الأقل live-camera-ready أو disabled بوضوح للـ unsupported modes.
-- [ ] tests تغطي diagnostics الأساسية.
+- [x] Debug Lab يفتح في Android debug build (`TrainingDebugActivity` + Profile → Training Debug Lab في debug).
+- [x] Camera mode يعمل مع flip camera وpermission gate (Android).
+- [x] Image mode يعمل مع EXIF rotation وfit-center overlay (Android).
+- [x] Video mode يعمل مع play/pause/seek/reset deterministic analysis (Android).
+- [ ] Full/Heavy model selector يغير detector فعليا أو يعرض fallback بوضوح (port جاهز؛ UI wiring جزئي).
+- [x] Angle tab يعرض selected joints وraw/smoothed/world diagnostics.
+- [x] Elbow diagnostics موجودة وتعرض `strategy` و`HOLD` (`ElbowCorrectionDiagnostics` + `ElbowDiagnosticsAdapter`).
+- [x] Position tab يبني synthetic checks ويعرض PASS/FAIL/FAIL_PENDING/SKIPPED.
+- [ ] Tilt correction مدعوم أو disabled بوضوح في modes التي لا تدعمه (Android camera؛ iOS غير موصول بعد).
+- [x] Camera tab يعرض posture/direction/region/facing/depth/match.
+- [x] Setup Gate probe موجود لقياس gate الجديد في KMP (squat fixture مدمج في analyzer).
+- [ ] Overlay يدعم angle highlight وposition line وscene state (contract جاهز؛ `MovitSkeletonOverlay` renderer pending).
+- [x] Copy/export يعطي نصا قابلا للإرسال للفريق.
+- [x] common analyzer بلا Android imports.
+- [x] Android-specific media/camera code محصور في androidMain/app debug.
+- [x] iOS route موجود على الأقل live-camera-ready أو disabled بوضوح للـ unsupported modes (`MovitInnerRoute.TrainingDebugLab` + image/video disabled chips).
+- [x] tests تغطي diagnostics الأساسية (`training-engine`, `training-debug` common tests).
 
 ---
 
@@ -842,3 +842,321 @@ iOS:
 ## 11) Definition Of Done
 
 الـ Debug Mode يعتبر منقولا عندما يستطيع المطور أن يفتح Debug Lab في KMP، يختار Camera/Video/Image، يغير model والتبويب والإعدادات، يرى نفس القياسات التي كان يعتمد عليها في Legacy، وينسخ report يشرح لماذا خرجت زاوية أو position أو scene gate بهذه النتيجة، مع بقاء المنطق المشترك داخل KMP common وبدون الاعتماد على Activity Android ضخمة أو مسار Legacy.
+
+---
+
+## 12) Implementation Log
+
+| Date | Agent | Scope | Status | Notes |
+|---|---|---|---|---|
+| 2026-06-15 | Agent parity | Debug/Training pipeline unification | **Done** | Camera→`CameraXFrameSource`; angles→`PoseFrameAssembler`; `TrainingGateFactory`; tests green |
+| 2026-06-15 | Agent overlay | Selective annotations + multi-joint + mirror | **Done** | `MovitPoseAnnotationOverlay`; multi-select joints; no full skeleton default; front-camera index mirror in mapper |
+| 2026-06-15 | Agent parity P1/P2 | Debug Lab ↔ Training parity gaps | **Done** | `LensSwitchFrameGate` debug delivery; production camera config; `PoseModelTypePort` live camera; `DeviceTiltPort`; optional `exerciseSlug` setup gate; single front-camera mirror in angle diagnostics |
+
+### Agent 2 — Pose Capture APIs (2026-06-14)
+
+**commonMain** (`com.movit.core.posecapture.boundary.trainingdebug`):
+
+- `TrainingDebugInputMode`, `TrainingDebugSourceConfig`, `TrainingDebugPoseSource`
+- `TrainingDebugPoseFrame` — raw/smoothed normalized + world, inference time, analysis dimensions
+- `MediaPipeSyncRunningMode` (`IMAGE`, `VIDEO`)
+- `PoseModelType`, `ResolvedPoseModel`, `PoseModelTypePort` (D9)
+- `TrainingDebugVideoFrameSelector` — deterministic 33ms video-time interval (Legacy `VideoManager` parity)
+
+**androidMain**:
+
+- `MediaPipeSyncPoseDetector` — `warmUp(mode, config)`, `detect(bitmap, timestampMs)`, `resetTracking(reason, recreateVideoLandmarker)`, `shutdown()`
+- `MediaPipeLandmarkMapper` — shared MediaPipe → `Landmark` conversion
+- `PoseModelResolver` — heavy fallback + background upgrade (shared with live detector)
+- `AndroidPoseModelTypePort` — official model read/write (no app-module dependency)
+- `LandmarkSmoother.smoothWorld()` — world landmark smoothing for debug diagnostics
+- `MediaPipePoseDetector.DetectionResult` extended with raw normalized/world + `modelDisplayLabel`
+- Koin: `PoseModelTypePort` singleton, `MediaPipeSyncPoseDetector` factory
+
+**iosMain**: `IosPoseModelTypePort` stub (heavy pending).
+
+**Tests**: `:core:pose-capture:testDebugUnitTest` — `TrainingDebugVideoFrameSelectorTest`, `PoseModelTypeTest` (+ existing gate/codec tests). **BUILD SUCCESSFUL**.
+
+**Handoff → Agent 4** (D9 model UI polish, iOS D10, instrumentation QA):
+
+1. استبدال `AndroidDebugMediaPipeLandmarker` بـ `MediaPipeSyncPoseDetector` + `PoseModelTypePort` من Agent 2.
+2. ربط settings UI بـ `resolveForInitialization()` لعرض fallback heavy.
+3. iOS: تفعيل image/video عند جاهزية MediaPipe iOS أو الإبقاء على placeholder.
+4. instrumentation smoke: `TrainingDebugActivity` launch، image/video fixtures.
+5. تحسين `MovitSkeletonOverlay` لرسم `SkeletonDebugOverlayState` (angle arcs، scene badge نصي).
+6. إضافة entry من debug shell / profile.
+
+---
+
+### 2026-06-14 — Agent 3 (Feature Module + Android Debug Lab)
+
+#### Phase D1 — Common Debug Analyzer ✅
+
+| الملف | الغرض |
+|---|---|
+| `:feature:training-debug` module | Gradle + `settings.gradle.kts` |
+| `TrainingDebugModels.kt` | config، frame input، diagnostics DTOs |
+| `TrainingDebugAnalyzer.kt` | PoseFrameAssembler + Elbow + Position + Scene + SetupReadinessGate |
+| `AngleDiagnosticsBuilder.kt` | raw/smoothed/world angle frames + mirror |
+| `ElbowDiagnosticsAdapter.kt` | يربط `ElbowAngleEstimator.lastDiagnostics` |
+| `DebugPositionCheckFactory.kt` | synthetic `debug_check` |
+| `TrainingDebugOverlayMapper.kt` | → `SkeletonDebugOverlayState` |
+| `TrainingDebugExportFormatter.kt` | clipboard text + JSON snapshot |
+| `TrainingDebugViewModel.kt` | events + dispatch + FPS |
+| `TrainingDebugRoute.kt` + `PlatformTrainingDebugScreen` | KMP entry |
+
+**Tests:** `TrainingDebugAnalyzerTest`, `AngleDiagnosticsBuilderTest`, `DebugPositionCheckFactoryTest` — **PASS** (`:feature:training-debug:testDebugUnitTest`).
+
+#### Phases D3–D6 — Android Live Debug Lab ✅ (أساسي)
+
+| الملف | الغرض |
+|---|---|
+| `TrainingDebugActivity` | `app/src/debug` — adb entry |
+| `ui/TrainingDebugScreen.kt` | Compose: camera/video/image، toolbar، settings sheet، tabs |
+| `TrainingDebugCameraHost.android.kt` | CameraX + `AndroidDebugCameraPoseSource` |
+| `TrainingDebugOverlay.kt` | skeleton + position line + scene badge |
+| `AndroidManifest.xml` (debug) | `com.movit.debug.TrainingDebugActivity` exported |
+
+- Camera: live stream، flip + `resetAnalysisState`
+- Tabs: ANGLE / POSITION / CAMERA_SCENE / SETUP_GATE
+- Copy/export عبر ViewModel → clipboard
+- FPS counters (source / inference / analysis / skipped busy)
+
+#### Phase D7 — Image Mode ✅ (أساسي)
+
+| الملف | الغرض |
+|---|---|
+| `AndroidDebugImagePoseSource.kt` | picker URI، EXIF rotation، IMAGE running mode، reanalyze on settings |
+
+#### Phase D8 — Video Mode ✅ (أساسي)
+
+| الملف | الغرض |
+|---|---|
+| `AndroidDebugVideoPoseSource.kt` | Media3 ExoPlayer + TextureView، play/pause/seek/reset، deterministic 33ms frames، backpressure counter |
+
+#### ملاحظات تقنية
+
+- `AndroidDebugMediaPipeLandmarker` مؤقت — **Agent 4** يستبدله بـ `MediaPipeSyncPoseDetector` (Agent 2).
+- iOS: `PlatformTrainingDebugScreen.ios.kt` — camera فقط؛ image/video placeholder.
+- إصلاح عرضي: `MovitSkeletonOverlay` `String.format` → KMP-safe للسماح بـ metadata compile.
+
+#### Acceptance Checklist (جزئي)
+
+- [x] Debug Lab يفتح في Android debug build (`adb shell am start -n com.trainingvalidator.poc/com.movit.debug.TrainingDebugActivity`)
+- [x] Camera mode + flip + permission
+- [x] Image mode + EXIF + reanalyze
+- [x] Video mode + controls + seek reset
+- [ ] Full/Heavy selector يغيّر detector فعلياً (يحتاج Agent 4 + PoseModelTypePort wiring)
+- [x] Angle tab multi-joint + diagnostics + elbow section (عبر `ElbowDiagnosticsAdapter`)
+- [x] Position tab synthetic check + statuses
+- [x] Camera/Scene + Setup Gate probe
+- [x] Copy/export نصي
+- [x] common analyzer بلا Android imports
+- [x] Android media في androidMain فقط
+- [ ] iOS route كامل (Agent 4 / D10)
+- [x] unit tests diagnostics أساسية
+- [x] `:feature:training:testDebugUnitTest` لا regressions
+
+---
+
+## 12) Implementation Log
+
+### 2026-06-14 — Agent 1 (Engine & Design Foundation)
+
+#### Phase D0 — Legacy Baseline Inventory
+
+**مصادر Legacy المقروءة:**
+
+| الملف | الغرض |
+|---|---|
+| `DebugActivity.kt` | تدفق التحليل، tabs، export نصي، ربط `elbowAngleEstimator.lastDiagnostics` |
+| `ElbowAngleEstimator.kt` (legacy analysis) | منطق التصحيح + `ElbowDiagnostics` |
+| `dialog_debug_settings.xml` | controls: Info Panel، Input (Camera/Video/Image)، Pick File، Model (Full/Heavy)، Tabs (Angle Lab / Positions / Scene)، إعدادات كل tab |
+
+**`dialog_debug_settings.xml` — عناصر التحكم:**
+
+| Control | ID / Label | ملاحظة |
+|---|---|---|
+| Info Panel toggle | `switchDebugInfo` | إظهار/إخفاء لوحة التشخيص |
+| Input Source | `inputModeGroup` — Camera / Video / Image | يغيّر المصدر ووضع scale للـ overlay |
+| Pick File | `btnPickFile` | فيديو أو صورة حسب الوضع |
+| Detection Model | `modelToggleGroup` — Full / Heavy | |
+| Test Mode tabs | `tabLayout` — Angle Lab / Positions / Scene | |
+| Angle: multi-joint | `btnSelectJoints`, `tvSelectedJointsSummary` | |
+| Position: tilt | `switchTiltCorrection` | camera فقط في Legacy |
+| Position: type/landmarks/operator/threshold | spinners + `etThreshold` | default threshold `0.05` |
+| Scene: posture/direction/region | `spinnerExpectedCamPos`, `spinnerExpectedDirection`, `spinnerExpectedRegion` | |
+
+**Golden outputs المتوقعة (Elbow pipeline — من `appendElbowPipelineDiagnostics`):**
+
+```
+--- ELBOW PIPELINE ---
+Strategy:      <STRAIGHT|TRUST_3D|TRUST_2D|MILD_DOWN|DEEP_DOWN|LOW_CONF|HOLD>
+Facing ratio:  %.3f (1=front 0=side)
+Screen 2D:     <angle>
+World 3D:      <angle>
+dzShare:       UA=%.3f  FA=%.3f  max=%.3f
+Correction:    %.0f%%
+Output:        <angle>
+Holding:       YES|no
+```
+
+**قرارات baseline:**
+
+- KMP يحتفظ بنفس أسماء الاستراتيجيات كـ `enum` (`ElbowCorrectionStrategy`) مع `.name` مطابق لنص Legacy.
+- `lastDiagnostics` مصفوفة `[left=0, right=1]` كما في Legacy؛ الوصول عبر `left_elbow` / `right_elbow` joint codes في الـ analyzer.
+- منطق التصحيح الحالي في KMP مطابق للـ legacy قبل هذه المرحلة؛ إضافة diagnostics side-effect فقط على `lastDiagnostics`.
+- `SkeletonOverlayParityState` يبقى للتدريب؛ Debug overlay في ملف contract منفصل.
+
+#### Phase D2 — Elbow Correction Diagnostics ✅
+
+**ملفات جديدة/معدّلة:**
+
+| الملف | التغيير |
+|---|---|
+| `core/training-engine/.../ElbowCorrectionDiagnostics.kt` | **جديد** — `ElbowCorrectionStrategy`, `ElbowCorrectionDiagnostics` |
+| `core/training-engine/.../ElbowAngleEstimator.kt` | `lastDiagnostics` read-only؛ تعبئة diagnostics في كل فرع استراتيجية + HOLD |
+| `core/training-engine/.../ElbowAngleEstimatorTest.kt` | **جديد** — 6 tests (parity output، STRAIGHT، TRUST_3D، HOLD، reset) |
+
+**API للوكلاء الآخرين:**
+
+```kotlin
+// بعد ElbowAngleEstimator.correct(...)
+estimator.lastDiagnostics[0]  // left elbow
+estimator.lastDiagnostics[1]  // right elbow
+// ElbowCorrectionDiagnostics.strategy.name → "STRAIGHT" | "TRUST_3D" | ... | "HOLD"
+```
+
+#### Overlay Contract (§5.6) ✅
+
+**ملف جديد:** `core/designsystem/.../SkeletonDebugOverlayContract.kt`
+
+| النوع | الغرض |
+|---|---|
+| `SkeletonDebugOverlayState` | حالة overlay موحّدة للـ Debug Lab |
+| `DebugJointHighlight` | Angle tab — vertex + endpoints + زاوية |
+| `DebugPositionLine` | Position tab — خط primary↔secondary + status |
+| `DebugSceneOverlay` | Scene tab — direction/posture/region/match |
+| `DebugOverlayScaleMode` | `FillCenter` (camera/video) / `FitCenter` (image) |
+
+`SkeletonOverlayParityState` **لم يُمس**.
+
+#### Tests
+
+| Task | النتيجة |
+|---|---|
+| `:core:training-engine:testDebugUnitTest` — `ElbowAngleEstimatorTest` | **6/6 PASS** |
+| `:core:designsystem:testDebugUnitTest` | **PASS** (لا tests جديدة؛ compile نظيف) |
+
+**ملاحظة build:** بعد `clean` — `:core:training-engine:testDebugUnitTest`, `:core:pose-capture:testDebugUnitTest`, `:feature:training-debug:testDebugUnitTest`, `:feature:training:testDebugUnitTest` — **BUILD SUCCESSFUL**.
+
+#### ما يحتاجه الوكلاء التاليون
+
+| الوكيل | يعتمد على |
+|---|---|
+| **MovitSkeletonOverlay renderer** | قراءة `SkeletonDebugOverlayState` (contract جاهز؛ رسم arcs/lines pending) |
+| **Android instrumentation** | smoke `TrainingDebugActivity` launch (لم يُضف بعد) |
+
+---
+
+### 2026-06-14 — Agent 4 (iOS D10 + QA/Tests/Docs D11)
+
+#### Phase D10 — iOS Debug Path ✅ (live camera)
+
+| الملف | الغرض |
+|---|---|
+| `MovitInnerRoute.TrainingDebugLab` | route مخفي في shell |
+| `MovitInnerHost` + `MovitAppShellViewModel` | navigation + copy/share |
+| `PlatformInfo.supportsTrainingDebugLab` | Android `BuildConfig.DEBUG` / iOS `Platform.isDebugBinary` |
+| `MovitProfileScreen` | صف "Training Debug Lab" في debug/internal فقط |
+| `PlatformTrainingDebugScreen.ios.kt` | Compose shell: tabs + camera + disabled image/video |
+| `TrainingDebugCameraHost.ios.kt` | `IosCameraFrameSource` → `TrainingDebugFrameInput` |
+| `IosTrainingDebugPoseSource.kt` | `TrainingDebugPoseSource` لـ pose-capture boundary (live فقط) |
+| `TrainingDebugBuild.ios.kt` | `isMediaInputModeSupported() = false` — لا crash لـ image/video |
+
+**القبول D10:** iOS debug build يرى نفس tabs؛ الكاميرا الحية تغذي `TrainingDebugAnalyzer`؛ image/video تظهر disabled state واضح.
+
+#### Phase D11 — QA, Tests, Documentation ✅ (common)
+
+| المهمة | النتيجة |
+|---|---|
+| `TrainingDebugAnalyzer.kt` | common analyzer مكتمل (angle/position/scene/setup) |
+| `TrainingDebugViewModel.kt` | API موحّد لـ Android UI (Agent 3) + iOS |
+| `TrainingDebugAnalyzerTest` | angle + elbow + position + scene + setup gate |
+| `AngleDiagnosticsBuilderTest` | mirror + pipeline + `ElbowDiagnosticsAdapter` |
+| `DebugPositionCheckFactoryTest` | synthetic vertical check PASS |
+| Gradle tests | انظر جدول النتائج أدناه |
+| Acceptance checklist + §12/§13 | هذا الملف |
+| Audit cross-link | سطر في `Android-KMP-Training-Engine-Legacy-MO-vs-Current-Difference-Audit.md` §1 |
+
+**نتائج الاختبارات (2026-06-14, بعد `gradlew clean`):**
+
+| Task | النتيجة |
+|---|---|
+| `:core:training-engine:testDebugUnitTest` | **PASS** (يشمل `ElbowAngleEstimatorTest` 6 tests) |
+| `:core:pose-capture:testDebugUnitTest` | **PASS** |
+| `:feature:training-debug:testDebugUnitTest` | **PASS** (3 test classes) |
+| `:feature:training:testDebugUnitTest` | **PASS** (no regressions) |
+| Android instrumentation smoke | **لم يُنفَّذ** — يتطلب `TrainingDebugActivity` instrumented test (Agent 3 scope) |
+
+**قرارات Agent 4:**
+
+- iOS يستخدم نفس `TrainingDebugAnalyzer` و`TrainingDebugViewModel` دون fork منطقي.
+- `PlatformTrainingDebugScreen` expect/actual: Android → `ui/TrainingDebugScreen` (Agent 3)؛ iOS → شاشة مبسطة مع placeholder لـ media modes.
+- لم يُعدَّل `pose-capture` APIs (Agent 2) إلا عبر consumer `IosTrainingDebugPoseSource` في feature module.
+- `AndroidDebugMediaPipeLandmarker` **محذوف** — استُبدل بمسار الإنتاج (انظر 2026-06-15 أدناه).
+
+---
+
+### 2026-06-15 — Debug/Training Pipeline Parity
+
+**القرارات:**
+
+- الزوايا في Debug Lab تُقرأ حصرياً من `PoseFrame.angles` بعد `PoseFrameAssembler.assemble()` — لا `calculateAngles` ولا `ElbowAngleEstimator` منفصل في `TrainingDebugAnalyzer`.
+- الكاميرا الحية تعيد استخدام `CameraXFrameSource` + `MediaPipePoseDetector` عبر `CameraXFrameSource.setDebugFrameListener` (raw/smoothed للعرض فقط).
+- Image/Video: `MediaPipeSyncPoseDetector.detect()` ثم `assemble()` — نفس معادلة الزوايا.
+- `TrainingGateFactory` + `SetupProbeDefaults` في `core:training-engine`؛ `MovitTrainingEngine` يبني `PositionValidator` عبر الـ factory.
+- `PoseFrameAssembler.lastElbowDiagnostics()` للـ elbow tab — instance واحدة مع التدريب.
+
+**ملفات رئيسية:**
+
+| الملف | التغيير |
+|---|---|
+| `CameraXFrameSource.kt` | `setDebugFrameListener(DetectionResult, PoseFrame)` |
+| `AndroidDebugCameraPoseSource.kt` | Koin `CameraXFrameSource` + production throughput profile |
+| `AndroidDebugImagePoseSource.kt` / `AndroidDebugVideoPoseSource.kt` | `MediaPipeSyncPoseDetector` + mapper |
+| `TrainingDebugAnalyzer.kt` | مدخل `poseFrame`؛ إزالة estimator منفصل |
+| `TrainingGateFactory.kt` / `SetupProbeDefaults.kt` | **جديد** — shared gates |
+| `TrainingDebugFrameFactory.kt` | **جديد** — بناء `TrainingDebugFrameInput` |
+| `AndroidDebugMediaPipeLandmarker.kt` | **محذوف** |
+
+**Tests:** `PoseFrameAssemblerDebugParityTest`, `TrainingDebugAnalyzerTest.analyzerUsesPoseFrameAngles_fromAssembler`, تحديث `AngleDiagnosticsBuilderTest`.
+
+**متبقٍ مقصود:**
+
+- Image/video sync path لا يمر بـ `PoseRefiner` (الكاميرا الحية تمر) — فرق بسيط للعرض فقط.
+- Setup tab يحمّل `exerciseSlug` من `MovitInnerRoute.TrainingDebugLab` / `TrainingDebugActivity.EXTRA_EXERCISE_SLUG` عبر `MovitData.trainingConfig.getExercise(slug)`؛ fallback = `SetupProbeDefaults`.
+- `SetupReadinessGate` في Debug Lab يمرّر `DeviceTiltPort` عند تفعيل tilt (مثل `TrainingSessionViewModel`).
+- iOS camera debug يستخدم `resolveTrainingCameraConfiguration()` (parity مع `TrainingSessionCameraHost`).
+- no-pose من `CameraXFrameSource` يبلّغ debug listener ويصفّر overlay عبر `TrainingDebugViewModel.onFrame(null)`.
+- iOS: لا raw/smoothed split — يستخدم `poseFrame` من مسار الكاميرا الإنتاجي.
+
+---
+
+## 13) Known Differences from Legacy
+
+| المجال | Legacy (`DebugActivity`) | KMP الحالي | مقصود؟ |
+|---|---|---|---|
+| Entry | Profile/debug + manifest | Android: `TrainingDebugActivity` + Profile row؛ iOS: Profile row في debug binary فقط | نعم — لا يظهر في production |
+| Image/Video iOS | N/A (Android-only legacy) | disabled UI + `isMediaInputModeSupported() = false` | نعم — MediaPipe iOS sync path غير جاهز |
+| Overlay rendering | `SkeletonOverlayView` كامل | `SkeletonDebugOverlayState` contract؛ renderer في `MovitSkeletonOverlay` pending | نعم — مرحلة لاحقة |
+| Rep/session counting | لا يعد reps | لا يعد reps؛ Setup Gate probe فقط | نعم — Debug Lab ≠ training session |
+| Model selector UI | Full/Heavy toggle مباشر | `PoseModelTypePort` جاهز؛ UI يعرض label جزئياً | مؤقت — wiring Agent 2→3 |
+| Video frame timing | ~33ms video-time | `TrainingDebugVideoFrameSelector` (common) | نعم — parity مقصود |
+| Elbow diagnostics export | نص `appendElbowPipelineDiagnostics` | `PoseFrameAssemblerElbowDiagnostics` + `TrainingDebugExportFormatter` | نعم — نفس حقول الاستراتيجية من instance الإنتاج |
+| Tilt correction | camera فقط عبر `PoseApp` | `DeviceTiltPort` في analyzer عند تفعيل toggle | نعم — KMP port بدل coupling |
+| Temporary landmarker | `PoseLandmarkerHelper` monolith | **محذوف** — camera: `CameraXFrameSource` + `MediaPipePoseDetector`؛ image/video: `MediaPipeSyncPoseDetector` + `PoseFrameAssembler.assemble()` | نعم — parity مع التدريب |
+| Angle extraction | Legacy helper + estimator منفصل | `TrainingDebugFrameInput.poseFrame.angles` من `PoseFrameAssembler` فقط | نعم |
+| PositionValidator construction | inline في التدريب | `TrainingGateFactory` مشترك (تدريب + debug synthetic check) | نعم |
+| Setup probe exercise | JSON ثابت في Activity | `exerciseSlug` اختياري من shell/deep link/Activity extra؛ fallback `SetupProbeDefaults` | نعم |
+| Elbow diagnostics instance | `ElbowAngleEstimator` ثانية في Analyzer | `PoseFrameAssembler.lastElbowDiagnostics()` عبر `PoseFrameAssemblerElbowDiagnostics` | نعم |

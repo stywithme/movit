@@ -1,0 +1,10 @@
+// Applied when movitKmp.namespace is set — configures kotlin.android for AGP KMP library plugin.
+kotlin {
+    android {
+        namespace = movitAndroidNamespace
+        compileSdk = movitAndroidCompileSdk
+        minSdk = movitAndroidMinSdk
+        androidResources.enable = true
+        withHostTest { }
+    }
+}

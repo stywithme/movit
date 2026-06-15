@@ -3,7 +3,7 @@ plugins {
     id("movit.kmp.feature")
 }
 
-android {
+movitKmp {
     namespace = "com.movit.feature.library"
 }
 

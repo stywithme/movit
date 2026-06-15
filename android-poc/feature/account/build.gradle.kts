@@ -4,11 +4,8 @@ plugins {
 }
 
 movitKmp {
-    unitTestsReturnDefaultValues = true
-}
-
-android {
     namespace = "com.movit.feature.account"
+    unitTestsReturnDefaultValues = true
 }
 
 kotlin {
@@ -51,8 +48,10 @@ kotlin {
             implementation(project(":core:network"))
             implementation(project(":core:resources"))
         }
-        androidUnitTest.dependencies {
-            implementation(kotlin("test"))
+        sourceSets.named("androidHostTest") {
+            dependencies {
+                implementation(kotlin("test"))
+            }
         }
     }
 }

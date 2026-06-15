@@ -3,17 +3,13 @@ plugins {
     id("movit.kmp.feature")
 }
 
-android {
+val throughputProfile =
+    (project.findProperty("movit.training.throughput.profile") as String?)?.trim().orEmpty()
+        .ifEmpty { "stable" }
+
+movitKmp {
     namespace = "com.movit.feature.training"
-    buildFeatures {
-        buildConfig = true
-    }
-    defaultConfig {
-        val throughputProfile =
-            (project.findProperty("movit.training.throughput.profile") as String?)?.trim().orEmpty()
-                .ifEmpty { "stable" }
-        buildConfigField("String", "TRAINING_THROUGHPUT_PROFILE", "\"$throughputProfile\"")
-    }
+    buildConfigStrings["TRAINING_THROUGHPUT_PROFILE"] = throughputProfile
 }
 
 kotlin {

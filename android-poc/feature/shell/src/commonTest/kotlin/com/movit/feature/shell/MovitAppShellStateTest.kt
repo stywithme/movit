@@ -100,10 +100,33 @@ class MovitAppShellStateTest {
     }
 
     @Test
-    fun homeOpenProfile_changesDestination() {
+    fun homeOpenProfile_pushesProfileInnerRoute() {
         val viewModel = MovitAppShellViewModel()
         viewModel.onEvent(MovitAppShellEvent.HomeEffectReceived(MovitHomeEffect.OpenProfile))
-        assertEquals(MovitAppDestination.Profile, viewModel.state.value.selectedDestination)
+        assertEquals(MovitInnerRoute.Profile, viewModel.state.value.currentInnerRoute)
+        assertEquals(MovitAppDestination.Home, viewModel.state.value.selectedDestination)
+    }
+
+    @Test
+    fun floatingDestinations_hasFourTabsWithoutProfile() {
+        assertEquals(4, MovitShellFloatingDestinations.size)
+        assertTrue(MovitShellFloatingDestinations.none { it.name == "Profile" })
+    }
+
+    @Test
+    fun destinationSelectedProfile_pushesProfileInnerRoute() {
+        val viewModel = MovitAppShellViewModel()
+        viewModel.onEvent(MovitAppShellEvent.DestinationSelected(MovitAppDestination.Profile))
+        assertEquals(MovitInnerRoute.Profile, viewModel.state.value.currentInnerRoute)
+    }
+
+    @Test
+    fun tabProfileClicked_pushesProfileInnerRoute() {
+        val viewModel = MovitAppShellViewModel()
+        viewModel.onEvent(MovitAppShellEvent.DestinationSelected(MovitAppDestination.Train))
+        viewModel.onEvent(MovitAppShellEvent.TabProfileClicked)
+        assertEquals(MovitInnerRoute.Profile, viewModel.state.value.currentInnerRoute)
+        assertEquals(MovitAppDestination.Train, viewModel.state.value.selectedDestination)
     }
 
     @Test

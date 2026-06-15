@@ -33,6 +33,10 @@ class ElbowAngleEstimator {
     private val lastStable = doubleArrayOf(Double.NaN, Double.NaN)
     private val lastStableTs = longArrayOf(0L, 0L)
 
+    /** Latest per-side diagnostics after [correct]; index 0=left, 1=right. */
+    var lastDiagnostics: Array<ElbowCorrectionDiagnostics?> = arrayOf(null, null)
+        private set
+
     fun correct(
         angles: JointAngles,
         worldLandmarks: List<Landmark>,
@@ -59,6 +63,7 @@ class ElbowAngleEstimator {
             smoothOut[i] = Double.NaN
             lastStable[i] = Double.NaN
             lastStableTs[i] = 0L
+            lastDiagnostics[i] = null
         }
     }
 
@@ -95,39 +100,64 @@ class ElbowAngleEstimator {
         val faDzRaw = if (faLen > 0.01f) abs(ww.z - we.z) / faLen else 0f
         smUaDz[side] += DZ_SMOOTH_ALPHA * (uaDzRaw - smUaDz[side])
         smFaDz[side] += DZ_SMOOTH_ALPHA * (faDzRaw - smFaDz[side])
-        val maxDz = maxOf(smUaDz[side], smFaDz[side])
+        val uaDz = smUaDz[side]
+        val faDz = smFaDz[side]
+        val maxDz = maxOf(uaDz, faDz)
         val sideStrength = computeSideStrength(facingRatio)
         val output: Double
         val corrPct: Float
         var isLowConfidence = false
+        val strategy: ElbowCorrectionStrategy
         when {
             ang2D > STRAIGHT_ARM_GATE -> {
                 output = ang2D + (180.0 - ang2D) * STRAIGHT_ARM_BOOST
                 corrPct = 0f
+                strategy = ElbowCorrectionStrategy.STRAIGHT
             }
             ang3D <= ang2D + INFLATION_GATE -> {
                 output = ang3D
                 corrPct = 0f
+                strategy = ElbowCorrectionStrategy.TRUST_3D
             }
             maxDz < LOW_DEPTH -> {
                 output = ang2D
                 corrPct = 0f
+                strategy = ElbowCorrectionStrategy.TRUST_2D
             }
             maxDz < MID_DEPTH -> {
                 val depthFactor = (maxDz - LOW_DEPTH) / (MID_DEPTH - LOW_DEPTH)
                 corrPct = (depthFactor * CORRECTION_SCALE * sideStrength).coerceAtMost(MAX_CORRECTION * 0.5f)
                 output = ang2D * (1.0 - corrPct)
+                strategy = ElbowCorrectionStrategy.MILD_DOWN
             }
             else -> {
                 val depthFactor = ((maxDz - MID_DEPTH) / (1.0f - MID_DEPTH)).coerceIn(0f, 1f)
                 corrPct = ((0.5f + depthFactor * 0.5f) * CORRECTION_SCALE * sideStrength).coerceAtMost(MAX_CORRECTION)
                 output = ang2D * (1.0 - corrPct)
                 isLowConfidence = maxDz > HIGH_DEPTH
+                strategy = if (isLowConfidence) {
+                    ElbowCorrectionStrategy.LOW_CONF
+                } else {
+                    ElbowCorrectionStrategy.DEEP_DOWN
+                }
             }
         }
         val clamped = output.coerceIn(0.0, MAX_ELBOW_ANGLE)
         if (isLowConfidence && !lastStable[side].isNaN() && ts - lastStableTs[side] < HOLD_TIMEOUT_MS) {
             smoothOut[side] = lastStable[side]
+            lastDiagnostics[side] = ElbowCorrectionDiagnostics(
+                strategy = ElbowCorrectionStrategy.HOLD,
+                facingRatio = facingRatio,
+                screenAngle = ang2D,
+                worldAngle = ang3D,
+                maxDzShare = maxDz,
+                dzImbalance = faDz - uaDz,
+                correctionPct = corrPct,
+                outputAngle = lastStable[side],
+                isHolding = true,
+                uaDzShare = uaDz,
+                faDzShare = faDz,
+            )
             return lastStable[side]
         }
         val smoothed = if (smoothOut[side].isNaN()) clamped
@@ -137,6 +167,19 @@ class ElbowAngleEstimator {
             lastStable[side] = smoothed
             lastStableTs[side] = ts
         }
+        lastDiagnostics[side] = ElbowCorrectionDiagnostics(
+            strategy = strategy,
+            facingRatio = facingRatio,
+            screenAngle = ang2D,
+            worldAngle = ang3D,
+            maxDzShare = maxDz,
+            dzImbalance = faDz - uaDz,
+            correctionPct = corrPct,
+            outputAngle = smoothed,
+            isHolding = false,
+            uaDzShare = uaDz,
+            faDzShare = faDz,
+        )
         return smoothed
     }
 

@@ -286,8 +286,11 @@ async function buildTrainMode(
       ? trainingProfile.trainingWeekdays
       : null;
 
+  const activeSlot = activePlan?.programs?.find((slot: { status: string }) => slot.status === 'active');
+  const hasActiveProgram = !!(activeSlot?.userProgram?.program);
+
   // State 1: No assessment ever done
-  if (!latestAssessment) {
+  if (!latestAssessment && !hasActiveProgram) {
     return {
       status: 'no_assessment',
       activeProgram: null,
@@ -300,7 +303,11 @@ async function buildTrainMode(
   }
 
   // State 2: Reassessment overdue � show before anything else
-  if (pendingReassessment && new Date() >= pendingReassessment.scheduledDate) {
+  if (
+    pendingReassessment &&
+    new Date() >= pendingReassessment.scheduledDate &&
+    !hasActiveProgram
+  ) {
     return {
       status: 'reassessment_due',
       activeProgram: null,
@@ -313,7 +320,6 @@ async function buildTrainMode(
   }
 
   // State 3: No active program in plan
-  const activeSlot = activePlan?.programs?.[0];
   if (!activeSlot || !activeSlot.userProgram?.program) {
     return {
       status: 'no_plan',

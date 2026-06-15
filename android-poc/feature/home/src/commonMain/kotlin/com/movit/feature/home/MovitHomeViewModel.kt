@@ -125,6 +125,7 @@ class MovitHomeViewModel(
             -> _effects.tryEmit(MovitHomeEffect.OpenExplore)
             MovitHomeEvent.ReportsClicked -> _effects.tryEmit(MovitHomeEffect.OpenReports)
             MovitHomeEvent.ProfileClicked -> _effects.tryEmit(MovitHomeEffect.OpenProfile)
+            MovitHomeEvent.NotificationClicked -> _effects.tryEmit(MovitHomeEffect.OpenNotifications)
             is MovitHomeEvent.ViewProgramClicked -> {
                 if (event.programId.isNotBlank()) {
                     _effects.tryEmit(MovitHomeEffect.OpenProgramDetail(event.programId))

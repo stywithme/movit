@@ -3,7 +3,8 @@ package com.movit.feature.home
 data class MovitHomeUiState(
     val isLoading: Boolean = false,
     val userName: String = "Athlete",
-    val greetingEyebrow: String = "Good morning",
+    val greetingEyebrow: String = "",
+    val hasUnreadNotifications: Boolean = false,
     val greetingTitle: String = "",
     val greetingSubtitle: String = "",
     val metricTiles: List<HomeMetricTileUi> = emptyList(),

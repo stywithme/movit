@@ -39,7 +39,9 @@ import com.movit.designsystem.components.MovitInsightVariant
 import com.movit.designsystem.components.MovitListGroup
 import com.movit.designsystem.components.MovitListRow
 import com.movit.designsystem.components.MovitLoadingState
+import com.movit.designsystem.components.MovitHeaderVariant
 import com.movit.designsystem.components.MovitScaffold
+import com.movit.designsystem.components.movitFloatingNavScrollPadding
 import com.movit.designsystem.components.MovitSectionHeader
 import com.movit.designsystem.components.MovitStatTileData
 import com.movit.designsystem.components.MovitStatTileRow
@@ -62,11 +64,17 @@ fun MovitHomeScreen(
     modifier: Modifier = Modifier,
 ) {
     val canRefresh = state.errorMessage == null && !state.isLoading
+    val headerGreeting = state.greetingEyebrow.ifBlank {
+        movitText(HomeTimeGreeting.stringKeyNow())
+    }
 
     MovitScaffold(
         modifier = modifier,
-        title = null,
+        headerVariant = MovitHeaderVariant.Home,
+        greeting = headerGreeting,
         userName = state.userName,
+        hasUnreadNotifications = state.hasUnreadNotifications,
+        onNotificationClick = { onEvent(MovitHomeEvent.NotificationClicked) },
         onProfileClick = { onEvent(MovitHomeEvent.ProfileClicked) },
     ) { padding ->
         PullToRefreshBox(
@@ -84,7 +92,8 @@ fun MovitHomeScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(MovitSpacing.lg),
+                    .padding(MovitSpacing.lg)
+                    .movitFloatingNavScrollPadding(),
                 verticalArrangement = Arrangement.spacedBy(MovitSpacing.lg),
             ) {
             when {

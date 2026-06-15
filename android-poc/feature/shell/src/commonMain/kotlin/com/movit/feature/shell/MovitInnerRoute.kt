@@ -42,7 +42,11 @@ sealed interface MovitInnerRoute {
     ) : MovitInnerRoute
     data class ReportDetail(val reportId: String) : MovitInnerRoute
     data object Auth : MovitInnerRoute
+    /** Account / settings — opened from header avatar, not the bottom nav. */
+    data object Profile : MovitInnerRoute
     data object ProfileOnboarding : MovitInnerRoute
     data class Assessment(val mode: String = "initial") : MovitInnerRoute
     data object LevelProfile : MovitInnerRoute
+    /** Hidden debug/internal route — Training Debug Lab (D10). */
+    data class TrainingDebugLab(val exerciseSlug: String? = null) : MovitInnerRoute
 }

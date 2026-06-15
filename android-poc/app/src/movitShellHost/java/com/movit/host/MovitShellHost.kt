@@ -4,6 +4,11 @@ import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import com.movit.MovitMainActivity
 import com.movit.billing.SubscriptionActivity
 import com.movit.designsystem.platform.installMovitCoilImageLoader
@@ -24,6 +29,15 @@ fun ComponentActivity.attachMovitShellHost(
     MovitDataInstall.install(context = applicationContext)
 
     enableEdgeToEdge()
+    WindowCompat.setDecorFitsSystemWindows(window, false)
+    applyImmersiveNavigationBar()
+    lifecycle.addObserver(
+        object : DefaultLifecycleObserver {
+            override fun onResume(owner: LifecycleOwner) {
+                applyImmersiveNavigationBar()
+            }
+        },
+    )
 
     setContent {
         MovitAppShellHost(
@@ -47,6 +61,14 @@ fun ComponentActivity.attachMovitShellHost(
                 true
             },
         )
+    }
+}
+
+private fun ComponentActivity.applyImmersiveNavigationBar() {
+    WindowInsetsControllerCompat(window, window.decorView).apply {
+        hide(WindowInsetsCompat.Type.navigationBars())
+        systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
     }
 }
 

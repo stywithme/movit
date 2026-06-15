@@ -6,10 +6,8 @@ plugins {
 
 
 
-android {
-
+movitKmp {
     namespace = "com.movit.core.posecapture"
-
 }
 
 

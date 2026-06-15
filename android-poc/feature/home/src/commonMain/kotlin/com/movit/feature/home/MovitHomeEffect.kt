@@ -5,6 +5,7 @@ sealed interface MovitHomeEffect {
     data object OpenExplore : MovitHomeEffect
     data object OpenReports : MovitHomeEffect
     data object OpenProfile : MovitHomeEffect
+    data object OpenNotifications : MovitHomeEffect
     data object OpenAssessment : MovitHomeEffect
     data object OpenLevel : MovitHomeEffect
     data class OpenReportDetail(val reportId: String) : MovitHomeEffect

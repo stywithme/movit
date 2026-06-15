@@ -16,6 +16,7 @@ fun MovitReportsRoute(
     modifier: Modifier = Modifier,
     viewModel: MovitReportsViewModel = viewModel { MovitReportsViewModel() },
     userName: String = "Athlete",
+    onProfileClick: () -> Unit = {},
     onEffect: (MovitReportsEffect) -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -42,6 +43,7 @@ fun MovitReportsRoute(
         },
         modifier = modifier,
         userName = userName,
+        onProfileClick = onProfileClick,
     )
 }
 

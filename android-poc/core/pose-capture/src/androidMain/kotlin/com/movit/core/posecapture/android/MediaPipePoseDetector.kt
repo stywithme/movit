@@ -5,7 +5,6 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.RectF
-import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.util.Log
 import androidx.camera.core.ImageProxy
@@ -18,6 +17,8 @@ import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult
 import com.movit.core.posecapture.boundary.NoOpPoseRefiner
 import com.movit.core.posecapture.boundary.PoseRefiner
+import com.movit.core.posecapture.boundary.trainingdebug.PoseModelType
+import com.movit.core.posecapture.boundary.trainingdebug.PoseModelTypePort
 import com.movit.core.training.boundary.PoseDetector
 import com.movit.core.training.boundary.PoseDetectorConfiguration
 import com.movit.core.training.diagnostics.TrainingPipelineDiagnostics
@@ -33,22 +34,25 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
-import java.io.File
 import kotlin.math.max
 import kotlin.math.roundToInt
 
 class MediaPipePoseDetector(
     private val context: Context,
     private val poseRefiner: PoseRefiner = NoOpPoseRefiner,
+    private val modelPort: PoseModelTypePort = AndroidPoseModelTypePort(context),
 ) : PoseDetector {
     data class DetectionResult(
         val landmarks: List<Landmark>,
         val worldLandmarks: List<Landmark>?,
+        val rawNormalizedLandmarks: List<Landmark>,
+        val rawWorldLandmarks: List<Landmark>?,
         val timestampMs: Long,
         val inferenceTimeMs: Long,
         val isFrontCamera: Boolean,
         val analysisImageWidth: Int,
         val analysisImageHeight: Int,
+        val modelDisplayLabel: String = "",
     )
 
     interface Listener {
@@ -62,7 +66,6 @@ class MediaPipePoseDetector(
         private const val MIN_DETECTION = 0.5f
         private const val MIN_TRACKING = 0.5f
         private const val MIN_PRESENCE = 0.5f
-        private const val MODEL_TYPE_HEAVY = "heavy"
         private const val INFERENCE_STALL_TIMEOUT_MS = 1_500L
     }
 
@@ -102,13 +105,18 @@ class MediaPipePoseDetector(
             shutdownLandmarkerOnly()
             try {
                 val baseBuilder = BaseOptions.builder()
-                val resolved = applyModelToBaseOptions(baseBuilder, configuration)
-                modelLabel = resolved.label
                 if (useGpu) {
                     baseBuilder.setDelegate(Delegate.GPU)
                 } else {
                     baseBuilder.setDelegate(Delegate.CPU)
                 }
+                val resolved = PoseModelResolver.resolve(
+                    context = context,
+                    baseBuilder = baseBuilder,
+                    configuration = configuration,
+                    modelPort = modelPort,
+                )
+                modelLabel = resolved.displayLabel
                 val options = PoseLandmarker.PoseLandmarkerOptions.builder()
                     .setBaseOptions(baseBuilder.build())
                     .setRunningMode(RunningMode.LIVE_STREAM)
@@ -276,22 +284,27 @@ class MediaPipePoseDetector(
             }
             val norm = result.landmarks()[0]
             val world = result.worldLandmarks().firstOrNull()
+            val rawNormalized = MediaPipeLandmarkMapper.mapNormalizedRaw(norm)
+            val rawWorld = world?.let(MediaPipeLandmarkMapper::mapWorldRaw)
             val smoothed = landmarkSmoother.smooth(norm, frameTs)
             val refinedLandmarks = if (poseRefiner.isAvailable) {
                 poseRefiner.refineLandmarks(smoothed)
             } else {
                 smoothed
             }
-            val smoothedWorld = world?.let(::mapWorldLandmarks)
+            val smoothedWorld = world?.let { landmarkSmoother.smoothWorld(it, frameTs) }
             listener?.onPoseDetected(
                 DetectionResult(
                     landmarks = refinedLandmarks,
                     worldLandmarks = smoothedWorld,
+                    rawNormalizedLandmarks = rawNormalized,
+                    rawWorldLandmarks = rawWorld,
                     timestampMs = frameTs,
                     inferenceTimeMs = lastInferenceTimeMs,
                     isFrontCamera = isFrontCamera,
                     analysisImageWidth = lastAnalysisWidth,
                     analysisImageHeight = lastAnalysisHeight,
+                    modelDisplayLabel = modelLabel,
                 ),
             )
         } finally {
@@ -321,85 +334,22 @@ class MediaPipePoseDetector(
         heavyUpgradeInFlight = false
     }
 
-    private data class ResolvedModel(
-        val label: String,
-        val scheduleHeavyUpgrade: Boolean = false,
-    )
-
-    private fun applyModelToBaseOptions(
-        baseBuilder: BaseOptions.Builder,
-        configuration: PoseDetectorConfiguration,
-    ): ResolvedModel {
-        configuration.modelAssetName?.let { explicitAsset ->
-            baseBuilder.setModelAssetPath(explicitAsset)
-            return ResolvedModel(label = explicitAsset)
-        }
-
-        val modelType = PoseModelTypePreference.getModelType(context)
-        if (modelType != MODEL_TYPE_HEAVY) {
-            baseBuilder.setModelAssetPath(PoseLandmarkerHeavyModelStore.FULL_MODEL_ASSET)
-            return ResolvedModel(label = PoseLandmarkerHeavyModelStore.FULL_MODEL_ASSET)
-        }
-
-        return when (val resolved = PoseLandmarkerHeavyModelStore.resolveHeavyOrFallback(context)) {
-            is PoseLandmarkerHeavyModelStore.ResolveResult.HeavyFile -> {
-                applyHeavyFileToBaseOptions(baseBuilder, File(resolved.absolutePath))
-                ResolvedModel(label = resolved.absolutePath)
-            }
-            is PoseLandmarkerHeavyModelStore.ResolveResult.HeavyAsset -> {
-                baseBuilder.setModelAssetPath(resolved.assetName)
-                ResolvedModel(label = resolved.assetName)
-            }
-            is PoseLandmarkerHeavyModelStore.ResolveResult.FallbackFullAsset -> {
-                baseBuilder.setModelAssetPath(resolved.assetName)
-                Log.i(
-                    TAG,
-                    "Heavy model unavailable — using bundled full; download will run in background",
-                )
-                ResolvedModel(
-                    label = "${resolved.assetName} (heavy pending)",
-                    scheduleHeavyUpgrade = true,
-                )
-            }
-        }
-    }
-
-    private fun applyHeavyFileToBaseOptions(baseBuilder: BaseOptions.Builder, modelFile: File) {
-        ParcelFileDescriptor.open(modelFile, ParcelFileDescriptor.MODE_READ_ONLY).use { pfd ->
-            baseBuilder.setModelAssetFileDescriptor(pfd.detachFd())
-        }
-    }
-
     private fun scheduleHeavyUpgrade(configuration: PoseDetectorConfiguration) {
         if (heavyUpgradeInFlight) return
-        if (PoseModelTypePreference.getModelType(context) != MODEL_TYPE_HEAVY) return
+        if (modelPort.getSelectedModel() != PoseModelType.HEAVY) return
         heavyUpgradeInFlight = true
         backgroundScope.launch {
             try {
                 val cached = PoseLandmarkerHeavyModelStore.ensureCached(context)
                 if (!cached) return@launch
-                if (PoseModelTypePreference.getModelType(context) != MODEL_TYPE_HEAVY) return@launch
-                val resolved = PoseLandmarkerHeavyModelStore.resolveHeavyOrFallback(context)
-                if (resolved is PoseLandmarkerHeavyModelStore.ResolveResult.FallbackFullAsset) {
-                    return@launch
-                }
+                if (modelPort.getSelectedModel() != PoseModelType.HEAVY) return@launch
+                val preview = modelPort.resolveForInitialization(PoseModelType.HEAVY)
+                if (preview.usesHeavyFallback) return@launch
                 Log.i(TAG, "Heavy model cached — re-initializing pose landmarker")
                 warmUp(lastConfiguration ?: configuration)
             } finally {
                 heavyUpgradeInFlight = false
             }
         }
-    }
-
-    private fun mapWorldLandmarks(
-        world: List<com.google.mediapipe.tasks.components.containers.Landmark>,
-    ): List<Landmark> = world.map { lm ->
-        Landmark(
-            x = lm.x(),
-            y = lm.y(),
-            z = lm.z(),
-            visibility = lm.visibility().orElse(1f),
-            presence = lm.presence().orElse(1f),
-        )
     }
 }

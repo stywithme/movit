@@ -4,11 +4,8 @@ plugins {
 }
 
 movitKmp {
-    unitTestsReturnDefaultValues = true
-}
-
-android {
     namespace = "com.movit.feature.reports"
+    unitTestsReturnDefaultValues = true
 }
 
 kotlin {
@@ -36,8 +33,10 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
         }
-        androidUnitTest.dependencies {
-            implementation(kotlin("test"))
+        sourceSets.named("androidHostTest") {
+            dependencies {
+                implementation(kotlin("test"))
+            }
         }
     }
 }

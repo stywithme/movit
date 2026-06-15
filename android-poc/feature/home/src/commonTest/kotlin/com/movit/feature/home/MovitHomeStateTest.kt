@@ -113,6 +113,19 @@ class MovitHomeStateTest {
     }
 
     @Test
+    fun notificationClicked_emitsOpenNotifications() = runBlocking {
+        val viewModel = MovitHomeViewModel()
+        val effectDeferred = async {
+            withTimeout(5_000) {
+                viewModel.effects.first()
+            }
+        }
+        yield()
+        viewModel.onEvent(MovitHomeEvent.NotificationClicked)
+        assertEquals(MovitHomeEffect.OpenNotifications, effectDeferred.await())
+    }
+
+    @Test
     fun levelCardClicked_emitsOpenLevel() = runBlocking {
         val viewModel = MovitHomeViewModel()
         val effectDeferred = async {

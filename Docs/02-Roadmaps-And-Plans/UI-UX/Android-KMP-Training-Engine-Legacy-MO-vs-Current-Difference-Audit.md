@@ -23,6 +23,7 @@
   - `android-poc/app/src/main/java/com/trainingvalidator/poc/ui/train/CameraTrainingInputController.kt`
   - `android-poc/app/src/main/java/com/trainingvalidator/poc/camera/CameraManager.kt`
   - `android-poc/app/src/main/java/com/trainingvalidator/poc/pose/PoseLandmarkerHelper.kt`
+  - Legacy Debug Lab: `DebugActivity.kt` — نقل KMP موثّق في [Android-KMP-Training-Debug-Mode-Full-Migration-Plan.md](./Android-KMP-Training-Debug-Mode-Full-Migration-Plan.md) (§12 Agent 1–4).
   - `android-poc/app/src/main/java/com/trainingvalidator/poc/training/TrainingEngine.kt`
   - `android-poc/app/src/main/java/com/trainingvalidator/poc/training/workout/WorkoutTrainingEngine.kt`
   - `android-poc/app/src/main/java/com/trainingvalidator/poc/training/report/ReportGenerator.kt`

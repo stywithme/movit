@@ -213,25 +213,15 @@ class MovitTrainingEngine(
 
     private val positionValidator: PositionValidator? =
 
-        if (exerciseConfig.hasAnyPositionChecks(poseVariantIndex)) {
+        TrainingGateFactory.buildPositionValidatorForExercise(
 
-            PositionValidator(
+            exerciseConfig = exerciseConfig,
 
-                positionChecks = poseVariant.positionChecks,
+            poseVariantIndex = poseVariantIndex,
 
-                posePositionCode = poseVariant.posePosition ?: poseVariant.cameraPosition ?: "standing_side",
+            tiltSource = deviceTiltPort,
 
-                sceneExpectation = poseVariant.resolveSceneExpectation(),
-
-                tiltSource = deviceTiltPort,
-
-            )
-
-        } else {
-
-            null
-
-        }
+        )
 
     private val framePipeline = FramePipelineExecutor(
 

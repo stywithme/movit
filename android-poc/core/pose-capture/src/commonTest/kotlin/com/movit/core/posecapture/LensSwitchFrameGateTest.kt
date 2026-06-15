@@ -35,4 +35,11 @@ class LensSwitchFrameGateTest {
         assertFalse(gate.isAwaitingFrames())
         assertEquals(LensSwitchFrameGate.FrameDecision.Deliver, gate.acceptFrame(isFrontCamera = false))
     }
+
+    @Test
+    fun deliversToConsumers_matchesEngineAndDebugGatePolicy() {
+        assertTrue(LensSwitchFrameGate.FrameDecision.Deliver.deliversToConsumers())
+        assertTrue(LensSwitchFrameGate.FrameDecision.DeliverCompleteSwitch.deliversToConsumers())
+        assertFalse(LensSwitchFrameGate.FrameDecision.Suppress.deliversToConsumers())
+    }
 }

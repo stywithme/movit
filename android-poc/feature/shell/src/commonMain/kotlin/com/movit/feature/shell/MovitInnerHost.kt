@@ -6,6 +6,8 @@ import com.movit.feature.account.MovitAssessmentRoute
 import com.movit.feature.account.MovitAuthRoute
 import com.movit.feature.account.MovitLevelRoute
 import com.movit.feature.account.MovitOnboardingRoute
+import com.movit.feature.account.MovitProfileRoute
+import com.movit.feature.account.MovitProfileViewModel
 import com.movit.feature.library.ExercisePrepareRoute
 import com.movit.feature.library.ExercisesLibraryRoute
 import com.movit.feature.library.WorkoutFlowCache
@@ -20,6 +22,8 @@ import com.movit.feature.training.PlannedWorkoutContext
 import com.movit.feature.training.TrainingSessionRoute
 import com.movit.feature.training.TrainingSessionRouteArgs
 import com.movit.feature.training.WorkoutUploadContext
+import com.movit.feature.trainingdebug.TrainingDebugRoute
+import com.movit.feature.trainingdebug.isTrainingDebugLabEnabled
 import com.movit.feature.library.TrainingStartAction
 import com.movit.feature.library.WorkoutSessionRoute
 import com.movit.feature.library.WorkoutsLibraryRoute
@@ -29,6 +33,7 @@ import com.movit.feature.reports.ReportDetailRoute
 @Composable
 fun MovitInnerHost(
     route: MovitInnerRoute,
+    profileViewModel: MovitProfileViewModel,
     onBack: () -> Unit,
     onNavigate: (MovitInnerRoute) -> Unit,
     onShellEvent: (MovitAppShellEvent) -> Unit = {},
@@ -241,6 +246,14 @@ fun MovitInnerHost(
                 modifier = modifier,
             )
         }
+        MovitInnerRoute.Profile -> {
+            MovitProfileRoute(
+                viewModel = profileViewModel,
+                onBack = onBack,
+                onEffect = { onShellEvent(MovitAppShellEvent.ProfileEffectReceived(it)) },
+                modifier = modifier,
+            )
+        }
         MovitInnerRoute.ProfileOnboarding -> {
             MovitOnboardingRoute(
                 onEffect = { onShellEvent(MovitAppShellEvent.OnboardingEffectReceived(it)) },
@@ -260,6 +273,25 @@ fun MovitInnerHost(
                 onEffect = { onShellEvent(MovitAppShellEvent.LevelEffectReceived(it)) },
                 modifier = modifier,
             )
+        }
+        is MovitInnerRoute.TrainingDebugLab -> {
+            if (isTrainingDebugLabEnabled()) {
+                TrainingDebugRoute(
+                    exerciseSlug = route.exerciseSlug,
+                    onBack = onBack,
+                    onCopy = { text ->
+                        onShellEffect(
+                            MovitAppShellEffect.ShareText(
+                                subject = "Training Debug Lab",
+                                text = text,
+                            ),
+                        )
+                    },
+                    modifier = modifier,
+                )
+            } else {
+                onBack()
+            }
         }
     }
 }

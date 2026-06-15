@@ -4,7 +4,7 @@ plugins {
     alias(libs.plugins.sqldelight)
 }
 
-android {
+movitKmp {
     namespace = "com.movit.core.data"
 }
 

@@ -24,6 +24,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.movit.core.posecapture.CameraStartGate
 import com.movit.core.posecapture.LensSwitchFrameGate
+import com.movit.core.posecapture.deliversToConsumers
 import com.movit.core.training.boundary.CameraFrameSource
 import com.movit.core.training.boundary.CameraSourceConfiguration
 import com.movit.core.training.boundary.PoseDetectorConfiguration
@@ -56,6 +57,7 @@ class CameraXFrameSource(
     private var previewUseCase: Preview? = null
     private var analysisUseCase: ImageAnalysis? = null
     private var frameListener: ((PoseFrame?) -> Unit)? = null
+    private var debugFrameListener: ((MediaPipePoseDetector.DetectionResult?, PoseFrame?) -> Unit)? = null
     private var errorListener: ((String) -> Unit)? = null
     private var onCameraBoundListener: (() -> Unit)? = null
     private var configuration = CameraSourceConfiguration()
@@ -89,6 +91,12 @@ class CameraXFrameSource(
 
     override fun setFrameListener(listener: ((PoseFrame?) -> Unit)?) {
         frameListener = listener
+    }
+
+    fun setDebugFrameListener(
+        listener: ((MediaPipePoseDetector.DetectionResult?, PoseFrame?) -> Unit)?,
+    ) {
+        debugFrameListener = listener
     }
 
     override fun setErrorListener(listener: ((String) -> Unit)?) {
@@ -135,16 +143,31 @@ class CameraXFrameSource(
         PoseFrameAssembler.resetElbowEstimator()
     }
 
-    private fun emitPoseFrame(frame: PoseFrame?, facingOverride: Boolean? = null) {
+    private fun emitPoseFrame(
+        frame: PoseFrame?,
+        facingOverride: Boolean? = null,
+        debugResult: MediaPipePoseDetector.DetectionResult? = null,
+    ) {
         val facing = facingOverride ?: frame?.isFrontCamera ?: configuration.useFrontCamera
-        when (lensSwitchGate.acceptFrame(facing)) {
-            LensSwitchFrameGate.FrameDecision.Suppress -> Unit
-            LensSwitchFrameGate.FrameDecision.Deliver -> frameListener?.invoke(frame)
-            LensSwitchFrameGate.FrameDecision.DeliverCompleteSwitch -> {
-                switchingCamera.set(false)
-                onCameraBoundListener?.invoke()
-                frameListener?.invoke(frame)
-            }
+        val decision = lensSwitchGate.acceptFrame(facing)
+        if (!decision.deliversToConsumers()) return
+        if (decision == LensSwitchFrameGate.FrameDecision.DeliverCompleteSwitch) {
+            switchingCamera.set(false)
+            onCameraBoundListener?.invoke()
+        }
+        deliverDebugFrame(debugResult, frame)
+        frameListener?.invoke(frame)
+    }
+
+    private fun deliverDebugFrame(
+        debugResult: MediaPipePoseDetector.DetectionResult?,
+        frame: PoseFrame?,
+    ) {
+        val listener = debugFrameListener ?: return
+        if (frame == null) {
+            listener(null, null)
+        } else if (debugResult != null) {
+            listener(debugResult, frame)
         }
     }
 
@@ -165,7 +188,7 @@ class CameraXFrameSource(
                     hasPose = true,
                     busySkippedSinceLastResult = poseDetector.consumeBusySkipCount(),
                 )
-                emitPoseFrame(frame)
+                emitPoseFrame(frame, debugResult = result)
             }
 
             override fun onNoPoseDetected(isFrontCamera: Boolean) {

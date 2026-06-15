@@ -199,6 +199,13 @@ private fun ProfileContent(
                 )
             },
         )
+        if (PlatformInfo.supportsTrainingDebugLab) {
+            MovitListRow(
+                title = "Training Debug Lab",
+                subtitle = "Internal pose diagnostics",
+                onClick = { onEvent(MovitProfileEvent.TrainingDebugLabClicked) },
+            )
+        }
     }
     SettingsGroup(title = movitText("profile_account")) {
         MovitListRow(

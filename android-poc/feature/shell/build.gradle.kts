@@ -3,7 +3,7 @@ plugins {
     id("movit.kmp.feature")
 }
 
-android {
+movitKmp {
     namespace = "com.movit.feature.shell"
 }
 
@@ -32,6 +32,7 @@ kotlin {
             implementation(project(":core:training-engine"))
             implementation(project(":feature:library"))
             implementation(project(":feature:training"))
+            implementation(project(":feature:training-debug"))
             // Account effect types (e.g. MovitProfileEffect) are part of shell's public API
             // (MovitAppShellEvent) — api() keeps them visible to the iOS framework compile.
             api(project(":feature:account"))

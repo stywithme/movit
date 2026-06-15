@@ -27,6 +27,7 @@ import com.movit.designsystem.movitColors
 @Composable
 fun MovitAppHeader(
     modifier: Modifier = Modifier,
+    variant: MovitHeaderVariant = MovitHeaderVariant.TabPage,
     greeting: String = "",
     userName: String = "",
     pageTitle: String? = null,
@@ -37,32 +38,53 @@ fun MovitAppHeader(
     onProfileClick: (() -> Unit)? = null,
     actions: @Composable () -> Unit = {},
 ) {
+    when (variant) {
+        MovitHeaderVariant.Home -> HomeAppHeader(
+            modifier = modifier,
+            greeting = greeting,
+            userName = userName,
+            pageTitle = pageTitle,
+            pageSubtitle = pageSubtitle,
+            showNotification = showNotification,
+            hasUnreadNotifications = hasUnreadNotifications,
+            onNotificationClick = onNotificationClick,
+            onProfileClick = onProfileClick,
+            actions = actions,
+        )
+        MovitHeaderVariant.TabPage -> TabPageAppHeader(
+            modifier = modifier,
+            userName = userName,
+            pageTitle = pageTitle,
+            pageSubtitle = pageSubtitle,
+            onProfileClick = onProfileClick,
+            actions = actions,
+        )
+    }
+}
+
+@Composable
+private fun HomeAppHeader(
+    modifier: Modifier,
+    greeting: String,
+    userName: String,
+    pageTitle: String?,
+    pageSubtitle: String?,
+    showNotification: Boolean,
+    hasUnreadNotifications: Boolean,
+    onNotificationClick: (() -> Unit)?,
+    onProfileClick: (() -> Unit)?,
+    actions: @Composable () -> Unit,
+) {
     Row(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 18.dp, vertical = MovitSpacing.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (onProfileClick != null) {
-            Surface(
-                onClick = onProfileClick,
-                modifier = Modifier.size(44.dp),
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            ) {
-                ProfileAvatarInitial(userName = userName)
-            }
-        } else {
-            Surface(
-                modifier = Modifier.size(44.dp),
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            ) {
-                ProfileAvatarInitial(userName = userName)
-            }
-        }
+        ProfileAvatarSurface(
+            userName = userName,
+            onClick = onProfileClick,
+        )
 
         Column(
             modifier = Modifier
@@ -70,19 +92,7 @@ fun MovitAppHeader(
                 .padding(start = MovitSpacing.md),
         ) {
             if (pageTitle != null) {
-                Text(
-                    text = pageTitle,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.W800,
-                )
-                if (pageSubtitle != null) {
-                    Text(
-                        text = pageSubtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.movitColors.textSecondary,
-                        modifier = Modifier.padding(top = 2.dp),
-                    )
-                }
+                HeaderTitleBlock(pageTitle = pageTitle, pageSubtitle = pageSubtitle)
             } else {
                 Text(
                     text = greeting,
@@ -100,21 +110,115 @@ fun MovitAppHeader(
         actions()
 
         if (showNotification) {
-            Box {
-                IconButton(onClick = { onNotificationClick?.invoke() }) {
-                    Icon(Icons.Default.Notifications, contentDescription = "Notifications")
-                }
-                if (hasUnreadNotifications) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(top = 10.dp, end = 10.dp)
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.tertiary),
-                    )
-                }
+            NotificationIconButton(
+                hasUnreadNotifications = hasUnreadNotifications,
+                onNotificationClick = onNotificationClick,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TabPageAppHeader(
+    modifier: Modifier,
+    userName: String,
+    pageTitle: String?,
+    pageSubtitle: String?,
+    onProfileClick: (() -> Unit)?,
+    actions: @Composable () -> Unit,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 18.dp, vertical = MovitSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = MovitSpacing.md),
+        ) {
+            if (pageTitle != null) {
+                HeaderTitleBlock(pageTitle = pageTitle, pageSubtitle = pageSubtitle)
             }
+        }
+
+        actions()
+
+        if (onProfileClick != null) {
+            ProfileAvatarSurface(
+                userName = userName,
+                onClick = onProfileClick,
+            )
+        }
+    }
+}
+
+@Composable
+private fun HeaderTitleBlock(
+    pageTitle: String,
+    pageSubtitle: String?,
+) {
+    Text(
+        text = pageTitle,
+        style = MaterialTheme.typography.headlineSmall,
+        fontWeight = FontWeight.W800,
+    )
+    if (pageSubtitle != null) {
+        Text(
+            text = pageSubtitle,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.movitColors.textSecondary,
+            modifier = Modifier.padding(top = 2.dp),
+        )
+    }
+}
+
+@Composable
+private fun ProfileAvatarSurface(
+    userName: String,
+    onClick: (() -> Unit)?,
+) {
+    if (onClick != null) {
+        Surface(
+            onClick = onClick,
+            modifier = Modifier.size(44.dp),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        ) {
+            ProfileAvatarInitial(userName = userName)
+        }
+    } else {
+        Surface(
+            modifier = Modifier.size(44.dp),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        ) {
+            ProfileAvatarInitial(userName = userName)
+        }
+    }
+}
+
+@Composable
+private fun NotificationIconButton(
+    hasUnreadNotifications: Boolean,
+    onNotificationClick: (() -> Unit)?,
+) {
+    Box {
+        IconButton(onClick = { onNotificationClick?.invoke() }) {
+            Icon(Icons.Default.Notifications, contentDescription = "Notifications")
+        }
+        if (hasUnreadNotifications) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 10.dp, end = 10.dp)
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.tertiary),
+            )
         }
     }
 }

@@ -22,4 +22,5 @@ sealed interface MovitProfileEvent {
     data class AppearanceSelected(val themeMode: String) : MovitProfileEvent
     data class AudioCuesChanged(val enabled: Boolean) : MovitProfileEvent
     data class HapticChanged(val enabled: Boolean) : MovitProfileEvent
+    data object TrainingDebugLabClicked : MovitProfileEvent
 }

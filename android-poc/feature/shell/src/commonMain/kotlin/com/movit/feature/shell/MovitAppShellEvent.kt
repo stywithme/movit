@@ -22,6 +22,8 @@ sealed interface MovitAppShellEvent {
     data class TrainEffectReceived(val effect: MovitTrainEffect) : MovitAppShellEvent
     data class ReportsEffectReceived(val effect: MovitReportsEffect) : MovitAppShellEvent
     data class HeaderUserNameUpdated(val userName: String) : MovitAppShellEvent
+    /** Open profile as inner route from Train / Explore / Reports headers. */
+    data object TabProfileClicked : MovitAppShellEvent
     data class ProfileEffectReceived(val effect: MovitProfileEffect) : MovitAppShellEvent
     data class AuthEffectReceived(val effect: MovitAuthEffect) : MovitAppShellEvent
     data class OnboardingEffectReceived(val effect: MovitOnboardingEffect) : MovitAppShellEvent

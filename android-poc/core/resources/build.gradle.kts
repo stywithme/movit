@@ -3,11 +3,8 @@ plugins {
 }
 
 movitKmp {
-    unitTestsReturnDefaultValues = true
-}
-
-android {
     namespace = "com.movit.resources"
+    unitTestsReturnDefaultValues = true
 }
 
 kotlin {
@@ -22,8 +19,10 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.ui)
         }
-        androidUnitTest.dependencies {
-            implementation(kotlin("test"))
+        sourceSets.named("androidHostTest") {
+            dependencies {
+                implementation(kotlin("test"))
+            }
         }
     }
 }
@@ -64,10 +63,6 @@ val generateMovitEnglishStrings by tasks.registering {
     }
 }
 
-tasks.named("preBuild") {
-    dependsOn(generateMovitEnglishStrings)
-}
-
-tasks.matching { it.name.startsWith("compileKotlin") }.configureEach {
+tasks.matching { it.name.startsWith("compile") && it.name.contains("Kotlin") }.configureEach {
     dependsOn(generateMovitEnglishStrings)
 }

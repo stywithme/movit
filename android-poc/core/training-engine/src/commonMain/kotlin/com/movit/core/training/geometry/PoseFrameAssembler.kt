@@ -39,6 +39,9 @@ object PoseFrameAssembler {
 
     fun resetElbowEstimator() = elbowEstimator.reset()
 
+    /** Read-only elbow diagnostics from the shared production estimator instance. */
+    fun lastElbowDiagnostics(): Array<ElbowCorrectionDiagnostics?> = elbowEstimator.lastDiagnostics
+
     fun calculateAngles(
         landmarks: List<Landmark>,
         visibilityThreshold: Float = 0.5f,

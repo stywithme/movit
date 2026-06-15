@@ -17,6 +17,7 @@ import com.movit.designsystem.components.MovitButtonVariant
 import com.movit.designsystem.components.MovitErrorState
 import com.movit.designsystem.components.MovitLoadingState
 import com.movit.designsystem.components.MovitScaffold
+import com.movit.designsystem.components.movitFloatingNavScrollPadding
 import com.movit.feature.train.components.TrainNoPlanSection
 import com.movit.feature.train.components.TrainQuickActions
 import com.movit.feature.train.components.TrainReadinessCard
@@ -32,6 +33,8 @@ fun MovitTrainScreen(
     state: MovitTrainUiState,
     onEvent: (MovitTrainEvent) -> Unit,
     modifier: Modifier = Modifier,
+    userName: String = "",
+    onProfileClick: () -> Unit = {},
 ) {
     val dashboard = state.dashboard
     val canRefresh = state.errorMessage == null && !state.isLoading
@@ -40,6 +43,8 @@ fun MovitTrainScreen(
         modifier = modifier,
         title = movitText("train_title"),
         subtitle = dashboard?.subtitle ?: movitText("train_dest_subtitle"),
+        userName = userName,
+        onProfileClick = onProfileClick,
     ) { padding ->
         PullToRefreshBox(
             isRefreshing = state.isRefreshing,
@@ -56,7 +61,8 @@ fun MovitTrainScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(MovitSpacing.lg),
+                    .padding(MovitSpacing.lg)
+                    .movitFloatingNavScrollPadding(),
                 verticalArrangement = Arrangement.spacedBy(MovitSpacing.lg),
             ) {
             when {

@@ -8,11 +8,10 @@ fun MovitAppDestination.toFloatingNav(): MovitNavDestination =
 fun MovitNavDestination.toAppDestination(): MovitAppDestination =
     MovitAppDestination.valueOf(name)
 
-/** Main tabs in the ink floating nav — matches the production shell. */
+/** Main tabs in the ink floating nav — profile is reached via header avatar, not the bar. */
 val MovitShellFloatingDestinations: List<MovitNavDestination> = listOf(
     MovitAppDestination.Home,
     MovitAppDestination.Train,
     MovitAppDestination.Explore,
     MovitAppDestination.Reports,
-    MovitAppDestination.Profile,
 ).map { it.toFloatingNav() }

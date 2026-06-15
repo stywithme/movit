@@ -792,6 +792,10 @@ class ProgramDetailViewModel(
 
                 is AppResult.Success -> {
 
+                    if (MovitData.isInstalled) {
+                        MovitData.home.sync()
+                    }
+
                     loadedProgramExport = programExportLoader(program.id) ?: loadedProgramExport
 
                     enrollment = resolveEnrollment(program.id).copy(
@@ -971,8 +975,12 @@ class ProgramDetailViewModel(
         }
 
         val active = MovitData.home.readCached()?.trainMode?.activeProgram
-
-        val isEnrolled = active?.id == programId
+        val export = loadedProgramExport
+        val isEnrolled = active != null && (
+            active.id == programId ||
+                active.id == export?.slug ||
+                active.id == export?.id
+            )
 
         return ProgramEnrollmentUi(
 
@@ -1024,6 +1032,12 @@ class ProgramDetailViewModel(
 
             }
 
+            ProgramDetailApiMapper.previewNextSession(export, language, strings)?.sessionWorkoutId?.let {
+
+                return it
+
+            }
+
         }
 
         _state.update {
@@ -1062,7 +1076,7 @@ class ProgramDetailViewModel(
 
         val nextSession = loadedProgramExport?.let { export ->
 
-            if (!MovitData.isInstalled || !enrollment.isEnrolled) {
+            if (!MovitData.isInstalled) {
 
                 null
 
@@ -1074,7 +1088,11 @@ class ProgramDetailViewModel(
 
                 val home = MovitData.home.readCached()
 
-                ProgramDetailApiMapper.nextSession(export, home, language, strings)
+                if (enrollment.isEnrolled) {
+                    ProgramDetailApiMapper.nextSession(export, home, language, strings)
+                } else {
+                    ProgramDetailApiMapper.previewNextSession(export, language, strings)
+                }
 
             }
 

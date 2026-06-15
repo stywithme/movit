@@ -1,7 +1,7 @@
 package com.movit.core.network
 
 import android.os.Build
-import com.movit.core.network.BuildConfig
+import com.movit.core.network.buildconfig.MovitGeneratedBuildConfig
 
 private const val EMULATOR_HOST = "10.0.2.2"
 
@@ -19,14 +19,14 @@ private fun isEmulator(): Boolean {
 }
 
 internal fun resolveAndroidApiBaseUrl(): String {
-  return when (BuildConfig.API_MODE) {
-    "server" -> BuildConfig.API_SERVER_URL
+  return when (MovitGeneratedBuildConfig.API_MODE) {
+    "server" -> MovitGeneratedBuildConfig.API_SERVER_URL
     else -> {
-      val port = BuildConfig.API_PORT
+      val port = MovitGeneratedBuildConfig.API_PORT
       if (isEmulator()) {
         "http://$EMULATOR_HOST:$port/"
       } else {
-        "http://${BuildConfig.API_PHYSICAL_IP}:$port/"
+        "http://${MovitGeneratedBuildConfig.API_PHYSICAL_IP}:$port/"
       }
     }
   }

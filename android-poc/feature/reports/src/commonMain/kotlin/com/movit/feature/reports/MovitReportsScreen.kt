@@ -40,6 +40,7 @@ import com.movit.designsystem.components.MovitLoadingState
 import com.movit.designsystem.components.MovitScaffold
 import com.movit.designsystem.components.MovitSectionHeader
 import com.movit.designsystem.components.MovitUnderlineTabRow
+import com.movit.designsystem.components.movitFloatingNavScrollPadding
 import com.movit.designsystem.movitColors
 import com.movit.resources.movitText
 import androidx.compose.ui.unit.dp
@@ -52,6 +53,7 @@ fun MovitReportsScreen(
     onEvent: (MovitReportsEvent) -> Unit,
     modifier: Modifier = Modifier,
     userName: String = movitText("reports_athlete_fallback"),
+    onProfileClick: () -> Unit = {},
 ) {
     val dashboard = state.dashboard
     val canRefresh = dashboard?.hubState == ReportsHubState.Success
@@ -61,7 +63,7 @@ fun MovitReportsScreen(
         title = movitText("reports_title"),
         subtitle = movitText("reports_subtitle"),
         userName = userName,
-        onProfileClick = null,
+        onProfileClick = onProfileClick,
     ) { padding ->
         Column(
             modifier = Modifier
@@ -86,7 +88,8 @@ fun MovitReportsScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
-                        .padding(MovitSpacing.lg),
+                        .padding(MovitSpacing.lg)
+                        .movitFloatingNavScrollPadding(),
                     verticalArrangement = Arrangement.spacedBy(MovitSpacing.lg),
                 ) {
                     when {

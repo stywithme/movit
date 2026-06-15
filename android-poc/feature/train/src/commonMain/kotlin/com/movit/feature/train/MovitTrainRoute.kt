@@ -13,6 +13,8 @@ import kotlinx.coroutines.launch
 fun MovitTrainRoute(
     modifier: Modifier = Modifier,
     viewModel: MovitTrainViewModel = viewModel { MovitTrainViewModel() },
+    userName: String = "",
+    onProfileClick: () -> Unit = {},
     onEffect: (MovitTrainEffect) -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -38,5 +40,7 @@ fun MovitTrainRoute(
             }
         },
         modifier = modifier,
+        userName = userName,
+        onProfileClick = onProfileClick,
     )
 }

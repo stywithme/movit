@@ -17,7 +17,7 @@ internal object ProgramDetailApiMapper {
         strings: ProgramFlowStrings,
     ): List<ProgramWeekUi> {
         val active = home?.trainMode?.activeProgram
-        val isActiveProgram = active?.id == program.id
+        val isActiveProgram = active?.id == program.id || active?.id == program.slug
         val activeWeek = active?.weekNumber?.coerceAtLeast(1) ?: 1
         val completedDays = active?.weekProgress?.completed ?: 0
 
@@ -72,16 +72,50 @@ internal object ProgramDetailApiMapper {
         strings: ProgramFlowStrings,
     ): ProgramNextSessionUi? {
         val active = home?.trainMode?.activeProgram ?: return null
-        if (active.id != program.id) return null
+        if (active.id != program.id && active.id != program.slug) return null
 
-        val weekNumber = active.weekNumber.coerceAtLeast(1)
+        return sessionForPosition(
+            program = program,
+            weekNumber = active.weekNumber.coerceAtLeast(1),
+            dayNumber = active.dayNumber.coerceAtLeast(1),
+            language = language,
+            strings = strings,
+        )
+    }
+
+    suspend fun previewNextSession(
+        program: ProgramExportDto,
+        language: String,
+        strings: ProgramFlowStrings,
+    ): ProgramNextSessionUi? {
+        val week = program.weeks.minByOrNull { it.weekNumber } ?: return null
+        val day = week.days
+            .sortedBy { it.dayNumber }
+            .firstOrNull { !it.isRestDay && it.plannedWorkouts.isNotEmpty() }
+            ?: return null
+        return sessionForPosition(
+            program = program,
+            weekNumber = week.weekNumber,
+            dayNumber = day.dayNumber,
+            language = language,
+            strings = strings,
+        )
+    }
+
+    private suspend fun sessionForPosition(
+        program: ProgramExportDto,
+        weekNumber: Int,
+        dayNumber: Int,
+        language: String,
+        strings: ProgramFlowStrings,
+    ): ProgramNextSessionUi? {
         val week = program.weeks.firstOrNull { it.weekNumber == weekNumber } ?: return null
         val day = week.days
             .sortedBy { it.dayNumber }
-            .firstOrNull { day ->
-                !day.isRestDay &&
-                    day.dayNumber >= active.dayNumber.coerceAtLeast(1) &&
-                    day.plannedWorkouts.isNotEmpty()
+            .firstOrNull { candidate ->
+                !candidate.isRestDay &&
+                    candidate.dayNumber >= dayNumber.coerceAtLeast(1) &&
+                    candidate.plannedWorkouts.isNotEmpty()
             }
             ?: week.days.firstOrNull { !it.isRestDay && it.plannedWorkouts.isNotEmpty() }
             ?: return null

@@ -2,7 +2,7 @@ plugins {
     id("movit.kmp.core")
 }
 
-android {
+movitKmp {
     namespace = "com.movit.core.model"
 }
 
