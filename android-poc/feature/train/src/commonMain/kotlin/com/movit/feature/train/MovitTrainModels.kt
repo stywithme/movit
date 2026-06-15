@@ -10,12 +10,19 @@ enum class TrainDashboardStatus {
     ProgramComplete,
 }
 
+/**
+ * Truthful per-day states, mapped 1:1 from the backend week calendar.
+ * Note: there is intentionally NO "Missed" state — the program is
+ * completion-based and waits for the user; lateness is surfaced gently
+ * elsewhere (catch-up), never as a punishing red day.
+ */
 enum class TrainWeekDayState {
-    Done,
+    Completed,
     Today,
-    Planned,
+    InProgress,
+    Upcoming,
     Rest,
-    Missed,
+    ActiveRecovery,
 }
 
 data class TrainFeaturedProgramUi(
@@ -96,12 +103,29 @@ data class TrainWorkoutItemUi(
 data class TrainWeekPreviewUi(
     val title: String,
     val days: List<TrainWeekDayUi>,
+    val weekNumber: Int = 1,
+    val isCurrentWeek: Boolean = false,
+    val subtitle: String? = null,
 )
 
 data class TrainWeekDayUi(
     val label: String,
     val dayNumber: String,
     val state: TrainWeekDayState,
+    val isToday: Boolean = false,
+    val progress: Float? = null,
+    val detail: TrainWeekDayDetailUi? = null,
+)
+
+/** Inline preview shown when a calendar day is tapped. */
+data class TrainWeekDayDetailUi(
+    val title: String,
+    val infoLabel: String,
+    val statusLabel: String,
+    val isWorkout: Boolean = false,
+    val isCompleted: Boolean = false,
+    val actionLabel: String? = null,
+    val launchTarget: TrainWorkoutLaunchUi? = null,
 )
 
 data class TrainReadinessUi(

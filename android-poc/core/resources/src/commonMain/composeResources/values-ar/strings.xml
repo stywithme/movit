@@ -26,6 +26,7 @@
     <string name="ds_week_legend_done">تم</string>
     <string name="ds_week_legend_today">اليوم</string>
     <string name="ds_week_legend_missed">فائت</string>
+    <string name="ds_week_legend_upcoming">قادم</string>
     <string name="ds_week_legend_rest">راحة</string>
 
     <string name="home_loading">جاري تحميل لوحتك…</string>
@@ -160,6 +161,19 @@
     <string name="train_this_week">هذا الأسبوع</string>
     <string name="train_week_title">الأسبوع %1$d</string>
     <string name="train_day_short">ي%1$d</string>
+    <string name="train_week_progress">%1$d من %2$d تمارين</string>
+    <string name="train_weekday_0">أحد</string>
+    <string name="train_weekday_1">إثن</string>
+    <string name="train_weekday_2">ثلا</string>
+    <string name="train_weekday_3">أرب</string>
+    <string name="train_weekday_4">خمس</string>
+    <string name="train_weekday_5">جمع</string>
+    <string name="train_weekday_6">سبت</string>
+    <string name="train_status_today">اليوم</string>
+    <string name="train_status_upcoming">قادم</string>
+    <string name="train_status_in_progress">قيد التنفيذ</string>
+    <string name="train_status_completed">مكتمل</string>
+    <string name="train_status_rest">يوم راحة</string>
     <string name="train_readiness">الجاهزية</string>
     <string name="train_latest_report">آخر تقرير</string>
     <string name="train_last_workout">آخر تمرين مكتمل</string>

@@ -213,20 +213,21 @@ fun MovitCatalogHeroAccentSection() {
 fun MovitCatalogWeekSessionSection() {
     CatalogSection(title = "Training week & sessions") {
         MovitWeekStrip(
-            title = "June · Week 2",
+            title = "Week 2",
+            subtitle = "2 of 4 workouts",
             days = listOf(
-                MovitWeekDay("Mon", "1", MovitWeekDayState.Done),
-                MovitWeekDay("Tue", "2", MovitWeekDayState.Done),
-                MovitWeekDay("Wed", "3", MovitWeekDayState.Missed),
-                MovitWeekDay("Thu", "4", MovitWeekDayState.Today),
-                MovitWeekDay("Fri", "5", MovitWeekDayState.Planned),
-                MovitWeekDay("Sat", "6", MovitWeekDayState.Rest),
-                MovitWeekDay("Sun", "7", MovitWeekDayState.Planned),
+                MovitWeekDay("Mon", "1", MovitWeekDayState.Completed),
+                MovitWeekDay("Tue", "2", MovitWeekDayState.Completed),
+                MovitWeekDay("Wed", "3", MovitWeekDayState.Rest),
+                MovitWeekDay("Thu", "4", MovitWeekDayState.Today, isToday = true),
+                MovitWeekDay("Fri", "5", MovitWeekDayState.InProgress, progress = 0.5f),
+                MovitWeekDay("Sat", "6", MovitWeekDayState.ActiveRecovery),
+                MovitWeekDay("Sun", "7", MovitWeekDayState.Upcoming),
             ),
             legend = MovitWeekStripLegend(
                 done = movitText("ds_week_legend_done"),
                 today = movitText("ds_week_legend_today"),
-                missed = movitText("ds_week_legend_missed"),
+                upcoming = movitText("ds_week_legend_upcoming"),
                 rest = movitText("ds_week_legend_rest"),
             ),
         )

@@ -272,6 +272,27 @@ weekCalendar: {
 
 ---
 
+## 7.1 حالة التنفيذ (تم — 2026-06-15)
+
+نُفِّذت المراحل P0→P3 بالكامل، وأجزاء من P4:
+
+| الطبقة | التغيير | الحالة |
+|--------|---------|--------|
+| **Backend P0** | `weekCalendars` per-week/per-day في `trainMode` ([`mobile-home.controller.ts`](../../../backend/src/modules/mobile-sync/mobile-home.controller.ts)) — يُبنى من نفس البيانات المحمّلة (صفر استعلامات جديدة) | ✅ `tsc` نظيف (الأخطاء الـ3 المتبقّية سابقة في `progression-rules-admin`) |
+| **DTO** | `WeekCalendarDto/DayDto/WorkoutDto` + حقل في `TrainModeDto` ([`HomeDto.kt`](../../../android-poc/core/network/src/commonMain/kotlin/com/movit/core/network/dto/HomeDto.kt)) | ✅ Android + **iOS** أخضر |
+| **Models** | `TrainWeekDayState` صادق (حذف `Missed`) + `TrainWeekDayUi`/`TrainWeekDayDetailUi` | ✅ |
+| **Mapper** | `buildCurrentWeek`/`buildWeekOptions`/`mapWeekCalendar` تستهلك الـ backend مباشرة؛ fallback صادق بلا تخمين ([`TrainApiMapper.kt`](../../../android-poc/feature/train/src/commonMain/kotlin/com/movit/feature/train/TrainApiMapper.kt)) | ✅ + اختبار جديد |
+| **DS Component** | `MovitWeekStrip` تفاعلي: حالات جديدة، حلقة "اليوم"، شريط تقدّم، نقاط راحة/استشفاء، أحرف أيام، Legend كامل، contentDescription ([`MovitWeekStrip.kt`](../../../android-poc/core/designsystem/src/commonMain/kotlin/com/movit/designsystem/components/MovitWeekStrip.kt)) | ✅ Android + **iOS** أخضر |
+| **Interaction** | لمس اليوم → بطاقة تفاصيل inline + بدء/عرض ملخّص (events/VM/UiState/Screen) | ✅ |
+| **Strings** | EN map + EN/AR XML: أيام الأسبوع، تقدّم الأسبوع، حالات، Legend `upcoming` | ✅ |
+| **Tests** | `feature:train` host tests خضراء (شامل اختبار `weekCalendars` الجديد + fallback) | ✅ |
+
+**تحقّق iOS:** `:core:network` و `:core:designsystem` يُترجمان لـ `iosSimulatorArm64` بنجاح (شمل إصلاح `String.format` سابق في `MovitPoseAnnotationOverlay`). كود الـ mapper/models نقي Kotlin. الحاجز المتبقّي لترجمة `feature:train` على iOS هو كسر **سابق الوجود** في `core:training-engine` (استخدام `synchronized` غير المتاح على Native) — خارج نطاق هذا المكوّن (مُتابَع كمهمة منفصلة).
+
+**مُؤجَّل (مهام منفصلة):**
+- توحيد `CatchUpSuggestionDto` مع شكل الـ backend الحقيقي (يمسّ Home banner + Session + ٣ contract tests).
+- إصلاح كسر iOS في `core:training-engine` (`synchronized` → expect/actual lock).
+
 ## 8. مخاطر ومحاذير
 
 - **اشتقاق التاريخ:** البرنامج completion-based؛ ربط "يوم البرنامج → تاريخ" تقريبي (يعتمد `startDate` + `trainingWeekdays`). الحل الآمن: عرض نسبي ("اليوم/غداً/السبت") عند غياب تاريخ دقيق، لا تواريخ مضلِّلة.

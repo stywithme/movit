@@ -25,7 +25,12 @@ import {
   countEffectiveExerciseItems,
   effectivePlanService,
 } from '@/modules/effective-plan/effective-plan.service';
-import { resolveTrainingPositionMeta, countTrainingDaySlots, isProgramTrainingDaySlot } from '@/modules/active-plan/plan-position';
+import {
+  resolveTrainingPositionMeta,
+  countTrainingDaySlots,
+  isProgramTrainingDaySlot,
+  type TrainingPositionMeta,
+} from '@/modules/active-plan/plan-position';
 import {
   buildCatchUpSuggestionFromMeta,
   getLastPlannedWorkoutCompletedAt,
@@ -42,6 +47,43 @@ type TrainModeStatus =
   | 'program_complete'
   | 'reassessment_due';
 
+/** One cell in the Train week-calendar component. Per-day truth, no client-side guessing. */
+type WeekCalendarDayStatus =
+  | 'completed'
+  | 'today'
+  | 'in_progress'
+  | 'upcoming'
+  | 'rest'
+  | 'active_recovery';
+
+interface WeekCalendarWorkout {
+  plannedWorkoutId: string;
+  name: Record<string, string>;
+  exerciseCount: number;
+  estimatedMinutes: number | null;
+  allWorkoutsCount: number;
+  completedWorkoutsCount: number;
+}
+
+interface WeekCalendarDay {
+  dayNumber: number;
+  /** 0=Sun … 6=Sat — best-effort from trainingWeekdays; null when not derivable (e.g. rest slots). */
+  weekdayIndex: number | null;
+  dayType: string;
+  isRestDay: boolean;
+  status: WeekCalendarDayStatus;
+  isToday: boolean;
+  workout: WeekCalendarWorkout | null;
+}
+
+interface WeekCalendar {
+  weekNumber: number;
+  isCurrentWeek: boolean;
+  completedDays: number;
+  totalTrainingDays: number;
+  days: WeekCalendarDay[];
+}
+
 interface TrainModeData {
   status: TrainModeStatus;
   activeProgram: {
@@ -52,6 +94,8 @@ interface TrainModeData {
     totalWeeks: number;
     weekProgress: { completed: number; total: number };
   } | null;
+  /** Per-week, per-day calendar for the Train week strip. Empty when no active program. */
+  weekCalendars: WeekCalendar[];
   todayWorkout: {
     plannedWorkoutId: string;
     name: Record<string, string>;
@@ -294,6 +338,7 @@ async function buildTrainMode(
     return {
       status: 'no_assessment',
       activeProgram: null,
+      weekCalendars: [],
       todayWorkout: null,
       dayType: null,
       nextReassessment: null,
@@ -311,6 +356,7 @@ async function buildTrainMode(
     return {
       status: 'reassessment_due',
       activeProgram: null,
+      weekCalendars: [],
       todayWorkout: null,
       dayType: null,
       nextReassessment: reassessmentData,
@@ -324,6 +370,7 @@ async function buildTrainMode(
     return {
       status: 'no_plan',
       activeProgram: null,
+      weekCalendars: [],
       todayWorkout: null,
       dayType: null,
       nextReassessment: reassessmentData,
@@ -346,6 +393,8 @@ async function buildTrainMode(
   const targetWeek = position.targetWeekNumber;
   const targetDay = position.targetDayNumber;
 
+  const weekCalendars = buildWeekCalendars(program, meta, trainingWeekdays);
+
   const totalProgramTrainingDays = countTrainingDaySlots(program.weeks as any[]);
 
   // State 4: Program complete (exceeded all weeks)
@@ -363,6 +412,7 @@ async function buildTrainMode(
           total: totalProgramTrainingDays,
         },
       },
+      weekCalendars,
       todayWorkout: null,
       dayType: 'completed',
       nextReassessment: reassessmentData,
@@ -397,6 +447,7 @@ async function buildTrainMode(
     return {
       status: 'rest_day',
       activeProgram,
+      weekCalendars,
       todayWorkout: null,
       dayType: isUserOffDay ? 'off_schedule' : day?.dayType ?? 'rest',
       nextReassessment: reassessmentData,
@@ -417,6 +468,7 @@ async function buildTrainMode(
     return {
       status: 'rest_day',
       activeProgram,
+      weekCalendars,
       todayWorkout: null,
       dayType: 'day_complete',
       nextReassessment: reassessmentData,
@@ -444,6 +496,7 @@ async function buildTrainMode(
   return {
     status: 'active',
     activeProgram,
+    weekCalendars,
     todayWorkout: {
       plannedWorkoutId: nextPlannedWorkout.id,
       name: nextPlannedWorkout.name as Record<string, string>,
@@ -459,6 +512,130 @@ async function buildTrainMode(
     isTrainingDay: position.isTrainingDay ?? true,
     catchUpSuggestion,
   };
+}
+
+// -- Week Calendar Builder --------------------------------------------------
+
+/**
+ * Builds the per-week, per-day calendar for the Train week strip directly from
+ * the already-loaded program template + progress reports. No extra queries.
+ *
+ * Status is derived from the real completion-based position (not a guessed grid):
+ *   - rest / active_recovery slots are first-class (never mislabelled as missed).
+ *   - the single current slot is `today` (or `in_progress` when partially done).
+ *   - earlier training days are `completed`, later ones `upcoming`.
+ *   - there is intentionally NO "missed" state — the program waits for the user.
+ */
+function buildWeekCalendars(
+  program: any,
+  meta: TrainingPositionMeta<any, any>,
+  trainingWeekdays: number[] | null,
+): WeekCalendar[] {
+  const position = meta.position;
+  const targetWeek = position.targetWeekNumber;
+  const targetDay = position.targetDayNumber;
+  const isComplete = position.isProgramComplete;
+
+  const orderIndex = new Map<string, number>();
+  meta.orderedTrainingDays.forEach((ref: any, i: number) => {
+    orderIndex.set(`${ref.weekNumber}:${ref.dayNumber}`, i);
+  });
+  const targetOrder = orderIndex.get(`${targetWeek}:${targetDay}`) ?? -1;
+
+  const weeks = [...((program.weeks as any[]) ?? [])].sort(
+    (a, b) => a.weekNumber - b.weekNumber,
+  );
+
+  return weeks.map((week: any): WeekCalendar => {
+    const days = [...((week.days as any[]) ?? [])].sort((a, b) => a.dayNumber - b.dayNumber);
+    let trainingDayCounter = 0;
+    let completedDays = 0;
+    let totalTrainingDays = 0;
+
+    const calendarDays: WeekCalendarDay[] = days.map((day: any): WeekCalendarDay => {
+      if (!isProgramTrainingDaySlot(day)) {
+        const restStatus: WeekCalendarDayStatus =
+          day.dayType === 'active_recovery' ? 'active_recovery' : 'rest';
+        return {
+          dayNumber: day.dayNumber,
+          weekdayIndex: null,
+          dayType: day.dayType ?? 'rest',
+          isRestDay: true,
+          status: restStatus,
+          isToday: false,
+          workout: null,
+        };
+      }
+
+      totalTrainingDays++;
+      const weekdayIndex =
+        trainingWeekdays && trainingDayCounter < trainingWeekdays.length
+          ? trainingWeekdays[trainingDayCounter]
+          : null;
+      trainingDayCounter++;
+
+      const plannedWorkouts = [...((day.plannedWorkouts as any[]) ?? [])].sort(
+        (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
+      );
+      const allWorkoutsCount = plannedWorkouts.length;
+      const completedWorkoutsCount = plannedWorkouts.filter(
+        (pw: any) => (pw.reports?.length ?? 0) > 0,
+      ).length;
+      const dayCompleted = allWorkoutsCount > 0 && completedWorkoutsCount === allWorkoutsCount;
+      if (dayCompleted) completedDays++;
+
+      const exerciseCount = plannedWorkouts.reduce(
+        (sum: number, pw: any) => sum + ((pw.items as any[])?.length ?? 0),
+        0,
+      );
+      const estimatedMinutes = plannedWorkouts.reduce(
+        (sum: number, pw: any) => sum + (pw.estimatedDurationMin ?? 0),
+        0,
+      );
+      const firstWorkout = plannedWorkouts[0];
+
+      const isToday =
+        !isComplete && week.weekNumber === targetWeek && day.dayNumber === targetDay;
+
+      let status: WeekCalendarDayStatus;
+      if (dayCompleted) {
+        status = 'completed';
+      } else if (isToday) {
+        status = completedWorkoutsCount > 0 ? 'in_progress' : 'today';
+      } else {
+        const ord =
+          orderIndex.get(`${week.weekNumber}:${day.dayNumber}`) ?? Number.MAX_SAFE_INTEGER;
+        status = targetOrder >= 0 && ord < targetOrder ? 'completed' : 'upcoming';
+      }
+
+      return {
+        dayNumber: day.dayNumber,
+        weekdayIndex,
+        dayType: day.dayType ?? 'training',
+        isRestDay: false,
+        status,
+        isToday,
+        workout: firstWorkout
+          ? {
+              plannedWorkoutId: firstWorkout.id,
+              name: (firstWorkout.name ?? {}) as Record<string, string>,
+              exerciseCount,
+              estimatedMinutes: estimatedMinutes > 0 ? estimatedMinutes : null,
+              allWorkoutsCount,
+              completedWorkoutsCount,
+            }
+          : null,
+      };
+    });
+
+    return {
+      weekNumber: week.weekNumber,
+      isCurrentWeek: week.weekNumber === targetWeek,
+      completedDays,
+      totalTrainingDays,
+      days: calendarDays,
+    };
+  });
 }
 
 // -- Level Progress Builder -------------------------------------------------

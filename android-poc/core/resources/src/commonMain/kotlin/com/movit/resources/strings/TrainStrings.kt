@@ -71,9 +71,20 @@ data class TrainStrings(
     val focusProgress: String,
     val complete: String,
     val dash: String,
+    val statusToday: String,
+    val statusUpcoming: String,
+    val statusInProgress: String,
+    val statusCompleted: String,
+    val statusRest: String,
 ) {
     suspend fun weekDayPosition(week: Int, total: Int, day: Int): String =
         localizedString(language, "train_week_day_position", week, total, day)
+
+    suspend fun weekProgressLabel(completed: Int, total: Int): String =
+        localizedString(language, "train_week_progress", completed, total)
+
+    suspend fun weekdayShort(index: Int): String =
+        localizedString(language, "train_weekday_${index.coerceIn(0, 6)}")
 
     suspend fun workoutsThisWeek(count: Int): String =
         localizedString(language, "train_workouts_this_week", count)
@@ -181,6 +192,11 @@ data class TrainStrings(
             focusProgress = localizedString(language, "train_focus_progress"),
             complete = localizedString(language, "home_complete"),
             dash = localizedString(language, "home_dash"),
+            statusToday = localizedString(language, "train_status_today"),
+            statusUpcoming = localizedString(language, "train_status_upcoming"),
+            statusInProgress = localizedString(language, "train_status_in_progress"),
+            statusCompleted = localizedString(language, "train_status_completed"),
+            statusRest = localizedString(language, "train_status_rest"),
         )
     }
 }

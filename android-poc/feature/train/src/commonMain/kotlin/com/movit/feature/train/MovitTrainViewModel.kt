@@ -66,6 +66,7 @@ class MovitTrainViewModel(
                 dashboard = dashboard,
                 errorMessage = null,
                 selectedWeekIndex = weekIndex,
+                selectedDayIndex = null,
             )
         }
     }
@@ -76,6 +77,8 @@ class MovitTrainViewModel(
             MovitTrainEvent.RetryClicked -> Unit
             MovitTrainEvent.PreviousWeekClicked -> navigateWeek(-1)
             MovitTrainEvent.NextWeekClicked -> navigateWeek(+1)
+            is MovitTrainEvent.DayClicked -> toggleDaySelection(event.index)
+            MovitTrainEvent.DayActionClicked -> handleDayAction()
             MovitTrainEvent.StartWorkoutClicked -> {
                 val launchTarget = _state.value.dashboard
                     ?.today
@@ -146,7 +149,44 @@ class MovitTrainViewModel(
         if (weeks.size <= 1) return
         val nextIndex = (_state.value.selectedWeekIndex + delta).coerceIn(0, weeks.lastIndex)
         if (nextIndex != _state.value.selectedWeekIndex) {
-            _state.update { it.copy(selectedWeekIndex = nextIndex) }
+            _state.update { it.copy(selectedWeekIndex = nextIndex, selectedDayIndex = null) }
+        }
+    }
+
+    private fun toggleDaySelection(index: Int) {
+        _state.update {
+            val next = if (it.selectedDayIndex == index) null else index
+            it.copy(selectedDayIndex = next)
+        }
+    }
+
+    private fun selectedDayDetail(): TrainWeekDayDetailUi? {
+        val state = _state.value
+        val dashboard = state.dashboard ?: return null
+        val weeks = dashboard.weekOptions.ifEmpty { listOf(dashboard.week) }
+        val week = weeks.getOrElse(state.selectedWeekIndex) { dashboard.week }
+        val dayIndex = state.selectedDayIndex ?: return null
+        return week.days.getOrNull(dayIndex)?.detail
+    }
+
+    private fun handleDayAction() {
+        val detail = selectedDayDetail() ?: return
+        val launchTarget = detail.launchTarget
+        when {
+            launchTarget != null -> _effects.tryEmit(MovitTrainEffect.OpenProgramWorkout(launchTarget))
+            detail.isCompleted -> {
+                val program = _state.value.dashboard?.program
+                if (program != null && program.id.isNotBlank()) {
+                    _effects.tryEmit(
+                        MovitTrainEffect.OpenWeeklyReport(
+                            programId = program.id,
+                            weekNumber = program.weekNumber,
+                        ),
+                    )
+                } else {
+                    _effects.tryEmit(MovitTrainEffect.OpenReports)
+                }
+            }
         }
     }
 

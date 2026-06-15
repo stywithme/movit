@@ -8,6 +8,8 @@ import com.movit.core.network.dto.HomeStatsDto
 import com.movit.core.network.dto.TrainActiveProgramDto
 import com.movit.core.network.dto.TrainModeDto
 import com.movit.core.network.dto.TrainTodayWorkoutDto
+import com.movit.core.network.dto.WeekCalendarDayDto
+import com.movit.core.network.dto.WeekCalendarDto
 import kotlin.math.roundToInt
 
 object TrainApiMapper {
@@ -35,8 +37,8 @@ object TrainApiMapper {
             subtitle = subtitleFor(status, activeProgram, trainMode, language, strings),
             program = buildProgramUi(activeProgram, data.stats, language, strings),
             today = buildTodayWorkout(status, trainMode, activeProgram, todayWorkout, language, strings),
-            week = buildWeekPreview(activeProgram, status, strings),
-            weekOptions = buildWeekOptions(activeProgram, status, strings),
+            week = buildCurrentWeek(trainMode, activeProgram, status, language, strings),
+            weekOptions = buildWeekOptions(trainMode, activeProgram, status, language, strings),
             readiness = buildReadiness(data, status, language, strings),
             report = buildReportSummary(data, language, strings),
             quickActions = quickActions(strings),
@@ -224,44 +226,35 @@ object TrainApiMapper {
         )
     }
 
-    private suspend fun buildWeekPreview(
+    /**
+     * Current week strip. Consumes the backend [TrainModeDto.weekCalendars] directly
+     * (per-day truth, zero client-side guessing). Falls back to an honest minimal
+     * derivation only when the calendar payload is absent (old cache / hydrator path).
+     */
+    private suspend fun buildCurrentWeek(
+        trainMode: TrainModeDto?,
         activeProgram: TrainActiveProgramDto?,
         status: TrainDashboardStatus,
+        language: String,
         strings: TrainStrings,
     ): TrainWeekPreviewUi {
         if (activeProgram == null) {
             return TrainWeekPreviewUi(title = strings.thisWeek, days = emptyList())
         }
-
-        val weekProgress = activeProgram.weekProgress
-        val completed = weekProgress.completed.coerceIn(0, 7)
-        val todayDay = activeProgram.dayNumber.coerceIn(1, 7)
-
-        val days = (1..7).map { dayNumber ->
-            val state = when {
-                status == TrainDashboardStatus.RestDay && dayNumber == todayDay -> TrainWeekDayState.Rest
-                dayNumber < todayDay && dayNumber <= completed -> TrainWeekDayState.Done
-                dayNumber == todayDay && status == TrainDashboardStatus.CompletedToday -> TrainWeekDayState.Done
-                dayNumber == todayDay -> TrainWeekDayState.Today
-                dayNumber < todayDay -> TrainWeekDayState.Missed
-                else -> TrainWeekDayState.Planned
-            }
-            TrainWeekDayUi(
-                label = strings.dayShort(dayNumber),
-                dayNumber = dayNumber.toString(),
-                state = state,
-            )
+        val calendars = trainMode?.weekCalendars.orEmpty()
+        val current = calendars.firstOrNull { it.isCurrentWeek }
+            ?: calendars.firstOrNull { it.weekNumber == activeProgram.weekNumber }
+        if (current != null) {
+            return mapWeekCalendar(current, activeProgram, language, strings)
         }
-
-        return TrainWeekPreviewUi(
-            title = strings.weekTitle(activeProgram.weekNumber),
-            days = days,
-        )
+        return fallbackWeek(activeProgram, status, strings)
     }
 
     private suspend fun buildWeekOptions(
+        trainMode: TrainModeDto?,
         activeProgram: TrainActiveProgramDto?,
         status: TrainDashboardStatus,
+        language: String,
         strings: TrainStrings,
     ): List<TrainWeekPreviewUi> {
         if (
@@ -272,19 +265,168 @@ object TrainApiMapper {
         ) {
             return emptyList()
         }
+        val calendars = trainMode?.weekCalendars.orEmpty()
+        if (calendars.isNotEmpty()) {
+            return calendars
+                .sortedBy { it.weekNumber }
+                .map { mapWeekCalendar(it, activeProgram, language, strings) }
+        }
+        // Fallback: no per-day payload — show current week truthfully, others as upcoming.
         val totalWeeks = activeProgram.totalWeeks.coerceAtLeast(1)
         return (1..totalWeeks).map { weekNumber ->
-            val preview = if (weekNumber == activeProgram.weekNumber) {
-                buildWeekPreview(activeProgram, status, strings)
+            if (weekNumber == activeProgram.weekNumber) {
+                fallbackWeek(activeProgram, status, strings)
             } else {
-                buildWeekPreview(
+                fallbackWeek(
                     activeProgram = activeProgram.copy(weekNumber = weekNumber, dayNumber = 1),
                     status = TrainDashboardStatus.ActivePlan,
                     strings = strings,
-                )
+                ).copy(weekNumber = weekNumber, isCurrentWeek = false)
             }
-            preview.copy(title = strings.weekTitle(weekNumber))
         }
+    }
+
+    private suspend fun mapWeekCalendar(
+        calendar: WeekCalendarDto,
+        activeProgram: TrainActiveProgramDto,
+        language: String,
+        strings: TrainStrings,
+    ): TrainWeekPreviewUi {
+        val days = calendar.days.map { day ->
+            mapCalendarDay(day, calendar.weekNumber, activeProgram, language, strings)
+        }
+        return TrainWeekPreviewUi(
+            title = strings.weekTitle(calendar.weekNumber),
+            days = days,
+            weekNumber = calendar.weekNumber,
+            isCurrentWeek = calendar.isCurrentWeek,
+            subtitle = strings.weekProgressLabel(calendar.completedDays, calendar.totalTrainingDays),
+        )
+    }
+
+    private suspend fun mapCalendarDay(
+        day: WeekCalendarDayDto,
+        weekNumber: Int,
+        activeProgram: TrainActiveProgramDto,
+        language: String,
+        strings: TrainStrings,
+    ): TrainWeekDayUi {
+        val state = when (day.status) {
+            "completed" -> TrainWeekDayState.Completed
+            "today" -> TrainWeekDayState.Today
+            "in_progress" -> TrainWeekDayState.InProgress
+            "rest" -> TrainWeekDayState.Rest
+            "active_recovery" -> TrainWeekDayState.ActiveRecovery
+            else -> TrainWeekDayState.Upcoming
+        }
+        val label = day.weekdayIndex?.let { strings.weekdayShort(it) } ?: strings.dayShort(day.dayNumber)
+        val workout = day.workout
+        val progress = if (state == TrainWeekDayState.InProgress && workout != null && workout.allWorkoutsCount > 0) {
+            (workout.completedWorkoutsCount.toFloat() / workout.allWorkoutsCount).coerceIn(0f, 1f)
+        } else {
+            null
+        }
+        return TrainWeekDayUi(
+            label = label,
+            dayNumber = day.dayNumber.toString(),
+            state = state,
+            isToday = day.isToday,
+            progress = progress,
+            detail = buildDayDetail(day, state, weekNumber, activeProgram, language, strings),
+        )
+    }
+
+    private suspend fun buildDayDetail(
+        day: WeekCalendarDayDto,
+        state: TrainWeekDayState,
+        weekNumber: Int,
+        activeProgram: TrainActiveProgramDto,
+        language: String,
+        strings: TrainStrings,
+    ): TrainWeekDayDetailUi {
+        if (state == TrainWeekDayState.Rest || state == TrainWeekDayState.ActiveRecovery) {
+            val isActive = state == TrainWeekDayState.ActiveRecovery
+            return TrainWeekDayDetailUi(
+                title = if (isActive) strings.activeRecovery else strings.recoveryDay,
+                infoLabel = if (isActive) strings.recovery else strings.noWorkout,
+                statusLabel = strings.statusRest,
+                isWorkout = false,
+            )
+        }
+
+        val workout = day.workout
+        val title = workout?.name?.localized(language)?.ifBlank { strings.todaysWorkout }
+            ?: strings.todaysWorkout
+        val info = buildString {
+            val exercises = workout?.exerciseCount ?: 0
+            append(strings.exercisesCount(exercises))
+            workout?.estimatedMinutes?.takeIf { it > 0 }?.let { append(" · ${strings.minEst(it)}") }
+        }
+        val isStartable = state == TrainWeekDayState.Today || state == TrainWeekDayState.InProgress
+        val launchTarget = if (isStartable && workout != null && workout.plannedWorkoutId.isNotBlank()) {
+            TrainWorkoutLaunchUi(
+                programSlug = activeProgram.id,
+                programId = activeProgram.id,
+                weekNumber = weekNumber,
+                dayNumber = day.dayNumber,
+                plannedWorkoutId = workout.plannedWorkoutId,
+            )
+        } else {
+            null
+        }
+        val statusLabel = when (state) {
+            TrainWeekDayState.Completed -> strings.statusCompleted
+            TrainWeekDayState.Today -> strings.statusToday
+            TrainWeekDayState.InProgress -> strings.statusInProgress
+            else -> strings.statusUpcoming
+        }
+        val actionLabel = when {
+            isStartable -> strings.startSession
+            state == TrainWeekDayState.Completed -> strings.viewSummary
+            else -> null
+        }
+        return TrainWeekDayDetailUi(
+            title = title,
+            infoLabel = info,
+            statusLabel = statusLabel,
+            isWorkout = true,
+            isCompleted = state == TrainWeekDayState.Completed,
+            actionLabel = actionLabel,
+            launchTarget = launchTarget,
+        )
+    }
+
+    /** Honest minimal week when the backend calendar payload is unavailable. */
+    private suspend fun fallbackWeek(
+        activeProgram: TrainActiveProgramDto,
+        status: TrainDashboardStatus,
+        strings: TrainStrings,
+    ): TrainWeekPreviewUi {
+        val total = activeProgram.weekProgress.total.coerceIn(1, 7)
+        val completed = activeProgram.weekProgress.completed.coerceIn(0, total)
+        val isCompletedToday = status == TrainDashboardStatus.CompletedToday
+        val todayIndex = (completed + 1).coerceAtMost(total)
+        val days = (1..total).map { dayNumber ->
+            val state = when {
+                dayNumber <= completed -> TrainWeekDayState.Completed
+                dayNumber == todayIndex && isCompletedToday -> TrainWeekDayState.Completed
+                dayNumber == todayIndex && status != TrainDashboardStatus.RestDay -> TrainWeekDayState.Today
+                else -> TrainWeekDayState.Upcoming
+            }
+            TrainWeekDayUi(
+                label = strings.dayShort(dayNumber),
+                dayNumber = dayNumber.toString(),
+                state = state,
+                isToday = dayNumber == todayIndex && status != TrainDashboardStatus.RestDay,
+            )
+        }
+        return TrainWeekPreviewUi(
+            title = strings.weekTitle(activeProgram.weekNumber),
+            days = days,
+            weekNumber = activeProgram.weekNumber,
+            isCurrentWeek = true,
+            subtitle = strings.weekProgressLabel(completed, total),
+        )
     }
 
     private fun buildReadiness(

@@ -11,6 +11,8 @@ sealed interface MovitTrainEvent {
     data object RetryClicked : MovitTrainEvent
     data object PreviousWeekClicked : MovitTrainEvent
     data object NextWeekClicked : MovitTrainEvent
+    data class DayClicked(val index: Int) : MovitTrainEvent
+    data object DayActionClicked : MovitTrainEvent
     data class StartProgramClicked(val programId: String) : MovitTrainEvent
     data class QuickActionClicked(val actionId: String) : MovitTrainEvent
 }

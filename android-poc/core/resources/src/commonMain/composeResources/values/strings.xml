@@ -28,6 +28,7 @@
     <string name="ds_week_legend_done">Done</string>
     <string name="ds_week_legend_today">Today</string>
     <string name="ds_week_legend_missed">Missed</string>
+    <string name="ds_week_legend_upcoming">Upcoming</string>
     <string name="ds_week_legend_rest">Rest</string>
 
     <!-- Home -->
@@ -164,6 +165,19 @@
     <string name="train_this_week">This week</string>
     <string name="train_week_title">Week %1$d</string>
     <string name="train_day_short">D%1$d</string>
+    <string name="train_week_progress">%1$d of %2$d workouts</string>
+    <string name="train_weekday_0">Sun</string>
+    <string name="train_weekday_1">Mon</string>
+    <string name="train_weekday_2">Tue</string>
+    <string name="train_weekday_3">Wed</string>
+    <string name="train_weekday_4">Thu</string>
+    <string name="train_weekday_5">Fri</string>
+    <string name="train_weekday_6">Sat</string>
+    <string name="train_status_today">Today</string>
+    <string name="train_status_upcoming">Upcoming</string>
+    <string name="train_status_in_progress">In progress</string>
+    <string name="train_status_completed">Completed</string>
+    <string name="train_status_rest">Rest day</string>
     <string name="train_readiness">Readiness</string>
     <string name="train_latest_report">Latest report</string>
     <string name="train_last_workout">Last completed workout</string>

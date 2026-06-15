@@ -41,6 +41,40 @@ data class TrainModeDto(
     val nextReassessment: NextReassessmentDto? = null,
     val isTrainingDay: Boolean? = null,
     val catchUpSuggestion: CatchUpSuggestionDto? = null,
+    val weekCalendars: List<WeekCalendarDto> = emptyList(),
+)
+
+/** Per-week, per-day truth for the Train week-calendar component (built server-side). */
+@Serializable
+data class WeekCalendarDto(
+    val weekNumber: Int = 1,
+    val isCurrentWeek: Boolean = false,
+    val completedDays: Int = 0,
+    val totalTrainingDays: Int = 0,
+    val days: List<WeekCalendarDayDto> = emptyList(),
+)
+
+@Serializable
+data class WeekCalendarDayDto(
+    val dayNumber: Int = 0,
+    /** 0=Sun … 6=Sat — best-effort weekday; null when not derivable. */
+    val weekdayIndex: Int? = null,
+    val dayType: String = "training",
+    val isRestDay: Boolean = false,
+    /** completed | today | in_progress | upcoming | rest | active_recovery */
+    val status: String = "upcoming",
+    val isToday: Boolean = false,
+    val workout: WeekCalendarWorkoutDto? = null,
+)
+
+@Serializable
+data class WeekCalendarWorkoutDto(
+    val plannedWorkoutId: String = "",
+    val name: Map<String, String> = emptyMap(),
+    val exerciseCount: Int = 0,
+    val estimatedMinutes: Int? = null,
+    val allWorkoutsCount: Int = 1,
+    val completedWorkoutsCount: Int = 0,
 )
 
 @Serializable

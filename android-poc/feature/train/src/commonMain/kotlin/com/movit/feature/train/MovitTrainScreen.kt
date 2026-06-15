@@ -131,10 +131,13 @@ private fun TrainDashboardContent(
     if (selectedWeek != null && shouldShowWeek(dashboard.status)) {
         TrainWeekPreview(
             week = selectedWeek,
+            selectedDayIndex = state.selectedDayIndex,
             canGoPrevious = state.selectedWeekIndex > 0,
             canGoNext = state.selectedWeekIndex < weekOptions.lastIndex,
             onPreviousWeek = { onEvent(MovitTrainEvent.PreviousWeekClicked) },
             onNextWeek = { onEvent(MovitTrainEvent.NextWeekClicked) },
+            onDayClick = { onEvent(MovitTrainEvent.DayClicked(it)) },
+            onDayAction = { onEvent(MovitTrainEvent.DayActionClicked) },
         )
     }
 

@@ -3,41 +3,57 @@ package com.movit.feature.train
 object MovitTrainPreviewData {
 
     val week1 = TrainWeekPreviewUi(
-        title = "June · Week 1",
+        title = "Week 1",
+        weekNumber = 1,
+        subtitle = "4 of 4 workouts",
         days = listOf(
-            TrainWeekDayUi("Mon", "1", TrainWeekDayState.Done),
-            TrainWeekDayUi("Tue", "2", TrainWeekDayState.Done),
-            TrainWeekDayUi("Wed", "3", TrainWeekDayState.Done),
-            TrainWeekDayUi("Thu", "4", TrainWeekDayState.Done),
-            TrainWeekDayUi("Fri", "5", TrainWeekDayState.Done),
+            TrainWeekDayUi("Mon", "1", TrainWeekDayState.Completed),
+            TrainWeekDayUi("Tue", "2", TrainWeekDayState.Completed),
+            TrainWeekDayUi("Wed", "3", TrainWeekDayState.Rest),
+            TrainWeekDayUi("Thu", "4", TrainWeekDayState.Completed),
+            TrainWeekDayUi("Fri", "5", TrainWeekDayState.Completed),
             TrainWeekDayUi("Sat", "6", TrainWeekDayState.Rest),
-            TrainWeekDayUi("Sun", "7", TrainWeekDayState.Done),
+            TrainWeekDayUi("Sun", "7", TrainWeekDayState.Rest),
         ),
     )
 
     val week = TrainWeekPreviewUi(
-        title = "June · Week 2",
+        title = "Week 2",
+        weekNumber = 2,
+        isCurrentWeek = true,
+        subtitle = "2 of 4 workouts",
         days = listOf(
-            TrainWeekDayUi("Mon", "1", TrainWeekDayState.Done),
-            TrainWeekDayUi("Tue", "2", TrainWeekDayState.Done),
-            TrainWeekDayUi("Wed", "3", TrainWeekDayState.Missed),
-            TrainWeekDayUi("Thu", "4", TrainWeekDayState.Today),
-            TrainWeekDayUi("Fri", "5", TrainWeekDayState.Planned),
+            TrainWeekDayUi("Mon", "1", TrainWeekDayState.Completed),
+            TrainWeekDayUi("Tue", "2", TrainWeekDayState.Completed),
+            TrainWeekDayUi("Wed", "3", TrainWeekDayState.Rest),
+            TrainWeekDayUi(
+                "Thu", "4", TrainWeekDayState.Today, isToday = true,
+                detail = TrainWeekDayDetailUi(
+                    title = "Lower Body Strength",
+                    infoLabel = "5 exercises · ~22 min",
+                    statusLabel = "Today",
+                    isWorkout = true,
+                    actionLabel = "Start session",
+                ),
+            ),
+            TrainWeekDayUi("Fri", "5", TrainWeekDayState.Upcoming),
             TrainWeekDayUi("Sat", "6", TrainWeekDayState.Rest),
-            TrainWeekDayUi("Sun", "7", TrainWeekDayState.Planned),
+            TrainWeekDayUi("Sun", "7", TrainWeekDayState.Upcoming),
         ),
     )
 
     val week3 = TrainWeekPreviewUi(
-        title = "June · Week 3",
+        title = "Week 3",
+        weekNumber = 3,
+        subtitle = "0 of 4 workouts",
         days = listOf(
-            TrainWeekDayUi("Mon", "1", TrainWeekDayState.Planned),
-            TrainWeekDayUi("Tue", "2", TrainWeekDayState.Planned),
-            TrainWeekDayUi("Wed", "3", TrainWeekDayState.Planned),
-            TrainWeekDayUi("Thu", "4", TrainWeekDayState.Planned),
-            TrainWeekDayUi("Fri", "5", TrainWeekDayState.Planned),
+            TrainWeekDayUi("Mon", "1", TrainWeekDayState.Upcoming),
+            TrainWeekDayUi("Tue", "2", TrainWeekDayState.Upcoming),
+            TrainWeekDayUi("Wed", "3", TrainWeekDayState.Rest),
+            TrainWeekDayUi("Thu", "4", TrainWeekDayState.Upcoming),
+            TrainWeekDayUi("Fri", "5", TrainWeekDayState.Upcoming),
             TrainWeekDayUi("Sat", "6", TrainWeekDayState.Rest),
-            TrainWeekDayUi("Sun", "7", TrainWeekDayState.Planned),
+            TrainWeekDayUi("Sun", "7", TrainWeekDayState.Upcoming),
         ),
     )
 

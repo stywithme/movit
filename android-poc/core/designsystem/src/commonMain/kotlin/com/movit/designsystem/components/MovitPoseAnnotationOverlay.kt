@@ -16,6 +16,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.hypot
+import kotlin.math.roundToInt
 
 private val accentColors = listOf(
     Color(0xFF64B5F6),
@@ -118,7 +119,7 @@ private fun DrawScope.drawAngleHighlight(
 
     highlight.angleDegrees?.let { angle ->
         val shortCode = highlight.jointCode.replace('_', ' ').take(12)
-        val label = "$shortCode ${"%.0f".format(angle)}°"
+        val label = "$shortCode ${angle.roundToInt()}°"
         val textStyle = TextStyle(color = accent, fontSize = 14.sp)
         val layout = textMeasurer.measure(label, textStyle)
         val padH = 8.dp.toPx()
