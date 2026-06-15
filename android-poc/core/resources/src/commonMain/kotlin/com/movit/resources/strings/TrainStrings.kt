@@ -75,6 +75,7 @@ data class TrainStrings(
     val statusUpcoming: String,
     val statusInProgress: String,
     val statusCompleted: String,
+    val statusMissed: String,
     val statusRest: String,
 ) {
     suspend fun weekDayPosition(week: Int, total: Int, day: Int): String =
@@ -196,6 +197,7 @@ data class TrainStrings(
             statusUpcoming = localizedString(language, "train_status_upcoming"),
             statusInProgress = localizedString(language, "train_status_in_progress"),
             statusCompleted = localizedString(language, "train_status_completed"),
+            statusMissed = localizedString(language, "ds_week_legend_missed"),
             statusRest = localizedString(language, "train_status_rest"),
         )
     }

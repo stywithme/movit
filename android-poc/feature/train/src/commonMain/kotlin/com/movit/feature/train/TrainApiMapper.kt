@@ -315,6 +315,7 @@ object TrainApiMapper {
             "completed" -> TrainWeekDayState.Completed
             "today" -> TrainWeekDayState.Today
             "in_progress" -> TrainWeekDayState.InProgress
+            "missed", "needs_attention", "needs_catch_up" -> TrainWeekDayState.Missed
             "rest" -> TrainWeekDayState.Rest
             "active_recovery" -> TrainWeekDayState.ActiveRecovery
             else -> TrainWeekDayState.Upcoming
@@ -378,6 +379,7 @@ object TrainApiMapper {
             TrainWeekDayState.Completed -> strings.statusCompleted
             TrainWeekDayState.Today -> strings.statusToday
             TrainWeekDayState.InProgress -> strings.statusInProgress
+            TrainWeekDayState.Missed -> strings.statusMissed
             else -> strings.statusUpcoming
         }
         val actionLabel = when {

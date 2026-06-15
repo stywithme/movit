@@ -56,6 +56,7 @@ fun TrainWeekPreview(
             legend = MovitWeekStripLegend(
                 done = movitText("ds_week_legend_done"),
                 today = movitText("ds_week_legend_today"),
+                missed = movitText("ds_week_legend_missed"),
                 upcoming = movitText("ds_week_legend_upcoming"),
                 rest = movitText("ds_week_legend_rest"),
             ),
@@ -121,6 +122,7 @@ private fun TrainWeekDayUi.toMovitWeekDay(): MovitWeekDay = MovitWeekDay(
         TrainWeekDayState.Today -> MovitWeekDayState.Today
         TrainWeekDayState.InProgress -> MovitWeekDayState.InProgress
         TrainWeekDayState.Upcoming -> MovitWeekDayState.Upcoming
+        TrainWeekDayState.Missed -> MovitWeekDayState.Missed
         TrainWeekDayState.Rest -> MovitWeekDayState.Rest
         TrainWeekDayState.ActiveRecovery -> MovitWeekDayState.ActiveRecovery
     },

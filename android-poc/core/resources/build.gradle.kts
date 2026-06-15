@@ -63,6 +63,6 @@ val generateMovitEnglishStrings by tasks.registering {
     }
 }
 
-tasks.matching { it.name.startsWith("compile") && it.name.contains("Kotlin") }.configureEach {
+tasks.matching { it.name.startsWith("compile") }.configureEach {
     dependsOn(generateMovitEnglishStrings)
 }

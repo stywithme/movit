@@ -53,6 +53,8 @@ type WeekCalendarDayStatus =
   | 'today'
   | 'in_progress'
   | 'upcoming'
+  | 'missed'
+  | 'needs_attention'
   | 'rest'
   | 'active_recovery';
 
@@ -67,7 +69,7 @@ interface WeekCalendarWorkout {
 
 interface WeekCalendarDay {
   dayNumber: number;
-  /** 0=Sun … 6=Sat — best-effort from trainingWeekdays; null when not derivable (e.g. rest slots). */
+  /** 0=Sun through 6=Sat. Counts every program calendar slot, including rest slots. */
   weekdayIndex: number | null;
   dayType: string;
   isRestDay: boolean;
@@ -382,7 +384,9 @@ async function buildTrainMode(
   const program = activeSlot.userProgram.program;
   const progressEntries: any[] = activeSlot.userProgram.progress ?? [];
   const lastAt = await getLastPlannedWorkoutCompletedAt(userId, program.id);
+  const now = new Date();
   const meta = resolveTrainingPositionMeta(program.weeks as any[], progressEntries, {
+    now,
     lastWorkoutCompletedAt: lastAt,
     trainingWeekdays,
     durationWeeks: program.durationWeeks,
@@ -393,7 +397,7 @@ async function buildTrainMode(
   const targetWeek = position.targetWeekNumber;
   const targetDay = position.targetDayNumber;
 
-  const weekCalendars = buildWeekCalendars(program, meta, trainingWeekdays);
+  const weekCalendars = buildWeekCalendars(program, meta, now);
 
   const totalProgramTrainingDays = countTrainingDaySlots(program.weeks as any[]);
 
@@ -516,25 +520,52 @@ async function buildTrainMode(
 
 // -- Week Calendar Builder --------------------------------------------------
 
+function wrapWeekdayIndex(value: number): number {
+  const result = value % 7;
+  return result < 0 ? result + 7 : result;
+}
+
 /**
  * Builds the per-week, per-day calendar for the Train week strip directly from
  * the already-loaded program template + progress reports. No extra queries.
  *
  * Status is derived from the real completion-based position (not a guessed grid):
  *   - rest / active_recovery slots are first-class (never mislabelled as missed).
+ *   - weekday labels advance through every template day, including rest days.
  *   - the single current slot is `today` (or `in_progress` when partially done).
  *   - earlier training days are `completed`, later ones `upcoming`.
- *   - there is intentionally NO "missed" state — the program waits for the user.
+ *   - earlier incomplete training days become Coral attention states.
  */
 function buildWeekCalendars(
   program: any,
   meta: TrainingPositionMeta<any, any>,
-  trainingWeekdays: number[] | null,
+  now: Date,
 ): WeekCalendar[] {
   const position = meta.position;
   const targetWeek = position.targetWeekNumber;
   const targetDay = position.targetDayNumber;
   const isComplete = position.isProgramComplete;
+
+  const weeks = [...((program.weeks as any[]) ?? [])].sort(
+    (a, b) => a.weekNumber - b.weekNumber,
+  );
+
+  const programDayIndex = new Map<string, number>();
+  weeks.forEach((week: any) => {
+    [...((week.days as any[]) ?? [])]
+      .sort((a, b) => a.dayNumber - b.dayNumber)
+      .forEach((day: any) => {
+        programDayIndex.set(`${week.weekNumber}:${day.dayNumber}`, programDayIndex.size);
+      });
+  });
+  const targetProgramDayIndex = programDayIndex.get(`${targetWeek}:${targetDay}`) ?? 0;
+  const todayWeekdayIndex = now.getUTCDay();
+
+  const weekdayIndexFor = (weekNumber: number, dayNumber: number): number | null => {
+    const dayIndex = programDayIndex.get(`${weekNumber}:${dayNumber}`);
+    if (dayIndex == null) return null;
+    return wrapWeekdayIndex(todayWeekdayIndex + dayIndex - targetProgramDayIndex);
+  };
 
   const orderIndex = new Map<string, number>();
   meta.orderedTrainingDays.forEach((ref: any, i: number) => {
@@ -542,37 +573,31 @@ function buildWeekCalendars(
   });
   const targetOrder = orderIndex.get(`${targetWeek}:${targetDay}`) ?? -1;
 
-  const weeks = [...((program.weeks as any[]) ?? [])].sort(
-    (a, b) => a.weekNumber - b.weekNumber,
-  );
-
   return weeks.map((week: any): WeekCalendar => {
     const days = [...((week.days as any[]) ?? [])].sort((a, b) => a.dayNumber - b.dayNumber);
-    let trainingDayCounter = 0;
     let completedDays = 0;
     let totalTrainingDays = 0;
 
     const calendarDays: WeekCalendarDay[] = days.map((day: any): WeekCalendarDay => {
+      const weekdayIndex = weekdayIndexFor(week.weekNumber, day.dayNumber);
+      const isToday =
+        !isComplete && week.weekNumber === targetWeek && day.dayNumber === targetDay;
+
       if (!isProgramTrainingDaySlot(day)) {
         const restStatus: WeekCalendarDayStatus =
           day.dayType === 'active_recovery' ? 'active_recovery' : 'rest';
         return {
           dayNumber: day.dayNumber,
-          weekdayIndex: null,
+          weekdayIndex,
           dayType: day.dayType ?? 'rest',
           isRestDay: true,
           status: restStatus,
-          isToday: false,
+          isToday,
           workout: null,
         };
       }
 
       totalTrainingDays++;
-      const weekdayIndex =
-        trainingWeekdays && trainingDayCounter < trainingWeekdays.length
-          ? trainingWeekdays[trainingDayCounter]
-          : null;
-      trainingDayCounter++;
 
       const plannedWorkouts = [...((day.plannedWorkouts as any[]) ?? [])].sort(
         (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
@@ -594,9 +619,6 @@ function buildWeekCalendars(
       );
       const firstWorkout = plannedWorkouts[0];
 
-      const isToday =
-        !isComplete && week.weekNumber === targetWeek && day.dayNumber === targetDay;
-
       let status: WeekCalendarDayStatus;
       if (dayCompleted) {
         status = 'completed';
@@ -605,7 +627,11 @@ function buildWeekCalendars(
       } else {
         const ord =
           orderIndex.get(`${week.weekNumber}:${day.dayNumber}`) ?? Number.MAX_SAFE_INTEGER;
-        status = targetOrder >= 0 && ord < targetOrder ? 'completed' : 'upcoming';
+        if (targetOrder >= 0 && ord < targetOrder) {
+          status = completedWorkoutsCount > 0 ? 'needs_attention' : 'missed';
+        } else {
+          status = 'upcoming';
+        }
       }
 
       return {

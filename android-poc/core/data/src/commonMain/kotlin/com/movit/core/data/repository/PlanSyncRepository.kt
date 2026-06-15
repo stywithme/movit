@@ -49,7 +49,7 @@ class PlanSyncRepository(
     }
 
     /** Hydrates [MovitPlatformBindings.activeUserProgramId] from the server when a session exists. */
-    suspend fun refreshActiveUserProgramId(): AppResult<String?> {
+    suspend fun refreshActiveUserProgramId(programId: String? = null): AppResult<String?> {
         val bindings = platform()
         val auth = bindings.authHeader()
         if (auth == null) {
@@ -62,7 +62,7 @@ class PlanSyncRepository(
         ).getOrElse {
             return AppResult.Success(bindings.activeUserProgramId())
         }
-        val activeId = resolveActiveUserProgramId(userPrograms, programId = null)
+        val activeId = resolveActiveUserProgramId(userPrograms, programId)
         if (activeId != null) {
             bindings.setActiveUserProgramId(activeId)
         }

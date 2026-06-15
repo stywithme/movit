@@ -190,6 +190,53 @@ class TrainApiMapperTest {
     }
 
     @Test
+    fun mapsMissedWeekCalendarDayToAttentionState() {
+        runBlocking {
+            val strings = TrainStrings.load("en")
+            val data = HomeDataDto(
+                trainMode = TrainModeDto(
+                    status = "active",
+                    activeProgram = TrainActiveProgramDto(
+                        id = "prog-1",
+                        name = mapOf("en" to "Push Pull"),
+                        weekNumber = 1,
+                        dayNumber = 2,
+                        totalWeeks = 1,
+                        weekProgress = WeekProgressDto(completed = 0, total = 2),
+                    ),
+                    weekCalendars = listOf(
+                        WeekCalendarDto(
+                            weekNumber = 1,
+                            isCurrentWeek = true,
+                            completedDays = 0,
+                            totalTrainingDays = 2,
+                            days = listOf(
+                                WeekCalendarDayDto(
+                                    dayNumber = 1,
+                                    weekdayIndex = 1,
+                                    status = "missed",
+                                    workout = WeekCalendarWorkoutDto(
+                                        plannedWorkoutId = "pw-missed",
+                                        name = mapOf("en" to "Upper Body"),
+                                        exerciseCount = 4,
+                                    ),
+                                ),
+                                WeekCalendarDayDto(dayNumber = 2, weekdayIndex = 3, status = "today", isToday = true),
+                            ),
+                        ),
+                    ),
+                ),
+            )
+
+            val dashboard = TrainApiMapper.map(data, language = "en", strings = strings)
+
+            assertEquals(TrainWeekDayState.Missed, dashboard.week.days[0].state)
+            assertEquals(strings.statusMissed, dashboard.week.days[0].detail?.statusLabel)
+            assertEquals(null, dashboard.week.days[0].detail?.actionLabel)
+        }
+    }
+
+    @Test
     fun mapsNoAssessmentStatus() {
         runBlocking {
             val strings = TrainStrings.load("en")

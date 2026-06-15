@@ -3,12 +3,14 @@ package com.movit.feature.library
 import com.movit.core.data.MovitData
 import com.movit.core.data.cache.CacheState
 import com.movit.core.data.cache.staleWhileRevalidate
+import com.movit.core.data.platform.MovitPlatformBindings
 import com.movit.core.network.dto.CatchUpSuggestionDto
 import com.movit.core.network.dto.ExploreDataDto
 import com.movit.core.network.dto.ExploreWorkoutDto
 import com.movit.resources.strings.SessionStrings
 import com.movit.shared.AppResult
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 
 class SharedWorkoutSessionRepository(
@@ -41,12 +43,27 @@ class SharedWorkoutSessionRepository(
         }
 
         val platform = MovitData.requirePlatform()
-        val userProgramId = platform.activeUserProgramId()
-            ?: return flow {
-                emit(CacheState.Error(SessionStrings.load(platform.preferredLanguage()).noEnrollment))
+        return flow {
+            val strings = SessionStrings.load(platform.preferredLanguage())
+            when (val idResult = resolveActiveUserProgramIdForProgram(platform, parsed.programId, strings)) {
+                is AppResult.Success -> emitAll(
+                    observeProgramSessionWithEnrollment(
+                        parsed = parsed,
+                        userProgramId = idResult.value,
+                        platform = platform,
+                    ),
+                )
+                is AppResult.Failure -> emit(CacheState.Error(idResult.message))
             }
+        }
+    }
 
-        return staleWhileRevalidate(
+    private fun observeProgramSessionWithEnrollment(
+        parsed: ParsedSessionKey,
+        userProgramId: String,
+        platform: MovitPlatformBindings,
+    ): Flow<CacheState<WorkoutSessionUi>> =
+        staleWhileRevalidate(
             screenId = "workout_session_program",
             readCached = {
                 val language = platform.preferredLanguage()
@@ -110,7 +127,6 @@ class SharedWorkoutSessionRepository(
                 }
             },
         )
-    }
 
     private fun observeTemplateSession(slugOrId: String): Flow<CacheState<WorkoutSessionUi>> {
         if (!MovitData.isInstalled) {
@@ -237,8 +253,12 @@ class SharedWorkoutSessionRepository(
         val platform = MovitData.requirePlatform()
         val language = platform.preferredLanguage()
         val strings = SessionStrings.load(language)
-        val userProgramId = platform.activeUserProgramId()
-            ?: return AppResult.Failure(strings.noEnrollment)
+        val userProgramId = when (
+            val idResult = resolveActiveUserProgramIdForProgram(platform, parsed.programId, strings)
+        ) {
+            is AppResult.Success -> idResult.value
+            is AppResult.Failure -> return idResult
+        }
         val explore = MovitData.explore.readCached()
         val imageResolver: (String) -> String? = { slug -> platform.exerciseImageUrl(slug) }
         val (exerciseBySlug, exerciseById) = WorkoutSessionApiMapper.buildExerciseCatalog(
@@ -351,9 +371,14 @@ class SharedWorkoutSessionRepository(
         if (!MovitData.isInstalled) return SessionDayContext()
 
         val platform = MovitData.requirePlatform()
-        val userProgramId = platform.activeUserProgramId() ?: return SessionDayContext()
         val language = platform.preferredLanguage()
         val strings = SessionStrings.load(language)
+        val userProgramId = when (
+            val idResult = resolveActiveUserProgramIdForProgram(platform, parsed.programId, strings)
+        ) {
+            is AppResult.Success -> idResult.value
+            is AppResult.Failure -> return SessionDayContext()
+        }
         val plan = MovitData.workoutSession.readCachedEffectivePlan(
             userProgramId = userProgramId,
             weekNumber = parsed.weekNumber,
@@ -384,7 +409,14 @@ class SharedWorkoutSessionRepository(
         dayNumber: Int,
     ): String? {
         if (!MovitData.isInstalled) return null
-        val userProgramId = MovitData.requirePlatform().activeUserProgramId() ?: return null
+        val platform = MovitData.requirePlatform()
+        val strings = SessionStrings.load(platform.preferredLanguage())
+        val userProgramId = when (
+            val idResult = resolveActiveUserProgramIdForProgram(platform, programId, strings)
+        ) {
+            is AppResult.Success -> idResult.value
+            is AppResult.Failure -> return null
+        }
         val plan = MovitData.workoutSession.readCachedEffectivePlan(
             userProgramId = userProgramId,
             weekNumber = weekNumber,
@@ -418,8 +450,13 @@ class SharedWorkoutSessionRepository(
             return AppResult.Failure(SessionStrings.load("en").dataNotInstalled)
         }
         val platform = MovitData.requirePlatform()
-        val userProgramId = platform.activeUserProgramId()
-            ?: return AppResult.Failure(SessionStrings.load(platform.preferredLanguage()).noEnrollment)
+        val strings = SessionStrings.load(platform.preferredLanguage())
+        val userProgramId = when (
+            val idResult = resolveActiveUserProgramIdForProgram(platform, parsed.programId, strings)
+        ) {
+            is AppResult.Success -> idResult.value
+            is AppResult.Failure -> return idResult
+        }
         val context = when (val sessionResult = loadSession(workoutId)) {
             is AppResult.Success -> sessionResult.value.context
             is AppResult.Failure -> null
@@ -458,8 +495,14 @@ class SharedWorkoutSessionRepository(
         }
 
         val platform = MovitData.requirePlatform()
-        val userProgramId = platform.activeUserProgramId()
-            ?: return AppResult.Failure(SessionStrings.load(platform.preferredLanguage()).noEnrollment)
+        val language = platform.preferredLanguage()
+        val strings = SessionStrings.load(language)
+        val userProgramId = when (
+            val idResult = resolveActiveUserProgramIdForProgram(platform, context.programId, strings)
+        ) {
+            is AppResult.Success -> idResult.value
+            is AppResult.Failure -> return idResult
+        }
 
         val plan = MovitData.workoutSession.readCachedEffectivePlan(
             userProgramId = userProgramId,
@@ -476,7 +519,6 @@ class SharedWorkoutSessionRepository(
             is AppResult.Failure -> return AppResult.Failure(sync.message)
         }
 
-        val language = platform.preferredLanguage()
         val explore = MovitData.explore.readCached()
         val imageResolver: (String) -> String? = { slug -> platform.exerciseImageUrl(slug) }
         val (exerciseBySlug, _) = WorkoutSessionApiMapper.buildExerciseCatalog(
@@ -555,6 +597,22 @@ class SharedWorkoutSessionRepository(
             ),
         )?.let { templateId ->
             MovitData.workoutSession.syncTrainingConfig(templateId)
+        }
+    }
+
+    private suspend fun resolveActiveUserProgramIdForProgram(
+        platform: MovitPlatformBindings,
+        programId: String,
+        strings: SessionStrings,
+    ): AppResult<String> {
+        platform.activeUserProgramId()?.takeIf { it.isNotBlank() }?.let { return AppResult.Success(it) }
+
+        return when (val refreshed = MovitData.plan.refreshActiveUserProgramId(programId)) {
+            is AppResult.Success -> refreshed.value
+                ?.takeIf { it.isNotBlank() }
+                ?.let { AppResult.Success(it) }
+                ?: AppResult.Failure(strings.noEnrollment)
+            is AppResult.Failure -> AppResult.Failure(refreshed.message.ifBlank { strings.noEnrollment })
         }
     }
 }

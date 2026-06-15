@@ -76,6 +76,42 @@ class PlanSyncRepositoryTest {
         }
     }
 
+    @Test
+    fun refreshActiveUserProgramId_prefersRequestedProgram() {
+        runBlocking {
+            val platform = FakeMovitPlatformBindings(userProgramId = null)
+            val engine = MockEngine {
+                respond(
+                    content = """
+                        {
+                          "success": true,
+                          "data": {
+                            "userPrograms": [
+                              {"id":"up-other","programId":"prog-other","isActive":true},
+                              {"id":"up-target","programId":"prog-target","isActive":true}
+                            ]
+                          }
+                        }
+                    """.trimIndent(),
+                    headers = jsonHeaders(),
+                )
+            }
+            val api = testMobileApi(engine, platform)
+            val localStore = testLocalStore(platform)
+            val repo = PlanSyncRepository(
+                api = api,
+                platform = { platform },
+                homeSync = HomeSyncRepository(api, { platform }, { localStore }),
+            )
+
+            val result = repo.refreshActiveUserProgramId(programId = "prog-target")
+
+            assertTrue(result is AppResult.Success)
+            assertEquals("up-target", result.value)
+            assertEquals("up-target", platform.activeUserProgramId())
+        }
+    }
+
     private fun jsonHeaders() = headersOf(
         HttpHeaders.ContentType,
         "application/json",

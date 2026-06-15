@@ -222,11 +222,12 @@ fun MovitCatalogWeekSessionSection() {
                 MovitWeekDay("Thu", "4", MovitWeekDayState.Today, isToday = true),
                 MovitWeekDay("Fri", "5", MovitWeekDayState.InProgress, progress = 0.5f),
                 MovitWeekDay("Sat", "6", MovitWeekDayState.ActiveRecovery),
-                MovitWeekDay("Sun", "7", MovitWeekDayState.Upcoming),
+                MovitWeekDay("Sun", "7", MovitWeekDayState.Missed),
             ),
             legend = MovitWeekStripLegend(
                 done = movitText("ds_week_legend_done"),
                 today = movitText("ds_week_legend_today"),
+                missed = movitText("ds_week_legend_missed"),
                 upcoming = movitText("ds_week_legend_upcoming"),
                 rest = movitText("ds_week_legend_rest"),
             ),

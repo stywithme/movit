@@ -57,11 +57,11 @@ data class WeekCalendarDto(
 @Serializable
 data class WeekCalendarDayDto(
     val dayNumber: Int = 0,
-    /** 0=Sun … 6=Sat — best-effort weekday; null when not derivable. */
+    /** 0=Sun through 6=Sat; server counts rest slots as calendar days. */
     val weekdayIndex: Int? = null,
     val dayType: String = "training",
     val isRestDay: Boolean = false,
-    /** completed | today | in_progress | upcoming | rest | active_recovery */
+    /** completed | today | in_progress | upcoming | missed | needs_attention | needs_catch_up | rest | active_recovery */
     val status: String = "upcoming",
     val isToday: Boolean = false,
     val workout: WeekCalendarWorkoutDto? = null,

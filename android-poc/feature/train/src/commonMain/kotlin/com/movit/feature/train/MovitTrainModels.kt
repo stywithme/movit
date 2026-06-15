@@ -12,15 +12,15 @@ enum class TrainDashboardStatus {
 
 /**
  * Truthful per-day states, mapped 1:1 from the backend week calendar.
- * Note: there is intentionally NO "Missed" state — the program is
- * completion-based and waits for the user; lateness is surfaced gently
- * elsewhere (catch-up), never as a punishing red day.
+ * "Missed" is only used when the backend explicitly marks an unperformed
+ * workout day as needing attention; normal lateness remains a catch-up flow.
  */
 enum class TrainWeekDayState {
     Completed,
     Today,
     InProgress,
     Upcoming,
+    Missed,
     Rest,
     ActiveRecovery,
 }
