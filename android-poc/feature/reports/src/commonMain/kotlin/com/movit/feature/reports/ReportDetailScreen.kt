@@ -15,7 +15,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.MaterialTheme
@@ -42,13 +41,13 @@ import com.movit.designsystem.MovitRadius
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.components.MovitBarChart
 import com.movit.designsystem.components.MovitBarChartItem
+import com.movit.designsystem.components.MovitBackButton
 import com.movit.designsystem.components.MovitButton
 import com.movit.designsystem.components.MovitButtonVariant
 import com.movit.designsystem.components.MovitCard
 import com.movit.designsystem.components.MovitCardVariant
+import com.movit.designsystem.components.MovitChromeIconButton
 import com.movit.designsystem.components.MovitErrorState
-import com.movit.designsystem.components.MovitFloatPill
-import com.movit.designsystem.components.MovitFloatPillVariant
 import com.movit.designsystem.components.MovitInsightCard
 import com.movit.designsystem.components.MovitInsightVariant
 import com.movit.designsystem.components.MovitLoadingState
@@ -119,16 +118,13 @@ fun ReportDetailScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            MovitFloatPill(
+            MovitBackButton(
                 onClick = onBack,
-                icon = Icons.AutoMirrored.Filled.ArrowBack,
-                variant = MovitFloatPillVariant.Outline,
                 contentDescription = movitText("report_detail_back"),
             )
-            MovitFloatPill(
+            MovitChromeIconButton(
                 onClick = onShare,
                 icon = Icons.Default.Share,
-                variant = MovitFloatPillVariant.Outline,
                 contentDescription = movitText("report_detail_share"),
             )
         }

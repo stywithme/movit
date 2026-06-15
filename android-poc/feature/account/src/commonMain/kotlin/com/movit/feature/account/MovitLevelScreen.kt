@@ -19,7 +19,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -40,6 +39,7 @@ import com.movit.designsystem.MovitRadius
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.components.MovitAccentBlock
 import com.movit.designsystem.components.MovitAccentVariant
+import com.movit.designsystem.components.MovitBackButton
 import com.movit.designsystem.components.MovitButton
 import com.movit.designsystem.components.MovitButtonSize
 import com.movit.designsystem.components.MovitButtonVariant
@@ -47,6 +47,7 @@ import com.movit.designsystem.components.MovitCard
 import com.movit.designsystem.components.MovitDashboardHero
 import com.movit.designsystem.components.MovitDashboardHeroVariant
 import com.movit.designsystem.components.MovitErrorState
+import com.movit.designsystem.components.MovitBackButton
 import com.movit.designsystem.components.MovitFloatPill
 import com.movit.designsystem.components.MovitFloatPillVariant
 import com.movit.designsystem.components.MovitIconBoxVariant
@@ -124,11 +125,9 @@ private fun LevelFloatingHeader(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
     ) {
-        MovitFloatPill(
+        MovitBackButton(
             onClick = onBack,
-            icon = Icons.AutoMirrored.Filled.ArrowBack,
-            variant = MovitFloatPillVariant.Ink,
-            contentDescription = movitText("profile_back"),
+            contentDescription = movitText("common_back"),
         )
         MovitFloatPill(
             onClick = { onTabSelected(LevelTab.LevelProfile) },

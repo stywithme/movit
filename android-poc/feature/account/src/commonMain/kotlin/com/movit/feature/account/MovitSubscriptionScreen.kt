@@ -10,10 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.movit.designsystem.MovitSpacing
+import com.movit.designsystem.components.MovitBackButton
 import com.movit.designsystem.components.MovitButton
 import com.movit.designsystem.components.MovitButtonVariant
 import com.movit.designsystem.components.MovitCard
@@ -48,12 +45,10 @@ fun MovitSubscriptionScreen(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = movitText("profile_back"),
-                )
-            }
+            MovitBackButton(
+                onClick = onBack,
+                contentDescription = movitText("common_back"),
+            )
             Text(
                 text = movitText("profile_subscription"),
                 style = MaterialTheme.typography.titleLarge,

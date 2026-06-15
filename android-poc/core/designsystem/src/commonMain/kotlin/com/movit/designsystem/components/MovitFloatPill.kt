@@ -111,33 +111,30 @@ fun MovitFloatPill(
 }
 
 /**
- * Inner-page floating header: a back control on the leading edge, an optional centered
- * title, and an optional trailing action (prototype "Inner page" patterns in §7b).
+ * Inner-page header row: minimal back icon, optional centered title, optional trailing action.
  */
 @Composable
 fun MovitInnerPageHeader(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     title: String? = null,
-    backLabel: String? = null,
+    backContentDescription: String = "Back",
     onAction: (() -> Unit)? = null,
     actionLabel: String? = null,
     actionIcon: ImageVector? = null,
     actionVariant: MovitFloatPillVariant = MovitFloatPillVariant.Action,
     onImage: Boolean = false,
 ) {
-    val backVariant = if (onImage) MovitFloatPillVariant.Outline else MovitFloatPillVariant.Ink
+    val backStyle = if (onImage) MovitChromeButtonStyle.OnMedia else MovitChromeButtonStyle.Default
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
     ) {
-        MovitFloatPill(
+        MovitBackButton(
             onClick = onBack,
-            label = backLabel,
-            icon = Icons.AutoMirrored.Filled.ArrowBack,
-            variant = backVariant,
-            contentDescription = backLabel ?: "Back",
+            contentDescription = backContentDescription,
+            style = backStyle,
         )
         if (title != null) {
             Text(

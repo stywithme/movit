@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import com.movit.designsystem.components.MovitBackButton
 import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -46,9 +46,11 @@ actual fun PlatformTrainingDebugScreen(
             TopAppBar(
                 title = { Text("Training Debug Lab") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
+                    MovitBackButton(
+                        onClick = onBack,
+                        contentDescription = "Back",
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
                 },
                 actions = {
                     Text(

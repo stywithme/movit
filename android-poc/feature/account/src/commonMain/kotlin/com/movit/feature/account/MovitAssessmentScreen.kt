@@ -17,13 +17,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Scanner
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -42,6 +40,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.movit.designsystem.MovitRadius
 import com.movit.designsystem.MovitSpacing
+import com.movit.designsystem.components.MovitBackButton
 import com.movit.designsystem.components.MovitButton
 import com.movit.designsystem.components.MovitButtonVariant
 import com.movit.designsystem.components.MovitCard
@@ -101,12 +100,10 @@ private fun AssessmentHeader(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconButton(onClick = { onEvent(MovitAssessmentEvent.BackClicked) }) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = movitText("profile_back"),
-            )
-        }
+        MovitBackButton(
+            onClick = { onEvent(MovitAssessmentEvent.BackClicked) },
+            contentDescription = movitText("common_back"),
+        )
         Text(
             text = title,
             style = MaterialTheme.typography.titleLarge,
@@ -116,7 +113,7 @@ private fun AssessmentHeader(
                 .padding(horizontal = MovitSpacing.sm),
             textAlign = TextAlign.Center,
         )
-        Box(modifier = Modifier.size(48.dp))
+        Box(modifier = Modifier.size(40.dp))
     }
 }
 

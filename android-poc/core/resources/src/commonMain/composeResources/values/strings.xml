@@ -24,6 +24,7 @@
     <!-- Common / design system -->
     <string name="common_error_title">Something went wrong</string>
     <string name="common_retry">Retry</string>
+    <string name="common_back">Back</string>
     <string name="ds_week_legend_done">Done</string>
     <string name="ds_week_legend_today">Today</string>
     <string name="ds_week_legend_missed">Missed</string>

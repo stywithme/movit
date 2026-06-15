@@ -48,7 +48,7 @@ fun ExerciseLiveScreen(
         topBar = {
             MovitInnerPageHeader(
                 onBack = onBack,
-                backLabel = movitText("workout_flow_back"),
+                backContentDescription = movitText("workout_flow_back"),
                 title = state.exerciseName.ifBlank { movitText("workout_live_title") },
                 modifier = Modifier.padding(horizontal = MovitSpacing.lg, vertical = MovitSpacing.sm),
             )

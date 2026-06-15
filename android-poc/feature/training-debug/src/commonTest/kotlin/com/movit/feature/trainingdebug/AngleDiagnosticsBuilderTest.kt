@@ -8,11 +8,10 @@ import com.movit.core.training.model.PoseLandmarkIndices
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 class AngleDiagnosticsBuilderTest {
     @Test
-    fun buildOne_mirrorsJointOnFrontCamera() {
+    fun buildOne_frontCamera_keepsSelectedJointAsDiagnosticSource() {
         val landmarks = visibleLandmarks()
         val angles = JointAngles(leftKnee = 120.0)
         val result = AngleDiagnosticsBuilder.buildOne(
@@ -25,12 +24,12 @@ class AngleDiagnosticsBuilderTest {
             isFrontCamera = true,
         )
 
-        assertEquals("right_knee", result.sourceJointCode)
-        assertTrue(result.effectiveIndices.isNotEmpty())
+        assertEquals("left_knee", result.sourceJointCode)
+        assertEquals(listOf(23, 25, 27), result.effectiveIndices)
     }
 
     @Test
-    fun buildOne_frontCamera_mirrorsIndicesOnce_notCoordinatesTwice() {
+    fun buildOne_frontCamera_keepsGeometryAlignedWithDisplayedAngle() {
         val landmarks = visibleLandmarks()
         landmarks[PoseLandmarkIndices.LEFT_KNEE] = Landmark(0.1f, 0.6f, 0f, 1f, 1f)
         landmarks[PoseLandmarkIndices.RIGHT_KNEE] = Landmark(0.9f, 0.6f, 0f, 1f, 1f)
@@ -45,8 +44,8 @@ class AngleDiagnosticsBuilderTest {
             isFrontCamera = true,
         )
 
-        assertEquals(PoseLandmarkIndices.RIGHT_KNEE, result.effectiveIndices[1])
-        assertEquals(0.9f, result.normalizedSmoothed?.pointB?.x)
+        assertEquals(PoseLandmarkIndices.LEFT_KNEE, result.effectiveIndices[1])
+        assertEquals(0.1f, result.normalizedSmoothed?.pointB?.x)
     }
 
     @Test

@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Favorite
@@ -16,7 +15,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.CenterFocusStrong
 import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,6 +36,7 @@ import com.movit.designsystem.components.MovitBanner
 import com.movit.designsystem.components.MovitBannerVariant
 import com.movit.designsystem.components.MovitBarChart
 import com.movit.designsystem.components.MovitBarChartItem
+import com.movit.designsystem.components.MovitBackButton
 import com.movit.designsystem.components.MovitButton
 import com.movit.designsystem.components.MovitButtonSize
 import com.movit.designsystem.components.MovitButtonVariant
@@ -141,7 +141,7 @@ fun MovitCatalogStatCardsSection() {
                 description = "Healthy range",
                 value = "82",
                 unit = "kg",
-                icon = Icons.Default.TrendingUp,
+                icon = Icons.AutoMirrored.Filled.TrendingUp,
                 delta = "1.2",
                 deltaUp = false,
                 modifier = Modifier.weight(1f),
@@ -300,7 +300,7 @@ fun MovitCatalogFloatingControlsSection() {
             horizontalArrangement = Arrangement.spacedBy(MovitSpacing.md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            MovitFloatPill(onClick = {}, label = "Back", icon = Icons.AutoMirrored.Filled.ArrowBack)
+            MovitBackButton(onClick = {}, contentDescription = "Back")
             MovitFloatPill(onClick = {}, icon = Icons.Default.MoreVert, contentDescription = "More")
             MovitFloatPill(
                 onClick = {},

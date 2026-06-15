@@ -50,7 +50,7 @@ fun ExercisesLibraryScreen(
         ) {
             MovitInnerPageHeader(
                 onBack = onBack,
-                backLabel = movitText("library_a11y_back"),
+                backContentDescription = movitText("library_a11y_back"),
                 modifier = Modifier.weight(1f),
             )
             if (!state.isLoading && state.errorMessage == null) {

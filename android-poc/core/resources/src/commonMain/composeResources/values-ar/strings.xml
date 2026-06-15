@@ -22,6 +22,7 @@
 
     <string name="common_error_title">حدث خطأ ما</string>
     <string name="common_retry">إعادة المحاولة</string>
+    <string name="common_back">رجوع</string>
     <string name="ds_week_legend_done">تم</string>
     <string name="ds_week_legend_today">اليوم</string>
     <string name="ds_week_legend_missed">فائت</string>

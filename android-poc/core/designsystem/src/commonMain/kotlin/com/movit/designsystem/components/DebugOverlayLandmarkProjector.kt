@@ -70,3 +70,8 @@ fun rememberDebugOverlayLandmarkProjector(
         { x, y, canvasW, canvasH -> projector.project(x, y, canvasW, canvasH) }
     }
 }
+
+internal fun sweepAngleDegrees(startDegrees: Float, endDegrees: Float): Float {
+    val sweep = ((endDegrees - startDegrees + 540f) % 360f) - 180f
+    return if (sweep == -180f) 180f else sweep
+}

@@ -17,11 +17,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.FlipCameraAndroid
+import com.movit.designsystem.components.MovitBackButton
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -29,6 +31,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -48,9 +51,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.movit.core.training.config.PositionOperator
 import com.movit.core.training.config.PositionCheckType
 import com.movit.core.training.position.BodyPosture
 import com.movit.core.training.position.ExpectedDirection
@@ -195,9 +200,11 @@ fun TrainingDebugScreen(
             TopAppBar(
                 title = { Text("Debug ${state.fps.sourceFps}/${state.fps.inferenceFps} fps") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
+                    MovitBackButton(
+                        onClick = onBack,
+                        contentDescription = "Back",
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
                 },
                 actions = {
                     if (state.config.inputMode == TrainingDebugInputMode.CAMERA) {
@@ -324,10 +331,21 @@ private fun SettingsSheet(
 ) {
     val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var position by remember(state.config.positionCheck) { mutableStateOf(state.config.positionCheck) }
-    var threshold by remember { mutableStateOf(state.config.positionCheck.threshold.toString()) }
+    var threshold by remember(state.config.positionCheck.threshold) {
+        mutableStateOf(state.config.positionCheck.threshold.toString())
+    }
+    val landmarkOptions = remember { JointLandmarkMapping.trackedJointCodes.sorted() }
+
+    fun updatePosition(updated: DebugPositionCheckConfig) {
+        position = updated
+        onAction(TrainingDebugAction.SetPositionCheck(updated))
+    }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheet) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(
+            Modifier.fillMaxWidth().padding(16.dp).verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             Text("Input mode", style = MaterialTheme.typography.titleMedium)
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TrainingDebugInputMode.entries.forEach { mode ->
@@ -377,13 +395,48 @@ private fun SettingsSheet(
                 }
             }
             if (state.config.activeTab == TrainingDebugTab.POSITION_CHECK) {
+                DebugDropdownMenu(
+                    label = "Type",
+                    selectedText = position.checkType.name,
+                    options = PositionCheckType.entries.toList(),
+                    optionText = { it.name },
+                    onSelected = { updatePosition(position.copy(checkType = it)) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    DebugDropdownMenu(
+                        label = "Primary",
+                        selectedText = position.primaryLandmark,
+                        options = landmarkOptions,
+                        optionText = { it },
+                        onSelected = { updatePosition(position.copy(primaryLandmark = it)) },
+                        modifier = Modifier.weight(1f),
+                    )
+                    DebugDropdownMenu(
+                        label = "Secondary",
+                        selectedText = position.secondaryLandmark,
+                        options = landmarkOptions,
+                        optionText = { it },
+                        onSelected = { updatePosition(position.copy(secondaryLandmark = it)) },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                if (position.checkType.usesOperator()) {
+                    DebugDropdownMenu(
+                        label = "Operator",
+                        selectedText = position.operator.name,
+                        options = PositionOperator.entries.toList(),
+                        optionText = { it.name },
+                        onSelected = { updatePosition(position.copy(operator = it)) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
                 OutlinedTextField(
                     value = threshold,
                     onValueChange = {
                         threshold = it
                         it.toDoubleOrNull()?.let { v ->
-                            position = position.copy(threshold = v)
-                            onAction(TrainingDebugAction.SetPositionCheck(position))
+                            updatePosition(position.copy(threshold = v))
                         }
                     },
                     label = { Text("Threshold") },
@@ -433,4 +486,47 @@ private fun SettingsSheet(
             Button(onClick = onDismiss, Modifier.fillMaxWidth()) { Text("Close") }
         }
     }
+}
+
+@Composable
+private fun <T> DebugDropdownMenu(
+    label: String,
+    selectedText: String,
+    options: List<T>,
+    optionText: (T) -> String,
+    onSelected: (T) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Column(modifier) {
+        Text(label, style = MaterialTheme.typography.labelMedium)
+        Box {
+            OutlinedButton(
+                onClick = { expanded = true },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(selectedText, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                options.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(optionText(option)) },
+                        onClick = {
+                            expanded = false
+                            onSelected(option)
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun PositionCheckType.usesOperator(): Boolean = when (this) {
+    PositionCheckType.HORIZONTAL_ALIGNMENT,
+    PositionCheckType.VERTICAL_ALIGNMENT,
+    PositionCheckType.DEPTH_ALIGNMENT,
+    -> false
+    else -> true
 }

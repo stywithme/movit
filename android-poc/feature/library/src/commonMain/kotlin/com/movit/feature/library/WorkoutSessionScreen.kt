@@ -81,7 +81,7 @@ fun WorkoutSessionScreen(
             val editToggleA11y = movitText("session_a11y_toggle_edit")
             MovitInnerPageHeader(
                 onBack = onBack,
-                backLabel = movitText("session_back"),
+                backContentDescription = movitText("session_back"),
                 actionLabel = if (state.isEditMode) movitText("session_done") else movitText("session_edit"),
                 actionIcon = if (state.isEditMode) Icons.Default.Check else Icons.Default.Edit,
                 onAction = onToggleEdit,

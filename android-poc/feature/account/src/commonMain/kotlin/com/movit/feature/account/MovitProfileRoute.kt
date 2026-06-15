@@ -3,18 +3,16 @@ package com.movit.feature.account
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.movit.designsystem.MovitSpacing
-import com.movit.designsystem.components.MovitFloatPill
-import com.movit.designsystem.components.MovitFloatPillVariant
+import com.movit.designsystem.components.MovitBackButton
 import com.movit.resources.movitText
 import kotlinx.coroutines.launch
 
@@ -67,12 +65,12 @@ fun MovitProfileRoute(
         }
 
         if (onBack != null) {
-            MovitFloatPill(
+            MovitBackButton(
                 onClick = onBack,
-                icon = Icons.AutoMirrored.Filled.ArrowBack,
-                variant = MovitFloatPillVariant.Outline,
-                contentDescription = movitText("profile_back"),
-                modifier = Modifier.padding(horizontal = MovitSpacing.lg, vertical = MovitSpacing.md),
+                contentDescription = movitText("common_back"),
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(horizontal = MovitSpacing.lg, vertical = MovitSpacing.md),
             )
         }
     }

@@ -16,7 +16,6 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.hypot
-import kotlin.math.min
 
 private val accentColors = listOf(
     Color(0xFF64B5F6),
@@ -41,10 +40,11 @@ fun MovitPoseAnnotationOverlay(
     showFullSkeleton: Boolean = false,
 ) {
     val textMeasurer = rememberTextMeasurer()
-    val projector = rememberAnnotationProjector(
+    val projector = rememberDebugOverlayLandmarkProjector(
         scaleMode = debug.scaleMode,
-        analysisImageWidth = analysisImageWidth,
-        analysisImageHeight = analysisImageHeight,
+        isFrontCamera = isFrontCamera,
+        imageWidth = analysisImageWidth,
+        imageHeight = analysisImageHeight,
     )
 
     if (showFullSkeleton) {
@@ -72,32 +72,6 @@ fun MovitPoseAnnotationOverlay(
         }
         debug.sceneExpectation?.let { scene ->
             drawSceneBadge(scene, textMeasurer)
-        }
-    }
-}
-
-@Composable
-private fun rememberAnnotationProjector(
-    scaleMode: DebugOverlayScaleMode,
-    analysisImageWidth: Int,
-    analysisImageHeight: Int,
-): (Float, Float, Float, Float) -> Offset {
-    val srcW = if (analysisImageWidth > 0) analysisImageWidth.toFloat() else 1f
-    val srcH = if (analysisImageHeight > 0) analysisImageHeight.toFloat() else 1f
-    return { x, y, canvasW, canvasH ->
-        when (scaleMode) {
-            DebugOverlayScaleMode.FILL_CENTER -> {
-                val scale = maxOf(canvasW / srcW, canvasH / srcH)
-                val offsetX = (canvasW - srcW * scale) / 2f
-                val offsetY = (canvasH - srcH * scale) / 2f
-                Offset(offsetX + x * srcW * scale, offsetY + y * srcH * scale)
-            }
-            DebugOverlayScaleMode.FIT_CENTER -> {
-                val scale = min(canvasW / srcW, canvasH / srcH)
-                val offsetX = (canvasW - srcW * scale) / 2f
-                val offsetY = (canvasH - srcH * scale) / 2f
-                Offset(offsetX + x * srcW * scale, offsetY + y * srcH * scale)
-            }
         }
     }
 }

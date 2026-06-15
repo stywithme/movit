@@ -86,7 +86,7 @@ fun ExercisePrepareScreen(
             Column {
                 MovitInnerPageHeader(
                     onBack = onBack,
-                    backLabel = movitText("prepare_back"),
+                    backContentDescription = movitText("prepare_back"),
                     title = movitText(headerTitleKey),
                     modifier = Modifier.padding(horizontal = MovitSpacing.lg, vertical = MovitSpacing.sm),
                 )

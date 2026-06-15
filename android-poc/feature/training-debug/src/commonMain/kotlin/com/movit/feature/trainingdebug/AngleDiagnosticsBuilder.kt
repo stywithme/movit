@@ -2,7 +2,6 @@ package com.movit.feature.trainingdebug
 
 import com.movit.core.training.geometry.JointAngleCalculator
 import com.movit.core.training.geometry.JointLandmarkMapping
-import com.movit.core.training.geometry.PoseLandmarkMirroring
 import com.movit.core.training.geometry.PosePoint2D
 import com.movit.core.training.geometry.PosePoint3D
 import com.movit.core.training.geometry.VirtualLandmarks
@@ -51,50 +50,27 @@ object AngleDiagnosticsBuilder {
         isFrontCamera: Boolean,
         elbowDiagnosticsPort: ElbowDiagnosticsPort = ElbowDiagnosticsPort.NoOp,
     ): AngleDiagnosticsData {
-        val sourceJointCode = mirrorJointCode(jointCode, isFrontCamera)
         val rawIndices = JointLandmarkMapping.getLandmarksForAngle(jointCode)
-        val effectiveIndices = rawIndices.map { idx ->
-            if (isFrontCamera) PoseLandmarkMirroring.mirroredIndex(idx) else idx
-        }
         val displayedAngle = angles.getAngle(jointCode)
         val hasWorld = smoothedWorld != null && smoothedWorld.size >= 33
         val pipelineSourceLabel = if (hasWorld && displayedAngle != null) "World XYZ" else "Screen XY fallback"
 
         return AngleDiagnosticsData(
             displayJointCode = jointCode,
-            sourceJointCode = sourceJointCode,
-            effectiveIndices = effectiveIndices,
+            sourceJointCode = jointCode,
+            effectiveIndices = rawIndices,
             displayedAngle = displayedAngle,
             pipelineSourceLabel = pipelineSourceLabel,
-            normalizedRaw = buildFrame(rawNorm, effectiveIndices),
-            normalizedSmoothed = buildFrame(smoothedNorm, effectiveIndices),
-            worldRaw = rawWorld?.let { buildFrame(it, effectiveIndices) },
-            worldSmoothed = smoothedWorld?.let { buildFrame(it, effectiveIndices) },
+            normalizedRaw = buildFrame(rawNorm, rawIndices),
+            normalizedSmoothed = buildFrame(smoothedNorm, rawIndices),
+            worldRaw = rawWorld?.let { buildFrame(it, rawIndices) },
+            worldSmoothed = smoothedWorld?.let { buildFrame(it, rawIndices) },
             elbowDiagnostics = if (jointCode.contains("elbow")) {
                 elbowDiagnosticsPort.snapshotForJoint(jointCode)
             } else {
                 null
             },
         )
-    }
-
-    private fun mirrorJointCode(jointCode: String, isFrontCamera: Boolean): String {
-        if (!isFrontCamera) return jointCode
-        return when (jointCode.lowercase()) {
-            "left_elbow" -> "right_elbow"
-            "right_elbow" -> "left_elbow"
-            "left_knee" -> "right_knee"
-            "right_knee" -> "left_knee"
-            "left_shoulder" -> "right_shoulder"
-            "right_shoulder" -> "left_shoulder"
-            "left_hip" -> "right_hip"
-            "right_hip" -> "left_hip"
-            "left_ankle" -> "right_ankle"
-            "right_ankle" -> "left_ankle"
-            "left_wrist" -> "right_wrist"
-            "right_wrist" -> "left_wrist"
-            else -> jointCode
-        }
     }
 
     private fun buildFrame(

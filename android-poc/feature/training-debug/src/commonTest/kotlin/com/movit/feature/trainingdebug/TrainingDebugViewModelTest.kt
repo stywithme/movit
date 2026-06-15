@@ -1,5 +1,7 @@
 package com.movit.feature.trainingdebug
 
+import com.movit.core.training.config.PositionCheckType
+import com.movit.core.training.config.PositionOperator
 import com.movit.core.training.model.Landmark
 import com.movit.core.training.model.PoseLandmarkIndices
 import kotlin.test.Test
@@ -21,6 +23,22 @@ class TrainingDebugViewModelTest {
         assertEquals("No pose", analysis.statusText)
         assertEquals("—", analysis.liveValueText)
         assertTrue(analysis.overlayState.selectedJointHighlights.isEmpty())
+    }
+
+    @Test
+    fun dispatch_positionCheck_updatesFullLegacyDebugSettings() {
+        val viewModel = TrainingDebugViewModel()
+        val positionCheck = DebugPositionCheckConfig(
+            checkType = PositionCheckType.SIDEWAYS_COMPARISON,
+            primaryLandmark = "right_wrist",
+            secondaryLandmark = "right_elbow",
+            operator = PositionOperator.SHOULD_EXCEED,
+            threshold = -0.12,
+        )
+
+        viewModel.dispatch(TrainingDebugAction.SetPositionCheck(positionCheck))
+
+        assertEquals(positionCheck, viewModel.uiState.value.config.positionCheck)
     }
 
     private fun squatFrame(): TrainingDebugFrameInput =

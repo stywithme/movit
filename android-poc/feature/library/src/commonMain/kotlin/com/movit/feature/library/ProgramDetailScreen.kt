@@ -73,7 +73,7 @@ fun ProgramDetailScreen(
         topBar = {
             MovitInnerPageHeader(
                 onBack = onBack,
-                backLabel = movitText("program_back"),
+                backContentDescription = movitText("program_back"),
                 actionLabel = when {
                     isOverview -> movitText("program_customize")
                     else -> movitText("program_save")
