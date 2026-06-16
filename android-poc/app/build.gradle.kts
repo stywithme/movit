@@ -369,17 +369,8 @@ dependencies {
     // kotlinx.serialization — billing DTOs (JsonElement) read by SubscriptionActivity
     implementation(libs.kotlinx.serialization.json)
 
-    // JSON + Retrofit (legacy ApiClient auth refresh only — removed in WS-D/F)
-
+    // Gson — deep-link WorkoutFlowConfig parsing + legacy AnalyticsStorage drain (WS-C).
     implementation(libs.gson)
-
-    implementation(libs.retrofit)
-
-    implementation(libs.retrofit.converter.gson)
-
-    implementation(libs.okhttp)
-
-    implementation(libs.okhttp.logging)
 
 
 

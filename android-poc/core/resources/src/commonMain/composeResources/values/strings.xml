@@ -718,6 +718,7 @@
     <string name="training_session_auto_pause_nopose">No pose detected</string>
     <string name="training_session_auto_pause_generic">Session paused</string>
     <string name="training_session_live_dock_title">Live set</string>
+    <string name="training_session_status">Status</string>
     <string name="training_session_pause">Pause</string>
     <string name="training_session_resume">Resume</string>
     <string name="training_session_stop">Stop</string>

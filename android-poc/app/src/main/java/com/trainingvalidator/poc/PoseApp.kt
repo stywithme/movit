@@ -11,8 +11,6 @@ import com.movit.core.data.local.MovitAndroidRuntime
 import com.movit.core.data.sync.BackgroundSyncScheduler
 import com.movit.core.posecapture.android.PoseLandmarkerHeavyModelStore
 import com.movit.MovitMainActivity
-import com.trainingvalidator.poc.network.ApiClient
-import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.ui.theme.AppThemeManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -42,15 +40,16 @@ class PoseApp : Application() {
         MovitAndroidRuntime.applicationContext = applicationContext
         BackgroundSyncScheduler.schedule()
         AppThemeManager.applySavedMode(this)
-        ApiClient.init(this)
         installBillingHost(this)
         preloadHeavyPoseModelIfNeeded()
         registerImmersiveMode()
     }
 
     private fun preloadHeavyPoseModelIfNeeded() {
-        SettingsManager.initialize(this)
-        if (SettingsManager.getModelType() != "heavy") return
+        // Mirrors core:pose-capture PoseModelTypePreference store ("training_settings"/"model_type").
+        val modelType = getSharedPreferences("training_settings", MODE_PRIVATE)
+            .getString("model_type", "full")
+        if (modelType != "heavy") return
         applicationScope.launch {
             PoseLandmarkerHeavyModelStore.ensureCached(applicationContext)
         }

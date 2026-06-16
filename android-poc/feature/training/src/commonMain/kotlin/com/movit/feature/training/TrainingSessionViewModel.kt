@@ -151,6 +151,8 @@ class TrainingSessionViewModel(
 
   private var sessionStartMs: Long = 0L
   private var lastElapsedMs: Long = 0L
+  private var activeElapsedMs: Long = 0L
+  private var lastTrainingTimestampMs: Long = 0L
   private var visibilityWarningActive = false
   private var visibilityPauseCount = 0
   private var cameraWarningCount = 0
@@ -330,8 +332,12 @@ class TrainingSessionViewModel(
     if (sessionStartMs == 0L && timestampMs > 0L) {
       sessionStartMs = timestampMs
     }
-    if (sessionStartMs > 0L) {
-      lastElapsedMs = (timestampMs - sessionStartMs).coerceAtLeast(0L)
+    if (timestampMs > 0L) {
+      if (lastTrainingTimestampMs > 0L) {
+        activeElapsedMs += (timestampMs - lastTrainingTimestampMs).coerceAtLeast(0L)
+      }
+      lastTrainingTimestampMs = timestampMs
+      lastElapsedMs = activeElapsedMs.coerceAtLeast(0L)
       _state.update { it.copy(elapsedLabel = formatElapsed(lastElapsedMs)) }
     }
   }
@@ -501,34 +507,9 @@ class TrainingSessionViewModel(
     countdown.setListener(object : CountdownController.CountdownListener {
       override fun onTick(secondsRemaining: Int) {
         _state.update { it.copy(countdownValue = secondsRemaining) }
-        if (secondsRemaining in 1..3) {
-          val key = "training_countdown_$secondsRemaining"
-          feedback.submit(
-            FeedbackSignal(
-              kind = FeedbackKind.COUNTDOWN,
-              severity = FeedbackSeverity.CRITICAL,
-              text = systemMessage(key, secondsRemaining.toString(), secondsRemaining.toString()),
-              dedupeKey = key,
-              activeKey = "countdown",
-              forceAudible = true,
-              allowVisual = false,
-            ),
-          )
-        }
       }
 
       override fun onFinish() {
-        feedback.submit(
-          FeedbackSignal(
-            kind = FeedbackKind.COUNTDOWN,
-            severity = FeedbackSeverity.SUCCESS,
-            text = systemMessage("training_countdown_go", "ابدأ!", "Go!"),
-            dedupeKey = "training_countdown_go",
-            activeKey = "countdown",
-            forceAudible = true,
-            allowVisual = false,
-          ),
-        )
         supervisor.processSignal(SupervisorSignal.CountdownFinished)
       }
 
@@ -730,28 +711,41 @@ class TrainingSessionViewModel(
   private fun handleSupervisorAction(action: SupervisorAction) {
     when (action) {
       is SupervisorAction.StartEngine -> {
+        lastTrainingTimestampMs = 0L
         engine?.start()
         engine?.let { eng ->
           exerciseConfig?.let { config -> writeHooks.attach(eng, config) }
         }
       }
-      is SupervisorAction.PauseEngine -> engine?.pause()
-      is SupervisorAction.ResumeEngine -> engine?.resume()
-      is SupervisorAction.ResumeFromVisibilityPause -> engine?.resume()
-      is SupervisorAction.StopEngine -> engine?.stop()
+      is SupervisorAction.PauseEngine -> {
+        lastTrainingTimestampMs = 0L
+        engine?.pause()
+      }
+      is SupervisorAction.ResumeEngine -> {
+        lastTrainingTimestampMs = 0L
+        engine?.resume()
+      }
+      is SupervisorAction.ResumeFromVisibilityPause -> {
+        lastTrainingTimestampMs = 0L
+        engine?.resume()
+      }
+      is SupervisorAction.StopEngine -> {
+        lastTrainingTimestampMs = 0L
+        engine?.stop()
+      }
       is SupervisorAction.ResetEngine -> {
+        activeElapsedMs = 0L
+        lastElapsedMs = 0L
+        lastTrainingTimestampMs = 0L
         engine?.stop()
         engine?.start()
+        _state.update { it.copy(elapsedLabel = formatElapsed(lastElapsedMs)) }
       }
       is SupervisorAction.ProcessFrame -> {
         if (sessionStartMs == 0L && action.timestampMs > 0L) {
           sessionStartMs = action.timestampMs
         }
-        if (action.timestampMs > 0L) lastFrameTimestampMs = action.timestampMs
-        if (sessionStartMs > 0L) {
-          lastElapsedMs = (action.timestampMs - sessionStartMs).coerceAtLeast(0L)
-          _state.update { it.copy(elapsedLabel = formatElapsed(lastElapsedMs)) }
-        }
+        updateSessionElapsed(action.timestampMs)
         engine?.processFrame(
           PoseFrame(
             angles = action.angles,
@@ -1057,6 +1051,10 @@ class TrainingSessionViewModel(
     feedback.resetAll()
     feedbackEventRouter.reset()
     previousHoldState = null
+    sessionStartMs = 0L
+    lastElapsedMs = 0L
+    activeElapsedMs = 0L
+    lastTrainingTimestampMs = 0L
     _state.update {
       it.copy(
         exerciseSlug = activeSlug,
@@ -1068,6 +1066,7 @@ class TrainingSessionViewModel(
         progressPercent = 0,
         runState = SessionRunState.IDLE,
         isComplete = false,
+        elapsedLabel = formatElapsed(lastElapsedMs),
       )
     }
   }

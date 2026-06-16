@@ -747,6 +747,7 @@
     <string name="training_session_auto_pause_nopose">لم يُكتشف وضعية</string>
     <string name="training_session_auto_pause_generic">أُوقف التدريب</string>
     <string name="training_session_live_dock_title">مجموعة حية</string>
+    <string name="training_session_status">&#1575;&#1604;&#1581;&#1575;&#1604;&#1577;</string>
     <string name="training_session_resume">استئناف</string>
     <string name="training_session_stop">إيقاف</string>
     <string name="training_session_form_label">الشكل</string>

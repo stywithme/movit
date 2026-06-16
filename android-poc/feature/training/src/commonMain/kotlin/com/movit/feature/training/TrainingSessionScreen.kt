@@ -2,7 +2,7 @@ package com.movit.feature.training
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,13 +13,15 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -28,26 +30,26 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.movit.core.training.session.PauseReason
+import androidx.compose.ui.unit.sp
 import com.movit.core.training.session.SessionRunState
 import com.movit.designsystem.MovitSpacing
-import com.movit.designsystem.components.GlassMessageSeverity
 import com.movit.designsystem.components.MovitBackButton
 import com.movit.designsystem.components.MovitButton
 import com.movit.designsystem.components.MovitButtonVariant
 import com.movit.designsystem.components.MovitChromeButtonStyle
+import com.movit.designsystem.components.MovitChromeIconButton
 import com.movit.designsystem.components.MovitErrorState
-import com.movit.designsystem.components.MovitGlassMessage
 import com.movit.designsystem.components.MovitSkeletonOverlay
-import com.movit.designsystem.components.TrainingHud
-import com.movit.designsystem.components.VignetteEffect
 import com.movit.designsystem.movitColors
 import com.movit.resources.movitText
 
 @Composable
+@Suppress("UNUSED_PARAMETER")
 fun TrainingSessionScreen(
     state: TrainingSessionUiState,
     onBack: () -> Unit,
@@ -60,6 +62,7 @@ fun TrainingSessionScreen(
     cameraSlot: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     onFlipCamera: (() -> Unit)? = null,
+    onSettings: () -> Unit = {},
     debugFps: Int? = null,
 ) {
     val romIndicators = remember(state.landmarks, state.skeletonOverlayParity) {
@@ -107,9 +110,7 @@ fun TrainingSessionScreen(
                 )
             }
             else -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                ) {
+                Box(modifier = Modifier.fillMaxSize()) {
                     cameraSlot()
 
                     if (state.requiresCamera()) {
@@ -118,11 +119,7 @@ fun TrainingSessionScreen(
                             parity = state.skeletonOverlayParity,
                             romIndicators = romIndicators,
                             landmarkProjector = landmarkProjector,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-
-                        VignetteEffect(
-                            visible = state.showVignette,
+                            showBilateralSideHint = false,
                             modifier = Modifier.fillMaxSize(),
                         )
 
@@ -142,68 +139,43 @@ fun TrainingSessionScreen(
                         }
                     }
 
-                    TrainingAttentionFrame(
-                        severity = state.glassMessage?.severity,
-                        visible = state.showVignette || state.glassMessage != null,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-
                     TrainingSessionStateOverlay(
                         state = state,
-                        localizedPhase = localizedPhase,
                         onViewReport = onViewReport,
                         modifier = Modifier.fillMaxSize(),
                     )
-
-                    if (
-                        state.glassMessage != null &&
-                        state.runState != SessionRunState.TRAINING &&
-                        state.runState != SessionRunState.AUTO_PAUSED
-                    ) {
-                        val message = state.glassMessage
-                        MovitGlassMessage(
-                            text = message.text,
-                            severity = message.severity,
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(
-                                    start = MovitSpacing.lg,
-                                    end = MovitSpacing.lg,
-                                    bottom = 128.dp,
-                                ),
-                        )
-                    }
 
                     TrainingSessionTopChrome(
                         exerciseName = state.exerciseName.ifBlank { movitText("workout_live_title") },
                         onBack = onBack,
-                        onFlipCamera = onFlipCamera?.takeIf { !state.isComplete && !state.isResting },
-                        flipEnabled = !state.isCameraSwitching,
+                        onFlipCamera = onFlipCamera,
+                        flipEnabled = state.requiresCamera() && !state.isCameraSwitching,
+                        onSettings = onSettings,
                         modifier = Modifier.align(Alignment.TopCenter),
                     )
 
-                    TrainingDebugFpsOverlay(
-                        fps = debugFps,
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .statusBarsPadding()
-                            .padding(top = 58.dp, end = MovitSpacing.md),
-                    )
-
-                    TrainingSessionControls(
-                        state = state,
-                        onPause = onPause,
-                        onResume = onResume,
-                        onStop = onStop,
-                        onFinish = onFinish,
-                        onViewReport = onViewReport,
-                        onSkipRest = onSkipRest,
-                        modifier = Modifier.align(Alignment.BottomCenter),
-                    )
+                    if (state.requiresCamera()) {
+                        TrainingSessionLiveBottomBar(
+                            state = state,
+                            localizedPhase = localizedPhase,
+                            onPause = onPause,
+                            onResume = onResume,
+                            modifier = Modifier.align(Alignment.BottomCenter),
+                        )
+                    } else {
+                        TrainingSessionNonCameraControls(
+                            state = state,
+                            onFinish = onFinish,
+                            onViewReport = onViewReport,
+                            onSkipRest = onSkipRest,
+                            modifier = Modifier.align(Alignment.BottomCenter),
+                        )
+                    }
                 }
             }
         }
     }
+
 }
 
 @Composable
@@ -212,6 +184,7 @@ private fun TrainingSessionTopChrome(
     onBack: () -> Unit,
     onFlipCamera: (() -> Unit)?,
     flipEnabled: Boolean,
+    onSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val movit = MaterialTheme.movitColors
@@ -253,34 +226,19 @@ private fun TrainingSessionTopChrome(
         } else {
             Spacer(Modifier.size(MovitSpacing.minTouchTarget))
         }
+        Spacer(Modifier.width(MovitSpacing.xs))
+        MovitChromeIconButton(
+            onClick = onSettings,
+            icon = Icons.Default.Settings,
+            contentDescription = movitText("training_session_open_settings"),
+            style = MovitChromeButtonStyle.OnMedia,
+        )
     }
-}
-
-@Composable
-private fun TrainingAttentionFrame(
-    severity: GlassMessageSeverity?,
-    visible: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    if (!visible) return
-    val movit = MaterialTheme.movitColors
-    val color = when (severity) {
-        GlassMessageSeverity.SUCCESS -> movit.success
-        GlassMessageSeverity.ERROR -> MaterialTheme.colorScheme.tertiary
-        GlassMessageSeverity.WARNING, null -> movit.warning
-        GlassMessageSeverity.INFO -> MaterialTheme.colorScheme.primary
-    }
-    Box(
-        modifier = modifier.border(
-            border = BorderStroke(width = 6.dp, color = color.copy(alpha = 0.86f)),
-        ),
-    )
 }
 
 @Composable
 private fun TrainingSessionStateOverlay(
     state: TrainingSessionUiState,
-    localizedPhase: String,
     onViewReport: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -294,94 +252,243 @@ private fun TrainingSessionStateOverlay(
             )
             return
         }
-        when (state.runState) {
-            SessionRunState.SETUP_POSE, SessionRunState.RESUME_SETUP -> {
-                SetupPosePanel(
-                    progressPercent = state.setupProgressPercent,
-                    phaseLabel = localizedSetupPhase(state.setupPhase),
-                    guidance = state.setupGuidance,
-                    actionMessage = state.setupActionMessage,
-                    cameraTip = state.setupCameraTip,
-                    regionStatus = state.setupRegionStatus,
-                    postureStatus = state.setupPostureStatus,
-                    directionStatus = state.setupDirectionStatus,
-                    jointRows = state.setupJointRows,
-                    referenceImageUrl = state.setupReferenceImageUrl,
-                    modifier = Modifier.align(Alignment.Center),
-                )
-            }
-            SessionRunState.COUNTDOWN, SessionRunState.RESUME_COUNTDOWN -> {
-                CountdownOverlay(
-                    value = state.countdownValue,
-                    frozen = state.countdownFrozen,
-                    freezeReason = state.setupActionMessage?.takeIf { state.countdownFrozen },
-                    modifier = Modifier.align(Alignment.Center),
-                )
-            }
-            SessionRunState.TRAINING -> {
-                TrainingHud(
-                    repCount = state.repCount,
-                    targetReps = state.targetReps,
-                    formPercent = state.liveFormPercent,
-                    phaseLabel = localizedPhase,
-                    elapsedLabel = state.elapsedLabel,
-                    progressPercent = state.progressPercent,
-                    formLabel = movitText("training_session_form_label"),
-                    repsLabel = movitText("workout_flow_reps_label"),
-                    timeLabel = movitText("train_metric_time"),
-                    progressLabel = movitText("home_progress"),
-                    coachMessage = state.glassMessage?.text,
-                    coachSeverity = state.glassMessage?.severity ?: GlassMessageSeverity.INFO,
-                    repsContentDescription = if (state.targetReps > 0) {
-                        movitText(
-                            "workout_live_reps",
-                            state.repCount,
-                            state.targetReps,
-                        )
-                    } else {
-                        null
-                    },
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = 78.dp, start = MovitSpacing.lg, end = MovitSpacing.lg),
-                )
-            }
-            SessionRunState.COMPLETED -> {
-                WorkoutCompletePanel(
-                    exerciseName = state.exerciseName,
-                    repCount = state.repCount,
-                    formPercent = state.liveFormPercent,
-                    showViewReport = state.reportDetailId != null,
-                    uploadNotice = state.uploadNotice,
-                    onViewReport = onViewReport,
-                    modifier = Modifier.align(Alignment.Center),
-                )
-            }
-            SessionRunState.AUTO_PAUSED -> {
-                val message = when (state.pauseReason) {
-                    PauseReason.VISIBILITY -> movitText("training_session_auto_pause_visibility")
-                    PauseReason.NO_POSE -> movitText("training_session_auto_pause_nopose")
-                    else -> movitText("training_session_auto_pause_generic")
-                }
-                MovitGlassMessage(
-                    text = message,
-                    severity = GlassMessageSeverity.WARNING,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(MovitSpacing.lg),
-                )
-            }
-            else -> Unit
+
+        if (state.runState == SessionRunState.COMPLETED) {
+            WorkoutCompletePanel(
+                exerciseName = state.exerciseName,
+                repCount = state.repCount,
+                formPercent = state.liveFormPercent,
+                showViewReport = state.reportDetailId != null,
+                uploadNotice = state.uploadNotice,
+                onViewReport = onViewReport,
+                modifier = Modifier.align(Alignment.Center),
+            )
         }
     }
 }
 
 @Composable
-private fun TrainingSessionControls(
+private fun TrainingSessionLiveBottomBar(
     state: TrainingSessionUiState,
+    localizedPhase: String,
     onPause: () -> Unit,
     onResume: () -> Unit,
-    onStop: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val movit = MaterialTheme.movitColors
+    val isTraining = state.runState == SessionRunState.TRAINING
+    val canStart = state.runState.canResume()
+    val actionLabel = if (isTraining) {
+        movitText("training_session_stop")
+    } else {
+        movitText("training_phase_start")
+    }
+    val actionIcon = if (isTraining) Icons.Default.Stop else Icons.Default.PlayArrow
+    val actionEnabled = isTraining || canStart
+    val action = if (isTraining) onPause else onResume
+    val progress = liveProgressMetric(state)
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = MovitSpacing.lg, vertical = MovitSpacing.md),
+        shape = RoundedCornerShape(30.dp),
+        color = movit.inkVeil78,
+        contentColor = movit.onInk,
+        border = BorderStroke(1.dp, movit.onInkVeil18),
+        shadowElevation = 0.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = MovitSpacing.md, vertical = MovitSpacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
+        ) {
+            TrainingBottomMetric(
+                title = movitText("training_session_status"),
+                value = liveStatusValue(state, localizedPhase),
+                textAlign = TextAlign.Start,
+                modifier = Modifier.weight(0.9f),
+            )
+            LiveTimerActionButton(
+                label = actionLabel,
+                elapsedLabel = state.elapsedLabel,
+                icon = actionIcon,
+                enabled = actionEnabled,
+                onClick = action,
+                modifier = Modifier.weight(1.22f),
+            )
+            TrainingBottomMetric(
+                title = progress.title,
+                value = progress.value,
+                textAlign = TextAlign.End,
+                modifier = Modifier.weight(0.9f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun TrainingBottomMetric(
+    title: String,
+    value: String,
+    textAlign: TextAlign,
+    modifier: Modifier = Modifier,
+) {
+    val movit = MaterialTheme.movitColors
+    Column(
+        modifier = modifier,
+        horizontalAlignment = when (textAlign) {
+            TextAlign.End -> Alignment.End
+            TextAlign.Center -> Alignment.CenterHorizontally
+            else -> Alignment.Start
+        },
+    ) {
+        Text(
+            text = title,
+            color = movit.onInkVeil70,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.W800,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = textAlign,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text(
+            text = value,
+            color = movit.onInk,
+            fontSize = 22.sp,
+            fontWeight = FontWeight.W900,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = textAlign,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+@Composable
+private fun LiveTimerActionButton(
+    label: String,
+    elapsedLabel: String,
+    icon: ImageVector,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val movit = MaterialTheme.movitColors
+    val container = if (enabled) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        movit.onInkVeil16
+    }
+    val content = if (enabled) {
+        MaterialTheme.colorScheme.onPrimary
+    } else {
+        movit.onInkVeil55
+    }
+
+    Surface(
+        onClick = { if (enabled) onClick() },
+        modifier = modifier,
+        shape = RoundedCornerShape(999.dp),
+        color = container,
+        contentColor = content,
+        border = BorderStroke(1.dp, movit.onInkVeil22),
+        shadowElevation = 0.dp,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = MovitSpacing.sm, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.W900,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Text(
+                text = elapsedLabel,
+                fontSize = 25.sp,
+                fontWeight = FontWeight.W900,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
+private fun liveStatusValue(
+    state: TrainingSessionUiState,
+    localizedPhase: String,
+): String = when (state.runState) {
+    SessionRunState.TRAINING -> localizedPhase.ifBlank { movitText("train_status_in_progress") }
+    SessionRunState.PAUSED,
+    SessionRunState.AUTO_PAUSED,
+    -> movitText("training_session_countdown_frozen_chip")
+    SessionRunState.COUNTDOWN,
+    SessionRunState.RESUME_COUNTDOWN,
+    -> state.countdownValue?.toString() ?: movitText("training_phase_ready")
+    SessionRunState.SETUP_POSE,
+    SessionRunState.RESUME_SETUP,
+    -> localizedSetupPhase(state.setupPhase)
+    SessionRunState.COMPLETED -> movitText("train_status_completed")
+    SessionRunState.IDLE -> movitText("training_phase_ready")
+}
+
+@Composable
+private fun liveProgressMetric(state: TrainingSessionUiState): LiveProgressMetric {
+    return if (state.targetReps > 0) {
+        LiveProgressMetric(
+            title = movitText("workout_flow_reps_label"),
+            value = "${state.repCount} / ${state.targetReps}",
+        )
+    } else {
+        val hold = state.holdStatus
+        val value = if (hold != null && hold.elapsedMs + hold.remainingMs > 0L) {
+            "${formatLiveDuration(hold.elapsedMs)} / ${formatLiveDuration(hold.elapsedMs + hold.remainingMs)}"
+        } else {
+            state.elapsedLabel
+        }
+        LiveProgressMetric(
+            title = movitText("session_duration"),
+            value = value,
+        )
+    }
+}
+
+private data class LiveProgressMetric(
+    val title: String,
+    val value: String,
+)
+
+private fun formatLiveDuration(elapsedMs: Long): String {
+    val seconds = (elapsedMs / 1000).coerceAtLeast(0)
+    val minutes = seconds / 60
+    val remainingSeconds = seconds % 60
+    return "$minutes:${remainingSeconds.toString().padStart(2, '0')}"
+}
+
+@Composable
+private fun TrainingSessionNonCameraControls(
+    state: TrainingSessionUiState,
     onFinish: () -> Unit,
     onViewReport: () -> Unit,
     onSkipRest: () -> Unit,
@@ -424,41 +531,6 @@ private fun TrainingSessionControls(
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
-            state.runState == SessionRunState.TRAINING -> {
-                MovitButton(
-                    text = movitText("training_session_pause"),
-                    onClick = onPause,
-                    variant = MovitButtonVariant.Filled,
-                    leadingIcon = Icons.Default.Pause,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-            state.runState.isPaused() -> {
-                MovitButton(
-                    text = movitText("training_session_resume"),
-                    onClick = onResume,
-                    variant = MovitButtonVariant.Filled,
-                    leadingIcon = Icons.Default.PlayArrow,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
-
-        if (
-            !state.isComplete &&
-            !state.isResting &&
-            state.workoutFlowPhase != WorkoutFlowPhase.REST &&
-            state.runState != SessionRunState.IDLE
-        ) {
-            MovitButton(
-                text = movitText("training_session_stop"),
-                onClick = onStop,
-                variant = MovitButtonVariant.Outlined,
-                leadingIcon = Icons.Default.Stop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = MovitSpacing.sm),
-            )
         }
     }
 }

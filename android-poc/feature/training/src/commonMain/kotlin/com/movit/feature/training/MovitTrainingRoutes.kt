@@ -101,6 +101,7 @@ fun TrainingSessionRoute(
   TrainingKeepScreenOnEffect()
   var useFrontCamera by remember { mutableStateOf(true) }
   var debugFps by remember { mutableIntStateOf(0) }
+  val openSettings = rememberOpenAppSettingsAction()
   var previousFlowPhase by remember { mutableStateOf<WorkoutFlowPhase?>(null) }
   LaunchedEffect(state.workoutFlowPhase) {
     val prev = previousFlowPhase
@@ -153,6 +154,7 @@ fun TrainingSessionRoute(
       viewModel.onCameraSwitchStarted()
       useFrontCamera = !useFrontCamera
     },
+    onSettings = openSettings,
     debugFps = debugFps.takeIf { isTrainingDebugBuild() },
     cameraSlot = {
       if (state.requiresCamera()) {

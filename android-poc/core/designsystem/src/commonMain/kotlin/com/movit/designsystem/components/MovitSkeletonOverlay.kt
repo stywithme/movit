@@ -86,6 +86,7 @@ fun MovitSkeletonOverlay(
     romIndicators: List<SkeletonRomIndicator> = emptyList(),
     /** Maps normalized analysis coords to canvas pixels; null = stretch to full canvas. */
     landmarkProjector: ((normalizedX: Float, normalizedY: Float, canvasWidth: Float, canvasHeight: Float) -> Offset)? = null,
+    showBilateralSideHint: Boolean = true,
 ) {
     val overlayState = parity.copy(jointVisuals = jointStates.ifEmpty { parity.jointVisuals })
     val trackPath = remember { Path() }
@@ -142,7 +143,7 @@ fun MovitSkeletonOverlay(
                     trainingPolish = trainingPolish,
                     point = ::point,
                 )
-                if (trainingPolish) {
+                if (trainingPolish && showBilateralSideHint) {
                     overlayState.bilateralSideHint?.let { hint ->
                         drawBilateralSideHint(hint, textMeasurer)
                     }

@@ -5,9 +5,9 @@ package com.movit.core.network.contract
  */
 internal object RetrofitContractPathExtractor {
 
-    private val interfaceFiles = listOf(
-        "AuthApi.kt",
-    )
+    // Legacy Retrofit fully removed (WS-D/B8): auth + subscriptions are now KMP-native
+    // (MovitMobileApi / MovitBillingApi). No Retrofit interface files remain to extract.
+    private val interfaceFiles = emptyList<String>()
 
     private val annotationRegex = Regex(
         """@(GET|POST|PUT|DELETE|PATCH)\("([^"]+)"\)""",

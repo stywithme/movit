@@ -13,20 +13,9 @@ object MobileApiContractRegistry {
     )
 
     /** Normalized as METHOD + space + path (placeholders: {id}, {slug}, {workoutId}, {sessionId}, {overrideId}, {exerciseId}). */
-    val legacyEndpoints: Set<String> = setOf(
-        // AuthApi (poc — ApiClient token refresh; removed in WS-D/F)
-        "POST api/mobile/auth/register",
-        "POST api/mobile/auth/login",
-        "POST api/mobile/auth/google",
-        "POST api/mobile/auth/refresh",
-        "POST api/mobile/auth/logout",
-        "POST api/mobile/auth/forgot-password",
-        "POST api/mobile/auth/reset-password",
-        "GET api/mobile/auth/profile",
-        "PATCH api/mobile/auth/profile",
-        "PATCH api/mobile/auth/settings",
-        // Subscriptions migrated to KMP Ktor (MovitBillingApi / MovitData.billing) — B3; no longer Retrofit.
-    )
+    // Legacy Retrofit fully removed (WS-D/B8): AuthApi/ApiClient deleted; auth endpoints are now
+    // KMP-native in MovitMobileApi (see kmpCoveredEndpoints), subscriptions in MovitBillingApi.
+    val legacyEndpoints: Set<String> = emptySet()
 
     /**
      * Legacy mobile consumers **outside** Retrofit (OkHttp constants).
