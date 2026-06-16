@@ -1,0 +1,227 @@
+{
+  "slug": "ex058_cable_high_row",
+  "status": "published",
+  "movementPattern": "PULL_VERTICAL",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "pull_vertical_family",
+  "familyOrder": 58,
+  "name": {
+    "ar": "cable high row",
+    "en": "cable high row"
+  },
+  "category": {
+    "code": "back",
+    "name": {
+      "ar": "تمارين الظهر",
+      "en": "Back"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "lats",
+    "traps",
+    "front_delts"
+  ],
+  "equipment": [
+    "cable_machine"
+  ],
+  "tags": [
+    "missing_exercises",
+    "upper_body",
+    "strength"
+  ],
+  "repCountingConfig": {
+    "reps": 10,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 4000
+  },
+  "supportsWeight": true,
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "أمامي",
+        "en": "Front view"
+      },
+      "posePosition": "standing_front_upper",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "front"
+      ],
+      "expectedRegions": [
+        "upper_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_shoulder_cross",
+          "role": "primary",
+          "startPose": {
+            "min": 100,
+            "max": 110
+          },
+          "upRange": {
+            "perfect": {
+              "min": 100,
+              "max": 110
+            },
+            "normal": {
+              "min": 92,
+              "max": 110
+            },
+            "pad": {
+              "min": 85,
+              "max": 110
+            }
+          },
+          "downRange": {
+            "perfect": {
+              "min": 10,
+              "max": 20
+            },
+            "normal": {
+              "min": 2,
+              "max": 20
+            },
+            "pad": {
+              "min": 0,
+              "max": 20
+            }
+          },
+          "stateMessages": {
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! وصلت لنهاية الحركة بتحكم",
+                "en": "Perfect! You reached the end range with control"
+              },
+              "down": {
+                "ar": "ممتاز! رجوع متحكم به للوضع الأساسي",
+                "en": "Perfect! Controlled return to the start position"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "حافظ على المدى الكامل بدون تعويض",
+                "en": "Keep the full range without compensating"
+              }
+            }
+          },
+          "pairedWith": "right_shoulder_cross"
+        },
+        {
+          "joint": "left_elbow",
+          "role": "secondary",
+          "startPose": {
+            "min": 170,
+            "max": 180
+          },
+          "range": {
+            "perfect": {
+              "min": 80,
+              "max": 180
+            },
+            "normal": {
+              "min": 72,
+              "max": 180
+            },
+            "pad": {
+              "min": 65,
+              "max": 180
+            }
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "المفصل ثابت وفي مدى مناسب",
+              "en": "The joint stays stable in a good range"
+            },
+            "warning": {
+              "ar": "راجع وضع هذا المفصل أثناء الحركة",
+              "en": "Check this joint position during the movement"
+            }
+          },
+          "pairedWith": "right_elbow"
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "ex058_cable_high_row_check_1",
+          "type": "depth_alignment",
+          "landmarks": {
+            "primary": "spine",
+            "secondary": "left_elbow",
+            "tertiary": "right_elbow"
+          },
+          "condition": {
+            "operator": "should_exceed",
+            "threshold": 0.08
+          },
+          "activePhases": [
+            "up"
+          ],
+          "errorMessage": {
+            "ar": "حافظ على المحاذاة المطلوبة أثناء التمرين.",
+            "en": "Keep the required alignment during the exercise."
+          },
+          "severity": "tip",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        },
+        {
+          "id": "ex058_cable_high_row_check_2",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip",
+            "tertiary": "left_knee"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.08
+          },
+          "activePhases": [
+            "up",
+            "top"
+          ],
+          "errorMessage": {
+            "ar": "حافظ على المحاذاة المطلوبة أثناء التمرين.",
+            "en": "Keep the required alignment during the exercise."
+          },
+          "severity": "tip",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء ممتاز في cable high row",
+            "en": "Excellent controlled cable high row"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "حافظ على التحكم في الحركة والتنفس الهادئ.",
+            "en": "Keep the movement controlled and breathe steadily."
+          }
+        ]
+      }
+    }
+  ],
+  "description": {
+    "ar": "cable high row — تمرين ضمن مجموعة التمارين المفقودة، تم تحويله من ملف الإكسل مع ربط المدى الحركي والفحوصات.",
+    "en": "cable high row from the missing exercises group, converted from the spreadsheet with ROM and checks linked by Exercise_ID."
+  },
+  "instructions": {
+    "ar": "1. جهز وضع البداية: Satnding.\n2. تحرك بسلاسة خلال المدى المطلوب.\n3. حافظ على المفاصل الثانوية تحت التحكم وتجنب التعويض.\n4. توقف إذا ظهر ألم حاد أو فقدت التحكم.",
+    "en": "1. Set up in the listed start position: Satnding.\n2. Move smoothly through the target range.\n3. Keep the secondary joints controlled and avoid compensation.\n4. Stop if sharp pain appears or control is lost."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION"
+    ]
+  },
+  "hasPositionChecks": true
+}

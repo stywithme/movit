@@ -1,0 +1,167 @@
+{
+  "slug": "ex067_copenhagen_adduction",
+  "status": "published",
+  "movementPattern": "CORE_BRACE",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "core_brace_family",
+  "familyOrder": 67,
+  "name": {
+    "ar": "Copenhagen Adduction",
+    "en": "Copenhagen Adduction"
+  },
+  "category": {
+    "code": "abs",
+    "name": {
+      "ar": "تمارين البطن",
+      "en": "Abs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "adductors"
+  ],
+  "equipment": [
+    "bench"
+  ],
+  "tags": [
+    "missing_exercises",
+    "lower_body",
+    "strength",
+    "unilateral"
+  ],
+  "repCountingConfig": {
+    "reps": 10,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 4000
+  },
+  "supportsWeight": true,
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "استلقاء جانبي",
+        "en": "Side-lying view"
+      },
+      "posePosition": "side_lying",
+      "expectedPostures": [
+        "lying_side"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "right_hip_cross",
+          "role": "primary",
+          "startPose": {
+            "min": 0,
+            "max": 10
+          },
+          "upRange": {
+            "perfect": {
+              "min": 30,
+              "max": 50
+            },
+            "normal": {
+              "min": 22,
+              "max": 50
+            },
+            "pad": {
+              "min": 15,
+              "max": 50
+            }
+          },
+          "downRange": {
+            "perfect": {
+              "min": 0,
+              "max": 10
+            },
+            "normal": {
+              "min": 0,
+              "max": 10
+            },
+            "pad": {
+              "min": 0,
+              "max": 10
+            }
+          },
+          "stateMessages": {
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! وصلت لنهاية الحركة بتحكم",
+                "en": "Perfect! You reached the end range with control"
+              },
+              "down": {
+                "ar": "ممتاز! رجوع متحكم به للوضع الأساسي",
+                "en": "Perfect! Controlled return to the start position"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "حافظ على المدى الكامل بدون تعويض",
+                "en": "Keep the full range without compensating"
+              }
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "ex067_copenhagen_adduction_check_1",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_hip",
+            "secondary": "left_shoulder"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.08
+          },
+          "activePhases": [
+            "all"
+          ],
+          "errorMessage": {
+            "ar": "حافظ على المحاذاة المطلوبة أثناء التمرين.",
+            "en": "Keep the required alignment during the exercise."
+          },
+          "severity": "tip",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء ممتاز في Copenhagen Adduction",
+            "en": "Excellent controlled Copenhagen Adduction"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "حافظ على التحكم في الحركة والتنفس الهادئ.",
+            "en": "Keep the movement controlled and breathe steadily."
+          }
+        ]
+      }
+    }
+  ],
+  "description": {
+    "ar": "Copenhagen Adduction — تمرين ضمن مجموعة التمارين المفقودة، تم تحويله من ملف الإكسل مع ربط المدى الحركي والفحوصات.",
+    "en": "Copenhagen Adduction from the missing exercises group, converted from the spreadsheet with ROM and checks linked by Exercise_ID."
+  },
+  "instructions": {
+    "ar": "1. جهز وضع البداية: Side-lying supported on forearm.\n2. تحرك بسلاسة خلال المدى المطلوب.\n3. حافظ على المفاصل الثانوية تحت التحكم وتجنب التعويض.\n4. توقف إذا ظهر ألم حاد أو فقدت التحكم.",
+    "en": "1. Set up in the listed start position: Side-lying supported on forearm.\n2. Move smoothly through the target range.\n3. Keep the secondary joints controlled and avoid compensation.\n4. Stop if sharp pain appears or control is lost."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION"
+    ]
+  },
+  "hasPositionChecks": true
+}

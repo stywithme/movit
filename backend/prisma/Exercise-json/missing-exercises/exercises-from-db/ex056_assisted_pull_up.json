@@ -1,0 +1,203 @@
+{
+  "slug": "ex056_assisted_pull_up",
+  "status": "published",
+  "movementPattern": "PULL_VERTICAL",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "pull_vertical_family",
+  "familyOrder": 56,
+  "name": {
+    "ar": "Assisted Pull-up",
+    "en": "Assisted Pull-up"
+  },
+  "category": {
+    "code": "back",
+    "name": {
+      "ar": "تمارين الظهر",
+      "en": "Back"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "lats",
+    "biceps"
+  ],
+  "equipment": [
+    "machine"
+  ],
+  "tags": [
+    "missing_exercises",
+    "upper_body",
+    "strength"
+  ],
+  "repCountingConfig": {
+    "reps": 10,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 4000
+  },
+  "supportsWeight": false,
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "أمامي",
+        "en": "Front view"
+      },
+      "posePosition": "standing_front_upper",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "front"
+      ],
+      "expectedRegions": [
+        "upper_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_shoulder_cross",
+          "role": "primary",
+          "startPose": {
+            "min": 160,
+            "max": 180
+          },
+          "upRange": {
+            "perfect": {
+              "min": 160,
+              "max": 180
+            },
+            "normal": {
+              "min": 152,
+              "max": 180
+            },
+            "pad": {
+              "min": 145,
+              "max": 180
+            }
+          },
+          "downRange": {
+            "perfect": {
+              "min": 60,
+              "max": 70
+            },
+            "normal": {
+              "min": 52,
+              "max": 70
+            },
+            "pad": {
+              "min": 45,
+              "max": 70
+            }
+          },
+          "stateMessages": {
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! وصلت لنهاية الحركة بتحكم",
+                "en": "Perfect! You reached the end range with control"
+              },
+              "down": {
+                "ar": "ممتاز! رجوع متحكم به للوضع الأساسي",
+                "en": "Perfect! Controlled return to the start position"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "حافظ على المدى الكامل بدون تعويض",
+                "en": "Keep the full range without compensating"
+              }
+            }
+          },
+          "pairedWith": "right_shoulder_cross"
+        },
+        {
+          "joint": "left_elbow",
+          "role": "secondary",
+          "startPose": {
+            "min": 170,
+            "max": 180
+          },
+          "range": {
+            "perfect": {
+              "min": 50,
+              "max": 180
+            },
+            "normal": {
+              "min": 42,
+              "max": 180
+            },
+            "pad": {
+              "min": 35,
+              "max": 180
+            }
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "المفصل ثابت وفي مدى مناسب",
+              "en": "The joint stays stable in a good range"
+            },
+            "warning": {
+              "ar": "راجع وضع هذا المفصل أثناء الحركة",
+              "en": "Check this joint position during the movement"
+            }
+          },
+          "pairedWith": "right_elbow"
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "ex056_assisted_pull_up_check_1",
+          "type": "depth_alignment",
+          "landmarks": {
+            "primary": "right_shoulder",
+            "secondary": "left_shoulder",
+            "tertiary": "right_elbow",
+            "quaternary": "left_elbow"
+          },
+          "condition": {
+            "operator": "should_exceed",
+            "threshold": 0.08
+          },
+          "activePhases": [
+            "up"
+          ],
+          "errorMessage": {
+            "ar": "حافظ على المحاذاة المطلوبة أثناء التمرين.",
+            "en": "Keep the required alignment during the exercise."
+          },
+          "severity": "error",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء ممتاز في Assisted Pull-up",
+            "en": "Excellent controlled Assisted Pull-up"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "حافظ على التحكم في الحركة والتنفس الهادئ.",
+            "en": "Keep the movement controlled and breathe steadily."
+          }
+        ]
+      }
+    }
+  ],
+  "description": {
+    "ar": "Assisted Pull-up — تمرين ضمن مجموعة التمارين المفقودة، تم تحويله من ملف الإكسل مع ربط المدى الحركي والفحوصات.",
+    "en": "Assisted Pull-up from the missing exercises group, converted from the spreadsheet with ROM and checks linked by Exercise_ID."
+  },
+  "instructions": {
+    "ar": "1. جهز وضع البداية: kneeling on the machine.\n2. تحرك بسلاسة خلال المدى المطلوب.\n3. حافظ على المفاصل الثانوية تحت التحكم وتجنب التعويض.\n4. توقف إذا ظهر ألم حاد أو فقدت التحكم.",
+    "en": "1. Set up in the listed start position: kneeling on the machine.\n2. Move smoothly through the target range.\n3. Keep the secondary joints controlled and avoid compensation.\n4. Stop if sharp pain appears or control is lost."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION"
+    ]
+  },
+  "hasPositionChecks": true
+}

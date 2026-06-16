@@ -1,0 +1,176 @@
+{
+  "slug": "ex070_barbell_overhead_press",
+  "status": "published",
+  "movementPattern": "PUSH_VERTICAL",
+  "loadCapability": "EXTERNAL_LOAD_REQUIRED",
+  "familyKey": "push_vertical_family",
+  "familyOrder": 70,
+  "name": {
+    "ar": "Barbell Overhead Press",
+    "en": "Barbell Overhead Press"
+  },
+  "category": {
+    "code": "shoulders",
+    "name": {
+      "ar": "تمارين الأكتاف",
+      "en": "Shoulders"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "front_delts",
+    "triceps"
+  ],
+  "equipment": [
+    "barbell"
+  ],
+  "tags": [
+    "missing_exercises",
+    "upper_body",
+    "strength"
+  ],
+  "repCountingConfig": {
+    "reps": 10,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 3000
+  },
+  "supportsWeight": true,
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "جالس",
+        "en": "Seated view"
+      },
+      "posePosition": "sitting_front_upper",
+      "expectedPostures": [
+        "sitting"
+      ],
+      "expectedDirections": [
+        "front"
+      ],
+      "expectedRegions": [
+        "upper_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_shoulder_cross",
+          "role": "primary",
+          "startPose": {
+            "min": 80,
+            "max": 90
+          },
+          "upRange": {
+            "perfect": {
+              "min": 160,
+              "max": 180
+            },
+            "normal": {
+              "min": 152,
+              "max": 180
+            },
+            "pad": {
+              "min": 145,
+              "max": 180
+            }
+          },
+          "downRange": {
+            "perfect": {
+              "min": 80,
+              "max": 90
+            },
+            "normal": {
+              "min": 72,
+              "max": 90
+            },
+            "pad": {
+              "min": 65,
+              "max": 90
+            }
+          },
+          "stateMessages": {
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! وصلت لنهاية الحركة بتحكم",
+                "en": "Perfect! You reached the end range with control"
+              },
+              "down": {
+                "ar": "ممتاز! رجوع متحكم به للوضع الأساسي",
+                "en": "Perfect! Controlled return to the start position"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "حافظ على المدى الكامل بدون تعويض",
+                "en": "Keep the full range without compensating"
+              }
+            }
+          },
+          "pairedWith": "right_shoulder_cross"
+        },
+        {
+          "joint": "left_elbow",
+          "role": "secondary",
+          "startPose": {
+            "min": 80,
+            "max": 100
+          },
+          "range": {
+            "perfect": {
+              "min": 80,
+              "max": 180
+            },
+            "normal": {
+              "min": 72,
+              "max": 180
+            },
+            "pad": {
+              "min": 65,
+              "max": 180
+            }
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "المفصل ثابت وفي مدى مناسب",
+              "en": "The joint stays stable in a good range"
+            },
+            "warning": {
+              "ar": "راجع وضع هذا المفصل أثناء الحركة",
+              "en": "Check this joint position during the movement"
+            }
+          },
+          "pairedWith": "right_elbow"
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء ممتاز في Barbell Overhead Press",
+            "en": "Excellent controlled Barbell Overhead Press"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "حافظ على التحكم في الحركة والتنفس الهادئ.",
+            "en": "Keep the movement controlled and breathe steadily."
+          }
+        ]
+      }
+    }
+  ],
+  "description": {
+    "ar": "Barbell Overhead Press — تمرين ضمن مجموعة التمارين المفقودة، تم تحويله من ملف الإكسل مع ربط المدى الحركي والفحوصات.",
+    "en": "Barbell Overhead Press from the missing exercises group, converted from the spreadsheet with ROM and checks linked by Exercise_ID."
+  },
+  "instructions": {
+    "ar": "1. جهز وضع البداية: sitting.\n2. تحرك بسلاسة خلال المدى المطلوب.\n3. حافظ على المفاصل الثانوية تحت التحكم وتجنب التعويض.\n4. توقف إذا ظهر ألم حاد أو فقدت التحكم.",
+    "en": "1. Set up in the listed start position: sitting.\n2. Move smoothly through the target range.\n3. Keep the secondary joints controlled and avoid compensation.\n4. Stop if sharp pain appears or control is lost."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION"
+    ]
+  }
+}

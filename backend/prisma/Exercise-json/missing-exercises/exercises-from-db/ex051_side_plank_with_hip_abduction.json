@@ -1,0 +1,213 @@
+{
+  "slug": "ex051_side_plank_with_hip_abduction",
+  "status": "published",
+  "movementPattern": "CORE_BRACE",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "core_brace_family",
+  "familyOrder": 51,
+  "name": {
+    "ar": "side plank with hip abduction",
+    "en": "side plank with hip abduction"
+  },
+  "category": {
+    "code": "shoulders",
+    "name": {
+      "ar": "تمارين الأكتاف",
+      "en": "Shoulders"
+    }
+  },
+  "countingMethod": "hold",
+  "muscles": [
+    "glutes"
+  ],
+  "equipment": [
+    "bodyweight"
+  ],
+  "tags": [
+    "missing_exercises",
+    "upper_body",
+    "strength",
+    "isometric",
+    "unilateral"
+  ],
+  "repCountingConfig": {
+    "duration": 15,
+    "gracePeriodMs": 2500
+  },
+  "supportsWeight": false,
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "استلقاء جانبي",
+        "en": "Side-lying view"
+      },
+      "posePosition": "side_lying",
+      "expectedPostures": [
+        "lying_side"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_hip_cross",
+          "role": "primary",
+          "startPose": {
+            "min": 30,
+            "max": 50
+          },
+          "range": {
+            "perfect": {
+              "min": 30,
+              "max": 50
+            },
+            "normal": {
+              "min": 22,
+              "max": 50
+            },
+            "pad": {
+              "min": 14,
+              "max": 50
+            }
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ثبات ممتاز في الوضع المطلوب",
+              "en": "Excellent hold in the target position"
+            },
+            "warning": {
+              "ar": "حافظ على الوضع ولا تدع الجسم ينهار",
+              "en": "Keep the position and do not let the body collapse"
+            }
+          }
+        },
+        {
+          "joint": "right_shoulder_cross",
+          "role": "secondary",
+          "startPose": {
+            "min": 85,
+            "max": 95
+          },
+          "range": {
+            "perfect": {
+              "min": 85,
+              "max": 95
+            },
+            "normal": {
+              "min": 77,
+              "max": 95
+            },
+            "pad": {
+              "min": 70,
+              "max": 95
+            }
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "المفصل ثابت وفي مدى مناسب",
+              "en": "The joint stays stable in a good range"
+            },
+            "warning": {
+              "ar": "راجع وضع هذا المفصل أثناء الحركة",
+              "en": "Check this joint position during the movement"
+            }
+          }
+        },
+        {
+          "joint": "right_elbow",
+          "role": "secondary",
+          "startPose": {
+            "min": 85,
+            "max": 95
+          },
+          "range": {
+            "perfect": {
+              "min": 85,
+              "max": 95
+            },
+            "normal": {
+              "min": 77,
+              "max": 95
+            },
+            "pad": {
+              "min": 70,
+              "max": 95
+            }
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "المفصل ثابت وفي مدى مناسب",
+              "en": "The joint stays stable in a good range"
+            },
+            "warning": {
+              "ar": "راجع وضع هذا المفصل أثناء الحركة",
+              "en": "Check this joint position during the movement"
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "ex051_side_plank_with_hip_abduction_check_1",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "right_shoulder",
+            "secondary": "rt_hip",
+            "tertiary": "rt_knee"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.08
+          },
+          "activePhases": [
+            "count",
+            "top"
+          ],
+          "errorMessage": {
+            "ar": "حافظ على المحاذاة المطلوبة أثناء التمرين.",
+            "en": "Keep the required alignment during the exercise."
+          },
+          "severity": "error",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء ممتاز في side plank with hip abduction",
+            "en": "Excellent controlled side plank with hip abduction"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "حافظ على التحكم في الحركة والتنفس الهادئ.",
+            "en": "Keep the movement controlled and breathe steadily."
+          }
+        ]
+      }
+    }
+  ],
+  "description": {
+    "ar": "side plank with hip abduction — تمرين ضمن مجموعة التمارين المفقودة، تم تحويله من ملف الإكسل مع ربط المدى الحركي والفحوصات.",
+    "en": "side plank with hip abduction from the missing exercises group, converted from the spreadsheet with ROM and checks linked by Exercise_ID."
+  },
+  "instructions": {
+    "ar": "1. جهز وضع البداية: Laying supported on forearms and toes.\n2. تحرك بسلاسة خلال المدى المطلوب.\n3. حافظ على المفاصل الثانوية تحت التحكم وتجنب التعويض.\n4. توقف إذا ظهر ألم حاد أو فقدت التحكم.",
+    "en": "1. Set up in the listed start position: Laying supported on forearms and toes.\n2. Move smoothly through the target range.\n3. Keep the secondary joints controlled and avoid compensation.\n4. Stop if sharp pain appears or control is lost."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM"
+    ]
+  },
+  "hasPositionChecks": true
+}

@@ -1,0 +1,32 @@
+Exercise_ID,Exercise Name,Starting Postion,Body Part,View Camera,Type,Primary Joint,Secondary Joint,Secondary Joint,Secondaty Joint,Secondary Joint,Invert Indicator,Repetion,Muscles,Rep Minimum Time,Rep Maximum Time,Equipment
+EX002,Shoulder Horizontal Abduction,Sitting,Upper Body,rear view,push and pull,Both Shoulder,Both Elbow,wrist,,,,10,Posterior Deltoid – Middle Trapezius – Rhomboids,1.5 seconds,4 secondes,Machine
+EX003,Standing Elbow Flexion with Dumbells,Standing,Upper body,side view,Ups and down,Both Elbow,Both Shoulder,wrist,,,,10,Biceps Brachii – Brachialis – Brachioradialis,1.5 seconds,3 secondes,Dumbbells
+EX004,Back Extension,on bench,Trunk,Side view,ups and down,Both Hip,Both Shoulder,,,,,10,Gluteus Maximus – Erector Spinae – Hamstrings,1.5 seconds,4 secondes,
+EX005,Leg Extension,Sitting,Lower Body,Side view,Ups and down,Both knees,Both Hip,Both Ankle,,,,10,Quadriceps,1.5 seconds,4 secondes,Machine
+EX006,Squat goblet,Standing,Lower Body,front view,ups and down,Both Hip,Both knees,Both Ankle,spine,elbow,Yes,10,"Quadriceps, Glutes maximus",1.5 seconds,4 secondes,Dumbbells
+EX008,Reverse lunge,Standing,Lower Body,Side view,ups and down,RT knee,RT hip,RT ankle,LT knee,,YES,10,"Quadriceps, Glutes maximus",1.5 seconds,4 secondes,
+EX010,Barbell romanian dealift,Standing,Lower Body,Side view,ups and down,Both Hip,Both knees,Both Shoulder,,,Yes,10,"Hamstrings, Gluteus Maximus",1.5 seconds,4 secondes,Bar
+EX011,Barbell Hip Thrust,Back support on bar,Lower body,Sagital Plane,Side view,ups and down,Hip,Knee,,,,,10,"Gluteus Maximus, Hamstring",1.5 seconds,4 secondes
+EX014,Standing Calf raise,Satnding,Lower Body,Sagital Plane,Side view lower body,Ups and down,Ankle,knee,,,,,10,Calf muscles,1.5 seconds,3 secondes
+EX015,Push Up,"High plank position, arm extended",Upper Body,Sagital Plane,Side view,Ups and down,Elbow,Shoulder,,,,Yes,10,"Pectoralis Major, Triceps Brachii, Anterior Deltoid",1.5 seconds,3 secondes
+EX016,Dumbell Bensh press,Laying down on bensh,Upper Body,Transverse Plane,front view upper body,Ups and down,Shoulder,Elbow,,,,,10,"Pectoralis Major, Triceps Brachii, Anterior Deltoid",1.5 seconds,3 secondes
+EX017,Dumbell shoulder press,sitting,Upper Body,Frontal plane,front view upper body,Ups and down,Shoulder,Elbow,,,,,10,"Anterior Deltoid, Middle Deltoid, Triceps Brachii",1.5 seconds,3 secondes
+EX018,Arnold press,sitting,Upper Body,fontal plane,front view upper body,Ups and down,Shoulder,Elbow,,,,,10,"Anterior Deltoid, Middle Deltoid, Triceps Brachii",1.5 seconds,3 secondes
+EX051,side plank with hip abduction,Laying supported on forearms and toes,Upper Body,front view,Isometric Hold,LT Hip,Knee,Rt shoulder,Rt elbow,,,10,"Gluteus Medius, Gluteus Minimus",1.5 secondes,4 secondes,
+EX053,Overhead Dumbbell Triceps Extension,Sitting,Upper Body,Side view,Ups and down,elbow,shoulder,wrist,,,,10,Triceps Brachii (Long Head),1.5 secondes,4 secondes,Dumbbells
+EX054,Lat Pulldown,Sitting,Upper Body,front view,Ups and down,Shoulder cross,Elbow,wrist,,,,10,Latissimus Dorsi – Teres Major – Biceps Brachii,1.5 secondes,4 secondes,cable
+EX055,Neutral-Grip Lat Pulldown,Sitting,Upper Body,front view,Ups and down,Shoulder cross,Elbow,wrist,,,,10,Latissimus Dorsi – Teres Major – Biceps Brachii – Brachialis,1.5 secondes,4 secondes,cable
+EX056,Assisted Pull-up,kneeling on the machine,Upper Body,front view,Ups and down,Shoulder cross,Elbow,wrist,,,,10,Latissimus Dorsi – Teres Major – Biceps Brachii – Rhomboids,1.5 secondes,4 secondes,machine
+EX058,cable high row,Satnding,Upper Body,front view,Ups and down,Shoulder,Elbow,wrist,,,,10,"Rhomboids, Middle Trapezius, Posterior Deltoid, Latissimus Dorsi",1.5 secondes,4 secondes,Cable
+EX059,Dumbbell Hammer curl,Satnding,Upper Body,Side view,Ups and down,elbow,shoulder,wrist,,,,10,"Brachialis, Brachioradialis",1.5 secondes,4 secondes,Dumbbells
+EX060,Barbell Curl,Satnding,Upper Body,Side view,Ups and down,elbow,shoulder,wrist,,,,10,Biceps brachii (long & short head),1.5 secondes,4 secondes,bar
+EX061,Tempo Squat,Satnding,Lower Body,Side view,Ups and down,knee,hip,ankle,,,,10,"Quadriceps, Gluteus Maximus",4 secondes,6 secondes,
+EX062,Pause squat,Satnding,Lower Body,Side view,Isometric Hold,knee,hip,ankle,,,,10,"Quadriceps, Gluteus Maximus",4 secondes,7 secondes,
+EX063,Deficit RDL,Standing,Lower Body,Side view,Ups and down,Hip,Knee,ankle,,,,10,"Hamstrings, Gluteus Maximus",3 secondes,6 secondes,Bar
+EX064,Box squat,Satnding,Lower Body,Side view,Ups and down,knee,hip,ankle,,,,10,"Gluteus Maximus, Quadriceps",3 secondes,6 secondes,Box
+EX065,Single leg box squat,Satnding,Lower Body,Side view,Ups and down,Rt knee,Rt hip,Rt ankle,Lt knee,,,10,"Gluteus Maximus, Quadriceps",3 secondes,6 secondes,Box
+EX066,Standing cable kickback,Satnding,Lower Body,Side view,Ups and down,Hip,Knee,spine,,,,10,Gluteus Maximus,1.5 secondes,4 secondes,Cable
+EX067,Copenhagen Adduction,Side-lying supported on forearm,Lower Body,front view,Ups and down,RT Hip,Rt Shoulder,rt elbow,,,,10,"Adductor Longus, Adductor Magnus, Adductor Brevis",1.5 secondes,4 secondes,bensh
+EX068,single leg calf raise,Satnding,Lower Body,Side view,Ups and down,rt ankle,Rt  Knee,Rt hip,,,,10,"Gastrocnemius, Soleus",1.5 secondes,4 secondes,Dumbbells
+EX069,Bulgarian Split Squat,Satnding,Lower Body,Side view,Ups and down,Rt knee,Rt hip,,,,,10,"Quadriceps, Gluteus Maximus, Gluteus Medius",1.5 secondes,4 secondes,Dumbbells
+EX070,Barbell Overhead Press,sitting,Upper Body,Frontal plane,front view,Ups and down,Shoulder,Elbow,,,,10,"Anterior Deltoid, Middle Deltoid, Triceps Brachii",1.5 secondes,3 secondes,Bar

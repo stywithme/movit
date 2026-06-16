@@ -1,0 +1,259 @@
+{
+  "slug": "ex061_tempo_squat",
+  "status": "published",
+  "movementPattern": "SQUAT",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "squat_family",
+  "familyOrder": 61,
+  "name": {
+    "ar": "Tempo Squat",
+    "en": "Tempo Squat"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "quadriceps",
+    "glutes"
+  ],
+  "equipment": [
+    "bodyweight"
+  ],
+  "tags": [
+    "missing_exercises",
+    "lower_body",
+    "strength"
+  ],
+  "repCountingConfig": {
+    "reps": 10,
+    "minRepIntervalMs": 4000,
+    "maxRepIntervalMs": 6000
+  },
+  "supportsWeight": false,
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "جانبي",
+        "en": "Side view"
+      },
+      "posePosition": "standing_side_lower",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "lower_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_knee",
+          "role": "primary",
+          "startPose": {
+            "min": 160,
+            "max": 180
+          },
+          "upRange": {
+            "perfect": {
+              "min": 160,
+              "max": 180
+            },
+            "normal": {
+              "min": 152,
+              "max": 180
+            },
+            "pad": {
+              "min": 145,
+              "max": 180
+            }
+          },
+          "downRange": {
+            "perfect": {
+              "min": 50,
+              "max": 70
+            },
+            "normal": {
+              "min": 42,
+              "max": 70
+            },
+            "pad": {
+              "min": 35,
+              "max": 70
+            }
+          },
+          "stateMessages": {
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! وصلت لنهاية الحركة بتحكم",
+                "en": "Perfect! You reached the end range with control"
+              },
+              "down": {
+                "ar": "ممتاز! رجوع متحكم به للوضع الأساسي",
+                "en": "Perfect! Controlled return to the start position"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "حافظ على المدى الكامل بدون تعويض",
+                "en": "Keep the full range without compensating"
+              }
+            }
+          },
+          "pairedWith": "right_knee"
+        },
+        {
+          "joint": "left_hip",
+          "role": "secondary",
+          "startPose": {
+            "min": 170,
+            "max": 180
+          },
+          "range": {
+            "perfect": {
+              "min": 60,
+              "max": 180
+            },
+            "normal": {
+              "min": 52,
+              "max": 180
+            },
+            "pad": {
+              "min": 45,
+              "max": 180
+            }
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "المفصل ثابت وفي مدى مناسب",
+              "en": "The joint stays stable in a good range"
+            },
+            "warning": {
+              "ar": "راجع وضع هذا المفصل أثناء الحركة",
+              "en": "Check this joint position during the movement"
+            }
+          },
+          "pairedWith": "right_hip"
+        },
+        {
+          "joint": "left_ankle",
+          "role": "secondary",
+          "startPose": {
+            "min": 80,
+            "max": 90
+          },
+          "range": {
+            "perfect": {
+              "min": 70,
+              "max": 90
+            },
+            "normal": {
+              "min": 62,
+              "max": 90
+            },
+            "pad": {
+              "min": 55,
+              "max": 90
+            }
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "المفصل ثابت وفي مدى مناسب",
+              "en": "The joint stays stable in a good range"
+            },
+            "warning": {
+              "ar": "راجع وضع هذا المفصل أثناء الحركة",
+              "en": "Check this joint position during the movement"
+            }
+          },
+          "pairedWith": "right_ankle"
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "ex061_tempo_squat_check_1",
+          "type": "depth_alignment",
+          "landmarks": {
+            "primary": "left_knee",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "should_exceed",
+            "threshold": 0.08
+          },
+          "activePhases": [
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "حافظ على المحاذاة المطلوبة أثناء التمرين.",
+            "en": "Keep the required alignment during the exercise."
+          },
+          "severity": "tip",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        },
+        {
+          "id": "ex061_tempo_squat_check_2",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_hip",
+            "secondary": "spine",
+            "tertiary": "left_shoulder"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.08
+          },
+          "activePhases": [
+            "up",
+            "down",
+            "top"
+          ],
+          "errorMessage": {
+            "ar": "حافظ على المحاذاة المطلوبة أثناء التمرين.",
+            "en": "Keep the required alignment during the exercise."
+          },
+          "severity": "tip",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء ممتاز في Tempo Squat",
+            "en": "Excellent controlled Tempo Squat"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "حافظ على التحكم في الحركة والتنفس الهادئ.",
+            "en": "Keep the movement controlled and breathe steadily."
+          }
+        ]
+      }
+    }
+  ],
+  "description": {
+    "ar": "Tempo Squat — تمرين ضمن مجموعة التمارين المفقودة، تم تحويله من ملف الإكسل مع ربط المدى الحركي والفحوصات.",
+    "en": "Tempo Squat from the missing exercises group, converted from the spreadsheet with ROM and checks linked by Exercise_ID."
+  },
+  "instructions": {
+    "ar": "1. جهز وضع البداية: Satnding.\n2. تحرك بسلاسة خلال المدى المطلوب.\n3. حافظ على المفاصل الثانوية تحت التحكم وتجنب التعويض.\n4. توقف إذا ظهر ألم حاد أو فقدت التحكم.",
+    "en": "1. Set up in the listed start position: Satnding.\n2. Move smoothly through the target range.\n3. Keep the secondary joints controlled and avoid compensation.\n4. Stop if sharp pain appears or control is lost."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION"
+    ]
+  },
+  "hasPositionChecks": true
+}

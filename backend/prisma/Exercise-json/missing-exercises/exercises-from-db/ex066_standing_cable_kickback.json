@@ -1,0 +1,233 @@
+{
+  "slug": "ex066_standing_cable_kickback",
+  "status": "published",
+  "movementPattern": "LUNGE",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "lunge_family",
+  "familyOrder": 66,
+  "name": {
+    "ar": "Standing cable kickback",
+    "en": "Standing cable kickback"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "glutes"
+  ],
+  "equipment": [
+    "cable_machine"
+  ],
+  "tags": [
+    "missing_exercises",
+    "lower_body",
+    "strength",
+    "unilateral"
+  ],
+  "repCountingConfig": {
+    "reps": 10,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 4000
+  },
+  "supportsWeight": true,
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "جانبي",
+        "en": "Side view"
+      },
+      "posePosition": "standing_side_lower",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "lower_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_hip",
+          "role": "primary",
+          "startPose": {
+            "min": 160,
+            "max": 180
+          },
+          "upRange": {
+            "perfect": {
+              "min": 160,
+              "max": 180
+            },
+            "normal": {
+              "min": 152,
+              "max": 180
+            },
+            "pad": {
+              "min": 145,
+              "max": 180
+            }
+          },
+          "downRange": {
+            "perfect": {
+              "min": 0,
+              "max": 50
+            },
+            "normal": {
+              "min": 0,
+              "max": 50
+            },
+            "pad": {
+              "min": 0,
+              "max": 50
+            }
+          },
+          "stateMessages": {
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! وصلت لنهاية الحركة بتحكم",
+                "en": "Perfect! You reached the end range with control"
+              },
+              "down": {
+                "ar": "ممتاز! رجوع متحكم به للوضع الأساسي",
+                "en": "Perfect! Controlled return to the start position"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "حافظ على المدى الكامل بدون تعويض",
+                "en": "Keep the full range without compensating"
+              }
+            }
+          }
+        },
+        {
+          "joint": "left_knee",
+          "role": "secondary",
+          "startPose": {
+            "min": 170,
+            "max": 180
+          },
+          "range": {
+            "perfect": {
+              "min": 170,
+              "max": 180
+            },
+            "normal": {
+              "min": 162,
+              "max": 180
+            },
+            "pad": {
+              "min": 155,
+              "max": 180
+            }
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "المفصل ثابت وفي مدى مناسب",
+              "en": "The joint stays stable in a good range"
+            },
+            "warning": {
+              "ar": "راجع وضع هذا المفصل أثناء الحركة",
+              "en": "Check this joint position during the movement"
+            }
+          }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "min": 25,
+            "max": 35
+          },
+          "range": {
+            "perfect": {
+              "min": 25,
+              "max": 35
+            },
+            "normal": {
+              "min": 17,
+              "max": 35
+            },
+            "pad": {
+              "min": 10,
+              "max": 35
+            }
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "المفصل ثابت وفي مدى مناسب",
+              "en": "The joint stays stable in a good range"
+            },
+            "warning": {
+              "ar": "راجع وضع هذا المفصل أثناء الحركة",
+              "en": "Check this joint position during the movement"
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "ex066_standing_cable_kickback_check_1",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_hip",
+            "secondary": "left_shoulder"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.08
+          },
+          "activePhases": [
+            "up",
+            "down",
+            "top"
+          ],
+          "errorMessage": {
+            "ar": "حافظ على المحاذاة المطلوبة أثناء التمرين.",
+            "en": "Keep the required alignment during the exercise."
+          },
+          "severity": "tip",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء ممتاز في Standing cable kickback",
+            "en": "Excellent controlled Standing cable kickback"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "حافظ على التحكم في الحركة والتنفس الهادئ.",
+            "en": "Keep the movement controlled and breathe steadily."
+          }
+        ]
+      }
+    }
+  ],
+  "description": {
+    "ar": "Standing cable kickback — تمرين ضمن مجموعة التمارين المفقودة، تم تحويله من ملف الإكسل مع ربط المدى الحركي والفحوصات.",
+    "en": "Standing cable kickback from the missing exercises group, converted from the spreadsheet with ROM and checks linked by Exercise_ID."
+  },
+  "instructions": {
+    "ar": "1. جهز وضع البداية: Satnding.\n2. تحرك بسلاسة خلال المدى المطلوب.\n3. حافظ على المفاصل الثانوية تحت التحكم وتجنب التعويض.\n4. توقف إذا ظهر ألم حاد أو فقدت التحكم.",
+    "en": "1. Set up in the listed start position: Satnding.\n2. Move smoothly through the target range.\n3. Keep the secondary joints controlled and avoid compensation.\n4. Stop if sharp pain appears or control is lost."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION"
+    ]
+  },
+  "hasPositionChecks": true
+}

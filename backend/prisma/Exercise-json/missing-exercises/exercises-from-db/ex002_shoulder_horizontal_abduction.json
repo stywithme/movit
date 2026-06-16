@@ -1,0 +1,237 @@
+{
+  "slug": "ex002_shoulder_horizontal_abduction",
+  "status": "published",
+  "movementPattern": "OTHER",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "other_family",
+  "familyOrder": 2,
+  "name": {
+    "ar": "Shoulder Horizontal Abduction",
+    "en": "Shoulder Horizontal Abduction"
+  },
+  "category": {
+    "code": "shoulders",
+    "name": {
+      "ar": "تمارين الأكتاف",
+      "en": "Shoulders"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "front_delts",
+    "traps",
+    "lats"
+  ],
+  "equipment": [
+    "machine"
+  ],
+  "tags": [
+    "missing_exercises",
+    "upper_body",
+    "strength"
+  ],
+  "repCountingConfig": {
+    "reps": 10,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 4000
+  },
+  "supportsWeight": false,
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "أمامي - جالس",
+        "en": "Seated front view"
+      },
+      "posePosition": "sitting_front_upper",
+      "expectedPostures": [
+        "sitting"
+      ],
+      "expectedDirections": [
+        "front"
+      ],
+      "expectedRegions": [
+        "upper_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_shoulder",
+          "role": "primary",
+          "startPose": {
+            "min": 70,
+            "max": 100
+          },
+          "upRange": {
+            "perfect": {
+              "min": 90,
+              "max": 100
+            },
+            "normal": {
+              "min": 85,
+              "max": 100
+            },
+            "pad": {
+              "min": 85,
+              "max": 100
+            }
+          },
+          "downRange": {
+            "perfect": {
+              "min": 70,
+              "max": 80
+            },
+            "normal": {
+              "min": 62,
+              "max": 80
+            },
+            "pad": {
+              "min": 55,
+              "max": 80
+            }
+          },
+          "stateMessages": {
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! وصلت لنهاية الحركة بتحكم",
+                "en": "Perfect! You reached the end range with control"
+              },
+              "down": {
+                "ar": "ممتاز! رجوع متحكم به للوضع الأساسي",
+                "en": "Perfect! Controlled return to the start position"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "حافظ على المدى الكامل بدون تعويض",
+                "en": "Keep the full range without compensating"
+              }
+            }
+          },
+          "pairedWith": "right_shoulder"
+        },
+        {
+          "joint": "left_elbow",
+          "role": "secondary",
+          "startPose": {
+            "min": 160,
+            "max": 180
+          },
+          "range": {
+            "perfect": {
+              "min": 160,
+              "max": 180
+            },
+            "normal": {
+              "min": 152,
+              "max": 180
+            },
+            "pad": {
+              "min": 145,
+              "max": 180
+            }
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "المفصل ثابت وفي مدى مناسب",
+              "en": "The joint stays stable in a good range"
+            },
+            "warning": {
+              "ar": "راجع وضع هذا المفصل أثناء الحركة",
+              "en": "Check this joint position during the movement"
+            }
+          },
+          "pairedWith": "right_elbow"
+        },
+        {
+          "joint": "left_wrist",
+          "role": "secondary",
+          "startPose": {
+            "min": 160,
+            "max": 180
+          },
+          "range": {
+            "perfect": {
+              "min": 160,
+              "max": 180
+            },
+            "normal": {
+              "min": 152,
+              "max": 180
+            },
+            "pad": {
+              "min": 145,
+              "max": 180
+            }
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "المفصل ثابت وفي مدى مناسب",
+              "en": "The joint stays stable in a good range"
+            },
+            "warning": {
+              "ar": "راجع وضع هذا المفصل أثناء الحركة",
+              "en": "Check this joint position during the movement"
+            }
+          },
+          "pairedWith": "right_wrist"
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "ex002_shoulder_horizontal_abduction_check_1",
+          "type": "horizontal_alignment",
+          "landmarks": {
+            "primary": "right_elbow",
+            "secondary": "right_shoulder",
+            "tertiary": "neck",
+            "quaternary": "left_shoulder"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.08
+          },
+          "activePhases": [
+            "up"
+          ],
+          "errorMessage": {
+            "ar": "حافظ على المحاذاة المطلوبة أثناء التمرين.",
+            "en": "Keep the required alignment during the exercise."
+          },
+          "severity": "tip",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء ممتاز في Shoulder Horizontal Abduction",
+            "en": "Excellent controlled Shoulder Horizontal Abduction"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "حافظ على التحكم في الحركة والتنفس الهادئ.",
+            "en": "Keep the movement controlled and breathe steadily."
+          }
+        ]
+      }
+    }
+  ],
+  "description": {
+    "ar": "Shoulder Horizontal Abduction — تمرين ضمن مجموعة التمارين المفقودة، تم تحويله من ملف الإكسل مع ربط المدى الحركي والفحوصات.",
+    "en": "Shoulder Horizontal Abduction from the missing exercises group, converted from the spreadsheet with ROM and checks linked by Exercise_ID."
+  },
+  "instructions": {
+    "ar": "1. جهز وضع البداية: Sitting.\n2. تحرك بسلاسة خلال المدى المطلوب.\n3. حافظ على المفاصل الثانوية تحت التحكم وتجنب التعويض.\n4. توقف إذا ظهر ألم حاد أو فقدت التحكم.",
+    "en": "1. Set up in the listed start position: Sitting.\n2. Move smoothly through the target range.\n3. Keep the secondary joints controlled and avoid compensation.\n4. Stop if sharp pain appears or control is lost."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION"
+    ]
+  },
+  "hasPositionChecks": true
+}
