@@ -26,7 +26,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -36,6 +39,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.movit.core.data.preferences.MovitTrainingPreferencesState
 import com.movit.core.training.session.SessionRunState
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.components.MovitBackButton
@@ -62,14 +66,22 @@ fun TrainingSessionScreen(
     cameraSlot: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     onFlipCamera: (() -> Unit)? = null,
-    onSettings: () -> Unit = {},
+    trainingPreferences: MovitTrainingPreferencesState = MovitTrainingPreferencesState(),
+    useFrontCamera: Boolean = true,
+    onApplyTrainingSettings: (TrainingSessionSettingsSelection) -> Unit = {},
     debugFps: Int? = null,
 ) {
-    val romIndicators = remember(state.landmarks, state.skeletonOverlayParity) {
+    var showSettingsDialog by remember { mutableStateOf(false) }
+    val romIndicators = remember(
+        state.landmarks,
+        state.skeletonOverlayParity,
+        trainingPreferences.indicatorType,
+    ) {
         buildSkeletonRomIndicators(
             landmarks = state.landmarks,
             jointVisuals = state.skeletonOverlayParity.jointVisuals,
             isBilateralFlipped = state.skeletonOverlayParity.isBilateralFlipped,
+            indicatorType = trainingPreferences.indicatorType,
         )
     }
     val landmarkProjector = remember(
@@ -150,7 +162,7 @@ fun TrainingSessionScreen(
                         onBack = onBack,
                         onFlipCamera = onFlipCamera,
                         flipEnabled = state.requiresCamera() && !state.isCameraSwitching,
-                        onSettings = onSettings,
+                        onSettings = { showSettingsDialog = true },
                         modifier = Modifier.align(Alignment.TopCenter),
                     )
 
@@ -176,6 +188,18 @@ fun TrainingSessionScreen(
         }
     }
 
+    if (showSettingsDialog) {
+        TrainingSessionSettingsDialog(
+            preferences = trainingPreferences,
+            useFrontCamera = useFrontCamera,
+            onSwitchCamera = onFlipCamera?.takeIf { state.requiresCamera() && !state.isCameraSwitching },
+            onApply = { selection ->
+                onApplyTrainingSettings(selection)
+                showSettingsDialog = false
+            },
+            onDismiss = { showSettingsDialog = false },
+        )
+    }
 }
 
 @Composable
@@ -230,7 +254,7 @@ private fun TrainingSessionTopChrome(
         MovitChromeIconButton(
             onClick = onSettings,
             icon = Icons.Default.Settings,
-            contentDescription = movitText("training_session_open_settings"),
+            contentDescription = movitText("training_settings"),
             style = MovitChromeButtonStyle.OnMedia,
         )
     }

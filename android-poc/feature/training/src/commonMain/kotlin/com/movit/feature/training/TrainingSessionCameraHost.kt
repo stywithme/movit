@@ -11,5 +11,6 @@ expect fun TrainingSessionCameraHost(
     onError: (String) -> Unit,
     modifier: Modifier = Modifier,
     useFrontCamera: Boolean = true,
+    modelType: String = "full",
     onDebugFps: ((Int) -> Unit)? = null,
 )

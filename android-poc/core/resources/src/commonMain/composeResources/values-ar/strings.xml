@@ -23,6 +23,7 @@
     <string name="common_error_title">حدث خطأ ما</string>
     <string name="common_retry">إعادة المحاولة</string>
     <string name="common_back">رجوع</string>
+    <string name="common_cancel">إلغاء</string>
     <string name="ds_week_legend_done">تم</string>
     <string name="ds_week_legend_today">اليوم</string>
     <string name="ds_week_legend_missed">فائت</string>
@@ -771,6 +772,26 @@
     <string name="training_session_flip_camera_a11y">تبديل الكاميرا</string>
     <string name="training_session_camera_switch_failed">تعذّر تبديل الكاميرا. حاول مرة أخرى.</string>
     <string name="training_session_debug_fps">إطار/ث %1$d</string>
+    <string name="training_settings">إعدادات التمرين</string>
+    <string name="visual_indicator">المؤشر البصري</string>
+    <string name="indicator_line">خط</string>
+    <string name="indicator_arc">قوس</string>
+    <string name="voice_feedback">التعليق الصوتي</string>
+    <string name="voice_feedback_desc">تصحيح الأداء في الوقت الفعلي</string>
+    <string name="coach_intensity">كثافة المدرب</string>
+    <string name="coach_intensity_desc">تتحكم في عدد مرات كلام المدرب أثناء التدريب بالكاميرا.</string>
+    <string name="coach_calm">هادئ</string>
+    <string name="coach_standard">متوازن</string>
+    <string name="coach_strict">صارم</string>
+    <string name="detection_model">نموذج الكشف</string>
+    <string name="detection_model_desc">النموذج الثقيل أكثر دقة لكنه أبطأ.</string>
+    <string name="model_full">كامل</string>
+    <string name="model_heavy">ثقيل</string>
+    <string name="apply">تطبيق</string>
+    <string name="camera_position">موقع الكاميرا</string>
+    <string name="front_camera">الكاميرا الأمامية</string>
+    <string name="back_camera">الكاميرا الخلفية</string>
+    <string name="switch_text">تبديل</string>
 
     <string name="auth_app_name">WayToFix</string>
     <string name="auth_tagline">تدريب بالذكاء الاصطناعي لتحسين الأداء</string>

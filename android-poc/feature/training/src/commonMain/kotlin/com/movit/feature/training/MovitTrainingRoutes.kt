@@ -16,9 +16,12 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.movit.core.data.MovitData
+import com.movit.core.posecapture.boundary.trainingdebug.PoseModelType
+import com.movit.core.posecapture.boundary.trainingdebug.PoseModelTypePort
 import com.movit.core.training.engine.feedback.FeedbackRouter
 import com.movit.core.training.feedback.CoachIntensity
 import com.movit.core.training.session.TrainingFlowItem
+import org.koin.core.component.get
 
 /**
  * Typed session args (I-24) — shell uses [com.movit.feature.shell.MovitInnerRoute.TrainingSession]
@@ -76,6 +79,10 @@ fun TrainingSessionRoute(
   val feedbackPorts = rememberTrainingFeedbackPorts(language = args.language)
   val deviceTiltPort = remember { resolveTrainingDeviceTiltPort() }
   val prefs = MovitData.trainingPreferences.snapshot()
+  val trainingPrefs by MovitData.trainingPreferences.state.collectAsStateWithLifecycle(initialValue = prefs)
+  val poseModelPort = remember {
+    runCatching { MovitData.koin().get<PoseModelTypePort>() }.getOrNull()
+  }
   val viewModel: TrainingSessionViewModel = viewModel {
     TrainingSessionViewModel(
       exerciseSlug = args.exerciseSlug,
@@ -101,7 +108,6 @@ fun TrainingSessionRoute(
   TrainingKeepScreenOnEffect()
   var useFrontCamera by remember { mutableStateOf(true) }
   var debugFps by remember { mutableIntStateOf(0) }
-  val openSettings = rememberOpenAppSettingsAction()
   var previousFlowPhase by remember { mutableStateOf<WorkoutFlowPhase?>(null) }
   LaunchedEffect(state.workoutFlowPhase) {
     val prev = previousFlowPhase
@@ -154,7 +160,15 @@ fun TrainingSessionRoute(
       viewModel.onCameraSwitchStarted()
       useFrontCamera = !useFrontCamera
     },
-    onSettings = openSettings,
+    trainingPreferences = trainingPrefs,
+    useFrontCamera = useFrontCamera,
+    onApplyTrainingSettings = { selection ->
+      MovitData.trainingPreferences.setIndicatorType(selection.indicatorType)
+      MovitData.trainingPreferences.setVoiceFeedbackEnabled(selection.voiceFeedbackEnabled)
+      MovitData.trainingPreferences.setCoachIntensity(selection.coachIntensity)
+      MovitData.trainingPreferences.setModelType(selection.modelType)
+      poseModelPort?.setSelectedModel(PoseModelType.fromPreference(selection.modelType))
+    },
     debugFps = debugFps.takeIf { isTrainingDebugBuild() },
     cameraSlot = {
       if (state.requiresCamera()) {
@@ -163,6 +177,7 @@ fun TrainingSessionRoute(
           onCameraReady = viewModel::onCameraReady,
           onError = viewModel::onCameraError,
           useFrontCamera = useFrontCamera,
+          modelType = trainingPrefs.modelType,
           onDebugFps = if (isTrainingDebugBuild()) {
             { fps -> debugFps = fps }
           } else {

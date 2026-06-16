@@ -31,6 +31,7 @@ actual fun TrainingSessionCameraHost(
     onError: (String) -> Unit,
     modifier: Modifier,
     useFrontCamera: Boolean,
+    modelType: String,
     onDebugFps: ((Int) -> Unit)?,
 ) {
     val context = LocalContext.current
@@ -79,6 +80,7 @@ actual fun TrainingSessionCameraHost(
     var frameCounter by remember { mutableIntStateOf(0) }
     var fpsWindowStart by remember { mutableStateOf(0L) }
     var previewBound by remember { mutableStateOf(false) }
+    var appliedModelType by remember { mutableStateOf(modelType) }
 
     DisposableEffect(cameraSource) {
         val source = cameraSource ?: return@DisposableEffect onDispose {}
@@ -113,10 +115,14 @@ actual fun TrainingSessionCameraHost(
         return
     }
 
-    LaunchedEffect(useFrontCamera, previewBound, cameraSource) {
+    LaunchedEffect(useFrontCamera, modelType, previewBound, cameraSource) {
         if (!previewBound) return@LaunchedEffect
         val androidSource = cameraSource as? CameraXFrameSource
         androidSource?.setDebugFpsEnabled(isTrainingDebugBuild())
+        if (appliedModelType != modelType) {
+            androidSource?.reinitializePoseDetector()
+            appliedModelType = modelType
+        }
         cameraSource.start(resolveTrainingCameraConfiguration(useFrontCamera))
     }
 

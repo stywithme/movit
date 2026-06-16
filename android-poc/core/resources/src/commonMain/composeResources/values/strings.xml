@@ -25,6 +25,7 @@
     <string name="common_error_title">Something went wrong</string>
     <string name="common_retry">Retry</string>
     <string name="common_back">Back</string>
+    <string name="common_cancel">Cancel</string>
     <string name="ds_week_legend_done">Done</string>
     <string name="ds_week_legend_today">Today</string>
     <string name="ds_week_legend_missed">Missed</string>
@@ -743,6 +744,26 @@
     <string name="training_session_flip_camera_a11y">Switch camera</string>
     <string name="training_session_camera_switch_failed">Could not switch camera. Try again.</string>
     <string name="training_session_debug_fps">FPS %1$d</string>
+    <string name="training_settings">Training Settings</string>
+    <string name="visual_indicator">Visual Indicator</string>
+    <string name="indicator_line">Line</string>
+    <string name="indicator_arc">Arc</string>
+    <string name="voice_feedback">Voice Feedback</string>
+    <string name="voice_feedback_desc">Real-time form correction</string>
+    <string name="coach_intensity">Coach Intensity</string>
+    <string name="coach_intensity_desc">Controls how often the live coach speaks during camera training.</string>
+    <string name="coach_calm">Calm</string>
+    <string name="coach_standard">Standard</string>
+    <string name="coach_strict">Strict</string>
+    <string name="detection_model">Detection Model</string>
+    <string name="detection_model_desc">Heavy model is more accurate but slower.</string>
+    <string name="model_full">Full</string>
+    <string name="model_heavy">Heavy</string>
+    <string name="apply">Apply</string>
+    <string name="camera_position">Camera Position</string>
+    <string name="front_camera">Front Camera</string>
+    <string name="back_camera">Back Camera</string>
+    <string name="switch_text">Switch</string>
 
     <!-- Program flow (15) -->
     <string name="program_flow_list_title">Programs</string>

@@ -477,6 +477,12 @@ class CameraXFrameSource(
         startGate.reset()
     }
 
+    fun reinitializePoseDetector() {
+        stop()
+        poseDetector.shutdown()
+        detectorWarmedUp.set(false)
+    }
+
     fun dispose() {
         stop()
         poseDetector.setListener(null)

@@ -26,6 +26,7 @@ fun buildSkeletonRomIndicators(
     landmarks: List<SkeletonLandmarkPoint>?,
     jointVisuals: Map<String, SkeletonJointVisual>,
     isBilateralFlipped: Boolean = false,
+    indicatorType: String = "arc",
 ): List<SkeletonRomIndicator> {
     if (landmarks == null || landmarks.size < 33 || jointVisuals.isEmpty()) return emptyList()
     return jointVisuals.values.mapNotNull { visual ->
@@ -34,10 +35,10 @@ fun buildSkeletonRomIndicators(
         val lookupCode = effectiveLandmarkJointCode(visual.jointCode, isBilateralFlipped)
         val anchor = jointAnchor(lookupCode, landmarks) ?: return@mapNotNull null
         val (rangeMin, rangeMax, angle, color) = qualityBand(visual.quality)
-        val style = if (lookupCode.contains("knee", ignoreCase = true)) {
-            SkeletonRomIndicatorStyle.ARC
-        } else {
+        val style = if (indicatorType.equals("line", ignoreCase = true)) {
             SkeletonRomIndicatorStyle.LINE
+        } else {
+            SkeletonRomIndicatorStyle.ARC
         }
         SkeletonRomIndicator(
             jointCode = visual.jointCode,

@@ -28,6 +28,7 @@ actual fun TrainingSessionCameraHost(
     onError: (String) -> Unit,
     modifier: Modifier,
     useFrontCamera: Boolean,
+    modelType: String,
     onDebugFps: ((Int) -> Unit)?,
 ) {
     var previewReady by remember { mutableStateOf(false) }
@@ -75,7 +76,7 @@ actual fun TrainingSessionCameraHost(
         }
     }
 
-    LaunchedEffect(previewReady, useFrontCamera, cameraSource) {
+    LaunchedEffect(previewReady, useFrontCamera, modelType, cameraSource) {
         if (!previewReady) return@LaunchedEffect
         cameraError = null
         runCatching {
