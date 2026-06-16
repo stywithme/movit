@@ -107,6 +107,7 @@ object MovitData {
     val trainingWrites: TrainingSessionWriteCoordinator get() = koin().get()
     val mobileWrites: MobileWriteSyncRepository get() = koin().get()
     val account: AccountSyncRepository get() = koin().get()
+    val billing: com.movit.core.data.repository.BillingSyncRepository get() = koin().get()
     val trainingConfig: TrainingConfigRepository get() = koin().get()
     val trainingPreferences: MovitTrainingPreferences get() = koin().get()
     val audioManifest: AudioManifestCache get() = koin().get()

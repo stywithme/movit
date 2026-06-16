@@ -24,6 +24,7 @@ kotlin {
             implementation(project(":core:model"))
             implementation(project(":core:resources"))
             implementation(project(":core:data"))
+            implementation(project(":core:network"))
             implementation(project(":core:designsystem"))
             implementation(project(":feature:explore"))
             implementation(project(":feature:home"))

@@ -16,6 +16,7 @@ import com.movit.core.data.outbox.OfflineWriteQueue
 import com.movit.core.data.platform.MovitPlatformBindings
 import com.movit.core.data.platform.PlatformMovitAuthTokenStore
 import com.movit.core.data.repository.AccountSyncRepository
+import com.movit.core.data.repository.BillingSyncRepository
 import com.movit.core.data.repository.DayCustomizationLocalStore
 import com.movit.core.data.repository.ExercisePreferenceLocalStore
 import com.movit.core.data.repository.ExploreSyncRepository
@@ -32,9 +33,11 @@ import com.movit.core.data.repository.WorkoutSessionSyncRepository
 import com.movit.core.data.sync.MovitSyncOrchestrator
 import com.movit.core.data.sync.WeekOfflinePackPrefetcher
 import com.movit.core.network.MovitAuthTokenStore
+import com.movit.core.network.MovitBillingApi
 import com.movit.core.network.MovitHttpClientConfig
 import com.movit.core.network.MovitMobileApi
 import com.movit.core.network.createMovitHttpClient
+import io.ktor.client.HttpClient
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
@@ -45,22 +48,22 @@ fun movitDataModule(
     single<MovitPlatformBindings> { platform }
     single<MovitLocalStore> { localStoreFactory.create(platform) }
     single<MovitAuthTokenStore> { PlatformMovitAuthTokenStore { get() } }
-    single {
+    single<HttpClient> {
         val bindings = get<MovitPlatformBindings>()
         val tokenStore = get<MovitAuthTokenStore>()
         val refreshClient = createMovitHttpClient(enableLogging = false)
-        MovitMobileApi(
-            createMovitHttpClient(
-                enableLogging = false,
-                auth = MovitHttpClientConfig(
-                    tokenStore = tokenStore,
-                    baseUrlProvider = { bindings.apiBaseUrl() },
-                    refreshHttpClient = refreshClient,
-                    onSessionExpired = { MovitData.notifySessionExpired() },
-                ),
+        createMovitHttpClient(
+            enableLogging = false,
+            auth = MovitHttpClientConfig(
+                tokenStore = tokenStore,
+                baseUrlProvider = { bindings.apiBaseUrl() },
+                refreshHttpClient = refreshClient,
+                onSessionExpired = { MovitData.notifySessionExpired() },
             ),
-        ) { bindings.apiBaseUrl() }
+        )
     }
+    single { MovitMobileApi(get()) { get<MovitPlatformBindings>().apiBaseUrl() } }
+    single { MovitBillingApi(get()) { get<MovitPlatformBindings>().apiBaseUrl() } }
     single { MovitSyncMetadataStore(get()) }
     single { AudioManifestCache(get()) }
     single<AudioFileDownloadPort> { AudioFileDownloader() }
@@ -122,6 +125,7 @@ fun movitDataModule(
         )
     }
     single { AccountSyncRepository(api = get(), platform = { get() }) }
+    single { BillingSyncRepository(api = get(), platform = { get() }) }
     single { ExercisePreferenceLocalStore(get()) }
     single { DayCustomizationLocalStore(get()) }
     single { MessageLibraryCache(get()) }

@@ -9,7 +9,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
-import com.movit.MovitMainActivity
 import com.movit.billing.SubscriptionActivity
 import com.movit.designsystem.platform.installMovitCoilImageLoader
 import com.movit.feature.shell.MovitAppShellHost
@@ -19,7 +18,6 @@ import com.movit.feature.shell.MovitAppShellHost
  * ([com.movit.debug.MovitShellPilotActivity]).
  */
 fun ComponentActivity.attachMovitShellHost(
-    legacyAuthExitEnabled: Boolean = false,
     launchIntent: android.content.Intent? = null,
 ) {
     MovitShellDeepLinkParser.applyFromIntent(launchIntent)
@@ -41,14 +39,9 @@ fun ComponentActivity.attachMovitShellHost(
 
     setContent {
         MovitAppShellHost(
-            legacyAuthExitEnabled = legacyAuthExitEnabled,
             onHostBackPressed = { finish() },
             onLaunchLegacySubscription = {
                 startActivity(Intent(this@attachMovitShellHost, SubscriptionActivity::class.java))
-                true
-            },
-            onNavigateToLegacyAuth = {
-                restartShellForAuth()
                 true
             },
             onShareText = { subject, text ->
@@ -70,13 +63,4 @@ private fun ComponentActivity.applyImmersiveNavigationBar() {
         systemBarsBehavior =
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
     }
-}
-
-private fun ComponentActivity.restartShellForAuth() {
-    startActivity(
-        Intent(this, MovitMainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        },
-    )
-    finish()
 }

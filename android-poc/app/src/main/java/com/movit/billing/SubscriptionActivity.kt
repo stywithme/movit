@@ -20,15 +20,14 @@ import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
-import com.google.gson.JsonElement
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.movit.billing.network.BillingApiClient
-import com.movit.billing.network.CancelSubscriptionRequest
-import com.movit.billing.network.CreateCheckoutRequest
-import com.movit.billing.network.SubscriptionApiEnvelope
-import com.movit.billing.network.SubscriptionPlanDto
-import com.movit.billing.network.SubscriptionStatusDto
-import com.movit.billing.network.VerifyGooglePlayRequest
+import com.movit.core.data.MovitData
+import com.movit.core.network.dto.CancelSubscriptionRequest
+import com.movit.core.network.dto.CreateCheckoutRequest
+import com.movit.core.network.dto.SubscriptionPlanDto
+import com.movit.core.network.dto.SubscriptionStatusDto
+import com.movit.core.network.dto.VerifyGooglePlayRequest
+import com.movit.shared.AppResult
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivitySubscriptionBinding
 import com.trainingvalidator.poc.databinding.ItemSubscriptionPlanBinding
@@ -37,8 +36,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
-import retrofit2.Response
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import java.text.DateFormat
 import java.util.Locale
 import kotlin.coroutines.resume
@@ -151,21 +154,19 @@ class SubscriptionActivity : AppCompatActivity(), PurchasesUpdatedListener {
         lifecycleScope.launch {
             if (showRefreshIndicator) binding.swipeRefresh.isRefreshing = true
             try {
-                val plansRes = withContext(Dispatchers.IO) { BillingApiClient.api.getPlans() }
-                val statusRes = withContext(Dispatchers.IO) { BillingApiClient.api.getStatus() }
-
-                if (plansRes.isSuccessful && plansRes.body()?.success == true) {
-                    plans = plansRes.body()?.data.orEmpty().filter { it.isActive }
-                } else {
-                    Toast.makeText(this@SubscriptionActivity, R.string.subscription_load_error, Toast.LENGTH_LONG).show()
+                when (val plansRes = MovitData.billing.getPlans()) {
+                    is AppResult.Success -> plans = plansRes.value.filter { it.isActive }
+                    is AppResult.Failure ->
+                        Toast.makeText(this@SubscriptionActivity, R.string.subscription_load_error, Toast.LENGTH_LONG).show()
                 }
 
                 if (selectedPlan == null || plans.none { it.id == selectedPlan?.id }) {
                     selectedPlan = plans.firstOrNull()
                 }
 
-                if (statusRes.isSuccessful && statusRes.body()?.success == true) {
-                    applyStatus(statusRes.body()?.data)
+                when (val statusRes = MovitData.billing.getStatus()) {
+                    is AppResult.Success -> applyStatus(statusRes.value)
+                    is AppResult.Failure -> Unit
                 }
 
                 renderPlanCards()
@@ -321,39 +322,34 @@ class SubscriptionActivity : AppCompatActivity(), PurchasesUpdatedListener {
     )
 
     private fun localizedFeatureLines(features: JsonElement?): List<String> {
-        if (features == null || features.isJsonNull) return emptyList()
+        if (features == null || features is JsonNull) return emptyList()
         val lang = billingLanguage
-        return when {
-            features.isJsonArray -> features.asJsonArray.mapNotNull { feature ->
+        return when (features) {
+            is JsonArray -> features.mapNotNull { feature ->
                 localizedText(feature, lang, "").takeIf { it.isNotBlank() }?.let { "✓ $it" }
             }
-            features.isJsonObject -> {
-                val obj = features.asJsonObject
-                val localized = obj.get(if (lang.startsWith("ar")) "ar" else "en")
-                when {
-                    localized != null && localized.isJsonArray -> localized.asJsonArray.mapNotNull {
+            is JsonObject -> {
+                when (val localized = features[if (lang.startsWith("ar")) "ar" else "en"]) {
+                    is JsonArray -> localized.mapNotNull {
                         localizedText(it, lang, "").takeIf { value -> value.isNotBlank() }?.let { value -> "✓ $value" }
                     }
-                    localized != null && localized.isJsonPrimitive -> listOf("✓ ${localized.asString}")
+                    is JsonPrimitive -> listOf("✓ ${localized.contentOrNull.orEmpty()}")
                     else -> emptyList()
                 }
             }
-            features.isJsonPrimitive -> listOf("✓ ${features.asString}")
+            is JsonPrimitive -> listOf("✓ ${features.contentOrNull.orEmpty()}")
             else -> emptyList()
         }
     }
 
     private fun localizedText(el: JsonElement?, lang: String, fallback: String): String {
-        if (el == null || el.isJsonNull) return fallback
-        if (el.isJsonPrimitive) return el.asString
-        val obj = el.asJsonObject
+        if (el == null || el is JsonNull) return fallback
+        if (el is JsonPrimitive) return el.contentOrNull ?: fallback
+        val obj = el as? JsonObject ?: return fallback
         val key = if (lang.lowercase(Locale.getDefault()).startsWith("ar")) "ar" else "en"
-        if (obj.has(key)) {
-            val v = obj.get(key)
-            if (v != null && v.isJsonPrimitive) return v.asString
-        }
-        val first = obj.entrySet().firstOrNull()?.value
-        return if (first != null && first.isJsonPrimitive) first.asString else fallback
+        (obj[key] as? JsonPrimitive)?.contentOrNull?.let { return it }
+        val first = obj.values.firstOrNull() as? JsonPrimitive
+        return first?.contentOrNull ?: fallback
     }
 
     private fun startMyFatoorahCheckout() {
@@ -369,15 +365,16 @@ class SubscriptionActivity : AppCompatActivity(), PurchasesUpdatedListener {
                     billingPeriod = billingPeriod(),
                     gateway = "myfatoorah",
                 )
-                val res = withContext(Dispatchers.IO) { BillingApiClient.api.createCheckout(body) }
-                if (!res.isSuccessful || res.body()?.success != true) {
-                    Toast.makeText(this@SubscriptionActivity, apiErrorMessage(res, R.string.subscription_checkout_failed), Toast.LENGTH_LONG).show()
-                    return@launch
+                val checkout = when (val res = MovitData.billing.createCheckout(body)) {
+                    is AppResult.Success -> res.value
+                    is AppResult.Failure -> {
+                        Toast.makeText(this@SubscriptionActivity, res.message.ifBlank { getString(R.string.subscription_checkout_failed) }, Toast.LENGTH_LONG).show()
+                        return@launch
+                    }
                 }
-                val checkout = res.body()?.data
-                val url = checkout?.paymentUrl
+                val url = checkout.paymentUrl
                 if (url.isNullOrBlank()) {
-                    if (checkout?.status == "paid") {
+                    if (checkout.status == "paid") {
                         refreshSessionFromServer()
                         loadAll(showRefreshIndicator = true)
                     } else {
@@ -497,15 +494,14 @@ class SubscriptionActivity : AppCompatActivity(), PurchasesUpdatedListener {
                     immediate = false,
                     reason = "user_app",
                 )
-                val res = withContext(Dispatchers.IO) { BillingApiClient.api.cancel(body) }
-                withContext(Dispatchers.Main) {
-                    if (res.isSuccessful && res.body()?.success == true) {
+                when (val res = MovitData.billing.cancel(body)) {
+                    is AppResult.Success -> {
                         Toast.makeText(this@SubscriptionActivity, R.string.subscription_cancelled, Toast.LENGTH_SHORT).show()
                         refreshSessionFromServer()
                         loadAll(showRefreshIndicator = true)
-                    } else {
-                        Toast.makeText(this@SubscriptionActivity, apiErrorMessage(res, R.string.subscription_load_error), Toast.LENGTH_LONG).show()
                     }
+                    is AppResult.Failure ->
+                        Toast.makeText(this@SubscriptionActivity, res.message.ifBlank { getString(R.string.subscription_load_error) }, Toast.LENGTH_LONG).show()
                 }
             } catch (_: Exception) {
                 Toast.makeText(this@SubscriptionActivity, R.string.subscription_load_error, Toast.LENGTH_LONG).show()
@@ -541,37 +537,32 @@ class SubscriptionActivity : AppCompatActivity(), PurchasesUpdatedListener {
                 packageName = Billing.requireHost().applicationId,
                 orderId = purchase.orderId,
             )
-            val res = withContext(Dispatchers.IO) { BillingApiClient.api.verifyGooglePlay(req) }
-            withContext(Dispatchers.Main) {
-                if (res.isSuccessful && res.body()?.success == true) {
+            when (val res = MovitData.billing.verifyGooglePlay(req)) {
+                is AppResult.Success -> {
                     Toast.makeText(this@SubscriptionActivity, R.string.subscription_purchase_success, Toast.LENGTH_SHORT).show()
                     refreshSessionFromServer()
                     loadAll(showRefreshIndicator = true)
-                } else {
-                    Toast.makeText(this@SubscriptionActivity, apiErrorMessage(res, R.string.subscription_load_error), Toast.LENGTH_LONG).show()
                 }
+                is AppResult.Failure ->
+                    Toast.makeText(this@SubscriptionActivity, res.message.ifBlank { getString(R.string.subscription_load_error) }, Toast.LENGTH_LONG).show()
             }
         } catch (_: Exception) {
-            withContext(Dispatchers.Main) {
-                Toast.makeText(this@SubscriptionActivity, R.string.subscription_load_error, Toast.LENGTH_LONG).show()
-            }
+            Toast.makeText(this@SubscriptionActivity, R.string.subscription_load_error, Toast.LENGTH_LONG).show()
         }
     }
 
     private suspend fun pollCheckoutOnce(checkoutId: String) {
         try {
             repeat(3) { attempt ->
-                val res = withContext(Dispatchers.IO) { BillingApiClient.api.getCheckout(checkoutId) }
-                if (res.isSuccessful && res.body()?.success == true) {
-                    val st = res.body()?.data?.status
-                    if (st == "paid" || st == "failed") {
-                        clearPendingCheckout()
-                        refreshSessionFromServer()
-                        withContext(Dispatchers.Main) {
-                            loadAll(showRefreshIndicator = true)
-                        }
-                        return
-                    }
+                val st = when (val res = MovitData.billing.getCheckout(checkoutId)) {
+                    is AppResult.Success -> res.value.status
+                    is AppResult.Failure -> null
+                }
+                if (st == "paid" || st == "failed") {
+                    clearPendingCheckout()
+                    refreshSessionFromServer()
+                    loadAll(showRefreshIndicator = true)
+                    return
                 }
                 if (attempt < 2) delay(1500)
             }
@@ -594,28 +585,6 @@ class SubscriptionActivity : AppCompatActivity(), PurchasesUpdatedListener {
 
     private fun clearPendingCheckout() {
         prefs().edit().remove(KEY_PENDING_CHECKOUT).apply()
-    }
-
-    private fun apiErrorMessage(response: Response<*>, fallbackResId: Int): String {
-        response.body()?.let { body ->
-            val error = when (body) {
-                is SubscriptionApiEnvelope<*> -> body.error
-                else -> null
-            }
-            if (!error.isNullOrBlank()) return error
-        }
-
-        val raw = response.errorBody()?.string()
-        if (!raw.isNullOrBlank()) {
-            runCatching {
-                val json = JSONObject(raw)
-                val error = json.optString("error")
-                val message = json.optString("message")
-                if (error.isNotBlank()) return error
-                if (message.isNotBlank()) return message
-            }
-        }
-        return getString(fallbackResId)
     }
 
     companion object {

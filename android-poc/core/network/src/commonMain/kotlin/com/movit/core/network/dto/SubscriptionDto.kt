@@ -1,19 +1,31 @@
-package com.movit.billing.network
+package com.movit.core.network.dto
 
-import com.google.gson.JsonElement
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
+/**
+ * Mobile subscription / billing contracts (Ktor + kotlinx.serialization) — the single source of
+ * truth shared between Android (Play Billing + MyFatoorah) and, later, iOS (StoreKit). Replaces the
+ * legacy Retrofit/Gson models under `feature:billing/network`.
+ *
+ * `name` / `description` / `features` stay as raw [JsonElement] because the backend returns them
+ * polymorphically (plain string, `{en, ar}` object, or localized array).
+ */
+@Serializable
 data class SubscriptionApiEnvelope<T>(
-    val success: Boolean,
+    val success: Boolean = false,
     val data: T? = null,
     val error: String? = null,
 )
 
+@Serializable
 data class MobilePlansEnvelope(
-    val success: Boolean,
+    val success: Boolean = false,
     val data: List<SubscriptionPlanDto>? = null,
     val error: String? = null,
 )
 
+@Serializable
 data class SubscriptionPlanDto(
     val id: String,
     val name: JsonElement? = null,
@@ -31,18 +43,20 @@ data class SubscriptionPlanDto(
     val isActive: Boolean = true,
 )
 
+@Serializable
 data class SubscriptionStatusDto(
-    val isPro: Boolean,
-    val isFree: Boolean,
+    val isPro: Boolean = false,
+    val isFree: Boolean = false,
     val subscriptionExpiry: String? = null,
     val activeSubscription: SubscriptionRowDto? = null,
     val pendingCheckouts: List<SubscriptionCheckoutDto> = emptyList(),
 )
 
+@Serializable
 data class SubscriptionRowDto(
     val id: String,
     val userId: String? = null,
-    val planId: String,
+    val planId: String = "",
     val status: String? = null,
     val billingPeriod: String? = null,
     val gateway: String? = null,
@@ -52,6 +66,7 @@ data class SubscriptionRowDto(
     val plan: SubscriptionPlanDto? = null,
 )
 
+@Serializable
 data class SubscriptionCheckoutDto(
     val id: String,
     val userId: String? = null,
@@ -68,6 +83,7 @@ data class SubscriptionCheckoutDto(
     val subscription: SubscriptionRowDto? = null,
 )
 
+@Serializable
 data class CreateCheckoutRequest(
     val planId: String,
     val billingPeriod: String,
@@ -76,6 +92,7 @@ data class CreateCheckoutRequest(
     val replaceSubscriptionId: String? = null,
 )
 
+@Serializable
 data class VerifyGooglePlayRequest(
     val planId: String,
     val billingPeriod: String,
@@ -86,17 +103,20 @@ data class VerifyGooglePlayRequest(
     val linkedPurchaseToken: String? = null,
 )
 
+@Serializable
 data class CancelSubscriptionRequest(
     val subscriptionId: String? = null,
     val immediate: Boolean? = false,
     val reason: String? = null,
 )
 
+@Serializable
 data class VerifyGooglePlayResponse(
     val subscription: SubscriptionRowDto? = null,
     val status: SubscriptionStatusDto? = null,
 )
 
+@Serializable
 data class CancelSubscriptionResponse(
     val subscription: SubscriptionRowDto? = null,
     val status: SubscriptionStatusDto? = null,

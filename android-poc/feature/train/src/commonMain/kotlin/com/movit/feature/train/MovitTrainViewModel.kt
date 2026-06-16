@@ -23,6 +23,7 @@ class MovitTrainViewModel(
 
     private val _effects = MutableSharedFlow<MovitTrainEffect>(extraBufferCapacity = 1)
     val effects: SharedFlow<MovitTrainEffect> = _effects.asSharedFlow()
+    private var prefetchedSessionKey: String? = null
 
     fun loadInitial() {
         viewModelScope.launch { load(isRefresh = false) }
@@ -69,6 +70,7 @@ class MovitTrainViewModel(
                 selectedDayIndex = null,
             )
         }
+        prefetchPrimarySession(dashboard)
     }
 
     fun onEvent(event: MovitTrainEvent) {
@@ -80,18 +82,7 @@ class MovitTrainViewModel(
             is MovitTrainEvent.DayClicked -> toggleDaySelection(event.index)
             MovitTrainEvent.DayActionClicked -> handleDayAction()
             MovitTrainEvent.StartWorkoutClicked -> {
-                val launchTarget = _state.value.dashboard
-                    ?.today
-                    ?.sessions
-                    .orEmpty()
-                    .firstOrNull { !it.isCompleted && it.launchTarget != null }
-                    ?.launchTarget
-                    ?: _state.value.dashboard
-                        ?.today
-                        ?.sessions
-                        .orEmpty()
-                        .firstOrNull { it.launchTarget != null }
-                        ?.launchTarget
+                val launchTarget = resolvePrimaryLaunchTarget(_state.value.dashboard)
 
                 if (launchTarget != null) {
                     _effects.tryEmit(MovitTrainEffect.OpenProgramWorkout(launchTarget))
@@ -139,6 +130,50 @@ class MovitTrainViewModel(
                         _effects.emit(MovitTrainEffect.ShowMessage(message))
                     }
                 }
+            }
+        }
+    }
+
+    private fun resolvePrimaryLaunchTarget(dashboard: TrainDashboardUi?): TrainWorkoutLaunchUi? {
+        val sessions = dashboard?.today?.sessions.orEmpty()
+        return sessions.firstOrNull { !it.isCompleted && it.launchTarget != null }?.launchTarget
+            ?: sessions.firstOrNull { it.launchTarget != null }?.launchTarget
+    }
+
+    private fun prefetchPrimarySession(dashboard: TrainDashboardUi) {
+        val target = resolvePrimaryLaunchTarget(dashboard) ?: return
+        val sessionKey = listOf(
+            target.programId,
+            target.weekNumber,
+            target.dayNumber,
+            target.plannedWorkoutId,
+        ).joinToString(":")
+        if (prefetchedSessionKey == sessionKey) return
+        prefetchedSessionKey = sessionKey
+
+        viewModelScope.launch {
+            if (!MovitData.isInstalled) return@launch
+            val cachedUserProgramId = MovitData.plan.readCachedActiveUserProgramId()
+            val userProgramId = cachedUserProgramId ?: when (
+                val refreshed = MovitData.plan.refreshActiveUserProgramId(target.programId)
+            ) {
+                is AppResult.Success -> refreshed.value
+                is AppResult.Failure -> null
+            }
+            if (userProgramId.isNullOrBlank()) {
+                prefetchedSessionKey = null
+                return@launch
+            }
+
+            when (
+                MovitData.workoutSession.syncEffectivePlan(
+                    userProgramId = userProgramId,
+                    weekNumber = target.weekNumber,
+                    dayNumber = target.dayNumber,
+                )
+            ) {
+                is AppResult.Success -> Unit
+                is AppResult.Failure -> prefetchedSessionKey = null
             }
         }
     }

@@ -173,27 +173,3 @@ fun TrainingSessionRoute(
     modifier = modifier,
   )
 }
-
-/** Legacy name — same session UI (Phase 07 WS-6). */
-@Composable
-fun ExerciseLiveRoute(
-  exerciseSlug: String,
-  exerciseName: String,
-  targetReps: Int,
-  onBack: () -> Unit,
-  onFinish: (isWorkoutFlowComplete: Boolean) -> Unit,
-  onViewReport: (String) -> Unit = {},
-  modifier: Modifier = Modifier,
-) {
-  TrainingSessionRoute(
-    args = TrainingSessionRouteArgs(
-      exerciseSlug = exerciseSlug,
-      exerciseName = exerciseName,
-      targetReps = targetReps,
-    ),
-    onBack = onBack,
-    onFinish = onFinish,
-    onViewReport = onViewReport,
-    modifier = modifier,
-  )
-}

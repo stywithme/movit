@@ -17,7 +17,9 @@ class PlanSyncRepositoryTest {
     fun enrollProgram_persistsActiveUserProgramId() {
         runBlocking {
             val platform = FakeMovitPlatformBindings(userProgramId = null)
+            val requestOrder = mutableListOf<String>()
             val engine = MockEngine { request ->
+                requestOrder += request.url.encodedPath.substringAfterLast("/")
                 when {
                     request.url.encodedPath.endsWith("/plan/enroll") -> respond(
                         content = """{"success":true,"data":{"id":"plan-1","userId":"u1","status":"active","programs":[],"createdAt":"","updatedAt":""}}""",
@@ -47,6 +49,7 @@ class PlanSyncRepositoryTest {
             assertTrue(result is AppResult.Success)
             assertEquals("up-enrolled", result.value)
             assertEquals("up-enrolled", platform.activeUserProgramId())
+            assertEquals(listOf("enroll", "sync", "home"), requestOrder)
         }
     }
 
@@ -54,7 +57,8 @@ class PlanSyncRepositoryTest {
     fun refreshActiveUserProgramId_hydratesFromSync() {
         runBlocking {
             val platform = FakeMovitPlatformBindings(userProgramId = null)
-            val engine = MockEngine {
+            val engine = MockEngine { request ->
+                assertEquals("true", request.url.parameters["forceRefresh"])
                 respond(
                     content = """{"success":true,"data":{"userPrograms":[{"id":"up-active","programId":"prog-9","isActive":true}]}}""",
                     headers = jsonHeaders(),
@@ -80,7 +84,8 @@ class PlanSyncRepositoryTest {
     fun refreshActiveUserProgramId_prefersRequestedProgram() {
         runBlocking {
             val platform = FakeMovitPlatformBindings(userProgramId = null)
-            val engine = MockEngine {
+            val engine = MockEngine { request ->
+                assertEquals("true", request.url.parameters["forceRefresh"])
                 respond(
                     content = """
                         {

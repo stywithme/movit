@@ -29,11 +29,6 @@
     <color name="card_form_accent">@color/primary</color>
     <color name="chart_line">@color/primary</color>
 
-    <!-- Legacy accent aliases kept for compatibility while migrating screens. -->
-    <color name="brand_accent_legacy">@color/accent_action</color>
-    <color name="brand_accent_legacy_13">#22E76D46</color>
-    <color name="brand_accent_legacy_20">#33E76D46</color>
-
     <!-- Legacy Material Colors (Launcher compatibility) -->
     <color name="purple_200">#C4D489</color>
     <color name="purple_500">#8ECFE3</color>

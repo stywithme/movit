@@ -692,6 +692,7 @@ internal val movitEnglishStrings: Map<String, String> = mapOf(
     "training_session_auto_pause_nopose" to "No pose detected",
     "training_session_auto_pause_generic" to "Session paused",
     "training_session_live_dock_title" to "Live set",
+    "training_session_pause" to "Pause",
     "training_session_resume" to "Resume",
     "training_session_stop" to "Stop",
     "training_session_form_label" to "Form",

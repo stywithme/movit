@@ -366,7 +366,10 @@ dependencies {
 
 
 
-    // JSON + Retrofit (LegacyBillingHost / ApiClient auth refresh only)
+    // kotlinx.serialization — billing DTOs (JsonElement) read by SubscriptionActivity
+    implementation(libs.kotlinx.serialization.json)
+
+    // JSON + Retrofit (legacy ApiClient auth refresh only — removed in WS-D/F)
 
     implementation(libs.gson)
 

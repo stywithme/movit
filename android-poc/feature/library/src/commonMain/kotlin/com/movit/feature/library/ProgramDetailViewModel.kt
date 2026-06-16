@@ -792,10 +792,6 @@ class ProgramDetailViewModel(
 
                 is AppResult.Success -> {
 
-                    if (MovitData.isInstalled) {
-                        MovitData.home.sync()
-                    }
-
                     loadedProgramExport = programExportLoader(program.id) ?: loadedProgramExport
 
                     enrollment = resolveEnrollment(program.id).copy(

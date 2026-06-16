@@ -11,13 +11,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun MovitAppShellHost(
-    legacyAuthExitEnabled: Boolean = false,
     onHostBackPressed: () -> Unit = {},
     onLaunchLegacySubscription: () -> Boolean = { false },
-    onNavigateToLegacyAuth: () -> Boolean = { false },
     onShareText: (subject: String, text: String) -> Boolean = { _, _ -> false },
 ) {
-    val shellViewModel = viewModel { MovitAppShellViewModel(legacyAuthExitEnabled) }
+    val shellViewModel = viewModel { MovitAppShellViewModel() }
 
     BackHandler {
         if (!shellViewModel.handleSystemBack()) {
@@ -28,7 +26,6 @@ fun MovitAppShellHost(
     MovitAppShellRoute(
         shellViewModel = shellViewModel,
         onLaunchLegacySubscription = onLaunchLegacySubscription,
-        onNavigateToLegacyAuth = onNavigateToLegacyAuth,
         onShareText = onShareText,
     )
 }

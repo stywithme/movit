@@ -7,10 +7,6 @@ package com.movit.billing
 interface BillingHost {
     val applicationId: String
 
-    fun apiBaseUrl(): String
-
-    fun authHeader(): String?
-
     suspend fun refreshSessionAfterPurchase()
 }
 

@@ -2,7 +2,6 @@ package com.movit.host
 
 import android.content.Context
 import com.movit.core.data.MovitData
-import com.movit.core.data.MovitTrainingKmpGate
 import com.movit.core.data.local.MovitAndroidRuntime
 import com.movit.core.data.outbox.registerOutboxConnectivityReplay
 import com.movit.core.data.platform.AndroidMovitPlatform
@@ -13,7 +12,6 @@ object MovitDataInstall {
     fun install(context: Context) {
         val appContext = context.applicationContext
         MovitAndroidRuntime.applicationContext = appContext
-        MovitTrainingKmpGate.enabled = true
         MovitData.install(
             additionalModules = listOf(movitPoseCaptureAndroidModule()),
             platform = AndroidMovitPlatform(appContext),

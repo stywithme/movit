@@ -20,6 +20,9 @@ import com.movit.feature.home.MovitHomeEffect
 import com.movit.feature.reports.MovitReportsEffect
 import com.movit.feature.library.WorkoutSessionKeys
 import com.movit.feature.train.MovitTrainEffect
+import com.movit.feature.train.TrainWorkoutLaunchUi
+import com.movit.resources.strings.SessionStrings
+import com.movit.shared.AppResult
 import com.movit.shared.PlatformInfo
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,9 +33,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class MovitAppShellViewModel(
-    private val legacyAuthExitEnabled: Boolean = false,
-) : ViewModel() {
+class MovitAppShellViewModel : ViewModel() {
     private val _state = MutableStateFlow(MovitAppShellState())
     val state: StateFlow<MovitAppShellState> = _state.asStateFlow()
 
@@ -49,12 +50,8 @@ class MovitAppShellViewModel(
                 MovitData.bootstrapLocalCaches()
             }
             MovitData.onSessionExpired = {
-                if (legacyAuthExitEnabled) {
-                    _effects.tryEmit(MovitAppShellEffect.NavigateToLegacyAuth)
-                } else {
-                    popAllInner()
-                    pushInner(MovitInnerRoute.Auth)
-                }
+                popAllInner()
+                pushInner(MovitInnerRoute.Auth)
             }
             val platform = MovitData.requirePlatform()
             val bootstrap = AuthBootstrapContext.fromMovitData()
@@ -226,12 +223,8 @@ class MovitAppShellViewModel(
                 _effects.tryEmit(MovitAppShellEffect.ShowLocalizedMessage(effect.key))
             }
             MovitProfileEffect.LoggedOut -> {
-                if (legacyAuthExitEnabled) {
-                    _effects.tryEmit(MovitAppShellEffect.NavigateToLegacyAuth)
-                } else {
-                    popAllInner()
-                    pushInner(MovitInnerRoute.Auth)
-                }
+                popAllInner()
+                pushInner(MovitInnerRoute.Auth)
             }
             is MovitProfileEffect.LanguageChanged -> {
                 _state.update { it.copy(localeRevision = it.localeRevision + 1) }
@@ -353,22 +346,66 @@ class MovitAppShellViewModel(
             MovitTrainEffect.OpenExplore -> navigateTo(MovitAppDestination.Explore)
             MovitTrainEffect.OpenReports -> navigateTo(MovitAppDestination.Reports)
             is MovitTrainEffect.OpenProgramWorkout -> {
-                pushInner(
-                    MovitInnerRoute.WorkoutSession(
-                        com.movit.feature.library.WorkoutSessionKeys.encode(
-                            programId = effect.target.programId,
-                            weekNumber = effect.target.weekNumber,
-                            dayNumber = effect.target.dayNumber,
-                            plannedWorkoutId = effect.target.plannedWorkoutId,
-                        ),
-                    ),
-                )
+                openTrainWorkoutSession(effect.target)
             }
             is MovitTrainEffect.ShowMessage -> {
                 _effects.tryEmit(MovitAppShellEffect.ShowMessage(effect.message))
             }
         }
     }
+
+    private fun openTrainWorkoutSession(target: TrainWorkoutLaunchUi) {
+        val sessionKey = WorkoutSessionKeys.encode(
+            programId = target.programId,
+            weekNumber = target.weekNumber,
+            dayNumber = target.dayNumber,
+            plannedWorkoutId = target.plannedWorkoutId,
+        )
+        if (!MovitData.isInstalled) {
+            pushInner(MovitInnerRoute.WorkoutSession(sessionKey))
+            return
+        }
+
+        viewModelScope.launch {
+            val platform = MovitData.requirePlatform()
+            val strings = SessionStrings.load(platform.preferredLanguage())
+            val prepared = prepareTrainWorkoutSession(target)
+            if (prepared) {
+                pushInner(MovitInnerRoute.WorkoutSession(sessionKey))
+            } else {
+                _effects.emit(MovitAppShellEffect.ShowMessage(strings.noEnrollment))
+            }
+        }
+    }
+
+    private suspend fun prepareTrainWorkoutSession(target: TrainWorkoutLaunchUi): Boolean {
+        val cachedUserProgramId = MovitData.plan.readCachedActiveUserProgramId()
+        if (!cachedUserProgramId.isNullOrBlank() && syncTrainWorkoutPlan(cachedUserProgramId, target)) {
+            return true
+        }
+
+        val refreshedUserProgramId = when (val refreshed = MovitData.plan.refreshActiveUserProgramId(target.programId)) {
+            is AppResult.Success -> refreshed.value
+            is AppResult.Failure -> null
+        } ?: return false
+
+        return syncTrainWorkoutPlan(refreshedUserProgramId, target)
+    }
+
+    private suspend fun syncTrainWorkoutPlan(
+        userProgramId: String,
+        target: TrainWorkoutLaunchUi,
+    ): Boolean =
+        when (
+            MovitData.workoutSession.syncEffectivePlan(
+                userProgramId = userProgramId,
+                weekNumber = target.weekNumber,
+                dayNumber = target.dayNumber,
+            )
+        ) {
+            is AppResult.Success -> true
+            is AppResult.Failure -> false
+        }
 
     private fun handleExploreEffect(effect: MovitExploreEffect) {
         when (effect) {

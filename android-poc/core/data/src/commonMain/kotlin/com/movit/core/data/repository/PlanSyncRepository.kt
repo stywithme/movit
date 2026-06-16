@@ -16,8 +16,8 @@ class PlanSyncRepository(
 
     /**
      * Enrolls in [programId] via `POST /api/mobile/plan/enroll`, then resolves the active
-     * [UserProgramExportDto.id] from `/api/mobile/sync` and persists it on the platform bindings
-     * (required for effective-plan APIs on iOS where legacy ProgramRepository is absent).
+     * [UserProgramExportDto.id] from `/api/mobile/sync`, persists it on the platform bindings,
+     * and refreshes home/train cache against the new enrollment.
      */
     suspend fun enrollProgram(programId: String): AppResult<String> {
         val bindings = platform()
@@ -31,8 +31,6 @@ class PlanSyncRepository(
             return AppResult.Failure(enrollResponse.error ?: "Enrollment failed.")
         }
 
-        homeSync.sync()
-
         val userPrograms = api.fetchSyncUserPrograms(
             forceRefresh = true,
             authorization = auth,
@@ -45,6 +43,7 @@ class PlanSyncRepository(
             )
 
         bindings.setActiveUserProgramId(userProgramId)
+        homeSync.sync()
         return AppResult.Success(userProgramId)
     }
 
@@ -56,17 +55,19 @@ class PlanSyncRepository(
             return AppResult.Success(bindings.activeUserProgramId())
         }
 
+        val cachedActiveId = bindings.activeUserProgramId()?.takeIf { it.isNotBlank() }
+        val needsFullSync = programId != null || cachedActiveId == null
         val userPrograms = api.fetchSyncUserPrograms(
-            forceRefresh = false,
+            forceRefresh = needsFullSync,
             authorization = auth,
         ).getOrElse {
-            return AppResult.Success(bindings.activeUserProgramId())
+            return AppResult.Success(cachedActiveId)
         }
         val activeId = resolveActiveUserProgramId(userPrograms, programId)
         if (activeId != null) {
             bindings.setActiveUserProgramId(activeId)
         }
-        return AppResult.Success(activeId ?: bindings.activeUserProgramId())
+        return AppResult.Success(activeId ?: cachedActiveId)
     }
 
     private fun resolveActiveUserProgramId(

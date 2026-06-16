@@ -7,7 +7,6 @@ internal object RetrofitContractPathExtractor {
 
     private val interfaceFiles = listOf(
         "AuthApi.kt",
-        "SubscriptionApi.kt",
     )
 
     private val annotationRegex = Regex(
@@ -43,9 +42,6 @@ internal object RetrofitContractPathExtractor {
             "app/src/main/java/com/trainingvalidator/poc/network/$fileName",
             "../app/src/main/java/com/trainingvalidator/poc/network/$fileName",
             "../../app/src/main/java/com/trainingvalidator/poc/network/$fileName",
-            "feature/billing/src/main/kotlin/com/movit/billing/network/$fileName",
-            "../feature/billing/src/main/kotlin/com/movit/billing/network/$fileName",
-            "../../feature/billing/src/main/kotlin/com/movit/billing/network/$fileName",
         )
         for (relative in candidates) {
             val file = java.io.File(relative)

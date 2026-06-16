@@ -24,12 +24,6 @@ sealed interface MovitInnerRoute {
         val restSeconds: Int? = null,
         val upNextExerciseId: String? = null,
     ) : MovitInnerRoute
-    data class ExerciseLive(
-        val exerciseSlug: String,
-        val exerciseName: String,
-        val targetReps: Int,
-        val workoutId: String? = null,
-    ) : MovitInnerRoute
     data class TrainingSession(
         val exerciseSlug: String,
         val exerciseName: String,

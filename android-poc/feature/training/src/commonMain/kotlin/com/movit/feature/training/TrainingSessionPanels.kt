@@ -3,14 +3,19 @@ package com.movit.feature.training
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.ui.draw.scale
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -18,16 +23,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.movit.designsystem.MovitMotion
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.components.GlassMessageSeverity
 import com.movit.designsystem.components.MovitButton
 import com.movit.designsystem.components.MovitButtonVariant
 import com.movit.designsystem.components.MovitGlassMessage
-import com.movit.designsystem.components.MovitProgressBar
 import com.movit.designsystem.components.MovitRemoteImage
 import com.movit.designsystem.components.MovitTag
 import com.movit.designsystem.components.MovitTagVariant
@@ -48,68 +54,111 @@ fun SetupPosePanel(
     jointRows: List<SetupJointGuidanceUi> = emptyList(),
     referenceImageUrl: String? = null,
 ) {
-    Column(
+    val movit = MaterialTheme.movitColors
+    Surface(
         modifier = modifier
             .fillMaxWidth()
             .padding(MovitSpacing.lg),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
+        shape = RoundedCornerShape(28.dp),
+        color = movit.inkVeil78,
+        contentColor = MaterialTheme.colorScheme.onPrimary,
+        border = BorderStroke(1.dp, movit.onInkVeil18),
     ) {
-        Text(
-            text = movitText("training_session_setup_title"),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.W800,
-            color = MaterialTheme.colorScheme.onPrimary,
-            textAlign = TextAlign.Center,
-        )
-
-        SetupAxisChipsRow(
-            regionStatus = regionStatus,
-            postureStatus = postureStatus,
-            directionStatus = directionStatus,
-        )
-
-        if (!referenceImageUrl.isNullOrBlank()) {
-            MovitRemoteImage(
-                imageUrl = referenceImageUrl,
-                contentDescription = phaseLabel,
-                placeholderLabel = phaseLabel.take(1).uppercase(),
-                modifier = Modifier
-                    .size(120.dp)
-                    .padding(vertical = MovitSpacing.xs),
+        Column(
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(MovitSpacing.md),
+        ) {
+            Text(
+                text = movitText("training_session_setup_title"),
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.W900,
+                color = MaterialTheme.colorScheme.onPrimary,
+                textAlign = TextAlign.Center,
             )
-        }
 
-        val headline = actionMessage?.takeIf { it.isNotBlank() }
-            ?: movitText("training_session_setup_phase", phaseLabel)
-        MovitGlassMessage(
-            text = headline,
-            severity = GlassMessageSeverity.INFO,
-        )
-
-        if (!cameraTip.isNullOrBlank() && cameraTip != actionMessage) {
-            MovitGlassMessage(
-                text = cameraTip,
-                severity = GlassMessageSeverity.WARNING,
+            SetupAxisChipsRow(
+                regionStatus = regionStatus,
+                postureStatus = postureStatus,
+                directionStatus = directionStatus,
             )
-        }
 
-        if (jointRows.isNotEmpty()) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(MovitSpacing.xs),
-            ) {
-                jointRows.forEach { row ->
-                    SetupJointRow(row)
+            if (!referenceImageUrl.isNullOrBlank()) {
+                MovitRemoteImage(
+                    imageUrl = referenceImageUrl,
+                    contentDescription = phaseLabel,
+                    placeholderLabel = phaseLabel.take(1).uppercase(),
+                    modifier = Modifier
+                        .size(112.dp)
+                        .padding(vertical = MovitSpacing.xs),
+                )
+            }
+
+            val headline = actionMessage?.takeIf { it.isNotBlank() }
+                ?: movitText("training_session_setup_phase", phaseLabel)
+            SetupPrimaryCue(text = headline, progressPercent = progressPercent)
+
+            if (!cameraTip.isNullOrBlank() && cameraTip != actionMessage) {
+                MovitGlassMessage(
+                    text = cameraTip,
+                    severity = GlassMessageSeverity.WARNING,
+                )
+            }
+
+            if (jointRows.isNotEmpty()) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(MovitSpacing.xs),
+                ) {
+                    jointRows.take(2).forEach { row ->
+                        SetupJointRow(row)
+                    }
                 }
             }
-        }
 
-        MovitProgressBar(progressPercent = progressPercent.coerceIn(0, 100))
+            LinearProgressIndicator(
+                progress = { progressPercent.coerceIn(0, 100) / 100f },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(12.dp)
+                    .clip(RoundedCornerShape(999.dp)),
+                color = if (progressPercent >= 90) movit.success else MaterialTheme.colorScheme.primary,
+                trackColor = movit.onInkVeil16,
+            )
+            Text(
+                text = movitText("training_session_setup_progress", progressPercent),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.W800,
+                color = movit.onInkVeil88,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SetupPrimaryCue(
+    text: String,
+    progressPercent: Int,
+) {
+    val movit = MaterialTheme.movitColors
+    val ready = progressPercent >= 90
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = if (ready) movit.success.copy(alpha = 0.3f) else movit.onInkVeil16,
+        contentColor = MaterialTheme.colorScheme.onPrimary,
+        border = BorderStroke(
+            width = 1.dp,
+            color = if (ready) movit.success.copy(alpha = 0.75f) else movit.onInkVeil22,
+        ),
+    ) {
         Text(
-            text = movitText("training_session_setup_progress", progressPercent),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.movitColors.onInkVeil70,
+            text = text,
+            modifier = Modifier.padding(horizontal = MovitSpacing.lg, vertical = MovitSpacing.md),
+            fontSize = 22.sp,
+            lineHeight = 28.sp,
+            fontWeight = FontWeight.W900,
+            textAlign = TextAlign.Center,
         )
     }
 }
@@ -176,17 +225,29 @@ fun CountdownOverlay(
     modifier: Modifier = Modifier,
 ) {
     val display = value?.toString() ?: "…"
+    val displayText = value?.toString() ?: if (display.isBlank()) display else "..."
+    val movit = MaterialTheme.movitColors
     Column(
         modifier = modifier.padding(MovitSpacing.xl),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
     ) {
-        Text(
-            text = display,
-            style = MaterialTheme.typography.displayLarge,
-            fontWeight = FontWeight.W900,
-            color = MaterialTheme.colorScheme.onPrimary,
-        )
+        Surface(
+            shape = RoundedCornerShape(36.dp),
+            color = movit.inkVeil78,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            border = BorderStroke(1.dp, movit.onInkVeil18),
+        ) {
+            Text(
+                text = displayText,
+                modifier = Modifier.padding(horizontal = 46.dp, vertical = 10.dp),
+                fontSize = 104.sp,
+                lineHeight = 110.sp,
+                fontWeight = FontWeight.W900,
+                color = MaterialTheme.colorScheme.onPrimary,
+                textAlign = TextAlign.Center,
+            )
+        }
         if (frozen) {
             MovitTag(
                 text = movitText("training_session_countdown_frozen_chip"),
@@ -213,32 +274,44 @@ fun RestPanel(
     tip: String?,
     modifier: Modifier = Modifier,
 ) {
-    Column(
+    val movit = MaterialTheme.movitColors
+    Surface(
         modifier = modifier
             .fillMaxWidth()
             .padding(MovitSpacing.lg),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
+        shape = RoundedCornerShape(28.dp),
+        color = movit.inkVeil78,
+        contentColor = MaterialTheme.colorScheme.onPrimary,
+        border = BorderStroke(1.dp, movit.onInkVeil18),
     ) {
-        Text(
-            text = movitText("training_session_rest_title"),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.W800,
-            color = MaterialTheme.colorScheme.onPrimary,
-        )
-        Text(
-            text = movitText("training_session_rest_timer", secondsRemaining),
-            style = MaterialTheme.typography.displaySmall,
-            fontWeight = FontWeight.W900,
-            color = MaterialTheme.colorScheme.onPrimary,
-        )
-        Text(
-            text = movitText("training_session_rest_next", nextExerciseName),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.movitColors.onInkVeil88,
-        )
-        if (!tip.isNullOrBlank()) {
-            MovitGlassMessage(text = tip, severity = GlassMessageSeverity.INFO)
+        Column(
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(MovitSpacing.md),
+        ) {
+            Text(
+                text = movitText("training_session_rest_title"),
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.W900,
+                color = MaterialTheme.colorScheme.onPrimary,
+            )
+            Text(
+                text = movitText("training_session_rest_timer", secondsRemaining),
+                fontSize = 72.sp,
+                lineHeight = 78.sp,
+                fontWeight = FontWeight.W900,
+                color = MaterialTheme.colorScheme.onPrimary,
+            )
+            Text(
+                text = movitText("training_session_rest_next", nextExerciseName),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.W800,
+                color = movit.onInkVeil88,
+                textAlign = TextAlign.Center,
+            )
+            if (!tip.isNullOrBlank()) {
+                MovitGlassMessage(text = tip, severity = GlassMessageSeverity.INFO)
+            }
         }
     }
 }

@@ -34,7 +34,6 @@ fun MovitAppShellRoute(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     onTrainEffect: (MovitTrainEffect) -> Boolean = { false },
     onLaunchLegacySubscription: () -> Boolean = { false },
-    onNavigateToLegacyAuth: () -> Boolean = { false },
     onShareText: (subject: String, text: String) -> Boolean = { _, _ -> false },
 ) {
     val shellState by shellViewModel.state.collectAsStateWithLifecycle()
@@ -66,7 +65,6 @@ fun MovitAppShellRoute(
                 snackbarHostState = snackbarHostState,
                 onTrainEffect = onTrainEffect,
                 onLaunchLegacySubscription = onLaunchLegacySubscription,
-                onNavigateToLegacyAuth = onNavigateToLegacyAuth,
                 onShareText = onShareText,
             )
         }
@@ -85,7 +83,6 @@ private fun MovitAppShellRouteContent(
     snackbarHostState: SnackbarHostState,
     onTrainEffect: (MovitTrainEffect) -> Boolean,
     onLaunchLegacySubscription: () -> Boolean,
-    onNavigateToLegacyAuth: () -> Boolean,
     onShareText: (subject: String, text: String) -> Boolean,
 ) {
     val state by shellViewModel.state.collectAsStateWithLifecycle()
@@ -113,9 +110,6 @@ private fun MovitAppShellRouteContent(
                             localizedString(language, "profile_subscription_ios_unavailable"),
                         )
                     }
-                }
-                MovitAppShellEffect.NavigateToLegacyAuth -> {
-                    onNavigateToLegacyAuth()
                 }
             }
         }

@@ -74,7 +74,4 @@
         <item name="dialogCornerRadius">@dimen/radius_base</item>
         <item name="android:windowBackground">@drawable/bg_dialog</item>
     </style>
-
-    <!-- Keeping legacy theme for compatibility until migration is complete -->
-    <style name="Theme.TrainingValidatorPoC" parent="Theme.WayToFix" />
 </resources>

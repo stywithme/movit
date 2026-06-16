@@ -14,7 +14,7 @@ object MobileApiContractRegistry {
 
     /** Normalized as METHOD + space + path (placeholders: {id}, {slug}, {workoutId}, {sessionId}, {overrideId}, {exerciseId}). */
     val legacyEndpoints: Set<String> = setOf(
-        // AuthApi (poc — LegacyBillingHost token refresh)
+        // AuthApi (poc — ApiClient token refresh; removed in WS-D/F)
         "POST api/mobile/auth/register",
         "POST api/mobile/auth/login",
         "POST api/mobile/auth/google",
@@ -25,14 +25,7 @@ object MobileApiContractRegistry {
         "GET api/mobile/auth/profile",
         "PATCH api/mobile/auth/profile",
         "PATCH api/mobile/auth/settings",
-        // SubscriptionApi (feature:billing — B6 platform billing)
-        "GET api/mobile/plans",
-        "GET api/mobile/subscriptions/status",
-        "GET api/mobile/subscriptions/mine",
-        "POST api/mobile/subscriptions/checkout",
-        "GET api/mobile/subscriptions/checkout/{id}",
-        "POST api/mobile/subscriptions/google-play/verify",
-        "POST api/mobile/subscriptions/cancel",
+        // Subscriptions migrated to KMP Ktor (MovitBillingApi / MovitData.billing) — B3; no longer Retrofit.
     )
 
     /**
@@ -105,13 +98,7 @@ object MobileApiContractRegistry {
     val deferredEndpoints: List<DeferredEndpoint> = listOf(
         DeferredEndpoint("POST", "api/mobile/auth/reset-password", "Reset-password flow not in Movit shell"),
         DeferredEndpoint("PATCH", "api/mobile/auth/profile", "Profile PATCH deferred; settings PATCH covered"),
-        DeferredEndpoint("GET", "api/mobile/plans", "Subscriptions hidden (StoreKit)"),
-        DeferredEndpoint("GET", "api/mobile/subscriptions/status", "Subscriptions hidden"),
-        DeferredEndpoint("GET", "api/mobile/subscriptions/mine", "Subscriptions hidden"),
-        DeferredEndpoint("POST", "api/mobile/subscriptions/checkout", "Subscriptions hidden"),
-        DeferredEndpoint("GET", "api/mobile/subscriptions/checkout/{id}", "Subscriptions hidden"),
-        DeferredEndpoint("POST", "api/mobile/subscriptions/google-play/verify", "Subscriptions hidden"),
-        DeferredEndpoint("POST", "api/mobile/subscriptions/cancel", "Subscriptions hidden"),
+        // Subscriptions now KMP-native (MovitBillingApi, Android); iOS StoreKit tracked in WS-H.
         DeferredEndpoint("GET", "api/bookings/rules", "BookingApi removed in WS-5 — out of Movit product scope"),
         DeferredEndpoint("GET", "api/exercises/{id}/substitutions", "Admin id route; mobile slug route covered"),
         DeferredEndpoint("GET", "api/mobile/workout-executions/stats", "Home stats parity"),

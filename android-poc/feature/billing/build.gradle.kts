@@ -24,10 +24,5 @@ android {
 }
 
 dependencies {
-    implementation(libs.gson)
     implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.okhttp)
-    implementation(libs.okhttp.logging)
-    implementation(libs.retrofit)
-    implementation(libs.retrofit.converter.gson)
 }

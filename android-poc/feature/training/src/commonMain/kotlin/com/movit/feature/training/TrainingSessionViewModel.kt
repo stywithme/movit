@@ -30,6 +30,7 @@ import com.movit.core.training.engine.feedback.VignetteCue
 import com.movit.core.training.session.HoldState
 import com.movit.core.training.engine.policy.TimingPolicy
 import com.movit.core.training.feedback.CoachIntensity
+import com.movit.core.training.feedback.FeedbackInterruptPolicy
 import com.movit.core.training.feedback.FeedbackKind
 import com.movit.core.training.feedback.RepIncompleteFeedback
 import com.movit.core.training.feedback.FeedbackSeverity
@@ -560,8 +561,13 @@ class TrainingSessionViewModel(
         )
       }
 
-      override suspend fun playCountdownNumber(secondsRemaining: Int) = Unit
-      override suspend fun playGo() = Unit
+      override suspend fun playCountdownNumber(secondsRemaining: Int) {
+        feedback.submit(countdownNumberSignal(secondsRemaining))
+      }
+
+      override suspend fun playGo() {
+        feedback.submit(countdownGoSignal())
+      }
     }
   }
 
@@ -1356,6 +1362,40 @@ class TrainingSessionViewModel(
 
   private fun systemMessage(key: String, defaultAr: String, defaultEn: String): String =
     SystemMessageRegistry.get(key, defaultAr, defaultEn).display(language)
+
+  private fun countdownNumberSignal(secondsRemaining: Int): FeedbackSignal {
+    val key = TrainingFeedbackEventRouter.trainingNumeralKey(secondsRemaining)
+    val text = key?.let { systemMessage(it, secondsRemaining.toString(), secondsRemaining.toString()) }
+      ?: secondsRemaining.toString()
+    return FeedbackSignal(
+      kind = FeedbackKind.COUNTDOWN,
+      severity = FeedbackSeverity.INFO,
+      text = text,
+      dedupeKey = "countdown:$secondsRemaining",
+      activeKey = "countdown",
+      cooldownGroup = "countdown:$secondsRemaining",
+      forceAudible = true,
+      allowTone = false,
+      allowVisual = false,
+      allowHaptic = false,
+      interruptPolicy = FeedbackInterruptPolicy.INTERRUPT,
+    )
+  }
+
+  private fun countdownGoSignal(): FeedbackSignal =
+    FeedbackSignal(
+      kind = FeedbackKind.COUNTDOWN,
+      severity = FeedbackSeverity.SUCCESS,
+      text = systemMessage("training_countdown_go", "Go!", "Go!"),
+      dedupeKey = "countdown:go",
+      activeKey = "countdown",
+      cooldownGroup = "countdown:go",
+      forceAudible = true,
+      allowTone = false,
+      allowVisual = false,
+      allowHaptic = false,
+      interruptPolicy = FeedbackInterruptPolicy.INTERRUPT,
+    )
 
   private fun setupSceneToVisibilityMessage(): LocalizedText {
     val remote = SystemMessageRegistry.get(

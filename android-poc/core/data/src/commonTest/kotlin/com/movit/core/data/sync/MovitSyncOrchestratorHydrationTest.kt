@@ -116,7 +116,7 @@ class MovitSyncOrchestratorHydrationTest {
             assertEquals("pw-1", reportsSync.hydrateCalls.single().single().plannedWorkoutId)
 
             assertEquals(1, dayCustomizationLocalStore.hydrateCalls.size)
-            assertEquals("prog-1", dayCustomizationLocalStore.hydrateCalls.single().userProgramId)
+            assertEquals("up-1", dayCustomizationLocalStore.hydrateCalls.single().userProgramId)
 
             assertEquals(1, messageLibraryCache.read().size)
             assertEquals("msg-1", messageLibraryCache.read().single().id)

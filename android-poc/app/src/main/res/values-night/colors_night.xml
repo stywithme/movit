@@ -18,11 +18,6 @@
     <color name="card_form_accent">@color/primary</color>
     <color name="chart_line">@color/primary</color>
 
-    <!-- Legacy accent aliases -->
-    <color name="brand_accent_legacy">@color/accent_action</color>
-    <color name="brand_accent_legacy_13">#22E76D46</color>
-    <color name="brand_accent_legacy_20">#33E76D46</color>
-
     <!-- Backgrounds -->
     <color name="background">#1A2428</color>
     <color name="background_gradient_start">#1A2428</color>

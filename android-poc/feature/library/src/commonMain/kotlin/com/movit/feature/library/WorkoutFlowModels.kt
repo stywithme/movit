@@ -109,7 +109,7 @@ fun resolveTrainingStartAction(
     )
 }
 
-/** Start path from workout run / prepare — KMP live camera or legacy [TrainingActivity]. */
+/** Start path from workout run / prepare — KMP live camera. */
 sealed interface TrainingStartAction {
     data class KmpLive(
         val slug: String,
@@ -121,8 +121,6 @@ sealed interface TrainingStartAction {
         val startExerciseIndex: Int = 0,
         val poseVariantIndex: Int = 0,
     ) : TrainingStartAction
-
-    data class Legacy(val exerciseFileName: String) : TrainingStartAction
 }
 
 /** In-memory handoff between workout details, run, prepare, and live training. */

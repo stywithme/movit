@@ -17,7 +17,6 @@ import com.movit.feature.library.ProgramDetailRoute
 import com.movit.feature.library.ProgramListRoute
 import com.movit.feature.library.WeeklyReportEffect
 import com.movit.feature.library.WeeklyReportRoute
-import com.movit.feature.training.ExerciseLiveRoute
 import com.movit.feature.training.PlannedWorkoutContext
 import com.movit.feature.training.TrainingSessionRoute
 import com.movit.feature.training.TrainingSessionRouteArgs
@@ -132,26 +131,6 @@ fun MovitInnerHost(
                 },
                 onSnackbar = { key ->
                     onShellEffect(MovitAppShellEffect.ShowLocalizedMessage(key))
-                },
-                modifier = modifier,
-            )
-        }
-        is MovitInnerRoute.ExerciseLive -> {
-            ExerciseLiveRoute(
-                exerciseSlug = route.exerciseSlug,
-                exerciseName = route.exerciseName,
-                targetReps = route.targetReps,
-                onBack = onBack,
-                onFinish = { _ ->
-                    val workoutId = route.workoutId
-                    if (workoutId != null) {
-                        onNavigate(MovitInnerRoute.WorkoutSession(workoutId))
-                    } else {
-                        onBack()
-                    }
-                },
-                onViewReport = { reportId ->
-                    onNavigate(MovitInnerRoute.ReportDetail(reportId))
                 },
                 modifier = modifier,
             )
@@ -352,9 +331,7 @@ private fun handleTrainingStart(
                 ),
             )
         }
-        is TrainingStartAction.Legacy,
-        null,
-        -> {
+        null -> {
             onShellEffect(
                 MovitAppShellEffect.ShowLocalizedMessage("training_config_first_use_online"),
             )

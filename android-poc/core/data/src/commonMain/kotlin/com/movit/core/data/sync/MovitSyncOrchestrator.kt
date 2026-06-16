@@ -167,10 +167,10 @@ class MovitSyncOrchestrator(
             }
 
             payload.userPrograms.forEach { userProgram ->
-                val programId = userProgram.programId
-                if (programId != null && userProgram.customizations != null) {
+                val userProgramId = userProgram.id.takeIf { it.isNotBlank() }
+                if (userProgramId != null && userProgram.customizations != null) {
                     dayCustomizationLocalStore.hydrateFromBackend(
-                        userProgramId = programId,
+                        userProgramId = userProgramId,
                         customizations = userProgram.customizations,
                         serverCustomizationsUpdatedAt = userProgram.customizationsUpdatedAt,
                     )
