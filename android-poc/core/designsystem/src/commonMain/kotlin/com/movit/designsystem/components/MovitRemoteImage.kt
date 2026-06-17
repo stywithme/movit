@@ -15,7 +15,7 @@ import coil3.compose.AsyncImage
  * placeholder unconditionally. Coil 3 unifies both behind one commonMain implementation.
  *
  * Disk cache: [com.movit.designsystem.platform.MovitImageCachePolicy.DISK_MAX_BYTES] (64 MiB) via
- * [com.movit.designsystem.platform.installMovitCoilImageLoader] on Android shell startup.
+ * [com.movit.designsystem.platform.installMovitCoilImageLoader] on shell startup (Android + iOS).
  */
 @Composable
 fun MovitRemoteImage(

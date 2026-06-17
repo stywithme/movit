@@ -26,7 +26,13 @@ fun MovitBodyMap(
     contentDescription: String? = null,
 ) {
     val a11y = contentDescription ?: movitText("assessment_body_map_a11y")
-    val outline = MaterialTheme.movitColors.textTertiary.copy(alpha = 0.55f)
+    val movit = MaterialTheme.movitColors
+    val outline = movit.textTertiary.copy(alpha = 0.55f)
+    val toneColors = mapOf(
+        AssessmentRegionTone.Good to movit.success,
+        AssessmentRegionTone.Warning to movit.warning,
+        AssessmentRegionTone.Neutral to movit.limeDeep,
+    )
     Canvas(
         modifier = modifier
             .fillMaxWidth()
@@ -41,7 +47,7 @@ fun MovitBodyMap(
             .groupBy { it.regionKey }
             .forEach { (regionKey, regionList) ->
                 val best = regionList.maxByOrNull { it.score } ?: return@forEach
-                drawRegionHighlight(regionKey, best, cx, cy, scale)
+                drawRegionHighlight(regionKey, best, cx, cy, scale, toneColors)
             }
     }
 }
@@ -82,9 +88,10 @@ private fun DrawScope.drawRegionHighlight(
     cx: Float,
     cy: Float,
     scale: Float,
+    toneColors: Map<AssessmentRegionTone, Color>,
 ) {
     val (rx, ry, radius) = regionPosition(regionKey, cx, cy, scale)
-    val fill = regionColor(region.tone).copy(
+    val fill = (toneColors[region.tone] ?: toneColors.getValue(AssessmentRegionTone.Neutral)).copy(
         alpha = if (region.confidence.equals("low", ignoreCase = true)) 0.35f else 0.65f,
     )
     drawCircle(fill, radius, center = Offset(rx, ry))
@@ -100,8 +107,3 @@ private fun regionPosition(regionKey: String, cx: Float, cy: Float, scale: Float
         else -> Triple(cx, cy, 12f * scale)
     }
 
-private fun regionColor(tone: AssessmentRegionTone): Color = when (tone) {
-    AssessmentRegionTone.Good -> Color(0xFF4CAF50)
-    AssessmentRegionTone.Warning -> Color(0xFFFF9800)
-    AssessmentRegionTone.Neutral -> Color(0xFF8BC34A)
-}

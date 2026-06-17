@@ -1,4 +1,5 @@
 ﻿import { Module } from '@nestjs/common';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { BullModule } from '@nestjs/bullmq';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -45,6 +46,12 @@ import { TrainingProfileModule } from './modules/training-profile/training-profi
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60_000,
+        limit: 30,
+      },
+    ]),
     ScheduleModule.forRoot(),
     BullModule.forRoot({
       connection: {

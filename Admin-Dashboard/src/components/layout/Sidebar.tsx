@@ -75,10 +75,10 @@ export function Sidebar() {
         <div className="border-b p-5">
           <Link href="/admin" className="flex items-center gap-3">
             <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground">
-              FF
+              MV
             </div>
             <div>
-              <p className="text-sm font-semibold leading-none">Fix Fit</p>
+              <p className="text-sm font-semibold leading-none">Movit</p>
               <p className="mt-1 text-xs text-muted-foreground">Admin Dashboard</p>
             </div>
           </Link>

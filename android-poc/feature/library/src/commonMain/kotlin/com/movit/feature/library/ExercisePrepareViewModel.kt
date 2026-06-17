@@ -77,12 +77,25 @@ class ExercisePrepareViewModel(
 ) : ViewModel() {
     private val _state = MutableStateFlow(ExercisePrepareUiState(isLoading = true))
     val state: StateFlow<ExercisePrepareUiState> = _state.asStateFlow()
+    private val _effects = MutableSharedFlow<ExercisePrepareEffect>(extraBufferCapacity = 1)
+    val effects: SharedFlow<ExercisePrepareEffect> = _effects.asSharedFlow()
     private val _startEffects = MutableSharedFlow<TrainingStartAction>(extraBufferCapacity = 1)
     val startEffects: SharedFlow<TrainingStartAction> = _startEffects.asSharedFlow()
     private var restTimerJob: Job? = null
 
     /** Disable in JVM unit tests where [viewModelScope] has no dispatcher. */
     internal var enableRestTicker: Boolean = true
+
+    fun onEvent(event: ExercisePrepareEvent) {
+        when (event) {
+            is ExercisePrepareEvent.StartClicked -> requestTrainingStart(workoutId = event.workoutId)
+            ExercisePrepareEvent.SkipRest -> skipRest()
+            ExercisePrepareEvent.ToggleRestPause -> toggleRestPause()
+            ExercisePrepareEvent.AddRestTime -> addRestTime()
+            is ExercisePrepareEvent.PoseVariantSelected -> selectPoseVariant(event.index)
+            ExercisePrepareEvent.RetryClicked -> Unit
+        }
+    }
 
     fun loadInitial() {
         viewModelScope.launch { load() }
@@ -277,6 +290,7 @@ class ExercisePrepareViewModel(
                 )
                 else -> action
             }
+            _effects.emit(ExercisePrepareEffect.StartTraining(resolved))
             _startEffects.emit(resolved)
         }
     }

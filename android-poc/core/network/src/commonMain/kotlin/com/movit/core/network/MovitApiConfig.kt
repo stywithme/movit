@@ -2,7 +2,8 @@ package com.movit.core.network
 
 /**
  * Resolves the Movit API base URL for KMP HTTP clients.
- * Android reads [api.properties]/[local.properties] via BuildConfig; iOS uses production default.
+ * Android reads [api.properties]/[local.properties] via generated build config; iOS uses the same
+ * generated defaults with optional [NSUserDefaults] overrides (`movit.api.*` keys).
  */
 object MovitApiConfig {
   const val CONNECT_TIMEOUT_SECONDS = 30L

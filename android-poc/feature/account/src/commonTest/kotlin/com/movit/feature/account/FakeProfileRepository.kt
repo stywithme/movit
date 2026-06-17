@@ -1,4 +1,4 @@
-package com.movit.feature.account
+﻿package com.movit.feature.account
 
 import com.movit.shared.AppResult
 
@@ -19,7 +19,7 @@ object FakeProfilePreviewData {
 
     val proMember = signedIn.copy(
         isPro = true,
-        subscriptionLabel = "WayToFix Pro",
+        subscriptionLabel = "Movit Pro",
         subscriptionRenewal = "Renews Jun 15, 2026 · Monthly",
     )
 }
@@ -44,6 +44,14 @@ class FakeProfileRepository(
             AppResult.Success(Unit)
         } else {
             AppResult.Failure("Already signed out.")
+        }
+    }
+
+    override suspend fun deleteAccount(): AppResult<Unit> {
+        return if (signedIn) {
+            AppResult.Success(Unit)
+        } else {
+            AppResult.Failure("Sign in to delete your account.")
         }
     }
 

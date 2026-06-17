@@ -40,7 +40,7 @@ fun ComponentActivity.attachMovitShellHost(
     setContent {
         MovitAppShellHost(
             onHostBackPressed = { finish() },
-            onLaunchLegacySubscription = {
+            onLaunchPlatformSubscription = { _ ->
                 startActivity(Intent(this@attachMovitShellHost, SubscriptionActivity::class.java))
                 true
             },

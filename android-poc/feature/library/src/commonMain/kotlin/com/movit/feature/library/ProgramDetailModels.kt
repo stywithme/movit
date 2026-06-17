@@ -125,6 +125,7 @@ enum class WeekOfflineStatus {
 data class WeekOfflineUiState(
     val status: WeekOfflineStatus = WeekOfflineStatus.Idle,
     val progressPercent: Int = 0,
+    val errorMessageKey: String? = null,
     val errorMessage: String? = null,
 )
 

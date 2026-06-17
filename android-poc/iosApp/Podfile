@@ -1,0 +1,36 @@
+# MediaPipe Tasks Vision — version aligned with android-poc gradle/libs.versions.toml (mediapipe-tasks-vision 0.10.33).
+# Run after XcodeGen:  cd iosApp && xcodegen generate   (postGenCommand runs pod install)
+platform :ios, '18.0'
+
+target 'iosApp' do
+  use_frameworks! :linkage => :static
+  pod 'MediaPipeTasksVision', '0.10.33'
+  pod 'GoogleSignIn', '~> 8.0'
+end
+
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '18.0'
+    end
+  end
+
+  # MediaPipe 0.10.21+ CocoaPods xcconfig workaround (static xcframeworks need -framework, not -l).
+  # See: https://github.com/google-ai-edge/mediapipe/issues/6258
+  xcf_vision = '${PODS_ROOT}/MediaPipeTasksVision/frameworks/MediaPipeTasksVision.xcframework'
+  xcf_common = '${PODS_ROOT}/MediaPipeTasksCommon/frameworks/MediaPipeTasksCommon.xcframework'
+  pods_support = File.join(installer.sandbox.root, 'Target Support Files', 'Pods-iosApp')
+
+  Dir.glob(File.join(pods_support, '*.xcconfig')).each do |xcconfig_path|
+    config = File.read(xcconfig_path)
+    config = config.gsub('-l"MediaPipeTasksCommon"', '-framework "MediaPipeTasksCommon"')
+    config = config.gsub('-l"MediaPipeTasksVision"', '-framework "MediaPipeTasksVision"')
+    unless config.include?('MediaPipeTasksVision.xcframework/ios-arm64')
+      config += <<~XCCONFIG
+
+        FRAMEWORK_SEARCH_PATHS = $(inherited) "#{xcf_vision}/ios-arm64" "#{xcf_vision}/ios-arm64_x86_64-simulator" "#{xcf_common}/ios-arm64" "#{xcf_common}/ios-arm64_x86_64-simulator"
+      XCCONFIG
+    end
+    File.write(xcconfig_path, config)
+  end
+end

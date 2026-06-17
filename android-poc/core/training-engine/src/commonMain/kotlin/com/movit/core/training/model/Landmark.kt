@@ -2,7 +2,7 @@ package com.movit.core.training.model
 
 /**
  * Platform-neutral landmark produced by pose detection adapters.
- * Legacy Android [com.trainingvalidator.poc.analysis.SmoothedLandmark] maps here.
+ * Legacy Android [com.movit.analysis.SmoothedLandmark] maps here.
  */
 data class Landmark(
     val x: Float,

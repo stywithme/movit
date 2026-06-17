@@ -116,9 +116,12 @@ class MovitExploreViewModel(
             MovitExploreEvent.ScrollToWorkoutsHandled -> {
                 _state.update { it.copy(scrollToWorkouts = false) }
             }
-            MovitExploreEvent.RetryClicked,
-            MovitExploreEvent.RefreshRequested,
-            -> Unit
+            MovitExploreEvent.RetryClicked -> {
+                viewModelScope.launch { load(isRefresh = false) }
+            }
+            MovitExploreEvent.RefreshRequested -> {
+                viewModelScope.launch { load(isRefresh = true) }
+            }
         }
     }
 

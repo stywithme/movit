@@ -1,4 +1,4 @@
-/* WayToFix prototypes — unified navigation (main bottom · internal top) */
+/* Movit prototypes — unified navigation (main bottom · internal top) */
 (function () {
   var MAIN = [
     { title: 'Catalog', links: [{ href: 'index.html', label: 'Index' }] },

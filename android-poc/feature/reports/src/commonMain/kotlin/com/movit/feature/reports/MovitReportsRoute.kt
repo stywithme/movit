@@ -80,9 +80,9 @@ fun ReportDetailRoute(
     ReportDetailScreen(
         state = state,
         onBack = onBack,
-        onPageSelected = viewModel::onPageSelected,
-        onShare = viewModel::onShareClicked,
-        onExport = viewModel::onExportClicked,
+        onPageSelected = { viewModel.onEvent(ReportDetailEvent.PageSelected(it)) },
+        onShare = { viewModel.onEvent(ReportDetailEvent.ShareClicked) },
+        onExport = { viewModel.onEvent(ReportDetailEvent.ExportClicked) },
         onRetry = { scope.launch { viewModel.load() } },
         modifier = modifier,
     )

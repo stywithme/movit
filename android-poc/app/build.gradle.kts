@@ -26,7 +26,8 @@ if (apiPropsFile.exists()) apiProps.load(apiPropsFile.inputStream())
 
 if (localProps.exists()) apiProps.load(localProps.inputStream())
 
-val apiMode = apiProps.getProperty("api.mode", "local")
+val apiMode = (findProperty("api.mode") as String?)
+    ?: apiProps.getProperty("api.mode", "local")
 
 val apiPort = apiProps.getProperty("api.port", "4000")
 
@@ -38,7 +39,7 @@ val apiServerUrl = apiProps.getProperty("api.server_url", "https://back.mongz.on
 
 android {
 
-    namespace = "com.trainingvalidator.poc"
+    namespace = "com.movit"
 
     compileSdk = libs.versions.compile.sdk.get().toInt()
 
@@ -46,7 +47,8 @@ android {
 
     defaultConfig {
 
-        applicationId = "com.trainingvalidator.poc"
+        // Play Store package id — new listing 
+        applicationId = "com.movit.androidApp"
 
         minSdk = libs.versions.min.sdk.get().toInt()
 

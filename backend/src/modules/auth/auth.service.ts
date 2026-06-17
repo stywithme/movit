@@ -12,6 +12,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
 import { getPrisma } from '@/lib/prisma/client';
+import { getJwtRefreshSecret, getJwtSecret } from '@/lib/env/assert-production-auth-secrets';
 import type {
   RegisterInput,
   LoginInput,
@@ -33,9 +34,6 @@ const ACCESS_TOKEN_EXPIRY = '24h'; // 24 hours
 const REFRESH_TOKEN_EXPIRY = '30d'; // 30 days
 const RESET_TOKEN_EXPIRY_HOURS = 1;
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your-super-secret-refresh-key-change-in-production';
-
 // Google OAuth Client ID (Web Client ID from Google Cloud Console)
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
@@ -56,12 +54,6 @@ interface GoogleTokenPayload {
  * Verify Google ID token and extract user data
  */
 async function verifyGoogleToken(idToken: string): Promise<GoogleTokenPayload | null> {
-  // Skip verification if no client ID configured (development mode)
-  if (!GOOGLE_CLIENT_ID) {
-    console.warn('GOOGLE_CLIENT_ID not configured - skipping token verification');
-    return null;
-  }
-
   try {
     const ticket = await googleClient.verifyIdToken({
       idToken,
@@ -134,13 +126,13 @@ function generateTokens(user: { id: string; email: string; isPro: boolean; isAct
 
   const accessToken = jwt.sign(
     { ...payload, tokenType: 'access' },
-    JWT_SECRET,
+    getJwtSecret(),
     { expiresIn: ACCESS_TOKEN_EXPIRY }
   );
 
   const refreshToken = jwt.sign(
     { ...payload, tokenType: 'refresh' },
-    JWT_REFRESH_SECRET,
+    getJwtRefreshSecret(),
     { expiresIn: REFRESH_TOKEN_EXPIRY }
   );
 
@@ -153,7 +145,7 @@ function generateTokens(user: { id: string; email: string; isPro: boolean; isAct
 
 function verifyAccessToken(token: string): JwtPayload | null {
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as any;
+    const payload = jwt.verify(token, getJwtSecret()) as any;
     if (payload.tokenType !== 'access' && payload.type !== 'access') return null;
     return payload;
   } catch {
@@ -163,7 +155,7 @@ function verifyAccessToken(token: string): JwtPayload | null {
 
 function verifyRefreshToken(token: string): JwtPayload | null {
   try {
-    const payload = jwt.verify(token, JWT_REFRESH_SECRET) as any;
+    const payload = jwt.verify(token, getJwtRefreshSecret()) as any;
     if (payload.tokenType !== 'refresh' && payload.type !== 'refresh') return null;
     return payload;
   } catch {
@@ -287,17 +279,25 @@ export const authService = {
   ): Promise<AuthResponse> {
     const prisma = await getPrisma();
 
-    // If idToken provided and GOOGLE_CLIENT_ID configured, verify the token
-    if (idToken && GOOGLE_CLIENT_ID) {
+    if (GOOGLE_CLIENT_ID) {
+      if (!idToken) {
+        throw new Error('Google ID token is required');
+      }
       const verified = await verifyGoogleToken(idToken);
-      if (verified) {
-        // Use verified data instead of client-provided data
-        googleId = verified.sub;
-        email = verified.email;
-        name = verified.name;
-        avatarUrl = verified.picture || avatarUrl;
-      } else {
+      if (!verified) {
         throw new Error('Invalid Google token');
+      }
+      googleId = verified.sub;
+      email = verified.email;
+      name = verified.name;
+      avatarUrl = verified.picture || avatarUrl;
+    } else {
+      // DEV-ONLY: accepts client-provided googleId/email without cryptographic verification.
+      console.warn(
+        'GOOGLE_CLIENT_ID not configured — Google OAuth accepts unverified client body fields (development only)',
+      );
+      if (!googleId || !email || !name) {
+        throw new Error('Missing Google user data');
       }
     }
 

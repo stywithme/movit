@@ -36,6 +36,13 @@ class SharedProfileRepository : ProfileRepository {
         return MovitData.account.logout()
     }
 
+    override suspend fun deleteAccount(): AppResult<Unit> {
+        if (!MovitData.isInstalled) {
+            return AppResult.Failure(DATA_LAYER_NOT_INSTALLED)
+        }
+        return MovitData.account.deleteAccount()
+    }
+
     override suspend fun updateSettings(update: ProfileSettingsUpdate): AppResult<ProfileUi> {
         if (!MovitData.isInstalled) {
             return AppResult.Failure(DATA_LAYER_NOT_INSTALLED)

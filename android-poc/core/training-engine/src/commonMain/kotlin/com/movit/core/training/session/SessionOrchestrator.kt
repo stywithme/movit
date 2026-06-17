@@ -8,7 +8,7 @@ import com.movit.core.training.visibility.VisibilityState
 
 /**
  * Pure lifecycle/time orchestration for one exercise run.
- * Frame evaluation stays in legacy [com.trainingvalidator.poc.training.TrainingEngine] until Phase 07.
+ * Frame evaluation stays in legacy [com.movit.training.TrainingEngine] until Phase 07.
  *
  * [targetReps] is the session completion target (e.g. `perSideTarget * 2` for bilateral AFTER_ALL_REPS).
  */

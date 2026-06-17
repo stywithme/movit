@@ -6,7 +6,7 @@
     <!-- Base theme: ALL shared items. Colors auto-swap via values-night/colors_night.xml.
          Only android:windowLightStatusBar differs per light/dark — see the two thin themes below
          (light here, dark in values-night/themes.xml), both inheriting this base. -->
-    <style name="Base.Theme.WayToFix" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="Base.Theme.Movit" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Primary colors -->
         <item name="colorPrimary">@color/primary</item>
         <item name="colorPrimaryVariant">@color/primary_variant</item>
@@ -29,24 +29,24 @@
         <item name="android:navigationBarColor">@color/surface</item>
 
         <!-- Default text appearances -->
-        <item name="textAppearanceHeadline1">@style/TextAppearance.WayToFix.Headline1</item>
-        <item name="textAppearanceHeadline2">@style/TextAppearance.WayToFix.Headline2</item>
-        <item name="textAppearanceHeadline3">@style/TextAppearance.WayToFix.Headline3</item>
-        <item name="textAppearanceBody1">@style/TextAppearance.WayToFix.Body1</item>
-        <item name="textAppearanceBody2">@style/TextAppearance.WayToFix.Body2</item>
-        <item name="textAppearanceCaption">@style/TextAppearance.WayToFix.Caption</item>
-        <item name="textAppearanceButton">@style/TextAppearance.WayToFix.Button</item>
+        <item name="textAppearanceHeadline1">@style/TextAppearance.Movit.Headline1</item>
+        <item name="textAppearanceHeadline2">@style/TextAppearance.Movit.Headline2</item>
+        <item name="textAppearanceHeadline3">@style/TextAppearance.Movit.Headline3</item>
+        <item name="textAppearanceBody1">@style/TextAppearance.Movit.Body1</item>
+        <item name="textAppearanceBody2">@style/TextAppearance.Movit.Body2</item>
+        <item name="textAppearanceCaption">@style/TextAppearance.Movit.Caption</item>
+        <item name="textAppearanceButton">@style/TextAppearance.Movit.Button</item>
     </style>
 
     <!-- Light-mode entry point: inherits everything from Base, sets dark status-bar icons. -->
-    <style name="Theme.WayToFix" parent="Base.Theme.WayToFix">
+    <style name="Theme.Movit" parent="Base.Theme.Movit">
         <item name="android:windowLightStatusBar">true</item>
     </style>
 
     <!-- ═══════════════════════════════════════════════════ -->
     <!-- SPLASH SCREEN THEME -->
     <!-- ═══════════════════════════════════════════════════ -->
-    <style name="Theme.WayToFix.Splash" parent="Theme.WayToFix">
+    <style name="Theme.Movit.Splash" parent="Theme.Movit">
         <item name="android:windowBackground">@color/background</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
@@ -55,7 +55,7 @@
     <!-- ═══════════════════════════════════════════════════ -->
     <!-- TRAINING / CAMERA THEME (Fullscreen) -->
     <!-- ═══════════════════════════════════════════════════ -->
-    <style name="Theme.WayToFix.Training" parent="Theme.WayToFix">
+    <style name="Theme.Movit.Training" parent="Theme.Movit">
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowBackground">@android:color/black</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
@@ -67,7 +67,7 @@
     <!-- ═══════════════════════════════════════════════════ -->
     <!-- DIALOG THEME -->
     <!-- ═══════════════════════════════════════════════════ -->
-    <style name="Theme.WayToFix.Dialog" parent="ThemeOverlay.MaterialComponents.Dialog.Alert">
+    <style name="Theme.Movit.Dialog" parent="ThemeOverlay.MaterialComponents.Dialog.Alert">
         <item name="colorPrimary">@color/primary</item>
         <item name="colorSurface">@color/surface</item>
         <item name="colorOnSurface">@color/text_primary</item>

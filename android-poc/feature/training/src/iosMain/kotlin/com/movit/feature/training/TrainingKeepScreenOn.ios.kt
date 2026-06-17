@@ -8,10 +8,10 @@ import platform.UIKit.UIApplication
 actual fun TrainingKeepScreenOnEffect() {
     DisposableEffect(Unit) {
         val app = UIApplication.sharedApplication
-        val previous = app.isIdleTimerDisabled
-        app.isIdleTimerDisabled = true
+        val previous = app.isIdleTimerDisabled()
+        app.setIdleTimerDisabled(true)
         onDispose {
-            app.isIdleTimerDisabled = previous
+            app.setIdleTimerDisabled(previous)
         }
     }
 }

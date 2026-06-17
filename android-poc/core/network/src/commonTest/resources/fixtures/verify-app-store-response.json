@@ -1,0 +1,22 @@
+{
+  "success": true,
+  "data": {
+    "subscription": {
+      "id": "sub-001",
+      "userId": "user-001",
+      "planId": "550e8400-e29b-41d4-a716-446655440000",
+      "status": "active",
+      "billingPeriod": "monthly",
+      "gateway": "app_store",
+      "amountPaid": 49.99,
+      "startDate": "2026-06-17T00:00:00.000Z",
+      "endDate": "2026-07-17T00:00:00.000Z"
+    },
+    "status": {
+      "isPro": true,
+      "isFree": false,
+      "subscriptionExpiry": "2026-07-17T00:00:00.000Z",
+      "pendingCheckouts": []
+    }
+  }
+}

@@ -92,7 +92,9 @@ class MovitReportsViewModel(
 
     fun onEvent(event: MovitReportsEvent) {
         when (event) {
-            MovitReportsEvent.RetryClicked -> Unit
+            MovitReportsEvent.RetryClicked -> {
+                viewModelScope.launch { load(isRefresh = false) }
+            }
             is MovitReportsEvent.TabSelected -> {
                 _state.update { it.copy(selectedTab = event.tab) }
             }

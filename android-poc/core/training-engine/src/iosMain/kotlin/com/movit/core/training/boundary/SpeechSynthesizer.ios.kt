@@ -1,12 +1,39 @@
 package com.movit.core.training.boundary
 
 import com.movit.core.training.feedback.FeedbackSpeechPriority
+import platform.AVFAudio.AVSpeechBoundary
+import platform.AVFAudio.AVSpeechSynthesisVoice
+import platform.AVFAudio.AVSpeechSynthesizer
+import platform.AVFAudio.AVSpeechUtterance
 
-/** WS-9: AVSpeechSynthesizer actual; stub keeps iosSimulatorArm64 green in 07.4. */
 actual class SpeechSynthesizer {
-    actual fun speak(text: String, priority: FeedbackSpeechPriority) = Unit
+    private val synthesizer = AVSpeechSynthesizer()
+    private var voice: AVSpeechSynthesisVoice? = null
 
-    actual fun stop() = Unit
+    actual fun setLanguage(language: String) {
+        val isArabic = language.trim().lowercase().startsWith("ar")
+        val primary = if (isArabic) "ar-SA" else "en-US"
+        val fallback = if (isArabic) "ar" else "en"
+        voice = AVSpeechSynthesisVoice.voiceWithLanguage(primary)
+            ?: AVSpeechSynthesisVoice.voiceWithLanguage(fallback)
+    }
 
-    actual fun release() = Unit
+    actual fun speak(text: String, priority: FeedbackSpeechPriority) {
+        if (text.isBlank()) return
+        ensureTrainingAudioSession()
+        if (priority == FeedbackSpeechPriority.INTERRUPT) {
+            synthesizer.stopSpeakingAtBoundary(AVSpeechBoundary.AVSpeechBoundaryImmediate)
+        }
+        val utterance = AVSpeechUtterance.speechUtteranceWithString(text)
+        voice?.let { utterance.voice = it }
+        synthesizer.speakUtterance(utterance)
+    }
+
+    actual fun stop() {
+        synthesizer.stopSpeakingAtBoundary(AVSpeechBoundary.AVSpeechBoundaryImmediate)
+    }
+
+    actual fun release() {
+        stop()
+    }
 }

@@ -71,7 +71,7 @@ class TrainingDebugViewModel(
 
     fun onSourceFrame() {
         sourceFrames += 1
-        val now = System.currentTimeMillis()
+        val now = trainingDebugWallClockMs()
         if (sourceWindowStart == 0L) sourceWindowStart = now
         if (now - sourceWindowStart >= 1_000L) {
             val fps = sourceFrames

@@ -11,8 +11,8 @@ import com.movit.core.training.boundary.PoseDetector
  *
  * **Integration decision (07.6):** Kotlin/Native actuals live here (AVFoundation, CoreMotion,
  * AVSpeech, haptics). MediaPipe Tasks Vision iOS is **not** linked via Gradle cinterop — Swift
- * `MovitPoseLandmarkerBridge` in `iosApp` (CocoaPods: `MediaPipeTasksVision`) registers via
- * [installIosPoseLandmarkerBridge] from `iOSApp` init **before** `MainViewController`.
+ * `MovitPoseLandmarkerBridge` in `iosApp` (CocoaPods: `MediaPipeTasksVision` via `Podfile` + `project.yml`)
+ * registers via [installIosPoseLandmarkerBridge] from `iOSApp` init **before** `MainViewController`.
  *
  * Without a ready bridge, [IosPoseDetector] reports no-pose honestly (preview + permissions work).
  */

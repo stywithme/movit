@@ -7,6 +7,7 @@ import com.movit.core.data.platform.PlatformMovitAuthTokenStore
 import com.movit.core.network.MovitHttpClientConfig
 import com.movit.core.network.MovitJson
 import com.movit.core.network.MovitMobileApi
+import com.movit.core.network.MovitBillingApi
 import com.movit.core.network.createMovitHttpClientWithEngine
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -75,4 +76,29 @@ internal fun testWorkoutSessionRepository(
     )
 }
 
+
+internal fun testBillingApi(
+    engine: MockEngine,
+    platform: com.movit.core.data.platform.MovitPlatformBindings? = null,
+): MovitBillingApi {
+    val client = if (platform != null) {
+        val refreshClient = createMovitHttpClientWithEngine(engine)
+        createMovitHttpClientWithEngine(
+            engine = engine,
+            auth = MovitHttpClientConfig(
+                tokenStore = PlatformMovitAuthTokenStore { platform },
+                baseUrlProvider = { "https://test.movit.local" },
+                refreshHttpClient = refreshClient,
+            ),
+        )
+    } else {
+        HttpClient(engine) {
+            expectSuccess = false
+            install(ContentNegotiation) {
+                json(MovitJson)
+            }
+        }
+    }
+    return MovitBillingApi(client) { "https://test.movit.local/" }
+}
 internal fun successJson(body: String): String = body

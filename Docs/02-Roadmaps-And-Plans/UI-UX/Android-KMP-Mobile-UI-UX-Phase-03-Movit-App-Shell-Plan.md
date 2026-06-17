@@ -403,13 +403,13 @@ app/src/debug/AndroidManifest.xml
     android:name="com.movit.debug.MovitShellPilotActivity"
     android:exported="false"
     android:screenOrientation="portrait"
-    android:theme="@style/Theme.WayToFix" />
+    android:theme="@style/Theme.Movit" />
 ```
 
 ### 7.3 أمر الفتح
 
 ```powershell
-adb shell am start -n com.trainingvalidator.poc/com.movit.debug.MovitShellPilotActivity
+adb shell am start -n com.movit.androidApp/com.movit.debug.MovitShellPilotActivity
 ```
 
 ## الجزء 8 - UX Requirements
@@ -530,7 +530,7 @@ Effect -> Host
 افتح:
 
 ```powershell
-adb shell am start -n com.trainingvalidator.poc/com.movit.debug.MovitShellPilotActivity
+adb shell am start -n com.movit.androidApp/com.movit.debug.MovitShellPilotActivity
 ```
 
 راجع بصرياً:

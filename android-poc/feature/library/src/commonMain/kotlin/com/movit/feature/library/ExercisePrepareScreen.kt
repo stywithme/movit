@@ -52,15 +52,13 @@ import com.movit.designsystem.components.MovitStatsStrip
 import com.movit.designsystem.components.MovitTag
 import com.movit.designsystem.components.MovitTagVariant
 import com.movit.designsystem.movitColors
-import com.movit.feature.library.components.MovitAsyncImage
+import com.movit.designsystem.components.MovitRemoteImage
 import com.movit.resources.movitText
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.FilterChip
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.layout.ContentScale
-
 @Composable
 fun ExercisePrepareScreen(
     state: ExercisePrepareUiState,
@@ -259,11 +257,11 @@ private fun ExerciseHeroPreview(
             .semantics { contentDescription = heroA11y },
     ) {
         if (!imageUrl.isNullOrBlank()) {
-            MovitAsyncImage(
-                url = imageUrl,
+            MovitRemoteImage(
+                imageUrl = imageUrl,
                 contentDescription = heroA11y,
+                placeholderLabel = name.take(1).uppercase(),
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
             )
         } else {
             Box(

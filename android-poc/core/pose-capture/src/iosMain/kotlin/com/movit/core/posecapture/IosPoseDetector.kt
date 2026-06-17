@@ -41,6 +41,13 @@ class IosPoseDetector : PoseDetector {
     var lastInferenceTimeMs: Long = 0L
         private set
 
+    /**
+     * `true` after [warmUp] when the Swift MediaPipe bridge loaded `pose_landmarker_full.task`.
+     * Mirrors Android [com.movit.core.posecapture.android.MediaPipePoseDetector] readiness.
+     */
+    val isAvailable: Boolean
+        get() = bridgeStatus == IosPoseBridgeStatus.READY
+
     fun bridgeStatus(): IosPoseBridgeStatus = bridgeStatus
 
     fun setListener(listener: Listener?) {

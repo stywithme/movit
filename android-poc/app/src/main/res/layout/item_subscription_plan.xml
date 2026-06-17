@@ -28,7 +28,7 @@
 
             <TextView
                 android:id="@+id/tvPlanTitle"
-                style="@style/TextAppearance.WayToFix.Headline3"
+                style="@style/TextAppearance.Movit.Headline3"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -37,7 +37,7 @@
 
             <TextView
                 android:id="@+id/tvPlanBadge"
-                style="@style/TextAppearance.WayToFix.Caption"
+                style="@style/TextAppearance.Movit.Caption"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_chip_accent"
@@ -59,7 +59,7 @@
 
             <TextView
                 android:id="@+id/tvPlanPrice"
-                style="@style/TextAppearance.WayToFix.Headline2"
+                style="@style/TextAppearance.Movit.Headline2"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="@color/primary"
@@ -67,7 +67,7 @@
 
             <TextView
                 android:id="@+id/tvPlanPeriod"
-                style="@style/TextAppearance.WayToFix.Body2"
+                style="@style/TextAppearance.Movit.Body2"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="@dimen/spacing_xs"
@@ -78,7 +78,7 @@
 
         <TextView
             android:id="@+id/tvPlanDesc"
-            style="@style/TextAppearance.WayToFix.Body2"
+            style="@style/TextAppearance.Movit.Body2"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/spacing_sm"
@@ -89,7 +89,7 @@
 
         <TextView
             android:id="@+id/tvPlanFeatures"
-            style="@style/TextAppearance.WayToFix.Caption"
+            style="@style/TextAppearance.Movit.Caption"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/spacing_sm"

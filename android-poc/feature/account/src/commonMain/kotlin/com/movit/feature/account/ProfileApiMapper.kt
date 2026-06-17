@@ -1,4 +1,4 @@
-package com.movit.feature.account
+﻿package com.movit.feature.account
 
 import com.movit.core.data.platform.MovitThemeModeStorage
 import com.movit.core.network.dto.UserPublicDto
@@ -13,7 +13,7 @@ object ProfileApiMapper {
         email = user.email,
         avatarUrl = user.avatarUrl,
         isPro = user.isPro,
-        subscriptionLabel = if (user.isPro) "WayToFix Pro" else "Free",
+        subscriptionLabel = if (user.isPro) "Movit Pro" else "Free",
         subscriptionRenewal = formatSubscriptionRenewal(user.subscriptionExpiry, user.isPro),
         languageCode = user.preferredLanguage.lowercase().takeIf { it == "ar" } ?: "en",
         themeMode = themeMode,

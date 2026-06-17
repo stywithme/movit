@@ -9,7 +9,7 @@ import kotlin.test.assertTrue
 
 /**
  * G2 — frozen parity harness on recorded [parity_*.json] fixtures (KMP-only).
- * Replaces legacy [com.trainingvalidator.poc.training.engine.testing.TrainingEngineParityTest].
+ * Replaces legacy [com.movit.training.engine.testing.TrainingEngineParityTest].
  */
 class FrozenParityFixtureTest {
 

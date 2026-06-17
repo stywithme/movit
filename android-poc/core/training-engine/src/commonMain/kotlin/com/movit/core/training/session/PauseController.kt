@@ -6,7 +6,7 @@ import com.movit.core.training.visibility.VisibilityMonitor
 
 /**
  * Visibility-driven training interruption. User manual pause stays in [SessionOrchestrator].
- * Ported from legacy [com.trainingvalidator.poc.training.engine.PauseController].
+ * Ported from legacy [com.movit.training.engine.PauseController].
  */
 class PauseController(
     private val visibilityResumeCountdownMs: Long,

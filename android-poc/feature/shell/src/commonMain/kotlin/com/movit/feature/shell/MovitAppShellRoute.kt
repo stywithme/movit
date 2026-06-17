@@ -33,10 +33,12 @@ fun MovitAppShellRoute(
     profileViewModel: MovitProfileViewModel = viewModel { MovitProfileViewModel() },
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     onTrainEffect: (MovitTrainEffect) -> Boolean = { false },
-    onLaunchLegacySubscription: () -> Boolean = { false },
+    onLaunchPlatformSubscription: (restorePurchases: Boolean) -> Boolean = { false },
     onShareText: (subject: String, text: String) -> Boolean = { _, _ -> false },
 ) {
     val shellState by shellViewModel.state.collectAsStateWithLifecycle()
+
+    ShellSyncLifecycleEffects(shellViewModel)
 
     LaunchedEffect(Unit) {
         if (MovitData.isInstalled) {
@@ -64,7 +66,7 @@ fun MovitAppShellRoute(
                 modifier = modifier,
                 snackbarHostState = snackbarHostState,
                 onTrainEffect = onTrainEffect,
-                onLaunchLegacySubscription = onLaunchLegacySubscription,
+                onLaunchPlatformSubscription = onLaunchPlatformSubscription,
                 onShareText = onShareText,
             )
         }
@@ -82,7 +84,7 @@ private fun MovitAppShellRouteContent(
     modifier: Modifier,
     snackbarHostState: SnackbarHostState,
     onTrainEffect: (MovitTrainEffect) -> Boolean,
-    onLaunchLegacySubscription: () -> Boolean,
+    onLaunchPlatformSubscription: (restorePurchases: Boolean) -> Boolean,
     onShareText: (subject: String, text: String) -> Boolean,
 ) {
     val state by shellViewModel.state.collectAsStateWithLifecycle()
@@ -104,8 +106,8 @@ private fun MovitAppShellRouteContent(
                         )
                     }
                 }
-                MovitAppShellEffect.LaunchLegacySubscription -> {
-                    if (!onLaunchLegacySubscription()) {
+                is MovitAppShellEffect.LaunchPlatformSubscription -> {
+                    if (!onLaunchPlatformSubscription(effect.restorePurchases)) {
                         snackbarHostState.showSnackbar(
                             localizedString(language, "profile_subscription_ios_unavailable"),
                         )

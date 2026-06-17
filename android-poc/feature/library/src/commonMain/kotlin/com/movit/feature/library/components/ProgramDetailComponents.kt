@@ -70,7 +70,6 @@ import com.movit.feature.library.ProgramStatUi
 import com.movit.feature.library.ProgramWeekUi
 import com.movit.feature.library.WeekOfflineStatus
 import com.movit.feature.library.WeekOfflineUiState
-import com.movit.feature.library.ProgramWeekOfflineCopy
 import com.movit.resources.movitText
 
 @Composable
@@ -404,7 +403,7 @@ fun ProgramWeekOfflinePanel(
                             }
                         }
                         Text(
-                            text = ProgramWeekOfflineCopy.ready,
+                            text = movitText("program_week_offline_ready"),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.W800,
                             color = movit.success,
@@ -413,7 +412,7 @@ fun ProgramWeekOfflinePanel(
                 }
                 WeekOfflineStatus.Downloading -> {
                     Text(
-                        text = ProgramWeekOfflineCopy.downloading,
+                        text = movitText("program_week_offline_downloading"),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.W700,
                     )
@@ -427,25 +426,28 @@ fun ProgramWeekOfflinePanel(
                     )
                 }
                 WeekOfflineStatus.Failed -> {
+                    val errorText = weekOffline.errorMessage
+                        ?: weekOffline.errorMessageKey?.let { movitText(it) }
+                        ?: movitText("program_week_offline_download_failed")
                     Text(
-                        text = weekOffline.errorMessage ?: ProgramWeekOfflineCopy.downloadFailed,
+                        text = errorText,
                         style = MaterialTheme.typography.bodySmall,
                         color = scheme.error,
                     )
                     MovitButton(
-                        text = ProgramWeekOfflineCopy.retry,
+                        text = movitText("common_retry"),
                         onClick = onDownload,
                         variant = MovitButtonVariant.Outlined,
                     )
                 }
                 WeekOfflineStatus.Idle -> {
                     Text(
-                        text = ProgramWeekOfflineCopy.downloadAction,
+                        text = movitText("program_week_offline_download_action"),
                         style = MaterialTheme.typography.bodySmall,
                         color = movit.textSecondary,
                     )
                     MovitButton(
-                        text = ProgramWeekOfflineCopy.downloadAction,
+                        text = movitText("program_week_offline_download_action"),
                         onClick = onDownload,
                         variant = MovitButtonVariant.Outlined,
                     )

@@ -79,6 +79,12 @@ fun MovitProfileScreen(
                 onDismiss = { onEvent(MovitProfileEvent.LogoutDismissed) },
             )
         }
+        ProfilePicker.DeleteAccountConfirm -> {
+            ProfileDeleteAccountConfirmDialog(
+                onConfirm = { onEvent(MovitProfileEvent.DeleteAccountConfirmed) },
+                onDismiss = { onEvent(MovitProfileEvent.DeleteAccountDismissed) },
+            )
+        }
         null -> Unit
     }
 
@@ -229,6 +235,7 @@ private fun ProfileContent(
             onClick = { onEvent(MovitProfileEvent.LevelClicked) },
         )
         SignOutRow(onClick = { onEvent(MovitProfileEvent.LogoutClicked) })
+        DeleteAccountRow(onClick = { onEvent(MovitProfileEvent.DeleteAccountClicked) })
     }
 }
 
@@ -256,6 +263,32 @@ private fun SignOutRow(onClick: () -> Unit) {
             fontWeight = FontWeight.W700,
             color = MaterialTheme.colorScheme.error,
         )
+    }
+}
+
+@Composable
+private fun DeleteAccountRow(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = MovitSpacing.lg, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column {
+            Text(
+                text = movitText("profile_delete_account"),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.W700,
+                color = MaterialTheme.colorScheme.error,
+            )
+            Text(
+                text = movitText("profile_delete_account_sub"),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.movitColors.textSecondary,
+                modifier = Modifier.padding(top = MovitSpacing.xs),
+            )
+        }
     }
 }
 

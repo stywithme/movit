@@ -8,12 +8,30 @@ struct iOSApp: App {
         IosPoseLandmarkerBridgeInstallKt.installIosPoseLandmarkerBridge(
             bridge: MovitPoseLandmarkerBridge()
         )
+        IosStoreKitBridgeInstallKt.installIosStoreKitBridge(
+            bridge: MovitStoreKitBridge()
+        )
+        IosGoogleSignInBridgeInstallKt.installIosGoogleSignInBridge(
+            bridge: MovitGoogleSignInBridge()
+        )
+        IosCameraPermissionBridgeInstallKt.installIosCameraPermissionBridge(
+            bridge: MovitCameraPermissionBridge()
+        )
+        #if canImport(GoogleSignIn)
+        MovitGoogleSignInBootstrap.configure()
+        #endif
+        BackgroundSyncSchedulerKt.registerIosBackgroundSyncAtLaunch()
     }
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .ignoresSafeArea()
+                .onOpenURL { url in
+                    #if canImport(GoogleSignIn)
+                    _ = MovitGoogleSignInBootstrap.handle(url: url)
+                    #endif
+                }
         }
     }
 }

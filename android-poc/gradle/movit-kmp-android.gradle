@@ -1,4 +1,4 @@
-// Applied when movitKmp.namespace is set — configures kotlin.android for AGP KMP library plugin.
+// Applied when movitKmp.namespace is set â€” configures kotlin.android for AGP KMP library plugin.
 kotlin {
     android {
         namespace = movitAndroidNamespace
@@ -7,4 +7,10 @@ kotlin {
         androidResources.enable = true
         withHostTest { }
     }
+}
+
+tasks.register("testDebugUnitTest") {
+    group = "verification"
+    description = "Alias for testAndroidHostTest (KMP Android host unit tests)."
+    dependsOn(tasks.named("testAndroidHostTest"))
 }

@@ -4,6 +4,7 @@ sealed interface ProfilePicker {
     data object Language : ProfilePicker
     data object Appearance : ProfilePicker
     data object LogoutConfirm : ProfilePicker
+    data object DeleteAccountConfirm : ProfilePicker
 }
 
 data class MovitProfileUiState(
@@ -13,5 +14,6 @@ data class MovitProfileUiState(
     val errorMessage: String? = null,
     val showSubscription: Boolean = false,
     val isLoggingOut: Boolean = false,
+    val isDeletingAccount: Boolean = false,
     val activePicker: ProfilePicker? = null,
 )

@@ -4,8 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.movit.core.data.cache.CacheState
 import com.movit.shared.AppResult
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.CoroutineScope
@@ -35,7 +38,80 @@ class WorkoutSessionViewModel(
 ) : ViewModel() {
     private val _state = MutableStateFlow(WorkoutSessionUiState(isLoading = true))
     val state: StateFlow<WorkoutSessionUiState> = _state.asStateFlow()
+    private val _effects = MutableSharedFlow<WorkoutSessionEffect>(extraBufferCapacity = 1)
+    val effects: SharedFlow<WorkoutSessionEffect> = _effects.asSharedFlow()
     private val persistScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    fun onEvent(event: WorkoutSessionEvent) {
+        when (event) {
+            WorkoutSessionEvent.ToggleEditMode -> toggleEditMode()
+            is WorkoutSessionEvent.ExerciseClicked -> onExerciseClick(event.exerciseId)
+            is WorkoutSessionEvent.RestClicked -> onRestClick(event.restId)
+            is WorkoutSessionEvent.OpenSwapSheet -> openSwapSheet(event.exerciseId)
+            WorkoutSessionEvent.OpenAddExerciseSheet -> openAddExerciseSheet()
+            is WorkoutSessionEvent.SwapQueryChanged -> onSwapQueryChange(event.query)
+            is WorkoutSessionEvent.AddExerciseQueryChanged -> onAddExerciseQueryChange(event.query)
+            is WorkoutSessionEvent.SwapCandidateSelected -> selectSwapCandidate(event.slug)
+            is WorkoutSessionEvent.AddExerciseCandidateSelected -> selectAddExerciseCandidate(event.slug)
+            is WorkoutSessionEvent.OpenEditSheet -> openEditSheet(event.exerciseId)
+            is WorkoutSessionEvent.EditDraftChanged -> updateEditDraft(event.transform)
+            is WorkoutSessionEvent.RestDurationChanged -> updateRestDuration(event.seconds)
+            WorkoutSessionEvent.SaveEditDetails -> saveEditDetails()
+            WorkoutSessionEvent.SaveRestEdit -> saveRestEdit()
+            is WorkoutSessionEvent.DeleteExercise -> deleteExercise(event.exerciseId)
+            is WorkoutSessionEvent.DeleteBlock -> deleteBlock(event.blockId)
+            is WorkoutSessionEvent.MoveBlock -> moveBlock(event.sectionPhaseRole, event.blockId, event.delta)
+            WorkoutSessionEvent.AddRestBlock -> addRestBlock()
+            WorkoutSessionEvent.DismissSheet -> dismissSheet()
+            is WorkoutSessionEvent.TogglePlannedWorkoutExpand -> togglePlannedWorkoutExpand(event.workoutId)
+            WorkoutSessionEvent.DismissCatchUpDialog -> dismissCatchUpDialog()
+            WorkoutSessionEvent.OpenCatchUpDayClicked -> {
+                viewModelScope.launch {
+                    sessionKeyForCatchUpDay()?.let { key ->
+                        _effects.emit(WorkoutSessionEffect.OpenCatchUpDay(key))
+                    }
+                }
+            }
+            WorkoutSessionEvent.SkipWarmup -> skipWarmup()
+            WorkoutSessionEvent.SwitchEditToSwap -> switchEditSheetToSwap()
+            is WorkoutSessionEvent.SelectPlannedWorkout -> handlePlannedWorkoutSelected(event.plannedWorkoutId)
+            WorkoutSessionEvent.StartWorkoutClicked -> handleStartWorkoutClicked()
+            is WorkoutSessionEvent.OpenExerciseClicked -> handleOpenExerciseClicked(event.exerciseId)
+            WorkoutSessionEvent.RetryClicked -> {
+                viewModelScope.launch { load() }
+            }
+            WorkoutSessionEvent.SnackbarConsumed -> consumeSnackbar()
+        }
+    }
+
+    private fun handlePlannedWorkoutSelected(plannedWorkoutId: String) {
+        val context = _state.value.session?.context ?: return
+        if (plannedWorkoutId == context.plannedWorkoutId) return
+        val sessionKey = WorkoutSessionKeys.encode(
+            programId = context.programId,
+            weekNumber = context.weekNumber,
+            dayNumber = context.dayNumber,
+            plannedWorkoutId = plannedWorkoutId,
+        )
+        _effects.tryEmit(WorkoutSessionEffect.SwitchWorkout(sessionKey))
+    }
+
+    private fun handleStartWorkoutClicked() {
+        val session = _state.value.session ?: return
+        val firstExercise = WorkoutFlowMapper.fromSession(session).exercises.firstOrNull() ?: return
+        _effects.tryEmit(WorkoutSessionEffect.StartWorkout(firstExercise.id))
+    }
+
+    private fun handleOpenExerciseClicked(exerciseId: String) {
+        if (_state.value.session != null) {
+            _effects.tryEmit(WorkoutSessionEffect.OpenExercise(exerciseId))
+        }
+    }
+
+    private fun emitSnackbar(key: String) {
+        _state.update { it.copy(snackbarMessageKey = key) }
+        _effects.tryEmit(WorkoutSessionEffect.ShowSnackbar(key))
+    }
 
     fun loadInitial() {
         viewModelScope.launch { load() }
@@ -60,7 +136,7 @@ class WorkoutSessionViewModel(
     fun toggleEditMode() {
         val wasEditing = _state.value.isEditMode
         if (wasEditing) {
-            viewModelScope.launch { persistSession() }
+            persistScope.launch { persistSession() }
         }
         _state.update {
             it.copy(
@@ -348,11 +424,11 @@ class WorkoutSessionViewModel(
     fun skipWarmup() {
         val session = _state.value.session ?: return
         if (!session.hasWarmupSection()) {
-            _state.update { it.copy(snackbarMessageKey = "session_skip_warmup_none") }
+            emitSnackbar("session_skip_warmup_none")
             return
         }
         updateSession { it.withoutWarmup() }
-        _state.update { it.copy(snackbarMessageKey = "session_skip_warmup_done") }
+        emitSnackbar("session_skip_warmup_done")
         persistScope.launch { persistSession() }
     }
 

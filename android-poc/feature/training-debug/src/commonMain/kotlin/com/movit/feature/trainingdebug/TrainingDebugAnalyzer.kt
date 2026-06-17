@@ -13,6 +13,8 @@ import com.movit.core.training.session.SetupReadinessGate
 import com.movit.designsystem.components.SkeletonDebugOverlayState
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlin.math.pow
+import kotlin.math.roundToInt
 import kotlinx.serialization.json.putJsonArray
 
 class TrainingDebugAnalyzer {
@@ -139,7 +141,7 @@ class TrainingDebugAnalyzer {
     ): String = when (config.activeTab) {
         TrainingDebugTab.ANGLE_DIAGNOSTICS -> {
             val parts = config.selectedJoints.mapNotNull { joint ->
-                angles.getAngle(joint)?.let { "${"%.0f".format(it)}°" }
+                angles.getAngle(joint)?.let { "${it.roundToInt()}°" }
             }
             when {
                 parts.isEmpty() -> "—"
@@ -148,7 +150,7 @@ class TrainingDebugAnalyzer {
             }
         }
         TrainingDebugTab.POSITION_CHECK ->
-            positionDebug?.actualValue?.let { "${"%.3f".format(it)}" } ?: "—"
+            positionDebug?.actualValue?.let { formatFixedDecimals(it, 3) } ?: "—"
         TrainingDebugTab.CAMERA_SCENE -> "scene"
         TrainingDebugTab.SETUP_GATE -> "setup"
     }
@@ -269,4 +271,18 @@ class TrainingDebugAnalyzer {
         statusText = "No pose",
         infoPanelText = reason,
     )
+}
+
+private fun formatFixedDecimals(value: Double, fractionDigits: Int): String {
+    val multiplier = 10.0.pow(fractionDigits)
+    val rounded = kotlin.math.round(value * multiplier) / multiplier
+    val text = rounded.toString()
+    if (fractionDigits == 0) return text.substringBefore('.')
+    val dot = text.indexOf('.')
+    return if (dot < 0) {
+        "$text.${"0".repeat(fractionDigits)}"
+    } else {
+        val fraction = text.substring(dot + 1).padEnd(fractionDigits, '0').take(fractionDigits)
+        "${text.substring(0, dot)}.$fraction"
+    }
 }

@@ -10,7 +10,9 @@ import {
     Req,
     Res,
     ServiceUnavailableException,
+    UseGuards,
 } from '@nestjs/common';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { SubscriptionService } from './subscription.service';
 import { verifyMobileToken } from '@/modules/auth/auth.service';
 import type { Request, Response } from 'express';
@@ -18,6 +20,7 @@ import {
     cancelSubscriptionSchema,
     createSubscriptionCheckoutSchema,
     verifyGooglePlayPurchaseSchema,
+    verifyAppStorePurchaseSchema,
 } from './subscription.types';
 
 @Controller('mobile/subscriptions')
@@ -130,6 +133,8 @@ export class MobileSubscriptionController {
         }
     }
 
+    @UseGuards(ThrottlerGuard)
+    @Throttle({ default: { limit: 10, ttl: 60_000 } })
     @Post('google-play/verify')
     async verifyGooglePlay(
         @Req() req: Request,
@@ -159,6 +164,42 @@ export class MobileSubscriptionController {
                 return { success: false, error: error.message };
             }
             console.error('[Subscription] Error verifyGooglePlay:', error);
+            res.status(500);
+            return { success: false, error: 'Failed to verify purchase' };
+        }
+    }
+
+    @UseGuards(ThrottlerGuard)
+    @Throttle({ default: { limit: 10, ttl: 60_000 } })
+    @Post('app-store/verify')
+    async verifyAppStore(
+        @Req() req: Request,
+        @Res({ passthrough: true }) res: Response,
+        @Body() body: unknown,
+    ) {
+        try {
+            const authResult = await verifyMobileToken(req);
+            if (!authResult.success || !authResult.userId) {
+                res.status(401);
+                return { success: false, error: 'Unauthorized' };
+            }
+            const parsed = verifyAppStorePurchaseSchema.safeParse(body);
+            if (!parsed.success) {
+                res.status(400);
+                return { success: false, error: 'Invalid verify payload', details: parsed.error.flatten() };
+            }
+            const data = await this.subscriptionService.verifyAppStore(authResult.userId, parsed.data);
+            return { success: true, data };
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                res.status(404);
+                return { success: false, error: error.message };
+            }
+            if (error instanceof BadRequestException) {
+                res.status(400);
+                return { success: false, error: error.message };
+            }
+            console.error('[Subscription] Error verifyAppStore:', error);
             res.status(500);
             return { success: false, error: 'Failed to verify purchase' };
         }

@@ -89,10 +89,16 @@ jobs:
       - name: Gradle cache
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Install XcodeGen
-        run: brew install xcodegen
+      - name: Install XcodeGen and CocoaPods
+        run: brew install xcodegen cocoapods
 
-      - name: Generate Xcode project
+      - name: Fetch MediaPipe pose model
+        working-directory: android-poc
+        run: |
+          chmod +x scripts/fetch-pose-landmarker-model.sh
+          ./scripts/fetch-pose-landmarker-model.sh
+
+      - name: Generate Xcode workspace
         working-directory: android-poc/iosApp
         run: xcodegen generate
 
@@ -100,7 +106,7 @@ jobs:
         working-directory: android-poc/iosApp
         run: |
           xcodebuild \
-            -project iosApp.xcodeproj \
+            -workspace iosApp.xcworkspace \
             -scheme iosApp \
             -configuration Debug \
             -sdk iphonesimulator \

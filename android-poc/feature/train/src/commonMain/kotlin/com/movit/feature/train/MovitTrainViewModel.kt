@@ -76,7 +76,9 @@ class MovitTrainViewModel(
     fun onEvent(event: MovitTrainEvent) {
         when (event) {
             MovitTrainEvent.RefreshRequested -> Unit
-            MovitTrainEvent.RetryClicked -> Unit
+            MovitTrainEvent.RetryClicked -> {
+                viewModelScope.launch { load(isRefresh = false) }
+            }
             MovitTrainEvent.PreviousWeekClicked -> navigateWeek(-1)
             MovitTrainEvent.NextWeekClicked -> navigateWeek(+1)
             is MovitTrainEvent.DayClicked -> toggleDaySelection(event.index)

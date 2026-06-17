@@ -8,9 +8,9 @@ import platform.Foundation.NSUserDomainMask
 internal object IosApplicationFiles {
     fun documentsRoot(): String {
         val paths = NSSearchPathForDirectoriesInDomains(
-            directory = platform.Foundation.NSDocumentDirectory,
-            inDomains = NSUserDomainMask,
-            expandTilde = true,
+            platform.Foundation.NSDocumentDirectory,
+            NSUserDomainMask,
+            true,
         )
         return paths.firstOrNull() as? String ?: "/tmp/movit"
     }

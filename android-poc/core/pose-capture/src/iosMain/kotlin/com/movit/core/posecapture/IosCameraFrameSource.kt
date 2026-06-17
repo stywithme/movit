@@ -50,6 +50,8 @@ class IosCameraFrameSource(
     private var onCameraBoundListener: (() -> Unit)? = null
     private var configuration = CameraSourceConfiguration()
     private var lastSubmittedFrameMs = 0L
+    // Shared One-Euro smoothing — identical to the Android MediaPipe path so pose-frame inputs match.
+    private val landmarkSmoother = PoseLandmarkSmoother()
     private val outputQueue = dispatch_queue_create("com.movit.pose-capture.video", null)
 
     override fun setFrameListener(listener: ((PoseFrame?) -> Unit)?) {
@@ -92,15 +94,20 @@ class IosCameraFrameSource(
     override fun start(configuration: CameraSourceConfiguration) {
         this.configuration = configuration
         lastSubmittedFrameMs = 0L
+        landmarkSmoother.reset()
         stopSessionOnly()
         poseDetector.setListener(
             object : IosPoseDetector.Listener {
                 override fun onPoseDetected(result: IosPoseDetector.DetectionResult) {
+                    val timestampMs = result.timestampMs
+                    val smoothed = landmarkSmoother.smooth(result.landmarks, timestampMs)
+                    val smoothedWorld = result.worldLandmarks
+                        ?.let { landmarkSmoother.smoothWorld(it, timestampMs) }
                     val frame = PoseFrameAssembler.assemble(
-                        landmarks = result.landmarks,
-                        timestampMs = result.timestampMs,
+                        landmarks = smoothed,
+                        timestampMs = timestampMs,
                         isFrontCamera = result.isFrontCamera,
-                        worldLandmarks = result.worldLandmarks,
+                        worldLandmarks = smoothedWorld,
                         analysisImageWidth = result.analysisImageWidth,
                         analysisImageHeight = result.analysisImageHeight,
                     )

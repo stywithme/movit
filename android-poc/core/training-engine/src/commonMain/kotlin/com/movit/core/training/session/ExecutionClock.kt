@@ -4,7 +4,7 @@ import kotlin.math.abs
 
 /**
  * Tracks active execution duration with manual pause support.
- * Extracted from legacy [com.trainingvalidator.poc.training.TrainingEngine] time logic.
+ * Extracted from legacy [com.movit.training.TrainingEngine] time logic.
  */
 class ExecutionClock(
     private val wallClock: () -> Long,

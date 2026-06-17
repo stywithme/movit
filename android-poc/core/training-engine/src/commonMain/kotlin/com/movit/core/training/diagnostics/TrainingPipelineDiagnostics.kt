@@ -2,6 +2,9 @@ package com.movit.core.training.diagnostics
 
 import com.movit.core.training.boundary.TrainingThroughputProfiles
 import com.movit.core.training.session.SessionRunState
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Single, low-noise diagnostics channel for the live training capture pipeline.
@@ -14,7 +17,7 @@ import com.movit.core.training.session.SessionRunState
 object TrainingPipelineDiagnostics {
     private const val LOG_INTERVAL_MS = 2_000L
 
-    private val lock = Any()
+    private val mutex = Mutex()
 
     private var lastLogMs = 0L
     private var cameraTargetFps = 0
@@ -36,13 +39,16 @@ object TrainingPipelineDiagnostics {
     private var vmConflated = 0
 
     fun reset() {
-        synchronized(lock) {
-            resetWindowCounters()
-            lastLogMs = 0L
-            cameraTargetFps = 0
-            cameraAnalysisSize = "?"
-            cameraAppliedFps = "?"
-            cameraThroughputProfile = TrainingThroughputProfiles.STABLE.id
+        if (!isTrainingPipelineDiagnosticsEnabled()) return
+        runBlocking {
+            mutex.withLock {
+                resetWindowCounters()
+                lastLogMs = 0L
+                cameraTargetFps = 0
+                cameraAnalysisSize = "?"
+                cameraAppliedFps = "?"
+                cameraThroughputProfile = TrainingThroughputProfiles.STABLE.id
+            }
         }
     }
 
@@ -53,11 +59,14 @@ object TrainingPipelineDiagnostics {
         appliedFpsRange: String,
         throughputProfileId: String = TrainingThroughputProfiles.STABLE.id,
     ) {
-        synchronized(lock) {
-            cameraTargetFps = targetFps
-            cameraAnalysisSize = "${analysisWidth}x$analysisHeight"
-            cameraAppliedFps = appliedFpsRange
-            cameraThroughputProfile = throughputProfileId
+        if (!isTrainingPipelineDiagnosticsEnabled()) return
+        runBlocking {
+            mutex.withLock {
+                cameraTargetFps = targetFps
+                cameraAnalysisSize = "${analysisWidth}x$analysisHeight"
+                cameraAppliedFps = appliedFpsRange
+                cameraThroughputProfile = throughputProfileId
+            }
         }
         logMilestone(
             "throughput profile=$throughputProfileId " +
@@ -66,36 +75,51 @@ object TrainingPipelineDiagnostics {
     }
 
     fun recordCameraFrame(acceptedForAnalysis: Boolean) {
-        synchronized(lock) {
-            if (acceptedForAnalysis) cameraAccepted++ else cameraSkipped++
+        if (!isTrainingPipelineDiagnosticsEnabled()) return
+        runBlocking {
+            mutex.withLock {
+                if (acceptedForAnalysis) cameraAccepted++ else cameraSkipped++
+            }
         }
     }
 
     fun recordPoseResult(inferenceMs: Long, hasPose: Boolean, busySkippedSinceLastResult: Int) {
-        synchronized(lock) {
-            if (hasPose) poseWithBody++ else poseNoBody++
-            poseInferenceMsTotal += inferenceMs.coerceAtLeast(0L)
-            poseInferenceSamples++
-            poseBusySkipped += busySkippedSinceLastResult.coerceAtLeast(0)
+        if (!isTrainingPipelineDiagnosticsEnabled()) return
+        runBlocking {
+            mutex.withLock {
+                if (hasPose) poseWithBody++ else poseNoBody++
+                poseInferenceMsTotal += inferenceMs.coerceAtLeast(0L)
+                poseInferenceSamples++
+                poseBusySkipped += busySkippedSinceLastResult.coerceAtLeast(0)
+            }
         }
     }
 
     fun recordInferenceStall() {
-        synchronized(lock) {
-            poseStallEvents++
+        if (!isTrainingPipelineDiagnosticsEnabled()) return
+        runBlocking {
+            mutex.withLock {
+                poseStallEvents++
+            }
         }
     }
 
     fun recordVmIngress(wasConflated: Boolean) {
-        synchronized(lock) {
-            vmIngress++
-            if (wasConflated) vmConflated++
+        if (!isTrainingPipelineDiagnosticsEnabled()) return
+        runBlocking {
+            mutex.withLock {
+                vmIngress++
+                if (wasConflated) vmConflated++
+            }
         }
     }
 
     fun recordVmProcessed() {
-        synchronized(lock) {
-            vmProcessed++
+        if (!isTrainingPipelineDiagnosticsEnabled()) return
+        runBlocking {
+            mutex.withLock {
+                vmProcessed++
+            }
         }
     }
 
@@ -119,21 +143,23 @@ object TrainingPipelineDiagnostics {
         cameraActive: Boolean,
     ): Boolean {
         if (!isTrainingPipelineDiagnosticsEnabled() || !cameraActive) return false
-        synchronized(lock) {
-            if (lastLogMs > 0L && nowMs - lastLogMs < LOG_INTERVAL_MS) return false
-            val line = buildPeriodicLine(
-                runState = runState,
-                phase = phase,
-                repCount = repCount,
-                targetReps = targetReps,
-                formScore = formScore,
-                droppedEngine = droppedEngine,
-                droppedSupervisor = droppedSupervisor,
-            )
-            trainingPipelineLog(line)
-            resetWindowCounters()
-            lastLogMs = nowMs
-            return true
+        return runBlocking {
+            mutex.withLock {
+                if (lastLogMs > 0L && nowMs - lastLogMs < LOG_INTERVAL_MS) return@withLock false
+                val line = buildPeriodicLine(
+                    runState = runState,
+                    phase = phase,
+                    repCount = repCount,
+                    targetReps = targetReps,
+                    formScore = formScore,
+                    droppedEngine = droppedEngine,
+                    droppedSupervisor = droppedSupervisor,
+                )
+                trainingPipelineLog(line)
+                resetWindowCounters()
+                lastLogMs = nowMs
+                true
+            }
         }
     }
 

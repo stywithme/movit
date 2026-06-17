@@ -22,6 +22,8 @@ import com.movit.resources.strings.ProgramDetailStrings
 
 import com.movit.resources.strings.ProgramFlowStrings
 
+import com.movit.resources.localizedString
+
 import com.movit.shared.AppResult
 
 import kotlinx.coroutines.CoroutineScope
@@ -34,9 +36,15 @@ import kotlinx.coroutines.cancel
 
 import kotlinx.coroutines.delay
 
+import kotlinx.coroutines.flow.MutableSharedFlow
+
 import kotlinx.coroutines.flow.MutableStateFlow
 
+import kotlinx.coroutines.flow.SharedFlow
+
 import kotlinx.coroutines.flow.StateFlow
+
+import kotlinx.coroutines.flow.asSharedFlow
 
 import kotlinx.coroutines.flow.asStateFlow
 
@@ -118,6 +126,88 @@ class ProgramDetailViewModel(
 
 
 
+    private val _effects = MutableSharedFlow<ProgramDetailEffect>(extraBufferCapacity = 1)
+
+    val effects: SharedFlow<ProgramDetailEffect> = _effects.asSharedFlow()
+
+
+
+    fun onEvent(event: ProgramDetailEvent) {
+
+        when (event) {
+
+            is ProgramDetailEvent.TabSelected -> onTabSelected(event.tab)
+
+            is ProgramDetailEvent.WeekSelected -> onWeekSelected(event.weekNumber)
+
+            is ProgramDetailEvent.DaySelected -> onDaySelected(event.dayNumber)
+
+            ProgramDetailEvent.StartProgramClicked -> {
+
+                viewModelScope.launch {
+
+                    startProgramAndGetSessionKey()?.let { key ->
+
+                        _effects.emit(ProgramDetailEffect.StartSession(key))
+
+                    }
+
+                }
+
+            }
+
+            is ProgramDetailEvent.EditReasonSelected -> onEditReasonSelected(event.reason)
+
+            is ProgramDetailEvent.EditScopeSelected -> onEditScopeSelected(event.scope)
+
+            is ProgramDetailEvent.WeeklyTargetChange -> onWeeklyTargetChange(event.delta)
+
+            ProgramDetailEvent.PauseCalendarToggle -> onPauseCalendarToggle()
+
+            is ProgramDetailEvent.SessionMove -> onSessionMove(event.sessionId, event.direction)
+
+            is ProgramDetailEvent.ExerciseParamChange -> onExerciseParamChange(
+
+                sessionId = event.sessionId,
+
+                exerciseId = event.exerciseId,
+
+                sets = event.sets,
+
+                reps = event.reps,
+
+                weightKg = event.weightKg,
+
+                restSeconds = event.restSeconds,
+
+            )
+
+            is ProgramDetailEvent.RemoveSession -> onRemoveSession(event.sessionId)
+
+            is ProgramDetailEvent.RemoveExercise -> onRemoveExercise(event.sessionId, event.exerciseId)
+
+            ProgramDetailEvent.ResetEditDay -> onResetEditDay()
+
+            ProgramDetailEvent.SaveEdit -> onSaveEdit()
+
+            ProgramDetailEvent.ViewWeeklyReportClicked -> {
+
+                _effects.tryEmit(ProgramDetailEffect.ViewWeeklyReport(_state.value.selectedWeekNumber))
+
+            }
+
+            ProgramDetailEvent.DownloadWeekOffline -> onDownloadWeekOffline()
+
+            ProgramDetailEvent.RetryClicked -> {
+                viewModelScope.launch { load() }
+            }
+
+        }
+
+    }
+
+
+
     fun loadInitial() {
 
         viewModelScope.launch { load() }
@@ -144,7 +234,7 @@ class ProgramDetailViewModel(
 
                     _state.update {
 
-                        it.copy(isLoading = false, errorMessage = "Program not found.")
+                        it.copy(isLoading = false, errorMessage = "program_not_found")
 
                     }
 
@@ -264,7 +354,7 @@ class ProgramDetailViewModel(
 
                         status = WeekOfflineStatus.Failed,
 
-                        errorMessage = ProgramWeekOfflineCopy.programNotLoaded,
+                        errorMessageKey = "program_week_offline_program_not_loaded",
 
                     ),
 
@@ -286,7 +376,7 @@ class ProgramDetailViewModel(
 
                         status = WeekOfflineStatus.Failed,
 
-                        errorMessage = ProgramWeekOfflineCopy.enrollFirst,
+                        errorMessageKey = "program_week_offline_enroll_first",
 
                     ),
 
@@ -311,6 +401,7 @@ class ProgramDetailViewModel(
                         progressPercent = 0,
 
                         errorMessage = null,
+                        errorMessageKey = null,
 
                     ),
 
@@ -356,19 +447,12 @@ class ProgramDetailViewModel(
 
                         status = WeekOfflineStatus.Failed,
 
-                        errorMessage = ProgramWeekOfflineCopy.weekUnavailable,
+                        errorMessageKey = "program_week_offline_week_unavailable",
 
                     )
 
                 is WeekOfflinePackPrefetcher.PrefetchOutcome.Failed ->
-
-                    WeekOfflineUiState(
-
-                        status = WeekOfflineStatus.Failed,
-
-                        errorMessage = outcome.message.ifBlank { ProgramWeekOfflineCopy.downloadFailed },
-
-                    )
+                    weekOfflineFailedState(outcome.message)
 
             }
 
@@ -756,7 +840,7 @@ class ProgramDetailViewModel(
 
             customEditsCount = enrollment.customEditsCount + 1,
 
-            syncLabel = "Synced today",
+            syncLabel = localizedString(resolveLanguage(), "program_synced_today"),
 
         )
 
@@ -798,9 +882,9 @@ class ProgramDetailViewModel(
 
                         isEnrolled = true,
 
-                        startedLabel = "Started today",
+                        startedLabel = localizedString(resolveLanguage(), "program_started_today"),
 
-                        syncLabel = "Synced today",
+                        syncLabel = localizedString(resolveLanguage(), "program_synced_today"),
 
                     )
 
@@ -828,7 +912,7 @@ class ProgramDetailViewModel(
 
     fun startCtaLabel(isEnrolled: Boolean): String =
 
-        if (isEnrolled) "Start next session" else "Start program"
+        if (isEnrolled) "program_start_next" else "program_start"
 
 
 
@@ -962,7 +1046,7 @@ class ProgramDetailViewModel(
 
 
 
-    private fun resolveEnrollment(programId: String): ProgramEnrollmentUi {
+    private suspend fun resolveEnrollment(programId: String): ProgramEnrollmentUi {
 
         if (!MovitData.isInstalled) {
 
@@ -977,14 +1061,15 @@ class ProgramDetailViewModel(
                 active.id == export?.slug ||
                 active.id == export?.id
             )
+        val language = resolveLanguage()
 
         return ProgramEnrollmentUi(
 
             isEnrolled = isEnrolled,
 
-            startedLabel = if (isEnrolled) "Started" else null,
+            startedLabel = if (isEnrolled) localizedString(language, "program_started") else null,
 
-            syncLabel = if (isEnrolled) "Synced today" else null,
+            syncLabel = if (isEnrolled) localizedString(language, "program_synced_today") else null,
 
         )
 
@@ -1038,7 +1123,7 @@ class ProgramDetailViewModel(
 
         _state.update {
 
-            it.copy(errorMessage = "No upcoming session found for this program.")
+            it.copy(errorMessage = "program_no_upcoming_session")
 
         }
 
@@ -1136,6 +1221,23 @@ class ProgramDetailViewModel(
 
 
 
+    private fun weekOfflineFailedState(message: String): WeekOfflineUiState {
+        return when {
+            message.isBlank() -> WeekOfflineUiState(
+                status = WeekOfflineStatus.Failed,
+                errorMessageKey = "program_week_offline_download_failed",
+            )
+            message.startsWith("program_week_offline_") -> WeekOfflineUiState(
+                status = WeekOfflineStatus.Failed,
+                errorMessageKey = message,
+            )
+            else -> WeekOfflineUiState(
+                status = WeekOfflineStatus.Failed,
+                errorMessage = message,
+            )
+        }
+    }
+
     private fun resolveWeekOfflineState(programId: String, weekNumber: Int): WeekOfflineUiState {
 
         val current = _state.value.weekOffline
@@ -1160,6 +1262,7 @@ class ProgramDetailViewModel(
 
                 },
 
+                errorMessageKey = current.errorMessageKey,
                 errorMessage = current.errorMessage,
 
             )
@@ -1202,7 +1305,7 @@ private fun defaultPrefetchWeekOffline(): suspend (
 
     if (!MovitData.isInstalled) {
 
-        WeekOfflinePackPrefetcher.PrefetchOutcome.Failed(ProgramWeekOfflineCopy.signInRequired)
+        WeekOfflinePackPrefetcher.PrefetchOutcome.Failed("program_week_offline_sign_in_required")
 
     } else {
 
@@ -1230,7 +1333,7 @@ private fun defaultEnrollProgram(): suspend (String) -> AppResult<String> = { pr
 
     if (!MovitData.isInstalled) {
 
-        AppResult.Failure("Sign in to enroll in a program.")
+        AppResult.Failure("program_sign_in_to_enroll")
 
     } else {
 
@@ -1256,11 +1359,11 @@ private fun defaultSaveDayCustomizations(): suspend (
 
     if (!MovitData.isInstalled) {
 
-        AppResult.Failure("Sign in to save program edits.")
+        AppResult.Failure("program_sign_in_to_save_edits")
 
     } else if (userProgramId == "preview-user-program" || userProgramId.isBlank()) {
 
-        AppResult.Failure("Sign in to save program edits.")
+        AppResult.Failure("program_sign_in_to_save_edits")
 
     } else {
 

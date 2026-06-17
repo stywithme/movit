@@ -25,6 +25,15 @@ data class ProgressionMarkSeenResponse(
 data class PlanMutationResponse(
     val success: Boolean = false,
     val error: String? = null,
+    val data: ActivePlanDto? = null,
+    val completion: ProgramCompletionDecisionDto? = null,
+)
+
+@Serializable
+data class ProgramCompletionDecisionDto(
+    val nextAction: String = "",
+    val nextProgramId: String? = null,
+    val reassessmentTemplateId: String? = null,
 )
 
 @Serializable

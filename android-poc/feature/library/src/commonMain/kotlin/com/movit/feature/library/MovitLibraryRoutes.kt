@@ -1,9 +1,6 @@
 package com.movit.feature.library
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -21,17 +18,24 @@ fun ExercisesLibraryRoute(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
-    LaunchedEffect(viewModel) { viewModel.loadInitial() }
+    LaunchedEffect(viewModel) {
+        viewModel.loadInitial()
+        viewModel.effects.collect { effect ->
+            when (effect) {
+                is LibraryListEffect.OpenItem -> onItemClick(effect.itemId)
+            }
+        }
+    }
     ExercisesLibraryScreen(
         state = state,
         onBack = onBack,
-        onQueryChange = viewModel::onQueryChange,
-        onFilterSelected = viewModel::onFilterSelected,
-        onFilterClick = viewModel::onFilterClick,
-        onDismissFilterSheet = viewModel::onDismissFilterSheet,
-        onLoadMore = viewModel::onLoadMore,
-        onClearFilters = viewModel::onClearFilters,
-        onItemClick = onItemClick,
+        onQueryChange = { viewModel.onEvent(LibraryListEvent.QueryChanged(it)) },
+        onFilterSelected = { viewModel.onEvent(LibraryListEvent.FilterSelected(it)) },
+        onFilterClick = { viewModel.onEvent(LibraryListEvent.FilterClicked) },
+        onDismissFilterSheet = { viewModel.onEvent(LibraryListEvent.DismissFilterSheet) },
+        onLoadMore = { viewModel.onEvent(LibraryListEvent.LoadMore) },
+        onClearFilters = { viewModel.onEvent(LibraryListEvent.ClearFilters) },
+        onItemClick = { viewModel.onEvent(LibraryListEvent.ItemClicked(it)) },
         onRetry = { scope.launch { viewModel.load() } },
         modifier = modifier,
     )
@@ -46,17 +50,24 @@ fun WorkoutsLibraryRoute(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
-    LaunchedEffect(viewModel) { viewModel.loadInitial() }
+    LaunchedEffect(viewModel) {
+        viewModel.loadInitial()
+        viewModel.effects.collect { effect ->
+            when (effect) {
+                is LibraryListEffect.OpenItem -> onItemClick(effect.itemId)
+            }
+        }
+    }
     WorkoutsLibraryScreen(
         state = state,
         onBack = onBack,
-        onQueryChange = viewModel::onQueryChange,
-        onFilterSelected = viewModel::onFilterSelected,
-        onFilterClick = viewModel::onFilterClick,
-        onDismissFilterSheet = viewModel::onDismissFilterSheet,
-        onLoadMore = viewModel::onLoadMore,
-        onClearFilters = viewModel::onClearFilters,
-        onItemClick = onItemClick,
+        onQueryChange = { viewModel.onEvent(LibraryListEvent.QueryChanged(it)) },
+        onFilterSelected = { viewModel.onEvent(LibraryListEvent.FilterSelected(it)) },
+        onFilterClick = { viewModel.onEvent(LibraryListEvent.FilterClicked) },
+        onDismissFilterSheet = { viewModel.onEvent(LibraryListEvent.DismissFilterSheet) },
+        onLoadMore = { viewModel.onEvent(LibraryListEvent.LoadMore) },
+        onClearFilters = { viewModel.onEvent(LibraryListEvent.ClearFilters) },
+        onItemClick = { viewModel.onEvent(LibraryListEvent.ItemClicked(it)) },
         onRetry = { scope.launch { viewModel.load() } },
         modifier = modifier,
     )
@@ -77,31 +88,50 @@ fun ProgramDetailRoute(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
-    LaunchedEffect(viewModel) { viewModel.loadInitial() }
+    LaunchedEffect(viewModel) {
+        viewModel.loadInitial()
+        viewModel.effects.collect { effect ->
+            when (effect) {
+                is ProgramDetailEffect.StartSession -> onStartSession(effect.sessionKey)
+                is ProgramDetailEffect.ViewWeeklyReport -> onViewWeeklyReport(effect.weekNumber)
+            }
+        }
+    }
     ProgramDetailScreen(
         state = state,
         onBack = onBack,
-        onTabSelected = viewModel::onTabSelected,
-        onWeekSelected = viewModel::onWeekSelected,
-        onDaySelected = viewModel::onDaySelected,
+        onTabSelected = { viewModel.onEvent(ProgramDetailEvent.TabSelected(it)) },
+        onWeekSelected = { viewModel.onEvent(ProgramDetailEvent.WeekSelected(it)) },
+        onDaySelected = { viewModel.onEvent(ProgramDetailEvent.DaySelected(it)) },
         onOpenDaySession = onOpenDaySession,
-        onStartProgram = {
-            scope.launch {
-                viewModel.startProgramAndGetSessionKey()?.let(onStartSession)
-            }
+        onStartProgram = { viewModel.onEvent(ProgramDetailEvent.StartProgramClicked) },
+        onEditReasonSelected = { viewModel.onEvent(ProgramDetailEvent.EditReasonSelected(it)) },
+        onEditScopeSelected = { viewModel.onEvent(ProgramDetailEvent.EditScopeSelected(it)) },
+        onWeeklyTargetChange = { viewModel.onEvent(ProgramDetailEvent.WeeklyTargetChange(it)) },
+        onPauseCalendarToggle = { viewModel.onEvent(ProgramDetailEvent.PauseCalendarToggle) },
+        onSessionMove = { sessionId, direction ->
+            viewModel.onEvent(ProgramDetailEvent.SessionMove(sessionId, direction))
         },
-        onEditReasonSelected = viewModel::onEditReasonSelected,
-        onEditScopeSelected = viewModel::onEditScopeSelected,
-        onWeeklyTargetChange = viewModel::onWeeklyTargetChange,
-        onPauseCalendarToggle = viewModel::onPauseCalendarToggle,
-        onSessionMove = viewModel::onSessionMove,
-        onExerciseParamChange = viewModel::onExerciseParamChange,
-        onRemoveSession = viewModel::onRemoveSession,
-        onRemoveExercise = viewModel::onRemoveExercise,
-        onResetEditDay = viewModel::onResetEditDay,
-        onSaveEdit = viewModel::onSaveEdit,
-        onViewWeeklyReport = { onViewWeeklyReport(state.selectedWeekNumber) },
-        onDownloadWeekOffline = viewModel::onDownloadWeekOffline,
+        onExerciseParamChange = { sessionId, exerciseId, sets, reps, weightKg, restSeconds ->
+            viewModel.onEvent(
+                ProgramDetailEvent.ExerciseParamChange(
+                    sessionId = sessionId,
+                    exerciseId = exerciseId,
+                    sets = sets,
+                    reps = reps,
+                    weightKg = weightKg,
+                    restSeconds = restSeconds,
+                ),
+            )
+        },
+        onRemoveSession = { viewModel.onEvent(ProgramDetailEvent.RemoveSession(it)) },
+        onRemoveExercise = { sessionId, exerciseId ->
+            viewModel.onEvent(ProgramDetailEvent.RemoveExercise(sessionId, exerciseId))
+        },
+        onResetEditDay = { viewModel.onEvent(ProgramDetailEvent.ResetEditDay) },
+        onSaveEdit = { viewModel.onEvent(ProgramDetailEvent.SaveEdit) },
+        onViewWeeklyReport = { viewModel.onEvent(ProgramDetailEvent.ViewWeeklyReportClicked) },
+        onDownloadWeekOffline = { viewModel.onEvent(ProgramDetailEvent.DownloadWeekOffline) },
         onRetry = { scope.launch { viewModel.load() } },
         modifier = modifier,
     )
@@ -121,70 +151,64 @@ fun WorkoutSessionRoute(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
-    LaunchedEffect(viewModel) { viewModel.loadInitial() }
-    LaunchedEffect(state.snackbarMessageKey) {
-        state.snackbarMessageKey?.let { key ->
-            onSnackbar(key)
-            viewModel.consumeSnackbar()
+    LaunchedEffect(viewModel) {
+        viewModel.loadInitial()
+        viewModel.effects.collect { effect ->
+            when (effect) {
+                is WorkoutSessionEffect.ShowSnackbar -> {
+                    onSnackbar(effect.messageKey)
+                    viewModel.onEvent(WorkoutSessionEvent.SnackbarConsumed)
+                }
+                is WorkoutSessionEffect.StartWorkout -> {
+                    val session = viewModel.state.value.session ?: return@collect
+                    val config = WorkoutFlowMapper.fromSession(session)
+                    WorkoutFlowCache.put(workoutId, config)
+                    WorkoutRunProgressStore.clear(workoutId)
+                    onStartWorkout(effect.firstExerciseId)
+                }
+                is WorkoutSessionEffect.OpenExercise -> {
+                    viewModel.state.value.session?.let { session ->
+                        WorkoutFlowCache.put(workoutId, WorkoutFlowMapper.fromSession(session))
+                    }
+                    onExerciseClick(effect.exerciseId)
+                }
+                is WorkoutSessionEffect.SwitchWorkout -> onSwitchWorkout(effect.sessionKey)
+                is WorkoutSessionEffect.OpenCatchUpDay -> onOpenCatchUpDay(effect.sessionKey)
+            }
         }
     }
     WorkoutSessionScreen(
         state = state,
         onBack = onBack,
-        onToggleEdit = viewModel::toggleEditMode,
-        onExerciseClick = { exerciseId ->
-            state.session?.let { session ->
-                WorkoutFlowCache.put(workoutId, WorkoutFlowMapper.fromSession(session))
-            }
-            onExerciseClick(exerciseId)
-        },
-        onSwapExercise = viewModel::openSwapSheet,
-        onEditExercise = viewModel::openEditSheet,
-        onDeleteExercise = viewModel::deleteExercise,
-        onAddExercise = viewModel::openAddExerciseSheet,
-        onAddRest = viewModel::addRestBlock,
-        onStartWorkout = {
-            val session = state.session ?: return@WorkoutSessionScreen
-            val config = WorkoutFlowMapper.fromSession(session)
-            val firstExercise = config.exercises.firstOrNull() ?: return@WorkoutSessionScreen
-            WorkoutFlowCache.put(workoutId, config)
-            WorkoutRunProgressStore.clear(workoutId)
-            onStartWorkout(firstExercise.id)
-        },
+        onToggleEdit = { viewModel.onEvent(WorkoutSessionEvent.ToggleEditMode) },
+        onExerciseClick = { viewModel.onEvent(WorkoutSessionEvent.OpenExerciseClicked(it)) },
+        onSwapExercise = { viewModel.onEvent(WorkoutSessionEvent.OpenSwapSheet(it)) },
+        onEditExercise = { viewModel.onEvent(WorkoutSessionEvent.OpenEditSheet(it)) },
+        onDeleteExercise = { viewModel.onEvent(WorkoutSessionEvent.DeleteExercise(it)) },
+        onAddExercise = { viewModel.onEvent(WorkoutSessionEvent.OpenAddExerciseSheet) },
+        onAddRest = { viewModel.onEvent(WorkoutSessionEvent.AddRestBlock) },
+        onStartWorkout = { viewModel.onEvent(WorkoutSessionEvent.StartWorkoutClicked) },
         onRetry = { scope.launch { viewModel.load() } },
-        onDismissSheet = viewModel::dismissSheet,
-        onSwapQueryChange = viewModel::onSwapQueryChange,
-        onSwapCandidateSelected = viewModel::selectSwapCandidate,
-        onAddExerciseQueryChange = viewModel::onAddExerciseQueryChange,
-        onAddExerciseCandidateSelected = viewModel::selectAddExerciseCandidate,
-        onEditDraftChange = viewModel::updateEditDraft,
-        onSaveEditDetails = viewModel::saveEditDetails,
-        onSwitchEditToSwap = viewModel::switchEditSheetToSwap,
-        onRestClick = viewModel::onRestClick,
-        onDeleteBlock = viewModel::deleteBlock,
-        onMoveBlock = viewModel::moveBlock,
-        onRestDurationChange = viewModel::updateRestDuration,
-        onSaveRestEdit = viewModel::saveRestEdit,
-        onSelectPlannedWorkout = { plannedWorkoutId ->
-            val context = state.session?.context ?: return@WorkoutSessionScreen
-            if (plannedWorkoutId == context.plannedWorkoutId) return@WorkoutSessionScreen
-            onSwitchWorkout(
-                WorkoutSessionKeys.encode(
-                    programId = context.programId,
-                    weekNumber = context.weekNumber,
-                    dayNumber = context.dayNumber,
-                    plannedWorkoutId = plannedWorkoutId,
-                ),
-            )
+        onDismissSheet = { viewModel.onEvent(WorkoutSessionEvent.DismissSheet) },
+        onSwapQueryChange = { viewModel.onEvent(WorkoutSessionEvent.SwapQueryChanged(it)) },
+        onSwapCandidateSelected = { viewModel.onEvent(WorkoutSessionEvent.SwapCandidateSelected(it)) },
+        onAddExerciseQueryChange = { viewModel.onEvent(WorkoutSessionEvent.AddExerciseQueryChanged(it)) },
+        onAddExerciseCandidateSelected = { viewModel.onEvent(WorkoutSessionEvent.AddExerciseCandidateSelected(it)) },
+        onEditDraftChange = { viewModel.onEvent(WorkoutSessionEvent.EditDraftChanged(it)) },
+        onSaveEditDetails = { viewModel.onEvent(WorkoutSessionEvent.SaveEditDetails) },
+        onSwitchEditToSwap = { viewModel.onEvent(WorkoutSessionEvent.SwitchEditToSwap) },
+        onRestClick = { viewModel.onEvent(WorkoutSessionEvent.RestClicked(it)) },
+        onDeleteBlock = { viewModel.onEvent(WorkoutSessionEvent.DeleteBlock(it)) },
+        onMoveBlock = { sectionRole, blockId, delta ->
+            viewModel.onEvent(WorkoutSessionEvent.MoveBlock(sectionRole, blockId, delta))
         },
-        onTogglePlannedWorkoutExpand = viewModel::togglePlannedWorkoutExpand,
-        onDismissCatchUpDialog = viewModel::dismissCatchUpDialog,
-        onOpenCatchUpDay = {
-            scope.launch {
-                viewModel.sessionKeyForCatchUpDay()?.let(onOpenCatchUpDay)
-            }
-        },
-        onSkipWarmup = viewModel::skipWarmup,
+        onRestDurationChange = { viewModel.onEvent(WorkoutSessionEvent.RestDurationChanged(it)) },
+        onSaveRestEdit = { viewModel.onEvent(WorkoutSessionEvent.SaveRestEdit) },
+        onSelectPlannedWorkout = { viewModel.onEvent(WorkoutSessionEvent.SelectPlannedWorkout(it)) },
+        onTogglePlannedWorkoutExpand = { viewModel.onEvent(WorkoutSessionEvent.TogglePlannedWorkoutExpand(it)) },
+        onDismissCatchUpDialog = { viewModel.onEvent(WorkoutSessionEvent.DismissCatchUpDialog) },
+        onOpenCatchUpDay = { viewModel.onEvent(WorkoutSessionEvent.OpenCatchUpDayClicked) },
+        onSkipWarmup = { viewModel.onEvent(WorkoutSessionEvent.SkipWarmup) },
         modifier = modifier,
     )
 }
@@ -198,14 +222,21 @@ fun ProgramListRoute(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
-    LaunchedEffect(viewModel) { viewModel.loadInitial() }
+    LaunchedEffect(viewModel) {
+        viewModel.loadInitial()
+        viewModel.effects.collect { effect ->
+            when (effect) {
+                is ProgramListEffect.OpenProgram -> onProgramClick(effect.programId)
+            }
+        }
+    }
     ProgramListScreen(
         state = state,
         onBack = onBack,
-        onQueryChange = viewModel::onQueryChange,
-        onChipSelected = viewModel::onChipSelected,
-        onLoadMore = viewModel::onLoadMore,
-        onProgramClick = onProgramClick,
+        onQueryChange = { viewModel.onEvent(ProgramListEvent.QueryChanged(it)) },
+        onChipSelected = { viewModel.onEvent(ProgramListEvent.ChipSelected(it)) },
+        onLoadMore = { viewModel.onEvent(ProgramListEvent.LoadMore) },
+        onProgramClick = { viewModel.onEvent(ProgramListEvent.ProgramClicked(it)) },
         onRetry = { scope.launch { viewModel.load() } },
         modifier = modifier,
     )
@@ -229,11 +260,8 @@ fun WeeklyReportRoute(
     WeeklyReportScreen(
         state = state,
         onBack = onBack,
-        onShare = viewModel::onShareClicked,
-        onWeekSelected = { selectedWeek ->
-            viewModel.onWeekSelected(selectedWeek)
-            scope.launch { viewModel.load() }
-        },
+        onShare = { viewModel.onEvent(WeeklyReportEvent.ShareClicked) },
+        onWeekSelected = { viewModel.onEvent(WeeklyReportEvent.WeekSelected(it)) },
         onRetry = { scope.launch { viewModel.load() } },
         modifier = modifier,
     )
@@ -269,18 +297,21 @@ fun ExercisePrepareRoute(
     val scope = rememberCoroutineScope()
     LaunchedEffect(viewModel) { viewModel.loadInitial() }
     LaunchedEffect(viewModel) {
-        viewModel.startEffects.collect(onStart)
+        viewModel.effects.collect { effect ->
+            when (effect) {
+                is ExercisePrepareEffect.StartTraining -> onStart(effect.action)
+            }
+        }
     }
     ExercisePrepareScreen(
         state = state,
         onBack = onBack,
-        onStart = { viewModel.requestTrainingStart(workoutId = workoutId) },
-        onSkipRest = viewModel::skipRest,
-        onToggleRestPause = viewModel::toggleRestPause,
-        onAddRestTime = viewModel::addRestTime,
+        onStart = { viewModel.onEvent(ExercisePrepareEvent.StartClicked(workoutId = workoutId)) },
+        onSkipRest = { viewModel.onEvent(ExercisePrepareEvent.SkipRest) },
+        onToggleRestPause = { viewModel.onEvent(ExercisePrepareEvent.ToggleRestPause) },
+        onAddRestTime = { viewModel.onEvent(ExercisePrepareEvent.AddRestTime) },
         onRetry = { scope.launch { viewModel.load() } },
-        onPoseVariantSelected = viewModel::selectPoseVariant,
+        onPoseVariantSelected = { viewModel.onEvent(ExercisePrepareEvent.PoseVariantSelected(it)) },
         modifier = modifier,
     )
 }
-

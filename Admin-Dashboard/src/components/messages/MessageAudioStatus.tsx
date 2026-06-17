@@ -17,11 +17,14 @@ export interface MessageAudioStatusProps {
   className?: string;
 }
 
+// Legacy GCS bucket name (`waytofix`) — infra asset storage; Movit rebrand does not rename the bucket.
+const GCS_AUDIO_BUCKET = process.env.NEXT_PUBLIC_GCS_BUCKET_NAME ?? 'waytofix';
+
 function resolvePlayableUrl(url: string | undefined | null): string | null {
   if (!url || typeof url !== 'string' || url.trim() === '') return null;
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
   if (url.startsWith('/')) return url;
-  return `https://storage.googleapis.com/waytofix/exercises/audio/${url.replace(/^\//, '')}`;
+  return `https://storage.googleapis.com/${GCS_AUDIO_BUCKET}/exercises/audio/${url.replace(/^\//, '')}`;
 }
 
 export function MessageAudioStatus({

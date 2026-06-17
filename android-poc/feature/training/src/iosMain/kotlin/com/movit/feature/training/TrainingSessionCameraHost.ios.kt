@@ -17,7 +17,6 @@ import com.movit.core.training.model.PoseFrame
 import com.movit.designsystem.components.MovitErrorState
 import com.movit.resources.movitText
 import kotlinx.cinterop.ExperimentalForeignApi
-import platform.Foundation.NSDate
 import platform.UIKit.UIView
 
 @OptIn(ExperimentalForeignApi::class)
@@ -116,5 +115,4 @@ actual fun TrainingSessionCameraHost(
     )
 }
 
-private fun iosNowMillis(): Long =
-    (NSDate().timeIntervalSince1970 * 1000.0).toLong()
+private fun iosNowMillis(): Long = trainingWallClockMs()

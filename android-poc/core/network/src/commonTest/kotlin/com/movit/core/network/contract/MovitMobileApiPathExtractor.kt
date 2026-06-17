@@ -1,7 +1,7 @@
-package com.movit.core.network.contract
+﻿package com.movit.core.network.contract
 
 /**
- * Parses [com.movit.core.network.MovitMobileApi] source for base("…") HTTP paths.
+ * Parses [com.movit.core.network.MovitMobileApi] source for base("Ã¢â‚¬Â¦") HTTP paths.
  */
 internal object MovitMobileApiPathExtractor {
 
@@ -47,6 +47,7 @@ internal object MovitMobileApiPathExtractor {
             .replace("\$slug", "{slug}")
             .replace("\$exerciseSlug", "{slug}")
             .replace("\$sessionId", "{sessionId}")
+            .replace("\$checkoutId", "{checkoutId}")
 
     private fun readSource(): String {
         val fromModule = javaClass.classLoader.getResource(sourcePath)?.readText()
@@ -64,3 +65,4 @@ internal object MovitMobileApiPathExtractor {
         error("Cannot locate MovitMobileApi.kt for contract extraction")
     }
 }
+

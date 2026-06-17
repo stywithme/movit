@@ -39,9 +39,9 @@ internal object RetrofitContractPathExtractor {
         javaClass.classLoader.getResource(resourcePath)?.readText()?.let { return it }
 
         val candidates = listOf(
-            "app/src/main/java/com/trainingvalidator/poc/network/$fileName",
-            "../app/src/main/java/com/trainingvalidator/poc/network/$fileName",
-            "../../app/src/main/java/com/trainingvalidator/poc/network/$fileName",
+            "app/src/main/java/com/movit/network/$fileName",
+            "../app/src/main/java/com/movit/network/$fileName",
+            "../../app/src/main/java/com/movit/network/$fileName",
         )
         for (relative in candidates) {
             val file = java.io.File(relative)

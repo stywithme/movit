@@ -82,6 +82,31 @@ internal fun ProfileLogoutConfirmDialog(
 }
 
 @Composable
+internal fun ProfileDeleteAccountConfirmDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = movitText("profile_delete_account_confirm_title")) },
+        text = { Text(text = movitText("profile_delete_account_confirm_message")) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(
+                    text = movitText("profile_delete_account_confirm_action"),
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = movitText("profile_cancel"))
+            }
+        },
+    )
+}
+
+@Composable
 private fun ProfileSingleChoiceDialog(
     title: String,
     options: List<Pair<String, String>>,

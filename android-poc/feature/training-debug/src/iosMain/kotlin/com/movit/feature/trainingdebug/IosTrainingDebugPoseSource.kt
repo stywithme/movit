@@ -25,8 +25,8 @@ class IosTrainingDebugPoseSource : TrainingDebugPoseSource {
             val frame = poseFrame ?: return@setFrameListener
             frameListener?.invoke(
                 com.movit.core.posecapture.boundary.trainingdebug.TrainingDebugPoseFrame(
-                    rawNormalizedLandmarks = frame.landmarks,
-                    smoothedNormalizedLandmarks = frame.landmarks,
+                    rawNormalizedLandmarks = frame.landmarks ?: emptyList(),
+                    smoothedNormalizedLandmarks = frame.landmarks ?: emptyList(),
                     rawWorldLandmarks = frame.worldLandmarks,
                     smoothedWorldLandmarks = frame.worldLandmarks,
                     timestampMs = frame.timestampMs,

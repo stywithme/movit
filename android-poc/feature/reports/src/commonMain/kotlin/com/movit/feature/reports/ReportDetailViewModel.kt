@@ -30,6 +30,15 @@ class ReportDetailViewModel(
     private val _effects = MutableSharedFlow<ReportDetailEffect>(extraBufferCapacity = 1)
     val effects: SharedFlow<ReportDetailEffect> = _effects.asSharedFlow()
 
+    fun onEvent(event: ReportDetailEvent) {
+        when (event) {
+            is ReportDetailEvent.PageSelected -> onPageSelected(event.page)
+            ReportDetailEvent.ShareClicked -> onShareClicked()
+            ReportDetailEvent.ExportClicked -> onExportClicked()
+            ReportDetailEvent.RetryClicked -> Unit
+        }
+    }
+
     fun loadInitial() {
         viewModelScope.launch { load() }
     }

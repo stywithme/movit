@@ -4,8 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.movit.core.model.ExploreItemUi
 import com.movit.shared.AppResult
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -39,7 +42,29 @@ class LibraryListViewModel(
     )
     val state: StateFlow<LibraryListUiState> = _state.asStateFlow()
 
+    private val _effects = MutableSharedFlow<LibraryListEffect>(extraBufferCapacity = 1)
+    val effects: SharedFlow<LibraryListEffect> = _effects.asSharedFlow()
+
     private var allItems: List<ExploreItemUi> = emptyList()
+
+    fun onEvent(event: LibraryListEvent) {
+        when (event) {
+            is LibraryListEvent.QueryChanged -> onQueryChange(event.query)
+            is LibraryListEvent.FilterSelected -> onFilterSelected(event.filter)
+            LibraryListEvent.FilterClicked -> onFilterClick()
+            LibraryListEvent.DismissFilterSheet -> onDismissFilterSheet()
+            LibraryListEvent.LoadMore -> onLoadMore()
+            LibraryListEvent.ClearFilters -> onClearFilters()
+            is LibraryListEvent.ItemClicked -> {
+                if (event.itemId.isNotBlank()) {
+                    _effects.tryEmit(LibraryListEffect.OpenItem(event.itemId))
+                }
+            }
+            LibraryListEvent.RetryClicked -> {
+                viewModelScope.launch { load() }
+            }
+        }
+    }
 
     fun loadInitial() {
         viewModelScope.launch { load() }

@@ -1,6 +1,7 @@
 package com.movit.core.network.dto
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class LevelProfileApiResponse(
@@ -73,14 +74,17 @@ data class TrainingProfilePayloadDto(
 data class TrainingProfilePutRequest(
     val dateOfBirth: String? = null,
     val biologicalSex: String? = null,
+    val currentActivityLevel: String? = null,
     val heightCm: Float? = null,
     val weightKg: Float? = null,
     val resistanceExperience: String? = null,
     val trainingExperienceMonths: Int? = null,
     val trainingWeekdays: List<Int> = emptyList(),
     val availableDaysPerWeek: Int? = null,
+    val maxWorkoutMinutes: Int? = null,
     val trainingLocation: String? = null,
     val availableEquipment: List<String> = emptyList(),
+    val knownInjuries: JsonElement? = null,
     val healthDisclaimerAccepted: Boolean = false,
     val trainingGoal: String? = null,
 )

@@ -9,7 +9,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 /**
- * Parity with legacy [com.trainingvalidator.poc.analysis.AngleCalculator.calculateAllAnglesSmoothed]
+ * Parity with legacy [com.movit.analysis.AngleCalculator.calculateAllAnglesSmoothed]
  * when world landmarks are supplied with use3D=true.
  */
 class PoseFrameAssemblerTest {

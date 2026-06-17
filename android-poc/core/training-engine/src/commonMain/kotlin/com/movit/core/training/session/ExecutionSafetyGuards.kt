@@ -4,7 +4,7 @@ import com.movit.core.training.engine.policy.TimingPolicy
 
 /**
  * Exercise-run safety caps: max reps and max wall-clock duration for one session.
- * Ported from legacy [com.trainingvalidator.poc.training.engine.ExecutionSafetyGuards].
+ * Ported from legacy [com.movit.training.engine.ExecutionSafetyGuards].
  */
 class ExecutionSafetyGuards(
     timingPolicy: TimingPolicy,

@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Fix Fit Admin",
-  description: "Professional admin dashboard for Fix Fit operations.",
+  title: "Movit Admin",
+  description: "Professional admin dashboard for Movit operations.",
 };
 
 export default function RootLayout({

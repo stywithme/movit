@@ -69,9 +69,10 @@ internal object MovitSessionReportEnrichmentMapper {
         strings: ReportDetailStrings,
     ): Pair<List<Float>, List<String>> {
         if (repTimeline.isNotEmpty()) {
-            val bySet = repTimeline.groupBy { it.setNumber }.toSortedMap()
-            val values = bySet.values.map { reps -> reps.map { it.score }.average().toFloat() }
-            val labels = bySet.keys.map { strings.setShort(it) }
+            val bySet = repTimeline.groupBy { it.setNumber }
+            val setNumbers = bySet.keys.sorted()
+            val values = setNumbers.map { set -> bySet.getValue(set).map { it.score }.average().toFloat() }
+            val labels = setNumbers.map { strings.setShort(it) }
             return values to labels
         }
         if (setSummaries.isNotEmpty()) {
@@ -113,13 +114,14 @@ internal object MovitSessionReportEnrichmentMapper {
         repTimeline: List<MovitRepTimelineEntry>,
         strings: ReportDetailStrings,
     ): String? {
-        val bySet = repTimeline.groupBy { it.setNumber }.toSortedMap()
-        if (bySet.size < 2) return null
-        val firstAvg = bySet.values.first().map { it.score }.average()
-        val lastAvg = bySet.values.last().map { it.score }.average()
+        val bySet = repTimeline.groupBy { it.setNumber }
+        val setNumbers = bySet.keys.sorted()
+        if (setNumbers.size < 2) return null
+        val firstAvg = bySet.getValue(setNumbers.first()).map { it.score }.average()
+        val lastAvg = bySet.getValue(setNumbers.last()).map { it.score }.average()
         val delta = (firstAvg - lastAvg).roundToInt()
         return if (delta > 0) {
-            strings.formDropped(delta, bySet.keys.last())
+            strings.formDropped(delta, setNumbers.last())
         } else {
             strings.formSteady
         }

@@ -210,9 +210,13 @@ class MovitAppShellViewModel : ViewModel() {
             MovitProfileEffect.OpenOnboarding -> pushInner(MovitInnerRoute.ProfileOnboarding)
             MovitProfileEffect.OpenAssessment -> pushInner(MovitInnerRoute.Assessment())
             MovitProfileEffect.OpenLevel -> pushInner(MovitInnerRoute.LevelProfile)
-            MovitProfileEffect.OpenSubscription -> {
+            is MovitProfileEffect.OpenSubscription -> {
                 if (PlatformInfo.supportsInAppSubscription) {
-                    _effects.tryEmit(MovitAppShellEffect.LaunchLegacySubscription)
+                    _effects.tryEmit(
+                        MovitAppShellEffect.LaunchPlatformSubscription(
+                            restorePurchases = effect.restorePurchases,
+                        ),
+                    )
                 } else {
                     _effects.tryEmit(
                         MovitAppShellEffect.ShowLocalizedMessage("profile_subscription_ios_unavailable"),
@@ -310,7 +314,7 @@ class MovitAppShellViewModel : ViewModel() {
             MovitReportsEffect.OpenTrain -> navigateTo(MovitAppDestination.Train)
             MovitReportsEffect.OpenUpgrade -> {
                 if (PlatformInfo.supportsInAppSubscription) {
-                    _effects.tryEmit(MovitAppShellEffect.LaunchLegacySubscription)
+                    _effects.tryEmit(MovitAppShellEffect.LaunchPlatformSubscription(restorePurchases = false))
                 } else {
                     _effects.tryEmit(
                         MovitAppShellEffect.ShowLocalizedMessage("profile_subscription_ios_unavailable"),

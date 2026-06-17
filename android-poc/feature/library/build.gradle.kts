@@ -1,10 +1,11 @@
-// AGP 9 migration: replace android.library with android.kmp.library when upgrading.
+﻿// AGP 9 migration: replace android.library with android.kmp.library when upgrading.
 plugins {
     id("movit.kmp.feature")
 }
 
 movitKmp {
     namespace = "com.movit.feature.library"
+    unitTestsReturnDefaultValues = true
 }
 
 kotlin {
@@ -28,7 +29,6 @@ kotlin {
             implementation(libs.jetbrains.lifecycle.runtime.compose)
         }
         androidMain.dependencies {
-            implementation(libs.coil.compose)
             implementation(libs.androidx.activity.compose)
             implementation(libs.jetbrains.lifecycle.runtime.compose)
             implementation(libs.camera.view)
@@ -36,6 +36,11 @@ kotlin {
         commonTest.dependencies {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.core)
+        }
+        sourceSets.named("androidHostTest") {
+            dependencies {
+                implementation(kotlin("test"))
+            }
         }
     }
 }

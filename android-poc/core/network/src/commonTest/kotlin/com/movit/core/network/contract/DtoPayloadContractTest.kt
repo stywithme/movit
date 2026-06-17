@@ -10,6 +10,9 @@ import com.movit.core.network.dto.MobileSyncApiResponse
 import com.movit.core.network.dto.PlannedWorkoutApiResponse
 import com.movit.core.network.dto.TrainingConfigApiResponse
 import com.movit.core.network.dto.WorkoutExecutionUploadRequestDto
+import com.movit.core.network.dto.SubscriptionApiEnvelope
+import com.movit.core.network.dto.VerifyAppStoreRequest
+import com.movit.core.network.dto.VerifyAppStoreResponse
 import kotlinx.serialization.json.jsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -152,6 +155,37 @@ class DtoPayloadContractTest {
     MovitJson.decodeFromString(MobileSyncApiResponse.serializer(), readFixture("sync-response.json"))
   }
 
+
+  @Test
+  fun verifyAppStoreRequestFixture_roundTripsWithoutLoss() {
+    val raw = readFixture("verify-app-store-request.json")
+    val parsed = MovitJson.decodeFromString(VerifyAppStoreRequest.serializer(), raw)
+
+    assertEquals("550e8400-e29b-41d4-a716-446655440000", parsed.planId)
+    assertEquals("monthly", parsed.billingPeriod)
+    assertEquals("movit.pro.monthly", parsed.productId)
+    assertEquals("2000000123456789", parsed.transactionId)
+    assertEquals("2000000123456789", parsed.originalTransactionId)
+    assertTrue(parsed.signedTransactionInfo.isNotBlank())
+
+    val reencoded = MovitJson.encodeToString(VerifyAppStoreRequest.serializer(), parsed)
+    assertEquals(parsed, MovitJson.decodeFromString(VerifyAppStoreRequest.serializer(), reencoded))
+  }
+
+  @Test
+  fun verifyAppStoreResponseFixture_parsesSubscriptionEnvelope() {
+    val raw = readFixture("verify-app-store-response.json")
+    val parsed = MovitJson.decodeFromString(
+      SubscriptionApiEnvelope.serializer(VerifyAppStoreResponse.serializer()),
+      raw,
+    )
+
+    assertTrue(parsed.success)
+    assertNotNull(parsed.data)
+    assertEquals("sub-001", parsed.data?.subscription?.id)
+    assertEquals(true, parsed.data?.status?.isPro)
+    assertEquals("2026-07-17T00:00:00.000Z", parsed.data?.status?.subscriptionExpiry)
+  }
   private fun readFixture(name: String): String {
     javaClass.classLoader?.getResource("fixtures/$name")?.readText()?.let { return it }
     val candidates = listOf(

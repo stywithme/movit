@@ -123,7 +123,7 @@ Package/applicationId = قرار تقني/release identity
 
 ### 2.3 ما لا يتم الآن إلا بقرار صريح
 
-- لا تغير `applicationId` من `com.trainingvalidator.poc` إلا إذا قررت أن الفرع لن يحتاج تثبيت/تحديث فوق نسخة قديمة.
+- `applicationId` = `com.movit.androidApp` (متوازٍ مع iOS `com.movit.iosApp`) — قائمة Play جديدة؛ لا يحدّث تثبيتات `com.trainingvalidator.poc` القديمة.
 - لا تعيد تسمية كل packages القديمة مرة واحدة.
 - لا تعيد تسمية ملفات training/pose engine التي تستخدم كلمة `Pose` بمعنى human pose. هنا `Pose` مصطلح domain وليس brand.
 
@@ -138,7 +138,7 @@ com.movit.*
 أو إذا قررت عدم تغيير package الآن:
 
 ```text
-com.trainingvalidator.poc.movit.*
+com.movit.movit.*
 ```
 
 القرار الموصى به لهذه المرحلة:
@@ -282,7 +282,7 @@ feature/explore/
 لو لم تغير package:
 
 ```text
-com.trainingvalidator.poc.feature.explore
+com.movit.feature.explore
 ```
 
 ## الجزء 5 - Explore UI contract
@@ -376,7 +376,7 @@ app/src/debug/java/.../MovitExplorePilotActivity.kt
 - يمكن فتحها بـ adb:
 
 ```powershell
-adb shell am start -n com.trainingvalidator.poc/.debug.MovitExplorePilotActivity
+adb shell am start -n com.movit.androidApp/.debug.MovitExplorePilotActivity
 ```
 
 لو غيرت package/activity path، وثق الأمر الفعلي.
@@ -482,6 +482,6 @@ cd android-poc
 - إذا كان rename من `Pose*` إلى `Movit*` كبيراً، نفذه داخل الموديولات الجديدة فقط الآن.
 - لا تخلط rename شامل للـ legacy XML themes مع Explore pilot إلا لو كان صغيراً وآمناً.
 - `Pose` في سياق human pose/training engine ليس brand قديم، فلا تغيره عشوائياً.
-- التسمية القديمة `WayToFix` في XML legacy يمكن توثيقها كـ debt لمرحلة لاحقة.
+- العلامة والثيم في XML legacy: **Movit** (`Theme.Movit` · `Widget.Movit.*`). Deep links: `movit://`.
 - الهدف من Phase 02 هو بناء أول شاشة صح، لا تنظيف كل التاريخ السابق.
 

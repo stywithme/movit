@@ -1,5 +1,6 @@
 package com.movit.core.data.platform
 
+import com.movit.core.data.MovitData
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSUserDefaults
 import platform.posix.time
@@ -52,6 +53,13 @@ class IosMovitPlatform(
             defaults.setObject(userProgramId, KEY_ACTIVE_USER_PROGRAM_ID)
         }
     }
+
+    override fun exerciseImageUrl(slug: String): String? =
+        if (MovitData.isInstalled) {
+            MovitData.explore.exerciseImageUrl(slug)
+        } else {
+            null
+        }
 
     override fun userEmail(): String? =
         defaults.stringForKey(KEY_USER_EMAIL)?.takeIf { it.isNotBlank() }
@@ -109,7 +117,6 @@ class IosMovitPlatform(
         snapshot.avatarUrl?.let { defaults.setObject(it, KEY_AVATAR_URL) }
         defaults.setObject(snapshot.preferredLanguage, KEY_LANGUAGE)
         defaults.setBool(snapshot.isPro, KEY_IS_PRO)
-        defaults.setBool(true, KEY_ONBOARDING_COMPLETED)
         defaults.setInteger(snapshot.totalWorkouts.toLong(), KEY_TOTAL_WORKOUTS)
         defaults.setInteger(snapshot.totalMinutes.toLong(), KEY_TOTAL_MINUTES)
         snapshot.subscriptionExpiry?.let { defaults.setObject(it, KEY_SUBSCRIPTION_EXPIRY) }
@@ -127,6 +134,12 @@ class IosMovitPlatform(
         defaults.removeObjectForKey(KEY_ACTIVE_USER_PROGRAM_ID)
         defaults.setBool(false, KEY_IS_PRO)
         defaults.setBool(false, KEY_ONBOARDING_COMPLETED)
+    }
+
+    override fun clearLegacyUserCaches() {
+        MovitLegacyUserCacheStores.sharedPreferenceNames.forEach { store ->
+            clearCacheStore(store)
+        }
     }
 
     override fun setOnboardingCompleted(completed: Boolean) {
@@ -182,6 +195,16 @@ class IosMovitPlatform(
     }
 
     private fun cacheKey(store: String, key: String): String = "movit_cache_${store}_$key"
+
+    private fun cacheStorePrefix(store: String): String = "movit_cache_${store}_"
+
+    private fun clearCacheStore(store: String) {
+        val prefix = cacheStorePrefix(store)
+        defaults.dictionaryRepresentation().keys
+            .mapNotNull { it as? String }
+            .filter { it.startsWith(prefix) }
+            .forEach { defaults.removeObjectForKey(it) }
+    }
 
     companion object {
         const val DEFAULT_BASE_URL = "https://back.mongz.online/"

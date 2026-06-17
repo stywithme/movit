@@ -1,8 +1,11 @@
+@file:OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
+
 package com.movit.feature.training
 
 import com.movit.core.posecapture.IosPoseLandmarkerBridgeRegistry
 import com.movit.core.training.boundary.PersistedFrameSnapshot
 import com.movit.core.training.boundary.TrainingFrameSnapshotPort
+import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
@@ -11,6 +14,7 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 import platform.Foundation.NSData
 import platform.Foundation.NSFileManager
+import platform.Foundation.create
 import platform.Foundation.writeToFile
 
 /**

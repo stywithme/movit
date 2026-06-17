@@ -1,4 +1,4 @@
-# Phase 06 — release APK smoke helper (adb checklist)
+﻿# Phase 06 — release APK smoke helper (adb checklist)
 # Usage (from android-poc/):
 #   .\scripts\phase06-smoke-adb.ps1
 #   .\scripts\phase06-smoke-adb.ps1 -SkipBuild
@@ -10,7 +10,8 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$AppId = "com.trainingvalidator.poc"
+# applicationId matches Play Store package (namespace is com.movit).
+$AppId = "com.movit.androidApp"
 $LauncherActivity = "com.movit.MovitMainActivity"
 $ApkPath = "app\build\outputs\apk\release\app-release.apk"
 
@@ -56,7 +57,7 @@ $steps = @(
     },
     @{
         Title = "7. Subscription deep-link (optional)"
-        Cmd   = "adb shell am start -a android.intent.action.VIEW -d waytofix://subscription/result"
+        Cmd   = "adb shell am start -a android.intent.action.VIEW -d movit://subscription/result"
     },
     @{
         Title = "8. (debug build only) Design system catalog"

@@ -1,4 +1,4 @@
-/* WayToFix prototypes — shared interactions (theme, selects, state switcher) */
+/* Movit prototypes — shared interactions (theme, selects, state switcher) */
 (function(){
   var root = document.documentElement;
 

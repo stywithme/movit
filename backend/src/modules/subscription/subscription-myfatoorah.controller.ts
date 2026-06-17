@@ -82,7 +82,7 @@ export class SubscriptionMyFatoorahController {
     }
 
     private appReturnUrl(status: 'paid' | 'pending' | 'failed', checkoutId: string | null): string {
-        const scheme = process.env.MOBILE_APP_DEEP_LINK_SCHEME || 'waytofix';
+        const scheme = process.env.MOBILE_APP_DEEP_LINK_SCHEME || 'movit';
         const params = new URLSearchParams({ status });
         if (checkoutId) params.set('checkoutId', checkoutId);
         return `${scheme}://subscription/result?${params.toString()}`;

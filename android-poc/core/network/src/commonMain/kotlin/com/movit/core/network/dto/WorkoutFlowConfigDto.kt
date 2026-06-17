@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 
 /**
  * Local workout template JSON (deep-link / offline quick-start).
- * Replaces legacy [com.trainingvalidator.poc.training.models.WorkoutConfig].
+ * Replaces legacy [com.movit.training.models.WorkoutConfig].
  */
 @Serializable
 data class WorkoutFlowConfigDto(

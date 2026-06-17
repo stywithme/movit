@@ -1,7 +1,7 @@
 package com.movit.core.training.session
 
 /**
- * Hold-exercise timing extracted from legacy Android [com.trainingvalidator.poc.training.engine.HoldTimer].
+ * Hold-exercise timing extracted from legacy Android [com.movit.training.engine.HoldTimer].
  * Uses callbacks instead of StateFlow so it stays platform-neutral.
  */
 class HoldTimer(

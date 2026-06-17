@@ -1,12 +1,34 @@
 ﻿package com.movit.core.posecapture
 
-/**
- * AVFoundation class-method bindings for camera authorization are not exposed on
- * [platform.AVFoundation.AVCaptureDevice] in Kotlin 2.3 (see platform klib vs compiler).
- * Session start in [IosCameraFrameSource] triggers the system prompt when needed.
- */
-fun isIosCameraAuthorized(): Boolean = true
+import kotlin.coroutines.resume
+import kotlinx.coroutines.suspendCancellableCoroutine
 
-fun isIosCameraPermissionDenied(): Boolean = false
+fun isIosCameraAuthorized(): Boolean =
+    cameraAuthorizationStatus() == IOS_CAMERA_AUTH_AUTHORIZED
 
-suspend fun requestIosCameraPermission(): Boolean = true
+fun isIosCameraPermissionDenied(): Boolean {
+    val status = cameraAuthorizationStatus()
+    return status == IOS_CAMERA_AUTH_DENIED || status == IOS_CAMERA_AUTH_RESTRICTED
+}
+
+suspend fun requestIosCameraPermission(): Boolean {
+    if (isIosCameraAuthorized()) return true
+    if (isIosCameraPermissionDenied()) return false
+    val bridge = IosCameraPermissionBridgeRegistry.current() ?: return false
+    if (cameraAuthorizationStatus() != IOS_CAMERA_AUTH_NOT_DETERMINED) {
+        return isIosCameraAuthorized()
+    }
+    return suspendCancellableCoroutine { cont ->
+        bridge.requestAccess(
+            object : IosCameraPermissionResultHandler {
+                override fun onCompleted(granted: Boolean) {
+                    if (cont.isActive) cont.resume(granted)
+                }
+            },
+        )
+    }
+}
+
+private fun cameraAuthorizationStatus(): Int =
+    IosCameraPermissionBridgeRegistry.current()?.authorizationStatus()
+        ?: IOS_CAMERA_AUTH_NOT_DETERMINED

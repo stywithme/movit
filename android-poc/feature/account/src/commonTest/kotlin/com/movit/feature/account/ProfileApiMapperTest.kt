@@ -1,4 +1,4 @@
-package com.movit.feature.account
+﻿package com.movit.feature.account
 
 import com.movit.core.network.dto.UserPublicDto
 import kotlin.test.Test
@@ -17,7 +17,7 @@ class ProfileApiMapperTest {
         val profile = ProfileApiMapper.map(user)
 
         assertTrue(profile.isPro)
-        assertEquals("WayToFix Pro", profile.subscriptionLabel)
+        assertEquals("Movit Pro", profile.subscriptionLabel)
         assertEquals("Renews Jun 15, 2026 · Monthly", profile.subscriptionRenewal)
     }
 

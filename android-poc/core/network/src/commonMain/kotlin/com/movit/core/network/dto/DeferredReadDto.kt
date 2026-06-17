@@ -23,8 +23,25 @@ data class LevelDefinitionDto(
     val name: LocalizedNameDto = LocalizedNameDto(),
     val description: LocalizedNameDto? = null,
     val color: String? = null,
+    val icon: String? = null,
     val entryThreshold: Double = 0.0,
-    val maxThreshold: Double? = null,
+    val defaults: LevelTrainingDefaultsDto? = null,
+)
+
+@Serializable
+data class LevelTrainingDefaultsDto(
+    val setsRange: LevelIntRangeDto? = null,
+    val repsRange: LevelIntRangeDto? = null,
+    val intensityGuide: String? = null,
+    val restBetweenSetsMs: Int? = null,
+    val workoutDurationRange: LevelIntRangeDto? = null,
+    val weeklyFrequencyRange: LevelIntRangeDto? = null,
+)
+
+@Serializable
+data class LevelIntRangeDto(
+    val min: Int = 0,
+    val max: Int = 0,
 )
 
 @Serializable

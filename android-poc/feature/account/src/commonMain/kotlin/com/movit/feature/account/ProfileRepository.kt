@@ -25,6 +25,7 @@ data class ProfileSettingsUpdate(
 interface ProfileRepository {
     suspend fun loadProfile(): AppResult<ProfileUi>
     suspend fun logout(): AppResult<Unit>
+    suspend fun deleteAccount(): AppResult<Unit>
     suspend fun updateSettings(update: ProfileSettingsUpdate): AppResult<ProfileUi>
     suspend fun setThemeMode(mode: String): AppResult<ProfileUi>
 }

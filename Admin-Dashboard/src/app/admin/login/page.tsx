@@ -88,10 +88,10 @@ function AdminLoginInner() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-2 flex size-10 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground">
-            FF
+            MV
           </div>
           <CardTitle>Admin Login</CardTitle>
-          <CardDescription>Access the Fix Fit dashboard</CardDescription>
+          <CardDescription>Access the Movit dashboard</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-5">

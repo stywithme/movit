@@ -22,13 +22,6 @@ data class WeeklyReportUiState(
     val errorMessage: String? = null,
 )
 
-sealed interface WeeklyReportEffect {
-    data class ShareRequested(
-        val subject: String,
-        val text: String,
-    ) : WeeklyReportEffect
-}
-
 class WeeklyReportViewModel(
     private val programId: String,
     initialWeekNumber: Int,
@@ -41,6 +34,17 @@ class WeeklyReportViewModel(
 
     private val _effects = MutableSharedFlow<WeeklyReportEffect>(extraBufferCapacity = 1)
     val effects: SharedFlow<WeeklyReportEffect> = _effects.asSharedFlow()
+
+    fun onEvent(event: WeeklyReportEvent) {
+        when (event) {
+            is WeeklyReportEvent.WeekSelected -> {
+                onWeekSelected(event.weekNumber)
+                viewModelScope.launch { load() }
+            }
+            WeeklyReportEvent.ShareClicked -> onShareClicked()
+            WeeklyReportEvent.RetryClicked -> Unit
+        }
+    }
 
     fun loadInitial() {
         viewModelScope.launch { load() }

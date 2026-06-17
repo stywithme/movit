@@ -14,7 +14,7 @@ import com.movit.core.training.boundary.SpeechSynthesizer
 actual fun rememberTrainingFeedbackPorts(language: String): TrainingFeedbackPorts {
     val context = LocalContext.current.applicationContext
     return remember(context, language) {
-        val speech = SpeechSynthesizer(context)
+        val speech = SpeechSynthesizer(context).apply { setLanguage(language) }
         val audioCache = runCatching { MovitData.koin().get<AudioFileDownloadPort>() }.getOrNull()
         val audioPlayer = audioCache?.let { cache ->
             CachedAudioFeedbackPlayer(

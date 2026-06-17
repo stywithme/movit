@@ -816,7 +816,7 @@ node scripts/generate-cold-offline-bundle.mjs
 | `exercise_prepare` | `ExercisePrepare` | ✅ |
 | `assessment` | `Assessment` | ✅ |
 | `program_detail` | `ProgramDetail` (+ week) | ✅ |
-| `waytofix://subscription/result` | `SubscriptionActivity` | 🔴 legacy فقط |
+| `movit://subscription/result` | `SubscriptionActivity` | 🔴 legacy فقط |
 
 ---
 

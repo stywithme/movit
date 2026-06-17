@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <application>
+    <application android:usesCleartextTraffic="true">
         <activity
             android:name="com.movit.debug.MovitDesignSystemCatalogActivity"
             android:exported="false"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
+            android:theme="@style/Theme.Movit" />
 
         <activity
             android:name="com.movit.debug.MovitExplorePilotActivity"
             android:exported="false"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
+            android:theme="@style/Theme.Movit" />
 
         <!-- No LAUNCHER — debug uses merged [MovitMainActivity] from main manifest (Phase A). -->
         <activity
@@ -20,14 +20,14 @@
             android:exported="false"
             android:label="Movit KMP Shell"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
+            android:theme="@style/Theme.Movit" />
 
         <activity
             android:name="com.movit.debug.TrainingDebugActivity"
             android:exported="true"
             android:label="Training Debug Lab"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
+            android:theme="@style/Theme.Movit" />
     </application>
 
 </manifest>

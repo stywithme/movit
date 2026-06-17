@@ -8,7 +8,7 @@ import kotlin.math.sqrt
 
 /**
  * Pure-Kotlin joint angle math shared between Android and iOS.
- * Legacy [com.trainingvalidator.poc.analysis.AngleCalculator] delegates here over time.
+ * Legacy [com.movit.analysis.AngleCalculator] delegates here over time.
  */
 object JointAngleCalculator {
     fun angleDegrees(

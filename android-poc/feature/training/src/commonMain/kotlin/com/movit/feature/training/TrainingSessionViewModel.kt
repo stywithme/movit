@@ -72,8 +72,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -174,6 +177,42 @@ class TrainingSessionViewModel(
     ),
   )
   val state: StateFlow<TrainingSessionUiState> = _state.asStateFlow()
+
+  private val _effects = MutableSharedFlow<TrainingSessionEffect>(extraBufferCapacity = 1)
+  val effects: SharedFlow<TrainingSessionEffect> = _effects.asSharedFlow()
+
+  fun onEvent(event: TrainingSessionEvent) {
+    when (event) {
+      TrainingSessionEvent.StartWorkoutExercise -> startWorkoutExercise()
+      TrainingSessionEvent.SkipRest -> skipRest()
+      TrainingSessionEvent.StopSession -> stopSession()
+      is TrainingSessionEvent.PoseFrameReceived -> onPoseFrame(event.frame)
+      TrainingSessionEvent.CameraReady -> onCameraReady()
+      TrainingSessionEvent.CameraSwitchStarted -> onCameraSwitchStarted()
+      is TrainingSessionEvent.CameraError -> onCameraError(event.message)
+      TrainingSessionEvent.Pause -> pause()
+      TrainingSessionEvent.Resume -> resume()
+      TrainingSessionEvent.Stop -> stop()
+      is TrainingSessionEvent.HostBackgrounded -> onHostBackgrounded(event.nowMs ?: defaultLifecycleNowMs())
+      is TrainingSessionEvent.HostForegrounded -> onHostForegrounded(event.nowMs ?: defaultLifecycleNowMs())
+      TrainingSessionEvent.BackPressed -> {
+        stopSession()
+        _effects.tryEmit(TrainingSessionEffect.NavigateBack)
+      }
+      TrainingSessionEvent.FinishClicked -> {
+        stopSession()
+        _effects.tryEmit(TrainingSessionEffect.Finish(_state.value.isWorkoutComplete))
+      }
+      TrainingSessionEvent.ViewReportClicked -> {
+        _state.value.reportDetailId?.let { reportId ->
+          _effects.tryEmit(TrainingSessionEffect.ViewReport(reportId))
+        }
+      }
+    }
+  }
+
+  private fun defaultLifecycleNowMs(): Long =
+    lastFrameTimestampMs.takeIf { it > 0 } ?: sessionStartMs
 
   init {
     activePoseVariantIndex = resolveActivePoseVariantIndex()
@@ -343,7 +382,7 @@ class TrainingSessionViewModel(
   }
 
   private fun emitPipelineDiagnostics(timestampMs: Long) {
-    val nowMs = timestampMs.takeIf { it > 0L } ?: System.currentTimeMillis()
+    val nowMs = timestampMs.takeIf { it > 0L } ?: trainingWallClockMs()
     val engineSnapshot = engine?.metricsSnapshot()
     TrainingPipelineDiagnostics.maybeEmitPeriodic(
       nowMs = nowMs,

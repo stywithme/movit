@@ -80,7 +80,7 @@ class ProgramDetailViewModelTest {
         assertEquals("program-starter", enrolledId)
         assertTrue(viewModel.state.value.enrollment.isEnrolled)
         assertNull(key)
-        assertEquals("No upcoming session found for this program.", viewModel.state.value.errorMessage)
+        assertEquals("program_no_upcoming_session", viewModel.state.value.errorMessage)
     }
 
     @Test

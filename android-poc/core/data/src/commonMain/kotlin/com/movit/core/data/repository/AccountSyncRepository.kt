@@ -98,11 +98,29 @@ class AccountSyncRepository(
         if (auth != null && refresh != null) {
             api.logout(LogoutRequestDto(refresh), authorization = auth)
         }
+        clearLocalSession(bindings)
+        return AppResult.Success(Unit)
+    }
+
+    suspend fun deleteAccount(): AppResult<Unit> {
+        val bindings = platform()
+        val auth = bindings.authHeader()
+            ?: return AppResult.Failure("Sign in to delete your account.")
+        val response = api.deleteAccount(authorization = auth).getOrElse { error ->
+            return AppResult.Failure(error.message ?: "Delete account failed.")
+        }
+        if (!response.success) {
+            return AppResult.Failure(response.error ?: response.message ?: "Delete account failed.")
+        }
+        clearLocalSession(bindings)
+        return AppResult.Success(Unit)
+    }
+
+    private suspend fun clearLocalSession(bindings: MovitPlatformBindings) {
         if (MovitData.isInstalled) {
             MovitData.clearAllUserData()
         }
         bindings.clearAuthSession()
-        return AppResult.Success(Unit)
     }
 
     suspend fun fetchProfile(): AppResult<UserPublicDto> {

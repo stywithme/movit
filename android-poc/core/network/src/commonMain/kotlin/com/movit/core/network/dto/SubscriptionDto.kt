@@ -1,12 +1,13 @@
 package com.movit.core.network.dto
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 
 /**
  * Mobile subscription / billing contracts (Ktor + kotlinx.serialization) — the single source of
- * truth shared between Android (Play Billing + MyFatoorah) and, later, iOS (StoreKit). Replaces the
- * legacy Retrofit/Gson models under `feature:billing/network`.
+ * truth shared between Android (Play Billing + MyFatoorah) and iOS (StoreKit 2).
+ * Replaces the legacy Retrofit/Gson models under `feature:billing/network`.
  *
  * `name` / `description` / `features` stay as raw [JsonElement] because the backend returns them
  * polymorphically (plain string, `{en, ar}` object, or localized array).
@@ -35,10 +36,13 @@ data class SubscriptionPlanDto(
     val currency: String? = "EGP",
     val discount: Double? = 0.0,
     val maxExercisesLimit: Int = 0,
-    val maxWorkoutsLimit: Int = 0,
+    @SerialName("maxWorkoutTemplatesLimit")
+    val maxWorkoutTemplatesLimit: Int = 0,
     val freeDoctorSessionsLimit: Int = 0,
     val monthlyGooglePlayProductId: String? = null,
     val yearlyGooglePlayProductId: String? = null,
+    val monthlyAppStoreProductId: String? = null,
+    val yearlyAppStoreProductId: String? = null,
     val features: JsonElement? = null,
     val isActive: Boolean = true,
 )
@@ -112,6 +116,22 @@ data class CancelSubscriptionRequest(
 
 @Serializable
 data class VerifyGooglePlayResponse(
+    val subscription: SubscriptionRowDto? = null,
+    val status: SubscriptionStatusDto? = null,
+)
+
+@Serializable
+data class VerifyAppStoreRequest(
+    val planId: String,
+    val billingPeriod: String,
+    val productId: String,
+    val transactionId: String,
+    val originalTransactionId: String,
+    val signedTransactionInfo: String,
+)
+
+@Serializable
+data class VerifyAppStoreResponse(
     val subscription: SubscriptionRowDto? = null,
     val status: SubscriptionStatusDto? = null,
 )

@@ -17,6 +17,9 @@ sealed interface MovitProfileEvent {
     data object LogoutClicked : MovitProfileEvent
     data object LogoutConfirmed : MovitProfileEvent
     data object LogoutDismissed : MovitProfileEvent
+    data object DeleteAccountClicked : MovitProfileEvent
+    data object DeleteAccountConfirmed : MovitProfileEvent
+    data object DeleteAccountDismissed : MovitProfileEvent
     data object PickerDismissed : MovitProfileEvent
     data class LanguageSelected(val languageCode: String) : MovitProfileEvent
     data class AppearanceSelected(val themeMode: String) : MovitProfileEvent

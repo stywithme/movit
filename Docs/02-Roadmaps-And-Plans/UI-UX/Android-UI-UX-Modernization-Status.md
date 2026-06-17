@@ -351,11 +351,11 @@ android-poc/
   - `component_icon_container`
   - `component_empty_icon`
 - تم توسيع `values/styles.xml` بـ styles جديدة:
-  - `Widget.WayToFix.Button.Primary.Small`
-  - `Widget.WayToFix.Button.Tonal`
-  - `Widget.WayToFix.Card.Outlined`
-  - `Widget.WayToFix.Card.List`
-  - `Widget.WayToFix.Card.Stat`
+  - `Widget.Movit.Button.Primary.Small`
+  - `Widget.Movit.Button.Tonal`
+  - `Widget.Movit.Card.Outlined`
+  - `Widget.Movit.Card.List`
+  - `Widget.Movit.Card.Stat`
 - تم إضافة خيار `Mode` في `Profile`:
   - `System`
   - `Light`
@@ -453,9 +453,9 @@ android-poc/
 - تم إزالة hardcoded colors/textSize الواضحة من layout.
 - تم تحويل quick stats إلى stat cards.
 - تم تحويل cards الأساسية إلى:
-  - `Widget.WayToFix.Card.Stat`
-  - `Widget.WayToFix.Card.Outlined`
-  - `Widget.WayToFix.Card.List`
+  - `Widget.Movit.Card.Stat`
+  - `Widget.Movit.Card.Outlined`
+  - `Widget.Movit.Card.List`
 - تم تحسين:
   - Header
   - Level card
@@ -492,7 +492,7 @@ android-poc/
   - `@color/background`
   - `@color/surface`
   - `@color/text_*`
-  - `Widget.WayToFix.*`
+  - `Widget.Movit.*`
   - `MaterialCardView`
 - تم تحديث ألوان أزرار visual indicator في Kotlin لتقرأ من الثيم بدلاً من hex ثابت.
 - تم إضافة strings جديدة للعنوان والرسائل الناقصة.
@@ -663,7 +663,7 @@ cd android-poc
 تشغيل Shell على Android (debug):
 
 ```text
-adb shell am start -n com.trainingvalidator.poc/com.movit.debug.MovitShellPilotActivity
+adb shell am start -n com.movit.androidApp/com.movit.debug.MovitShellPilotActivity
 ```
 
 Android Studio ما زال مفيداً للمراجعة البصرية وتشغيل المحاكي:

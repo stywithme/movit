@@ -541,6 +541,11 @@
     <string name="program_details_sub">Details</string>
     <string name="program_start">Start program</string>
     <string name="program_start_next">Start next session</string>
+    <string name="program_sign_in_to_enroll">Sign in to enroll in a program.</string>
+    <string name="program_sign_in_to_save_edits">Sign in to save program edits.</string>
+    <string name="program_started">Started</string>
+    <string name="program_started_today">Started today</string>
+    <string name="program_synced_today">Synced today</string>
     <string name="program_day_sessions_title">Day sessions</string>
     <string name="program_day_sessions_sub">Open a session to review or start training.</string>
     <string name="program_open_session">View session</string>
@@ -588,6 +593,15 @@
     <string name="program_impact_sync">Sync payload</string>
     <string name="program_impact_sync_value">%1$d sessions</string>
     <string name="program_not_found">Program not found.</string>
+    <string name="program_no_upcoming_session">No upcoming session found for this program.</string>
+    <string name="program_week_offline_download_action">Download week for offline</string>
+    <string name="program_week_offline_downloading">Downloading week…</string>
+    <string name="program_week_offline_ready">Offline ready ✓</string>
+    <string name="program_week_offline_sign_in_required">Sign in to download this week for offline training.</string>
+    <string name="program_week_offline_enroll_first">Start the program before downloading for offline.</string>
+    <string name="program_week_offline_program_not_loaded">Program data isn\'t loaded yet. Connect and try again.</string>
+    <string name="program_week_offline_week_unavailable">This week isn\'t available in the program yet.</string>
+    <string name="program_week_offline_download_failed">Couldn\'t download this week. Check your connection and try again.</string>
     <string name="program_stat_duration">Duration</string>
     <string name="program_stat_weekly_target">Weekly target</string>
     <string name="program_stat_session_time">Session time</string>
@@ -813,7 +827,7 @@
     <string name="program_flow_a11y_week_summary">Week %1$d, %2$s, %3$d percent, %4$s</string>
 
     <!-- Auth (10) -->
-    <string name="auth_app_name">WayToFix</string>
+    <string name="auth_app_name">Movit</string>
     <string name="auth_tagline">AI-powered form coaching</string>
     <string name="auth_version">Version 1.0.0</string>
     <string name="auth_intro_title_1">Train with confidence</string>
@@ -853,7 +867,7 @@
     <string name="auth_error_password_required">Enter your password.</string>
     <string name="auth_error_name_required">Enter your full name.</string>
     <string name="auth_error_password_short">Password must be at least 8 characters.</string>
-    <string name="auth_logo_content_desc">WayToFix app logo</string>
+    <string name="auth_logo_content_desc">Movit app logo</string>
     <string name="auth_intro_icon_desc">Intro illustration</string>
     <string name="auth_forgot_success_icon_desc">Email sent</string>
     <string name="auth_intro_page_indicator">Intro page %1$d of %2$d</string>
@@ -880,7 +894,17 @@
     <string name="profile_sign_out">Sign out</string>
     <string name="profile_pro_badge">PRO ACTIVE</string>
     <string name="profile_manage_subscription">Manage subscription</string>
-    <string name="profile_subscription_ios_unavailable">In-app subscriptions are not available on iOS yet. Manage your plan on Android or the web.</string>
+    <string name="profile_subscription_ios_unavailable">In-app subscriptions on iOS are available when App Store product IDs are configured. Link products in App Store Connect or manage your plan on the web.</string>
+    <string name="billing_load_plans_failed">Failed to load plans.</string>
+    <string name="billing_load_status_failed">Failed to load subscription status.</string>
+    <string name="billing_empty_status_response">Empty status response.</string>
+    <string name="billing_checkout_failed">Checkout failed.</string>
+    <string name="billing_empty_checkout_response">Empty checkout response.</string>
+    <string name="billing_checkout_lookup_failed">Checkout lookup failed.</string>
+    <string name="billing_purchase_verification_failed">Purchase verification failed.</string>
+    <string name="billing_empty_verification_response">Empty verification response.</string>
+    <string name="billing_cancel_failed">Cancel failed.</string>
+    <string name="billing_empty_cancel_response">Empty cancel response.</string>
     <string name="profile_unlock_pro">Unlock Pro</string>
     <string name="profile_unlock_pro_sub">Advanced reports, program analytics, and unlimited body scans.</string>
     <string name="profile_view_plans">View plans</string>
@@ -904,6 +928,12 @@
     <string name="profile_cancel">Cancel</string>
     <string name="profile_logout_confirm_title">Sign out?</string>
     <string name="profile_logout_confirm_message">You will need to sign in again to sync workouts and reports.</string>
+    <string name="profile_delete_account">Delete account</string>
+    <string name="profile_delete_account_sub">Permanently remove your account and data</string>
+    <string name="profile_delete_account_confirm_title">Delete your account?</string>
+    <string name="profile_delete_account_confirm_message">This action cannot be undone. Your workouts, reports, and subscription access will be removed from our servers.</string>
+    <string name="profile_delete_account_confirm_action">Delete permanently</string>
+    <string name="profile_delete_account_error">Unable to delete your account. Please try again or contact support.</string>
     <string name="profile_avatar_cd">Profile photo</string>
     <string name="profile_edit_avatar_cd">Edit profile photo</string>
     <string name="profile_edit_coming_soon">Profile photo editing is coming soon.</string>

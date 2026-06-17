@@ -3,9 +3,9 @@
     <!-- ═══════════════════════════════════════════════════ -->
     <!-- BUTTONS -->
     <!-- ═══════════════════════════════════════════════════ -->
-    <style name="Widget.WayToFix.Button.Primary" parent="Widget.MaterialComponents.Button">
+    <style name="Widget.Movit.Button.Primary" parent="Widget.MaterialComponents.Button">
         <item name="android:layout_height">@dimen/button_height</item>
-        <item name="android:textAppearance">@style/TextAppearance.WayToFix.Button</item>
+        <item name="android:textAppearance">@style/TextAppearance.Movit.Button</item>
         <item name="android:textColor">@color/text_on_primary</item>
         <item name="backgroundTint">@color/primary</item>
         <item name="cornerRadius">@dimen/radius_xl</item>
@@ -13,16 +13,16 @@
         <item name="elevation">0dp</item>
     </style>
 
-    <style name="Widget.WayToFix.Button.Primary.Small" parent="Widget.WayToFix.Button.Primary">
+    <style name="Widget.Movit.Button.Primary.Small" parent="Widget.Movit.Button.Primary">
         <item name="android:layout_height">@dimen/button_height_small</item>
         <item name="android:minHeight">@dimen/button_height_small</item>
         <item name="android:paddingStart">@dimen/spacing_lg</item>
         <item name="android:paddingEnd">@dimen/spacing_lg</item>
     </style>
 
-    <style name="Widget.WayToFix.Button.Tonal" parent="Widget.MaterialComponents.Button">
+    <style name="Widget.Movit.Button.Tonal" parent="Widget.MaterialComponents.Button">
         <item name="android:layout_height">@dimen/button_height</item>
-        <item name="android:textAppearance">@style/TextAppearance.WayToFix.Button</item>
+        <item name="android:textAppearance">@style/TextAppearance.Movit.Button</item>
         <item name="android:textColor">@color/on_accent_soft</item>
         <item name="backgroundTint">@color/accent_soft</item>
         <item name="cornerRadius">@dimen/radius_xl</item>
@@ -30,9 +30,9 @@
         <item name="elevation">0dp</item>
     </style>
     
-    <style name="Widget.WayToFix.Button.Secondary" parent="Widget.MaterialComponents.Button.OutlinedButton">
+    <style name="Widget.Movit.Button.Secondary" parent="Widget.MaterialComponents.Button.OutlinedButton">
         <item name="android:layout_height">@dimen/button_height</item>
-        <item name="android:textAppearance">@style/TextAppearance.WayToFix.Button</item>
+        <item name="android:textAppearance">@style/TextAppearance.Movit.Button</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="strokeColor">@color/surface_border</item>
         <item name="strokeWidth">@dimen/border_medium</item>
@@ -41,18 +41,18 @@
     </style>
     
     <!-- Dialog Buttons -->
-    <style name="Widget.WayToFix.Button.DialogPositive" parent="Widget.MaterialComponents.Button.TextButton">
+    <style name="Widget.Movit.Button.DialogPositive" parent="Widget.MaterialComponents.Button.TextButton">
         <item name="android:textColor">@color/primary</item>
     </style>
     
-    <style name="Widget.WayToFix.Button.DialogNegative" parent="Widget.MaterialComponents.Button.TextButton">
+    <style name="Widget.Movit.Button.DialogNegative" parent="Widget.MaterialComponents.Button.TextButton">
         <item name="android:textColor">@color/text_secondary</item>
     </style>
 
     <!-- ═══════════════════════════════════════════════════ -->
     <!-- INPUT FIELDS -->
     <!-- ═══════════════════════════════════════════════════ -->
-    <style name="Widget.WayToFix.TextInputLayout" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+    <style name="Widget.Movit.TextInputLayout" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
         <item name="boxBackgroundColor">@color/surface</item>
         <item name="boxStrokeColor">@color/surface_border</item>
         <item name="boxStrokeWidth">@dimen/border_medium</item>
@@ -64,8 +64,8 @@
         <item name="android:textColorHint">@color/text_tertiary</item>
     </style>
     
-    <style name="Widget.WayToFix.TextInputEditText" parent="Widget.MaterialComponents.TextInputEditText.OutlinedBox">
-        <item name="android:textAppearance">@style/TextAppearance.WayToFix.Body1</item>
+    <style name="Widget.Movit.TextInputEditText" parent="Widget.MaterialComponents.TextInputEditText.OutlinedBox">
+        <item name="android:textAppearance">@style/TextAppearance.Movit.Body1</item>
         <item name="android:textColor">@color/text_primary</item>
     </style>
 
@@ -73,14 +73,14 @@
     <!-- ONBOARDING -->
     <!-- ═══════════════════════════════════════════════════ -->
     <!-- Forces NumberPicker text to render light on the dark surface (pre-API 29 has no textColor attr). -->
-    <style name="ThemeOverlay.WayToFix.NumberPicker" parent="">
+    <style name="ThemeOverlay.Movit.NumberPicker" parent="">
         <item name="android:textColorPrimary">@color/text_primary</item>
         <item name="colorControlNormal">@color/text_secondary</item>
         <item name="colorAccent">@color/primary</item>
     </style>
 
     <!-- Selectable choice card (gender / goal / location). State driven via app:checkable. -->
-    <style name="Widget.WayToFix.ChoiceCard" parent="Widget.MaterialComponents.CardView">
+    <style name="Widget.Movit.ChoiceCard" parent="Widget.MaterialComponents.CardView">
         <item name="cardBackgroundColor">@color/onboarding_card_bg</item>
         <item name="strokeColor">@color/onboarding_card_stroke</item>
         <item name="strokeWidth">@dimen/border_thick</item>
@@ -92,7 +92,7 @@
     </style>
 
     <!-- Segmented unit switch (kg/lb, cm/ft) inside a MaterialButtonToggleGroup. -->
-    <style name="Widget.WayToFix.UnitToggle" parent="Widget.MaterialComponents.Button.OutlinedButton">
+    <style name="Widget.Movit.UnitToggle" parent="Widget.MaterialComponents.Button.OutlinedButton">
         <item name="android:textColor">@color/unit_toggle_text</item>
         <item name="android:textSize">@dimen/text_body_small</item>
         <item name="android:minWidth">52dp</item>
@@ -108,26 +108,26 @@
     <!-- ═══════════════════════════════════════════════════ -->
     <!-- CARDS -->
     <!-- ═══════════════════════════════════════════════════ -->
-    <style name="Widget.WayToFix.Card" parent="Widget.MaterialComponents.CardView">
+    <style name="Widget.Movit.Card" parent="Widget.MaterialComponents.CardView">
         <item name="cardBackgroundColor">@color/surface</item>
         <item name="cardCornerRadius">@dimen/radius_base</item>
         <item name="cardElevation">0dp</item>
         <item name="contentPadding">@dimen/spacing_base</item>
     </style>
 
-    <style name="Widget.WayToFix.Card.Outlined" parent="Widget.WayToFix.Card">
+    <style name="Widget.Movit.Card.Outlined" parent="Widget.Movit.Card">
         <item name="strokeColor">@color/surface_border</item>
         <item name="strokeWidth">@dimen/border_thin</item>
         <item name="rippleColor">@color/primary_light</item>
     </style>
 
-    <style name="Widget.WayToFix.Card.List" parent="Widget.WayToFix.Card.Outlined">
+    <style name="Widget.Movit.Card.List" parent="Widget.Movit.Card.Outlined">
         <item name="android:minHeight">@dimen/component_card_min_height</item>
         <item name="cardCornerRadius">@dimen/radius_lg</item>
         <item name="contentPadding">0dp</item>
     </style>
 
-    <style name="Widget.WayToFix.Card.Stat" parent="Widget.WayToFix.Card.Outlined">
+    <style name="Widget.Movit.Card.Stat" parent="Widget.Movit.Card.Outlined">
         <item name="android:minHeight">@dimen/component_stat_card_min_height</item>
         <item name="cardCornerRadius">@dimen/radius_lg</item>
     </style>
@@ -135,7 +135,7 @@
     <!-- ═══════════════════════════════════════════════════ -->
     <!-- SWITCHES -->
     <!-- ═══════════════════════════════════════════════════ -->
-    <style name="Widget.WayToFix.Switch" parent="Widget.MaterialComponents.CompoundButton.Switch">
+    <style name="Widget.Movit.Switch" parent="Widget.MaterialComponents.CompoundButton.Switch">
         <item name="thumbTint">@color/switch_thumb_tint</item>
         <item name="trackTint">@color/switch_track_tint</item>
     </style>
@@ -143,7 +143,7 @@
     <!-- ═══════════════════════════════════════════════════ -->
     <!-- CHIPS -->
     <!-- ═══════════════════════════════════════════════════ -->
-    <style name="Widget.WayToFix.Chip.Filter" parent="Widget.MaterialComponents.Chip.Choice">
+    <style name="Widget.Movit.Chip.Filter" parent="Widget.MaterialComponents.Chip.Choice">
         <item name="chipBackgroundColor">@color/chip_background_selector</item>
         <item name="android:textColor">@color/chip_text_selector</item>
         <item name="chipStrokeColor">@color/surface_border</item>
@@ -158,25 +158,25 @@
     <!-- ═══════════════════════════════════════════════════ -->
     <!-- HEADERS & AVATARS -->
     <!-- Dot-separated style names imply a parent chain: each segment must exist. -->
-    <!-- e.g. ShapeAppearanceOverlay.WayToFix.Circle needs ShapeAppearanceOverlay.WayToFix and ShapeAppearanceOverlay. -->
-    <!-- e.g. Widget.WayToFix.Header needs Widget.WayToFix (Widget exists in the framework). -->
+    <!-- e.g. ShapeAppearanceOverlay.Movit.Circle needs ShapeAppearanceOverlay.Movit and ShapeAppearanceOverlay. -->
+    <!-- e.g. Widget.Movit.Header needs Widget.Movit (Widget exists in the framework). -->
     <!-- ═══════════════════════════════════════════════════ -->
     <style name="ShapeAppearanceOverlay" />
-    <style name="ShapeAppearanceOverlay.WayToFix" />
+    <style name="ShapeAppearanceOverlay.Movit" />
 
-    <style name="ShapeAppearanceOverlay.WayToFix.Circle">
+    <style name="ShapeAppearanceOverlay.Movit.Circle">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
     </style>
 
-    <style name="Widget.WayToFix" parent="" />
+    <style name="Widget.Movit" parent="" />
 
-    <style name="Widget.WayToFix.Header">
+    <style name="Widget.Movit.Header">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
     </style>
 
-    <style name="Widget.WayToFix.Header.MainTab">
+    <style name="Widget.Movit.Header.MainTab">
         <item name="android:gravity">center_vertical</item>
         <item name="android:orientation">horizontal</item>
         <item name="android:paddingStart">@dimen/screen_padding_horizontal</item>
@@ -187,8 +187,8 @@
     </style>
 
     <!-- Ring matches legacy @drawable/bg_avatar_circle; stroke draws on top of the circular shape. -->
-    <style name="Widget.WayToFix.Avatar">
-        <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay.WayToFix.Circle</item>
+    <style name="Widget.Movit.Avatar">
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay.Movit.Circle</item>
         <item name="android:backgroundTint">@color/surface</item>
         <item name="strokeWidth">3dp</item>
         <item name="strokeColor">@color/surface_border</item>
@@ -196,12 +196,12 @@
         <item name="android:scaleType">centerCrop</item>
     </style>
 
-    <style name="Widget.WayToFix.Avatar.Small">
+    <style name="Widget.Movit.Avatar.Small">
         <item name="android:layout_width">48dp</item>
         <item name="android:layout_height">48dp</item>
     </style>
 
-    <style name="Widget.WayToFix.Avatar.Large">
+    <style name="Widget.Movit.Avatar.Large">
         <item name="android:layout_width">100dp</item>
         <item name="android:layout_height">100dp</item>
     </style>

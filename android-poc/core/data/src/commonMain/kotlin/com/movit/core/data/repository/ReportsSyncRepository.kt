@@ -57,7 +57,7 @@ open class ReportsSyncRepository(
             readAllCachedPlannedWorkoutReports().isNotEmpty()
 
     /**
-     * Mirrors legacy [com.trainingvalidator.poc.storage.SyncManager]: only backfill reports
+     * Mirrors legacy [com.movit.storage.SyncManager]: only backfill reports
      * that are not already present locally (pending offline completions win).
      */
     open fun hydrateFromSync(exports: List<PlannedWorkoutReportExportDto>) {

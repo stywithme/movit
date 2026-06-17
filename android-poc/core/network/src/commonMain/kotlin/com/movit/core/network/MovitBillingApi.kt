@@ -7,6 +7,8 @@ import com.movit.core.network.dto.MobilePlansEnvelope
 import com.movit.core.network.dto.SubscriptionApiEnvelope
 import com.movit.core.network.dto.SubscriptionCheckoutDto
 import com.movit.core.network.dto.SubscriptionStatusDto
+import com.movit.core.network.dto.VerifyAppStoreRequest
+import com.movit.core.network.dto.VerifyAppStoreResponse
 import com.movit.core.network.dto.VerifyGooglePlayRequest
 import com.movit.core.network.dto.VerifyGooglePlayResponse
 import io.ktor.client.HttpClient
@@ -82,6 +84,19 @@ class MovitBillingApi(
         }
         if (!response.status.isSuccess()) error("Google Play verify failed (${response.status.value})")
         response.body<SubscriptionApiEnvelope<VerifyGooglePlayResponse>>()
+    }
+
+    suspend fun verifyAppStore(
+        request: VerifyAppStoreRequest,
+        authorization: String?,
+    ): Result<SubscriptionApiEnvelope<VerifyAppStoreResponse>> = runCatching {
+        val response = client.post(base("api/mobile/subscriptions/app-store/verify")) {
+            bearer(authorization)
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }
+        if (!response.status.isSuccess()) error("App Store verify failed (${response.status.value})")
+        response.body<SubscriptionApiEnvelope<VerifyAppStoreResponse>>()
     }
 
     suspend fun cancel(

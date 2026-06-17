@@ -1,16 +1,4 @@
-# MediaPipe Model Directory
-
-Download the pose landmarker model and place it here:
-
-File: pose_landmarker_full.task
-
-Download URL:
-https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/latest/pose_landmarker_full.task
-
-Alternative models:
-- Lite (faster, less accurate):
-  https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task
-
-- Heavy (slower, more accurate) — NOT bundled in release (F8 on-demand via PoseLandmarkerHeavyModelStore):
-  https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/latest/pose_landmarker_heavy.task
-  Debug: place pose_landmarker_heavy.task in src/debug/assets/ for offline dev.
+# MediaPipe pose model (pose_landmarker_full.task) is not committed.
+# CI: android-poc/scripts/fetch-pose-landmarker-model.sh (movit-android-release workflow).
+# Local: run the same script, or download from:
+# https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/latest/pose_landmarker_full.task

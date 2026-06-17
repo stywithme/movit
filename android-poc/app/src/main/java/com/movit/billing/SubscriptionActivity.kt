@@ -1,4 +1,4 @@
-package com.movit.billing
+﻿package com.movit.billing
 
 import android.content.Context
 import android.content.Intent
@@ -28,9 +28,9 @@ import com.movit.core.network.dto.SubscriptionPlanDto
 import com.movit.core.network.dto.SubscriptionStatusDto
 import com.movit.core.network.dto.VerifyGooglePlayRequest
 import com.movit.shared.AppResult
-import com.trainingvalidator.poc.R
-import com.trainingvalidator.poc.databinding.ActivitySubscriptionBinding
-import com.trainingvalidator.poc.databinding.ItemSubscriptionPlanBinding
+import com.movit.R
+import com.movit.databinding.ActivitySubscriptionBinding
+import com.movit.databinding.ItemSubscriptionPlanBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -306,7 +306,9 @@ class SubscriptionActivity : AppCompatActivity(), PurchasesUpdatedListener {
         val localized = localizedFeatureLines(plan.features)
         val lines = mutableListOf<String>()
         if (localized.isNotEmpty()) lines += localized
-        if (plan.maxWorkoutsLimit > 0) lines += "✓ ${getString(R.string.subscription_feature_workouts, plan.maxWorkoutsLimit)}"
+        if (plan.maxWorkoutTemplatesLimit > 0) {
+            lines += "✓ ${getString(R.string.subscription_feature_workouts, plan.maxWorkoutTemplatesLimit)}"
+        }
         if (plan.maxExercisesLimit > 0) lines += "✓ ${getString(R.string.subscription_feature_exercises, plan.maxExercisesLimit)}"
         if (plan.freeDoctorSessionsLimit > 0) {
             lines += "✓ ${getString(R.string.subscription_feature_doctor_sessions, plan.freeDoctorSessionsLimit)}"
@@ -394,7 +396,7 @@ class SubscriptionActivity : AppCompatActivity(), PurchasesUpdatedListener {
 
     private fun handleReturnIntent(source: Intent?) {
         val data = source?.data ?: return
-        if (data.scheme != "waytofix" || data.host != "subscription") return
+        if (data.scheme != "movit" || data.host != "subscription") return
         val checkoutId = data.getQueryParameter("checkoutId")
         val status = data.getQueryParameter("status")
 

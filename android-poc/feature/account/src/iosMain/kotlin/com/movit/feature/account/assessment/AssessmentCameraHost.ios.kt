@@ -69,7 +69,7 @@ actual fun AssessmentCameraHost(
     }
 
     LaunchedEffect(cameraStarted, realPoseSeen) {
-        if (!cameraStarted || realPoseSeen || guidedModeStarted) return@LaunchedEffect
+        if (!cameraStarted || realPoseSeen || guidedModeStarted || !isAssessmentDebugBuild()) return@LaunchedEffect
         delay(2_500)
         if (!realPoseSeen && !guidedModeStarted) {
             guidedModeStarted = true
@@ -77,8 +77,10 @@ actual fun AssessmentCameraHost(
         }
     }
 
+    // DEBUG-only synthetic pose frames for simulator / pre-MediaPipe wiring.
+    // Production builds require real MediaPipe pose output from the camera pipeline.
     LaunchedEffect(guidedModeStarted) {
-        if (!guidedModeStarted) return@LaunchedEffect
+        if (!guidedModeStarted || !isAssessmentDebugBuild()) return@LaunchedEffect
         var timestamp = 0L
         while (true) {
             onPoseFrame(assessmentGuidedPoseFrame(timestamp))

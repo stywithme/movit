@@ -731,7 +731,7 @@ iosMain:
 - Compose Multiplatform هو مسار UI الجديد.
 - Material 3 هو أساس الـ Design System.
 - KMP structure يبدأ مبكراً حتى لو بقيت بعض الشاشات Android-only مؤقتاً.
-- الشاشات الجديدة في KMP تبنى بـ `Movit*` components وليس XML. أسماء `Pose*` أو `WayToFix*` تبقى فقط في legacy Android/prototype history إلى أن تُستبدل تدريجياً.
+- الشاشات الجديدة في KMP تبنى بـ `Movit*` components وليس XML. أسماء `Pose*` تبقى فقط في legacy Android/prototype history (سياق pose detection) إلى أن تُستبدل تدريجياً. العلامة والثيم: **Movit** · deep links `movit://`.
 - التطبيق الحالي مرجع للسلوك والـ APIs، وليس قيداً على UI أو الملفات.
 - (مُنفَّذ) KMP `androidx.lifecycle.ViewModel` كحامل حالة مشترك، بدل Controller أو Android-only ViewModel.
 - (مُنفَّذ) iOS targets + CI على macOS من البداية — "iOS-ready بالـ build وليس بالاتفاق".

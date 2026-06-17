@@ -34,7 +34,7 @@ export class PaymentResultController {
     const { status, checkoutId } =
       await this.service.getResultStatus(paymentId, query.checkoutId);
 
-    const appScheme = process.env.MOBILE_APP_SCHEME || 'poseapp';
+    const appScheme = process.env.MOBILE_APP_SCHEME || 'movit';
     const deepLink = checkoutId
       ? `${appScheme}://payment/result?checkoutId=${checkoutId}&status=${status}`
       : `${appScheme}://payment/result?status=${status}`;

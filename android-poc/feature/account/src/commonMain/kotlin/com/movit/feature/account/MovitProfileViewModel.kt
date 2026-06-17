@@ -59,13 +59,14 @@ class MovitProfileViewModel(
 
     fun onEvent(event: MovitProfileEvent) {
         when (event) {
-            MovitProfileEvent.RetryClicked -> Unit
+            MovitProfileEvent.RetryClicked -> {
+                workScope.launch { load() }
+            }
             MovitProfileEvent.SignInClicked -> _effects.tryEmit(MovitProfileEffect.OpenAuth)
             MovitProfileEvent.ViewPlansClicked -> openSubscription()
             MovitProfileEvent.ManageSubscriptionClicked -> openSubscription()
-            MovitProfileEvent.SubscribeNowClicked,
-            MovitProfileEvent.RestorePurchasesClicked,
-            -> launchLegacyBilling()
+            MovitProfileEvent.SubscribeNowClicked -> launchLegacyBilling(restorePurchases = false)
+            MovitProfileEvent.RestorePurchasesClicked -> launchLegacyBilling(restorePurchases = true)
             MovitProfileEvent.CloseSubscriptionClicked -> {
                 _state.update { it.copy(showSubscription = false) }
             }
@@ -94,7 +95,15 @@ class MovitProfileViewModel(
                 _state.update { it.copy(activePicker = null) }
                 logout()
             }
+            MovitProfileEvent.DeleteAccountClicked -> {
+                _state.update { it.copy(activePicker = ProfilePicker.DeleteAccountConfirm) }
+            }
+            MovitProfileEvent.DeleteAccountConfirmed -> {
+                _state.update { it.copy(activePicker = null) }
+                deleteAccount()
+            }
             MovitProfileEvent.LogoutDismissed,
+            MovitProfileEvent.DeleteAccountDismissed,
             MovitProfileEvent.PickerDismissed,
             -> {
                 _state.update { it.copy(activePicker = null) }
@@ -117,16 +126,16 @@ class MovitProfileViewModel(
             return
         }
         _state.update { it.copy(showSubscription = true) }
-        _effects.tryEmit(MovitProfileEffect.OpenSubscription)
+        _effects.tryEmit(MovitProfileEffect.OpenSubscription(restorePurchases = false))
     }
 
-    private fun launchLegacyBilling() {
+    private fun launchLegacyBilling(restorePurchases: Boolean) {
         if (!PlatformInfo.supportsInAppSubscription) {
             _effects.tryEmit(MovitProfileEffect.ShowLocalizedMessage("profile_subscription_ios_unavailable"))
             return
         }
         _state.update { it.copy(showSubscription = false) }
-        _effects.tryEmit(MovitProfileEffect.OpenSubscription)
+        _effects.tryEmit(MovitProfileEffect.OpenSubscription(restorePurchases = restorePurchases))
     }
 
     private fun logout() {
@@ -145,6 +154,27 @@ class MovitProfileViewModel(
                 is AppResult.Failure -> {
                     _state.update { it.copy(isLoggingOut = false) }
                     _effects.tryEmit(MovitProfileEffect.ShowMessage("Unable to sign out."))
+                }
+            }
+        }
+    }
+
+    private fun deleteAccount() {
+        workScope.launch {
+            _state.update { it.copy(isDeletingAccount = true) }
+            when (repository.deleteAccount()) {
+                is AppResult.Success -> {
+                    _state.update {
+                        MovitProfileUiState(
+                            isLoading = false,
+                            isSignedIn = false,
+                        )
+                    }
+                    _effects.tryEmit(MovitProfileEffect.LoggedOut)
+                }
+                is AppResult.Failure -> {
+                    _state.update { it.copy(isDeletingAccount = false) }
+                    _effects.tryEmit(MovitProfileEffect.ShowLocalizedMessage("profile_delete_account_error"))
                 }
             }
         }

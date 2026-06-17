@@ -13,6 +13,7 @@ import {
     CancelSubscriptionInput,
     CreateSubscriptionCheckoutInput,
     VerifyGooglePlayPurchaseInput,
+    VerifyAppStorePurchaseInput,
 } from './subscription.types';
 import {
     createPayment,
@@ -23,6 +24,12 @@ import {
     cancelGooglePlaySubscription,
     verifyGooglePlaySubscription,
 } from './google-play.client';
+import {
+    assertAppStorePayloadMatchesRequest,
+    getExpectedAppStoreBundleId,
+    isAppStoreEntitlementActive,
+    verifyAppStoreSignedTransaction,
+} from './app-store.client';
 import { Prisma } from '@prisma/client';
 
 const ACTIVE_ENTITLEMENT_STATUSES = ['active', 'cancelled'];
@@ -85,6 +92,12 @@ export class SubscriptionService {
         return billingPeriod === 'yearly'
             ? plan.yearlyGooglePlayProductId || null
             : plan.monthlyGooglePlayProductId || null;
+    }
+
+    private planAppStoreProductId(plan: any, billingPeriod: BillingPeriod): string | null {
+        return billingPeriod === 'yearly'
+            ? plan.yearlyAppStoreProductId || null
+            : plan.monthlyAppStoreProductId || null;
     }
 
     private async paymentCurrency(plan: any): Promise<string> {
@@ -538,6 +551,63 @@ export class SubscriptionService {
         };
     }
 
+    async verifyAppStore(userId: string, dto: VerifyAppStorePurchaseInput) {
+        const plan = await this.getActivePlanOrThrow(dto.planId);
+        const expectedProductId = this.planAppStoreProductId(plan, dto.billingPeriod);
+        const allowUnmapped = process.env.ALLOW_UNMAPPED_APP_STORE_PRODUCTS === 'true';
+        if (expectedProductId && expectedProductId !== dto.productId) {
+            throw new BadRequestException('App Store product does not match selected plan');
+        }
+        if (!expectedProductId && !allowUnmapped) {
+            throw new BadRequestException('Plan is missing App Store product mapping');
+        }
+
+        let payload;
+        try {
+            payload = await verifyAppStoreSignedTransaction(dto.signedTransactionInfo);
+            assertAppStorePayloadMatchesRequest(payload, {
+                productId: dto.productId,
+                transactionId: dto.transactionId,
+                originalTransactionId: dto.originalTransactionId,
+            }, getExpectedAppStoreBundleId());
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Invalid App Store signed transaction';
+            throw new BadRequestException(message);
+        }
+
+        const expiry = payload.expiresDate ? new Date(payload.expiresDate) : null;
+        if (!isAppStoreEntitlementActive(payload) || (expiry && expiry <= new Date())) {
+            await this.prisma.subscriptionCheckout.create({
+                data: {
+                    userId,
+                    planId: plan.id,
+                    gateway: 'app_store',
+                    billingPeriod: dto.billingPeriod,
+                    status: 'failed',
+                    currency: plan.currency || DEFAULT_PAYMENT_CURRENCY,
+                    amount: this.planAmount(plan, dto.billingPeriod),
+                    failedAt: new Date(),
+                    lastError: 'App Store subscription is not active',
+                    rawPayload: payload,
+                },
+            });
+            throw new BadRequestException('App Store subscription is not active');
+        }
+
+        const subscription = await this.upsertAppStoreSubscription(
+            userId,
+            plan,
+            dto,
+            payload,
+            expiry ?? this.addPeriod(new Date(), dto.billingPeriod),
+        );
+        await this.syncUserEntitlement(userId);
+        return {
+            subscription: this.serializeSubscription(subscription),
+            status: await this.getStatus(userId),
+        };
+    }
+
     async cancelForUser(userId: string, dto: CancelSubscriptionInput) {
         const subscription = dto.subscriptionId
             ? await this.prisma.subscription.findUnique({ where: { id: dto.subscriptionId }, include: { plan: true } })
@@ -727,6 +797,96 @@ export class SubscriptionService {
                 googlePlayPurchaseToken: dto.purchaseToken,
                 paidAt: now,
                 rawPayload: verification.raw,
+            },
+        });
+
+        return subscription;
+    }
+
+    private async upsertAppStoreSubscription(
+        userId: string,
+        plan: any,
+        dto: VerifyAppStorePurchaseInput,
+        payload: any,
+        expiry: Date,
+    ) {
+        const now = new Date();
+        const amount = this.planAmount(plan, dto.billingPeriod);
+
+        await this.prisma.subscription.updateMany({
+            where: {
+                userId,
+                status: { in: ACTIVE_ENTITLEMENT_STATUSES },
+                endDate: { gt: now },
+                OR: [
+                    { appStoreTransactionId: null },
+                    { appStoreTransactionId: { not: dto.transactionId } },
+                ],
+            },
+            data: {
+                status: 'replaced',
+                endDate: now,
+                currentPeriodEnd: now,
+                cancelledAt: now,
+                autoRenew: false,
+            },
+        });
+
+        const existing = await this.prisma.subscription.findUnique({
+            where: { appStoreTransactionId: dto.transactionId },
+            include: { plan: true },
+        });
+
+        if (existing && existing.userId !== userId) {
+            throw new ForbiddenException('This App Store transaction is already linked to another account');
+        }
+
+        const data = {
+            userId,
+            planId: plan.id,
+            status: 'active',
+            billingPeriod: dto.billingPeriod,
+            gateway: 'app_store',
+            amountPaid: amount,
+            startDate: now,
+            endDate: expiry,
+            currentPeriodStart: now,
+            currentPeriodEnd: expiry,
+            autoRenew: true,
+            cancelAtPeriodEnd: false,
+            appStoreProductId: dto.productId,
+            appStoreTransactionId: dto.transactionId,
+            appStoreOriginalTransactionId: dto.originalTransactionId,
+            lastVerifiedAt: now,
+            metadata: {
+                environment: payload.environment ?? null,
+                raw: payload,
+            },
+        };
+
+        const subscription = existing
+            ? await this.prisma.subscription.update({
+                where: { id: existing.id },
+                data,
+                include: { plan: true },
+            })
+            : await this.prisma.subscription.create({
+                data,
+                include: { plan: true },
+            });
+
+        await this.prisma.subscriptionCheckout.create({
+            data: {
+                userId,
+                planId: plan.id,
+                subscriptionId: subscription.id,
+                gateway: 'app_store',
+                billingPeriod: dto.billingPeriod,
+                status: 'paid',
+                currency: plan.currency || DEFAULT_PAYMENT_CURRENCY,
+                amount,
+                paidAt: now,
+                rawPayload: payload,
             },
         });
 

@@ -10,7 +10,8 @@ val apiPropsFile = rootProject.file("api.properties")
 val apiProps = Properties()
 if (apiPropsFile.exists()) apiProps.load(apiPropsFile.inputStream())
 if (localProps.exists()) apiProps.load(localProps.inputStream())
-val apiMode = apiProps.getProperty("api.mode", "local")
+val apiMode = (findProperty("api.mode") as String?)
+    ?: apiProps.getProperty("api.mode", "local")
 val apiPort = apiProps.getProperty("api.port", "4000")
 val apiPhysicalIp = apiProps.getProperty("api.physical_device_ip", "192.168.1.18")
 val apiServerUrl = apiProps.getProperty("api.server_url", "https://back.mongz.online/")
@@ -25,6 +26,9 @@ movitKmp {
 
 kotlin {
     sourceSets {
+        iosMain {
+            kotlin.srcDir(layout.buildDirectory.dir("generated/movitAndroidBuild/kotlin"))
+        }
         commonMain.dependencies {
             implementation(project(":shared"))
             implementation(libs.ktor.client.core)

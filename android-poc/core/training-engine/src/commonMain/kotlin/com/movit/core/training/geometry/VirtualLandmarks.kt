@@ -5,7 +5,7 @@ import com.movit.core.training.model.PoseLandmarkIndices
 
 /**
  * Virtual neck/spine landmarks (indices 33–34) — parity with legacy
- * [com.trainingvalidator.poc.analysis.LandmarkSmoother.appendVirtualLandmarks].
+ * [com.movit.analysis.LandmarkSmoother.appendVirtualLandmarks].
  */
 object VirtualLandmarks {
     const val NECK = 33

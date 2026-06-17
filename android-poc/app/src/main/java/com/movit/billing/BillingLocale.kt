@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
 
 /**
- * Active app language for billing UI (mirrors legacy [com.trainingvalidator.poc.ui.utils.currentLanguage]).
+ * Active app language for billing UI (mirrors legacy [com.movit.ui.utils.currentLanguage]).
  */
 val Context.billingLanguage: String
     get() {

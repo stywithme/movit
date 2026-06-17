@@ -1,4 +1,4 @@
-# UI/UX Maintenance Plan — مهام روتينية (للتنفيذ اليدوي)
+﻿# UI/UX Maintenance Plan — مهام روتينية (للتنفيذ اليدوي)
 
 هذه المهام **متكررة / منخفضة المخاطر / ميكانيكية**. مناسبة للتنفيذ اليدوي من الفريق. المهام المعقّدة (تفكيك الـ god classes إلى MVVM) تُنفَّذ بشكل منفصل وتدريجي مع التحقق بالـ build.
 
@@ -75,15 +75,13 @@
 
 ---
 
-## P2 — تنظيف الهوية (بعد حسم الاسم الجديد)
+## P2 — تنظيف الهوية (Movit — تم 2026-06-17)
 
-### 8. إعادة تسمية الثيم والبراند الميت
-بعد حسم الاسم التجاري الجديد، بدّل:
-- `Theme.WayToFix` و `Theme.WayToFix.Splash/Training/Dialog` → `Theme.<NewName>`.
-- `TextAppearance.WayToFix.*` → `TextAppearance.<NewName>.*`.
-- احذف `Theme.TrainingValidatorPoC` (legacy alias) بعد التأكد من عدم استخدامه.
-الملفات: `values/themes.xml`، `values-v31/themes.xml`، `values/styles.xml`، `values/typography.xml`، `AndroidManifest.xml` (android:theme)، وأي layout يشير لـ textAppearance.
-> ميكانيكي: find/replace على مستوى المشروع + build للتأكد.
+### 8. إعادة تسمية الثيم والبراند الميت ✅
+- `Theme.WayToFix` → `Theme.Movit` (+ Splash/Training/Dialog).
+- `TextAppearance.WayToFix.*` / `Widget.WayToFix.*` → `*.Movit.*`.
+- Deep links: `waytofix://` → `movit://`.
+- احذف `Theme.TrainingValidatorPoC` (legacy alias) بعد التأكد من عدم استخدامه — **متبقٍ**.
 
 ---
 
@@ -101,4 +99,4 @@
 - [x] 5. حذف ApiClient.init الزائد (مكانين)
 - [x] 6. حذف MainActivity الميّت (بعد التأكد)
 - [x] 7. توحيد estimateSessionDuration (overload لـ ProgramSession في ProgramSessionFormatting)
-- [ ] 8. إعادة تسمية الثيم/البراند (بعد الاسم الجديد)
+- [x] 8. إعادة تسمية الثيم/البراند (WayToFix → Movit)

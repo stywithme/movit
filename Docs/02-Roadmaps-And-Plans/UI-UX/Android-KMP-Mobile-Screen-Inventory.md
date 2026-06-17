@@ -368,7 +368,7 @@ flowchart LR
 
 | الرابط | الوجهة |
 |--------|--------|
-| `waytofix://subscription/result` | `SubscriptionActivity` (في Manifest) |
+| `movit://subscription/result` | `SubscriptionActivity` (في Manifest) |
 
 ---
 
@@ -461,7 +461,7 @@ flowchart LR
 | `ReportPagerActivity` | **ميت** — غير في Manifest |
 | `ProgramSessionReportActivity` | **ميت** — غير في Manifest |
 | `ProfileActivity` | الملف الشخصي legacy |
-| `SubscriptionActivity` | اشتراك + deep link `waytofix://` |
+| `SubscriptionActivity` | اشتراك + deep link `movit://` |
 
 ### 10.6 Fragments داخل `WorkoutReportActivity` / التقارير
 

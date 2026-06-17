@@ -12,7 +12,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 @Composable
 fun MovitAppShellHost(
     onHostBackPressed: () -> Unit = {},
-    onLaunchLegacySubscription: () -> Boolean = { false },
+    onLaunchPlatformSubscription: (restorePurchases: Boolean) -> Boolean = { false },
     onShareText: (subject: String, text: String) -> Boolean = { _, _ -> false },
 ) {
     val shellViewModel = viewModel { MovitAppShellViewModel() }
@@ -25,7 +25,7 @@ fun MovitAppShellHost(
 
     MovitAppShellRoute(
         shellViewModel = shellViewModel,
-        onLaunchLegacySubscription = onLaunchLegacySubscription,
+        onLaunchPlatformSubscription = onLaunchPlatformSubscription,
         onShareText = onShareText,
     )
 }

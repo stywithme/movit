@@ -2,7 +2,7 @@ package com.movit.core.training.model
 
 /**
  * MediaPipe BlazePose landmark indices (33 landmarks).
- * Mirrors legacy [com.trainingvalidator.poc.pose.BodyLandmarks] for KMP angle assembly.
+ * Mirrors legacy [com.movit.pose.BodyLandmarks] for KMP angle assembly.
  */
 object PoseLandmarkIndices {
     const val NOSE = 0

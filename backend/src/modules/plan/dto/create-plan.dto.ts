@@ -10,6 +10,8 @@
     freeDoctorSessionsLimit?: number;
     monthlyGooglePlayProductId?: string;
     yearlyGooglePlayProductId?: string;
+    monthlyAppStoreProductId?: string;
+    yearlyAppStoreProductId?: string;
     features?: any;
     isActive?: boolean;
 }

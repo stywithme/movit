@@ -1,0 +1,8 @@
+{
+  "planId": "550e8400-e29b-41d4-a716-446655440000",
+  "billingPeriod": "monthly",
+  "productId": "movit.pro.monthly",
+  "transactionId": "2000000123456789",
+  "originalTransactionId": "2000000123456789",
+  "signedTransactionInfo": "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0cmFuc2FjdGlvbklkIjoiMjAwMDAwMDEyMzQ1Njc4OSJ9.signature"
+}

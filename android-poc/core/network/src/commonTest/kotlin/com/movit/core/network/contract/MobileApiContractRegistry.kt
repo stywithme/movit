@@ -1,4 +1,4 @@
-package com.movit.core.network.contract
+﻿package com.movit.core.network.contract
 
 /**
  * Single source of truth for legacy Retrofit vs KMP [com.movit.core.network.MovitMobileApi] coverage.
@@ -29,8 +29,19 @@ object MobileApiContractRegistry {
     val allLegacyConsumerEndpoints: Set<String>
         get() = legacyEndpoints + legacyNonRetrofitEndpoints
 
-    /** Endpoints implemented in MovitMobileApi (must match base("…") paths in source). */
-    val kmpCoveredEndpoints: Set<String> = setOf(
+    /** Endpoints implemented in MovitBillingApi. */
+    val kmpBillingCoveredEndpoints: Set<String> = setOf(
+        "GET api/mobile/plans",
+        "GET api/mobile/subscriptions/status",
+        "POST api/mobile/subscriptions/checkout",
+        "GET api/mobile/subscriptions/checkout/{checkoutId}",
+        "POST api/mobile/subscriptions/google-play/verify",
+        "POST api/mobile/subscriptions/app-store/verify",
+        "POST api/mobile/subscriptions/cancel",
+    )
+
+    /** Endpoints implemented in MovitMobileApi (must match base("ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦") paths in source). */
+    val kmpMobileCoveredEndpoints: Set<String> = setOf(
         "GET api/mobile/explore",
         "GET api/mobile/home",
         "GET api/mobile/reports/dashboard",
@@ -47,6 +58,7 @@ object MobileApiContractRegistry {
         "POST api/mobile/auth/forgot-password",
         "POST api/mobile/auth/refresh",
         "POST api/mobile/auth/logout",
+        "DELETE api/mobile/auth/account",
         "GET api/mobile/auth/profile",
         "PATCH api/mobile/auth/settings",
         "GET api/mobile/level-profile",
@@ -84,17 +96,20 @@ object MobileApiContractRegistry {
         "POST api/mobile/progression/mark-seen",
     )
 
+    val kmpCoveredEndpoints: Set<String>
+        get() = kmpMobileCoveredEndpoints + kmpBillingCoveredEndpoints
+
     val deferredEndpoints: List<DeferredEndpoint> = listOf(
         DeferredEndpoint("POST", "api/mobile/auth/reset-password", "Reset-password flow not in Movit shell"),
         DeferredEndpoint("PATCH", "api/mobile/auth/profile", "Profile PATCH deferred; settings PATCH covered"),
         // Subscriptions now KMP-native (MovitBillingApi, Android); iOS StoreKit tracked in WS-H.
-        DeferredEndpoint("GET", "api/bookings/rules", "BookingApi removed in WS-5 — out of Movit product scope"),
+        DeferredEndpoint("GET", "api/bookings/rules", "BookingApi removed in WS-5 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â out of Movit product scope"),
         DeferredEndpoint("GET", "api/exercises/{id}/substitutions", "Admin id route; mobile slug route covered"),
         DeferredEndpoint("GET", "api/mobile/workout-executions/stats", "Home stats parity"),
         DeferredEndpoint("POST", "api/mobile/prescription/recommend", "Prescription parity"),
         DeferredEndpoint("GET", "api/mobile/plan/enrollment-check", "Enrollment check parity"),
-        DeferredEndpoint("POST", "api/mobile/plan/pause", "No backend route — ActivePlanController has complete only"),
-        DeferredEndpoint("POST", "api/mobile/plan/resume", "No backend route — ActivePlanController has complete only"),
+        DeferredEndpoint("POST", "api/mobile/plan/pause", "No backend route ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ActivePlanController has complete only"),
+        DeferredEndpoint("POST", "api/mobile/plan/resume", "No backend route ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ActivePlanController has complete only"),
         DeferredEndpoint("POST", "api/mobile/reassessment/request", "Reassessment request parity"),
         DeferredEndpoint("GET", "api/mobile/user-programs/{id}/overrides", "Overrides list read parity"),
     )

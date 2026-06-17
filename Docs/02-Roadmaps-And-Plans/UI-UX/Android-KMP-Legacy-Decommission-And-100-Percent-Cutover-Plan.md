@@ -38,7 +38,7 @@
 | **`feature:training-debug` في `shell` commonMain** | يُشحن في iOS framework | متوسطة — تلوث حدود الإنتاج |
 | **`boundary/trainingdebug` في `core:pose-capture`** | أنواع debug في core | متوسطة |
 | **موارد يتيمة** | ~90% من `strings.xml`، menus، assets matting | منخفضة — حجم/تعقيد |
-| **`applicationId` = `com.trainingvalidator.poc`** | هوية legacy | اختيارية للمتجر |
+| **`applicationId` = `com.movit.androidApp`** | هوية Movit (متوازية مع `com.movit.iosApp`) | ✅ تم |
 | **QA ميداني غير مُثبت** | G1/G6/smoke | **حرجة** — قبل حذف B3 |
 | **فجوات منتج التدريب** | throughput ~7fps، report UI، train calendar | **حرجة للمنتج** |
 | **iOS** | pose stub، لا billing، لا Google | خارج نطاق Android 100% |
@@ -258,7 +258,7 @@ ui/theme/AppThemeManager.kt
 | F3 | حذف `viewBinding` من `:app` | |
 | F4 | دمج source sets `movitShellEnabled` + `movitShellHost` في `main` | تبسيط build |
 | F5 | تنظيف `strings.xml` / drawables / assets يتيمة | grep مراجع |
-| F6 | (اختياري) `applicationId` → `com.movit` | قرار متجر — WS-G |
+| F6 | ✅ `applicationId` → `com.movit.androidApp` | WS-G — تم |
 
 **بوابة F:** `:app` < 500 سطر Kotlin؛ AAB < 35 MB هدف.
 
@@ -268,8 +268,8 @@ ui/theme/AppThemeManager.kt
 
 | # | المهمة |
 |---|--------|
-| G1 | قرار: الإبقاء على `com.trainingvalidator.poc` أو التغيير إلى `com.movit` |
-| G2 | إن تغيّر: تحديث Play Console + deep links + `waytofix://` |
+| G1 | ✅ `applicationId` → `com.movit.androidApp` (قائمة Play جديدة — لا تحديث فوق legacy) |
+| G2 | إن تغيّر: تحديث Play Console + deep links + `movit://` |
 
 ---
 

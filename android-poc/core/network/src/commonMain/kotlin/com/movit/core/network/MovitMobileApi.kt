@@ -300,6 +300,16 @@ class MovitMobileApi(
         response.body<AuthApiResponse<AuthDataDto>>()
     }
 
+    suspend fun deleteAccount(authorization: String? = null): Result<AuthApiResponse<Unit>> = runCatching {
+        val response = client.delete(base("api/mobile/auth/account")) {
+            applyBearerAuthorization(authorization)
+        }
+        if (!response.status.isSuccess()) {
+            error("Delete account failed (${response.status.value})")
+        }
+        response.body<AuthApiResponse<Unit>>()
+    }
+
     suspend fun fetchAuthProfile(authorization: String? = null): Result<AuthApiResponse<UserPublicDto>> = runCatching {
         val response = client.get(base("api/mobile/auth/profile")) {
             applyBearerAuthorization(authorization)

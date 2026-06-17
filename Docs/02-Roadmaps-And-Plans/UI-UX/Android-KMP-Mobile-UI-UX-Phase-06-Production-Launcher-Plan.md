@@ -19,7 +19,7 @@
 
 | Binding | المصدر الإنتاجي (موجود في main) |
 |---------|-------------------------------|
-| auth / tokens / session | `com.trainingvalidator.poc.storage.AuthManager` (EncryptedSharedPreferences) |
+| auth / tokens / session | `com.movit.androidApp.storage.AuthManager` (EncryptedSharedPreferences) |
 | base URL | `network.ApiConfig.getEffectiveBaseUrl()` |
 | active program id | `storage.ProgramRepository` |
 | exercise images | `storage.ExerciseRepository` |
@@ -214,7 +214,7 @@ cd android-poc
 
 تشغيل الـ shell الإنتاجي (debug pilot يبقى للـ QA):
 ```text
-adb shell am start -n com.trainingvalidator.poc/com.movit.debug.MovitShellPilotActivity
+adb shell am start -n com.movit.androidApp/com.movit.debug.MovitShellPilotActivity
 ```
 
 ---

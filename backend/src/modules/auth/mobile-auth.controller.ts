@@ -9,6 +9,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { authService } from './auth.service';
 import {
@@ -28,10 +29,12 @@ import { MobileAuth } from '@/lib/guards/mobile-auth.guard';
 import { UserPermissionGuard } from '@/lib/guards/user-permission.guard';
 
 @Controller('mobile/auth')
+@UseGuards(ThrottlerGuard)
 export class MobileAuthController {
 
   // ─── Public Routes (no guard) ──────────────────────────────────────────────
 
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('register')
   async register(@Req() req: Request, @Body() body: unknown, @Res({ passthrough: true }) res: Response) {
     const parseResult = registerSchema.safeParse(body);
@@ -60,6 +63,7 @@ export class MobileAuthController {
     }
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('login')
   async login(@Req() req: Request, @Body() body: unknown, @Res({ passthrough: true }) res: Response) {
     const parseResult = loginSchema.safeParse(body);
@@ -87,6 +91,7 @@ export class MobileAuthController {
     }
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('google')
   async googleAuth(@Req() req: Request, @Body() body: any, @Res({ passthrough: true }) res: Response) {
     const parseResult = googleAuthSchema.safeParse(body);
@@ -102,11 +107,6 @@ export class MobileAuthController {
     try {
       const { idToken } = parseResult.data;
       const { googleId, email, name, avatarUrl } = body;
-      if (!googleId || !email || !name) {
-        res.status(400);
-        return { success: false, error: 'Missing Google user data' };
-      }
-
       const deviceInfo = getDeviceInfo(req);
       const result = await authService.googleAuth(
         idToken,
@@ -120,7 +120,12 @@ export class MobileAuthController {
       return { success: true, data: result };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Google auth failed';
-      if (message === 'Account is deactivated') {
+      if (
+        message === 'Account is deactivated' ||
+        message === 'Invalid Google token' ||
+        message === 'Google ID token is required' ||
+        message === 'Missing Google user data'
+      ) {
         res.status(401);
         return { success: false, error: message };
       }
@@ -129,6 +134,7 @@ export class MobileAuthController {
     }
   }
 
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Post('refresh')
   async refresh(@Body() body: unknown, @Res({ passthrough: true }) res: Response) {
     const parseResult = refreshTokenSchema.safeParse(body);
@@ -155,6 +161,7 @@ export class MobileAuthController {
     }
   }
 
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('forgot-password')
   async forgotPassword(@Body() body: unknown, @Res({ passthrough: true }) res: Response) {
     const parseResult = forgotPasswordSchema.safeParse(body);
@@ -177,6 +184,7 @@ export class MobileAuthController {
     }
   }
 
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('reset-password')
   async resetPassword(@Body() body: unknown, @Res({ passthrough: true }) res: Response) {
     const parseResult = resetPasswordSchema.safeParse(body);

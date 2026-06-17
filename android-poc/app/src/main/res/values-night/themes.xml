@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Dark mode: inherit ALL base items, only flip status-bar icons to light.
-         Must inherit Base.Theme.WayToFix — a bare style here would drop every other
+         Must inherit Base.Theme.Movit — a bare style here would drop every other
          theme item (colors, nav bar, text appearances) in dark mode. -->
-    <style name="Theme.WayToFix" parent="Base.Theme.WayToFix">
+    <style name="Theme.Movit" parent="Base.Theme.Movit">
         <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>

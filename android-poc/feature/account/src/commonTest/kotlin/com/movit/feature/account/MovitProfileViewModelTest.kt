@@ -123,7 +123,7 @@ class MovitProfileViewModelTest {
         }
         yield()
         viewModel.onEvent(MovitProfileEvent.SubscribeNowClicked)
-        assertEquals(MovitProfileEffect.OpenSubscription, effectDeferred.await())
+        assertEquals(MovitProfileEffect.OpenSubscription(restorePurchases = false), effectDeferred.await())
         assertEquals(false, viewModel.state.value.showSubscription)
     }
 
@@ -134,6 +134,31 @@ class MovitProfileViewModelTest {
         )
         viewModel.load()
         viewModel.onEvent(MovitProfileEvent.LogoutConfirmed)
+        delay(100)
+
+        val state = viewModel.state.value
+        assertFalse(state.isSignedIn)
+        assertNull(state.profile)
+    }
+
+    @Test
+    fun deleteAccountClicked_showsConfirmPicker() = runBlocking {
+        val viewModel = MovitProfileViewModel(
+            repository = FakeProfileRepository(signedIn = true),
+        )
+        viewModel.load()
+        viewModel.onEvent(MovitProfileEvent.DeleteAccountClicked)
+
+        assertEquals(ProfilePicker.DeleteAccountConfirm, viewModel.state.value.activePicker)
+    }
+
+    @Test
+    fun deleteAccountConfirmed_clearsSignedInState() = runBlocking {
+        val viewModel = MovitProfileViewModel(
+            repository = FakeProfileRepository(signedIn = true),
+        )
+        viewModel.load()
+        viewModel.onEvent(MovitProfileEvent.DeleteAccountConfirmed)
         delay(100)
 
         val state = viewModel.state.value

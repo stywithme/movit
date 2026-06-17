@@ -8,12 +8,12 @@ import com.movit.core.training.journal.RepMetricsData
 import com.movit.core.training.journal.WorkoutExecutionMetrics
 import com.movit.core.training.journal.WorkoutUpload
 import com.movit.shared.AppResult
-import com.trainingvalidator.poc.storage.AnalyticsStorage
+import com.movit.storage.AnalyticsStorage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import com.trainingvalidator.poc.storage.WorkoutUpload as LegacyWorkoutUpload
+import com.movit.storage.WorkoutUpload as LegacyWorkoutUpload
 
 /**
  * WS-10 — moves pending legacy [AnalyticsStorage] workout executions into the KMP Outbox

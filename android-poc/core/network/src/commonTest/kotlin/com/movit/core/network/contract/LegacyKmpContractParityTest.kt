@@ -39,7 +39,7 @@ class LegacyKmpContractParityTest {
     @Test
     fun kmpRegistryMatchesMovitMobileApiSource() {
         val extracted = MovitMobileApiPathExtractor.extractFromSource()
-        val registry = MobileApiContractRegistry.kmpCoveredEndpoints
+        val registry = MobileApiContractRegistry.kmpMobileCoveredEndpoints
 
         val missingFromRegistry = extracted - registry
         val staleInRegistry = registry - extracted - MobileApiContractRegistry.kmpOnlyEndpoints
@@ -51,6 +51,26 @@ class LegacyKmpContractParityTest {
         assertTrue(
             staleInRegistry.isEmpty(),
             "kmpCoveredEndpoints lists paths absent from MovitMobileApi: $staleInRegistry",
+        )
+    }
+
+
+
+    @Test
+    fun kmpRegistryMatchesMovitBillingApiSource() {
+        val extracted = MovitBillingApiPathExtractor.extractFromSource()
+        val registry = MobileApiContractRegistry.kmpBillingCoveredEndpoints
+
+        val missingFromRegistry = extracted - registry
+        val staleInRegistry = registry - extracted
+
+        assertTrue(
+            missingFromRegistry.isEmpty(),
+            "MovitBillingApi paths not in kmpBillingCoveredEndpoints: $missingFromRegistry",
+        )
+        assertTrue(
+            staleInRegistry.isEmpty(),
+            "kmpBillingCoveredEndpoints lists paths absent from MovitBillingApi: $staleInRegistry",
         )
     }
 

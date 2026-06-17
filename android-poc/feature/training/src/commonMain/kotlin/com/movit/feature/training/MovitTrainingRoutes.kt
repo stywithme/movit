@@ -116,7 +116,16 @@ fun TrainingSessionRoute(
       prev == WorkoutFlowPhase.REST &&
       state.workoutFlowPhase == WorkoutFlowPhase.PRE_EXERCISE
     ) {
-      viewModel.startWorkoutExercise()
+      viewModel.onEvent(TrainingSessionEvent.StartWorkoutExercise)
+    }
+  }
+  LaunchedEffect(viewModel) {
+    viewModel.effects.collect { effect ->
+      when (effect) {
+        is TrainingSessionEffect.ViewReport -> onViewReport(effect.reportId)
+        is TrainingSessionEffect.Finish -> onFinish(effect.isWorkoutFlowComplete)
+        TrainingSessionEffect.NavigateBack -> onBack()
+      }
     }
   }
   LaunchedEffect(state.isComplete, state.reportDetailId) {
@@ -125,14 +134,14 @@ fun TrainingSessionRoute(
     onViewReport(reportId)
   }
   DisposableEffect(viewModel) {
-    onDispose { viewModel.stopSession() }
+    onDispose { viewModel.onEvent(TrainingSessionEvent.StopSession) }
   }
   val lifecycleOwner = LocalLifecycleOwner.current
   DisposableEffect(lifecycleOwner, viewModel) {
     val observer = LifecycleEventObserver { _, event ->
       when (event) {
-        Lifecycle.Event.ON_STOP -> viewModel.onHostBackgrounded()
-        Lifecycle.Event.ON_START -> viewModel.onHostForegrounded()
+        Lifecycle.Event.ON_STOP -> viewModel.onEvent(TrainingSessionEvent.HostBackgrounded())
+        Lifecycle.Event.ON_START -> viewModel.onEvent(TrainingSessionEvent.HostForegrounded())
         else -> Unit
       }
     }
@@ -141,23 +150,15 @@ fun TrainingSessionRoute(
   }
   TrainingSessionScreen(
     state = state,
-    onBack = {
-      viewModel.stopSession()
-      onBack()
-    },
-    onPause = viewModel::pause,
-    onResume = viewModel::resume,
-    onStop = viewModel::stop,
-    onFinish = {
-      viewModel.stopSession()
-      onFinish(viewModel.state.value.isWorkoutComplete)
-    },
-    onViewReport = {
-      viewModel.state.value.reportDetailId?.let(onViewReport)
-    },
-    onSkipRest = viewModel::skipRest,
+    onBack = { viewModel.onEvent(TrainingSessionEvent.BackPressed) },
+    onPause = { viewModel.onEvent(TrainingSessionEvent.Pause) },
+    onResume = { viewModel.onEvent(TrainingSessionEvent.Resume) },
+    onStop = { viewModel.onEvent(TrainingSessionEvent.Stop) },
+    onFinish = { viewModel.onEvent(TrainingSessionEvent.FinishClicked) },
+    onViewReport = { viewModel.onEvent(TrainingSessionEvent.ViewReportClicked) },
+    onSkipRest = { viewModel.onEvent(TrainingSessionEvent.SkipRest) },
     onFlipCamera = {
-      viewModel.onCameraSwitchStarted()
+      viewModel.onEvent(TrainingSessionEvent.CameraSwitchStarted)
       useFrontCamera = !useFrontCamera
     },
     trainingPreferences = trainingPrefs,
@@ -173,9 +174,9 @@ fun TrainingSessionRoute(
     cameraSlot = {
       if (state.requiresCamera()) {
         TrainingSessionCameraHost(
-          onFrame = viewModel::onPoseFrame,
-          onCameraReady = viewModel::onCameraReady,
-          onError = viewModel::onCameraError,
+          onFrame = { viewModel.onEvent(TrainingSessionEvent.PoseFrameReceived(it)) },
+          onCameraReady = { viewModel.onEvent(TrainingSessionEvent.CameraReady) },
+          onError = { viewModel.onEvent(TrainingSessionEvent.CameraError(it)) },
           useFrontCamera = useFrontCamera,
           modelType = trainingPrefs.modelType,
           onDebugFps = if (isTrainingDebugBuild()) {

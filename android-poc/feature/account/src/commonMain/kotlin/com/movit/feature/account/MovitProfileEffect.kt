@@ -2,7 +2,7 @@ package com.movit.feature.account
 
 sealed interface MovitProfileEffect {
     data object OpenAuth : MovitProfileEffect
-    data object OpenSubscription : MovitProfileEffect
+    data class OpenSubscription(val restorePurchases: Boolean = false) : MovitProfileEffect
     data object OpenOnboarding : MovitProfileEffect
     data object OpenAssessment : MovitProfileEffect
     data object OpenLevel : MovitProfileEffect

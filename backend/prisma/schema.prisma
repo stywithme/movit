@@ -1600,6 +1600,8 @@ model Plan {
   freeDoctorSessionsLimit   Int            @default(0)
   monthlyGooglePlayProductId String?
   yearlyGooglePlayProductId  String?
+  monthlyAppStoreProductId   String?
+  yearlyAppStoreProductId    String?
   features                  Json?
   isActive                  Boolean        @default(true)
   createdAt                 DateTime       @default(now())
@@ -1631,6 +1633,9 @@ model Subscription {
   googlePlayProductId   String?
   googlePlayPurchaseToken String? @unique
   googlePlayOrderId     String?
+  appStoreProductId           String?
+  appStoreTransactionId       String? @unique
+  appStoreOriginalTransactionId String?
   myFatoorahInvoiceId   String?
   myFatoorahPaymentId   String?
   lastVerifiedAt  DateTime?
@@ -1648,6 +1653,8 @@ model Subscription {
   @@index([userId, status])
   @@index([endDate])
   @@index([googlePlayProductId])
+  @@index([appStoreProductId])
+  @@index([appStoreOriginalTransactionId])
   @@index([myFatoorahInvoiceId])
   @@index([myFatoorahPaymentId])
   @@map("subscriptions")

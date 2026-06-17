@@ -116,7 +116,9 @@ class MovitHomeViewModel(
     fun onEvent(event: MovitHomeEvent) {
         when (event) {
             MovitHomeEvent.RefreshRequested -> Unit
-            MovitHomeEvent.RetryClicked -> Unit
+            MovitHomeEvent.RetryClicked -> {
+                viewModelScope.launch { load(isRefresh = false) }
+            }
             MovitHomeEvent.StartTodayPlanClicked -> _effects.tryEmit(MovitHomeEffect.OpenTrain)
             MovitHomeEvent.BodyScanClicked -> _effects.tryEmit(MovitHomeEffect.OpenAssessment)
             MovitHomeEvent.LevelCardClicked -> _effects.tryEmit(MovitHomeEffect.OpenLevel)

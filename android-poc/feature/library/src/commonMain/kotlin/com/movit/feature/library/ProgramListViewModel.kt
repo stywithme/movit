@@ -3,8 +3,11 @@ package com.movit.feature.library
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.movit.core.data.cache.CacheState
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -28,8 +31,25 @@ class ProgramListViewModel(
     private val _state = MutableStateFlow(ProgramListUiState(isLoading = true))
     val state: StateFlow<ProgramListUiState> = _state.asStateFlow()
 
+    private val _effects = MutableSharedFlow<ProgramListEffect>(extraBufferCapacity = 1)
+    val effects: SharedFlow<ProgramListEffect> = _effects.asSharedFlow()
+
     private var allPrograms: List<ProgramListItemUi> = emptyList()
     private var visibleLimit = PAGE_SIZE
+
+    fun onEvent(event: ProgramListEvent) {
+        when (event) {
+            is ProgramListEvent.QueryChanged -> onQueryChange(event.query)
+            is ProgramListEvent.ChipSelected -> onChipSelected(event.chip)
+            ProgramListEvent.LoadMore -> onLoadMore()
+            is ProgramListEvent.ProgramClicked -> {
+                if (event.programId.isNotBlank()) {
+                    _effects.tryEmit(ProgramListEffect.OpenProgram(event.programId))
+                }
+            }
+            ProgramListEvent.RetryClicked -> Unit
+        }
+    }
 
     fun loadInitial() {
         viewModelScope.launch { load() }

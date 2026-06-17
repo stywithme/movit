@@ -13,6 +13,7 @@ internal fun ShellSyncLifecycleEffects(shellViewModel: MovitAppShellViewModel) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 shellViewModel.onAppResumed()
+                drainLegacyWorkoutExecutionsOnResume()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)

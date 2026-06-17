@@ -74,8 +74,7 @@
 # Gson / Retrofit — legacy auth refresh (poc) + billing module (WS-3)
 -keepattributes Signature
 -keep class com.google.gson.** { *; }
--keep class com.trainingvalidator.poc.network.** { *; }
--keep class com.trainingvalidator.poc.models.** { *; }
+-keep class com.movit.storage.** { *; }
 -keep class com.movit.billing.network.** { *; }
 -keepclassmembers,allowobfuscation class * {
     @com.google.gson.annotations.SerializedName <fields>;

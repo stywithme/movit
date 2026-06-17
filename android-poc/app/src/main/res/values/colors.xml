@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!--
-        WayToFix Design Tokens - Light mode
+        Movit Design Tokens - Light mode
         Palette baseline: #8ECFE3, #C4D489, #282828, #E76D46, #D8DCDF.
         Keep existing resource names stable while screens migrate to shared components.
     -->

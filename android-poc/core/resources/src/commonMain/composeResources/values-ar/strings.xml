@@ -318,6 +318,7 @@
     <string name="library_result_workouts">عرض %1$d من %2$d جلسة</string>
     <string name="library_see_more_exercises">عرض المزيد من التمارين</string>
     <string name="library_see_more_workouts">عرض المزيد من الجلسات</string>
+    <string name="library_loading_more">جاري تحميل المزيد…</string>
     <string name="library_no_results">لا نتائج</string>
     <string name="library_try_filter">جرّب بحثاً أو فلتراً مختلفاً.</string>
     <string name="library_clear_filters">مسح الفلاتر</string>
@@ -534,6 +535,14 @@
     <string name="program_details_sub">التفاصيل</string>
     <string name="program_start">ابدأ البرنامج</string>
     <string name="program_start_next">ابدأ الجلسة التالية</string>
+    <string name="program_sign_in_to_enroll">سجّل الدخول للاشتراك في برنامج.</string>
+    <string name="program_sign_in_to_save_edits">سجّل الدخول لحفظ تعديلات البرنامج.</string>
+    <string name="program_started">بدأ</string>
+    <string name="program_started_today">بدأ اليوم</string>
+    <string name="program_synced_today">تمت المزامنة اليوم</string>
+    <string name="program_day_sessions_title">جلسات اليوم</string>
+    <string name="program_day_sessions_sub">افتح جلسة للمراجعة أو بدء التدريب.</string>
+    <string name="program_open_session">عرض الجلسة</string>
     <string name="program_cancel">إلغاء</string>
     <string name="program_save_copy">احفظ نسختي</string>
     <string name="program_edit_customize">تخصيص</string>
@@ -578,6 +587,15 @@
     <string name="program_impact_sync">حمولة المزامنة</string>
     <string name="program_impact_sync_value">%1$d جلسات</string>
     <string name="program_not_found">البرنامج غير موجود.</string>
+    <string name="program_no_upcoming_session">لم يُعثر على جلسة قادمة لهذا البرنامج.</string>
+    <string name="program_week_offline_download_action">تحميل الأسبوع للاستخدام دون اتصال</string>
+    <string name="program_week_offline_downloading">جاري تحميل الأسبوع…</string>
+    <string name="program_week_offline_ready">جاهز دون اتصال ✓</string>
+    <string name="program_week_offline_sign_in_required">سجّل الدخول لتحميل هذا الأسبوع للتدريب دون اتصال.</string>
+    <string name="program_week_offline_enroll_first">ابدأ البرنامج قبل التحميل للاستخدام دون اتصال.</string>
+    <string name="program_week_offline_program_not_loaded">بيانات البرنامج غير محمّلة بعد. اتصل بالإنترنت وحاول مرة أخرى.</string>
+    <string name="program_week_offline_week_unavailable">هذا الأسبوع غير متاح في البرنامج بعد.</string>
+    <string name="program_week_offline_download_failed">تعذّر تحميل هذا الأسبوع. تحقق من الاتصال وحاول مرة أخرى.</string>
     <string name="program_stat_duration">المدة</string>
     <string name="program_stat_weekly_target">الهدف الأسبوعي</string>
     <string name="program_stat_session_time">مدة الجلسة</string>
@@ -645,8 +663,16 @@
     <string name="prepare_a11y_hero_image">صورة معاينة التمرين</string>
     <string name="prepare_a11y_pose_variant">زاوية كاميرا %1$s</string>
 
+    <!-- Exercise detail -->
+    <string name="exercise_detail_title">تفاصيل التمرين</string>
+    <string name="exercise_detail_start">ابدأ التمرين</string>
+    <string name="exercise_detail_equipment">المعدات</string>
+
     <!-- Program flow (15) -->
     <string name="program_flow_list_title">البرامج</string>
+    <string name="program_flow_search">ابحث عن البرامج</string>
+    <string name="program_flow_list_count">%1$d برامج</string>
+    <string name="program_flow_list_count_filtered">%1$d من %2$d برامج</string>
     <string name="program_flow_loading">جاري تحميل البرامج…</string>
     <string name="program_flow_empty_title">لا توجد برامج بعد</string>
     <string name="program_flow_empty_message">تحقق من الاتصال وحاول مرة أخرى.</string>
@@ -749,6 +775,7 @@
     <string name="training_session_auto_pause_generic">أُوقف التدريب</string>
     <string name="training_session_live_dock_title">مجموعة حية</string>
     <string name="training_session_status">&#1575;&#1604;&#1581;&#1575;&#1604;&#1577;</string>
+    <string name="training_session_pause">&#1573;&#1610;&#1602;&#1575;&#1601; &#1605;&#1572;&#1602;&#1578;</string>
     <string name="training_session_resume">استئناف</string>
     <string name="training_session_stop">إيقاف</string>
     <string name="training_session_form_label">الشكل</string>
@@ -793,7 +820,7 @@
     <string name="back_camera">الكاميرا الخلفية</string>
     <string name="switch_text">تبديل</string>
 
-    <string name="auth_app_name">WayToFix</string>
+    <string name="auth_app_name">Movit</string>
     <string name="auth_tagline">تدريب بالذكاء الاصطناعي لتحسين الأداء</string>
     <string name="auth_version">الإصدار 1.0.0</string>
     <string name="auth_intro_title_1">تدرب بثقة</string>
@@ -833,7 +860,7 @@
     <string name="auth_error_password_required">أدخل كلمة المرور.</string>
     <string name="auth_error_name_required">أدخل اسمك الكامل.</string>
     <string name="auth_error_password_short">كلمة المرور يجب أن تكون 8 أحرف على الأقل.</string>
-    <string name="auth_logo_content_desc">شعار تطبيق WayToFix</string>
+    <string name="auth_logo_content_desc">شعار تطبيق Movit</string>
     <string name="auth_intro_icon_desc">رسم توضيحي للمقدمة</string>
     <string name="auth_forgot_success_icon_desc">تم إرسال البريد</string>
     <string name="auth_intro_page_indicator">صفحة المقدمة %1$d من %2$d</string>
@@ -858,7 +885,17 @@
     <string name="profile_sign_out">تسجيل الخروج</string>
     <string name="profile_pro_badge">برو نشط</string>
     <string name="profile_manage_subscription">إدارة الاشتراك</string>
-    <string name="profile_subscription_ios_unavailable">الاشتراك داخل التطبيق غير متاح على iOS بعد. يمكنك إدارة خطتك من Android أو الويب.</string>
+    <string name="profile_subscription_ios_unavailable">الاشتراك داخل التطبيق على iOS متاح عند ضبط معرّفات منتجات App Store. اربط المنتجات في App Store Connect أو أدِر خطتك من الويب.</string>
+    <string name="billing_load_plans_failed">تعذّر تحميل الخطط.</string>
+    <string name="billing_load_status_failed">تعذّر تحميل حالة الاشتراك.</string>
+    <string name="billing_empty_status_response">استجابة الحالة فارغة.</string>
+    <string name="billing_checkout_failed">فشل إتمام الدفع.</string>
+    <string name="billing_empty_checkout_response">استجابة الدفع فارغة.</string>
+    <string name="billing_checkout_lookup_failed">فشل البحث عن عملية الدفع.</string>
+    <string name="billing_purchase_verification_failed">فشل التحقق من الشراء.</string>
+    <string name="billing_empty_verification_response">استجابة التحقق فارغة.</string>
+    <string name="billing_cancel_failed">فشل الإلغاء.</string>
+    <string name="billing_empty_cancel_response">استجابة الإلغاء فارغة.</string>
     <string name="profile_unlock_pro">فتح برو</string>
     <string name="profile_unlock_pro_sub">تقارير متقدمة وتحليلات البرامج وفحوصات جسم غير محدودة.</string>
     <string name="profile_view_plans">عرض الخطط</string>
@@ -882,6 +919,12 @@
     <string name="profile_cancel">إلغاء</string>
     <string name="profile_logout_confirm_title">تسجيل الخروج؟</string>
     <string name="profile_logout_confirm_message">ستحتاج لتسجيل الدخول مجدداً لمزامنة التمارين والتقارير.</string>
+    <string name="profile_delete_account">حذف الحساب</string>
+    <string name="profile_delete_account_sub">إزالة حسابك وبياناتك نهائياً</string>
+    <string name="profile_delete_account_confirm_title">حذف حسابك؟</string>
+    <string name="profile_delete_account_confirm_message">لا يمكن التراجع عن هذا الإجراء. ستُزال تمارينك وتقاريرك وصلاحية الاشتراك من خوادمنا.</string>
+    <string name="profile_delete_account_confirm_action">حذف نهائي</string>
+    <string name="profile_delete_account_error">تعذّر حذف حسابك. حاول مجدداً أو تواصل مع الدعم.</string>
     <string name="profile_avatar_cd">صورة الملف الشخصي</string>
     <string name="profile_edit_avatar_cd">تعديل صورة الملف</string>
     <string name="profile_edit_coming_soon">تعديل صورة الملف قريباً.</string>

@@ -12,7 +12,7 @@ import com.movit.core.training.config.StateMessages
 
 /**
  * Expands [MessageAssignment] references using the sync message library before caching exercise configs.
- * Mirrors legacy [com.trainingvalidator.poc.storage.SyncManager.resolveExerciseMessages].
+ * Mirrors legacy [com.movit.storage.SyncManager.resolveExerciseMessages].
  */
 internal object ExerciseMessageLibraryMerger {
 

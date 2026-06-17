@@ -11,9 +11,9 @@ import MediaPipeTasksVision
 /// Swift MediaPipe Tasks Vision bridge for KMP `IosPoseDetector`.
 /// Registers via `IosPoseLandmarkerBridgeInstallKt.installIosPoseLandmarkerBridge` from `iOSApp` init.
 ///
-/// **Platform note:** MediaPipe CocoaPod is not wired in `project.yml` yet — compiles as an honest
-/// stub (`isAvailable == false`) until `pod 'MediaPipeTasksVision'` + `pose_landmarker_full.task`
-/// ship on a Mac. Live inference needs Mac + Xcode + physical device validation (audit §35.1).
+/// Requires `MediaPipeTasksVision` CocoaPod (`iosApp/Podfile`) + `pose_landmarker_full.task` in app bundle
+/// (`iosApp/Models/`). Without either, compiles as an honest stub (`isAvailable == false`).
+/// Live inference validation needs Mac + Xcode + physical device (Phase 07 smoke).
 final class MovitPoseLandmarkerBridge: NSObject, IosPoseLandmarkerBridge {
     private var resultHandler: IosPoseLandmarkerResultHandler?
     private var isFrontCamera = true

@@ -5,10 +5,14 @@ import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import com.movit.core.training.filter.OneEuroFilter3D
 import com.movit.core.training.model.Landmark
 
-/** One-Euro smoothing for MediaPipe landmarks (Android actual). */
+/**
+ * One-Euro smoothing for MediaPipe landmarks (Android actual). Shares its One-Euro parameters with
+ * the common [com.movit.core.posecapture.PoseLandmarkSmoother] used on iOS, so the two platforms
+ * stabilize landmarks identically and the training evaluation stays matched.
+ */
 class LandmarkSmoother(
-    private val minCutoff: Float = 1.0f,
-    private val beta: Float = 1.5f,
+    private val minCutoff: Float = com.movit.core.posecapture.PoseLandmarkSmoother.DEFAULT_MIN_CUTOFF,
+    private val beta: Float = com.movit.core.posecapture.PoseLandmarkSmoother.DEFAULT_BETA,
 ) {
     private val filters = arrayOfNulls<OneEuroFilter3D>(NUM_LANDMARKS)
     private val worldFilters = arrayOfNulls<OneEuroFilter3D>(NUM_LANDMARKS)

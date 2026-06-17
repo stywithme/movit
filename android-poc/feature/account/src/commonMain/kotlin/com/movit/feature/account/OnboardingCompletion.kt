@@ -7,7 +7,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 
 /**
- * Parity with legacy [com.trainingvalidator.poc.ui.onboarding.OnboardingGate]:
+ * Parity with legacy [com.movit.ui.onboarding.OnboardingGate]:
  * local cache first, then backend TrainingProfile core fields.
  */
 object OnboardingCompletion {

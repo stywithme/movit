@@ -11,7 +11,7 @@ import com.movit.core.network.dto.UserExercisePreferenceSyncDto
 import com.movit.core.network.dto.UserExercisePreferenceUpsertRequest
 
 /**
- * KMP equivalent of legacy [com.trainingvalidator.poc.storage.UserExercisePreferenceStore].
+ * KMP equivalent of legacy [com.movit.storage.UserExercisePreferenceStore].
  */
 open class ExercisePreferenceLocalStore(
     private val localStore: MovitLocalStore,
