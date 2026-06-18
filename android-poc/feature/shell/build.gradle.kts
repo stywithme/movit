@@ -15,6 +15,12 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "MovitApp"
             isStatic = true
+            // Swift iosApp bridges (MediaPipe, StoreKit, Google Sign-In, camera) call InstallKt
+            // entry points and implement Kotlin protocols — export() puts them in MovitApp.h.
+            export(project(":core:pose-capture"))
+            export(project(":core:data"))
+            export(project(":feature:account"))
+            transitiveExport = true
         }
     }
 
@@ -34,6 +40,8 @@ kotlin {
             implementation(project(":feature:library"))
             implementation(project(":feature:training"))
             implementation(project(":feature:training-debug"))
+            // Swift bridges in iosApp implement protocols from pose-capture (exported in framework).
+            implementation(project(":core:pose-capture"))
             // Account effect types (e.g. MovitProfileEffect) are part of shell's public API
             // (MovitAppShellEvent) — api() keeps them visible to the iOS framework compile.
             api(project(":feature:account"))

@@ -36,14 +36,15 @@ final class MovitPoseLandmarkerBridge: NSObject, IosPoseLandmarkerBridge {
         resultHandler = handler
     }
 
-    func warmUp(configuration: PoseDetectorConfiguration) -> KotlinBoolean {
+    func warmUp(configuration_ configuration: PoseDetectorConfiguration) -> Bool {
         #if canImport(MediaPipeTasksVision)
         guard let modelPath = Bundle.main.path(forResource: "pose_landmarker_full", ofType: "task") else {
             warmedUp = false
-            return KotlinBoolean(bool: false)
+            return false
         }
         do {
-            let baseOptions = BaseOptions(modelPath: modelPath)
+            let baseOptions = BaseOptions()
+            baseOptions.modelAssetPath = modelPath
             baseOptions.delegate = configuration.useGpu ? .GPU : .CPU
             var options = PoseLandmarkerOptions()
             options.baseOptions = baseOptions
@@ -54,31 +55,34 @@ final class MovitPoseLandmarkerBridge: NSObject, IosPoseLandmarkerBridge {
             options.poseLandmarkerLiveStreamDelegate = self
             landmarker = try PoseLandmarker(options: options)
             warmedUp = true
-            return KotlinBoolean(bool: true)
+            return true
         } catch {
             warmedUp = false
-            return KotlinBoolean(bool: false)
+            return false
         }
         #else
         warmedUp = false
-        return KotlinBoolean(bool: false)
+        return false
         #endif
     }
 
     func detectAsync(
-        sampleBuffer: CMSampleBufferRef?,
+        sampleBuffer: UnsafeMutableRawPointer?,
         isFrontCamera: Bool,
         timestampMs: Int64
     ) {
         #if canImport(MediaPipeTasksVision)
-        guard warmedUp, let landmarker, let sampleBuffer else {
+        let cmsampleBuffer: CMSampleBuffer? = sampleBuffer.map {
+            Unmanaged<CMSampleBuffer>.fromOpaque($0).takeUnretainedValue()
+        }
+        guard warmedUp, let landmarker, let cmsampleBuffer else {
             resultHandler?.onNoPoseDetected(isFrontCamera: isFrontCamera)
             return
         }
         self.isFrontCamera = isFrontCamera
-        let image = MPImage(sampleBuffer: sampleBuffer, orientation: .up)
-        lastFrameImage = image.uiImage
         do {
+            let image = try MPImage(sampleBuffer: cmsampleBuffer, orientation: .up)
+            lastFrameImage = image.image
             try landmarker.detectAsync(image: image, timestampInMilliseconds: Int(timestampMs))
         } catch {
             resultHandler?.onError(message: error.localizedDescription)
@@ -95,7 +99,7 @@ final class MovitPoseLandmarkerBridge: NSObject, IosPoseLandmarkerBridge {
         guard let data = scaled.jpegData(compressionQuality: CGFloat(quality) / 100.0) else {
             return nil
         }
-        return data.toKotlinByteArray()
+        return movitKotlinByteArray(from: data)
         #else
         return nil
         #endif
@@ -158,7 +162,7 @@ extension MovitPoseLandmarkerBridge: PoseLandmarkerLiveStreamDelegate {
         flat(from: landmarks.map { ($0.x, $0.y, $0.z, $0.visibility?.floatValue ?? 0, $0.presence?.floatValue ?? 0) })
     }
 
-    private static func flatWorld(from landmarks: [Landmark]?) -> KotlinFloatArray? {
+    private static func flatWorld(from landmarks: [MediaPipeTasksVision.Landmark]?) -> KotlinFloatArray? {
         guard let landmarks else { return nil }
         return flat(from: landmarks.map { ($0.x, $0.y, $0.z, $0.visibility?.floatValue ?? 1, $0.presence?.floatValue ?? 1) })
     }
@@ -183,10 +187,8 @@ extension MovitPoseLandmarkerBridge: PoseLandmarkerLiveStreamDelegate {
 }
 #endif
 
-private extension Data {
-    func toKotlinByteArray() -> KotlinByteArray {
-        KotlinByteArray(size: Int32(count)) { index in
-            KotlinByte(char: Int8(bitPattern: self[Int(index)]))
-        }
+private func movitKotlinByteArray(from data: Foundation.Data) -> KotlinByteArray {
+    KotlinByteArray(size: Int32(data.count)) { index in
+        KotlinByte(char: Int8(truncating: data[Int(index)]))
     }
 }

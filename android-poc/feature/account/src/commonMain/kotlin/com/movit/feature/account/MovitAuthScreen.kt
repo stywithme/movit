@@ -316,7 +316,7 @@ private fun AuthSignInPanel(
                 .fillMaxWidth()
                 .padding(top = MovitSpacing.lg),
         )
-        if (PlatformInfo.supportsGoogleSignIn) {
+        if (PlatformInfo.supportsGoogleSignIn && isGoogleSignInBridgeAvailable()) {
             AuthDivider()
             MovitButton(
                 text = movitText("auth_google"),
@@ -325,7 +325,7 @@ private fun AuthSignInPanel(
                 variant = MovitButtonVariant.Outlined,
                 modifier = Modifier.fillMaxWidth(),
             )
-        } else {
+        } else if (!PlatformInfo.supportsGoogleSignIn || !isGoogleSignInBridgeAvailable()) {
             Text(
                 text = movitText("auth_google_ios_blocker"),
                 style = MaterialTheme.typography.bodySmall,

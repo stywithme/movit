@@ -3,6 +3,7 @@ package com.movit.core.data.platform
 import com.movit.core.data.MovitData
 import com.movit.core.data.local.MovitLocalStore
 import com.movit.core.data.repository.MovitCacheKeys
+import com.movit.core.network.MovitApiConfig
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSUserDefaults
 import platform.posix.time
@@ -10,7 +11,7 @@ import platform.posix.time
 @OptIn(ExperimentalForeignApi::class)
 class IosMovitPlatform(
     private val defaults: NSUserDefaults = NSUserDefaults.standardUserDefaults,
-    private val baseUrl: String = DEFAULT_BASE_URL,
+    private val baseUrl: String = MovitApiConfig.getEffectiveBaseUrl(),
     private val secureSession: SecureSessionStore = IosKeychainSecureSessionStore(),
 ) : MovitPlatformBindings {
 

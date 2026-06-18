@@ -1,11 +1,13 @@
 package com.movit.core.training.boundary
 
 import com.movit.core.training.feedback.FeedbackSpeechPriority
+import kotlinx.cinterop.ExperimentalForeignApi
 import platform.AVFAudio.AVSpeechBoundary
 import platform.AVFAudio.AVSpeechSynthesisVoice
 import platform.AVFAudio.AVSpeechSynthesizer
 import platform.AVFAudio.AVSpeechUtterance
 
+@OptIn(ExperimentalForeignApi::class)
 actual class SpeechSynthesizer {
     private val synthesizer = AVSpeechSynthesizer()
     private var voice: AVSpeechSynthesisVoice? = null

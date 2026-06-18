@@ -2,6 +2,7 @@
 agp = "8.13.2"
 kotlin = "2.3.0"
 compose-multiplatform = "1.11.0"
+# Latest 1.0.x on Maven; aligns with CMP 1.11's androidx.navigationevent:1.0.1 (1.0.2 was never published).
 navigationevent = "1.0.1"
 
 # AndroidX — aligned with current :app (March 2026)
@@ -36,6 +37,8 @@ ktor = "3.1.2"
 kotlinx-serialization = "1.8.1"
 # Aligned with CMP 1.11.0 bundle (compose-multiplatform release notes).
 jetbrains-lifecycle = "2.11.0-beta01"
+# Bundled with Compose Multiplatform 1.11; coil3 3.4.0 still declares 0.9.22.2.
+skiko = "0.144.6"
 koin = "4.2.1"
 gson = "2.13.2"
 coil = "2.7.0"
@@ -52,8 +55,8 @@ sqldelight = "2.1.0"
 compile-sdk = "36"
 min-sdk = "24"
 target-sdk = "36"
-# Compose Multiplatform 1.11 + Skiko require iOS 18+; CMP 1.11 LayoutRegion APIs need Xcode with iOS 18 SDK+.
-ios-deployment-target = "18.0"
+# Compose Multiplatform 1.11 + Skiko/ICU prebuilts ship for iOS 18.5+; keep Xcode/iosApp aligned via ios-deployment-target.
+ios-deployment-target = "18.5"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidx-core-ktx" }
@@ -133,6 +136,7 @@ compose-ui-tooling = { group = "org.jetbrains.compose.ui", name = "ui-tooling", 
 compose-ui-tooling-preview = { group = "org.jetbrains.compose.ui", name = "ui-tooling-preview", version.ref = "compose-multiplatform" }
 compose-ui-backhandler = { group = "org.jetbrains.compose.ui", name = "ui-backhandler", version.ref = "compose-multiplatform" }
 compose-navigationevent = { group = "org.jetbrains.androidx.navigationevent", name = "navigationevent-compose", version.ref = "navigationevent" }
+skiko = { group = "org.jetbrains.skiko", name = "skiko", version.ref = "skiko" }
 
 android-gradle-plugin = { group = "com.android.tools.build", name = "gradle", version.ref = "agp" }
 kotlin-gradle-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }

@@ -19,7 +19,11 @@ cd iosApp
 xcodegen generate
 ```
 
-5. Open **`iosApp.xcworkspace`** in Xcode (not `iosApp.xcodeproj` alone — CocoaPods requires the workspace).
+`iosApp/.xcode.env` sets `JAVA_HOME` for Xcode (Homebrew OpenJDK 17). Xcode does not read your shell profile.
+
+**API / backend URL (iOS + KMP):** copy `android-poc/api.properties.example` to `android-poc/api.properties` and set `api.mode=server` with `api.server_url=https://back.mongz.online/` (or your backend). Gradle bakes these into `:core:network` build config when linking `MovitApp.framework`. After changing `api.properties`, run a clean Xcode build so the embed script re-links the framework.
+
+5. Open **`Movit.xcworkspace`** (or `iosApp.xcworkspace` — same file) in Xcode. **Do not** open `iosApp.xcodeproj` alone; CocoaPods requires the workspace.
 
 Or build from the terminal:
 
@@ -28,7 +32,7 @@ xcodebuild -workspace iosApp.xcworkspace -scheme iosApp \
   -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 16' build
 ```
 
-The pre-build script in `project.yml` discovers `JAVA_HOME` via `/usr/libexec/java_home`, `brew --prefix`, or `which java` — no hardcoded Homebrew paths.
+The pre-build script sources `iosApp/.xcode.env` for `JAVA_HOME` / `ANDROID_HOME` (Xcode does not load your shell profile).
 
 ### Windows / Linux
 
@@ -174,4 +178,13 @@ Project: **sharp-weft-398315** (same as Android/web clients in `Docs/06-Assets/C
 3. Open **`iosApp.xcworkspace`**.
 4. Build & Run → Sign In → **Continue with Google**.
 5. Verify backend accepts the token (`POST /api/mobile/auth/google`).
+
+
+
+
+
+
+
+
+
 

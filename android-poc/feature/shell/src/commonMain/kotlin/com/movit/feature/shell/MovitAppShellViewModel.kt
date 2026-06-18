@@ -46,9 +46,6 @@ class MovitAppShellViewModel : ViewModel() {
             ShellSyncCoordinator.requestSync(forceCheck = true)
         }
         if (MovitData.isInstalled) {
-            viewModelScope.launch {
-                MovitData.bootstrapLocalCaches()
-            }
             MovitData.onSessionExpired = {
                 popAllInner()
                 pushInner(MovitInnerRoute.Auth)
@@ -64,6 +61,9 @@ class MovitAppShellViewModel : ViewModel() {
                 )
             }
             if (bootstrap.hasActiveSession) {
+                viewModelScope.launch {
+                    MovitData.bootstrapLocalCaches()
+                }
                 requestSyncIfNeeded()
                 ensureOnboardingGateIfNeeded()
             }

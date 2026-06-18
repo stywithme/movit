@@ -7,8 +7,8 @@ options:
   # Runs after project generation; integrates MediaPipeTasksVision via Podfile.
   postGenCommand: pod install
   deploymentTarget:
-    # Align with android-poc gradle ios-deployment-target (Compose MP 1.11 + Skiko).
-    iOS: "18.0"
+    # Align with android-poc gradle ios-deployment-target (Compose MP 1.11 + Skiko/ICU 18.5).
+    iOS: "18.5"
 targets:
   iosApp:
     type: application
@@ -69,6 +69,7 @@ targets:
           - "-ObjC"
           - "-framework"
           - "MovitApp"
+          - "-lsqlite3"
         LD_RUNPATH_SEARCH_PATHS:
           - "$(inherited)"
           - "@executable_path/Frameworks"
@@ -77,72 +78,47 @@ targets:
         ONLY_ACTIVE_ARCH: YES
         "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
     preBuildScripts:
-      - name: "Ensure pose_landmarker model in bundle"
+      - name: "Require iosApp.xcworkspace (CocoaPods)"
         basedOnDependencyAnalysis: false
+        script: |
+          # GoogleSignIn pulls AppAuth — those pods only build when the workspace is used.
+          if [ -f "$SRCROOT/Podfile.lock" ] && [ -z "${WORKSPACE_DIR:-}" ]; then
+            echo "error: Open iosApp.xcworkspace (not iosApp.xcodeproj)." >&2
+            echo "  cd android-poc/iosApp && open iosApp.xcworkspace" >&2
+            exit 1
+          fi
+      - name: "Ensure pose_landmarker model in bundle"
+        basedOnDependencyAnalysis: true
+        inputFiles:
+          - "$(SRCROOT)/../app/src/main/assets/pose_landmarker_full.task"
+        outputFiles:
+          - "$(SRCROOT)/iosApp/Models/pose_landmarker_full.task"
         script: |
           set -e
           MODEL="$SRCROOT/iosApp/Models/pose_landmarker_full.task"
           ANDROID="$SRCROOT/../app/src/main/assets/pose_landmarker_full.task"
-          if [ -f "$MODEL" ]; then
+          if [ -f "$ANDROID" ]; then
+            if [ ! -f "$MODEL" ] || [ "$ANDROID" -nt "$MODEL" ]; then
+              mkdir -p "$(dirname "$MODEL")"
+              cp "$ANDROID" "$MODEL"
+              echo "Copied pose_landmarker_full.task from Android assets."
+            fi
             exit 0
           fi
-          if [ -f "$ANDROID" ]; then
-            mkdir -p "$(dirname "$MODEL")"
-            cp "$ANDROID" "$MODEL"
-            echo "Copied pose_landmarker_full.task from Android assets."
+          if [ -f "$MODEL" ]; then
             exit 0
           fi
           echo "warning: pose_landmarker_full.task missing — MovitPoseLandmarkerBridge.isAvailable will be false."
           echo "  Run: android-poc/scripts/fetch-pose-landmarker-model.sh"
           echo "  Or copy from app/src/main/assets/ after download (see app/src/main/assets/.gitkeep)."
       - name: "Build MovitApp Kotlin framework"
-        basedOnDependencyAnalysis: false
-        script: |
-          set -e
-          # --- Java (Temurin from CI, /usr/libexec/java_home, or Homebrew) ---
-          if [ -z "${JAVA_HOME:-}" ]; then
-            if command -v /usr/libexec/java_home >/dev/null 2>&1; then
-              export JAVA_HOME="$(/usr/libexec/java_home -v 17 2>/dev/null || /usr/libexec/java_home)"
-            elif command -v brew >/dev/null 2>&1; then
-              for formula in openjdk@17 openjdk java; do
-                prefix="$(brew --prefix "$formula" 2>/dev/null || true)"
-                if [ -n "$prefix" ] && [ -d "$prefix/libexec/openjdk.jdk/Contents/Home" ]; then
-                  export JAVA_HOME="$prefix/libexec/openjdk.jdk/Contents/Home"
-                  break
-                elif [ -n "$prefix" ] && [ -x "$prefix/bin/java" ]; then
-                  export JAVA_HOME="$prefix"
-                  break
-                fi
-              done
-            fi
-          fi
-          if [ -n "${JAVA_HOME:-}" ]; then
-            export PATH="$JAVA_HOME/bin:$PATH"
-          elif command -v java >/dev/null 2>&1; then
-            export JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v java)" 2>/dev/null || command -v java)")")"
-            export PATH="$JAVA_HOME/bin:$PATH"
-          else
-            echo "error: Java 17 not found. Install Temurin 17 or run: brew install openjdk@17" >&2
-            exit 1
-          fi
-          # --- Android SDK (optional; embed task may not need it on a pure iOS build) ---
-          if [ -z "${ANDROID_HOME:-}" ]; then
-            if command -v brew >/dev/null 2>&1; then
-              brew_sdk="$(brew --prefix android-commandlinetools 2>/dev/null || true)"
-              if [ -n "$brew_sdk" ] && [ -d "$brew_sdk" ]; then
-                export ANDROID_HOME="$brew_sdk"
-              fi
-            fi
-            if [ -z "${ANDROID_HOME:-}" ] && [ -d "$HOME/Library/Android/sdk" ]; then
-              export ANDROID_HOME="$HOME/Library/Android/sdk"
-            fi
-          fi
-          # --- Xcode ---
-          if [ -z "${DEVELOPER_DIR:-}" ] && [ -d "/Applications/Xcode.app/Contents/Developer" ]; then
-            export DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer"
-          fi
-          if [ "$SDK_NAME" = "iphonesimulator" ] || [[ "$SDK_NAME" == iphonesimulator* ]]; then
-            export ARCHS="arm64"
-          fi
-          cd "$SRCROOT/.."
-          ./gradlew :feature:shell:embedAndSignAppleFrameworkForXcode
+        basedOnDependencyAnalysis: true
+        path: scripts/embed-movit-framework.sh
+        inputFiles:
+          - "$(SRCROOT)/../gradlew"
+          - "$(SRCROOT)/.xcode.env"
+          - "$(SRCROOT)/scripts/embed-movit-framework.sh"
+        inputFileLists:
+          - "$(SRCROOT)/kmp-build-inputs.xcfilelist"
+        outputFiles:
+          - "$(SRCROOT)/../feature/shell/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)/MovitApp.framework/MovitApp"

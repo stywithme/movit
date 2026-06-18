@@ -46,12 +46,14 @@ class CanonicalCacheKeyMigrator(
         val map = mutableMapOf<String, String>()
         enrollments.listAll().forEach { enrollment ->
             val programId = enrollment.programId?.takeIf { it.isNotBlank() } ?: return@forEach
-            map.putIfAbsent(programId, enrollment.id)
+            if (programId !in map) {
+                map[programId] = enrollment.id
+            }
         }
         readLegacyUserPrograms().forEach { row ->
             val programId = row.programId?.takeIf { it.isNotBlank() } ?: return@forEach
-            if (row.id.isNotBlank()) {
-                map.putIfAbsent(programId, row.id)
+            if (row.id.isNotBlank() && programId !in map) {
+                map[programId] = row.id
             }
         }
         return map

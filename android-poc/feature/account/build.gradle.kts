@@ -10,6 +10,9 @@ movitKmp {
 
 kotlin {
     sourceSets {
+        iosMain {
+            kotlin.srcDir(layout.buildDirectory.dir("generated/movitAndroidBuild/kotlin"))
+        }
         commonMain.dependencies {
             implementation(project(":shared"))
             implementation(project(":core:data"))

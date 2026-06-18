@@ -3,8 +3,8 @@ package com.movit.feature.explore
 import com.movit.core.model.ExploreItemType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -18,7 +18,7 @@ fun MovitExploreRoute(
     onProfileClick: () -> Unit = {},
     onEffect: (MovitExploreEffect) -> Unit = {},
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
+    val state by viewModel.state.collectAsState()
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(viewModel) {

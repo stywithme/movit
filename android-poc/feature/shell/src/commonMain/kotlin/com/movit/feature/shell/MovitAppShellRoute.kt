@@ -3,9 +3,9 @@ package com.movit.feature.shell
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.movit.core.data.MovitData
@@ -36,15 +36,9 @@ fun MovitAppShellRoute(
     onLaunchPlatformSubscription: (restorePurchases: Boolean) -> Boolean = { false },
     onShareText: (subject: String, text: String) -> Boolean = { _, _ -> false },
 ) {
-    val shellState by shellViewModel.state.collectAsStateWithLifecycle()
+    val shellState by shellViewModel.state.collectAsState()
 
     ShellSyncLifecycleEffects(shellViewModel)
-
-    LaunchedEffect(Unit) {
-        if (MovitData.isInstalled) {
-            MovitData.plan.refreshActiveUserProgramId()
-        }
-    }
 
     val language = remember(shellState.localeRevision) {
         if (MovitData.isInstalled) {
@@ -87,7 +81,7 @@ private fun MovitAppShellRouteContent(
     onLaunchPlatformSubscription: (restorePurchases: Boolean) -> Boolean,
     onShareText: (subject: String, text: String) -> Boolean,
 ) {
-    val state by shellViewModel.state.collectAsStateWithLifecycle()
+    val state by shellViewModel.state.collectAsState()
     val language = LocalMovitLanguage.current
 
     LaunchedEffect(shellViewModel, snackbarHostState, language) {

@@ -24,6 +24,24 @@ tasks.register<Exec>("docsStats") {
     )
 }
 
+subprojects {
+    val skikoVersion = rootProject.extensions
+        .getByType(org.gradle.api.artifacts.VersionCatalogsExtension::class.java)
+        .named("libs")
+        .findVersion("skiko")
+        .get()
+        .requiredVersion
+
+    configurations.configureEach {
+        resolutionStrategy.eachDependency {
+            if (requested.group == "org.jetbrains.skiko") {
+                useVersion(skikoVersion)
+                because("Align Skiko with Compose Multiplatform 1.11")
+            }
+        }
+    }
+}
+
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.library) apply false
