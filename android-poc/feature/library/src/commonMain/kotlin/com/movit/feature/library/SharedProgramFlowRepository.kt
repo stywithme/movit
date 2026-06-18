@@ -3,6 +3,9 @@ package com.movit.feature.library
 import com.movit.core.data.MovitData
 import com.movit.core.data.cache.CacheState
 import com.movit.core.data.cache.staleWhileRevalidate
+import com.movit.core.network.dto.MetricsApiResponse
+import com.movit.core.network.dto.MetricsQuery
+import com.movit.core.network.dto.MetricsScope
 import com.movit.resources.strings.ProgramFlowStrings
 import com.movit.shared.AppResult
 import kotlinx.coroutines.flow.Flow
@@ -111,11 +114,8 @@ class SharedProgramFlowRepository : ProgramFlowRepository {
             }
         }
 
-        val dashboardSummary = if (platform.isProUser()) {
-            when (val result = MovitData.reports.syncDashboard(programId = programId, period = "week")) {
-                is AppResult.Success -> result.value.summary
-                is AppResult.Failure -> null
-            }
+        val weekScopeMetrics = if (platform.isProUser()) {
+            loadWeekScopeMetrics(programId, weekNumber)
         } else {
             null
         }
@@ -131,11 +131,28 @@ class SharedProgramFlowRepository : ProgramFlowRepository {
                 program = program,
                 weekNumber = weekNumber,
                 metrics = metrics,
-                dashboardSummary = dashboardSummary,
+                weekScopeMetrics = weekScopeMetrics,
                 language = language,
                 strings = strings,
             ).copy(weekSummaries = summaries),
         )
+    }
+
+    private suspend fun loadWeekScopeMetrics(
+        programId: String,
+        weekNumber: Int,
+    ): MetricsApiResponse? {
+        val query = MetricsQuery(
+            programId = programId,
+            scope = MetricsScope.Week,
+            weekNumber = weekNumber,
+            includeChildren = true,
+            includeHistory = true,
+        )
+        return when (val result = MovitData.reports.syncWeekMetrics(programId, weekNumber)) {
+            is AppResult.Success -> result.value
+            is AppResult.Failure -> MovitData.reports.readCachedMetrics(query)
+        }
     }
 
     override suspend fun loadWeekReportSummaries(programId: String): AppResult<List<WeeklyReportWeekSummaryUi>> {

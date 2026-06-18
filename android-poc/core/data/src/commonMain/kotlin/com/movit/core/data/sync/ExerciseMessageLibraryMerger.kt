@@ -16,6 +16,39 @@ import com.movit.core.training.config.StateMessages
  */
 internal object ExerciseMessageLibraryMerger {
 
+    fun hasUnresolvedAssignments(
+        record: ExerciseConfigRecord,
+        messageLibrary: List<SyncMessageTemplateDto>,
+    ): Boolean {
+        if (messageLibrary.isEmpty()) return false
+        val templates = messageLibrary.associateBy { it.id }
+        return record.config.poseVariants.any { variant ->
+            variant.messageAssignments.any { assignment ->
+                val template = templates[assignment.messageId] ?: return@any false
+                val content = template.content
+                val hasText = content.en.isNotBlank() || content.ar.isNotBlank()
+                if (!hasText) return@any false
+                when (assignment.target) {
+                    "feedback" -> when (assignment.context) {
+                        "motivational" -> variant.feedbackMessages.motivational.isEmpty()
+                        "tip" -> variant.feedbackMessages.tips.isEmpty()
+                        else -> false
+                    }
+                    "joint_state" -> {
+                        val jointCode = assignment.jointCode ?: return@any false
+                        val joint = variant.trackedJoints.firstOrNull { it.joint == jointCode } ?: return@any true
+                        joint.stateMessages == null
+                    }
+                    "position" -> {
+                        val checkId = assignment.checkId ?: return@any false
+                        variant.positionChecks.firstOrNull { it.id == checkId }?.errorMessage == null
+                    }
+                    else -> false
+                }
+            }
+        }
+    }
+
     fun resolveRecords(
         records: List<ExerciseConfigRecord>,
         messageLibrary: List<SyncMessageTemplateDto>,

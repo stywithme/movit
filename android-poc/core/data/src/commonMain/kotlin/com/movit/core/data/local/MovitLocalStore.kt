@@ -26,6 +26,9 @@ interface MovitLocalStore {
 
     fun remove(store: String, key: String) = removeJsonCache(store, key)
 
+    /** All entries in a logical cache namespace (used by one-time key canonicalization). */
+    fun listJsonCacheEntries(store: String): Map<String, String> = emptyMap()
+
     fun readInt(store: String, key: String, default: Int = 0): Int =
         readJsonCache(store, key)?.toIntOrNull() ?: default
 

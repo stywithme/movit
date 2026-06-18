@@ -16,8 +16,6 @@ import com.movit.core.training.report.SessionQualityMeta
 import com.movit.core.training.session.ExerciseWorkoutSummary
 import com.movit.core.training.session.MovitTrainingEngine
 import com.movit.shared.AppResult
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 
 /**
  * WS-8 hooks: motion journal checkpoint + offline-safe mobileWrites from the session VM.
@@ -115,29 +113,18 @@ class TrainingSessionWriteHooks(
 
     suspend fun enqueueExecutionUpload(
         upload: WorkoutUpload,
-        scope: CoroutineScope,
         context: String? = null,
         workoutGroupId: String? = null,
         workoutTemplateId: String? = null,
         legacyReport: MovitPostTrainingReport? = null,
-        onEnqueued: (String) -> Unit = {},
-        onOutcome: (AppResult<String>) -> Unit = {},
-    ) {
-        scope.launch {
-            val result = writes.uploadWorkoutExecution(
-                upload = upload,
-                context = context,
-                workoutGroupId = workoutGroupId,
-                workoutTemplateId = workoutTemplateId,
-                legacyReport = legacyReport?.let(writes::encodePostTrainingReport),
-            )
-            onOutcome(result)
-            when (result) {
-                is AppResult.Success -> onEnqueued(result.value)
-                is AppResult.Failure -> Unit
-            }
-        }
-    }
+    ): AppResult<String> = writes.uploadWorkoutExecution(
+        upload = upload,
+        context = context,
+        workoutGroupId = workoutGroupId,
+        workoutTemplateId = workoutTemplateId,
+        legacyReport = legacyReport?.let(writes::encodePostTrainingReport),
+        operationId = upload.id,
+    )
 
     fun finalizeExercise(upload: WorkoutUpload) {
         writes.finalizeJournal(sessionId)

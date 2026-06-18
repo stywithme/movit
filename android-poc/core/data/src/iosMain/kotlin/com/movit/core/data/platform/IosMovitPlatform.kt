@@ -1,6 +1,8 @@
 package com.movit.core.data.platform
 
 import com.movit.core.data.MovitData
+import com.movit.core.data.local.MovitLocalStore
+import com.movit.core.data.repository.MovitCacheKeys
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSUserDefaults
 import platform.posix.time
@@ -43,14 +45,30 @@ class IosMovitPlatform(
 
     override fun isProUser(): Boolean = defaults.boolForKey(KEY_IS_PRO)
 
-    override fun activeUserProgramId(): String? =
-        defaults.stringForKey(KEY_ACTIVE_USER_PROGRAM_ID)?.takeIf { it.isNotBlank() }
+    override fun activeUserProgramId(): String? {
+        if (MovitData.isInstalled) {
+            MovitData.plan.readCachedActiveUserProgramId()?.let { return it }
+        }
+        return defaults.stringForKey(KEY_ACTIVE_USER_PROGRAM_ID)?.takeIf { it.isNotBlank() }
+    }
 
     override fun setActiveUserProgramId(userProgramId: String?) {
+        if (MovitData.isInstalled) {
+            val store: MovitLocalStore = MovitData.localStore
+            if (userProgramId.isNullOrBlank()) {
+                store.remove(MovitCacheKeys.PROGRAM_STORE, MovitCacheKeys.ACTIVE_USER_PROGRAM_ID)
+            } else {
+                store.writeJsonCache(
+                    MovitCacheKeys.PROGRAM_STORE,
+                    MovitCacheKeys.ACTIVE_USER_PROGRAM_ID,
+                    userProgramId,
+                )
+            }
+        }
         if (userProgramId.isNullOrBlank()) {
             defaults.removeObjectForKey(KEY_ACTIVE_USER_PROGRAM_ID)
         } else {
-            defaults.setObject(userProgramId, KEY_ACTIVE_USER_PROGRAM_ID)
+            defaults.removeObjectForKey(KEY_ACTIVE_USER_PROGRAM_ID)
         }
     }
 

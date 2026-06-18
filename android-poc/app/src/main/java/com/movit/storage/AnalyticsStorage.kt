@@ -89,6 +89,10 @@ class AnalyticsStorage(private val context: Context) {
      * @return true if saved successfully
      */
     fun savePending(upload: WorkoutUpload): Boolean {
+        if (com.movit.core.data.MovitData.isInstalled) {
+            Log.w(TAG, "savePending blocked: KMP Outbox owns workout execution uploads")
+            return false
+        }
         return try {
             val file = File(pendingDir, "$FILE_PREFIX${upload.id}$FILE_EXTENSION")
             val json = gson.toJson(upload)

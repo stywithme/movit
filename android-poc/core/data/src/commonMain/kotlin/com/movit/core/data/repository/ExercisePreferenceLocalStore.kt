@@ -12,33 +12,32 @@ import com.movit.core.network.dto.UserExercisePreferenceUpsertRequest
 
 /**
  * KMP equivalent of legacy [com.movit.storage.UserExercisePreferenceStore].
+ * Preferences are stored by backend [exerciseId]; [ExerciseIdResolver] resolves slug aliases on read/write.
  */
 open class ExercisePreferenceLocalStore(
     private val localStore: MovitLocalStore,
+    private val exerciseIdResolver: ExerciseIdResolver = ExerciseIdResolver(localStore),
 ) {
-    fun get(exerciseId: String): UserExercisePreferenceUpsertRequest? =
-        MovitCachePolicy.readJson(
-            localStore,
-            MovitCacheKeys.PREFERENCES_STORE,
-            MovitCacheKeys.exercisePreferenceKey(exerciseId),
-            UserExercisePreferenceUpsertRequest.serializer(),
-        )
-
-    fun upsert(exerciseId: String, request: UserExercisePreferenceUpsertRequest) {
-        MovitCachePolicy.writeJson(
-            localStore,
-            MovitCacheKeys.PREFERENCES_STORE,
-            MovitCacheKeys.exercisePreferenceKey(exerciseId),
-            request,
-            UserExercisePreferenceUpsertRequest.serializer(),
-        )
+    fun get(exerciseIdOrSlug: String): UserExercisePreferenceUpsertRequest? {
+        val canonicalId = exerciseIdResolver.resolveCanonicalExerciseId(exerciseIdOrSlug)
+        return readPreference(canonicalId)
+            ?: if (canonicalId != exerciseIdOrSlug) readPreference(exerciseIdOrSlug) else null
     }
 
-    fun remove(exerciseId: String) {
-        localStore.remove(
-            MovitCacheKeys.PREFERENCES_STORE,
-            MovitCacheKeys.exercisePreferenceKey(exerciseId),
-        )
+    fun upsert(exerciseIdOrSlug: String, request: UserExercisePreferenceUpsertRequest) {
+        val canonicalId = exerciseIdResolver.resolveCanonicalExerciseId(exerciseIdOrSlug)
+        writePreference(canonicalId, request)
+        if (canonicalId != exerciseIdOrSlug) {
+            removeLegacyAliasKey(exerciseIdOrSlug)
+        }
+    }
+
+    fun remove(exerciseIdOrSlug: String) {
+        val canonicalId = exerciseIdResolver.resolveCanonicalExerciseId(exerciseIdOrSlug)
+        removePreference(canonicalId)
+        if (canonicalId != exerciseIdOrSlug) {
+            removeLegacyAliasKey(exerciseIdOrSlug)
+        }
     }
 
     open suspend fun hydrateFromSync(
@@ -46,8 +45,14 @@ open class ExercisePreferenceLocalStore(
         pendingExerciseIds: Set<String> = emptySet(),
     ) {
         rows.forEach { row ->
-            val exerciseId = row.exerciseId.ifBlank { row.exerciseSlug }
-            if (exerciseId.isBlank() || exerciseId in pendingExerciseIds) return@forEach
+            val exerciseId = row.exerciseId.takeIf { it.isNotBlank() }
+                ?: exerciseIdResolver.resolveCanonicalExerciseId(row.exerciseSlug)
+            if (exerciseId.isBlank()) return@forEach
+            val pending = pendingExerciseIds.any { pendingId ->
+                pendingId == exerciseId ||
+                    exerciseIdResolver.resolveCanonicalExerciseId(pendingId) == exerciseId
+            }
+            if (pending) return@forEach
 
             val hasAny = row.customReps != null ||
                 row.customDurationSec != null ||
@@ -66,6 +71,39 @@ open class ExercisePreferenceLocalStore(
                 ),
             )
         }
+    }
+
+    private fun readPreference(exerciseId: String): UserExercisePreferenceUpsertRequest? =
+        MovitCachePolicy.readJson(
+            localStore,
+            MovitCacheKeys.PREFERENCES_STORE,
+            MovitCacheKeys.exercisePreferenceKey(exerciseId),
+            UserExercisePreferenceUpsertRequest.serializer(),
+        )
+
+    private fun writePreference(exerciseId: String, request: UserExercisePreferenceUpsertRequest) {
+        MovitCachePolicy.writeJson(
+            localStore,
+            MovitCacheKeys.PREFERENCES_STORE,
+            MovitCacheKeys.exercisePreferenceKey(exerciseId),
+            request,
+            UserExercisePreferenceUpsertRequest.serializer(),
+        )
+    }
+
+    private fun removePreference(exerciseId: String) {
+        localStore.remove(
+            MovitCacheKeys.PREFERENCES_STORE,
+            MovitCacheKeys.exercisePreferenceKey(exerciseId),
+        )
+    }
+
+    private fun removeLegacyAliasKey(exerciseIdOrSlug: String) {
+        if (exerciseIdOrSlug.isBlank()) return
+        localStore.remove(
+            MovitCacheKeys.PREFERENCES_STORE,
+            MovitCacheKeys.exercisePreferenceKey(exerciseIdOrSlug),
+        )
     }
 
     companion object {

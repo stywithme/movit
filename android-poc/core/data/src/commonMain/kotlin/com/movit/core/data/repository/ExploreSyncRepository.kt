@@ -29,6 +29,14 @@ class ExploreSyncRepository(
             ?.imageUrl
             ?.takeIf { it.isNotBlank() }
 
+    /** Resolves a cached workout template id to its backend slug for entity audio manifest APIs. */
+    fun slugForWorkoutTemplateId(templateId: String): String? =
+        readCached()
+            ?.workoutTemplates
+            ?.firstOrNull { it.id == templateId }
+            ?.slug
+            ?.takeIf { it.isNotBlank() }
+
     suspend fun sync(limit: Int = 50): AppResult<ExploreDataDto> =
         syncInternal(clearLastSync = false, limit = limit)
 

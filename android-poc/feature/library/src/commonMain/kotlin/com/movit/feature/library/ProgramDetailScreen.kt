@@ -141,13 +141,13 @@ fun ProgramDetailScreen(
             state.isLoading -> MovitLoadingState(message = movitText("program_loading"))
             state.errorMessage != null -> MovitErrorState(
                 title = movitText("common_error_title"),
-                message = when (state.errorMessage) {
+                message = when (val error = state.errorMessage) {
                     "program_not_found",
                     "program_no_upcoming_session",
                     "program_sign_in_to_enroll",
                     "program_sign_in_to_save_edits",
-                    -> movitText(state.errorMessage!!)
-                    else -> state.errorMessage.orEmpty()
+                    -> movitText(error)
+                    else -> error
                 },
                 actionLabel = movitText("common_retry"),
                 onRetry = onRetry,

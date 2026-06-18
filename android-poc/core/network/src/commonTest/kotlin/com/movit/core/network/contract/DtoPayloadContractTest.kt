@@ -72,6 +72,10 @@ class DtoPayloadContractTest {
     assertEquals(1, parsed.data?.userPrograms?.size)
     assertEquals("up-001", parsed.data?.userPrograms?.first()?.id)
     assertEquals("prog-001", parsed.data?.userPrograms?.first()?.programId)
+    assertEquals("Foundation", parsed.data?.userPrograms?.first()?.name?.en)
+    assertEquals("2026-01-01", parsed.data?.userPrograms?.first()?.startDate)
+    assertEquals("2026-06-10T00:00:00Z", parsed.data?.userPrograms?.first()?.updatedAt)
+    assertEquals(listOf(1, 3, 5), parsed.data?.userPrograms?.first()?.trainingWeekdays)
     assertTrue(parsed.data?.userPrograms?.first()?.isActive == true)
   }
 

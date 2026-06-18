@@ -1,14 +1,14 @@
 package com.movit.feature.shell
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.ExperimentalComposeUiApi
-import androidx.compose.ui.backhandler.BackHandler
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
 
 /**
  * Android / shared activity root for the Movit shell — wires [MovitAppShellViewModel] and system back.
  */
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun MovitAppShellHost(
     onHostBackPressed: () -> Unit = {},
@@ -16,12 +16,16 @@ fun MovitAppShellHost(
     onShareText: (subject: String, text: String) -> Boolean = { _, _ -> false },
 ) {
     val shellViewModel = viewModel { MovitAppShellViewModel() }
+    val navigationEventState = rememberNavigationEventState(NavigationEventInfo.None)
 
-    BackHandler {
-        if (!shellViewModel.handleSystemBack()) {
-            onHostBackPressed()
-        }
-    }
+    NavigationBackHandler(
+        state = navigationEventState,
+        onBackCompleted = {
+            if (!shellViewModel.handleSystemBack()) {
+                onHostBackPressed()
+            }
+        },
+    )
 
     MovitAppShellRoute(
         shellViewModel = shellViewModel,

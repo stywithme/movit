@@ -7,9 +7,11 @@ import com.movit.core.data.repository.testMobileApi
 import com.movit.core.network.dto.EffectivePlannedWorkoutDto
 import com.movit.core.network.dto.ExecutionMetricsDto
 import com.movit.core.network.dto.ProgramCustomizationKeys
+import com.movit.core.network.dto.PlannedWorkoutCompleteRequestDto
 import com.movit.core.network.dto.ProgressionMarkSeenRequest
 import com.movit.core.network.dto.UserProgramUpdateRequest
 import com.movit.core.network.MovitClock
+import com.movit.core.network.MovitJson
 import com.movit.core.network.dto.WorkoutExecutionUploadRequestDto
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -17,9 +19,14 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.coroutineScope
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
 class OfflineWriteQueueTest {
@@ -261,6 +268,123 @@ class OfflineWriteQueueTest {
             assertEquals(0L, queue.pendingCount())
             val entry = localStore.getOutboxById("op-409")
             assertTrue(entry?.status == OutboxStatus.SUCCEEDED)
+        }
+    }
+
+    @Test
+    fun workoutExecutionUpload_stableIdReplay_noDuplicateApiCall() {
+        runBlocking {
+            val apiCalls = AtomicInteger(0)
+            val engine = MockEngine {
+                apiCalls.incrementAndGet()
+                respond(executionOkBody, HttpStatusCode.OK, jsonHeaders)
+            }
+            val platform = object : FakeMovitPlatformBindings() {
+                var online = false
+                override fun isNetworkAvailable(): Boolean = online
+            }
+            val queue = OfflineWriteQueue(InMemoryMovitLocalStore(), testMobileApi(engine, platform)) { platform }
+            val executionId = "exec-stable-replay-1"
+            val request = sampleWorkoutExecutionUpload(id = executionId)
+
+            queue.enqueueWorkoutExecutionUpload(request)
+            queue.enqueueWorkoutExecutionUpload(request)
+
+            platform.online = true
+            queue.replayPending()
+            assertEquals(1, apiCalls.get())
+
+            queue.replayPending()
+            assertEquals(1, apiCalls.get())
+        }
+    }
+
+    @Test
+    fun replayPending_ordersExecutionBeforePlannedComplete() {
+        runBlocking {
+            val callOrder = mutableListOf<String>()
+            val engine = MockEngine { request ->
+                when {
+                    request.url.encodedPath.contains("workout-executions") -> callOrder += "execution"
+                    request.url.encodedPath.contains("/complete") -> callOrder += "complete"
+                }
+                respond(
+                    if (request.url.encodedPath.contains("workout-executions")) executionOkBody else planOkBody,
+                    HttpStatusCode.OK,
+                    jsonHeaders,
+                )
+            }
+            val platform = object : FakeMovitPlatformBindings() {
+                override fun isNetworkAvailable(): Boolean = true
+            }
+            val localStore = InMemoryMovitLocalStore()
+            val queue = OfflineWriteQueue(localStore, testMobileApi(engine, platform)) { platform }
+
+            val baseTime = MovitClock.nowEpochMs()
+            localStore.insertOutbox(
+                OutboxEntry(
+                    id = "op-complete-first",
+                    type = OutboxOperationType.PLANNED_WORKOUT_COMPLETE,
+                    payload = MovitJson.encodeToString(
+                        PlannedWorkoutCompleteOutboxPayload(
+                            workoutId = "pw-1",
+                            request = PlannedWorkoutCompleteRequestDto(),
+                        ),
+                    ),
+                    createdAt = baseTime,
+                    attempts = 0,
+                    status = OutboxStatus.PENDING,
+                ),
+            )
+            localStore.insertOutbox(
+                OutboxEntry(
+                    id = "exec-order-1",
+                    type = OutboxOperationType.WORKOUT_EXECUTION_UPLOAD,
+                    payload = MovitJson.encodeToString(
+                        WorkoutExecutionUploadOutboxPayload(sampleWorkoutExecutionUpload("exec-order-1")),
+                    ),
+                    createdAt = baseTime + 1,
+                    attempts = 0,
+                    status = OutboxStatus.PENDING,
+                ),
+            )
+
+            queue.replayPending()
+
+            assertEquals(listOf("execution", "complete"), callOrder)
+        }
+    }
+
+    @Test
+    fun legacyDrainGate_blocksEnqueueUntilDrainCompletes() {
+        runBlocking {
+            val platform = object : FakeMovitPlatformBindings() {
+                override fun isNetworkAvailable(): Boolean = false
+            }
+            val queue = OfflineWriteQueue(
+                InMemoryMovitLocalStore(),
+                testMobileApi(MockEngine { respond(planOkBody, HttpStatusCode.OK, jsonHeaders) }, platform),
+            ) { platform }
+
+            LegacyWorkoutSyncGate.legacyDrainRunner = {
+                delay(50)
+            }
+
+            val enqueueStarted = AtomicBoolean(false)
+            coroutineScope {
+                val drainJob = launch { LegacyWorkoutSyncGate.drainLegacyExecutionsIfRegistered() }
+                val enqueueJob = async {
+                    enqueueStarted.set(true)
+                    queue.enqueuePlanComplete("op-blocked-by-drain")
+                }
+                delay(25)
+                assertTrue(enqueueStarted.get())
+                assertTrue(!enqueueJob.isCompleted)
+                drainJob.join()
+                assertEquals("op-blocked-by-drain", enqueueJob.await())
+            }
+
+            LegacyWorkoutSyncGate.legacyDrainRunner = null
         }
     }
 

@@ -91,4 +91,58 @@ class ReportsSyncRepositoryTest {
             assertTrue(result is AppResult.Success)
         }
     }
+
+    @Test
+    fun syncWeekMetrics_withAuth_writesScopedCacheKey() {
+        runBlocking {
+            val platform = FakeMovitPlatformBindings(pro = true)
+            val localStore = testLocalStore(platform)
+            val engine = MockEngine {
+                respond(
+                    content = """{"success":true,"scope":"week","summary":{"weekNumber":2,"daysTrained":3}}""",
+                    headers = io.ktor.http.headersOf(
+                        io.ktor.http.HttpHeaders.ContentType,
+                        "application/json",
+                    ),
+                )
+            }
+            val repo = ReportsSyncRepository(testMobileApi(engine, platform), { platform }, { localStore })
+
+            val result = repo.syncWeekMetrics(programId = "pr-1", weekNumber = 2)
+
+            assertTrue(result is AppResult.Success)
+            val cacheKey = MovitCacheKeys.reportsMetricsKey(
+                scope = "week",
+                programId = "pr-1",
+                weekNumber = 2,
+            )
+            assertNotNull(localStore.readString(MovitCacheKeys.REPORTS_STORE, cacheKey))
+        }
+    }
+
+    @Test
+    fun syncWeekMetrics_withoutAuth_returnsCachedScopedMetrics() {
+        runBlocking {
+            val platform = FakeMovitPlatformBindings(auth = null, pro = true)
+            val localStore = testLocalStore(platform)
+            val cacheKey = MovitCacheKeys.reportsMetricsKey(
+                scope = "week",
+                programId = "pr-1",
+                weekNumber = 1,
+            )
+            val cached = com.movit.core.network.dto.MetricsApiResponse(success = true, scope = "week")
+            localStore.writeString(
+                MovitCacheKeys.REPORTS_STORE,
+                cacheKey,
+                MovitJson.encodeToString(com.movit.core.network.dto.MetricsApiResponse.serializer(), cached),
+            )
+            val engine = MockEngine { respond("{}", HttpStatusCode.InternalServerError) }
+            val repo = ReportsSyncRepository(testMobileApi(engine, platform), { platform }, { localStore })
+
+            val result = repo.syncWeekMetrics(programId = "pr-1", weekNumber = 1)
+
+            assertTrue(result is AppResult.Success)
+            assertEquals("week", result.value.scope)
+        }
+    }
 }

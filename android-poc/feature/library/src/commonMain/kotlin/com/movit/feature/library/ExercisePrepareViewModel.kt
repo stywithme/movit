@@ -288,7 +288,6 @@ class ExercisePrepareViewModel(
                     plannedWorkout = workoutId?.let { resolvePlannedWorkoutLaunch(it, null) },
                     poseVariantIndex = exercise.selectedPoseVariantIndex,
                 )
-                else -> action
             }
             _effects.emit(ExercisePrepareEffect.StartTraining(resolved))
             _startEffects.emit(resolved)

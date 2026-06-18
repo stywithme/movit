@@ -49,5 +49,20 @@ data class ProgramExportDayDto(
 data class ProgramExportPlannedWorkoutDto(
     val id: String = "",
     val name: LocalizedNameDto = LocalizedNameDto(),
+    val sortOrder: Int = 0,
+    val workoutTemplateId: String = "",
+    val workoutTemplateSlug: String? = null,
     val estimatedDurationMin: Int? = null,
+    val items: List<ProgramExportItemDto> = emptyList(),
+)
+
+@Serializable
+data class ProgramExportItemDto(
+    val type: String = "",
+    val exerciseSlug: String? = null,
+    val deletedExercise: Boolean = false,
+    val sets: Int? = null,
+    val targetReps: Int? = null,
+    val targetDuration: Int? = null,
+    val sortOrder: Int = 0,
 )

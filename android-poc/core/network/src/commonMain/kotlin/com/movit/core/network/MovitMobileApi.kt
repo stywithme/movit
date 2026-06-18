@@ -25,6 +25,8 @@ import com.movit.core.network.dto.ReassessmentListApiResponse
 import com.movit.core.network.dto.LoginRequestDto
 import com.movit.core.network.dto.LogoutRequestDto
 import com.movit.core.network.dto.MetricsApiResponse
+import com.movit.core.network.dto.MetricsQuery
+import com.movit.core.network.dto.MetricsScope
 import com.movit.core.network.dto.PlannedWorkoutApiResponse
 import com.movit.core.network.dto.PlannedWorkoutCompleteRequestDto
 import com.movit.core.network.dto.PlannedWorkoutStartRequestDto
@@ -125,23 +127,44 @@ class MovitMobileApi(
         response.body<ReportsDashboardApiResponse>()
     }
 
-    suspend fun fetchExerciseMetrics(
-        programId: String,
-        exerciseSlug: String,
+    suspend fun fetchMetrics(
+        query: MetricsQuery,
         authorization: String? = null,
     ): Result<MetricsApiResponse> = runCatching {
         val response = client.get(base("api/mobile/reports/metrics")) {
             applyBearerAuthorization(authorization)
-            parameter("programId", programId)
-            parameter("scope", "exercise")
-            parameter("exerciseSlug", exerciseSlug)
-            parameter("includeHistory", true)
+            parameter("programId", query.programId)
+            parameter("scope", query.scope.wireValue)
+            query.weekNumber?.let { parameter("weekNumber", it) }
+            query.dayNumber?.let { parameter("dayNumber", it) }
+            query.plannedWorkoutId?.let { parameter("plannedWorkoutId", it) }
+            query.exerciseSlug?.let { parameter("exerciseSlug", it) }
+            if (query.includeHistory) {
+                parameter("includeHistory", true)
+            }
+            if (query.includeChildren) {
+                parameter("includeChildren", true)
+            }
         }
         if (!response.status.isSuccess()) {
-            error("Exercise metrics request failed (${response.status.value})")
+            error("Metrics request failed (${response.status.value})")
         }
         response.body<MetricsApiResponse>()
     }
+
+    suspend fun fetchExerciseMetrics(
+        programId: String,
+        exerciseSlug: String,
+        authorization: String? = null,
+    ): Result<MetricsApiResponse> = fetchMetrics(
+        MetricsQuery(
+            programId = programId,
+            scope = MetricsScope.Exercise,
+            exerciseSlug = exerciseSlug,
+            includeHistory = true,
+        ),
+        authorization = authorization,
+    )
 
     suspend fun fetchProgram(
         programId: String,

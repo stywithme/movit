@@ -6,6 +6,8 @@ import com.movit.core.data.platform.MovitPlatformBindings
 import com.movit.core.network.MovitJson
 import com.movit.core.network.MovitMobileApi
 import com.movit.core.network.dto.MetricsApiResponse
+import com.movit.core.network.dto.MetricsQuery
+import com.movit.core.network.dto.MetricsScope
 import com.movit.core.network.dto.PlannedWorkoutCompleteRequestDto
 import com.movit.core.network.dto.PlannedWorkoutReportExportDto
 import com.movit.core.network.dto.ReportDashboardSummaryDto
@@ -28,11 +30,29 @@ open class ReportsSyncRepository(
             ReportsDashboardApiResponse.serializer(),
         )
 
-    fun readCachedExerciseMetrics(exerciseSlug: String): MetricsApiResponse? =
-        MovitCachePolicy.readJson(
+    fun readCachedExerciseMetrics(exerciseSlug: String, programId: String? = null): MetricsApiResponse? {
+        if (!programId.isNullOrBlank()) {
+            readCachedMetrics(
+                MetricsQuery(
+                    programId = programId,
+                    scope = MetricsScope.Exercise,
+                    exerciseSlug = exerciseSlug,
+                ),
+            )?.let { return it }
+        }
+        return MovitCachePolicy.readJson(
             localStore(),
             MovitCacheKeys.REPORTS_STORE,
             MovitCacheKeys.reportsExerciseKey(exerciseSlug),
+            MetricsApiResponse.serializer(),
+        )
+    }
+
+    fun readCachedMetrics(query: MetricsQuery): MetricsApiResponse? =
+        MovitCachePolicy.readJson(
+            localStore(),
+            MovitCacheKeys.REPORTS_STORE,
+            metricsCacheKey(query),
             MetricsApiResponse.serializer(),
         )
 
@@ -194,13 +214,10 @@ open class ReportsSyncRepository(
         )
     }
 
-    suspend fun syncExerciseMetrics(
-        programId: String,
-        exerciseSlug: String,
-    ): AppResult<MetricsApiResponse> {
+    suspend fun syncMetrics(query: MetricsQuery): AppResult<MetricsApiResponse> {
         val bindings = platform()
-        val cacheKey = MovitCacheKeys.reportsExerciseKey(exerciseSlug)
-        val cached = readCachedExerciseMetrics(exerciseSlug)
+        val cacheKey = metricsCacheKey(query)
+        val cached = readCachedMetrics(query)
         val auth = bindings.authHeader()
             ?: return cached?.let { AppResult.Success(it) }
                 ?: AppResult.Failure("Sign in to load report details.")
@@ -214,15 +231,9 @@ open class ReportsSyncRepository(
             authRequired = true,
             hasAuth = auth != null,
             noAuthMessage = "Sign in to load report details.",
-            fetch = {
-                api.fetchExerciseMetrics(
-                    programId = programId,
-                    exerciseSlug = exerciseSlug,
-                    authorization = auth,
-                )
-            },
+            fetch = { api.fetchMetrics(query, authorization = auth) },
             isSuccess = { it.success },
-            errorMessage = { it.error ?: "Exercise report sync failed." },
+            errorMessage = { it.error ?: "Report metrics sync failed." },
             persist = { response ->
                 MovitCachePolicy.writeJson(
                     localStore(),
@@ -232,9 +243,82 @@ open class ReportsSyncRepository(
                     MetricsApiResponse.serializer(),
                 )
             },
-            failureMessage = { it.message ?: "Exercise report sync failed." },
+            failureMessage = { it.message ?: "Report metrics sync failed." },
         )
     }
+
+    suspend fun syncExerciseMetrics(
+        programId: String,
+        exerciseSlug: String,
+    ): AppResult<MetricsApiResponse> = syncMetrics(
+        MetricsQuery(
+            programId = programId,
+            scope = MetricsScope.Exercise,
+            exerciseSlug = exerciseSlug,
+            includeHistory = true,
+        ),
+    )
+
+    suspend fun syncProgramMetrics(programId: String): AppResult<MetricsApiResponse> =
+        syncMetrics(
+            MetricsQuery(
+                programId = programId,
+                scope = MetricsScope.Program,
+                includeChildren = true,
+            ),
+        )
+
+    suspend fun syncWeekMetrics(
+        programId: String,
+        weekNumber: Int,
+        includeChildren: Boolean = true,
+    ): AppResult<MetricsApiResponse> = syncMetrics(
+        MetricsQuery(
+            programId = programId,
+            scope = MetricsScope.Week,
+            weekNumber = weekNumber,
+            includeChildren = includeChildren,
+            includeHistory = true,
+        ),
+    )
+
+    suspend fun syncDayMetrics(
+        programId: String,
+        weekNumber: Int,
+        dayNumber: Int,
+        includeChildren: Boolean = true,
+    ): AppResult<MetricsApiResponse> = syncMetrics(
+        MetricsQuery(
+            programId = programId,
+            scope = MetricsScope.Day,
+            weekNumber = weekNumber,
+            dayNumber = dayNumber,
+            includeChildren = includeChildren,
+        ),
+    )
+
+    suspend fun syncPlannedWorkoutMetrics(
+        programId: String,
+        plannedWorkoutId: String,
+        includeChildren: Boolean = true,
+    ): AppResult<MetricsApiResponse> = syncMetrics(
+        MetricsQuery(
+            programId = programId,
+            scope = MetricsScope.PlannedWorkout,
+            plannedWorkoutId = plannedWorkoutId,
+            includeChildren = includeChildren,
+        ),
+    )
+
+    private fun metricsCacheKey(query: MetricsQuery): String =
+        MovitCacheKeys.reportsMetricsKey(
+            scope = query.scope.wireValue,
+            programId = query.programId,
+            weekNumber = query.weekNumber,
+            dayNumber = query.dayNumber,
+            plannedWorkoutId = query.plannedWorkoutId,
+            exerciseSlug = query.exerciseSlug,
+        )
 
     private fun patchDashboardFromCompletion(
         request: PlannedWorkoutCompleteRequestDto,

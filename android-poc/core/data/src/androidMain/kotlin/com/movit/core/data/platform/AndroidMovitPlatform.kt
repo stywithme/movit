@@ -68,19 +68,31 @@ class AndroidMovitPlatform(
     override fun isProUser(): Boolean =
         profilePrefs.getBoolean(MovitAuthProfileKeys.KEY_IS_PRO, false)
 
-    override fun activeUserProgramId(): String? =
-        readCache(MovitCacheKeys.PROGRAM_STORE, MovitCacheKeys.ACTIVE_USER_PROGRAM_ID)
+    override fun activeUserProgramId(): String? {
+        if (MovitData.isInstalled) {
+            MovitData.plan.readCachedActiveUserProgramId()?.let { return it }
+        }
+        return readCache(MovitCacheKeys.PROGRAM_STORE, MovitCacheKeys.ACTIVE_USER_PROGRAM_ID)
             ?.takeIf { it.isNotBlank() }
+    }
 
     override fun setActiveUserProgramId(userProgramId: String?) {
+        if (MovitData.isInstalled) {
+            val store = MovitData.localStore
+            if (userProgramId.isNullOrBlank()) {
+                store.remove(MovitCacheKeys.PROGRAM_STORE, MovitCacheKeys.ACTIVE_USER_PROGRAM_ID)
+            } else {
+                store.writeJsonCache(
+                    MovitCacheKeys.PROGRAM_STORE,
+                    MovitCacheKeys.ACTIVE_USER_PROGRAM_ID,
+                    userProgramId,
+                )
+            }
+        }
         if (userProgramId.isNullOrBlank()) {
             removeCache(MovitCacheKeys.PROGRAM_STORE, MovitCacheKeys.ACTIVE_USER_PROGRAM_ID)
         } else {
-            writeCache(
-                MovitCacheKeys.PROGRAM_STORE,
-                MovitCacheKeys.ACTIVE_USER_PROGRAM_ID,
-                userProgramId,
-            )
+            removeCache(MovitCacheKeys.PROGRAM_STORE, MovitCacheKeys.ACTIVE_USER_PROGRAM_ID)
         }
     }
 

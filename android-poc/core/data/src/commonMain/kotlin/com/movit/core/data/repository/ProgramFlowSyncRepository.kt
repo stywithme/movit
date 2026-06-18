@@ -3,12 +3,15 @@ package com.movit.core.data.repository
 import com.movit.core.data.cache.MovitCachePolicy
 import com.movit.core.data.local.MovitLocalStore
 import com.movit.core.data.platform.MovitPlatformBindings
+import com.movit.core.network.MovitJson
 import com.movit.core.network.MovitMobileApi
 import com.movit.core.network.dto.ExploreDataDto
 import com.movit.core.network.dto.HomeDataDto
 import com.movit.core.network.dto.ProgramExportDto
 import com.movit.core.network.dto.ProgramProgressMetricsPayloadDto
 import com.movit.shared.AppResult
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.serializer
 
 class ProgramFlowSyncRepository(
     private val api: MovitMobileApi,
@@ -29,6 +32,24 @@ class ProgramFlowSyncRepository(
             MovitCacheKeys.programKey(programId),
             ProgramExportDto.serializer(),
         )
+            ?: readProgramBySlug(programId)
+
+    private fun readProgramBySlug(slug: String): ProgramExportDto? {
+        val store = localStore()
+        val rawIndex = store.readJsonCache(MovitCacheKeys.CATALOG_INDEX_STORE, MovitCacheKeys.PROGRAM_ID_INDEX)
+            ?: return null
+        val ids = runCatching {
+            MovitJson.decodeFromString(ListSerializer(String.serializer()), rawIndex)
+        }.getOrNull() ?: return null
+        return ids.firstNotNullOfOrNull { id ->
+            MovitCachePolicy.readJson(
+                store,
+                MovitCacheKeys.PROGRAM_STORE,
+                MovitCacheKeys.programKey(id),
+                ProgramExportDto.serializer(),
+            )?.takeIf { it.slug == slug }
+        }
+    }
 
     suspend fun syncExplore(): AppResult<ExploreDataDto> =
         exploreSync.readCached()?.let { AppResult.Success(it) }

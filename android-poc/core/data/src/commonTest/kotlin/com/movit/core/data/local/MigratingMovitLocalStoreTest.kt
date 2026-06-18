@@ -67,9 +67,51 @@ class MigratingMovitLocalStoreTest {
             "up-active",
             sql.readJsonCache(MovitCacheKeys.PROGRAM_STORE, MovitCacheKeys.ACTIVE_USER_PROGRAM_ID),
         )
+    }
+
+    @Test
+    fun migrateKnownCachesFromPlatform_canonicalizesLegacySlugPreferenceKeys() {
+        val platform = FakeMovitPlatformBindings()
+        platform.writeCache(
+            MovitCacheKeys.LEGACY_USER_EXERCISE_PREFERENCES_STORE,
+            MovitCacheKeys.exercisePreferenceKey("bodyweight-squat"),
+            """{"customReps":10}""",
+        )
+        platform.writeCache(
+            MovitCacheKeys.LEGACY_DAY_CUSTOMIZATION_STORE,
+            MovitCacheKeys.dayCustomizationKey("prog-1", 2, 1),
+            """{"userProgramId":"prog-1","weekNumber":2,"dayNumber":1,"plannedWorkouts":[]}""",
+        )
+        platform.writeCache(
+            MovitCacheKeys.LEGACY_USER_PROGRAM_STORE,
+            MovitCacheKeys.LEGACY_USER_PROGRAMS_KEY,
+            MovitJson.encodeToString(
+                ListSerializer(UserProgramExportDto.serializer()),
+                listOf(UserProgramExportDto(id = "up-1", programId = "prog-1", isActive = true)),
+            ),
+        )
+
+        val sql = InMemoryMovitLocalStore()
+        sql.writeJsonCache(
+            MovitCacheKeys.EXERCISE_CONFIG_STORE,
+            MovitCacheKeys.EXERCISE_CONFIG_SLUG_ALIASES,
+            """{"ex-squat":"bodyweight-squat"}""",
+        )
+        val store = MigratingMovitLocalStore(sql, platform = { platform })
+        store.migrateKnownCachesFromPlatform()
+
+        assertNotNull(
+            sql.readJsonCache(
+                MovitCacheKeys.DAY_CUSTOMIZATION_STORE,
+                MovitCacheKeys.dayCustomizationKey("up-1", 2, 1),
+            ),
+        )
         assertEquals(
-            "up-active",
-            platform.readCache(MovitCacheKeys.PROGRAM_STORE, MovitCacheKeys.ACTIVE_USER_PROGRAM_ID),
+            """{"customReps":10}""",
+            sql.readJsonCache(
+                MovitCacheKeys.PREFERENCES_STORE,
+                MovitCacheKeys.exercisePreferenceKey("ex-squat"),
+            ),
         )
     }
 }

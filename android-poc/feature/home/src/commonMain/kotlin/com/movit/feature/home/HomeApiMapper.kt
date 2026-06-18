@@ -339,11 +339,3 @@ private fun Map<String, String>.localized(language: String): String {
         ?: fallback?.takeIf { it.isNotBlank() }
         ?: values.firstOrNull().orEmpty()
 }
-
-private fun com.movit.core.network.dto.LocalizedNameDto.display(language: String): String {
-    val primary = if (language == "ar") ar else en
-    val fallback = if (language == "ar") en else ar
-    return primary.takeIf { it.isNotBlank() }
-        ?: fallback.takeIf { it.isNotBlank() }
-        ?: ""
-}

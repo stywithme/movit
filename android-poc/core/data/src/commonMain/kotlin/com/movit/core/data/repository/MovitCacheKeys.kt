@@ -14,6 +14,25 @@ object MovitCacheKeys {
 
     fun reportsExerciseKey(exerciseSlug: String): String = "reports_exercise_$exerciseSlug"
 
+    fun reportsMetricsKey(
+        scope: String,
+        programId: String,
+        weekNumber: Int? = null,
+        dayNumber: Int? = null,
+        plannedWorkoutId: String? = null,
+        exerciseSlug: String? = null,
+    ): String {
+        val parts = listOf(
+            scope,
+            programId,
+            weekNumber?.toString().orEmpty(),
+            dayNumber?.toString().orEmpty(),
+            plannedWorkoutId.orEmpty(),
+            exerciseSlug.orEmpty(),
+        )
+        return "reports_metrics_${parts.joinToString("_")}"
+    }
+
     fun plannedWorkoutReportKey(plannedWorkoutId: String): String =
         "planned_workout_report_$plannedWorkoutId"
 
@@ -25,10 +44,27 @@ object MovitCacheKeys {
 
     const val DAY_CUSTOMIZATION_STORE = "day_customization_cache"
 
+    /** Legacy Android prefs namespace for day overrides (keys used [programId], not [userProgramId]). */
+    const val LEGACY_DAY_CUSTOMIZATION_STORE = "day_customization_store"
+
     const val PREFERENCES_STORE = "exercise_preferences_cache"
 
+    /** One-time marker: legacy programId / slug preference keys were rewritten to canonical ids. */
+    const val CANONICAL_CACHE_KEYS_MIGRATED = "canonical_cache_keys_migrated_v1"
+
     const val PROGRAM_STORE = "program_cache"
+    const val PROGRAM_ID_INDEX = "program_id_index"
     const val ACTIVE_USER_PROGRAM_ID = "active_user_program_id"
+
+    const val CATALOG_INDEX_STORE = "catalog_index_cache"
+    const val WORKOUT_TEMPLATE_STORE = "workout_template_cache"
+    const val WORKOUT_TEMPLATE_ID_INDEX = "workout_template_id_index"
+
+    const val USER_PROGRAM_ENROLLMENT_STORE = "user_program_enrollment_cache"
+    const val USER_PROGRAM_ENROLLMENT_INDEX = "user_program_enrollment_index"
+
+    fun userProgramEnrollmentKey(userProgramId: String): String =
+        "user_program_enrollment_$userProgramId"
 
     /** Legacy Android prefs store for [UserProgramStore] — migrated on install (WS-4). */
     const val LEGACY_USER_PROGRAM_STORE = "user_program_store"
@@ -41,6 +77,9 @@ object MovitCacheKeys {
 
     fun dayCustomizationKey(userProgramId: String, weekNumber: Int, dayNumber: Int): String =
         "day_${userProgramId}_${weekNumber}_$dayNumber"
+
+    /** Set by [com.movit.core.data.local.MigratingMovitLocalStore] after one-time platform→SQLDelight migration. */
+    const val LEGACY_CUTOVER_V1 = "legacy_cutover_v1"
 
     const val SYNC_STORE = "sync_manager_prefs"
     const val SYNC_LAST_TIMESTAMP = "last_sync_timestamp"
@@ -64,6 +103,8 @@ object MovitCacheKeys {
     const val MESSAGE_LIBRARY_JSON = "message_library_json"
 
     fun programKey(programId: String): String = "program_export_$programId"
+
+    fun workoutTemplateExportKey(templateId: String): String = "workout_export_$templateId"
 
     fun effectivePlanKey(userProgramId: String, weekNumber: Int, dayNumber: Int): String =
         "effective_plan_${userProgramId}_${weekNumber}_$dayNumber"

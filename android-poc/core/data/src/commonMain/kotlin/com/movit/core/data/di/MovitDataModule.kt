@@ -4,9 +4,12 @@ import com.movit.core.data.MovitData
 import com.movit.core.data.audio.AudioFileDownloadPort
 import com.movit.core.data.audio.AudioFileDownloader
 import com.movit.core.data.audio.AudioPrefetchRunner
+import com.movit.core.data.audio.EntityAudioManifestFetcher
+import com.movit.core.data.audio.MovitMobileEntityAudioClient
 import com.movit.core.data.cache.AudioManifestCache
 import com.movit.core.data.cache.ColdOfflineBundleSeeder
 import com.movit.core.data.cache.MessageLibraryCache
+import com.movit.core.data.cache.MovitCacheFreshnessDiagnostics
 import com.movit.core.data.cache.MovitSyncMetadataStore
 import com.movit.core.data.cache.SystemMessageCache
 import com.movit.core.data.local.DefaultMovitLocalStoreFactory
@@ -18,14 +21,17 @@ import com.movit.core.data.platform.PlatformMovitAuthTokenStore
 import com.movit.core.data.repository.AccountSyncRepository
 import com.movit.core.data.repository.BillingSyncRepository
 import com.movit.core.data.repository.DayCustomizationLocalStore
+import com.movit.core.data.repository.ExerciseIdResolver
 import com.movit.core.data.repository.ExercisePreferenceLocalStore
 import com.movit.core.data.repository.ExploreSyncRepository
 import com.movit.core.data.repository.HomeSyncRepository
 import com.movit.core.data.repository.MobileWriteSyncRepository
 import com.movit.core.data.repository.PlanSyncRepository
+import com.movit.core.data.repository.UserProgramEnrollmentLocalStore
 import com.movit.core.data.repository.ProgramFlowSyncRepository
 import com.movit.core.data.preferences.MovitTrainingPreferences
 import com.movit.core.data.repository.ReportsSyncRepository
+import com.movit.core.data.repository.SyncCatalogOfflineRepository
 import com.movit.core.data.repository.TrainingConfigRepository
 import com.movit.core.data.journal.SessionJournalStore
 import com.movit.core.data.repository.TrainingSessionWriteCoordinator
@@ -65,9 +71,18 @@ fun movitDataModule(
     single { MovitMobileApi(get()) { get<MovitPlatformBindings>().apiBaseUrl() } }
     single { MovitBillingApi(get()) { get<MovitPlatformBindings>().apiBaseUrl() } }
     single { MovitSyncMetadataStore(get()) }
+    single { MovitCacheFreshnessDiagnostics(get(), get()) }
     single { AudioManifestCache(get()) }
     single<AudioFileDownloadPort> { AudioFileDownloader() }
-    single { AudioPrefetchRunner(get(), get()) }
+    single<EntityAudioManifestFetcher> {
+        EntityAudioManifestFetcher(
+            client = MovitMobileEntityAudioClient(get()),
+            manifestCache = get(),
+            platform = { get() },
+            exploreSync = get(),
+        )
+    }
+    single { AudioPrefetchRunner(get(), get(), get()) }
     single { SystemMessageCache(get()) }
     single {
         ColdOfflineBundleSeeder(
@@ -88,7 +103,15 @@ fun movitDataModule(
     }
     single { ExploreSyncRepository(api = get(), platform = { get() }, localStore = { get() }) }
     single { HomeSyncRepository(api = get(), platform = { get() }, localStore = { get() }) }
-    single { PlanSyncRepository(api = get(), platform = { get() }, homeSync = get()) }
+    single { UserProgramEnrollmentLocalStore(get()) }
+    single {
+        PlanSyncRepository(
+            api = get(),
+            platform = { get() },
+            homeSync = get(),
+            userProgramEnrollments = get(),
+        )
+    }
     single {
         ProgramFlowSyncRepository(
             api = get(),
@@ -114,6 +137,7 @@ fun movitDataModule(
             localStore = { get() },
             mobileWrites = get(),
             trainingConfig = get(),
+            catalogOffline = get(),
         )
     }
     single { SessionJournalStore(localStore = get()) }
@@ -126,10 +150,11 @@ fun movitDataModule(
     }
     single { AccountSyncRepository(api = get(), platform = { get() }) }
     single { BillingSyncRepository(api = get(), platform = { get() }) }
-    single { ExercisePreferenceLocalStore(get()) }
+    single { ExercisePreferenceLocalStore(get(), ExerciseIdResolver(get())) }
     single { DayCustomizationLocalStore(get()) }
     single { MessageLibraryCache(get()) }
-    single { TrainingConfigRepository(localStore = get()) }
+    single { TrainingConfigRepository(localStore = get(), messageLibraryCache = get()) }
+    single { SyncCatalogOfflineRepository(localStore = get(), trainingConfig = get()) }
     single { MovitTrainingPreferences(localStore = get()) }
     single {
         MovitSyncOrchestrator(
@@ -145,10 +170,12 @@ fun movitDataModule(
             audioPrefetchRunner = get(),
             offlineWrites = get(),
             trainingConfig = get(),
+            catalogOffline = get(),
             systemMessageCache = get(),
             exercisePreferenceLocalStore = get(),
             dayCustomizationLocalStore = get(),
             messageLibraryCache = get(),
+            userProgramEnrollmentLocalStore = get(),
         )
     }
     single {

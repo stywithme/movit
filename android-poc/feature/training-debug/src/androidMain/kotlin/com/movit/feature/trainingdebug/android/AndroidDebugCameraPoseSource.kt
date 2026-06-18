@@ -57,11 +57,11 @@ class AndroidDebugCameraPoseSource : TrainingDebugPoseSource {
         cameraSource?.bindPreview(previewView, lifecycleOwner)
     }
 
-    override suspend fun start(sourceConfig: TrainingDebugSourceConfig) {
-        config = sourceConfig
-        isFrontCamera = sourceConfig.isFrontCamera
+    override suspend fun start(config: TrainingDebugSourceConfig) {
+        this.config = config
+        isFrontCamera = config.isFrontCamera
         val source = cameraSource ?: return
-        applySelectedModel(sourceConfig.modelType)
+        applySelectedModel(config.modelType)
         source.setDebugFrameListener { detection, poseFrame ->
             if (poseFrame == null) {
                 frameFlow.tryEmit(null)

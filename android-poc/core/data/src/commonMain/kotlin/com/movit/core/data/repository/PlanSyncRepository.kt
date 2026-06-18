@@ -9,10 +9,12 @@ class PlanSyncRepository(
     private val api: MovitMobileApi,
     private val platform: () -> MovitPlatformBindings,
     private val homeSync: HomeSyncRepository,
+    private val userProgramEnrollments: UserProgramEnrollmentLocalStore,
 ) {
-    /** Active enrollment id persisted on platform bindings (migrated to SQLDelight on install). */
+    /** Active enrollment id from local sync cache, then platform bindings. */
     fun readCachedActiveUserProgramId(): String? =
-        platform().activeUserProgramId()?.takeIf { it.isNotBlank() }
+        userProgramEnrollments.resolveActiveUserProgramId()
+            ?: platform().activeUserProgramId()?.takeIf { it.isNotBlank() }
 
     /**
      * Enrolls in [programId] via `POST /api/mobile/plan/enroll`, then resolves the active
@@ -37,6 +39,7 @@ class PlanSyncRepository(
         ).getOrElse { error ->
             return AppResult.Failure(error.message ?: "Enrollment sync failed.")
         }
+        userProgramEnrollments.hydrateFromSync(userPrograms, isFullSync = true)
         val userProgramId = resolveActiveUserProgramId(userPrograms, programId)
             ?: return AppResult.Failure(
                 "Enrollment succeeded but the active user program id was not returned.",
@@ -47,21 +50,30 @@ class PlanSyncRepository(
         return AppResult.Success(userProgramId)
     }
 
-    /** Hydrates [MovitPlatformBindings.activeUserProgramId] from the server when a session exists. */
+    /** Hydrates active enrollment from local sync cache or the server when a session exists. */
     suspend fun refreshActiveUserProgramId(programId: String? = null): AppResult<String?> {
         val bindings = platform()
-        val auth = bindings.authHeader()
-        if (auth == null) {
-            return AppResult.Success(bindings.activeUserProgramId())
+        val cachedActiveId = bindings.activeUserProgramId()?.takeIf { it.isNotBlank() }
+
+        userProgramEnrollments.resolveActiveUserProgramId(programId)?.let { activeId ->
+            bindings.setActiveUserProgramId(activeId)
+            return AppResult.Success(activeId)
         }
 
-        val cachedActiveId = bindings.activeUserProgramId()?.takeIf { it.isNotBlank() }
+        val auth = bindings.authHeader()
+        if (auth == null) {
+            return AppResult.Success(cachedActiveId)
+        }
+
         val needsFullSync = programId != null || cachedActiveId == null
         val userPrograms = api.fetchSyncUserPrograms(
             forceRefresh = needsFullSync,
             authorization = auth,
         ).getOrElse {
             return AppResult.Success(cachedActiveId)
+        }
+        if (userPrograms.isNotEmpty()) {
+            userProgramEnrollments.hydrateFromSync(userPrograms, isFullSync = needsFullSync)
         }
         val activeId = resolveActiveUserProgramId(userPrograms, programId)
         if (activeId != null) {

@@ -54,10 +54,10 @@ class AndroidDebugVideoPoseSource(
         onSeekReset = listener
     }
 
-    override suspend fun start(sourceConfig: TrainingDebugSourceConfig) {
-        config = sourceConfig
+    override suspend fun start(config: TrainingDebugSourceConfig) {
+        this.config = config
         val detector = syncDetector ?: return
-        val resolved = detector.warmUp(MediaPipeSyncRunningMode.VIDEO, sourceConfig.toPoseCaptureConfig())
+        val resolved = detector.warmUp(MediaPipeSyncRunningMode.VIDEO, config.toPoseCaptureConfig())
         modelLabelCache = resolved.displayLabel
     }
 

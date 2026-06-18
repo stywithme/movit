@@ -7,6 +7,7 @@ import com.movit.core.data.cache.MovitCacheDriftDetector
 import com.movit.core.data.cache.MovitSyncMetadataStore
 import com.movit.core.data.cache.SystemMessageCache
 import com.movit.core.data.local.MovitLocalStore
+import com.movit.core.data.outbox.LegacyWorkoutSyncGate
 import com.movit.core.data.outbox.OfflineWriteQueue
 import com.movit.core.data.platform.MovitPlatformBindings
 import com.movit.core.data.repository.DayCustomizationLocalStore
@@ -15,7 +16,9 @@ import com.movit.core.data.repository.ExploreSyncRepository
 import com.movit.core.data.repository.HomeSyncRepository
 import com.movit.core.data.repository.PlanSyncRepository
 import com.movit.core.data.repository.ReportsSyncRepository
+import com.movit.core.data.repository.SyncCatalogOfflineRepository
 import com.movit.core.data.repository.TrainingConfigRepository
+import com.movit.core.data.repository.UserProgramEnrollmentLocalStore
 import com.movit.core.network.MovitMobileApi
 import com.movit.core.network.dto.ExploreDataDto
 import com.movit.core.network.dto.HomeDataDto
@@ -37,10 +40,12 @@ class MovitSyncOrchestrator(
     private val audioPrefetchRunner: AudioPrefetchRunner,
     private val offlineWrites: OfflineWriteQueue,
     private val trainingConfig: TrainingConfigRepository,
+    private val catalogOffline: SyncCatalogOfflineRepository,
     private val systemMessageCache: SystemMessageCache,
     private val exercisePreferenceLocalStore: ExercisePreferenceLocalStore,
     private val dayCustomizationLocalStore: DayCustomizationLocalStore,
     private val messageLibraryCache: MessageLibraryCache,
+    private val userProgramEnrollmentLocalStore: UserProgramEnrollmentLocalStore,
 ) {
     sealed class SyncOutcome {
         data class Success(
@@ -166,9 +171,16 @@ class MovitSyncOrchestrator(
                 reportsSync.hydrateFromSync(payload.plannedWorkoutReports)
             }
 
+            if (payload.userPrograms.isNotEmpty()) {
+                userProgramEnrollmentLocalStore.hydrateFromSync(
+                    rows = payload.userPrograms,
+                    isFullSync = isFullSync,
+                )
+            }
+
             payload.userPrograms.forEach { userProgram ->
-                val userProgramId = userProgram.id.takeIf { it.isNotBlank() }
-                if (userProgramId != null && userProgram.customizations != null) {
+                val userProgramId = userProgram.id.takeIf { it.isNotBlank() } ?: return@forEach
+                if (userProgram.customizations != null) {
                     dayCustomizationLocalStore.hydrateFromBackend(
                         userProgramId = userProgramId,
                         customizations = userProgram.customizations,
@@ -189,6 +201,7 @@ class MovitSyncOrchestrator(
             }
 
             exploreData = exploreSync.applyFromSync(payload, isFullSync)
+            catalogOffline.applyFromSync(payload, isFullSync)
         }
 
         metadataStore.writeFromSyncMeta(syncResponse.meta)
@@ -211,6 +224,7 @@ class MovitSyncOrchestrator(
         val reportsResult = if (bindings.isProUser()) reportsSync.syncDashboard() else null
 
         updateLocalEntityCounts(exploreData)
+        LegacyWorkoutSyncGate.drainLegacyExecutionsIfRegistered()
         offlineWrites.replayPending()
 
         return SyncOutcome.Success(

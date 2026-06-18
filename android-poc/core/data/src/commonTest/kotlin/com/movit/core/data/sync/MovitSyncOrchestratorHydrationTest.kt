@@ -15,7 +15,10 @@ import com.movit.core.data.repository.FakeMovitPlatformBindings
 import com.movit.core.data.repository.HomeSyncRepository
 import com.movit.core.data.repository.PlanSyncRepository
 import com.movit.core.data.repository.ReportsSyncRepository
+import com.movit.core.data.repository.SyncCatalogOfflineRepository
 import com.movit.core.data.repository.TrainingConfigRepository
+import com.movit.core.data.repository.UserProgramEnrollmentLocalStore
+import com.movit.core.data.repository.testPlanSyncRepository
 import com.movit.core.data.repository.testLocalStore
 import com.movit.core.data.repository.testMobileApi
 import com.movit.core.network.MovitJson
@@ -47,6 +50,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 class MovitSyncOrchestratorHydrationTest {
 
@@ -77,6 +81,7 @@ class MovitSyncOrchestratorHydrationTest {
                 localStore = { localStore },
             )
             val dayCustomizationLocalStore = RecordingDayCustomizationLocalStore(localStore)
+            val userProgramEnrollmentLocalStore = UserProgramEnrollmentLocalStore(localStore)
             val messageLibraryCache = MessageLibraryCache(localStore)
 
             val engine = MockEngine { request ->
@@ -101,6 +106,7 @@ class MovitSyncOrchestratorHydrationTest {
                 reportsSync = reportsSync,
                 dayCustomizationLocalStore = dayCustomizationLocalStore,
                 messageLibraryCache = messageLibraryCache,
+                userProgramEnrollmentLocalStore = userProgramEnrollmentLocalStore,
             )
 
             orchestrator.syncIfNeeded(forceCheck = true)
@@ -117,6 +123,14 @@ class MovitSyncOrchestratorHydrationTest {
 
             assertEquals(1, dayCustomizationLocalStore.hydrateCalls.size)
             assertEquals("up-1", dayCustomizationLocalStore.hydrateCalls.single().userProgramId)
+
+            val enrollment = userProgramEnrollmentLocalStore.get("up-1")
+            assertNotNull(enrollment)
+            assertEquals("prog-1", enrollment.programId)
+            assertEquals(true, enrollment.isActive)
+            assertEquals(listOf(1, 3, 5), enrollment.trainingWeekdays)
+            assertEquals("2026-06-10T00:00:00Z", enrollment.updatedAt)
+            assertEquals("up-1", userProgramEnrollmentLocalStore.resolveActiveUserProgramId())
 
             assertEquals(1, messageLibraryCache.read().size)
             assertEquals("msg-1", messageLibraryCache.read().single().id)
@@ -242,11 +256,14 @@ class MovitSyncOrchestratorHydrationTest {
         reportsSync: ReportsSyncRepository = ReportsSyncRepository(api, { platform }, { localStore }),
         dayCustomizationLocalStore: DayCustomizationLocalStore = DayCustomizationLocalStore(localStore),
         messageLibraryCache: MessageLibraryCache = MessageLibraryCache(localStore),
+        userProgramEnrollmentLocalStore: UserProgramEnrollmentLocalStore =
+            UserProgramEnrollmentLocalStore(localStore),
     ): MovitSyncOrchestrator {
         val home = HomeSyncRepository(api, { platform }, { localStore })
         val explore = ExploreSyncRepository(api, { platform }, { localStore })
-        val plan = PlanSyncRepository(api, { platform }, home)
+        val plan = testPlanSyncRepository(api, platform, localStore, home)
         val audioManifestCache = AudioManifestCache(localStore)
+        val catalogOffline = SyncCatalogOfflineRepository(localStore, trainingConfig)
         return MovitSyncOrchestrator(
             api = api,
             platform = { platform },
@@ -260,10 +277,12 @@ class MovitSyncOrchestratorHydrationTest {
             audioPrefetchRunner = AudioPrefetchRunner(audioManifestCache, FakeAudioFileDownloader()),
             offlineWrites = OfflineWriteQueue(localStore, api) { platform },
             trainingConfig = trainingConfig,
+            catalogOffline = catalogOffline,
             systemMessageCache = systemMessageCache,
             exercisePreferenceLocalStore = exercisePreferenceLocalStore,
             dayCustomizationLocalStore = dayCustomizationLocalStore,
             messageLibraryCache = messageLibraryCache,
+            userProgramEnrollmentLocalStore = userProgramEnrollmentLocalStore,
         )
     }
 
@@ -303,6 +322,10 @@ class MovitSyncOrchestratorHydrationTest {
                         UserProgramExportDto(
                             id = "up-1",
                             programId = "prog-1",
+                            startDate = "2026-01-01",
+                            isActive = true,
+                            updatedAt = "2026-06-10T00:00:00Z",
+                            trainingWeekdays = listOf(1, 3, 5),
                             customizations = customizations,
                         ),
                     ),

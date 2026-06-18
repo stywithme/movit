@@ -87,7 +87,7 @@ class TrainingDebugAnalyzer {
         )
 
         val liveValue = primaryLiveValue(config, angles, positionDebug)
-        val status = buildStatus(config, positionDebug?.status, axisMatch?.allMatch == true, setupProbe.phase.name, setupExerciseLabel)
+        val status = buildStatus(config, positionDebug?.status, axisMatch.allMatch, setupProbe.phase.name, setupExerciseLabel)
         val infoText = buildInfoPanel(
             config = config,
             angles = angles,

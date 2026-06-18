@@ -48,7 +48,7 @@ class SharedReportDetailRepository : ReportDetailRepository {
                 }
             }
             is AppResult.Failure -> {
-                val cached = MovitData.reports.readCachedExerciseMetrics(reportId)
+                val cached = MovitData.reports.readCachedExerciseMetrics(reportId, programId)
                 val detail = cached?.let { ReportDetailApiMapper.map(reportId, it, strings) }
                 if (detail != null) {
                     AppResult.Success(detail)

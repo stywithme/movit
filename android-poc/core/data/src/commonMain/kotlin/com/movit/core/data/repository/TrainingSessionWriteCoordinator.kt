@@ -55,7 +55,7 @@ class TrainingSessionWriteCoordinator(
             legacyReport = legacyReport,
         )
         reportsSync.patchExerciseMetricsFromUpload(request)
-        return mobileWrites.uploadWorkoutExecution(request, operationId = operationId)
+        return mobileWrites.uploadWorkoutExecution(request, operationId = operationId ?: upload.id)
     }
 
     suspend fun completePlannedWorkout(

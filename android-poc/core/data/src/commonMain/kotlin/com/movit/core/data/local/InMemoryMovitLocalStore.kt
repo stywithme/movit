@@ -22,6 +22,13 @@ class InMemoryMovitLocalStore : MovitLocalStore {
         jsonCache.remove(cacheKey(store, key))
     }
 
+    override fun listJsonCacheEntries(store: String): Map<String, String> {
+        val prefix = cacheKey(store, "")
+        return jsonCache
+            .filterKeys { it.startsWith(prefix) }
+            .mapKeys { (key, _) -> key.removePrefix(prefix) }
+    }
+
     override fun readSyncMetadata(scope: String): SyncMetadata? = syncMetadata[scope]
 
     override fun writeSyncMetadata(scope: String, version: String?, lastSyncAt: String?) {

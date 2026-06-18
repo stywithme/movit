@@ -29,10 +29,10 @@ class AndroidDebugImagePoseSource(
     private var config = TrainingDebugSourceConfig()
     private var modelLabelCache = "full"
 
-    override suspend fun start(sourceConfig: TrainingDebugSourceConfig) {
-        config = sourceConfig
+    override suspend fun start(config: TrainingDebugSourceConfig) {
+        this.config = config
         val detector = syncDetector ?: return
-        val resolved = detector.warmUp(MediaPipeSyncRunningMode.IMAGE, sourceConfig.toPoseCaptureConfig())
+        val resolved = detector.warmUp(MediaPipeSyncRunningMode.IMAGE, config.toPoseCaptureConfig())
         modelLabelCache = resolved.displayLabel
         reanalyze()
     }

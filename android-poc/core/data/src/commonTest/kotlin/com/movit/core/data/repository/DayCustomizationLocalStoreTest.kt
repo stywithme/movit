@@ -1,5 +1,6 @@
 package com.movit.core.data.repository
 
+import com.movit.core.data.outbox.DayCustomizationCacheDto
 import com.movit.core.network.dto.EffectivePlannedWorkoutDto
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -92,6 +93,39 @@ class DayCustomizationLocalStoreTest {
             originalWorkouts = emptyList(),
         )
         assertEquals("pw-imported", effective.single().id)
+    }
+
+    @Test
+    fun get_readsLegacyProgramIdKeyedCustomizationViaResolver() {
+        val localStore = testLocalStore()
+        UserProgramEnrollmentLocalStore(localStore).hydrateFromSync(
+            listOf(
+                com.movit.core.network.dto.UserProgramExportDto(
+                    id = "up-1",
+                    programId = "prog-1",
+                    isActive = true,
+                ),
+            ),
+            isFullSync = true,
+        )
+        com.movit.core.data.cache.MovitCachePolicy.writeJson(
+            localStore,
+            MovitCacheKeys.DAY_CUSTOMIZATION_STORE,
+            MovitCacheKeys.dayCustomizationKey("prog-1", 1, 1),
+            DayCustomizationCacheDto(
+                userProgramId = "prog-1",
+                weekNumber = 1,
+                dayNumber = 1,
+                plannedWorkouts = listOf(EffectivePlannedWorkoutDto(id = "pw-legacy")),
+            ),
+            DayCustomizationCacheDto.serializer(),
+        )
+        val store = DayCustomizationLocalStore(localStore)
+
+        val cached = store.get("up-1", 1, 1)
+
+        assertNotNull(cached)
+        assertEquals("pw-legacy", cached.plannedWorkouts.single().id)
     }
 
     @Test

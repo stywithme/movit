@@ -1,5 +1,6 @@
 package com.movit.core.data.repository
 
+import com.movit.core.data.cache.MessageLibraryCache
 import com.movit.core.data.cache.MovitCachePolicy
 import com.movit.core.data.cache.MovitLruCache
 import com.movit.core.data.local.MovitLocalStore
@@ -20,6 +21,7 @@ import kotlinx.serialization.json.JsonElement
  */
 class TrainingConfigRepository(
     private val localStore: MovitLocalStore,
+    private val messageLibraryCache: MessageLibraryCache? = null,
 ) {
     private var memorySlugIndex: Set<String>? = null
     private var memorySlugAliases: Map<String, String>? = null
@@ -86,14 +88,16 @@ class TrainingConfigRepository(
 
         val slugs = readSlugIndex().toMutableSet()
         val aliases = readSlugAliasMap().toMutableMap()
+        val messageLibrary = messageLibraryCache?.read().orEmpty()
         ExerciseConfigParser.parseRecords(exercises).forEach { record ->
             val slug = record.slug
             if (slug.isBlank()) return@forEach
+            val toPersist = mergeRecordForPersist(record, messageLibrary)
             MovitCachePolicy.writeJson(
                 localStore,
                 MovitCacheKeys.EXERCISE_CONFIG_STORE,
                 MovitCacheKeys.exerciseConfigKey(slug),
-                record.withSanitizedConfig(),
+                toPersist.withSanitizedConfig(),
                 ExerciseConfigRecord.serializer(),
             )
             if (record.id.isNotBlank()) {
@@ -193,15 +197,36 @@ class TrainingConfigRepository(
         }
     }
 
-    private fun readRecordFromDisk(slug: String): ExerciseConfigRecord? =
-        MovitCachePolicy.readJson(
+    private fun readRecordFromDisk(slug: String): ExerciseConfigRecord? {
+        val record = MovitCachePolicy.readJson(
             localStore,
             MovitCacheKeys.EXERCISE_CONFIG_STORE,
             MovitCacheKeys.exerciseConfigKey(slug),
             ExerciseConfigRecord.serializer(),
-        )
+        ) ?: return null
+        return mergeRecordForRead(record)
+    }
+
+    private fun mergeRecordForRead(record: ExerciseConfigRecord): ExerciseConfigRecord {
+        val library = messageLibraryCache?.read().orEmpty()
+        if (library.isEmpty()) return record
+        if (!ExerciseMessageLibraryMerger.hasUnresolvedAssignments(record, library)) return record
+        return ExerciseMessageLibraryMerger.resolveRecords(listOf(record), library).single()
+    }
+
+    private fun mergeRecordForPersist(
+        record: ExerciseConfigRecord,
+        messageLibrary: List<SyncMessageTemplateDto>,
+    ): ExerciseConfigRecord {
+        if (messageLibrary.isEmpty()) return record
+        if (!ExerciseMessageLibraryMerger.hasUnresolvedAssignments(record, messageLibrary)) return record
+        return ExerciseMessageLibraryMerger.resolveRecords(listOf(record), messageLibrary).single()
+    }
 
     fun slugForExerciseId(id: String): String? = findSlugById(id)
+
+    fun resolveCanonicalExerciseId(alias: String): String =
+        ExerciseIdResolver(localStore).resolveCanonicalExerciseId(alias)
 
     private fun findSlugById(id: String): String? =
         localStore.readString(MovitCacheKeys.EXERCISE_CONFIG_STORE, MovitCacheKeys.exerciseIdToSlugKey(id))

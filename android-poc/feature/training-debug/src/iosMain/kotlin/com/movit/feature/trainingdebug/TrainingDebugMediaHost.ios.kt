@@ -2,6 +2,7 @@ package com.movit.feature.trainingdebug
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import kotlin.ParameterName
 
 @Composable
 actual fun TrainingDebugImageHost(
@@ -18,7 +19,11 @@ actual fun TrainingDebugVideoHost(
     isFrontCamera: Boolean,
     onFrame: (TrainingDebugFrameInput) -> Unit,
     onPickRequested: () -> Unit,
-    onProgress: (Long, Long, Boolean) -> Unit,
+    onProgress: (
+        @ParameterName("currentMs") Long,
+        @ParameterName("durationMs") Long,
+        @ParameterName("playing") Boolean,
+    ) -> Unit,
     onSeekReset: () -> Unit,
     modifier: Modifier,
 ) = Unit

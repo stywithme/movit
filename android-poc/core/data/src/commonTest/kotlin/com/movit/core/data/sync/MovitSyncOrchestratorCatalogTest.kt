@@ -16,8 +16,11 @@ import com.movit.core.data.repository.HomeSyncRepository
 import com.movit.core.data.repository.MovitCacheKeys
 import com.movit.core.data.repository.PlanSyncRepository
 import com.movit.core.data.repository.ReportsSyncRepository
+import com.movit.core.data.repository.SyncCatalogOfflineRepository
 import com.movit.core.data.repository.TrainingConfigRepository
+import com.movit.core.data.repository.UserProgramEnrollmentLocalStore
 import com.movit.core.data.repository.testLocalStore
+import com.movit.core.data.repository.testPlanSyncRepository
 import com.movit.core.data.repository.testMobileApi
 import com.movit.core.network.MovitJson
 import com.movit.core.network.dto.ExploreDataDto
@@ -127,8 +130,10 @@ class MovitSyncOrchestratorCatalogTest {
     ): MovitSyncOrchestrator {
         val home = HomeSyncRepository(api, { platform }, { localStore })
         val reports = ReportsSyncRepository(api, { platform }, { localStore })
-        val plan = PlanSyncRepository(api, { platform }, home)
+        val plan = testPlanSyncRepository(api, platform, localStore, home)
         val audioManifestCache = AudioManifestCache(localStore)
+        val trainingConfig = TrainingConfigRepository(localStore, MessageLibraryCache(localStore))
+        val catalogOffline = SyncCatalogOfflineRepository(localStore, trainingConfig)
         return MovitSyncOrchestrator(
             api = api,
             platform = { platform },
@@ -141,11 +146,13 @@ class MovitSyncOrchestratorCatalogTest {
             audioManifestCache = audioManifestCache,
             audioPrefetchRunner = AudioPrefetchRunner(audioManifestCache, FakeAudioFileDownloader()),
             offlineWrites = OfflineWriteQueue(localStore, api) { platform },
-            trainingConfig = TrainingConfigRepository(localStore),
+            trainingConfig = trainingConfig,
+            catalogOffline = catalogOffline,
             systemMessageCache = SystemMessageCache(localStore),
             exercisePreferenceLocalStore = ExercisePreferenceLocalStore(localStore),
             dayCustomizationLocalStore = DayCustomizationLocalStore(localStore),
             messageLibraryCache = MessageLibraryCache(localStore),
+            userProgramEnrollmentLocalStore = UserProgramEnrollmentLocalStore(localStore),
         )
     }
 

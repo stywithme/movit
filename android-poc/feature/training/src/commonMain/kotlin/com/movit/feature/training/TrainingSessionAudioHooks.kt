@@ -1,7 +1,7 @@
 package com.movit.feature.training
 
 import com.movit.core.data.audio.AudioPrefetchRunner
-import com.movit.core.data.cache.AudioManifestCache
+import com.movit.core.data.audio.EntityAudioManifestFetcher
 
 /**
  * DS-6 — prefetch cached voice clips when a live session opens.
@@ -12,9 +12,19 @@ import com.movit.core.data.cache.AudioManifestCache
 object TrainingSessionAudioHooks {
     suspend fun prefetchOnSessionOpen(
         prefetchRunner: AudioPrefetchRunner,
-        manifestCache: AudioManifestCache,
+        exerciseSlug: String,
+        workoutTemplateId: String? = null,
     ) {
-        if (manifestCache.read() == null) return
-        prefetchRunner.afterManifestApplied(isFullSync = false)
+        val hasEntityTargets = exerciseSlug.isNotBlank() || !workoutTemplateId.isNullOrBlank()
+        if (!hasEntityTargets) {
+            prefetchRunner.afterManifestApplied(isFullSync = false)
+            return
+        }
+        prefetchRunner.prefetchForTargets(
+            EntityAudioManifestFetcher.Targets(
+                exerciseSlugs = listOfNotNull(exerciseSlug.takeIf { it.isNotBlank() }),
+                workoutTemplateIds = listOfNotNull(workoutTemplateId?.takeIf { it.isNotBlank() }),
+            ),
+        )
     }
 }

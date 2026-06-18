@@ -183,8 +183,10 @@ private fun DrawScope.drawSkeletonConnections(
         val startJoint = landmarkIndexToJointCode(start)
         val endJoint = landmarkIndexToJointCode(end)
         val relevant = resolveJointVisual(startJoint, endJoint, jointVisuals, isBilateralFlipped)
+        // ANY_SIDE parity: the occluded (dimmed) side is not drawn at all — matches legacy
+        // SkeletonOverlayView, which `continue`s on dimmed joints rather than fading them.
+        if (relevant?.dimmed == true) continue
         val (color, width, alpha) = when {
-            relevant?.dimmed == true -> Triple(COLOR_LINE_DEFAULT, stroke, 0.35f)
             relevant != null && trainingPolish -> Triple(
                 qualityColor(relevant.quality),
                 trackedStroke,
@@ -223,15 +225,16 @@ private fun DrawScope.drawSkeletonJoints(
         val center = point(index) ?: continue
         val jointCode = landmarkIndexToJointCode(index) ?: continue
         val visual = jointVisualForLandmark(jointCode, jointVisuals, isBilateralFlipped)
+        // ANY_SIDE parity: the occluded (dimmed) side joint is hidden — matches legacy
+        // SkeletonOverlayView, which `continue`s on dimmed joints rather than fading them.
+        if (visual?.dimmed == true) continue
         val radius = if (visual != null && trainingPolish) trackedRadius else jointRadius
         val color = when {
-            visual?.dimmed == true -> COLOR_JOINT_DEFAULT.copy(alpha = 0.35f)
             visual != null && trainingPolish -> qualityColor(visual.quality)
             trainingPolish -> COLOR_JOINT_DEFAULT
             else -> Color.White.copy(alpha = 0.75f)
         }
         val alpha = when {
-            visual?.dimmed == true -> 0.35f
             visual != null && trainingPolish &&
                 (visual.quality == SkeletonJointQuality.WARNING ||
                     visual.quality == SkeletonJointQuality.DANGER ||
@@ -240,14 +243,14 @@ private fun DrawScope.drawSkeletonJoints(
             else -> 1f
         }
         drawCircle(color = color.copy(alpha = alpha), radius = radius, center = center)
-        if (trainingPolish && visual?.quality == SkeletonJointQuality.PERFECT && visual.dimmed != true) {
+        if (trainingPolish && visual?.quality == SkeletonJointQuality.PERFECT) {
             drawCircle(
                 color = color.copy(alpha = 0.35f),
                 radius = radius * 2.2f,
                 center = center,
             )
         }
-        if (trainingPolish && visual != null && visual.dimmed != true) {
+        if (trainingPolish && visual != null) {
             drawCircle(
                 color = color.copy(alpha = alpha * 0.85f),
                 radius = radius + 3.dp.toPx(),

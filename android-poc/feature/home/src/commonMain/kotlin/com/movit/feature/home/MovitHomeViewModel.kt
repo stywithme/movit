@@ -43,7 +43,10 @@ class MovitHomeViewModel(
             return
         }
 
-        if (_state.value.userName == null) {
+        if (_state.value.metricTiles.isEmpty() &&
+            _state.value.activeProgram == null &&
+            _state.value.todayPlan == null
+        ) {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
         }
         repository.observeDashboard().collect { cacheState ->

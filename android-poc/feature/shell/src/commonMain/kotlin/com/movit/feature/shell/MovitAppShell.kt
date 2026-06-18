@@ -14,10 +14,11 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.unit.dp
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.components.LocalMovitFloatingNavContentInset
 import com.movit.designsystem.components.MovitFloatingNavBar
@@ -33,7 +34,6 @@ import com.movit.feature.train.MovitTrainEffect
 import com.movit.feature.train.MovitTrainRoute
 import com.movit.feature.train.MovitTrainViewModel
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun MovitAppShell(
     state: MovitAppShellState,
@@ -50,9 +50,12 @@ fun MovitAppShell(
 ) {
     val innerRoute = state.currentInnerRoute
     val interceptSystemBack = innerRoute != null || state.selectedDestination != MovitAppDestination.Home
-    BackHandler(enabled = interceptSystemBack) {
-        onEvent(MovitAppShellEvent.BackPressed)
-    }
+    val navigationEventState = rememberNavigationEventState(NavigationEventInfo.None)
+    NavigationBackHandler(
+        state = navigationEventState,
+        isBackEnabled = interceptSystemBack,
+        onBackCompleted = { onEvent(MovitAppShellEvent.BackPressed) },
+    )
     val showFloatingNav = innerRoute == null
     val floatingNavInset = if (showFloatingNav) MovitFloatingNavContentInset else 0.dp
 

@@ -6,6 +6,7 @@ import com.movit.core.data.local.MovitAndroidRuntime
 import com.movit.core.data.outbox.registerOutboxConnectivityReplay
 import com.movit.core.data.platform.AndroidMovitPlatform
 import com.movit.core.posecapture.di.movitPoseCaptureAndroidModule
+import kotlinx.coroutines.runBlocking
 
 object MovitDataInstall {
 
@@ -17,6 +18,9 @@ object MovitDataInstall {
             platform = AndroidMovitPlatform(appContext),
         )
         registerOutboxConnectivityReplay(appContext)
-        LegacyWorkoutSyncDrain.drainPendingExecutions(appContext)
+        LegacyWorkoutSyncDrain.registerWithMovitData(appContext)
+        runBlocking {
+            MovitData.drainLegacyWorkoutExecutions()
+        }
     }
 }

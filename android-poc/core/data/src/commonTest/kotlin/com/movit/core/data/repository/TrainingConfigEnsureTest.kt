@@ -185,9 +185,10 @@ class TrainingConfigEnsureTest {
         val home = HomeSyncRepository(api, { platform }, { localStore })
         val explore = ExploreSyncRepository(api, { platform }, { localStore })
         val reports = ReportsSyncRepository(api, { platform }, { localStore })
-        val plan = PlanSyncRepository(api, { platform }, home)
+        val plan = testPlanSyncRepository(api, platform, localStore, home)
         val audioManifestCache = com.movit.core.data.cache.AudioManifestCache(localStore)
         val offlineWrites = com.movit.core.data.outbox.OfflineWriteQueue(localStore, api) { platform }
+        val catalogOffline = SyncCatalogOfflineRepository(localStore, trainingConfig)
         return com.movit.core.data.sync.MovitSyncOrchestrator(
             api = api,
             platform = { platform },
@@ -204,10 +205,12 @@ class TrainingConfigEnsureTest {
             ),
             offlineWrites = offlineWrites,
             trainingConfig = trainingConfig,
+            catalogOffline = catalogOffline,
             systemMessageCache = com.movit.core.data.cache.SystemMessageCache(localStore),
             exercisePreferenceLocalStore = com.movit.core.data.repository.ExercisePreferenceLocalStore(localStore),
             dayCustomizationLocalStore = com.movit.core.data.repository.DayCustomizationLocalStore(localStore),
             messageLibraryCache = com.movit.core.data.cache.MessageLibraryCache(localStore),
+            userProgramEnrollmentLocalStore = UserProgramEnrollmentLocalStore(localStore),
         )
     }
 

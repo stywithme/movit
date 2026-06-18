@@ -340,7 +340,6 @@ class SubscriptionActivity : AppCompatActivity(), PurchasesUpdatedListener {
                 }
             }
             is JsonPrimitive -> listOf("✓ ${features.contentOrNull.orEmpty()}")
-            else -> emptyList()
         }
     }
 

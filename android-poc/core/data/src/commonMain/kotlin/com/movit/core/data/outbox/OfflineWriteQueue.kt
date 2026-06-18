@@ -149,7 +149,7 @@ class OfflineWriteQueue(
         var failed = 0
         var skipped = 0
 
-        for (entry in localStore.listPendingOutbox()) {
+        for (entry in OutboxReplayOrdering.sortForReplay(localStore.listPendingOutbox())) {
             val current = localStore.getOutboxById(entry.id) ?: continue
             if (current.status != OutboxStatus.PENDING) {
                 skipped++
@@ -195,6 +195,8 @@ class OfflineWriteQueue(
         type: OutboxOperationType,
         payload: String,
     ): String {
+        LegacyWorkoutSyncGate.awaitBeforeEnqueue()
+
         val existing = localStore.getOutboxById(operationId)
         if (existing != null && existing.status != OutboxStatus.FAILED_PERMANENT) {
             return operationId

@@ -33,6 +33,10 @@ class SqlDelightMovitLocalStore(
         jsonQueries.deleteByStoreAndKey(store, key)
     }
 
+    override fun listJsonCacheEntries(store: String): Map<String, String> =
+        jsonQueries.selectAllByStore(store).executeAsList()
+            .associate { row -> row.cache_key to row.json_payload }
+
     override fun readSyncMetadata(scope: String): SyncMetadata? =
         syncQueries.selectByScope(scope).executeAsOneOrNull()?.let {
             SyncMetadata(

@@ -1,6 +1,7 @@
 package com.movit.core.data.sync
 
 import com.movit.core.data.audio.AudioPrefetchRunner
+import com.movit.core.data.audio.EntityAudioManifestFetcher
 import com.movit.core.data.platform.MovitPlatformBindings
 import com.movit.core.data.repository.TrainingConfigRepository
 import com.movit.core.data.repository.WorkoutSessionSyncRepository
@@ -77,6 +78,7 @@ class WeekOfflinePackPrefetcher(
         val bindings = platform()
         val userProgramId = bindings.activeUserProgramId()
         val exerciseSlugs = linkedSetOf<String>()
+        val workoutTemplateIds = linkedSetOf<String>()
         val imageUrls = linkedSetOf<String>()
         basePlan.coverImageUrl?.let { imageUrls += it }
 
@@ -97,6 +99,11 @@ class WeekOfflinePackPrefetcher(
                     )
                 ) {
                     is AppResult.Success -> {
+                        result.value.plannedWorkouts.forEach { planned ->
+                            planned.workoutTemplateId
+                                ?.takeIf(String::isNotBlank)
+                                ?.let { workoutTemplateIds += it }
+                        }
                         result.value.plannedWorkouts
                             .flatMap { it.items }
                             .mapNotNull { it.exerciseId?.takeIf(String::isNotBlank) }
@@ -116,11 +123,14 @@ class WeekOfflinePackPrefetcher(
         val configsCached = exerciseSlugs.count { trainingConfig.supports(it) }
 
         onProgress(WeekPrefetchProgress(WeekPrefetchProgress.Phase.CachingAudio, percent = 75))
-        audioPrefetch.afterManifestApplied(isFullSync = false)
+        audioPrefetch.prefetchForTargets(
+            EntityAudioManifestFetcher.Targets(
+                exerciseSlugs = exerciseSlugs,
+                workoutTemplateIds = workoutTemplateIds,
+            ),
+        )
 
         // TODO(N-25): platform Coil3 prefetch for [imageUrls] once a common ImagePrefetchPort exists.
-        // TODO(N-25): per-workout audio manifest fetch for [plannedWorkoutIds] when API consumer lands.
-        // ProgramExportDto has no exercise slugs — enrollment + effective-plan sync above is required.
 
         onProgress(WeekPrefetchProgress(WeekPrefetchProgress.Phase.Finishing, percent = 95))
 

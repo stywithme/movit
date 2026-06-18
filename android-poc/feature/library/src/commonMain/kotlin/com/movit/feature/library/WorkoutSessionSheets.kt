@@ -286,10 +286,11 @@ private fun EditDetailsSheetContent(
                 },
             )
         } else {
+            val reps = sheet.draft.reps
             EditStepperRow(
                 title = movitText("session_reps_title"),
                 subtitle = movitText("session_reps_sub"),
-                value = sheet.draft.reps ?: 12,
+                value = reps,
                 minValue = 1,
                 maxValue = 100,
                 onDecrement = { onDraftChange { it.copy(reps = ((it.reps ?: 12) - 1).coerceAtLeast(1)) } },

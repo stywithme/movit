@@ -11,6 +11,20 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+private fun planSyncRepository(
+    api: com.movit.core.network.MovitMobileApi,
+    platform: FakeMovitPlatformBindings,
+    localStore: com.movit.core.data.local.MovitLocalStore,
+): PlanSyncRepository {
+    val home = HomeSyncRepository(api, { platform }, { localStore })
+    return PlanSyncRepository(
+        api = api,
+        platform = { platform },
+        homeSync = home,
+        userProgramEnrollments = testUserProgramEnrollmentStore(localStore),
+    )
+}
+
 class PlanSyncRepositoryTest {
 
     @Test
@@ -38,11 +52,7 @@ class PlanSyncRepositoryTest {
             }
             val api = testMobileApi(engine, platform)
             val localStore = testLocalStore(platform)
-            val repo = PlanSyncRepository(
-                api = api,
-                platform = { platform },
-                homeSync = HomeSyncRepository(api, { platform }, { localStore }),
-            )
+            val repo = planSyncRepository(api, platform, localStore)
 
             val result = repo.enrollProgram("prog-1")
 
@@ -66,11 +76,7 @@ class PlanSyncRepositoryTest {
             }
             val api = testMobileApi(engine, platform)
             val localStore = testLocalStore(platform)
-            val repo = PlanSyncRepository(
-                api = api,
-                platform = { platform },
-                homeSync = HomeSyncRepository(api, { platform }, { localStore }),
-            )
+            val repo = planSyncRepository(api, platform, localStore)
 
             val result = repo.refreshActiveUserProgramId()
 
@@ -103,17 +109,42 @@ class PlanSyncRepositoryTest {
             }
             val api = testMobileApi(engine, platform)
             val localStore = testLocalStore(platform)
-            val repo = PlanSyncRepository(
-                api = api,
-                platform = { platform },
-                homeSync = HomeSyncRepository(api, { platform }, { localStore }),
-            )
+            val repo = planSyncRepository(api, platform, localStore)
 
             val result = repo.refreshActiveUserProgramId(programId = "prog-target")
 
             assertTrue(result is AppResult.Success)
             assertEquals("up-target", result.value)
             assertEquals("up-target", platform.activeUserProgramId())
+        }
+    }
+
+    @Test
+    fun refreshActiveUserProgramId_usesLocalEnrollmentWithoutExtraSync() {
+        runBlocking {
+            val platform = FakeMovitPlatformBindings(userProgramId = null)
+            val engine = MockEngine { respond("", HttpStatusCode.NotFound) }
+            val api = testMobileApi(engine, platform)
+            val localStore = testLocalStore(platform)
+            val enrollments = testUserProgramEnrollmentStore(localStore)
+            enrollments.hydrateFromSync(
+                rows = listOf(
+                    com.movit.core.network.dto.UserProgramExportDto(
+                        id = "up-cached",
+                        programId = "prog-1",
+                        isActive = true,
+                        trainingWeekdays = listOf(2, 4),
+                    ),
+                ),
+                isFullSync = true,
+            )
+            val repo = planSyncRepository(api, platform, localStore)
+
+            val result = repo.refreshActiveUserProgramId()
+
+            assertTrue(result is AppResult.Success)
+            assertEquals("up-cached", result.value)
+            assertEquals("up-cached", platform.activeUserProgramId())
         }
     }
 

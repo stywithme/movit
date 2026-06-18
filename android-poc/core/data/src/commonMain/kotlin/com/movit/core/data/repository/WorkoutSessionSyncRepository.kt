@@ -20,6 +20,7 @@ class WorkoutSessionSyncRepository(
     private val localStore: () -> MovitLocalStore,
     private val mobileWrites: MobileWriteSyncRepository,
     private val trainingConfig: TrainingConfigRepository,
+    private val catalogOffline: SyncCatalogOfflineRepository? = null,
 ) {
     fun readCachedEffectivePlan(
         userProgramId: String,
@@ -76,6 +77,10 @@ class WorkoutSessionSyncRepository(
     }
 
     fun readCachedTrainingConfig(templateId: String): WorkoutTemplateTrainingConfigDto? =
+        catalogOffline?.readWorkoutTrainingConfig(templateId)
+            ?: readSessionTrainingConfig(templateId)
+
+    private fun readSessionTrainingConfig(templateId: String): WorkoutTemplateTrainingConfigDto? =
         MovitCachePolicy.readJson(
             localStore(),
             MovitCacheKeys.SESSION_STORE,

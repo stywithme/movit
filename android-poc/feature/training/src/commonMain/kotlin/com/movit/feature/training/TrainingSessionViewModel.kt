@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.movit.core.data.MovitData
 import com.movit.core.data.audio.AudioPrefetchRunner
-import com.movit.core.data.cache.AudioManifestCache
 import com.movit.core.data.cache.SystemMessageRegistry
 import com.movit.core.data.preferences.MovitTrainingPreferences
 import com.movit.core.data.repository.TrainingConfigRepository
@@ -105,7 +104,6 @@ class TrainingSessionViewModel(
   private val writeCoordinator: TrainingSessionWriteCoordinator = MovitData.trainingWrites,
   private val trainingPreferences: MovitTrainingPreferences = MovitData.trainingPreferences,
   private val audioPrefetchRunner: AudioPrefetchRunner = MovitData.audioPrefetch,
-  private val audioManifestCache: AudioManifestCache = MovitData.audioManifest,
   private val setupValidation: SetupValidationConfig = SetupValidationConfig(),
   private val deviceTiltPort: DeviceTiltPort? = null,
   private val frameSnapshotPort: TrainingFrameSnapshotPort = defaultTrainingFrameSnapshotPort(),
@@ -515,7 +513,11 @@ class TrainingSessionViewModel(
 
   private fun prefetchAudio() {
     viewModelScope.launch {
-      TrainingSessionAudioHooks.prefetchOnSessionOpen(audioPrefetchRunner, audioManifestCache)
+      TrainingSessionAudioHooks.prefetchOnSessionOpen(
+        prefetchRunner = audioPrefetchRunner,
+        exerciseSlug = activeSlug,
+        workoutTemplateId = uploadContext?.workoutTemplateId,
+      )
     }
   }
 
@@ -1039,20 +1041,23 @@ class TrainingSessionViewModel(
       batch.record(upload, legacyJson)
       return
     }
-    writeHooks.enqueueExecutionUpload(
+    val result = writeHooks.enqueueExecutionUpload(
       upload = upload,
-      scope = viewModelScope,
       context = uploadContext?.context,
       workoutGroupId = uploadContext?.workoutGroupId,
       workoutTemplateId = uploadContext?.workoutTemplateId,
       legacyReport = postReport,
-      onEnqueued = { reportId ->
+    )
+    recordWriteOutcome(result, TrainingSessionWriteDiagnostics.WriteKind.EXECUTION_UPLOAD)
+    when (result) {
+      is com.movit.shared.AppResult.Success -> {
+        val reportId = result.value
         TrainingSessionReportCache.rekeyPostTraining(upload.id, reportId)
         postReport?.let { TrainingSessionReportCache.put(reportId, it.copy(id = reportId, workoutId = reportId)) }
         markReportAvailable(reportId)
-      },
-      onOutcome = { recordWriteOutcome(it, TrainingSessionWriteDiagnostics.WriteKind.EXECUTION_UPLOAD) },
-    )
+      }
+      is com.movit.shared.AppResult.Failure -> Unit
+    }
   }
 
   private fun markReportAvailable(reportId: String) {

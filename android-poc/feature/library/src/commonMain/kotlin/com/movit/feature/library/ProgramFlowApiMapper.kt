@@ -4,6 +4,7 @@ import com.movit.core.network.dto.ExploreDataDto
 import com.movit.core.network.dto.ExploreProgramDto
 import com.movit.core.network.dto.HomeDataDto
 import com.movit.core.network.dto.LocalizedNameDto
+import com.movit.core.network.dto.MetricsApiResponse
 import com.movit.core.network.dto.ProgramExportDto
 import com.movit.core.network.dto.ProgramProgressMetricsPayloadDto
 import com.movit.core.network.dto.ReportDashboardSummaryDto
@@ -66,21 +67,27 @@ object ProgramFlowApiMapper {
         program: ProgramExportDto,
         weekNumber: Int,
         metrics: ProgramProgressMetricsPayloadDto?,
-        dashboardSummary: ReportDashboardSummaryDto?,
+        weekScopeMetrics: MetricsApiResponse? = null,
+        dashboardSummary: ReportDashboardSummaryDto? = null,
         language: String,
         strings: ProgramFlowStrings,
     ): WeeklyReportUi {
         val weekMetrics = metrics?.weeks?.firstOrNull { it.weekNumber == weekNumber }
         val week = program.weeks.firstOrNull { it.weekNumber == weekNumber }
-        val plannedSessions = weekMetrics?.plannedWorkoutCount
+        val weekSummary = weekScopeMetrics?.summary
+        val plannedSessions = weekSummary?.workoutsPlanned
+            ?: weekMetrics?.plannedWorkoutCount
             ?: week?.days?.count { !it.isRestDay && it.plannedWorkouts.isNotEmpty() }
             ?: program.weeklyWorkoutTarget
             ?: 5
-        val completedSessions = estimateCompletedSessions(weekMetrics, plannedSessions, dashboardSummary)
-        val avgForm = weekMetrics?.avgFormScore?.roundToInt()
+        val completedSessions = weekSummary?.daysTrained
+            ?: weekSummary?.workoutsCompleted
+            ?: estimateCompletedSessions(weekMetrics, plannedSessions, dashboardSummary)
+        val avgForm = weekSummary?.averageFormScore?.roundToInt()
+            ?: weekMetrics?.avgFormScore?.roundToInt()
             ?: dashboardSummary?.overallFormScore?.roundToInt()
             ?: 0
-        val totalReps = dashboardSummary?.totalReps ?: 0
+        val totalReps = weekSummary?.totalReps ?: dashboardSummary?.totalReps ?: 0
 
         return WeeklyReportUi(
             programId = program.id,
@@ -94,7 +101,7 @@ object ProgramFlowApiMapper {
             sessionsPlanned = plannedSessions,
             avgFormPercent = avgForm.coerceIn(0, 100),
             totalReps = totalReps,
-            dailyScores = buildDailyScores(week, weekMetrics, strings),
+            dailyScores = buildDailyScores(week, weekMetrics, weekSummary, strings),
         )
     }
 
@@ -140,8 +147,21 @@ object ProgramFlowApiMapper {
     private suspend fun buildDailyScores(
         week: com.movit.core.network.dto.ProgramExportWeekDto?,
         weekMetrics: WeekProgressPointDto?,
+        weekScopeSummary: com.movit.core.network.dto.ExerciseMetricsSummaryDto?,
         strings: ProgramFlowStrings,
     ): List<WeeklyReportDayScoreUi> {
+        val trend = weekScopeSummary?.formScoreTrend
+        if (!trend.isNullOrEmpty()) {
+            val trainingDays = week?.days?.filter { !it.isRestDay }.orEmpty()
+            return trend.mapIndexed { index, score ->
+                val label = trainingDays.getOrNull(index)?.let { strings.dayShort(it.dayNumber) }
+                    ?: (index + 1).toString()
+                WeeklyReportDayScoreUi(
+                    label = label,
+                    scorePercent = score.roundToInt().coerceIn(0, 100),
+                )
+            }
+        }
         val trainingDays = week?.days?.filter { !it.isRestDay }.orEmpty()
         if (trainingDays.isEmpty()) {
             return listOf(

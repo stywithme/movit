@@ -19,18 +19,29 @@ import kotlinx.serialization.json.jsonObject
  */
 open class DayCustomizationLocalStore(
     private val localStore: MovitLocalStore,
+    private val keyResolver: DayCustomizationKeyResolver = DayCustomizationKeyResolver(
+        UserProgramEnrollmentLocalStore(localStore),
+    ),
 ) {
     fun get(
         userProgramId: String,
         weekNumber: Int,
         dayNumber: Int,
-    ): DayCustomizationCacheDto? =
-        MovitCachePolicy.readJson(
-            localStore,
-            MovitCacheKeys.DAY_CUSTOMIZATION_STORE,
-            MovitCacheKeys.dayCustomizationKey(userProgramId, weekNumber, dayNumber),
-            DayCustomizationCacheDto.serializer(),
-        )
+    ): DayCustomizationCacheDto? {
+        val canonicalId = keyResolver.resolveCanonicalUserProgramId(userProgramId)
+        readCustomization(canonicalId, weekNumber, dayNumber)?.let { return it }
+
+        val programId = keyResolver.programIdForUserProgram(canonicalId)
+            ?.takeIf { it != canonicalId }
+        if (programId != null) {
+            readCustomization(programId, weekNumber, dayNumber)?.let { return it }
+        }
+        return if (canonicalId != userProgramId) {
+            readCustomization(userProgramId, weekNumber, dayNumber)
+        } else {
+            null
+        }
+    }
 
     fun hasCustomization(userProgramId: String, weekNumber: Int, dayNumber: Int): Boolean =
         get(userProgramId, weekNumber, dayNumber) != null
@@ -64,9 +75,10 @@ open class DayCustomizationLocalStore(
         dayNumber: Int,
         plannedWorkouts: List<EffectivePlannedWorkoutDto>,
     ) {
+        val canonicalId = keyResolver.resolveCanonicalUserProgramId(userProgramId)
         save(
             DayCustomizationCacheDto(
-                userProgramId = userProgramId,
+                userProgramId = canonicalId,
                 weekNumber = weekNumber,
                 dayNumber = dayNumber,
                 plannedWorkouts = plannedWorkouts,
@@ -128,6 +140,18 @@ open class DayCustomizationLocalStore(
             DayCustomizationCacheDto.serializer(),
         )
     }
+
+    private fun readCustomization(
+        userProgramId: String,
+        weekNumber: Int,
+        dayNumber: Int,
+    ): DayCustomizationCacheDto? =
+        MovitCachePolicy.readJson(
+            localStore,
+            MovitCacheKeys.DAY_CUSTOMIZATION_STORE,
+            MovitCacheKeys.dayCustomizationKey(userProgramId, weekNumber, dayNumber),
+            DayCustomizationCacheDto.serializer(),
+        )
 
     companion object {
         fun parseBackendCustomizations(

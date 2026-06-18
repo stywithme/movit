@@ -119,7 +119,12 @@ class MobileWriteSyncRepository(
     ): AppResult<String> {
         if (!hasAuth()) return AppResult.Failure("Sign in to remove exercise preferences.")
 
-        localStore().remove(MovitCacheKeys.PREFERENCES_STORE, MovitCacheKeys.exercisePreferenceKey(exerciseId))
+        localStore().remove(
+            MovitCacheKeys.PREFERENCES_STORE,
+            MovitCacheKeys.exercisePreferenceKey(
+                ExerciseIdResolver(localStore()).resolveCanonicalExerciseId(exerciseId),
+            ),
+        )
 
         val id = if (operationId != null) {
             offlineWrites.enqueueExercisePreferenceDelete(exerciseId, operationId)
@@ -184,9 +189,7 @@ class MobileWriteSyncRepository(
 
     /**
      * Offline-safe upload for a single exercise execution (camera / training metrics).
-     * Uses [WorkoutExecutionUploadRequestDto.id] as the outbox idempotency key by default.
-     *
-     * Legacy OkHttp upload path still owns production traffic until KMP session wiring (Phase 07).
+     * Uses [WorkoutExecutionUploadRequestDto.id] as the stable outbox idempotency key.
      */
     suspend fun uploadWorkoutExecution(
         request: WorkoutExecutionUploadRequestDto,
@@ -237,11 +240,8 @@ class MobileWriteSyncRepository(
         exerciseId: String,
         request: UserExercisePreferenceUpsertRequest,
     ) {
-        localStore().writeString(
-            MovitCacheKeys.PREFERENCES_STORE,
-            MovitCacheKeys.exercisePreferenceKey(exerciseId),
-            MovitJson.encodeToString(UserExercisePreferenceUpsertRequest.serializer(), request),
-        )
+        val canonicalId = ExerciseIdResolver(localStore()).resolveCanonicalExerciseId(exerciseId)
+        ExercisePreferenceLocalStore(localStore()).upsert(canonicalId, request)
     }
 
     private fun applyCustomizationsToEffectivePlanCache(

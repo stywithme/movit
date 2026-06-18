@@ -12,6 +12,12 @@ object MobileApiContractRegistry {
         val reason: String,
     )
 
+    data class BackendOnlyEndpoint(
+        val method: String,
+        val path: String,
+        val reason: String,
+    )
+
     /** Normalized as METHOD + space + path (placeholders: {id}, {slug}, {workoutId}, {sessionId}, {overrideId}, {exerciseId}). */
     // Legacy Retrofit fully removed (WS-D/B8): AuthApi/ApiClient deleted; auth endpoints are now
     // KMP-native in MovitMobileApi (see kmpCoveredEndpoints), subscriptions in MovitBillingApi.
@@ -40,7 +46,7 @@ object MobileApiContractRegistry {
         "POST api/mobile/subscriptions/cancel",
     )
 
-    /** Endpoints implemented in MovitMobileApi (must match base("ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦") paths in source). */
+    /** Endpoints implemented in MovitMobileApi (must match base("...") paths in source). */
     val kmpMobileCoveredEndpoints: Set<String> = setOf(
         "GET api/mobile/explore",
         "GET api/mobile/home",
@@ -99,23 +105,58 @@ object MobileApiContractRegistry {
     val kmpCoveredEndpoints: Set<String>
         get() = kmpMobileCoveredEndpoints + kmpBillingCoveredEndpoints
 
+    /**
+     * Backend mobile routes with no KMP API method and no planned near-term consumer.
+     * Catalog/list routes are satisfied via `/sync` and `/explore` instead of list endpoints.
+     */
+    val backendOnlyEndpoints: List<BackendOnlyEndpoint> = listOf(
+        BackendOnlyEndpoint("DELETE", "api/mobile/auth/logout", "POST logout used; DELETE kept for admin parity"),
+        BackendOnlyEndpoint("POST", "api/mobile/auth/change-password", "Account security screen not in Movit shell"),
+        BackendOnlyEndpoint("GET", "api/mobile/programs", "Program catalog via sync/explore"),
+        BackendOnlyEndpoint("POST", "api/mobile/programs/{id}/enroll", "Enrollment via POST api/mobile/plan/enroll"),
+        BackendOnlyEndpoint("GET", "api/mobile/workout-templates", "Workout catalog via sync/explore"),
+        BackendOnlyEndpoint("GET", "api/mobile/subscriptions/mine", "Subscription history UI not ported"),
+        BackendOnlyEndpoint("GET", "api/mobile/exercise-preferences", "Preferences hydrated from sync payload"),
+        BackendOnlyEndpoint("GET", "api/mobile/workout-executions", "Execution history UI not ported"),
+        BackendOnlyEndpoint("GET", "api/mobile/workout-executions/{exerciseId}", "Per-exercise history UI not ported"),
+        BackendOnlyEndpoint("GET", "api/mobile/user-programs/{id}/today", "Today plan via GET api/mobile/plan/today"),
+        BackendOnlyEndpoint("POST", "api/mobile/user-programs/{id}/complete", "Completion via POST api/mobile/plan/complete"),
+        BackendOnlyEndpoint("GET", "api/mobile/reassessment/history", "Reassessment history UI not ported"),
+        BackendOnlyEndpoint("GET", "api/mobile/progression/planned-workout/{id}", "Alias of progression/session/{sessionId}"),
+        BackendOnlyEndpoint("GET", "api/assessment/history", "Assessment history UI not ported"),
+        BackendOnlyEndpoint("GET", "api/assessment/{id}", "Assessment detail UI not ported"),
+        BackendOnlyEndpoint("DELETE", "api/assessment/{id}", "Assessment delete needs product decision"),
+        BackendOnlyEndpoint("GET", "api/bookings/rules", "Booking feature out of Movit product scope"),
+        BackendOnlyEndpoint("GET", "api/exercises/{id}/substitutions", "Admin id route; mobile slug route covered"),
+    )
+
+    val backendOnlyEndpointKeys: Set<String> =
+        backendOnlyEndpoints.map { "${it.method} ${it.path}" }.toSet()
+
     val deferredEndpoints: List<DeferredEndpoint> = listOf(
         DeferredEndpoint("POST", "api/mobile/auth/reset-password", "Reset-password flow not in Movit shell"),
         DeferredEndpoint("PATCH", "api/mobile/auth/profile", "Profile PATCH deferred; settings PATCH covered"),
-        // Subscriptions now KMP-native (MovitBillingApi, Android); iOS StoreKit tracked in WS-H.
-        DeferredEndpoint("GET", "api/bookings/rules", "BookingApi removed in WS-5 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â out of Movit product scope"),
-        DeferredEndpoint("GET", "api/exercises/{id}/substitutions", "Admin id route; mobile slug route covered"),
         DeferredEndpoint("GET", "api/mobile/workout-executions/stats", "Home stats parity"),
         DeferredEndpoint("POST", "api/mobile/prescription/recommend", "Prescription parity"),
         DeferredEndpoint("GET", "api/mobile/plan/enrollment-check", "Enrollment check parity"),
-        DeferredEndpoint("POST", "api/mobile/plan/pause", "No backend route ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ActivePlanController has complete only"),
-        DeferredEndpoint("POST", "api/mobile/plan/resume", "No backend route ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ActivePlanController has complete only"),
+        DeferredEndpoint("POST", "api/mobile/plan/pause", "No backend route — ActivePlanController has complete only"),
+        DeferredEndpoint("POST", "api/mobile/plan/resume", "No backend route — ActivePlanController has complete only"),
         DeferredEndpoint("POST", "api/mobile/reassessment/request", "Reassessment request parity"),
         DeferredEndpoint("GET", "api/mobile/user-programs/{id}/overrides", "Overrides list read parity"),
     )
 
     val deferredEndpointKeys: Set<String> =
         deferredEndpoints.map { "${it.method} ${it.path}" }.toSet()
+
+    /**
+     * Canonical backend mobile route inventory (76-row parity matrix + assessment progress).
+     * Every entry must be KMP-covered, deferred, or backend-only.
+     */
+    val backendMobileRouteInventory: Set<String>
+        get() = kmpCoveredEndpoints +
+            deferredEndpointKeys +
+            backendOnlyEndpointKeys +
+            setOf("GET api/assessment/progress")
 
     /** KMP-only additions (not in any legacy consumer catalog). */
     val kmpOnlyEndpoints: Set<String> = setOf(

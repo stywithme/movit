@@ -8,6 +8,11 @@ import com.movit.core.data.di.movitDataModule
 import com.movit.core.data.local.DefaultMovitLocalStoreFactory
 import com.movit.core.data.local.MovitLocalStore
 import com.movit.core.data.local.MovitLocalStoreFactory
+import com.movit.core.data.cache.logCacheFreshnessLine
+import com.movit.core.data.cache.MovitCacheFreshnessDiagnostics
+import com.movit.core.data.cache.MovitCacheFreshnessReport
+import com.movit.core.data.outbox.LegacyAnalyticsPendingCleaner
+import com.movit.core.data.outbox.LegacyWorkoutSyncGate
 import com.movit.core.data.outbox.OfflineWriteQueue
 import com.movit.core.data.platform.MovitPlatformBindings
 import com.movit.core.data.repository.AccountSyncRepository
@@ -91,6 +96,7 @@ object MovitData {
         val koin = koin()
         koin.get<MovitLocalStore>().clearAllUserData()
         koin.get<AudioManifestCache>().clear()
+        LegacyAnalyticsPendingCleaner.clearIfRegistered()
         koin.get<MovitPlatformBindings>().clearLegacyUserCaches()
     }
 
@@ -115,5 +121,27 @@ object MovitData {
     val offlineWrites: OfflineWriteQueue get() = koin().get()
     val sync: MovitSyncOrchestrator get() = koin().get()
     val weekOfflinePrefetch: WeekOfflinePackPrefetcher get() = koin().get()
+
+    /**
+     * Migrates legacy Android analytics pending files into the KMP outbox.
+     * Blocks new outbox writes until drain completes ([LegacyWorkoutSyncGate]).
+     */
+    suspend fun drainLegacyWorkoutExecutions() {
+        if (!isInstalled) return
+        LegacyWorkoutSyncGate.drainLegacyExecutionsIfRegistered()
+    }
+
+    /** SQLDelight cache freshness snapshot for diagnostics and support logs. */
+    suspend fun cacheFreshnessReport(): MovitCacheFreshnessReport {
+        if (!isInstalled) error("MovitData.install() was not called.")
+        return koin().get<MovitCacheFreshnessDiagnostics>().snapshot()
+    }
+
+    /** One-line log helper for support / debug builds. */
+    suspend fun logCacheFreshness(tag: String = "MovitCache") {
+        if (!isInstalled) return
+        val line = cacheFreshnessReport().toLogLine()
+        logCacheFreshnessLine(tag, line)
+    }
 
 }

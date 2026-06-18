@@ -16,6 +16,9 @@ class MigratingMovitLocalStore(
 ) : MovitLocalStore {
     override fun readJsonCache(store: String, key: String): String? {
         sqlStore.readJsonCache(store, key)?.let { return it }
+        if (!LegacyCatalogReadPolicy.allowsRuntimePlatformFallback(store)) {
+            return null
+        }
         val legacy = platform().readCache(store, key) ?: return null
         sqlStore.writeJsonCache(store, key, legacy)
         return legacy
@@ -91,6 +94,16 @@ class MigratingMovitLocalStore(
             }
         }
         migrateActiveUserProgramId(bindings)
+        CanonicalCacheKeyMigrator(sqlStore, platform).migrateIfNeeded()
+        markLegacyCutoverComplete()
+    }
+
+    private fun markLegacyCutoverComplete() {
+        sqlStore.writeJsonCache(
+            MovitCacheKeys.SYNC_STORE,
+            MovitCacheKeys.LEGACY_CUTOVER_V1,
+            "true",
+        )
     }
 
     private fun migrateEntry(
@@ -122,7 +135,6 @@ class MigratingMovitLocalStore(
                 ?.id
         }.getOrNull() ?: return
         sqlStore.writeJsonCache(store, key, activeId)
-        bindings.writeCache(store, key, activeId)
     }
 
     private companion object {
@@ -149,10 +161,12 @@ class MigratingMovitLocalStore(
             MovitCacheKeys.SESSION_STORE,
             MovitCacheKeys.PREFERENCES_STORE,
             MovitCacheKeys.PROGRAM_STORE,
+            MovitCacheKeys.DAY_CUSTOMIZATION_STORE,
         )
 
         val LEGACY_PREF_STORE_MIGRATIONS = listOf(
             MovitCacheKeys.LEGACY_USER_EXERCISE_PREFERENCES_STORE to MovitCacheKeys.PREFERENCES_STORE,
+            MovitCacheKeys.LEGACY_DAY_CUSTOMIZATION_STORE to MovitCacheKeys.DAY_CUSTOMIZATION_STORE,
         )
     }
 }

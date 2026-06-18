@@ -42,6 +42,24 @@ internal fun testMobileApi(
 internal fun testLocalStore(platform: FakeMovitPlatformBindings = FakeMovitPlatformBindings()): FakeMovitLocalStore =
     FakeMovitLocalStore(platform)
 
+internal fun testUserProgramEnrollmentStore(localStore: MovitLocalStore): UserProgramEnrollmentLocalStore =
+    UserProgramEnrollmentLocalStore(localStore)
+
+internal fun testPlanSyncRepository(
+    api: MovitMobileApi,
+    platform: FakeMovitPlatformBindings,
+    localStore: MovitLocalStore,
+    homeSync: HomeSyncRepository? = null,
+): PlanSyncRepository {
+    val home = homeSync ?: HomeSyncRepository(api, { platform }, { localStore })
+    return PlanSyncRepository(
+        api = api,
+        platform = { platform },
+        homeSync = home,
+        userProgramEnrollments = testUserProgramEnrollmentStore(localStore),
+    )
+}
+
 internal fun testOfflineWriteQueue(
     api: MovitMobileApi,
     platform: FakeMovitPlatformBindings,
