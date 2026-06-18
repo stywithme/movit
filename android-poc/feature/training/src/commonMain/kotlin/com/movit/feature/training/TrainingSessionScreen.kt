@@ -74,12 +74,17 @@ fun TrainingSessionScreen(
     var showSettingsDialog by remember { mutableStateOf(false) }
     val romIndicators = remember(
         state.landmarks,
-        state.skeletonOverlayParity,
+        state.jointStateInfos,
+        state.skeletonOverlayParity.isBilateralFlipped,
+        state.skeletonOverlayParity.jointVisuals,
         trainingPreferences.indicatorType,
     ) {
         buildSkeletonRomIndicators(
             landmarks = state.landmarks,
-            jointVisuals = state.skeletonOverlayParity.jointVisuals,
+            jointStateInfos = state.jointStateInfos,
+            anySideDimmedJointCodes = state.skeletonOverlayParity.jointVisuals
+                .filterValues { it.dimmed }
+                .keys,
             isBilateralFlipped = state.skeletonOverlayParity.isBilateralFlipped,
             indicatorType = trainingPreferences.indicatorType,
         )

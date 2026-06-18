@@ -27,4 +27,29 @@ class SkeletonRomGeometryTest {
         assertEquals(1f, SkeletonRomGeometry.lineProgress(200f, 50f, 100f, 0f, 180f))
         assertEquals(0.5f, SkeletonRomGeometry.lineProgress(90f, 50f, 100f, 0f, 180f), 0.001f)
     }
+
+    @Test
+    fun resolvedState_usesUpDownRangesAndTransitionGap() {
+        val upRange = SkeletonRomStateRanges(
+            perfect = SkeletonRomAngleRange(150f, 170f),
+            normal = SkeletonRomAngleRange(140f, 180f),
+        )
+        val downRange = SkeletonRomStateRanges(
+            perfect = SkeletonRomAngleRange(30f, 50f),
+            normal = SkeletonRomAngleRange(20f, 60f),
+        )
+
+        assertEquals(
+            SkeletonRomState.PERFECT,
+            SkeletonRomGeometry.resolvedStateForAngle(40f, upRange, downRange),
+        )
+        assertEquals(
+            SkeletonRomState.TRANSITION,
+            SkeletonRomGeometry.resolvedStateForAngle(100f, upRange, downRange),
+        )
+        assertEquals(
+            SkeletonRomState.NORMAL,
+            SkeletonRomGeometry.resolvedStateForAngle(175f, upRange, downRange),
+        )
+    }
 }

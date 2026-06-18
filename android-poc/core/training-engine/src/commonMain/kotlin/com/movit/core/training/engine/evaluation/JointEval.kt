@@ -29,6 +29,10 @@ data class JointEval(
         isPrimary = isPrimary,
         currentAngle = smoothedAngle,
         currentZone = zoneType,
+        stateRanges = stateRanges,
+        upStateRanges = upStateRanges,
+        downStateRanges = downStateRanges,
+        invertIndicator = invertIndicator,
     )
 }
 

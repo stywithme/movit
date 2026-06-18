@@ -22,6 +22,7 @@ import com.movit.core.training.engine.ErrorType
 import com.movit.core.training.boundary.TrainingFrameSnapshotPort
 import com.movit.core.training.engine.JointError
 import com.movit.core.training.engine.JointState
+import com.movit.core.training.engine.JointStateInfo
 import com.movit.core.training.engine.feedback.FeedbackRouter
 import com.movit.core.training.engine.feedback.FeedbackVisualMessage
 import com.movit.core.training.engine.feedback.TrainingFeedbackEventRouter
@@ -1347,7 +1348,13 @@ class TrainingSessionViewModel(
       setupJointRows = _state.value.setupJointRows,
       language = language,
     )
-    _state.update { it.copy(skeletonOverlayParity = parity, jointVisuals = parity.jointVisuals) }
+    _state.update {
+      it.copy(
+        jointStateInfos = metrics?.jointStateInfos ?: emptyMap(),
+        skeletonOverlayParity = parity,
+        jointVisuals = parity.jointVisuals,
+      )
+    }
   }
 
   private fun buildEngine(): MovitTrainingEngine? {
@@ -1565,6 +1572,7 @@ data class TrainingSessionUiState(
   /** When true, mirror normalized X to match front-camera PreviewView. */
   val skeletonMirrorPreview: Boolean = true,
   val jointVisuals: Map<String, SkeletonJointVisual> = emptyMap(),
+  val jointStateInfos: Map<String, JointStateInfo> = emptyMap(),
   val skeletonOverlayParity: SkeletonOverlayParityState = SkeletonOverlayParityState(),
   val glassMessage: GlassMessageState? = null,
   val showVignette: Boolean = false,

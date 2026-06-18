@@ -1,10 +1,16 @@
 package com.movit.feature.training
 
-import com.movit.designsystem.components.SkeletonJointQuality
-import com.movit.designsystem.components.SkeletonJointVisual
+import com.movit.core.training.config.AngleRange
+import com.movit.core.training.config.StateRanges
+import com.movit.core.training.engine.JointState
+import com.movit.core.training.engine.JointStateInfo
 import com.movit.designsystem.components.SkeletonLandmarkPoint
+import com.movit.designsystem.components.SkeletonRomAngleRange
+import com.movit.designsystem.components.SkeletonRomGeometry
 import com.movit.designsystem.components.SkeletonRomIndicator
 import com.movit.designsystem.components.SkeletonRomIndicatorStyle
+import com.movit.designsystem.components.SkeletonRomState
+import com.movit.designsystem.components.SkeletonRomStateRanges
 
 private const val LEFT_HIP = 23
 private const val RIGHT_HIP = 24
@@ -19,55 +25,74 @@ private const val RIGHT_ELBOW = 14
 private const val LEFT_WRIST = 15
 private const val RIGHT_WRIST = 16
 
-/**
- * Builds partial ROM overlays from landmarks + joint visuals until engine feeds full ranges (I-8).
- */
 fun buildSkeletonRomIndicators(
     landmarks: List<SkeletonLandmarkPoint>?,
-    jointVisuals: Map<String, SkeletonJointVisual>,
+    jointStateInfos: Map<String, JointStateInfo>,
+    anySideDimmedJointCodes: Set<String> = emptySet(),
     isBilateralFlipped: Boolean = false,
     indicatorType: String = "arc",
 ): List<SkeletonRomIndicator> {
-    if (landmarks == null || landmarks.size < 33 || jointVisuals.isEmpty()) return emptyList()
-    return jointVisuals.values.mapNotNull { visual ->
-        if (visual.dimmed) return@mapNotNull null
-        if (visual.quality == SkeletonJointQuality.NORMAL) return@mapNotNull null
-        val lookupCode = effectiveLandmarkJointCode(visual.jointCode, isBilateralFlipped)
+    if (landmarks == null || landmarks.size < 33 || jointStateInfos.isEmpty()) return emptyList()
+    val style = if (indicatorType.equals("line", ignoreCase = true)) {
+        SkeletonRomIndicatorStyle.LINE
+    } else {
+        SkeletonRomIndicatorStyle.ARC
+    }
+
+    return jointStateInfos.values.mapNotNull { info ->
+        if (!info.isPrimary) return@mapNotNull null
+        if (info.jointCode in anySideDimmedJointCodes) return@mapNotNull null
+        val upRanges = info.upStateRanges?.toSkeletonRomStateRanges()
+        val downRanges = info.downStateRanges?.toSkeletonRomStateRanges()
+        if (upRanges == null && downRanges == null) return@mapNotNull null
+
+        val lookupCode = effectiveLandmarkJointCode(info.jointCode, isBilateralFlipped)
         val anchor = jointAnchor(lookupCode, landmarks) ?: return@mapNotNull null
-        val (rangeMin, rangeMax, angle, color) = qualityBand(visual.quality)
-        val style = if (indicatorType.equals("line", ignoreCase = true)) {
-            SkeletonRomIndicatorStyle.LINE
-        } else {
-            SkeletonRomIndicatorStyle.ARC
-        }
+        val activeRange = info.stateRanges ?: info.upStateRanges ?: info.downStateRanges
+        val visualState = info.state.toSkeletonRomState()
+
         SkeletonRomIndicator(
-            jointCode = visual.jointCode,
+            jointCode = info.jointCode,
             style = style,
             centerX = anchor.center.x,
             centerY = anchor.center.y,
-            limbEndX = anchor.limbEnd.x,
-            limbEndY = anchor.limbEnd.y,
-            currentAngleDeg = angle,
-            rangeMinDeg = rangeMin,
-            rangeMaxDeg = rangeMax,
-            markerColorArgb = color,
+            upperEndX = anchor.upper.x,
+            upperEndY = anchor.upper.y,
+            lowerEndX = anchor.lower.x,
+            lowerEndY = anchor.lower.y,
+            limbEndX = anchor.lower.x,
+            limbEndY = anchor.lower.y,
+            currentAngleDeg = info.currentAngle.toFloat().coerceIn(0f, 180f),
+            rangeMinDeg = activeRange?.effectiveMin?.toFloat() ?: 0f,
+            rangeMaxDeg = activeRange?.effectiveMax?.toFloat() ?: 180f,
+            markerColorArgb = SkeletonRomGeometry.stateColorArgb(visualState),
+            currentState = visualState,
+            upStateRanges = upRanges,
+            downStateRanges = downRanges,
+            invertAngles = info.invertIndicator,
+            isHoldRange = upRanges != null && upRanges == downRanges,
+            isPrimary = info.isPrimary,
+            dimmed = false,
         )
     }
 }
 
 private data class NormPoint(val x: Float, val y: Float)
 
-private data class JointAnchor(val center: NormPoint, val limbEnd: NormPoint)
+private data class JointAnchor(
+    val upper: NormPoint,
+    val center: NormPoint,
+    val lower: NormPoint,
+)
 
-private fun jointAnchor(jointCode: String, landmarks: List<SkeletonLandmarkPoint>): JointAnchor? {
-    return when {
+private fun jointAnchor(jointCode: String, landmarks: List<SkeletonLandmarkPoint>): JointAnchor? =
+    when {
         jointCode.contains("left_knee", ignoreCase = true) -> anchorTriple(LEFT_HIP, LEFT_KNEE, LEFT_ANKLE, landmarks)
         jointCode.contains("right_knee", ignoreCase = true) -> anchorTriple(RIGHT_HIP, RIGHT_KNEE, RIGHT_ANKLE, landmarks)
         jointCode.contains("left_elbow", ignoreCase = true) -> anchorTriple(LEFT_SHOULDER, LEFT_ELBOW, LEFT_WRIST, landmarks)
         jointCode.contains("right_elbow", ignoreCase = true) -> anchorTriple(RIGHT_SHOULDER, RIGHT_ELBOW, RIGHT_WRIST, landmarks)
         else -> null
     }
-}
 
 private fun anchorTriple(
     proximal: Int,
@@ -75,27 +100,34 @@ private fun anchorTriple(
     distal: Int,
     landmarks: List<SkeletonLandmarkPoint>,
 ): JointAnchor? {
+    val p = landmarks.getOrNull(proximal)?.takeIf { it.visible } ?: return null
     val j = landmarks.getOrNull(joint)?.takeIf { it.visible } ?: return null
     val d = landmarks.getOrNull(distal)?.takeIf { it.visible } ?: return null
     return JointAnchor(
+        upper = NormPoint(p.x, p.y),
         center = NormPoint(j.x, j.y),
-        limbEnd = NormPoint(d.x, d.y),
+        lower = NormPoint(d.x, d.y),
     )
 }
 
-private fun qualityBand(quality: SkeletonJointQuality): Quadruple {
-    return when (quality) {
-        SkeletonJointQuality.PERFECT -> Quadruple(85f, 110f, 95f, 0xFF00E676)
-        SkeletonJointQuality.PAD -> Quadruple(65f, 90f, 78f, 0xFFFFB74D)
-        SkeletonJointQuality.WARNING -> Quadruple(60f, 85f, 72f, 0xFFFFD54F)
-        SkeletonJointQuality.DANGER -> Quadruple(30f, 60f, 45f, 0xFFFF5252)
-        SkeletonJointQuality.NORMAL -> Quadruple(70f, 100f, 85f, 0xFF64B5F6)
-    }
-}
+private fun StateRanges.toSkeletonRomStateRanges(): SkeletonRomStateRanges =
+    SkeletonRomStateRanges(
+        perfect = perfect.toSkeletonRomAngleRange(),
+        normal = normal?.toSkeletonRomAngleRange(),
+        pad = pad?.toSkeletonRomAngleRange(),
+        warning = warning?.toSkeletonRomAngleRange(),
+        danger = danger?.toSkeletonRomAngleRange(),
+    )
 
-private data class Quadruple(
-    val rangeMin: Float,
-    val rangeMax: Float,
-    val angle: Float,
-    val color: Long,
-)
+private fun AngleRange.toSkeletonRomAngleRange(): SkeletonRomAngleRange =
+    SkeletonRomAngleRange(minDeg = min.toFloat(), maxDeg = max.toFloat())
+
+private fun JointState.toSkeletonRomState(): SkeletonRomState =
+    when (this) {
+        JointState.PERFECT -> SkeletonRomState.PERFECT
+        JointState.NORMAL -> SkeletonRomState.NORMAL
+        JointState.PAD -> SkeletonRomState.PAD
+        JointState.WARNING -> SkeletonRomState.WARNING
+        JointState.DANGER -> SkeletonRomState.DANGER
+        JointState.TRANSITION -> SkeletonRomState.TRANSITION
+    }
