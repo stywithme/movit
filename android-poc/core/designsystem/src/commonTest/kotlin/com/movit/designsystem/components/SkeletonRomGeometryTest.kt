@@ -52,4 +52,13 @@ class SkeletonRomGeometryTest {
             SkeletonRomGeometry.resolvedStateForAngle(175f, upRange, downRange),
         )
     }
+
+    @Test
+    fun stateColorArgb_usesMovitSemanticTrainingColors() {
+        assertEquals(0xFFC4D489, SkeletonRomGeometry.stateColorArgb(SkeletonRomState.PERFECT))
+        assertEquals(0xFF8ECFE3, SkeletonRomGeometry.stateColorArgb(SkeletonRomState.NORMAL))
+        assertEquals(0xFF8ECFE3, SkeletonRomGeometry.stateColorArgb(SkeletonRomState.TRANSITION))
+        assertEquals(0xFFE76D46, SkeletonRomGeometry.stateColorArgb(SkeletonRomState.WARNING))
+        assertEquals(0xFFC62828, SkeletonRomGeometry.stateColorArgb(SkeletonRomState.DANGER))
+    }
 }

@@ -6,7 +6,7 @@ package com.movit.designsystem.components
  * Wiring: [com.movit.feature.training.buildSkeletonOverlayParityState] → [MovitSkeletonOverlay].
  */
 enum class SkeletonOverlayMode {
-    /** Live training: joint colors, ROM, position-error marks, any-side dimming, bilateral hint. */
+    /** Live training: ROM indicators only; setup/preview own the full skeleton drawing. */
     TRAINING,
     /** Setup ANGLES phase: coloured joints, bone lines, direction arrows. */
     SETUP_ANGLES,

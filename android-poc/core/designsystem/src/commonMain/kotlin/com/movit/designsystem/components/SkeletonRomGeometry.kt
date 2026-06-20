@@ -18,9 +18,9 @@ object SkeletonRomGeometry {
     const val LINE_SNAP_TO_ZERO_THRESHOLD = 0.04f
     const val LINE_UPPER_LENGTH_RATIO = 0.50f
     const val LINE_LOWER_LENGTH_RATIO = 0.75f
-    const val LINE_TRACK_ALPHA = 0.51f
-    const val LINE_TRACK_WIDTH_RATIO = 0.70f
-    const val LINE_INDICATOR_WIDTH_MULTIPLIER = 1.30f
+    const val LINE_TRACK_ALPHA = 0.42f
+    const val LINE_TRACK_WIDTH_RATIO = 0.62f
+    const val LINE_INDICATOR_WIDTH_MULTIPLIER = 1.15f
 
     /**
      * Maps joint angle (0° = straight, 180° = folded) to Compose canvas degrees
@@ -74,12 +74,12 @@ object SkeletonRomGeometry {
     )
 
     fun stateColorArgb(state: SkeletonRomState): Long = when (state) {
-        SkeletonRomState.PERFECT -> 0xFF4CAF50
-        SkeletonRomState.NORMAL -> 0xFFFFEB3B
-        SkeletonRomState.PAD -> 0xFFFF9800
-        SkeletonRomState.WARNING -> 0xFFFF5252
-        SkeletonRomState.DANGER -> 0xFFB71C1C
-        SkeletonRomState.TRANSITION -> 0xFFFFEB3B
+        SkeletonRomState.PERFECT -> 0xFFC4D489
+        SkeletonRomState.NORMAL -> 0xFF8ECFE3
+        SkeletonRomState.PAD -> 0xFF8ECFE3
+        SkeletonRomState.WARNING -> 0xFFE76D46
+        SkeletonRomState.DANGER -> 0xFFC62828
+        SkeletonRomState.TRANSITION -> 0xFF8ECFE3
     }
 
     fun resolvedStateForAngle(

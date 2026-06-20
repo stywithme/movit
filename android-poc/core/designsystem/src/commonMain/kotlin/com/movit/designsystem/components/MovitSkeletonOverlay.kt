@@ -1,6 +1,7 @@
 package com.movit.designsystem.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -91,6 +92,14 @@ fun MovitSkeletonOverlay(
     val overlayState = parity.copy(jointVisuals = jointStates.ifEmpty { parity.jointVisuals })
     val trackPath = remember { Path() }
     val romMotionState = remember { SkeletonRomMotionState() }
+    val romPalette = SkeletonRomColorPalette(
+        transition = MaterialTheme.colorScheme.primary,
+        accept = MaterialTheme.colorScheme.primary,
+        perfect = MaterialTheme.colorScheme.secondary,
+        warning = MaterialTheme.colorScheme.tertiary,
+        danger = MaterialTheme.colorScheme.error,
+        shadow = Color.Black.copy(alpha = 0.18f),
+    )
     val textMeasurer = rememberTextMeasurer()
 
     Canvas(modifier = modifier) {
@@ -119,37 +128,28 @@ fun MovitSkeletonOverlay(
                     textMeasurer = textMeasurer,
                 )
             }
-            SkeletonOverlayMode.TRAINING, SkeletonOverlayMode.PREVIEW -> {
-                val trainingPolish = overlayState.mode == SkeletonOverlayMode.TRAINING
+            SkeletonOverlayMode.TRAINING -> {
+                drawRomIndicators(
+                    romIndicators = romIndicators,
+                    trackPath = trackPath,
+                    motionState = romMotionState,
+                    palette = romPalette,
+                    projectNormalized = ::projectNormalized,
+                )
+            }
+            SkeletonOverlayMode.PREVIEW -> {
                 drawSkeletonConnections(
                     jointVisuals = overlayState.jointVisuals,
                     isBilateralFlipped = overlayState.isBilateralFlipped,
-                    trainingPolish = trainingPolish,
+                    trainingPolish = false,
                     point = ::point,
                 )
-                if (trainingPolish) {
-                    drawRomIndicators(
-                        romIndicators = romIndicators,
-                        trackPath = trackPath,
-                        motionState = romMotionState,
-                        projectNormalized = ::projectNormalized,
-                    )
-                    drawPositionErrorMarks(
-                        marks = overlayState.positionErrors,
-                        point = ::point,
-                    )
-                }
                 drawSkeletonJoints(
                     jointVisuals = overlayState.jointVisuals,
                     isBilateralFlipped = overlayState.isBilateralFlipped,
-                    trainingPolish = trainingPolish,
+                    trainingPolish = false,
                     point = ::point,
                 )
-                if (trainingPolish && showBilateralSideHint) {
-                    overlayState.bilateralSideHint?.let { hint ->
-                        drawBilateralSideHint(hint, textMeasurer)
-                    }
-                }
             }
             SkeletonOverlayMode.SCENE_CHECK -> Unit
         }
@@ -265,19 +265,21 @@ private fun DrawScope.drawRomIndicators(
     romIndicators: List<SkeletonRomIndicator>,
     trackPath: Path,
     motionState: SkeletonRomMotionState,
+    palette: SkeletonRomColorPalette,
     projectNormalized: (Float, Float) -> Offset,
 ) {
     for (indicator in romIndicators) {
         if (!indicator.isPrimary || indicator.dimmed) continue
         when (indicator.style) {
-            SkeletonRomIndicatorStyle.ARC -> drawArcRomIndicator(indicator, projectNormalized)
-            SkeletonRomIndicatorStyle.LINE -> drawLineRomIndicator(indicator, trackPath, motionState, projectNormalized)
+            SkeletonRomIndicatorStyle.ARC -> drawArcRomIndicator(indicator, palette, projectNormalized)
+            SkeletonRomIndicatorStyle.LINE -> drawLineRomIndicator(indicator, trackPath, motionState, palette, projectNormalized)
         }
     }
 }
 
 private fun DrawScope.drawArcRomIndicator(
     indicator: SkeletonRomIndicator,
+    palette: SkeletonRomColorPalette,
     projectNormalized: (Float, Float) -> Offset,
 ) {
     val center = projectNormalized(indicator.centerX, indicator.centerY)
@@ -287,10 +289,10 @@ private fun DrawScope.drawArcRomIndicator(
     val baseRadius = SkeletonRomGeometry.DEFAULT_ARC_RADIUS_DP.dp.toPx()
     val radius = when {
         refLimbPx <= 0f -> baseRadius
-        else -> (refLimbPx * 0.58f).coerceIn(40.dp.toPx(), 72.dp.toPx())
+        else -> (refLimbPx * 0.34f).coerceIn(30.dp.toPx(), 52.dp.toPx())
     }
-    val stroke = (radius * 0.13f).coerceIn(4.dp.toPx(), 8.dp.toPx())
-    val markerRadius = (radius * 0.11f).coerceIn(4.dp.toPx(), 6.dp.toPx())
+    val stroke = (radius * 0.14f).coerceIn(4.dp.toPx(), 7.dp.toPx())
+    val markerRadius = (radius * 0.11f).coerceIn(3.5.dp.toPx(), 5.5.dp.toPx())
     val rect = Rect(
         left = center.x - radius,
         top = center.y - radius,
@@ -298,13 +300,23 @@ private fun DrawScope.drawArcRomIndicator(
         bottom = center.y + radius,
     )
 
+    drawArc(
+        color = palette.shadow,
+        startAngle = -90f,
+        sweepAngle = 180f,
+        useCenter = false,
+        topLeft = rect.topLeft,
+        size = rect.size,
+        style = Stroke(width = stroke + 2.dp.toPx(), cap = StrokeCap.Round),
+    )
+
     var startAngle = 0f
     while (startAngle < 180f) {
         val endAngle = (startAngle + 2f).coerceAtMost(180f)
         val midVisualAngle = (startAngle + endAngle) / 2f
         val originalAngle = SkeletonRomGeometry.originalAngleForVisual(midVisualAngle, indicator.invertAngles)
-        val color = Color(
-            SkeletonRomGeometry.resolvedColorArgbForAngle(
+        val color = palette.colorForState(
+            SkeletonRomGeometry.resolvedStateForAngle(
                 angleDeg = originalAngle,
                 upRanges = indicator.upStateRanges,
                 downRanges = indicator.downStateRanges,
@@ -315,7 +327,7 @@ private fun DrawScope.drawArcRomIndicator(
             rangeEndDeg = endAngle.toDouble(),
         )
         drawArc(
-            color = color.copy(alpha = 0.88f),
+            color = color.copy(alpha = 0.92f),
             startAngle = canvasStart,
             sweepAngle = sweep,
             useCenter = false,
@@ -334,16 +346,17 @@ private fun DrawScope.drawArcRomIndicator(
             radiusPx = radius,
             jointAngleDeg = visualCurrentAngle.toDouble(),
         )
-        val markerColor = romCurrentColor(indicator)
+        val markerColor = romCurrentColor(indicator, palette)
         drawLine(
-            color = markerColor.copy(alpha = 0.58f),
+            color = markerColor.copy(alpha = 0.55f),
             start = center,
             end = marker,
-            strokeWidth = markerRadius * 0.42f,
+            strokeWidth = markerRadius * 0.36f,
             cap = StrokeCap.Round,
         )
-        drawCircle(color = markerColor.copy(alpha = 0.35f), radius = markerRadius * 2.2f, center = marker)
+        drawCircle(color = markerColor.copy(alpha = 0.24f), radius = markerRadius * 1.9f, center = marker)
         drawCircle(color = markerColor, radius = markerRadius, center = marker)
+        drawCircle(color = markerColor.copy(alpha = 0.45f), radius = markerRadius * 0.75f, center = center)
     }
 }
 
@@ -351,6 +364,7 @@ private fun DrawScope.drawLineRomIndicator(
     indicator: SkeletonRomIndicator,
     trackPath: Path,
     motionState: SkeletonRomMotionState,
+    palette: SkeletonRomColorPalette,
     projectNormalized: (Float, Float) -> Offset,
 ) {
     val center = projectNormalized(indicator.centerX, indicator.centerY)
@@ -372,6 +386,7 @@ private fun DrawScope.drawLineRomIndicator(
             target = upper,
             maxLength = upperLength,
             limbType = SkeletonRomLimbType.UPPER,
+            palette = palette,
             stroke = stroke,
         )
     }
@@ -383,6 +398,7 @@ private fun DrawScope.drawLineRomIndicator(
             target = lower,
             maxLength = lowerLength,
             limbType = SkeletonRomLimbType.LOWER,
+            palette = palette,
             stroke = stroke,
         )
     }
@@ -410,7 +426,7 @@ private fun DrawScope.drawLineRomIndicator(
     if (lineLength <= 0f) return
 
     val marker = pointAlongSegment(center, target, lineLength)
-    val markerColor = motionState.smoothedColor(indicator.jointCode, romCurrentColor(indicator))
+    val markerColor = motionState.smoothedColor(indicator.jointCode, romCurrentColor(indicator, palette))
     drawLine(
         color = markerColor,
         start = center,
@@ -432,6 +448,7 @@ private fun DrawScope.drawLineTrack(
     target: Offset,
     maxLength: Float,
     limbType: SkeletonRomLimbType,
+    palette: SkeletonRomColorPalette,
     stroke: Float,
 ) {
     if (maxLength <= 0f) return
@@ -449,8 +466,8 @@ private fun DrawScope.drawLineTrack(
             SkeletonRomLimbType.NONE -> 90f
         }
         val originalAngle = SkeletonRomGeometry.originalAngleForVisual(visualAngle, indicator.invertAngles)
-        val color = Color(
-            SkeletonRomGeometry.resolvedColorArgbForAngle(
+        val color = palette.colorForState(
+            SkeletonRomGeometry.resolvedStateForAngle(
                 angleDeg = originalAngle,
                 upRanges = indicator.upStateRanges,
                 downRanges = indicator.downStateRanges,
@@ -542,6 +559,25 @@ private enum class SkeletonRomLimbType {
     NONE,
 }
 
+private data class SkeletonRomColorPalette(
+    val transition: Color,
+    val accept: Color,
+    val perfect: Color,
+    val warning: Color,
+    val danger: Color,
+    val shadow: Color,
+) {
+    fun colorForState(state: SkeletonRomState): Color =
+        when (state) {
+            SkeletonRomState.PERFECT -> perfect
+            SkeletonRomState.NORMAL -> accept
+            SkeletonRomState.PAD -> accept
+            SkeletonRomState.WARNING -> warning
+            SkeletonRomState.DANGER -> danger
+            SkeletonRomState.TRANSITION -> transition
+        }
+}
+
 private fun holdTargetLimb(indicator: SkeletonRomIndicator): SkeletonRomLimbType {
     val range = indicator.upStateRanges ?: indicator.downStateRanges ?: return SkeletonRomLimbType.NONE
     val targetCenter = (range.perfect.minDeg + range.perfect.maxDeg) / 2f
@@ -550,25 +586,28 @@ private fun holdTargetLimb(indicator: SkeletonRomIndicator): SkeletonRomLimbType
 
 private fun DrawScope.lineStrokeForState(state: SkeletonRomState): Float =
     when (state) {
-        SkeletonRomState.DANGER, SkeletonRomState.WARNING -> 12.dp.toPx()
-        SkeletonRomState.PAD -> 10.dp.toPx()
-        else -> 8.dp.toPx()
+        SkeletonRomState.DANGER, SkeletonRomState.WARNING -> 9.dp.toPx()
+        SkeletonRomState.PAD -> 8.dp.toPx()
+        else -> 7.dp.toPx()
     }
 
 private fun DrawScope.lineEndpointRadiusForState(state: SkeletonRomState): Float =
     when (state) {
-        SkeletonRomState.DANGER, SkeletonRomState.WARNING -> 18.dp.toPx()
-        SkeletonRomState.PAD -> 16.dp.toPx()
-        else -> 12.dp.toPx()
+        SkeletonRomState.DANGER, SkeletonRomState.WARNING -> 9.dp.toPx()
+        SkeletonRomState.PAD -> 8.dp.toPx()
+        else -> 7.dp.toPx()
     }
 
-private fun romCurrentColor(indicator: SkeletonRomIndicator): Color {
+private fun romCurrentColor(
+    indicator: SkeletonRomIndicator,
+    palette: SkeletonRomColorPalette,
+): Color {
     val state = if (indicator.currentState == SkeletonRomState.TRANSITION) {
         SkeletonRomState.NORMAL
     } else {
         indicator.currentState
     }
-    return Color(SkeletonRomGeometry.stateColorArgb(state))
+    return palette.colorForState(state)
 }
 
 private fun pointAlongSegment(start: Offset, target: Offset, length: Float): Offset {
