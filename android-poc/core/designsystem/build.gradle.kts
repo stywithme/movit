@@ -11,14 +11,9 @@ movitKmp {
 kotlin {
     sourceSets {
         commonMain.dependencies {
+            movitComposeUi(includeResources = true)
             api(project(":core:model"))
             implementation(project(":core:resources"))
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.material3)
-            implementation(compose.materialIconsExtended)
-            implementation(compose.ui)
-            implementation(compose.components.resources)
             implementation(libs.coil3.compose)
             implementation(libs.coil3.network.ktor)
         }

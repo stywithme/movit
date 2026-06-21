@@ -1,3 +1,5 @@
+@file:OptIn(org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi::class)
+
 // AGP 9 migration: replace android.library with android.kmp.library when upgrading.
 plugins {
     id("movit.kmp.feature")
@@ -26,6 +28,7 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
+            movitComposeUi(includeResources = true)
             implementation(project(":shared"))
             implementation(project(":core:model"))
             implementation(project(":core:resources"))
@@ -45,12 +48,6 @@ kotlin {
             // Account effect types (e.g. MovitProfileEffect) are part of shell's public API
             // (MovitAppShellEvent) — api() keeps them visible to the iOS framework compile.
             api(project(":feature:account"))
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.material3)
-            implementation(compose.materialIconsExtended)
-            implementation(compose.ui)
-            implementation(compose.components.resources)
             implementation(libs.compose.navigationevent)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.jetbrains.lifecycle.viewmodel)

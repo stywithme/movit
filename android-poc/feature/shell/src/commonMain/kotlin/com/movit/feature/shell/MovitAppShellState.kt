@@ -8,6 +8,7 @@ data class MovitAppShellState(
     val innerStack: List<MovitInnerRoute> = emptyList(),
     val themeMode: String = MovitThemeModeStorage.SYSTEM,
     val localeRevision: Int = 0,
+    val dataRevision: Int = 0,
 ) {
     val currentInnerRoute: MovitInnerRoute?
         get() = innerStack.lastOrNull()

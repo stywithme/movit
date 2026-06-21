@@ -33,4 +33,6 @@ data class ExploreContent(
 
 interface ExploreRepository {
     suspend fun getExploreContent(): AppResult<ExploreContent>
+
+    suspend fun refreshExploreContent(): AppResult<ExploreContent> = getExploreContent()
 }

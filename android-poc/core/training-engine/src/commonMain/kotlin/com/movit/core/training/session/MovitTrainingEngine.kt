@@ -23,6 +23,7 @@ import com.movit.core.training.config.JointRole
 
 import com.movit.core.training.config.LocalizedText
 import com.movit.core.training.config.TrackedJoint
+import com.movit.core.training.config.TrackingMode
 import com.movit.core.training.engine.JointError
 import com.movit.core.training.engine.RepIncompleteReason
 
@@ -88,6 +89,7 @@ import com.movit.core.training.visibility.VisibilityJointRole
 
 import com.movit.core.training.visibility.VisibilityCheckResult
 import com.movit.core.training.visibility.VisibilityMonitor
+import com.movit.core.training.visibility.VisibilityTrackingMode
 
 
 
@@ -290,6 +292,18 @@ class MovitTrainingEngine(
                         VisibilityJointRole.SECONDARY
 
                     },
+
+                    trackingMode = if (it.trackingMode == TrackingMode.ANY_SIDE) {
+
+                        VisibilityTrackingMode.ANY_SIDE
+
+                    } else {
+
+                        VisibilityTrackingMode.BOTH_SIDES
+
+                    },
+
+                    pairedWith = it.pairedWith,
 
                 )
 

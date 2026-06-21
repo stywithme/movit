@@ -17,11 +17,38 @@ class SharedExploreRepository(
         val platform = MovitData.requirePlatform()
         val language = platform.preferredLanguage()
         val strings = ExploreStrings.load(language)
-        val cached = MovitData.explore.readCached()
-        return if (cached != null) {
-            AppResult.Success(ExploreApiMapper.map(cached, language, strings))
-        } else {
-            fallback.getExploreContent()
+        MovitData.explore.readCached()?.let { cached ->
+            return AppResult.Success(ExploreApiMapper.map(cached, language, strings))
+        }
+        return refreshExploreContent(language, strings)
+    }
+
+    override suspend fun refreshExploreContent(): AppResult<ExploreContent> {
+        if (!MovitData.isInstalled) {
+            return fallback.refreshExploreContent()
+        }
+        val platform = MovitData.requirePlatform()
+        val language = platform.preferredLanguage()
+        val strings = ExploreStrings.load(language)
+        return refreshExploreContent(language, strings)
+    }
+
+    private suspend fun refreshExploreContent(
+        language: String,
+        strings: ExploreStrings,
+    ): AppResult<ExploreContent> {
+        return when (val result = MovitData.explore.syncFull()) {
+            is AppResult.Success -> AppResult.Success(
+                ExploreApiMapper.map(result.value, language, strings),
+            )
+            is AppResult.Failure -> {
+                val cached = MovitData.explore.readCached()
+                if (cached != null) {
+                    AppResult.Success(ExploreApiMapper.map(cached, language, strings))
+                } else {
+                    AppResult.Failure(result.message)
+                }
+            }
         }
     }
 }

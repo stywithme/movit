@@ -52,8 +52,11 @@ class ProgramFlowSyncRepository(
     }
 
     suspend fun syncExplore(): AppResult<ExploreDataDto> =
-        exploreSync.readCached()?.let { AppResult.Success(it) }
-            ?: AppResult.Failure("Catalog not synced yet.")
+        when (val result = exploreSync.syncFull()) {
+            is AppResult.Success -> result
+            is AppResult.Failure -> exploreSync.readCached()?.let { AppResult.Success(it) }
+                ?: AppResult.Failure(result.message)
+        }
 
     suspend fun syncHome(): AppResult<HomeDataDto> = homeSync.sync()
 

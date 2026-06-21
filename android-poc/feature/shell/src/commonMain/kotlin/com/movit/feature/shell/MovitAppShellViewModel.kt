@@ -96,6 +96,9 @@ class MovitAppShellViewModel : ViewModel() {
         viewModelScope.launch {
             val outcome = MovitData.sync.syncIfNeeded(forceCheck = forceCheck)
             _syncOutcome.value = outcome
+            if (outcome is MovitSyncOrchestrator.SyncOutcome.Success) {
+                _state.update { it.copy(dataRevision = it.dataRevision + 1) }
+            }
         }
     }
 

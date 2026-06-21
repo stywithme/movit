@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -15,6 +17,8 @@ import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.components.MovitButton
 import com.movit.designsystem.components.MovitButtonVariant
 import com.movit.designsystem.components.MovitErrorState
+import com.movit.designsystem.components.MovitInsightCard
+import com.movit.designsystem.components.MovitInsightVariant
 import com.movit.designsystem.components.MovitLoadingState
 import com.movit.designsystem.components.MovitScaffold
 import com.movit.designsystem.components.movitFloatingNavScrollPadding
@@ -37,7 +41,7 @@ fun MovitTrainScreen(
     onProfileClick: () -> Unit = {},
 ) {
     val dashboard = state.dashboard
-    val canRefresh = state.errorMessage == null && !state.isLoading
+    val canRefresh = !state.isLoading
 
     MovitScaffold(
         modifier = modifier,
@@ -69,7 +73,7 @@ fun MovitTrainScreen(
                 state.isLoading && dashboard == null -> {
                     MovitLoadingState(message = movitText("train_loading"))
                 }
-                state.errorMessage != null -> {
+                state.errorMessage != null && dashboard == null -> {
                     MovitErrorState(
                         title = movitText("common_error_title"),
                         message = state.errorMessage,
@@ -78,6 +82,14 @@ fun MovitTrainScreen(
                     )
                 }
                 dashboard != null -> {
+                    state.errorMessage?.let { message ->
+                        MovitInsightCard(
+                            title = movitText("common_error_title"),
+                            message = message,
+                            icon = Icons.Default.Warning,
+                            variant = MovitInsightVariant.Warning,
+                        )
+                    }
                     TrainDashboardContent(
                         state = state,
                         dashboard = dashboard,

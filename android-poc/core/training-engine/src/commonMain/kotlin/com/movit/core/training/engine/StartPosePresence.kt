@@ -51,7 +51,7 @@ object StartPosePresence {
             val treatAsLenientPair = explicitAnySidePair ||
                 (isAnySideExercise && partnerInPrimaries)
             if (treatAsLenientPair) {
-                val partner = partnerCode!!
+                val partner = partnerCode
                 visited.add(joint.joint)
                 visited.add(partner)
                 val ok = readyJointCodes.contains(joint.joint) ||

@@ -234,6 +234,53 @@ class MovitSyncOrchestratorTest {
         }
     }
 
+    @Test
+    fun syncIfNeeded_replaysPendingOutboxBeforeFetchingSync() {
+        runBlocking {
+            val offlinePlatform = object : FakeMovitPlatformBindings() {
+                override fun isNetworkAvailable(): Boolean = false
+            }
+            val onlinePlatform = object : FakeMovitPlatformBindings() {
+                override fun isNetworkAvailable(): Boolean = true
+            }
+            val localStore = InMemoryMovitLocalStore()
+            val requestPaths = mutableListOf<String>()
+            val engine = MockEngine { request ->
+                val path = request.url.encodedPath
+                requestPaths += path
+                when {
+                    path.contains("plan/complete") ->
+                        respond("""{"success":true}""", HttpStatusCode.OK, jsonHeaders)
+                    path.contains("sync") ->
+                        respond(syncBody(), HttpStatusCode.OK, jsonHeaders)
+                    path.contains("explore") ->
+                        respond(exploreOkBody(), HttpStatusCode.OK, jsonHeaders)
+                    path.contains("home") ->
+                        respond(homeOkBody(), HttpStatusCode.OK, jsonHeaders)
+                    else -> respond("{}", HttpStatusCode.NotFound)
+                }
+            }
+            val api = testMobileApi(engine, onlinePlatform)
+            val offlineWrites = OfflineWriteQueue(localStore, api) { onlinePlatform }
+            val orchestrator = buildOrchestrator(
+                api = api,
+                platform = onlinePlatform,
+                localStore = localStore,
+                offlineWrites = offlineWrites,
+            )
+
+            OfflineWriteQueue(localStore, api) { offlinePlatform }.enqueuePlanComplete("op-before-sync")
+
+            orchestrator.syncIfNeeded(forceCheck = true)
+
+            val outboxIndex = requestPaths.indexOfFirst { it.contains("plan/complete") }
+            val syncIndex = requestPaths.indexOfFirst { it.contains("sync") }
+            assertTrue(outboxIndex >= 0, "Expected outbox replay request.")
+            assertTrue(syncIndex >= 0, "Expected sync request.")
+            assertTrue(outboxIndex < syncIndex, "Outbox replay must happen before fetching sync.")
+        }
+    }
+
     private fun buildOrchestrator(
         api: com.movit.core.network.MovitMobileApi,
         platform: FakeMovitPlatformBindings,

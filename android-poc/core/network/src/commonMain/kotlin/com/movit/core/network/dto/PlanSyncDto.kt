@@ -1,3 +1,5 @@
+@file:OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+
 package com.movit.core.network.dto
 
 import kotlinx.serialization.SerialName

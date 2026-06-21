@@ -9,6 +9,8 @@ import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -21,6 +23,8 @@ import com.movit.core.model.ExploreItemType
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.components.MovitEmptyState
 import com.movit.designsystem.components.MovitErrorState
+import com.movit.designsystem.components.MovitInsightCard
+import com.movit.designsystem.components.MovitInsightVariant
 import com.movit.designsystem.components.MovitLoadingState
 import com.movit.designsystem.components.MovitMediaCard
 import com.movit.designsystem.components.MovitProgramCard
@@ -45,7 +49,11 @@ fun MovitExploreScreen(
     onProfileClick: () -> Unit = {},
 ) {
     val scrollState = rememberScrollState()
-    val canRefresh = state.errorMessage == null && !state.isLoading
+    val hasContent = state.featured.isNotEmpty() ||
+        state.workouts.isNotEmpty() ||
+        state.exercises.isNotEmpty() ||
+        state.programs.isNotEmpty()
+    val canRefresh = !state.isLoading
     val workoutsRequester = remember { BringIntoViewRequester() }
     val exercisesRequester = remember { BringIntoViewRequester() }
     LaunchedEffect(state.scrollToWorkouts) {
@@ -92,13 +100,13 @@ fun MovitExploreScreen(
                 onQueryChange = { onEvent(MovitExploreEvent.QueryChanged(it)) },
                 onFilterClick = { onEvent(MovitExploreEvent.FilterButtonClicked) },
                 filtersActive = state.secondaryFiltersVisible,
-                enabled = state.errorMessage == null,
+                enabled = state.errorMessage == null || hasContent,
             )
             ExploreFilterSection(
                 filters = state.filters,
                 selectedFilter = state.selectedFilter,
                 onFilterSelected = { onEvent(MovitExploreEvent.FilterSelected(it)) },
-                enabled = state.errorMessage == null && !state.isLoading,
+                enabled = (state.errorMessage == null || hasContent) && !state.isLoading,
             )
             if (state.errorMessage == null && !state.isLoading && !state.isEmpty) {
                 Text(
@@ -116,7 +124,7 @@ fun MovitExploreScreen(
                 state.isLoading && state.featured.isEmpty() -> {
                     MovitLoadingState(message = movitText("explore_loading"))
                 }
-                state.errorMessage != null -> {
+                state.errorMessage != null && !hasContent -> {
                     MovitErrorState(
                         title = movitText("common_error_title"),
                         message = state.errorMessage,
@@ -138,6 +146,15 @@ fun MovitExploreScreen(
                     )
                 }
                 else -> {
+                    state.errorMessage?.let { message ->
+                        MovitInsightCard(
+                            title = movitText("common_error_title"),
+                            message = message,
+                            icon = Icons.Default.Warning,
+                            variant = MovitInsightVariant.Warning,
+                        )
+                    }
+
                     if (state.featured.isNotEmpty() && state.selectedFilter == ExploreFilter.All) {
                         ExploreHero(
                             items = state.featured,

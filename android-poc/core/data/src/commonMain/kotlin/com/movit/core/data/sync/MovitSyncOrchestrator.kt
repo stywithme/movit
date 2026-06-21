@@ -123,6 +123,9 @@ class MovitSyncOrchestrator(
                 }
             }
 
+        LegacyWorkoutSyncGate.drainLegacyExecutionsIfRegistered()
+        offlineWrites.replayPending()
+
         val syncResponse = api.fetchSync(
             updatedAfter = if (forceFullRefresh) null else metadataStore.readLastSyncTimestamp(),
             forceRefresh = forceFullRefresh,

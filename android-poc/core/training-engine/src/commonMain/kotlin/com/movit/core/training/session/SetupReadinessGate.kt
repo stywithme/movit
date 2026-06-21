@@ -3,8 +3,12 @@ package com.movit.core.training.session
 import com.movit.core.training.boundary.DeviceTiltPort
 import com.movit.core.training.config.ExerciseConfig
 import com.movit.core.training.config.LocalizedText
+import com.movit.core.training.config.PoseVariant
+import com.movit.core.training.engine.JointAngleTracker
 import com.movit.core.training.engine.StartPoseGate
+import com.movit.core.training.engine.policy.StabilityPolicy
 import com.movit.core.training.geometry.LandmarkTiltCorrector
+import com.movit.core.training.geometry.PoseLandmarkMirroring
 import com.movit.core.training.model.JointAngles
 import com.movit.core.training.model.Landmark
 import com.movit.core.training.position.PositionMessageResolver
@@ -17,6 +21,7 @@ import com.movit.core.training.position.resolveSceneExpectation
 class SetupReadinessGate(
     private val config: SetupValidationConfig = SetupValidationConfig(),
     private val tiltSource: DeviceTiltPort? = null,
+    private val stabilityPolicy: StabilityPolicy = StabilityPolicy.default(),
 ) {
     private val jointWindow = RollingWindow(config.windowSize, config.requiredValid)
     private val sceneDetector = PoseSceneDetector(
@@ -46,7 +51,7 @@ class SetupReadinessGate(
             ?: return SetupReadinessResult.empty().also { jointWindow.add(false) }
 
         if (startPoseGate == null) {
-            startPoseGate = StartPoseGate(variant.trackedJoints)
+            startPoseGate = StartPoseGate(variant.trackedJoints, stabilityPolicy)
         }
 
         val expectation = variant.resolveSceneExpectation()
@@ -63,7 +68,13 @@ class SetupReadinessGate(
             else -> SetupPhase.ANGLES
         }
 
-        val inStartPose = startPoseGate?.isInStartPose(angles.toMap()) == true
+        val angleMap = trackedSetupAngles(
+            angles = angles,
+            landmarks = landmarks,
+            variant = variant,
+            isFrontCamera = isFrontCamera,
+        )
+        val inStartPose = startPoseGate?.isInStartPose(angleMap) == true
         val primaryReady = phase == SetupPhase.ANGLES && inStartPose
 
         jointWindow.add(primaryReady)
@@ -82,7 +93,6 @@ class SetupReadinessGate(
             SetupPhase.ANGLES -> null
         }
 
-        val angleMap = angles.toMap()
         val jointGuidanceRows = if (phase == SetupPhase.ANGLES) {
             SetupJointGuidanceResolver.resolveAllJoints(
                 angles = angleMap,
@@ -129,11 +139,20 @@ class SetupReadinessGate(
         angles: JointAngles?,
         exerciseConfig: ExerciseConfig,
         poseVariantIndex: Int,
+        landmarks: List<Landmark>? = null,
+        isFrontCamera: Boolean = false,
     ): Boolean {
         if (angles == null) return false
         val variant = exerciseConfig.poseVariants.getOrNull(poseVariantIndex) ?: return false
-        val gate = startPoseGate ?: StartPoseGate(variant.trackedJoints).also { startPoseGate = it }
-        return gate.isInStartPose(angles.toMap())
+        val gate = startPoseGate ?: StartPoseGate(variant.trackedJoints, stabilityPolicy).also { startPoseGate = it }
+        return gate.isInStartPose(
+            trackedSetupAngles(
+                angles = angles,
+                landmarks = landmarks,
+                variant = variant,
+                isFrontCamera = isFrontCamera,
+            ),
+        )
     }
 
     /**
@@ -144,16 +163,44 @@ class SetupReadinessGate(
         angles: JointAngles?,
         exerciseConfig: ExerciseConfig,
         poseVariantIndex: Int,
+        landmarks: List<Landmark>? = null,
+        isFrontCamera: Boolean = false,
     ): Boolean {
         if (angles == null) return false
         val variant = exerciseConfig.poseVariants.getOrNull(poseVariantIndex) ?: return false
-        val gate = startPoseGate ?: StartPoseGate(variant.trackedJoints).also { startPoseGate = it }
+        val gate = startPoseGate ?: StartPoseGate(variant.trackedJoints, stabilityPolicy).also { startPoseGate = it }
         return gate.isStartPoseRoughlyValid(
-            currentAngles = angles.toMap(),
+            currentAngles = trackedSetupAngles(
+                angles = angles,
+                landmarks = landmarks,
+                variant = variant,
+                isFrontCamera = isFrontCamera,
+            ),
             toleranceDegrees = config.resolvedCountdownAngleToleranceDegrees(),
             minJointPresenceRatio = config.countdownMinJointPresenceRatio,
             requireAllPrimaryPresent = config.countdownRequireAllPrimaryPresent,
         )
+    }
+
+    private fun trackedSetupAngles(
+        angles: JointAngles,
+        landmarks: List<Landmark>?,
+        variant: PoseVariant,
+        isFrontCamera: Boolean,
+    ): Map<String, Double> {
+        val trackingAngles = if (isFrontCamera) {
+            PoseLandmarkMirroring.mirrorAngles(angles)
+        } else {
+            angles
+        }
+        val trackingLandmarks = landmarks?.let {
+            if (isFrontCamera) PoseLandmarkMirroring.mirrorLandmarks(it) else it
+        }
+        return JointAngleTracker(variant.trackedJoints, stabilityPolicy).extractTrackedAngles(
+            angles = trackingAngles,
+            landmarks = trackingLandmarks,
+            isFrontCamera = isFrontCamera,
+        ).angles
     }
 
     private fun getTiltCorrectedLandmarks(landmarks: List<Landmark>): List<Landmark> {

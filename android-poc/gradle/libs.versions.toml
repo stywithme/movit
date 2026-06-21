@@ -2,6 +2,9 @@
 agp = "8.13.2"
 kotlin = "2.3.0"
 compose-multiplatform = "1.11.0"
+compose-material3 = "1.11.0-alpha07"
+# material-icons-* pinned at 1.7.3 per CMP 1.8+ (extended set no longer tracks CMP releases).
+compose-material-icons = "1.7.3"
 # Latest 1.0.x on Maven; aligns with CMP 1.11's androidx.navigationevent:1.0.1 (1.0.2 was never published).
 navigationevent = "1.0.1"
 
@@ -132,6 +135,13 @@ sqldelight-coroutines = { group = "app.cash.sqldelight", name = "coroutines-exte
 sqldelight-runtime = { group = "app.cash.sqldelight", name = "runtime", version.ref = "sqldelight" }
 sqldelight-sqlite-driver = { group = "app.cash.sqldelight", name = "sqlite-driver", version.ref = "sqldelight" }
 
+compose-runtime = { group = "org.jetbrains.compose.runtime", name = "runtime", version.ref = "compose-multiplatform" }
+compose-foundation = { group = "org.jetbrains.compose.foundation", name = "foundation", version.ref = "compose-multiplatform" }
+compose-material3 = { group = "org.jetbrains.compose.material3", name = "material3", version.ref = "compose-material3" }
+compose-ui = { group = "org.jetbrains.compose.ui", name = "ui", version.ref = "compose-multiplatform" }
+compose-components-resources = { group = "org.jetbrains.compose.components", name = "components-resources", version.ref = "compose-multiplatform" }
+compose-material-icons-core = { group = "org.jetbrains.compose.material", name = "material-icons-core", version.ref = "compose-material-icons" }
+compose-material-icons-extended = { group = "org.jetbrains.compose.material", name = "material-icons-extended", version.ref = "compose-material-icons" }
 compose-ui-tooling = { group = "org.jetbrains.compose.ui", name = "ui-tooling", version.ref = "compose-multiplatform" }
 compose-ui-tooling-preview = { group = "org.jetbrains.compose.ui", name = "ui-tooling-preview", version.ref = "compose-multiplatform" }
 compose-ui-backhandler = { group = "org.jetbrains.compose.ui", name = "ui-backhandler", version.ref = "compose-multiplatform" }

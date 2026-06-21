@@ -93,6 +93,26 @@ class ReportsSyncRepositoryTest {
     }
 
     @Test
+    fun syncDashboard_withoutProButWithCache_returnsCached() {
+        runBlocking {
+            val platform = FakeMovitPlatformBindings(pro = false)
+            val localStore = testLocalStore(platform)
+            val cached = ReportsDashboardApiResponse(success = true)
+            localStore.writeString(
+                MovitCacheKeys.REPORTS_STORE,
+                MovitCacheKeys.REPORTS_DASHBOARD,
+                MovitJson.encodeToString(ReportsDashboardApiResponse.serializer(), cached),
+            )
+            val engine = MockEngine { respond("{}", HttpStatusCode.Forbidden) }
+            val repo = ReportsSyncRepository(testMobileApi(engine, platform), { platform }, { localStore })
+
+            val result = repo.syncDashboard()
+
+            assertTrue(result is AppResult.Success)
+        }
+    }
+
+    @Test
     fun syncWeekMetrics_withAuth_writesScopedCacheKey() {
         runBlocking {
             val platform = FakeMovitPlatformBindings(pro = true)
@@ -137,6 +157,32 @@ class ReportsSyncRepositoryTest {
                 MovitJson.encodeToString(com.movit.core.network.dto.MetricsApiResponse.serializer(), cached),
             )
             val engine = MockEngine { respond("{}", HttpStatusCode.InternalServerError) }
+            val repo = ReportsSyncRepository(testMobileApi(engine, platform), { platform }, { localStore })
+
+            val result = repo.syncWeekMetrics(programId = "pr-1", weekNumber = 1)
+
+            assertTrue(result is AppResult.Success)
+            assertEquals("week", result.value.scope)
+        }
+    }
+
+    @Test
+    fun syncWeekMetrics_withoutProButWithCache_returnsCachedScopedMetrics() {
+        runBlocking {
+            val platform = FakeMovitPlatformBindings(pro = false)
+            val localStore = testLocalStore(platform)
+            val cacheKey = MovitCacheKeys.reportsMetricsKey(
+                scope = "week",
+                programId = "pr-1",
+                weekNumber = 1,
+            )
+            val cached = com.movit.core.network.dto.MetricsApiResponse(success = true, scope = "week")
+            localStore.writeString(
+                MovitCacheKeys.REPORTS_STORE,
+                cacheKey,
+                MovitJson.encodeToString(com.movit.core.network.dto.MetricsApiResponse.serializer(), cached),
+            )
+            val engine = MockEngine { respond("{}", HttpStatusCode.Forbidden) }
             val repo = ReportsSyncRepository(testMobileApi(engine, platform), { platform }, { localStore })
 
             val result = repo.syncWeekMetrics(programId = "pr-1", weekNumber = 1)

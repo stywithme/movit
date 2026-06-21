@@ -37,10 +37,10 @@ class ExploreSyncRepository(
             ?.slug
             ?.takeIf { it.isNotBlank() }
 
-    suspend fun sync(limit: Int = 50): AppResult<ExploreDataDto> =
+    suspend fun sync(limit: Int? = null): AppResult<ExploreDataDto> =
         syncInternal(clearLastSync = false, limit = limit)
 
-    suspend fun syncFull(limit: Int = 50): AppResult<ExploreDataDto> =
+    suspend fun syncFull(limit: Int? = null): AppResult<ExploreDataDto> =
         syncInternal(clearLastSync = true, limit = limit)
 
     /**
@@ -75,7 +75,7 @@ class ExploreSyncRepository(
         return merged
     }
 
-    private suspend fun syncInternal(clearLastSync: Boolean, limit: Int): AppResult<ExploreDataDto> {
+    private suspend fun syncInternal(clearLastSync: Boolean, limit: Int?): AppResult<ExploreDataDto> {
         val bindings = platform()
         val store = localStore()
         val cached = readCached()

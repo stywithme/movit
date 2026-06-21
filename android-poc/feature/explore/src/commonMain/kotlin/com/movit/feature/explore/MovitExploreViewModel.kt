@@ -7,6 +7,7 @@ import com.movit.core.model.ExploreItemType
 import com.movit.core.model.ExploreItemUi
 import com.movit.core.model.ExploreRepository
 import com.movit.shared.AppResult
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MovitExploreViewModel(
     private val repository: ExploreRepository = defaultExploreRepository(),
@@ -42,7 +44,14 @@ class MovitExploreViewModel(
                 errorMessage = null,
             )
         }
-        when (val result = repository.getExploreContent()) {
+        val result = withContext(Dispatchers.Default) {
+            if (isRefresh) {
+                repository.refreshExploreContent()
+            } else {
+                repository.getExploreContent()
+            }
+        }
+        when (result) {
             is AppResult.Success -> {
                 cachedFeatured = result.value.featured
                 cachedWorkouts = result.value.workouts

@@ -10,7 +10,6 @@ import android.util.Range
 import androidx.camera.camera2.interop.Camera2CameraControl
 import androidx.camera.camera2.interop.Camera2CameraInfo
 import androidx.camera.camera2.interop.CaptureRequestOptions
-import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
@@ -359,7 +358,6 @@ class CameraXFrameSource(
         return Executors.newSingleThreadExecutor().also { analysisExecutor = it }
     }
 
-    @OptIn(ExperimentalCamera2Interop::class)
     private fun applyHighFps() {
         val cam = camera ?: return
         try {

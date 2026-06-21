@@ -10,14 +10,11 @@ movitKmp {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.ui)
-            implementation(compose.components.resources)
+            movitComposeResourcesStack()
             implementation(libs.kotlinx.coroutines.core)
         }
         androidMain.dependencies {
-            implementation(compose.ui)
+            implementation(libs.compose.ui)
         }
         sourceSets.named("androidHostTest") {
             dependencies {

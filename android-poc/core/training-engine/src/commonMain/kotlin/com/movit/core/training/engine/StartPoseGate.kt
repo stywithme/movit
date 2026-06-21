@@ -2,6 +2,7 @@ package com.movit.core.training.engine
 
 import com.movit.core.training.config.JointRole
 import com.movit.core.training.config.TrackedJoint
+import com.movit.core.training.config.TrackingMode
 import com.movit.core.training.config.getStateHoldRange
 import com.movit.core.training.config.isInCountedState
 import com.movit.core.training.config.isInStartPose
@@ -37,45 +38,45 @@ class StartPoseGate(
     ): Boolean {
         val totalTracked = trackedJoints.size
         if (totalTracked == 0) return true
+        val totalTrackedUnits = groupedJointUnitCount(trackedJoints)
 
         val primaryJointCodes = trackedJoints
             .filter { it.role == JointRole.PRIMARY }
             .map { it.joint }
             .toSet()
 
-        val minVisibleJoints = if (totalTracked == 1) {
+        val minVisibleJoints = if (totalTrackedUnits == 1) {
             1
         } else {
-            ceil(totalTracked * minJointPresenceRatio).toInt().coerceAtLeast(2)
+            ceil(totalTrackedUnits * minJointPresenceRatio).toInt().coerceAtLeast(2)
         }
 
-        var checkedCount = 0
-        var visiblePrimaryCount = 0
+        val checkedJointCodes = mutableSetOf<String>()
         for (joint in trackedJoints) {
             val currentAngle = currentAngles[joint.joint] ?: continue
-            checkedCount++
-            if (joint.joint in primaryJointCodes) {
-                visiblePrimaryCount++
-            }
+            checkedJointCodes.add(joint.joint)
             val min = joint.startPose.min - toleranceDegrees
             val max = joint.startPose.max + toleranceDegrees
             if (currentAngle < min || currentAngle > max) return false
         }
 
-        if (requireAllPrimaryPresent && primaryJointCodes.isNotEmpty() &&
-            visiblePrimaryCount < primaryJointCodes.size
+        val primaryJoints = trackedJoints.filter { it.role == JointRole.PRIMARY }
+        if (requireAllPrimaryPresent && primaryJoints.isNotEmpty() &&
+            !StartPosePresence.allPrimaryJointsPresent(primaryJoints, checkedJointCodes)
         ) {
             return false
         }
 
         if (!requireAllPrimaryPresent && primaryJointCodes.isNotEmpty()) {
-            val minPrimaryVisible = ceil(primaryJointCodes.size * minJointPresenceRatio)
+            val totalPrimaryUnits = groupedJointUnitCount(primaryJoints)
+            val checkedPrimaryUnits = checkedGroupedJointUnitCount(primaryJoints, checkedJointCodes)
+            val minPrimaryVisible = ceil(totalPrimaryUnits * minJointPresenceRatio)
                 .toInt()
                 .coerceAtLeast(1)
-            if (visiblePrimaryCount < minPrimaryVisible) return false
+            if (checkedPrimaryUnits < minPrimaryVisible) return false
         }
 
-        return checkedCount >= minVisibleJoints
+        return checkedGroupedJointUnitCount(trackedJoints, checkedJointCodes) >= minVisibleJoints
     }
 
     /** In-run rep path — UP/hold counted bands (not used during setup). */
@@ -99,5 +100,38 @@ class StartPoseGate(
             }
         }
         return checked > 0
+    }
+
+    private fun groupedJointUnitCount(joints: List<TrackedJoint>): Int =
+        checkedGroupedJointUnitCount(joints, joints.map { it.joint }.toSet())
+
+    private fun checkedGroupedJointUnitCount(
+        joints: List<TrackedJoint>,
+        checkedJointCodes: Set<String>,
+    ): Int {
+        val isAnySideExercise = joints.any { it.trackingMode == TrackingMode.ANY_SIDE }
+        val visited = mutableSetOf<String>()
+        var count = 0
+        for (joint in joints) {
+            if (joint.joint in visited) continue
+            val partnerCode = joint.pairedWith
+            val partner = partnerCode?.let { code -> joints.find { it.joint == code } }
+            val treatAsLenientPair = partnerCode != null &&
+                partner != null &&
+                (isAnySideExercise ||
+                    (joint.trackingMode == TrackingMode.ANY_SIDE &&
+                        partner.trackingMode == TrackingMode.ANY_SIDE))
+            if (treatAsLenientPair) {
+                visited.add(joint.joint)
+                visited.add(partnerCode)
+                if (joint.joint in checkedJointCodes || partnerCode in checkedJointCodes) {
+                    count++
+                }
+            } else {
+                visited.add(joint.joint)
+                if (joint.joint in checkedJointCodes) count++
+            }
+        }
+        return count
     }
 }

@@ -1,3 +1,5 @@
+@file:OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+
 package com.movit.core.training.config
 
 import com.movit.core.training.engine.CountingMethod

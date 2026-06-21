@@ -183,13 +183,14 @@ open class ReportsSyncRepository(
                 ?: AppResult.Failure("Sign in to load your reports.")
 
         if (!bindings.isProUser()) {
-            return AppResult.Failure("Reports require a Pro subscription.")
+            return cached?.let { AppResult.Success(it) }
+                ?: AppResult.Failure("Reports require a Pro subscription.")
         }
 
         return MovitCachePolicy.syncWithFallback(
             cached = cached,
             authRequired = true,
-            hasAuth = auth != null,
+            hasAuth = true,
             noAuthMessage = "Sign in to load your reports.",
             fetch = {
                 api.fetchReportsDashboard(
@@ -223,13 +224,14 @@ open class ReportsSyncRepository(
                 ?: AppResult.Failure("Sign in to load report details.")
 
         if (!bindings.isProUser()) {
-            return AppResult.Failure("Reports require a Pro subscription.")
+            return cached?.let { AppResult.Success(it) }
+                ?: AppResult.Failure("Reports require a Pro subscription.")
         }
 
         return MovitCachePolicy.syncWithFallback(
             cached = cached,
             authRequired = true,
-            hasAuth = auth != null,
+            hasAuth = true,
             noAuthMessage = "Sign in to load report details.",
             fetch = { api.fetchMetrics(query, authorization = auth) },
             isSuccess = { it.success },

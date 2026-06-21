@@ -30,6 +30,10 @@ class MovitKmpCoreConventionPlugin : Plugin<Project> {
                     ?: error("movitKmp { namespace = \"...\" } is required for $path")
 
                 extensions.configure<KotlinMultiplatformExtension> {
+                    compilerOptions {
+                        freeCompilerArgs.add("-Xexpect-actual-classes")
+                        freeCompilerArgs.add("-Xwarning-level=EXPECT_ACTUAL_CLASSIFIERS_ARE_IN_BETA_WARNING:disabled")
+                    }
                     targets.withType(KotlinAndroidTarget::class.java).configureEach {
                         compilerOptions {
                             jvmTarget.set(JvmTarget.JVM_17)

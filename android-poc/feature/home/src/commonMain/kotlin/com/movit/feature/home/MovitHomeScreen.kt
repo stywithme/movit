@@ -63,7 +63,13 @@ fun MovitHomeScreen(
     onEvent: (MovitHomeEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val canRefresh = state.errorMessage == null && !state.isLoading
+    val hasDashboardContent = state.metricTiles.isNotEmpty() ||
+        state.activeProgram != null ||
+        state.todayPlan != null ||
+        state.levelCard != null ||
+        state.progress != null ||
+        state.quickActions.isNotEmpty()
+    val canRefresh = !state.isLoading
     val headerGreeting = state.greetingEyebrow.ifBlank {
         movitText(HomeTimeGreeting.stringKeyNow())
     }
@@ -100,7 +106,7 @@ fun MovitHomeScreen(
                 state.isLoading && state.metricTiles.isEmpty() && state.todayPlan == null -> {
                     MovitLoadingState(message = movitText("home_loading"))
                 }
-                state.errorMessage != null -> {
+                state.errorMessage != null && !hasDashboardContent -> {
                     MovitErrorState(
                         title = movitText("common_error_title"),
                         message = state.errorMessage,
@@ -109,6 +115,15 @@ fun MovitHomeScreen(
                     )
                 }
                 else -> {
+                    state.errorMessage?.let { message ->
+                        MovitInsightCard(
+                            title = movitText("common_error_title"),
+                            message = message,
+                            icon = Icons.Default.Warning,
+                            variant = MovitInsightVariant.Warning,
+                        )
+                    }
+
                     HomeHeroSummary(
                         greetingEyebrow = state.greetingEyebrow,
                         greetingTitle = state.greetingTitle,

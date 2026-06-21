@@ -37,6 +37,78 @@ class SetupReadinessGateTest {
     }
 
     @Test
+    fun validate_anySideSetupUsesHigherConfidenceSide() {
+        val gate = SetupReadinessGate(
+            config = SetupValidationConfig(
+                windowSize = 1,
+                requiredValid = 1,
+                cameraCheckWindowSize = 1,
+                cameraCheckRequired = 1,
+            ),
+        )
+        val config = anySideElbowExerciseConfig()
+
+        val result = gate.validate(
+            angles = JointAngles(leftElbow = 165.0, rightElbow = 90.0),
+            landmarks = elbowLandmarks(leftVisibility = 0.1f, rightVisibility = 0.95f),
+            exerciseConfig = config,
+            poseVariantIndex = 0,
+        )
+
+        assertFalse(result.inStartPose)
+        assertFalse(result.isConfirmed)
+        assertEquals("right_elbow", result.worstJointGuidance?.jointCode)
+    }
+
+    @Test
+    fun validate_anySideSetupIgnoresHiddenPartnerGuidanceWhenVisibleSideReady() {
+        val gate = SetupReadinessGate(
+            config = SetupValidationConfig(
+                windowSize = 1,
+                requiredValid = 1,
+                cameraCheckWindowSize = 1,
+                cameraCheckRequired = 1,
+            ),
+        )
+        val config = anySideElbowExerciseConfig()
+
+        val result = gate.validate(
+            angles = JointAngles(leftElbow = 90.0, rightElbow = 165.0),
+            landmarks = elbowLandmarks(leftVisibility = 0.1f, rightVisibility = 0.95f),
+            exerciseConfig = config,
+            poseVariantIndex = 0,
+        )
+
+        assertTrue(result.inStartPose)
+        assertTrue(result.isConfirmed)
+        assertTrue(result.jointGuidanceRows.none { it.jointCode == "left_elbow" })
+    }
+
+    @Test
+    fun countdownPoseValid_anySideUsesHigherConfidenceSide() {
+        val gate = SetupReadinessGate()
+        val config = anySideElbowExerciseConfig()
+        val landmarks = elbowLandmarks(leftVisibility = 0.1f, rightVisibility = 0.95f)
+
+        assertTrue(
+            gate.isCountdownPoseValid(
+                angles = JointAngles(leftElbow = 90.0, rightElbow = 165.0),
+                exerciseConfig = config,
+                poseVariantIndex = 0,
+                landmarks = landmarks,
+            ),
+        )
+        assertFalse(
+            gate.isCountdownPoseValid(
+                angles = JointAngles(leftElbow = 165.0, rightElbow = 90.0),
+                exerciseConfig = config,
+                poseVariantIndex = 0,
+                landmarks = landmarks,
+            ),
+        )
+    }
+
+    @Test
     fun isSetupPoseConfirmed_bilateralRequiresBothKnees() {
         val config = ExerciseConfigParser.parseConfigJson(readExerciseFixture("squat.json"))
         val gate = SetupReadinessGate()
@@ -132,6 +204,9 @@ class SetupReadinessGateTest {
           "name": {"ar": "اختبار", "en": "Test"},
           "countingMethod": "up_down",
           "poseVariants": [{
+            "expectedPostures": ["any"],
+            "expectedDirections": ["any"],
+            "expectedRegions": ["any"],
             "trackedJoints": [
               {
                 "joint": "left_elbow",
@@ -171,5 +246,24 @@ class SetupReadinessGateTest {
                 spine = 10.0,
             ),
         )
+    }
+
+    private fun elbowLandmarks(leftVisibility: Float, rightVisibility: Float): List<Landmark> {
+        val landmarks = MutableList(33) { Landmark(0.5f, 0.5f, 0f, 1f, 1f) }
+        listOf(
+            PoseLandmarkIndices.LEFT_SHOULDER,
+            PoseLandmarkIndices.LEFT_ELBOW,
+            PoseLandmarkIndices.LEFT_WRIST,
+        ).forEach { index ->
+            landmarks[index] = landmarks[index].copy(visibility = leftVisibility)
+        }
+        listOf(
+            PoseLandmarkIndices.RIGHT_SHOULDER,
+            PoseLandmarkIndices.RIGHT_ELBOW,
+            PoseLandmarkIndices.RIGHT_WRIST,
+        ).forEach { index ->
+            landmarks[index] = landmarks[index].copy(visibility = rightVisibility)
+        }
+        return landmarks
     }
 }

@@ -24,9 +24,11 @@ internal suspend fun runBackgroundSyncIfReady(): BackgroundSyncRunOutcome {
     val platform = runCatching { MovitData.requirePlatform() }.getOrNull()
         ?: return BackgroundSyncRunOutcome.NoOp
     if (platform.authHeader().isNullOrBlank()) return BackgroundSyncRunOutcome.NoOp
+    if (!platform.isNetworkAvailable()) return BackgroundSyncRunOutcome.NoOp
 
     return runCatching {
         when (MovitData.sync.syncIfNeeded(forceCheck = true)) {
+            is MovitSyncOrchestrator.SyncOutcome.Offline -> BackgroundSyncRunOutcome.Failed
             is MovitSyncOrchestrator.SyncOutcome.Error -> BackgroundSyncRunOutcome.Failed
             else -> BackgroundSyncRunOutcome.Completed
         }

@@ -338,7 +338,13 @@ class TrainingSessionViewModel(
       if (isCountdown) {
         val hasSceneData = (landmarks?.size ?: 0) >= 33
         val sceneStillValid = hasSceneData && readiness.phase == SetupPhase.ANGLES
-        val startPoseStillValid = readinessGate.isCountdownPoseValid(angles, config, activePoseVariantIndex)
+        val startPoseStillValid = readinessGate.isCountdownPoseValid(
+          angles = angles,
+          exerciseConfig = config,
+          poseVariantIndex = activePoseVariantIndex,
+          landmarks = landmarks,
+          isFrontCamera = frame.isFrontCamera,
+        )
         if (!sceneStillValid || !startPoseStillValid) {
           supervisor.processSignal(SupervisorSignal.PoseInvalid)
         } else {

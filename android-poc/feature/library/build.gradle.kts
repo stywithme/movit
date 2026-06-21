@@ -1,4 +1,4 @@
-﻿// AGP 9 migration: replace android.library with android.kmp.library when upgrading.
+// AGP 9 migration: replace android.library with android.kmp.library when upgrading.
 plugins {
     id("movit.kmp.feature")
 }
@@ -18,11 +18,7 @@ kotlin {
             implementation(project(":core:network"))
             implementation(project(":core:resources"))
             implementation(project(":core:training-engine"))
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.material3)
-            implementation(compose.materialIconsExtended)
-            implementation(compose.ui)
+            movitComposeUi()
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.jetbrains.lifecycle.viewmodel)
             implementation(libs.jetbrains.lifecycle.viewmodel.compose)
