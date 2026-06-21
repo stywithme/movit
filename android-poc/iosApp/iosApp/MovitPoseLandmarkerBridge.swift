@@ -46,7 +46,7 @@ final class MovitPoseLandmarkerBridge: NSObject, IosPoseLandmarkerBridge {
             let baseOptions = BaseOptions()
             baseOptions.modelAssetPath = modelPath
             baseOptions.delegate = configuration.useGpu ? .GPU : .CPU
-            var options = PoseLandmarkerOptions()
+            let options = PoseLandmarkerOptions()
             options.baseOptions = baseOptions
             options.runningMode = .liveStream
             options.numPoses = 1
@@ -189,6 +189,6 @@ extension MovitPoseLandmarkerBridge: PoseLandmarkerLiveStreamDelegate {
 
 private func movitKotlinByteArray(from data: Foundation.Data) -> KotlinByteArray {
     KotlinByteArray(size: Int32(data.count)) { index in
-        KotlinByte(char: Int8(truncating: data[Int(index)]))
+        KotlinByte(char: Int8(bitPattern: data[Int(index)]))
     }
 }
