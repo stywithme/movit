@@ -74,7 +74,9 @@ export const mobileSyncService = {
   ): Promise<MobileExploreResponse> {
     const prisma = await getPrisma();
     const now = new Date();
-    const limit = Math.min(Math.max(params.limit ?? 6, 1), 20);
+    const limit = params.limit != null && Number.isFinite(params.limit)
+      ? Math.min(Math.max(params.limit, 1), 500)
+      : undefined;
     const isFullSync = !params.updatedAfter;
 
     let updatedAfterDate: Date | null = null;
@@ -110,7 +112,7 @@ export const mobileSyncService = {
       prisma.level.findMany({
         where: levelWhere,
         orderBy: { number: 'asc' },
-        take: limit,
+        ...(limit ? { take: limit } : {}),
       }),
       prisma.program.findMany({
         where: programWhere,
@@ -122,7 +124,7 @@ export const mobileSyncService = {
           { isFeatured: 'desc' },
           { updatedAt: 'desc' },
         ],
-        take: limit,
+        ...(limit ? { take: limit } : {}),
       }),
       prisma.workoutTemplate.findMany({
         where: workoutWhere,
@@ -136,7 +138,7 @@ export const mobileSyncService = {
           { isFeatured: 'desc' },
           { updatedAt: 'desc' },
         ],
-        take: limit,
+        ...(limit ? { take: limit } : {}),
       }),
       prisma.exercise.findMany({
         where: exerciseWhere,
@@ -171,7 +173,7 @@ export const mobileSyncService = {
           { isFeatured: 'desc' },
           { updatedAt: 'desc' },
         ],
-        take: limit,
+        ...(limit ? { take: limit } : {}),
       }),
     ]);
 
