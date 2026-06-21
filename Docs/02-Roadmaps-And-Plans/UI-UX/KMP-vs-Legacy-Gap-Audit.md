@@ -1,8 +1,8 @@
-﻿# تدقيق الفجوات — KMP الجديد مقابل Legacy والـ Prototype
+# تدقيق الفجوات — KMP الجديد مقابل Legacy والـ Prototype
 
 **تاريخ التجميع:** 2026-06-12  
 **النطاق:** 18 صفحة (00–17) — المسارات الأساسية والمنطق الأساسي  
-**المنهجية:** 4 وكلاء مراجعة مستقلين × (Prototype HTML ↔ Legacy `android-poc/app/src/main` ↔ KMP `android-poc/feature/*`)
+**المنهجية:** 4 وكلاء مراجعة مستقلين × (Prototype HTML ↔ Legacy `kmp-app/app/src/main` ↔ KMP `kmp-app/feature/*`)
 
 **مراجع:** [Android-KMP-Mobile-UI-UX-Phase-05-Page-By-Page-Modernization-Plan.md](Android-KMP-Mobile-UI-UX-Phase-05-Page-By-Page-Modernization-Plan.md) · [Page-Scorecards.md](Page-Scorecards.md) · [Sync-App-Pages.md](Sync-App-Pages.md) · [prototypes/](prototypes/)
 
@@ -73,7 +73,7 @@
 # القسم 1 — التبويبات الرئيسية (08 · 01 · 04 · 09)
 
 > **تاريخ المراجعة:** 2026-06-12  
-> **المنهجية:** مقارنة Prototype HTML ↔ Legacy (`android-poc/app/src/main`) ↔ KMP (`feature/home|train|explore|reports` + `feature/shell`)  
+> **المنهجية:** مقارنة Prototype HTML ↔ Legacy (`kmp-app/app/src/main`) ↔ KMP (`feature/home|train|explore|reports` + `feature/shell`)  
 > **مراجع:** [`Page-Scorecards.md`](../Page-Scorecards.md) · [`Sync-App-Pages.md`](../Sync-App-Pages.md) · `prototypes/08-home.html` · `01-train.html` · `04-explore.html` · `09-reports.html`
 
 ---
@@ -479,7 +479,7 @@
 # القسم 2 — الحساب والتقييم (10–14)
 
 **تاريخ المراجعة:** 2026-06-12  
-**المراجع:** Prototypes `10-auth.html` … `14-level-plan.html` · KMP `android-poc/feature/account` · Legacy `android-poc/app/src/main` · [`Page-Scorecards.md`](../Page-Scorecards.md) · [`Sync-App-Pages.md`](../Sync-App-Pages.md) · [`Onboarding-Page-Modernization-Spec.md`](../Page-Specs/Onboarding-Page-Modernization-Spec.md)
+**المراجع:** Prototypes `10-auth.html` … `14-level-plan.html` · KMP `kmp-app/feature/account` · Legacy `kmp-app/app/src/main` · [`Page-Scorecards.md`](../Page-Scorecards.md) · [`Sync-App-Pages.md`](../Sync-App-Pages.md) · [`Onboarding-Page-Modernization-Spec.md`](../Page-Specs/Onboarding-Page-Modernization-Spec.md)
 
 **تصنيف الفروق:** `مطابق` | `تحسين مقصود` | `فجوة وظيفية` | `فجوة بصرية` | `مؤجل Phase 07` | `غائب`
 
@@ -902,7 +902,7 @@ flowchart TD
 
 **التاريخ:** 2026-06-12  
 **النطاق:** صفحات 02 · 03 · 16 · 17 (`data-flow=training`)  
-**المصادر:** prototypes `02-session.html` · `03-prepare.html` · `16-workout-flow.html` · `17-report-detail.html` · [`Page-Scorecards.md`](../Page-Scorecards.md) · [`Sync-App-Pages.md`](../Sync-App-Pages.md) · KMP (`feature/library` · `feature/training` · `feature/reports` · `MovitInnerHost.kt`) · Legacy Android (`android-poc/app/...`)
+**المصادر:** prototypes `02-session.html` · `03-prepare.html` · `16-workout-flow.html` · `17-report-detail.html` · [`Page-Scorecards.md`](../Page-Scorecards.md) · [`Sync-App-Pages.md`](../Sync-App-Pages.md) · KMP (`feature/library` · `feature/training` · `feature/reports` · `MovitInnerHost.kt`) · Legacy Android (`kmp-app/app/...`)
 
 **تصنيف الفجوات:** `مطابق` | `تحسين مقصود` | `فجوة وظيفية` | `فجوة بصرية` | `مؤجل Phase 07` | `غائب`
 
@@ -1203,13 +1203,13 @@ flowchart TD
 
 | الطبقة | مسار |
 |--------|------|
-| Shell routes | `android-poc/feature/shell/.../MovitInnerHost.kt` |
-| Session | `android-poc/feature/library/.../WorkoutSession*.kt` |
-| Prepare | `android-poc/feature/library/.../ExercisePrepare*.kt` |
-| Workout flow | `android-poc/feature/library/.../WorkoutCustomize*.kt` · `WorkoutRun*.kt` · `WorkoutFlow*.kt` |
-| Training live | `android-poc/feature/training/.../TrainingSession*.kt` |
-| Report | `android-poc/feature/reports/.../ReportDetail*.kt` |
-| Legacy جسر | `android-poc/app/.../MovitTrainingEntryNavigator.kt` |
+| Shell routes | `kmp-app/feature/shell/.../MovitInnerHost.kt` |
+| Session | `kmp-app/feature/library/.../WorkoutSession*.kt` |
+| Prepare | `kmp-app/feature/library/.../ExercisePrepare*.kt` |
+| Workout flow | `kmp-app/feature/library/.../WorkoutCustomize*.kt` · `WorkoutRun*.kt` · `WorkoutFlow*.kt` |
+| Training live | `kmp-app/feature/training/.../TrainingSession*.kt` |
+| Report | `kmp-app/feature/reports/.../ReportDetail*.kt` |
+| Legacy جسر | `kmp-app/app/.../MovitTrainingEntryNavigator.kt` |
 | Legacy customize/report | `WorkoutCustomizeActivity.kt` · `WorkoutReportActivity.kt` |
 | Scorecards | `Docs/02-Roadmaps-And-Plans/UI-UX/Page-Scorecards.md` |
 

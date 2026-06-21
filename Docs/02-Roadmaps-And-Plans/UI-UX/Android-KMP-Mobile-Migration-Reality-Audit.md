@@ -227,12 +227,12 @@ is AppResult.Failure -> fallback.fetchLevelProfile()
 
 ## 8) مراجع الكود (للتحقق المستقل)
 
-- ارتداد التدريب للـ legacy (مسارات غير المدعومة في P0): [`MovitInnerHost.kt`](../../../android-poc/feature/shell/src/commonMain/kotlin/com/movit/feature/shell/MovitInnerHost.kt) · [`MovitAppShellEffect.kt`](../../../android-poc/feature/shell/src/commonMain/kotlin/com/movit/feature/shell/MovitAppShellEffect.kt)
-- مسار KMP POC: [`ExerciseLiveScreen.kt`](../../../android-poc/feature/library/src/commonMain/kotlin/com/movit/feature/library/training/ExerciseLiveScreen.kt) · [`LiveExerciseRunner.kt`](../../../android-poc/core/training-engine/src/commonMain/kotlin/com/movit/core/training/session/LiveExerciseRunner.kt) · [`LegacyKmpTrainingSessionFactory.kt`](../../../android-poc/app/src/movitShellHost/java/com/movit/legacy/LegacyKmpTrainingSessionFactory.kt)
+- ارتداد التدريب للـ legacy (مسارات غير المدعومة في P0): [`MovitInnerHost.kt`](../../../kmp-app/feature/shell/src/commonMain/kotlin/com/movit/feature/shell/MovitInnerHost.kt) · [`MovitAppShellEffect.kt`](../../../kmp-app/feature/shell/src/commonMain/kotlin/com/movit/feature/shell/MovitAppShellEffect.kt)
+- مسار KMP POC: [`ExerciseLiveScreen.kt`](../../../kmp-app/feature/library/src/commonMain/kotlin/com/movit/feature/library/training/ExerciseLiveScreen.kt) · [`LiveExerciseRunner.kt`](../../../kmp-app/core/training-engine/src/commonMain/kotlin/com/movit/core/training/session/LiveExerciseRunner.kt) · [`LegacyKmpTrainingSessionFactory.kt`](../../../kmp-app/app/src/movitShellHost/java/com/movit/legacy/LegacyKmpTrainingSessionFactory.kt)
 - تبعية `core:training-engine`: `feature:library/build.gradle.kts` + `app/build.gradle.kts`
-- السقوط الوهمي (أُغلق في P2): [`SharedProgramFlowRepository.kt`](../../../android-poc/feature/library/src/commonMain/kotlin/com/movit/feature/library/SharedProgramFlowRepository.kt) · [`SharedLevelRepository.kt`](../../../android-poc/feature/account/src/commonMain/kotlin/com/movit/feature/account/SharedLevelRepository.kt)
-- Body Scan P1: [`MovitAssessmentScreen.kt`](../../../android-poc/feature/account/src/commonMain/kotlin/com/movit/feature/account/MovitAssessmentScreen.kt) · [`AssessmentBodyScanEngine.kt`](../../../android-poc/feature/account/src/commonMain/kotlin/com/movit/feature/account/AssessmentBodyScanEngine.kt) · [`AssessmentCameraHost.kt`](../../../android-poc/feature/account/src/commonMain/kotlin/com/movit/feature/account/assessment/AssessmentCameraHost.kt)
-- منطق legacy غير المنقول: `android-poc/app/src/main/java/com/trainingvalidator/poc/{training,assessment}/`
+- السقوط الوهمي (أُغلق في P2): [`SharedProgramFlowRepository.kt`](../../../kmp-app/feature/library/src/commonMain/kotlin/com/movit/feature/library/SharedProgramFlowRepository.kt) · [`SharedLevelRepository.kt`](../../../kmp-app/feature/account/src/commonMain/kotlin/com/movit/feature/account/SharedLevelRepository.kt)
+- Body Scan P1: [`MovitAssessmentScreen.kt`](../../../kmp-app/feature/account/src/commonMain/kotlin/com/movit/feature/account/MovitAssessmentScreen.kt) · [`AssessmentBodyScanEngine.kt`](../../../kmp-app/feature/account/src/commonMain/kotlin/com/movit/feature/account/AssessmentBodyScanEngine.kt) · [`AssessmentCameraHost.kt`](../../../kmp-app/feature/account/src/commonMain/kotlin/com/movit/feature/account/assessment/AssessmentCameraHost.kt)
+- منطق legacy غير المنقول: `kmp-app/app/src/main/java/com/trainingvalidator/poc/{training,assessment}/`
 - منهجية الأوزان: [`Page-Scorecards.md`](Page-Scorecards.md) §«المنهجية»
 
 ---

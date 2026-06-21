@@ -16,36 +16,36 @@
 - `D:/laragon/www/POSE-2-MO-readonly` كنسخة `MO` Legacy.
 - `D:/laragon/www/POSE-2` كنسخة KMP الحالية.
 - ملفات Legacy الأساسية:
-  - `android-poc/app/src/main/java/com/trainingvalidator/poc/ui/train/TrainingActivity.kt`
-  - `android-poc/app/src/main/java/com/trainingvalidator/poc/ui/training/TrainingViewModel.kt`
-  - `android-poc/app/src/main/java/com/trainingvalidator/poc/ui/training/PoseSetupGuide.kt`
-  - `android-poc/app/src/main/java/com/trainingvalidator/poc/ui/train/SetupCountdownBinder.kt`
-  - `android-poc/app/src/main/java/com/trainingvalidator/poc/ui/train/CameraTrainingInputController.kt`
-  - `android-poc/app/src/main/java/com/trainingvalidator/poc/camera/CameraManager.kt`
-  - `android-poc/app/src/main/java/com/trainingvalidator/poc/pose/PoseLandmarkerHelper.kt`
+  - `kmp-app/app/src/main/java/com/trainingvalidator/poc/ui/train/TrainingActivity.kt`
+  - `kmp-app/app/src/main/java/com/trainingvalidator/poc/ui/training/TrainingViewModel.kt`
+  - `kmp-app/app/src/main/java/com/trainingvalidator/poc/ui/training/PoseSetupGuide.kt`
+  - `kmp-app/app/src/main/java/com/trainingvalidator/poc/ui/train/SetupCountdownBinder.kt`
+  - `kmp-app/app/src/main/java/com/trainingvalidator/poc/ui/train/CameraTrainingInputController.kt`
+  - `kmp-app/app/src/main/java/com/trainingvalidator/poc/camera/CameraManager.kt`
+  - `kmp-app/app/src/main/java/com/trainingvalidator/poc/pose/PoseLandmarkerHelper.kt`
   - Legacy Debug Lab: `DebugActivity.kt` — نقل KMP موثّق في [Android-KMP-Training-Debug-Mode-Full-Migration-Plan.md](./Android-KMP-Training-Debug-Mode-Full-Migration-Plan.md) (§12 Agent 1–4).
-  - `android-poc/app/src/main/java/com/trainingvalidator/poc/training/TrainingEngine.kt`
-  - `android-poc/app/src/main/java/com/trainingvalidator/poc/training/workout/WorkoutTrainingEngine.kt`
-  - `android-poc/app/src/main/java/com/trainingvalidator/poc/training/report/ReportGenerator.kt`
-  - `android-poc/app/src/main/java/com/trainingvalidator/poc/training/report/FrameCaptureManager.kt`
+  - `kmp-app/app/src/main/java/com/trainingvalidator/poc/training/TrainingEngine.kt`
+  - `kmp-app/app/src/main/java/com/trainingvalidator/poc/training/workout/WorkoutTrainingEngine.kt`
+  - `kmp-app/app/src/main/java/com/trainingvalidator/poc/training/report/ReportGenerator.kt`
+  - `kmp-app/app/src/main/java/com/trainingvalidator/poc/training/report/FrameCaptureManager.kt`
 - ملفات KMP الأساسية:
-  - `android-poc/core/training-engine/src/commonMain/kotlin/com/movit/core/training/session/MovitTrainingEngine.kt`
-  - `android-poc/core/training-engine/src/commonMain/kotlin/com/movit/core/training/session/SetupReadinessGate.kt`
-  - `android-poc/core/training-engine/src/commonMain/kotlin/com/movit/core/training/session/SetupJointGuidance.kt`
-  - `android-poc/core/training-engine/src/commonMain/kotlin/com/movit/core/training/engine/StartPoseGate.kt`
-  - `android-poc/core/training-engine/src/commonMain/kotlin/com/movit/core/training/session/TrainingSessionFlowCoordinator.kt`
-  - `android-poc/core/training-engine/src/commonMain/kotlin/com/movit/core/training/session/FrameIngressGate.kt`
-  - `android-poc/core/pose-capture/src/androidMain/kotlin/com/movit/core/posecapture/android/CameraXFrameSource.kt`
-  - `android-poc/core/pose-capture/src/androidMain/kotlin/com/movit/core/posecapture/android/MediaPipePoseDetector.kt`
-  - `android-poc/feature/training/src/commonMain/kotlin/com/movit/feature/training/TrainingSessionViewModel.kt`
-  - `android-poc/feature/training/src/commonMain/kotlin/com/movit/feature/training/TrainingKeepScreenOn.kt`
-  - `android-poc/core/training-engine/src/commonMain/kotlin/com/movit/core/training/diagnostics/TrainingPipelineDiagnostics.kt`
-  - `android-poc/feature/training/src/androidMain/kotlin/com/movit/feature/training/TrainingSessionCameraHost.android.kt`
-  - `android-poc/feature/training/src/commonMain/kotlin/com/movit/feature/training/TrainingSessionScreen.kt`
-  - `android-poc/feature/training/src/commonMain/kotlin/com/movit/feature/training/TrainingSessionPanels.kt`
-  - `android-poc/core/training-engine/src/commonMain/kotlin/com/movit/core/training/report/MovitPostTrainingReport.kt`
-  - `android-poc/core/training-engine/src/commonMain/kotlin/com/movit/core/training/journal/MotionRecorder.kt`
-  - `android-poc/feature/training/src/commonMain/kotlin/com/movit/feature/training/TrainingSessionWriteHooks.kt`
+  - `kmp-app/core/training-engine/src/commonMain/kotlin/com/movit/core/training/session/MovitTrainingEngine.kt`
+  - `kmp-app/core/training-engine/src/commonMain/kotlin/com/movit/core/training/session/SetupReadinessGate.kt`
+  - `kmp-app/core/training-engine/src/commonMain/kotlin/com/movit/core/training/session/SetupJointGuidance.kt`
+  - `kmp-app/core/training-engine/src/commonMain/kotlin/com/movit/core/training/engine/StartPoseGate.kt`
+  - `kmp-app/core/training-engine/src/commonMain/kotlin/com/movit/core/training/session/TrainingSessionFlowCoordinator.kt`
+  - `kmp-app/core/training-engine/src/commonMain/kotlin/com/movit/core/training/session/FrameIngressGate.kt`
+  - `kmp-app/core/pose-capture/src/androidMain/kotlin/com/movit/core/posecapture/android/CameraXFrameSource.kt`
+  - `kmp-app/core/pose-capture/src/androidMain/kotlin/com/movit/core/posecapture/android/MediaPipePoseDetector.kt`
+  - `kmp-app/feature/training/src/commonMain/kotlin/com/movit/feature/training/TrainingSessionViewModel.kt`
+  - `kmp-app/feature/training/src/commonMain/kotlin/com/movit/feature/training/TrainingKeepScreenOn.kt`
+  - `kmp-app/core/training-engine/src/commonMain/kotlin/com/movit/core/training/diagnostics/TrainingPipelineDiagnostics.kt`
+  - `kmp-app/feature/training/src/androidMain/kotlin/com/movit/feature/training/TrainingSessionCameraHost.android.kt`
+  - `kmp-app/feature/training/src/commonMain/kotlin/com/movit/feature/training/TrainingSessionScreen.kt`
+  - `kmp-app/feature/training/src/commonMain/kotlin/com/movit/feature/training/TrainingSessionPanels.kt`
+  - `kmp-app/core/training-engine/src/commonMain/kotlin/com/movit/core/training/report/MovitPostTrainingReport.kt`
+  - `kmp-app/core/training-engine/src/commonMain/kotlin/com/movit/core/training/journal/MotionRecorder.kt`
+  - `kmp-app/feature/training/src/commonMain/kotlin/com/movit/feature/training/TrainingSessionWriteHooks.kt`
 
 ---
 
@@ -892,7 +892,7 @@ data class SetupGuidanceUi(
 أمر التشغيل الموصى به:
 
 ```bash
-cd android-poc
+cd kmp-app
 ./gradlew :core:training-engine:testDebugUnitTest :feature:reports:testDebugUnitTest :feature:training:testDebugUnitTest
 ```
 
@@ -1145,7 +1145,7 @@ cd android-poc
 ### اختبارات مُشغَّلة
 
 ```bash
-cd android-poc
+cd kmp-app
 ./gradlew :core:training-engine:testDebugUnitTest \
   --tests "com.movit.core.training.engine.StartPoseGateTest" \
   --tests "com.movit.core.training.session.SetupReadinessGateTest"
@@ -1207,7 +1207,7 @@ cd android-poc
 - `worldLandmarksShorterThanNorm_fallsBackTo2D`.
 
 ```bash
-cd android-poc
+cd kmp-app
 ./gradlew :core:training-engine:testDebugUnitTest \
   --tests "com.movit.core.training.geometry.PoseFrameAssemblerTest"
 ```
@@ -1233,7 +1233,7 @@ cd android-poc
 |---|---|
 | علامات merge conflict (`<<<<<<<`) | **لا يوجد** في `.kt` / `.md` |
 | تعارض منطقي في الملفات الحرجة | **لم يُكتشف** — التكامل عبر حقن منافذ (`frameSnapshotPort`، `deviceTiltPort`، `audioPlayer`) وعقود nullable (`onFrame: PoseFrame?`) |
-| ملفات معدّلة/جديدة غير متتبعة | ~70 ملفاً في `android-poc` + ملف audit (انظر `git status`) |
+| ملفات معدّلة/جديدة غير متتبعة | ~70 ملفاً في `kmp-app` + ملف audit (انظر `git status`) |
 
 **نقاط التقاء رئيسية (تم التحقق من التوافق):**
 
@@ -1248,7 +1248,7 @@ cd android-poc
 ### 23.2 أوامر التحقق المُنفَّذة
 
 ```bash
-cd android-poc
+cd kmp-app
 
 # اختبارات الوحدات المركزة (المسارات الخمسة)
 ./gradlew :core:training-engine:testDebugUnitTest \
@@ -1327,7 +1327,7 @@ cd android-poc
 ### 24.3 أوامر التحقق
 
 ```bash
-cd android-poc
+cd kmp-app
 ./gradlew :core:training-engine:testDebugUnitTest :feature:training:testDebugUnitTest
 ```
 
@@ -1371,7 +1371,7 @@ cd android-poc
 ### 25.4 اختبارات وتحقق
 
 ```bash
-cd android-poc
+cd kmp-app
 ./gradlew :core:training-engine:testDebugUnitTest \
   :feature:training:testDebugUnitTest \
   :core:pose-capture:testDebugUnitTest \
@@ -1514,7 +1514,7 @@ cd android-poc
 ### 28.2 أوامر التحقق
 
 ```bash
-cd android-poc
+cd kmp-app
 
 ./gradlew :core:training-engine:testDebugUnitTest \
   :core:pose-capture:testDebugUnitTest \
@@ -1594,7 +1594,7 @@ cd android-poc
 ### 29.3 التحقق
 
 ```bash
-cd android-poc
+cd kmp-app
 ./gradlew :core:pose-capture:compileDebugKotlinAndroid \
   :core:pose-capture:testDebugUnitTest --no-daemon
 ```
@@ -1855,7 +1855,7 @@ KMP ليس مجرد نقل ناقص، وفيه تحسينات حقيقية: فص
 | `ExerciseWorkoutSummaryBuilderTest` | `RepCounter(minRepIntervalMs = …)` |
 
 ```bash
-cd android-poc
+cd kmp-app
 ./gradlew :app:assembleDebug \
   :core:training-engine:testDebugUnitTest \
   :feature:training:testDebugUnitTest \
@@ -1899,7 +1899,7 @@ cd android-poc
 
 ### 35.x.3 مسار التحقق على Mac (قبول §34.5 iOS smoke)
 
-1. `brew install xcodegen` · `cd android-poc/iosApp && xcodegen generate`
+1. `brew install xcodegen` · `cd kmp-app/iosApp && xcodegen generate`
 2. أضف CocoaPods: `pod 'MediaPipeTasksVision'` · انسخ `pose_landmarker_full.task` إلى `iosApp/iosApp/`
 3. `./gradlew :feature:shell:embedAndSignAppleFrameworkForXcode` · `xcodebuild` simulator
 4. شغّل تدريباً حياً: preview + landmarks + setup progress + عدّ + تقرير (evidence أو fallback metadata واضح في UI)
@@ -1937,7 +1937,7 @@ cd android-poc
 **اختبارات:** `RepCounterTest` (snapshot كامل، تجميع common position errors)، `ExerciseWorkoutSummaryPositionErrorsTest`.
 
 ```bash
-cd android-poc
+cd kmp-app
 ./gradlew :core:training-engine:testDebugUnitTest
 ```
 
@@ -2168,7 +2168,7 @@ window=2s | cam=7fps(skipThrottle=3 profile=stable target=10 ae=[10,10] analysis
 **تفعيل profile تجريبي (محلي/QA فقط):**
 
 ```properties
-# android-poc/gradle.properties
+# kmp-app/gradle.properties
 movit.training.throughput.profile=medium
 ```
 
@@ -2186,7 +2186,7 @@ movit.training.throughput.profile=medium
 **اختبارات:**
 
 ```bash
-cd android-poc
+cd kmp-app
 ./gradlew :core:training-engine:testDebugUnitTest --tests "*TrainingThroughputProfilesTest*"
 ./gradlew :core:training-engine:testDebugUnitTest --tests "*TrainingPipelineDiagnosticsTest*"
 ```
@@ -2211,7 +2211,7 @@ cd android-poc
 **اختبارات:** `ExerciseWorkoutSummaryBuilderTest` (جلسة squat اصطناعية + commonErrors)، `MovitPostTrainingReportBuilderTest.build_prefersSummaryRepDetailsForStateBreakdown`.
 
 ```bash
-cd android-poc
+cd kmp-app
 ./gradlew :core:training-engine:testDebugUnitTest --tests "com.movit.core.training.session.ExerciseWorkoutSummaryBuilderTest" --tests "com.movit.core.training.report.MovitPostTrainingReportBuilderTest"
 ```
 
@@ -2265,7 +2265,7 @@ cd android-poc
 | golden parity للحقول الأساسية | `MovitPostTrainingReportBuilderTest.legacyJson_matchesGoldenParityFields` |
 
 ```bash
-cd android-poc
+cd kmp-app
 ./gradlew :core:training-engine:testDebugUnitTest --tests "com.movit.core.training.report.MovitPostTrainingReportBuilderTest"
 ```
 
@@ -2302,7 +2302,7 @@ cd android-poc
 | bilateral يشترط الركبتين أثناء countdown | `SetupReadinessGateTest.countdownPoseValid_bilateralRequiresBothKnees` |
 
 ```bash
-cd android-poc
+cd kmp-app
 ./gradlew :core:training-engine:testDebugUnitTest --tests "com.movit.core.training.engine.StartPoseGateTest" --tests "com.movit.core.training.session.SetupReadinessGateTest"
 ```
 
@@ -2330,7 +2330,7 @@ cd android-poc
 **اختبارات:** `BilateralCompletionTargetRepsTest` — 12 reps per side → side switch عند 12، completion عند 24؛ + حالات `switchEvery == target` و`EVERY_REP`.
 
 ```bash
-cd android-poc
+cd kmp-app
 ./gradlew :core:training-engine:testDebugUnitTest --tests "com.movit.core.training.bilateral.BilateralCompletionTargetRepsTest" --tests "com.movit.core.training.bilateral.BilateralControllerParityTest"
 ```
 
@@ -2375,7 +2375,7 @@ cd android-poc
 | coordinator angles + sampler | `TrainingFrameCaptureCoordinatorTest` |
 
 ```bash
-cd android-poc
+cd kmp-app
 ./gradlew :core:training-engine:testDebugUnitTest --tests "com.movit.core.training.report.MovitPeakFrameCaptureManagerTest" --tests "com.movit.core.training.report.MovitRepReplaySamplerTest" --tests "com.movit.core.training.report.MovitPostTrainingReportBuilderTest"
 ./gradlew :feature:training:testDebugUnitTest --tests "com.movit.feature.training.TrainingFrameCaptureCoordinatorTest"
 ```
@@ -2446,7 +2446,7 @@ cd android-poc
 **اختبارات:**
 
 ```bash
-cd android-poc
+cd kmp-app
 ./gradlew :core:training-engine:testDebugUnitTest \
   --tests "com.movit.core.training.engine.feedback.TrainingFeedbackEventRouterTest" \
   --tests "com.movit.core.training.engine.feedback.FeedbackRouterTest" \
@@ -2499,7 +2499,7 @@ cd android-poc
 ### 35.11.4 اختبارات
 
 ```bash
-cd android-poc
+cd kmp-app
 ./gradlew :feature:training:testDebugUnitTest \
   --tests "com.movit.feature.training.SkeletonOverlayMapperTest" \
   :core:training-engine:testDebugUnitTest \
@@ -2553,14 +2553,14 @@ cd android-poc
 ### 36.3 أوامر التحقق
 
 ```bash
-cd android-poc
+cd kmp-app
 ./gradlew :core:training-engine:testDebugUnitTest :core:pose-capture:testDebugUnitTest :feature:training:testDebugUnitTest :feature:reports:testDebugUnitTest :feature:library:testDebugUnitTest --no-daemon
 ```
 
 **النتيجة:** ✅ `BUILD SUCCESSFUL` في 2026-06-14 بعد إصلاحات التحقق.
 
 ```bash
-git diff --check -- android-poc/core/pose-capture/src/androidMain/kotlin/com/movit/core/posecapture/android/MediaPipePoseDetector.kt android-poc/core/pose-capture/src/androidMain/kotlin/com/movit/core/posecapture/android/CameraXFrameSource.kt android-poc/core/pose-capture/src/iosMain/kotlin/com/movit/core/posecapture/IosPoseDetector.kt android-poc/core/pose-capture/src/iosMain/kotlin/com/movit/core/posecapture/IosCameraFrameSource.kt android-poc/core/pose-capture/src/iosMain/kotlin/com/movit/core/posecapture/IosPoseLandmarkerBridge.kt android-poc/iosApp/iosApp/MovitPoseLandmarkerBridge.swift android-poc/feature/training/src/iosMain/kotlin/com/movit/feature/training/IosTrainingFrameSnapshotPort.kt android-poc/feature/training/src/iosMain/kotlin/com/movit/feature/training/TrainingSessionCameraHost.ios.kt
+git diff --check -- kmp-app/core/pose-capture/src/androidMain/kotlin/com/movit/core/posecapture/android/MediaPipePoseDetector.kt kmp-app/core/pose-capture/src/androidMain/kotlin/com/movit/core/posecapture/android/CameraXFrameSource.kt kmp-app/core/pose-capture/src/iosMain/kotlin/com/movit/core/posecapture/IosPoseDetector.kt kmp-app/core/pose-capture/src/iosMain/kotlin/com/movit/core/posecapture/IosCameraFrameSource.kt kmp-app/core/pose-capture/src/iosMain/kotlin/com/movit/core/posecapture/IosPoseLandmarkerBridge.kt kmp-app/iosApp/iosApp/MovitPoseLandmarkerBridge.swift kmp-app/feature/training/src/iosMain/kotlin/com/movit/feature/training/IosTrainingFrameSnapshotPort.kt kmp-app/feature/training/src/iosMain/kotlin/com/movit/feature/training/TrainingSessionCameraHost.ios.kt
 ```
 
 **النتيجة:** ✅ لا توجد أخطاء whitespace؛ ظهرت فقط تحذيرات CRLF الخاصة بـ Windows.

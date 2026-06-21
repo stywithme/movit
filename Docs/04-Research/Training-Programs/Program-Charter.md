@@ -190,7 +190,7 @@ enum TrainingGoal {
 - **يفتح:** القرار 1 كاملاً.
 
 ### Gap 3: PAR-Q كخطوة Onboarding مستقلة
-- **أين:** Android Onboarding flow (حالياً تسويقي فقط في [android-poc/.../OnboardingActivity.kt](android-poc/app/src/main/java/com/trainingvalidator/poc/ui/auth/OnboardingActivity.kt)) + backend endpoint.
+- **أين:** Android Onboarding flow (حالياً تسويقي فقط في [kmp-app/.../OnboardingActivity.kt](kmp-app/app/src/main/java/com/trainingvalidator/poc/ui/auth/OnboardingActivity.kt)) + backend endpoint.
 - **حجم العمل:** متوسط.
 - **يفتح:** القرار 5.
 

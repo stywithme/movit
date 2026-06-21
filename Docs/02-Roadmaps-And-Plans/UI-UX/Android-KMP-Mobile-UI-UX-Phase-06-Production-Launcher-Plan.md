@@ -199,7 +199,7 @@ iOS native auth يكتب `access_token`/`is_pro`/`active_user_program_id` لعر
 ## أوامر التحقق
 
 ```powershell
-cd android-poc
+cd kmp-app
 # بناء التطبيق القديم (الفلاج off) — يجب أن يبقى نظيفاً
 .\gradlew.bat --console=plain :app:assembleRelease
 .\gradlew.bat --console=plain :app:dependencies --configuration releaseRuntimeClasspath   # خالٍ من Movit
@@ -413,7 +413,7 @@ adb shell am start -n com.movit.androidApp/com.movit.debug.MovitShellPilotActivi
 | **P6-1** | توحيد `MovitShellHost` | ✅ | نقل إلى `app/src/movitShellHost/java/com/movit/host/MovitShellHost.kt`؛ `build.gradle.kts` يضمّه في `main` (flag on) أو `debug` (flag off)؛ حُذف النسختان من `movitShellEnabled/` و`debugMovitHost/`؛ `exitToLegacyAuthOnLogout` محفوظ |
 | **P6-2** | ضيّق ProGuard | ✅ | أُزيلت `-keep class com.movit.**` و`androidx.compose.**` و`kotlinx.coroutines.**` الشاملة؛ بقيت serialization DTOs + `$$serializer`، Ktor client/http/serialization/util، Koin core/dsl + `core.data.di/repository`، `@Composable com.movit.**` + `Movit*ViewModel` + `com.movit.host.**` |
 | **P6-3** | CI `assembleRelease` | ✅ | workflow جديد `.github/workflows/movit-android-release.yml` — ubuntu، JDK 17، Android SDK، Gradle cache؛ `assembleRelease` off ثم on؛ grep `releaseRuntimeClasspath` يتحقق من غياب/وجود `feature:shell` |
-| **P6-4** | smoke جهاز | 🔶 | سكربت مساعد `android-poc/scripts/phase06-smoke-adb.ps1` — يبني APK (اختياري) ويوثّق أوامر adb للـ checklist (install → Splash → shell → logout)؛ **التنفيذ اليدوي على جهاز ما زال مطلوباً** |
+| **P6-4** | smoke جهاز | 🔶 | سكربت مساعد `kmp-app/scripts/phase06-smoke-adb.ps1` — يبني APK (اختياري) ويوثّق أوامر adb للـ checklist (install → Splash → shell → logout)؛ **التنفيذ اليدوي على جهاز ما زال مطلوباً** |
 
 ### نتائج build بعد التحسينات (2026-06-10)
 

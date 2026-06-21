@@ -4,7 +4,7 @@
 
 ## Implementation Status
 
-- تم تنفيذ `ProgramDetailScreen` داخل `android-poc/feature/library` مع تبويبي Overview و Customize copy.
+- تم تنفيذ `ProgramDetailScreen` داخل `kmp-app/feature/library` مع تبويبي Overview و Customize copy.
 - البيانات: Explore cache + `ProgramDetailApiMapper` من `ProgramExportDto` عند `MovitData`؛ preview fixture عند عدم التثبيت.
 - **Start program:** `MovitData.plan.enrollProgram` عند أول Start + `sessionKeyForProgram` من export/home.
 - **Weekly report:** journey header → `MovitInnerRoute.WeeklyReport(selectedWeekNumber)`.
@@ -16,7 +16,7 @@
 | المصدر | المسار |
 |--------|--------|
 | Prototype | `Docs/.../prototypes/07-program.html` |
-| Legacy | `android-poc/app/.../ProgramDetailActivity.kt` |
+| Legacy | `kmp-app/app/.../ProgramDetailActivity.kt` |
 | KMP | `feature/library/ProgramDetailScreen.kt` |
 
 ## أهداف المستخدم

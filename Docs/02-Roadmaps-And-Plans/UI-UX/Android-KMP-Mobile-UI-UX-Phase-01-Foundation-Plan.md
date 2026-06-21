@@ -62,7 +62,7 @@ codex/kmp-mobile-foundation
 أوامر مقترحة:
 
 ```powershell
-cd android-poc
+cd kmp-app
 .\gradlew.bat :app:assembleDebug
 .\gradlew.bat :app:testDebugUnitTest
 ```
@@ -72,14 +72,14 @@ cd android-poc
 إنشاء:
 
 ```text
-android-poc/gradle/libs.versions.toml
+kmp-app/gradle/libs.versions.toml
 ```
 
 ونقل الإصدارات من:
 
 ```text
-android-poc/build.gradle.kts
-android-poc/app/build.gradle.kts
+kmp-app/build.gradle.kts
+kmp-app/app/build.gradle.kts
 ```
 
 إلى version catalog تدريجياً.
@@ -103,13 +103,13 @@ android-poc/app/build.gradle.kts
 إنشاء موديول أولي:
 
 ```text
-android-poc/shared/
+kmp-app/shared/
 ```
 
 وتسجيله في:
 
 ```text
-android-poc/settings.gradle.kts
+kmp-app/settings.gradle.kts
 ```
 
 الهيكلة المطلوبة:
@@ -144,7 +144,7 @@ shared/
 إنشاء موديول:
 
 ```text
-android-poc/core/designsystem/
+kmp-app/core/designsystem/
 ```
 
 وتسجيله في:
@@ -341,7 +341,7 @@ app/src/debug/AndroidManifest.xml
 من داخل:
 
 ```powershell
-cd android-poc
+cd kmp-app
 ```
 
 شغل ما يلي حسب المتاح بعد التنفيذ:

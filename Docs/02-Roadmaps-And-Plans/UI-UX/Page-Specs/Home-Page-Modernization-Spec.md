@@ -4,7 +4,7 @@
 
 ## Implementation Status
 
-- تم تنفيذ `MovitHomeScreen` داخل `android-poc/feature/home` وربطه في `feature:shell`.
+- تم تنفيذ `MovitHomeScreen` داخل `kmp-app/feature/home` وربطه في `feature:shell`.
 - البيانات عبر `SharedHomeRepository` → `GET /api/mobile/home` مع كاش offline-first.
 - بطاقة المستوى تفتح `MovitInnerRoute.LevelProfile` عبر `MovitHomeEffect.OpenLevel`.
 - مكوّنات `HomeHeroSummary`، `TodayPlanCard`، `HomeQuickActions`، `HomeProgressSection`، `HomeLevelCard` موصولة في الشاشة.

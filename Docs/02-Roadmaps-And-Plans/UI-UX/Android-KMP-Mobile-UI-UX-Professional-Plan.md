@@ -75,7 +75,7 @@ feature:home  → Body scan → Assessment · بطاقة المستوى → Leve
 
 ## الهدف
 
-بناء واجهة موبايل احترافية وقابلة للتوسع لتطبيق `android-poc`، مع تجهيز المسار الطبيعي لتطبيق iOS عبر Kotlin Multiplatform. بما أن التطبيق ما زال تحت التطوير والتعديلات الكبيرة ستكون على فرع آخر، فالهدف ليس الحفاظ المفرط على الشكل الحالي، بل تنفيذ التحول الصحيح من البداية. التدرج هنا ليس خوفاً من التغيير، بل طريقة منظمة للتجربة، البناء، والتحقق بعد كل خطوة.
+بناء واجهة موبايل احترافية وقابلة للتوسع لتطبيق `kmp-app`، مع تجهيز المسار الطبيعي لتطبيق iOS عبر Kotlin Multiplatform. بما أن التطبيق ما زال تحت التطوير والتعديلات الكبيرة ستكون على فرع آخر، فالهدف ليس الحفاظ المفرط على الشكل الحالي، بل تنفيذ التحول الصحيح من البداية. التدرج هنا ليس خوفاً من التغيير، بل طريقة منظمة للتجربة، البناء، والتحقق بعد كل خطوة.
 
 القرار التصميمي المعتمد:
 
@@ -111,7 +111,7 @@ feature:home  → Body scan → Assessment · بطاقة المستوى → Leve
 - **`commonMain` نظيف 100%** من أى `android.*` / `java.*` — تحقّق آلي.
 - **UDF لكل feature:** `State / Event / Effect / ViewModel / Route / Screen`، باستخدام KMP `androidx.lifecycle.ViewModel` (لا Controller، لا Android-only ViewModel).
 - **Design System كمصدر حقيقة واحد:** `MovitTheme` + tokens؛ الـ palette الوحيدة بها hex؛ Light/Dark؛ `error` مميّز عن `tertiary`؛ line-heights مناسبة للعربى.
-- **iOS مفروض بالـ build:** كل الموديولات بها `iosArm64 + iosSimulatorArm64` (`iosX64` في `:shared` فقط)، وCI على macOS (`.github/workflows/movit-kmp-ios.yml`) يكمبّل `commonMain` لـ iOS عند كل push على `android-poc/**` — **أخضر**.
+- **iOS مفروض بالـ build:** كل الموديولات بها `iosArm64 + iosSimulatorArm64` (`iosX64` في `:shared` فقط)، وCI على macOS (`.github/workflows/movit-kmp-ios.yml`) يكمبّل `commonMain` لـ iOS عند كل push على `kmp-app/**` — **أخضر**.
 - **بيانات حقيقية عبر MovitData (بدون جسور Retrofit):** Explore · Home · Train · Reports · Session · Report Detail · **Account (login, profile, onboarding, level)** — `MovitDataInstall` في `app/src/main` · `IosMovitPlatform` على iOS.
 - **Release hygiene (Phase 06):** موديولات Movit `implementation` عند `movit.shell.launcher.enabled=true`؛ `debugImplementation` + classpath نظيف عند off؛ `SplashActivity` LAUNCHER ثابت؛ rollback بفلاج واحد.
 - **Tests:** خضراء عبر كل الموديولات — أعداد KMP في [`generated/Docs-Stats-Snapshot.md`](generated/Docs-Stats-Snapshot.md) (`.\gradlew.bat docsStats`).
@@ -153,7 +153,7 @@ feature:home  → Body scan → Assessment · بطاقة المستوى → Leve
 
 ### الموجود في التطبيق القديم الذي ننقل منه
 
-- `android-poc/app` ما زال يحتوي launcher وlegacy screens التي يستمر الرجوع إليها كسلوك مرجعي.
+- `kmp-app/app` ما زال يحتوي launcher وlegacy screens التي يستمر الرجوع إليها كسلوك مرجعي.
 - `app/build.gradle.kts` يستخدم:
   - Kotlin Android plugin.
   - Android Gradle Plugin.
@@ -164,7 +164,7 @@ feature:home  → Body scan → Assessment · بطاقة المستوى → Leve
   - MediaPipe + LiteRT + ONNX Runtime.
   - MPAndroidChart.
   - Coil 2.x للـ Views.
-- `gradlew` و`gradlew.bat` موجودان حالياً داخل `android-poc`.
+- `gradlew` و`gradlew.bat` موجودان حالياً داخل `kmp-app`.
 - الـ prototypes داخل `Docs/02-Roadmaps-And-Plans/UI-UX/prototypes/` أصبحت مرجعاً بصرياً جيداً، خصوصاً `app.css?v=7` و`00-components.html`.
 
 ### ديون legacy واضحة من الفحص
@@ -237,14 +237,14 @@ feature:home  → Body scan → Assessment · بطاقة المستوى → Leve
 نحافظ مؤقتاً على:
 
 ```text
-android-poc/
+kmp-app/
   app/
 ```
 
 ثم نضيف تدريجياً:
 
 ```text
-android-poc/
+kmp-app/
   app/                       # Android shell الحالي، يبقى launcher وlegacy screens
   shared/                    # KMP shared logic كبداية
   shared-ui/                 # Compose Multiplatform UI لاحقاً
@@ -255,7 +255,7 @@ android-poc/
 ### الهيكلة النهائية المقترحة
 
 ```text
-android-poc/
+kmp-app/
   androidApp/                # Android entry point، قد يكون rename من app لاحقاً
   iosApp/                    # Xcode/Swift entry point
   shared/
@@ -537,8 +537,8 @@ sealed interface ExploreEffect {
   - Gradle
   - Xcode
 - تشغيل:
-  - `android-poc/gradlew.bat :app:assembleDebug`
-  - `android-poc/gradlew.bat :app:testDebugUnitTest`
+  - `kmp-app/gradlew.bat :app:assembleDebug`
+  - `kmp-app/gradlew.bat :app:testDebugUnitTest`
 - تحديث مستند الحالة لأن `gradlew` موجود الآن.
 
 ### Phase 1 - Design System + KMP skeleton

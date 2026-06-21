@@ -87,9 +87,9 @@ enum WeekType { NORMAL DELOAD }   // ⛔ يُحذف (مستخدم فقط في Pr
 - [`new/page.tsx`](Admin-Dashboard/src/app/admin/programs/new/page.tsx) · [`[id]/edit/page.tsx`](Admin-Dashboard/src/app/admin/programs/[id]/edit/page.tsx): حالة `phases`، الـ auto-align effects، `buildPayload`.
 - [`_lib/build-program-phases-payload.ts`](Admin-Dashboard/src/app/admin/programs/_lib/build-program-phases-payload.ts): **يُحذف**.
 
-### 4.4 Mobile — [`android-poc/`](android-poc)
+### 4.4 Mobile — [`kmp-app/`](kmp-app)
 
-- [`ProgramConfig.kt`](android-poc/app/src/main/java/com/trainingvalidator/poc/training/models/ProgramConfig.kt): `ProgramWeek(weekNumber, name, description)`, `ProgramDay(dayNumber, isRestDay, name)`.
+- [`ProgramConfig.kt`](kmp-app/app/src/main/java/com/trainingvalidator/poc/training/models/ProgramConfig.kt): `ProgramWeek(weekNumber, name, description)`, `ProgramDay(dayNumber, isRestDay, name)`.
 - شاشات العرض: `ProgramDetailActivity`, `ProgramDayActivity` (تعرض أسماء الأسبوع/اليوم).
 - الموبايل **لا** يستهلك `weekType` ولا `dayFocus` ولا program-phases (نطاق أصغر).
 
@@ -224,7 +224,7 @@ model ProgramDayAttribute {
 
 ### Layer 4 — Mobile (Android)
 
-[`ProgramConfig.kt`](android-poc/app/src/main/java/com/trainingvalidator/poc/training/models/ProgramConfig.kt):
+[`ProgramConfig.kt`](kmp-app/app/src/main/java/com/trainingvalidator/poc/training/models/ProgramConfig.kt):
 - `ProgramWeek`: **حذف `name`** → إضافة `val target: LocalizedText? = null`. إبقاء `description`, `weekNumber`. (لا fallback — قطع نظيف D6.)
 - `ProgramDay`: **حذف `name`** → إضافة `val targetMuscles: List<MuscleRef> = emptyList()` (data class جديدة `MuscleRef(code, name: LocalizedText)`) و `val dayType: String = "training"`. إبقاء `dayNumber`, `isRestDay`.
 - شاشات: تحديث `ProgramDetailActivity` / `ProgramDayActivity` + ملفات `activity_program_detail.xml` / `activity_program_day.xml` لعرض **Target الأسبوع** و**عضلات اليوم** بدل الأسماء.

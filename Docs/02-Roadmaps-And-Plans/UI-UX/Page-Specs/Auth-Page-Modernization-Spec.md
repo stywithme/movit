@@ -4,7 +4,7 @@
 
 ## Implementation Status
 
-- أول نسخة KMP في `android-poc/feature/account` — `MovitAuthScreen` / `MovitAuthViewModel` / `SharedAuthRepository`.
+- أول نسخة KMP في `kmp-app/feature/account` — `MovitAuthScreen` / `MovitAuthViewModel` / `SharedAuthRepository`.
 - مربوطة داخل `feature:shell` عبر `MovitInnerRoute.Auth` (من Profile → Sign in).
 - تسجيل الدخول والتسجيل عبر `POST /api/mobile/auth/login|register` عند `MovitDataInstall`.
 - **Google Sign-In:** زر UI موثّق كـ **stub** — يعرض رسالة `auth_google_unavailable` عبر `MovitAuthEffect.ShowMessage`؛ لا OAuth native في Phase 05 (المرجع: legacy `GoogleSignInHelper` مؤجل لبوابة launcher).

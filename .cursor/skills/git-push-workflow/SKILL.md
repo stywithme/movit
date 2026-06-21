@@ -16,7 +16,7 @@ description: >-
 - **Main repo (POSE)**: branches `Base`, `MO`, `HA` — remote: `origin`
 - **Admin-Dashboard/**: nested independent repo (POSE-dashboard) — push to `main`
 - **backend/**: nested independent repo (POSE-backend) — push to `main`
-- **android-poc/**: part of main POSE repo (no separate git)
+- **kmp-app/**: part of main POSE repo (no separate git)
 
 ## Nested repos: `main` matches **HA**, not Base
 
@@ -119,6 +119,6 @@ When merging `Base` into `MO` or `HA`:
 - Sub-repos are pushed **only from monorepo branch `HA`**, never from `Base` or `MO`. Their **`main`** tracks **HA**, not `Base`.
 - After the workflow finishes, the main repo must be on **`Base`** (Step 5)
 - Always verify the current branch before every operation
-- `android-poc` has no separate repo — it's tracked by the main POSE repo only
+- `kmp-app` has no separate repo — it's tracked by the main POSE repo only
 - Write descriptive commit messages reflecting the actual changes, not generic ones
 - Run `git status` before each commit to review what will be committed

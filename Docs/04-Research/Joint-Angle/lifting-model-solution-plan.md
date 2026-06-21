@@ -379,7 +379,7 @@ edge_model.export("lifting_model.tflite")
 #### 4.1 إضافة ملف النموذج
 
 ```
-android-poc/app/src/main/assets/
+kmp-app/app/src/main/assets/
   └── lifting_model.tflite    ← ملف النموذج
 ```
 

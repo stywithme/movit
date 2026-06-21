@@ -8,7 +8,7 @@
 
 ## ملخص تنفيذي للمدير
 
-هذا المستند يجمع **حالتين متوازيتين** في مشروع `android-poc`:
+هذا المستند يجمع **حالتين متوازيتين** في مشروع `kmp-app`:
 
 | المسار | الوصف | من يستخدمه اليوم؟ |
 |--------|--------|-------------------|
@@ -119,7 +119,7 @@ MovitPlatformBindings
 ## هيكل الموديولات الحالي (KMP)
 
 ```
-android-poc/
+kmp-app/
 ├── app/                    # Legacy + debug pilot (MovitShellPilotActivity)
 ├── shared/                 # AppResult ومساعدات مشتركة
 ├── core/
@@ -153,7 +153,7 @@ android-poc/
 
 ## الهدف
 
-تحويل واجهة تطبيق `android-poc` من واجهة PoC نمت على مراحل إلى نظام UI/UX احترافي، نظيف، قابل للتوسع، ويدعم `Light / Dark / System` بشكل صحيح.
+تحويل واجهة تطبيق `kmp-app` من واجهة PoC نمت على مراحل إلى نظام UI/UX احترافي، نظيف، قابل للتوسع، ويدعم `Light / Dark / System` بشكل صحيح.
 
 الاتجاه التصميمي المطلوب:
 
@@ -366,17 +366,17 @@ android-poc/
 
 ### ملفات تم لمسها
 
-- `android-poc/app/src/main/res/values/colors.xml`
-- `android-poc/app/src/main/res/values-night/colors_night.xml`
-- `android-poc/app/src/main/res/values/themes.xml`
-- `android-poc/app/src/main/res/values/dimens.xml`
-- `android-poc/app/src/main/res/values/styles.xml`
-- `android-poc/app/src/main/res/values/strings.xml`
-- `android-poc/app/src/main/res/values-ar/strings.xml`
-- `android-poc/app/src/main/java/com/trainingvalidator/poc/ui/theme/AppThemeManager.kt`
-- `android-poc/app/src/main/java/com/trainingvalidator/poc/PoseApp.kt`
-- `android-poc/app/src/main/java/com/trainingvalidator/poc/ui/profile/ProfileActivity.kt`
-- `android-poc/app/src/main/res/layout/activity_profile.xml`
+- `kmp-app/app/src/main/res/values/colors.xml`
+- `kmp-app/app/src/main/res/values-night/colors_night.xml`
+- `kmp-app/app/src/main/res/values/themes.xml`
+- `kmp-app/app/src/main/res/values/dimens.xml`
+- `kmp-app/app/src/main/res/values/styles.xml`
+- `kmp-app/app/src/main/res/values/strings.xml`
+- `kmp-app/app/src/main/res/values-ar/strings.xml`
+- `kmp-app/app/src/main/java/com/trainingvalidator/poc/ui/theme/AppThemeManager.kt`
+- `kmp-app/app/src/main/java/com/trainingvalidator/poc/PoseApp.kt`
+- `kmp-app/app/src/main/java/com/trainingvalidator/poc/ui/profile/ProfileActivity.kt`
+- `kmp-app/app/src/main/res/layout/activity_profile.xml`
 
 ### الحالة
 
@@ -410,15 +410,15 @@ android-poc/
 
 ### ملفات تم لمسها
 
-- `android-poc/app/src/main/res/layout/component_app_header.xml`
-- `android-poc/app/src/main/res/layout/component_screen_scaffold.xml`
-- `android-poc/app/src/main/res/layout/component_stat_card.xml`
-- `android-poc/app/src/main/res/layout/component_list_card.xml`
-- `android-poc/app/src/main/res/layout/component_primary_cta.xml`
-- `android-poc/app/src/main/res/layout/component_empty_state.xml`
-- `android-poc/app/src/main/res/layout/component_section_header.xml`
-- `android-poc/app/src/main/res/drawable/bg_component_icon_container.xml`
-- `android-poc/app/src/main/res/drawable/bg_empty_state_icon.xml`
+- `kmp-app/app/src/main/res/layout/component_app_header.xml`
+- `kmp-app/app/src/main/res/layout/component_screen_scaffold.xml`
+- `kmp-app/app/src/main/res/layout/component_stat_card.xml`
+- `kmp-app/app/src/main/res/layout/component_list_card.xml`
+- `kmp-app/app/src/main/res/layout/component_primary_cta.xml`
+- `kmp-app/app/src/main/res/layout/component_empty_state.xml`
+- `kmp-app/app/src/main/res/layout/component_section_header.xml`
+- `kmp-app/app/src/main/res/drawable/bg_component_icon_container.xml`
+- `kmp-app/app/src/main/res/drawable/bg_empty_state_icon.xml`
 
 ### الحالة
 
@@ -471,7 +471,7 @@ android-poc/
 
 ### ملفات تم لمسها
 
-- `android-poc/app/src/main/res/layout/fragment_home.xml`
+- `kmp-app/app/src/main/res/layout/fragment_home.xml`
 
 ### الحالة
 
@@ -500,10 +500,10 @@ android-poc/
 
 ### ملفات تم لمسها
 
-- `android-poc/app/src/main/res/layout/activity_exercise_detail.xml`
-- `android-poc/app/src/main/java/com/trainingvalidator/poc/ui/exercises/ExerciseDetailActivity.kt`
-- `android-poc/app/src/main/res/values/strings.xml`
-- `android-poc/app/src/main/res/values-ar/strings.xml`
+- `kmp-app/app/src/main/res/layout/activity_exercise_detail.xml`
+- `kmp-app/app/src/main/java/com/trainingvalidator/poc/ui/exercises/ExerciseDetailActivity.kt`
+- `kmp-app/app/src/main/res/values/strings.xml`
+- `kmp-app/app/src/main/res/values-ar/strings.xml`
 
 ### الحالة
 
@@ -635,12 +635,12 @@ android-poc/
 
 ### مطلوب من Android Studio
 
-يوجد Gradle wrapper داخل `android-poc` الآن، لذلك التحقق لم يعد معتمداً على Android Studio فقط.
+يوجد Gradle wrapper داخل `kmp-app` الآن، لذلك التحقق لم يعد معتمداً على Android Studio فقط.
 
 على Windows:
 
 ```powershell
-cd android-poc
+cd kmp-app
 .\gradlew.bat --console=plain :app:assembleDebug
 .\gradlew.bat --console=plain :feature:shell:testDebugUnitTest
 ```
@@ -648,7 +648,7 @@ cd android-poc
 على Mac/Linux:
 
 ```bash
-cd android-poc
+cd kmp-app
 ./gradlew --console=plain :app:assembleDebug
 ./gradlew --console=plain :feature:shell:testDebugUnitTest
 ```
@@ -656,7 +656,7 @@ cd android-poc
 بعد تعديلات KMP أو iOS entry point:
 
 ```powershell
-cd android-poc
+cd kmp-app
 .\gradlew :app:assembleDebug :feature:shell:linkDebugFrameworkIosSimulatorArm64 :feature:train:testDebugUnitTest :feature:reports:testDebugUnitTest :feature:library:testDebugUnitTest :core:data:testDebugUnitTest
 ```
 

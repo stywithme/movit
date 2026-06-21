@@ -48,7 +48,7 @@ WorkoutTemplate (flat)
 ### 1.3 الأدمن (`Admin-Dashboard/src/app/admin/workout-templates/`)
 - `new/page.tsx` و `[id]/edit/page.tsx` — **~95% كود مكرّر**، نموذج طويل عمودي (Basic info → cover/difficulty → قائمة تمارين قابلة للتوسعة). دي الصفحة "السيئة" المطلوب refactor لها.
 
-### 1.4 الموبايل (`android-poc/.../training/`)
+### 1.4 الموبايل (`kmp-app/.../training/`)
 - `WorkoutConfig` → `WorkoutExercise[]` (flat). `WorkoutRunActivity.buildWorkoutLineItems()` بيحوّلها لـ `WorkoutLineItem[]` ويـ interleave الـ rest من `restAfterExerciseMs`.
 - `WorkoutTrainingEngine(items, plannedWorkoutRole="MAIN")` — بياخد **role واحد للـ run كله**، وبيـ look-ahead على `type=="rest"`.
 - `MobileSyncModels.kt`: `WorkoutConfigWithMeta` بيقرأ `exercises[]` (مع alternate `workouts`).

@@ -193,7 +193,7 @@ setContent {
 الأفضل لهذه المرحلة إنشاء موديول KMP جديد:
 
 ```text
-android-poc/feature/shell/
+kmp-app/feature/shell/
 ```
 
 السبب:

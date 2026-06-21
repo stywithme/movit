@@ -1,4 +1,4 @@
-﻿name: Movit Android Release
+name: Movit Android Release
 
 concurrency:
   group: movit-android-release-${{ github.ref }}
@@ -7,11 +7,11 @@ concurrency:
 on:
   push:
     paths:
-      - 'android-poc/**'
+      - 'kmp-app/**'
       - '.github/workflows/movit-android-release.yml'
   pull_request:
     paths:
-      - 'android-poc/**'
+      - 'kmp-app/**'
       - '.github/workflows/movit-android-release.yml'
 
 jobs:
@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: android-poc
+        working-directory: kmp-app
 
     steps:
       - name: Checkout

@@ -24,8 +24,8 @@
 
 تمت قراءة كامل الطبقتين:
 
-- **القديم** — `android-poc/app/src/main/java/com/trainingvalidator/poc/storage/` (25 ملفاً، ~5,900 سطر). المحور: [`SyncManager.kt`](../../../android-poc/app/src/main/java/com/trainingvalidator/poc/storage/SyncManager.kt) (980 سطراً).
-- **الجديد** — `android-poc/core/data/` (commonMain + android/iosMain + tests). المحور: [`MovitSyncOrchestrator.kt`](../../../android-poc/core/data/src/commonMain/kotlin/com/movit/core/data/sync/MovitSyncOrchestrator.kt) و `Shared*Repository` في وحدات `feature/*`.
+- **القديم** — `kmp-app/app/src/main/java/com/trainingvalidator/poc/storage/` (25 ملفاً، ~5,900 سطر). المحور: [`SyncManager.kt`](../../../kmp-app/app/src/main/java/com/trainingvalidator/poc/storage/SyncManager.kt) (980 سطراً).
+- **الجديد** — `kmp-app/core/data/` (commonMain + android/iosMain + tests). المحور: [`MovitSyncOrchestrator.kt`](../../../kmp-app/core/data/src/commonMain/kotlin/com/movit/core/data/sync/MovitSyncOrchestrator.kt) و `Shared*Repository` في وحدات `feature/*`.
 
 كل ادعاء في هذه الخطة مبني على ملف/سطر فعلي، لا على افتراض.
 
@@ -35,7 +35,7 @@
 
 ### R1 — منسّق المزامنة الجديد مبنيّ لكن **غير مُفعّل** ⛔ (الأخطر)
 
-`MovitSyncOrchestrator` هو البديل المعماري لـ `SyncManager` القديم (incremental sync، drift، audio manifest، cold offline bundle). لكنه **لا يُستدعى من أي مسار إنتاج**: البحث عن `syncIfNeeded` / `MovitData.sync` لا يُرجع سوى `MovitSyncOrchestratorTest`. لا الـ `MovitAppShellViewModel` ([`MovitAppShellViewModel.kt`](../../../android-poc/feature/shell/src/commonMain/kotlin/com/movit/feature/shell/MovitAppShellViewModel.kt)) ولا الـ host ([`MovitShellHost.kt`](../../../android-poc/app/src/movitShellHost/java/com/movit/host/MovitShellHost.kt)) يبدأ دورة مزامنة موحّدة.
+`MovitSyncOrchestrator` هو البديل المعماري لـ `SyncManager` القديم (incremental sync، drift، audio manifest، cold offline bundle). لكنه **لا يُستدعى من أي مسار إنتاج**: البحث عن `syncIfNeeded` / `MovitData.sync` لا يُرجع سوى `MovitSyncOrchestratorTest`. لا الـ `MovitAppShellViewModel` ([`MovitAppShellViewModel.kt`](../../../kmp-app/feature/shell/src/commonMain/kotlin/com/movit/feature/shell/MovitAppShellViewModel.kt)) ولا الـ host ([`MovitShellHost.kt`](../../../kmp-app/app/src/movitShellHost/java/com/movit/host/MovitShellHost.kt)) يبدأ دورة مزامنة موحّدة.
 
 **النتيجة:** لا توجد مزامنة خلفية واحدة منسّقة. بدلاً منها، كل شاشة تُزامن نفسها بنفسها عند الفتح → R2.
 
@@ -48,9 +48,9 @@
 
 ### R2 — **Network-first** بدل **Cache-first** (سبب الـ spinner)
 
-كل `Shared*Repository` ينفّذ نفس النمط: ينادي `MovitData.X.sync()` الذي **يحجب على الشبكة أولاً**، ولا يقرأ الكاش إلا عند فشل الشبكة. مثال [`SharedHomeRepository.kt`](../../../android-poc/feature/home/src/commonMain/kotlin/com/movit/feature/home/SharedHomeRepository.kt) و [`SharedTrainRepository.kt`](../../../android-poc/feature/train/src/commonMain/kotlin/com/movit/feature/train/SharedTrainRepository.kt) و [`SharedWorkoutSessionRepository.kt`](../../../android-poc/feature/library/src/commonMain/kotlin/com/movit/feature/library/SharedWorkoutSessionRepository.kt).
+كل `Shared*Repository` ينفّذ نفس النمط: ينادي `MovitData.X.sync()` الذي **يحجب على الشبكة أولاً**، ولا يقرأ الكاش إلا عند فشل الشبكة. مثال [`SharedHomeRepository.kt`](../../../kmp-app/feature/home/src/commonMain/kotlin/com/movit/feature/home/SharedHomeRepository.kt) و [`SharedTrainRepository.kt`](../../../kmp-app/feature/train/src/commonMain/kotlin/com/movit/feature/train/SharedTrainRepository.kt) و [`SharedWorkoutSessionRepository.kt`](../../../kmp-app/feature/library/src/commonMain/kotlin/com/movit/feature/library/SharedWorkoutSessionRepository.kt).
 
-`MovitCachePolicy.syncWithFallback` ([`MovitCachePolicy.kt`](../../../android-poc/core/data/src/commonMain/kotlin/com/movit/core/data/cache/MovitCachePolicy.kt)) هو **fetch-then-fallback**، أي «الكاش = خطة بديلة عند الخطأ» لا «الكاش = العرض الأول». هذا عكس القديم بالضبط:
+`MovitCachePolicy.syncWithFallback` ([`MovitCachePolicy.kt`](../../../kmp-app/core/data/src/commonMain/kotlin/com/movit/core/data/cache/MovitCachePolicy.kt)) هو **fetch-then-fallback**، أي «الكاش = خطة بديلة عند الخطأ» لا «الكاش = العرض الأول». هذا عكس القديم بالضبط:
 
 ```text
 القديم:   فتح الشاشة → getWorkout(slug) من RAM/JSON → عرض فوري ⚡ → (خلفياً) SyncManager يحدّث
@@ -61,7 +61,7 @@
 
 ### R3 — **مصدرا حقيقة متوازيان** (ازدواج + تضارب)
 
-طبقة `core/data` الجديدة (SQLDelight عبر `MigratingMovitLocalStore`) تعمل **بالتوازي** مع الكاش القديم (ملفات JSON + SharedPreferences). والأسوأ: جسر التثبيت [`MovitDataInstall.kt`](../../../android-poc/app/src/main/java/com/movit/host/MovitDataInstall.kt) ما زال **يعتمد على الكاش القديم** لقراءات محورية:
+طبقة `core/data` الجديدة (SQLDelight عبر `MigratingMovitLocalStore`) تعمل **بالتوازي** مع الكاش القديم (ملفات JSON + SharedPreferences). والأسوأ: جسر التثبيت [`MovitDataInstall.kt`](../../../kmp-app/app/src/main/java/com/movit/host/MovitDataInstall.kt) ما زال **يعتمد على الكاش القديم** لقراءات محورية:
 
 - `activeUserProgramId()` → `ProgramRepository.getInstance(...)` (قديم).
 - `exerciseImageUrl(slug)` → `ExerciseRepository.getInstance(...)` (قديم).
@@ -85,11 +85,11 @@
 
 ### R6 — ثغرات Offline-first إضافية
 
-- **Cold-start offline مفقود:** القديم يحمّل تمريناً مُجمّعاً عند أول تثبيت بلا شبكة ([`OfflineFallbackLoader.kt`](../../../android-poc/app/src/main/java/com/trainingvalidator/poc/storage/OfflineFallbackLoader.kt)). الجديد: `readColdOfflineBundle()` موجود لكن (أ) لا يُستدعى، (ب) لا يوجد أصل مُجمّع بديل ⇒ أول تشغيل offline = فارغ.
-- **تحميل ملفات الصوت الفعلي مفقود:** [`AudioManifestCache.kt`](../../../android-poc/core/data/src/commonMain/kotlin/com/movit/core/data/cache/AudioManifestCache.kt) يحفظ **الميتاداتا فقط**. لا يوجد نظير KMP لـ [`AudioCacheManager.kt`](../../../android-poc/app/src/main/java/com/trainingvalidator/poc/storage/AudioCacheManager.kt) (تنزيل/حد حجم/تنظيف) ولا لـ `EntityAudioPrefetchManager`.
+- **Cold-start offline مفقود:** القديم يحمّل تمريناً مُجمّعاً عند أول تثبيت بلا شبكة ([`OfflineFallbackLoader.kt`](../../../kmp-app/app/src/main/java/com/trainingvalidator/poc/storage/OfflineFallbackLoader.kt)). الجديد: `readColdOfflineBundle()` موجود لكن (أ) لا يُستدعى، (ب) لا يوجد أصل مُجمّع بديل ⇒ أول تشغيل offline = فارغ.
+- **تحميل ملفات الصوت الفعلي مفقود:** [`AudioManifestCache.kt`](../../../kmp-app/core/data/src/commonMain/kotlin/com/movit/core/data/cache/AudioManifestCache.kt) يحفظ **الميتاداتا فقط**. لا يوجد نظير KMP لـ [`AudioCacheManager.kt`](../../../kmp-app/app/src/main/java/com/trainingvalidator/poc/storage/AudioCacheManager.kt) (تنزيل/حد حجم/تنظيف) ولا لـ `EntityAudioPrefetchManager`.
 - **لا طبقة in-memory:** القديم يقرأ مرة (`ConcurrentHashMap + isLoaded`) ثم يخدم من RAM. الجديد يقرأ SQLDelight + يفكّ JSON عند **كل** نداء (`readCached`).
 - **هجرة prefs القديمة جزئية:** `MigratingMovitLocalStore.KNOWN_STATIC_KEYS` يغطّي explore/home/reports فقط — لا session/program/preferences/audio.
-- **تخصيصات اليوم offline:** القديم له [`DayCustomizationStore.kt`](../../../android-poc/app/src/main/java/com/trainingvalidator/poc/storage/DayCustomizationStore.kt) (override محلي + `hydrateFromBackend` واعٍ للتعارض). الجديد يرسل عبر outbox (`SAVE_DAY_CUSTOMIZATIONS`) لكن **القراءة offline تأتي من خطة الخادم المخزّنة فقط** ⇒ تعديلات المستخدم offline قد لا تظهر فوراً.
+- **تخصيصات اليوم offline:** القديم له [`DayCustomizationStore.kt`](../../../kmp-app/app/src/main/java/com/trainingvalidator/poc/storage/DayCustomizationStore.kt) (override محلي + `hydrateFromBackend` واعٍ للتعارض). الجديد يرسل عبر outbox (`SAVE_DAY_CUSTOMIZATIONS`) لكن **القراءة offline تأتي من خطة الخادم المخزّنة فقط** ⇒ تعديلات المستخدم offline قد لا تظهر فوراً.
 
 ---
 
@@ -158,7 +158,7 @@
 - **DoD:** عند فتح التطبيق، مزامنة واحدة منسّقة تُسجّل في اللوج؛ لا تكرار نداء `home.sync()` من شاشات متعددة. iOS أخضر.
 
 ### DS-2 — تحويل القراءات إلى Cache-first (يعالج R2 — الأثر الأظهر للمستخدم)
-- في كل `Shared*Repository` ([Home](../../../android-poc/feature/home/src/commonMain/kotlin/com/movit/feature/home/SharedHomeRepository.kt) · [Train](../../../android-poc/feature/train/src/commonMain/kotlin/com/movit/feature/train/SharedTrainRepository.kt) · [Reports](../../../android-poc/feature/reports/src/commonMain/kotlin/com/movit/feature/reports/SharedReportsRepository.kt) · [WorkoutSession](../../../android-poc/feature/library/src/commonMain/kotlin/com/movit/feature/library/SharedWorkoutSessionRepository.kt)): اقرأ `readCached*()` وأصدره أولاً، ثم زامِن خلفياً.
+- في كل `Shared*Repository` ([Home](../../../kmp-app/feature/home/src/commonMain/kotlin/com/movit/feature/home/SharedHomeRepository.kt) · [Train](../../../kmp-app/feature/train/src/commonMain/kotlin/com/movit/feature/train/SharedTrainRepository.kt) · [Reports](../../../kmp-app/feature/reports/src/commonMain/kotlin/com/movit/feature/reports/SharedReportsRepository.kt) · [WorkoutSession](../../../kmp-app/feature/library/src/commonMain/kotlin/com/movit/feature/library/SharedWorkoutSessionRepository.kt)): اقرأ `readCached*()` وأصدره أولاً، ثم زامِن خلفياً.
 - تعديل الـ ViewModels لتقبل تدفّقاً من حالتين (cached → fresh) بدل نتيجة واحدة، مع `isLoading` يُعرض **فقط** عند غياب الكاش.
 - خاص بالتدريب (محور الـ screenshot): `loadTemplateSession`/`loadProgramSession` تعرض `readCachedTrainingConfig`/`readCachedEffectivePlan` فوراً قبل `syncTrainingConfig`/`syncEffectivePlan`.
 - **DoD:** فتح Home/Train/Session على جهاز فيه كاش = **بلا spinner**؛ offline كامل = عرض آخر بيانات صحيحة. لقطات قبل/بعد.

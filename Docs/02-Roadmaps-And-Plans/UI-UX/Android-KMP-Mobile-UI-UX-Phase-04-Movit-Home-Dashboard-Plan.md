@@ -138,7 +138,7 @@ MovitHomeEffect
 أضف:
 
 ```text
-android-poc/feature/home/
+kmp-app/feature/home/
 ```
 
 وسجله في `settings.gradle.kts`:

@@ -1,7 +1,7 @@
-# جرد شامل لشاشات تطبيق android-poc (KMP + Legacy)
+# جرد شامل لشاشات تطبيق kmp-app (KMP + Legacy)
 
 > **تاريخ الجرد:** 2026-06-12  
-> **النطاق:** `android-poc/` — النظام الجديد (Compose Multiplatform) والنظام القديم (Android Views/XML) الموازي  
+> **النطاق:** `kmp-app/` — النظام الجديد (Compose Multiplatform) والنظام القديم (Android Views/XML) الموازي  
 > **الهدف:** توثيق كل شاشة — وظيفتها، طريقة الوصول، وما تتصل به — مع تركيز خاص على الصفحات الداخلية والمخفية والميتة.
 
 ---
@@ -538,4 +538,4 @@ flowchart LR
 
 ---
 
-*هذا المستند ناتج جرد آلي+يدوي على شجرة `android-poc` بتاريخ 2026-06-12. للمقارنة مع نسب الإكمال الوظيفي راجع [`Sync-App-Pages.md`](Sync-App-Pages.md) و [`Page-Scorecards.md`](Page-Scorecards.md).*
+*هذا المستند ناتج جرد آلي+يدوي على شجرة `kmp-app` بتاريخ 2026-06-12. للمقارنة مع نسب الإكمال الوظيفي راجع [`Sync-App-Pages.md`](Sync-App-Pages.md) و [`Page-Scorecards.md`](Page-Scorecards.md).*

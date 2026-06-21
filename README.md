@@ -6,7 +6,7 @@ This tree is a full copy of POSE branch **`KMP`** — not only the mobile app:
 
 | Path | Role |
 |------|------|
-| `android-poc/` | Kotlin Multiplatform mobile (Android + iOS) |
+| `kmp-app/` | Kotlin Multiplatform mobile (Android + iOS) |
 | `backend/` | Node API (mobile sync, auth, training data) |
 | `Admin-Dashboard/` | Admin web dashboard |
 | `Docs/` | Architecture and migration docs |
@@ -16,7 +16,7 @@ The legacy Android path remains on POSE branch **`HA`**.
 
 ## Quick start
 
-- **Mobile:** `android-poc/` — see `api.properties.example`, `./gradlew :app:assembleDebug`
+- **Mobile:** `kmp-app/` — see `api.properties.example`, `./gradlew :app:assembleDebug`
 - **Backend:** `backend/` — see `backend/README.md`
 - **Dashboard:** `Admin-Dashboard/`
 

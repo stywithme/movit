@@ -7,7 +7,7 @@
 | **Planned journey** | [Journey-Index.md](../../Product-Master/Journey-Index.md) |
 | **Verified** | 2026-05-29 |
 
-هذا المجلد يصف **الوضع الحالي في الكود** (Backend، Admin-Dashboard، android-poc) دون تفسيرات تشغيلية أو توصيات.
+هذا المجلد يصف **الوضع الحالي في الكود** (Backend، Admin-Dashboard، kmp-app) دون تفسيرات تشغيلية أو توصيات.
 
 ## الملفات
 
@@ -20,11 +20,11 @@
 | [05-program-completion-reassessment.md](./05-program-completion-reassessment.md) | إكمال البرنامج، جدولة إعادة التقييم، الانتقال للبرنامج التالي |
 | [06-mobile-home-train-mode.md](./06-mobile-home-train-mode.md) | `GET /mobile/home` وحالات `trainMode` |
 | [07-admin-dashboard.md](./07-admin-dashboard.md) | صفحات الإدارة ذات الصلة والـ API المستهلكة |
-| [08-android-poc.md](./08-android-poc.md) | تدفق التطبيق التجريبي ونقاط الاتصال بالخادم |
+| [08-kmp-app.md](./08-kmp-app.md) | تدفق التطبيق التجريبي ونقاط الاتصال بالخادم |
 
 ## مسار مبسّط (كما يظهر في التنفيذ الحالي)
 
-1. **تعريف المتدرب (سمات ثابتة/مفضّلة):** يُخزَّن في `TrainingProfile` و`User.trainingGoal` عبر واجهات الموبايل؛ محتوى شاشة `OnboardingActivity` في android-poc **لا** يملأ هذا النموذج.
+1. **تعريف المتدرب (سمات ثابتة/مفضّلة):** يُخزَّن في `TrainingProfile` و`User.trainingGoal` عبر واجهات الموبايل؛ محتوى شاشة `OnboardingActivity` في kmp-app **لا** يملأ هذا النموذج.
 2. **قالب الاختبار:** `GET /mobile/assessment-templates/resolve` يختار قالبًا منشورًا حسب `mode` (افتراضيًا `initial`) ومطابقة السمات ثم احتياطي `isDefault`.
 3. **تنفيذ الاختبار ورفع النتيجة:** `POST /api/assessment` ينشئ `BodyScanResult` ثم يحسب `UserLevelProfile` ويحدّث جداول إعادة التقييم عند الاقتضاء؛ وقد يُسجَّل المستخدم تلقائيًا في برنامج إذا لم يكن لديه برنامج نشط في الخطة.
 4. **المستوى:** يُشتق من درجات التقييم عبر `scoreToLevel` ومستويات قاعدة البيانات (أو عتبات افتراضية).

@@ -51,7 +51,7 @@
 ### WS-1 — System Design: صمود الجلسة (Token Lifecycle) 🔴
 
 **المشكلة (مؤكدة بالتحقق العدائي):** مسار KMP لا يملك أي تجديد للتوكن.
-- لا endpoint تجديد في [`MovitMobileApi.kt`](../../../android-poc/core/network/src/commonMain/kotlin/com/movit/core/network/MovitMobileApi.kt) — **رغم أن الـ backend يملكه**، والـ legacy يستخدمه (`AuthApi.kt`: `@POST("api/mobile/auth/refresh")`).
+- لا endpoint تجديد في [`MovitMobileApi.kt`](../../../kmp-app/core/network/src/commonMain/kotlin/com/movit/core/network/MovitMobileApi.kt) — **رغم أن الـ backend يملكه**، والـ legacy يستخدمه (`AuthApi.kt`: `@POST("api/mobile/auth/refresh")`).
 - لا معالجة 401 في أي مكان بـ KMP (لا Ktor `Auth` plugin؛ client factories تركّب `ContentNegotiation`+`Logging` فقط).
 - `expiresInSeconds` يُلتقط ويُخزَّن في Keychain (`AuthSessionSnapshot`) لكنه **لا يُستشار أبداً**.
 - `AccountSyncRepository.kt:80-86` يعيد فقط حفظ refresh token الموجود بـ `expiresInSeconds = 0`؛ refresh token يُستخدم في logout فقط.
@@ -72,16 +72,16 @@
 
 **3 مشكلات مؤكدة، كلها تظهر للمستخدم:**
 
-**(أ) بق escape في الخريطة المولَّدة** — [`MovitEnglishStrings.kt`](../../../android-poc/core/resources/src/commonMain/kotlin/com/movit/resources/MovitEnglishStrings.kt) يحتفظ بـ `\'` من XML: 24 مفتاحاً مثل `"home_todays_workout" to "Today\'s workout"`. المسار السريع في `localizedString` يعيد هذه الخريطة مباشرة → الإنجليزية تعرض حرفياً `Today\'s workout`.
+**(أ) بق escape في الخريطة المولَّدة** — [`MovitEnglishStrings.kt`](../../../kmp-app/core/resources/src/commonMain/kotlin/com/movit/resources/MovitEnglishStrings.kt) يحتفظ بـ `\'` من XML: 24 مفتاحاً مثل `"home_todays_workout" to "Today\'s workout"`. المسار السريع في `localizedString` يعيد هذه الخريطة مباشرة → الإنجليزية تعرض حرفياً `Today\'s workout`.
 - **الحل:** أصلح مولّد `generateMovitEnglishStrings` ليفك escape الـ XML (`\'`→`'`, `\"`→`"`, `\\n`→`\n`) عند التوليد. أعد التوليد. أضِف اختباراً يرفض أي قيمة تحتوي `\\`.
 
 **(ب) 592 استدعاء ديناميكي بلا حماية** — `movitString(name) = Res.allStringResources[name] ?: error(...)` عبر 592 موضعاً في 46 ملفاً، وصفر اختبار يتحقق من وجود المفاتيح.
 - **الحل:** اختبار JVM واحد يستخرج كل `movitText("...")`/`movitString("...")` بـ regex من شجرة المصدر، ويؤكد أن كل مفتاح موجود في `values/strings.xml`. ساعة عمل تقفل أخطر فئة أخطاء. (بديل أقوى لاحقاً: الرجوع لـ typed `Res.string.*` accessors — قرار منفصل.)
 
 **(ج) إنجليزية مُصلّبة داخل مكوّنات الـ DS تظهر في الواجهة العربية:**
-- [`MovitWeekStrip.kt:109-112`](../../../android-poc/core/designsystem/src/commonMain/kotlin/com/movit/designsystem/components/MovitWeekStrip.kt) — legend `"Done"/"Today"/"Missed"/"Rest"` و`showLegend=true` افتراضياً.
-- [`MovitErrorState.kt:10,15`](../../../android-poc/core/designsystem/src/commonMain/kotlin/com/movit/designsystem/components/MovitErrorState.kt) — `"Something went wrong"/"Retry"` تُستدعى من Train/Reports بلا override.
-- [`MovitAppHeader.kt:31`](../../../android-poc/core/designsystem/src/commonMain/kotlin/com/movit/designsystem/components/MovitAppHeader.kt) + `MovitScaffold.kt:18` — `userName = "Mahmoud"` (اسم المطوّر) افتراضياً.
+- [`MovitWeekStrip.kt:109-112`](../../../kmp-app/core/designsystem/src/commonMain/kotlin/com/movit/designsystem/components/MovitWeekStrip.kt) — legend `"Done"/"Today"/"Missed"/"Rest"` و`showLegend=true` افتراضياً.
+- [`MovitErrorState.kt:10,15`](../../../kmp-app/core/designsystem/src/commonMain/kotlin/com/movit/designsystem/components/MovitErrorState.kt) — `"Something went wrong"/"Retry"` تُستدعى من Train/Reports بلا override.
+- [`MovitAppHeader.kt:31`](../../../kmp-app/core/designsystem/src/commonMain/kotlin/com/movit/designsystem/components/MovitAppHeader.kt) + `MovitScaffold.kt:18` — `userName = "Mahmoud"` (اسم المطوّر) افتراضياً.
 - `MovitSessionCard.kt:101` (`"Done"`)، `LibraryBadgeHelper.kt` (`"Featured"` + تلوين بمطابقة substrings إنجليزية → كل الـ badges تنهار للأزرق في العربية).
 - **الحل:** مرّر النصوص من المستدعي عبر `movitText` (المكوّنات لا تعرف resources؛ تستقبل String). أضِف مفاتيح ar/en الناقصة. استبدل منطق تلوين الـ badge بـ enum/variant بدل مطابقة نص.
 
@@ -105,7 +105,7 @@
 ### WS-4 — الهيكلة: `core:model` + نظافة Gradle 🟡
 
 **مشكلات مؤكدة:**
-- **مخالفة معمارية وحيدة:** [`feature/library/build.gradle.kts:25`](../../../android-poc/feature/library/build.gradle.kts) يعتمد على `:feature:explore` ويستورد `ExploreItemUi/ExploreContent/ExploreItemType` مباشرة (نماذج مشتركة في موديول feature).
+- **مخالفة معمارية وحيدة:** [`feature/library/build.gradle.kts:25`](../../../kmp-app/feature/library/build.gradle.kts) يعتمد على `:feature:explore` ويستورد `ExploreItemUi/ExploreContent/ExploreItemType` مباشرة (نماذج مشتركة في موديول feature).
 - **`build-logic` غائب:** نفس بلوك `kotlin{}/android{}` (~25 سطراً) منسوخ في 11 موديولاً، **والانحراف بدأ** (`testOptions` في 3 موديولات فقط؛ `androidUnitTest` deps في 5 لا 7).
 - **`:app` يتجاهل version catalog:** ~50 إصداراً مكرراً كـ raw strings + `compileSdk/minSdk` مُصلّبة.
 - **`local.properties` متتبَّع في git** رغم header «must NOT be checked in» (machine-specific `sdk.dir`).
@@ -115,7 +115,7 @@
 1. أنشئ `core:model` وانقل إليه `ExploreItemUi/ExploreContent/ExploreItemType` (والنماذج المشتركة الأخرى)؛ حدّث library/explore/shell للاعتماد عليه؛ احذف dep المباشر.
 2. أنشئ `build-logic` بـ convention plugins (`movit.kmp.feature`, `movit.kmp.core`) تجمع البلوك المكرر.
 3. انقل `:app` للـ catalog + استخدم `libs.versions.compile.sdk`.
-4. `git rm --cached android-poc/local.properties` + انقل `api.*` لملف متتبَّع (`api.properties` أو `gradle.properties` defaults). (ملاحظة: `.gitignore:24` يحتوي النمط أصلاً — يكفي إلغاء التتبّع.)
+4. `git rm --cached kmp-app/local.properties` + انقل `api.*` لملف متتبَّع (`api.properties` أو `gradle.properties` defaults). (ملاحظة: `.gitignore:24` يحتوي النمط أصلاً — يكفي إلغاء التتبّع.)
 5. أطفئ Jetifier + ارفع `-Xmx` + فعّل `org.gradle.parallel/caching`.
 
 **معايير القبول:** صفر dep من feature→feature؛ `build-logic` يطبَّق على كل الموديولات؛ `:app:dependencies` نظيف؛ working tree لا يتسخ بـ local.properties.
@@ -125,7 +125,7 @@
 ### WS-5 — استخدام الـ Logic القديم: مواصلة الاستخراج العددي 🟡
 
 **مشكلات مؤكدة:**
-- **`OneEuroFilter` و`JointAngleCalculator` نُسخا ولم يُنقلا** (دخلا في Pre-06 Phase 1): النسخ في [`core:training-engine`](../../../android-poc/core/training-engine/src/commonMain/kotlin/com/movit/core/training/) **كود ميت** بلا مستهلك، بينما الـ legacy يستخدم نسخه الكاملة (`analysis/AngleCalculator.kt` 585 سطراً، `analysis/OneEuroFilter.kt` 181 سطراً). هذا عكس نمط الـ engine الناجح تماماً.
+- **`OneEuroFilter` و`JointAngleCalculator` نُسخا ولم يُنقلا** (دخلا في Pre-06 Phase 1): النسخ في [`core:training-engine`](../../../kmp-app/core/training-engine/src/commonMain/kotlin/com/movit/core/training/) **كود ميت** بلا مستهلك، بينما الـ legacy يستخدم نسخه الكاملة (`analysis/AngleCalculator.kt` 585 سطراً، `analysis/OneEuroFilter.kt` 181 سطراً). هذا عكس نمط الـ engine الناجح تماماً.
 - **الطبقة المحيطة Pure-Kotlin ما زالت Android-only:** `VisibilityMonitor`, `TimingPolicy`, `FeedbackPolicy/Scheduler`, `RepCompletionCoordinator`, `BilateralController`, `MetricsCalculator`... كلها بلا تبعيات كاميرا وقابلة للمشاركة.
 - **DTOs متشعّبة:** `core:network` (kotlinx) يعيد نمذجة نفس JSON الذي تصفه نماذج Gson في legacy؛ انحراف بدأ (`RecentWorkoutData.context` في legacy ومفقود في KMP DTO).
 
@@ -200,7 +200,7 @@
 ## أوامر التحقق (تُشغَّل بعد كل WS)
 
 ```powershell
-cd android-poc
+cd kmp-app
 .\gradlew.bat --console=plain `
   :feature:account:testDebugUnitTest `
   :feature:shell:testDebugUnitTest `
@@ -349,7 +349,7 @@ Select-String -Path .\feature\*\build.gradle.kts -Pattern 'project\(":feature:'
 ### التحقق النهائي (2026-06-10 — بعد إغلاق الفجوات)
 
 ```powershell
-cd android-poc
+cd kmp-app
 .\gradlew.bat --console=plain `
   :feature:account:testDebugUnitTest `
   :feature:shell:testDebugUnitTest `
@@ -561,7 +561,7 @@ BUILD SUCCESSFUL in 3m 23s — 459 actionable tasks (exit 0)
 ### أوامر تحقق موصى بها (بعد هذه الجلسة)
 
 ```powershell
-cd android-poc
+cd kmp-app
 .\gradlew.bat --console=plain `
   :feature:library:testDebugUnitTest `
   :feature:shell:testDebugUnitTest `

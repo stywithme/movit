@@ -28,7 +28,7 @@
 ## مسار الكود في المشروع
 
 ```
-android-poc/
+kmp-app/
 ├── app/
 │   ├── build.gradle.kts          # tasks-vision:0.10.29
 │   └── src/main/

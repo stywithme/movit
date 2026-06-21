@@ -363,7 +363,7 @@ https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_
 python tools/posture-mlp/train_posture_mlp.py --epochs 200
 ```
 
-Output files are written directly to `android-poc/app/src/main/assets/`:
+Output files are written directly to `kmp-app/app/src/main/assets/`:
 - `posture_mlp.tflite`
 - `posture_mlp_norm.json`
 
@@ -420,7 +420,7 @@ tools/posture-mlp/
   ├── TRAINING_GUIDE.md          — This document
   └── README.md                  — Quick start
 
-android-poc/app/src/main/
+kmp-app/app/src/main/
   ├── assets/
   │   ├── posture_mlp.tflite     — Trained model (~15 KB)
   │   └── posture_mlp_norm.json  — Normalization parameters

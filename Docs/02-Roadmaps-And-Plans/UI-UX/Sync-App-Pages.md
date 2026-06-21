@@ -5,7 +5,7 @@
 لكل صفحة:
 
 1. قراءة الـ prototype (أقسام، حالات `state-switch`، تدفق `data-flow`)
-2. تتبع الـ Legacy في `android-poc/app/src/main`
+2. تتبع الـ Legacy في `kmp-app/app/src/main`
 3. مقارنة تنفيذ KMP في `feature/`* و `core/designsystem`
 4. تصنيف: **مطابق / جزئي / placeholder / غائب**
 
@@ -40,7 +40,7 @@
 - **أُغلق:** Train session a11y · Explore/Library a11y+images · Reports Pro upsell + chart a11y · Home RTL ellipsis.
 - **Gradle:** `:feature:train|home|explore|reports|shell:testDebugUnitTest` — **BUILD SUCCESSFUL**.
 - **Gradle:** `:feature:library:testDebugUnitTest` — **52/57** (5 فشل في 02/16 training flow — خارج 05–06).
-- **السبب الجذري لظهور «فجوات» القديمة:** تأخر توثيق — التحقق بقراءة `android-poc/feature/*` و `MovitInnerHost.kt`.
+- **السبب الجذري لظهور «فجوات» القديمة:** تأخر توثيق — التحقق بقراءة `kmp-app/feature/*` و `MovitInnerHost.kt`.
 - **Gradle (تحقق 15/16/17):** `:feature:library:testDebugUnitTest` · `:feature:reports:testDebugUnitTest` — أعداد `@Test`: [`generated/Docs-Stats-Snapshot.md`](generated/Docs-Stats-Snapshot.md).
 - **Gradle (7 موديولات feature):** `:feature:home|train|explore|reports|library|account|shell:testDebugUnitTest` — **BUILD SUCCESSFUL** (ما عدا 5 اختبارات library أعلاه).
 - **تحقق 10–14 (2026-06-10):** `:feature:account:testDebugUnitTest` · `:feature:shell:testDebugUnitTest` — **BUILD SUCCESSFUL** بعد إصلاحات auth i18n · assessment a11y · shell onboarding routing tests.

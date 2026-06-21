@@ -211,7 +211,7 @@
 
 ## مراجع الكود
 
-- Legacy: `android-poc/app/.../network/MobileSyncApi.kt` · `AuthApi.kt` · `SubscriptionApi.kt` · `BookingApi.kt`
-- KMP: `android-poc/core/network/.../MovitMobileApi.kt`
+- Legacy: `kmp-app/app/.../network/MobileSyncApi.kt` · `AuthApi.kt` · `SubscriptionApi.kt` · `BookingApi.kt`
+- KMP: `kmp-app/core/network/.../MovitMobileApi.kt`
 - DTOs: `dto/HomeDto.kt` · `dto/PlanSyncDto.kt` · `dto/TrainingApiDto.kt`
 - اختبارات: `MovitMobileApiContractTest.kt`

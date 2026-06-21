@@ -113,7 +113,7 @@ case 'daily_summary':
 default:
   this.logger.warn(`Unknown analytics job: ${job.name}`);
 
-  [Medium] maintainability risk واضح: TrainingActivity (~2711 سطر)، ProgramWorkoutActivity (~1322)، TrainingEngine (~1274)، مع تغطية اختبارية محدودة جدًا (عمليًا ملفات اختبار قليلة جدًا في backend ولا يوجد مجلدات test/androidTest في android-poc).
+  [Medium] maintainability risk واضح: TrainingActivity (~2711 سطر)، ProgramWorkoutActivity (~1322)، TrainingEngine (~1274)، مع تغطية اختبارية محدودة جدًا (عمليًا ملفات اختبار قليلة جدًا في backend ولا يوجد مجلدات test/androidTest في kmp-app).
 
 الخلاصة الموضوعية
 الأساس التقني ممتاز في القياس الحركي، التقارير، والـ offline sync.

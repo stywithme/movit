@@ -2,7 +2,7 @@
 |---|---|
 | **Status** | `ACTIVE` |
 | **SSOT for** | TrainingEngine frame pipeline (as-built) |
-| **Code** | `android-poc/.../TrainingEngine.kt`, `FramePipelineExecutor.kt` |
+| **Code** | `kmp-app/.../TrainingEngine.kt`, `FramePipelineExecutor.kt` |
 | **Verified** | 2026-05-29 |
 
 # Training engine (Android)

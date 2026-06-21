@@ -2,15 +2,15 @@
   "folders": [
     {
       "name": "Admin Dashboard",
-      "path": "D:/laragon/www/POSE-2/Admin-Dashboard"
+      "path": "Admin-Dashboard"
     },
     {
       "name": "Backend",
-      "path": "D:/laragon/www/POSE-2/backend"
+      "path": "backend"
     },
     {
-      "name": "Android POC",
-      "path": "D:/laragon/www/POSE-2/android-poc"
+      "name": "KMP App",
+      "path": "kmp-app"
     }
   ],
   "settings": {

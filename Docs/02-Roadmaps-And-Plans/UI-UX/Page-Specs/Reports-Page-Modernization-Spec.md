@@ -4,7 +4,7 @@
 
 ## Implementation Status
 
-- تم تنفيذ `MovitReportsScreen` داخل `android-poc/feature/reports`.
+- تم تنفيذ `MovitReportsScreen` داخل `kmp-app/feature/reports`.
 - مربوطة في `feature:shell` كتبويب `MovitAppDestination.Reports`.
 - الربط مع API عبر `SharedReportsRepository` + `MovitData.reports.syncDashboard`.
 - التنقل إلى Report Detail (17) عبر `MovitReportsEffect.OpenReportDetail` → `MovitInnerRoute.ReportDetail`.

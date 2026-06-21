@@ -4,7 +4,7 @@
 
 ## Implementation Status
 
-- تم تنفيذ `MovitLevelScreen` داخل `android-poc/feature/account` مع تبويبي **Level profile** و **Your plan**.
+- تم تنفيذ `MovitLevelScreen` داخل `kmp-app/feature/account` مع تبويبي **Level profile** و **Your plan**.
 - البيانات تُحمَّل عبر `SharedLevelRepository`: `GET /api/mobile/level-profile` + `GET /api/mobile/plan` + `GET /api/mobile/reassessment/upcoming` (الأخيران اختياريان للخطة وإعادة التقييم).
 - عند غياب الجلسة أو فشل API يُستخدم `FakeLevelRepository` للمعاينة.
 - CTA **Retake body scan** يصدر `MovitLevelEffect.OpenAssessment`؛ **Browse programs** يصدر `OpenExplore`.

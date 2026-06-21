@@ -85,7 +85,7 @@ Phase 05 (page-by-page) أنتجت شاشات حقيقية شغّالة (Home/Ex
 - التأكد أن `default*Repository()` (androidMain/iosMain) تشير كلها إلى `Shared*Repository`، وإزالة أى فرع يختار الجسر.
 
 **قبول:**
-- `grep -r "ApiBridge\|FetcherBridge\|RemoteReportsRepository\|RemoteWorkoutSessionRepository" android-poc/` ⇒ صفر نتائج (خارج سجلّ git).
+- `grep -r "ApiBridge\|FetcherBridge\|RemoteReportsRepository\|RemoteWorkoutSessionRepository" kmp-app/` ⇒ صفر نتائج (خارج سجلّ git).
 - `:app:assembleDebug` ناجح، والـ Shell يعرض البيانات نفسها من الطبقة المشتركة.
 
 ---
@@ -211,7 +211,7 @@ Phase 05 (page-by-page) أنتجت شاشات حقيقية شغّالة (Home/Ex
 ## أوامر التحقق
 
 ```powershell
-cd android-poc
+cd kmp-app
 .\gradlew.bat --console=plain :app:assembleDebug
 .\gradlew.bat --console=plain :core:data:testDebugUnitTest
 .\gradlew.bat --console=plain :core:network:testDebugUnitTest
@@ -227,7 +227,7 @@ cd android-poc
 تحقق "صفر بقايا":
 
 ```powershell
-cd android-poc
+cd kmp-app
 rg "ApiBridge|FetcherBridge|RemoteReportsRepository|RemoteWorkoutSessionRepository" --glob '!**/build/**'
 rg "collectAsState\(\)" feature --glob '!**/build/**'
 ```
@@ -296,7 +296,7 @@ core/resources/
 ### أوامر التحقق المُنفَّذة
 
 ```powershell
-cd android-poc
+cd kmp-app
 .\gradlew.bat :core:resources:generateMovitEnglishStrings
 .\gradlew.bat :app:assembleDebug :feature:train:testDebugUnitTest :feature:reports:testDebugUnitTest :feature:library:testDebugUnitTest
 ```

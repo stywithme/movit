@@ -595,7 +595,7 @@ Bottom bar يرجع لشكله الطبيعي:
 ### 6.1 الملفات الجديدة
 
 ```
-android-poc/app/src/main/java/com/trainingvalidator/poc/ui/training/
+kmp-app/app/src/main/java/com/trainingvalidator/poc/ui/training/
 ├── PoseValidator.kt          → يُعاد بناؤه كـ PoseSetupGuide.kt
 └── CountdownController.kt    → يُحدّث (إصلاحات)
 

@@ -393,7 +393,7 @@ WS-0 ──┬─> WS-1 ──> WS-2 ──> WS-3 ─┐
 ## 7) أوامر التحقق
 
 ```powershell
-cd android-poc
+cd kmp-app
 .\gradlew.bat --console=plain `
   :core:training-engine:testDebugUnitTest `
   :core:pose-capture:testDebugUnitTest `

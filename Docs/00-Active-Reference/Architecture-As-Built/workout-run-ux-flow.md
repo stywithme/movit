@@ -1,4 +1,4 @@
-# Workout run UX flow (android-poc)
+# Workout run UX flow (kmp-app)
 
 Multi-exercise **workout run** inside a single `TrainingActivity` (distinct from a **planned workout** block on the program calendar).
 

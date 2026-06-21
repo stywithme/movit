@@ -49,7 +49,7 @@
 - قوالب: منشورة، الأنواع في `PROGRESSION_TYPES` = `progression`, `post_program`, `level_specific`، و **`targetLevel.number` يساوي `currentLevel`** الممرَّر من أحدث ملف مستوى.
 - نفس منطق `pickBestTemplate`.
 
-## ملاحظة سلوك العميل (android-poc)
+## ملاحظة سلوك العميل (kmp-app)
 
 `MobileSyncApi.resolveAssessmentTemplate` يستدعي المسار **بدون** معامل `mode`، فيُطبَّق على الخادم الوضع `initial` دائمًا ما لم يُضف الاستعلام لاحقًا في العميل.
 

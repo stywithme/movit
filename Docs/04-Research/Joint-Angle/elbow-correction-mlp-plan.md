@@ -424,7 +424,7 @@ with open("elbow_correction_mlp.tflite", "wb") as f:
 
 Output files:
 ```
-android-poc/app/src/main/assets/
+kmp-app/app/src/main/assets/
   ├── elbow_correction_mlp.tflite     (~30-50 KB)
   └── elbow_correction_mlp_norm.json  (mean/std normalization)
 ```
@@ -456,7 +456,7 @@ android-poc/app/src/main/assets/
 ### 9.1 New Files to Create
 
 ```
-android-poc/app/src/main/java/com/trainingvalidator/poc/
+kmp-app/app/src/main/java/com/trainingvalidator/poc/
   ├── analysis/
   │   ├── ElbowMlpFeatureExtractor.kt   ← 26-feature computation (mirrors Python)
   │   └── ElbowMlpCorrector.kt          ← TFLite loading + inference
@@ -785,11 +785,11 @@ tools/elbow-mlp/
 
 **Output files:**
 ```
-android-poc/app/src/main/assets/
+kmp-app/app/src/main/assets/
   ├── elbow_correction_mlp.tflite
   └── elbow_correction_mlp_norm.json
 
-android-poc/app/src/main/java/.../analysis/
+kmp-app/app/src/main/java/.../analysis/
   ├── ElbowMlpFeatureExtractor.kt
   └── ElbowMlpCorrector.kt
 ```
@@ -975,8 +975,8 @@ Since AIST++ only provides 3D keypoints (no videos), we generated synthetic Medi
 | Skipped (features) | 1,173 |
 
 ### Exported Files
-- `android-poc/app/src/main/assets/elbow_correction_mlp.tflite` (57 KB)
-- `android-poc/app/src/main/assets/elbow_correction_mlp_norm.json`
+- `kmp-app/app/src/main/assets/elbow_correction_mlp.tflite` (57 KB)
+- `kmp-app/app/src/main/assets/elbow_correction_mlp_norm.json`
 - `tools/elbow-mlp/models/elbow_correction_mlp_v1.keras`
 - `tools/elbow-mlp/reports/` (accuracy_report.json, evaluation.png, feature_importance.json)
 

@@ -4,7 +4,7 @@
 
 ## Implementation Status
 
-- أول نسخة KMP في `android-poc/feature/account` — `MovitOnboardingScreen` / `MovitOnboardingViewModel` / `SharedOnboardingRepository`.
+- أول نسخة KMP في `kmp-app/feature/account` — `MovitOnboardingScreen` / `MovitOnboardingViewModel` / `SharedOnboardingRepository`.
 - مربوطة داخل `feature:shell` عبر `MovitInnerRoute.ProfileOnboarding` (من Profile → Training profile · أو بعد Auth عند مستخدم جديد).
 - حفظ الملف عبر `PUT /api/mobile/training-profile` عند `MovitDataInstall` — mapping مطابق لـ legacy `ProfileOnboardingActivity.toPayload`.
 - **Scorecard:** **85%** — التفاصيل في [`Page-Scorecards.md`](../Page-Scorecards.md) §12.

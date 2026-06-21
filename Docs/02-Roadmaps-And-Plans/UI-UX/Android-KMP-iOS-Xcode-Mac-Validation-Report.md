@@ -39,7 +39,7 @@ export ANDROID_HOME="/opt/homebrew/share/android-commandlinetools"
 export DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer"
 ```
 
-كما تم ضبط `android-poc/local.properties` محلياً على:
+كما تم ضبط `kmp-app/local.properties` محلياً على:
 
 ```properties
 sdk.dir=/opt/homebrew/share/android-commandlinetools
@@ -64,7 +64,7 @@ sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 ثم تم تشغيل مهمة الربط المطلوبة:
 
 ```bash
-cd android-poc
+cd kmp-app
 ./gradlew --console=plain :feature:shell:linkDebugFrameworkIosSimulatorArm64
 ```
 
@@ -77,14 +77,14 @@ BUILD SUCCESSFUL
 بعد ذلك تم توليد مشروع Xcode:
 
 ```bash
-cd android-poc/iosApp
+cd kmp-app/iosApp
 xcodegen
 ```
 
 النتيجة:
 
 ```text
-Created project at android-poc/iosApp/iosApp.xcodeproj
+Created project at kmp-app/iosApp/iosApp.xcodeproj
 ```
 
 ثم تم فتح وتشغيل المشروع من Xcode على iPhone 17 Simulator.
@@ -202,13 +202,13 @@ BUILD SUCCESSFUL
 
 ## الملفات التي تم تعديلها أثناء التحقق
 
-- `android-poc/iosApp/project.yml`
-- `android-poc/iosApp/iosApp/Info.plist`
-- `android-poc/feature/shell/src/iosMain/kotlin/com/movit/feature/shell/MainViewController.kt`
-- `android-poc/feature/shell/src/commonMain/kotlin/com/movit/feature/shell/MovitAppShellRoute.kt`
-- `android-poc/feature/home/src/commonMain/kotlin/com/movit/feature/home/MovitHomeRoute.kt`
-- `android-poc/feature/explore/src/commonMain/kotlin/com/movit/feature/explore/MovitExploreRoute.kt`
-- `android-poc/local.properties` كإعداد محلي خاص بجهاز Mac.
+- `kmp-app/iosApp/project.yml`
+- `kmp-app/iosApp/iosApp/Info.plist`
+- `kmp-app/feature/shell/src/iosMain/kotlin/com/movit/feature/shell/MainViewController.kt`
+- `kmp-app/feature/shell/src/commonMain/kotlin/com/movit/feature/shell/MovitAppShellRoute.kt`
+- `kmp-app/feature/home/src/commonMain/kotlin/com/movit/feature/home/MovitHomeRoute.kt`
+- `kmp-app/feature/explore/src/commonMain/kotlin/com/movit/feature/explore/MovitExploreRoute.kt`
+- `kmp-app/local.properties` كإعداد محلي خاص بجهاز Mac.
 
 ## نتيجة التشغيل على Xcode
 

@@ -188,7 +188,7 @@ def main() -> None:
     ap.add_argument(
         "--out",
         type=Path,
-        default=REPO_ROOT / "android-poc" / "app" / "src" / "main" / "assets",
+        default=REPO_ROOT / "kmp-app" / "app" / "src" / "main" / "assets",
         help="Android assets output directory",
     )
     ap.add_argument("--epochs", type=int, default=120)

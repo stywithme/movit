@@ -1,6 +1,6 @@
 """
 Posture MLP feature vector — MUST stay in sync with:
-  android-poc/.../training/engine/PostureMlpFeatureExtractor.kt
+  kmp-app/.../training/engine/PostureMlpFeatureExtractor.kt
 
 16 features (float32), order fixed.
 """

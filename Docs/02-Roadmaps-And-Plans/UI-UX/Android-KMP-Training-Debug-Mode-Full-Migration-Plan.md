@@ -7,26 +7,26 @@
 المراجع التي تمت مراجعتها مباشرة:
 
 - Legacy readonly:
-  - `D:/laragon/www/POSE-2-MO-readonly/android-poc/app/src/main/java/com/trainingvalidator/poc/ui/debug/DebugActivity.kt`
-  - `D:/laragon/www/POSE-2-MO-readonly/android-poc/app/src/main/res/layout/activity_debug.xml`
-  - `D:/laragon/www/POSE-2-MO-readonly/android-poc/app/src/main/res/layout/dialog_debug_settings.xml`
-  - `D:/laragon/www/POSE-2-MO-readonly/android-poc/app/src/main/java/com/trainingvalidator/poc/video/VideoManager.kt`
-  - `D:/laragon/www/POSE-2-MO-readonly/android-poc/app/src/main/java/com/trainingvalidator/poc/pose/PoseLandmarkerHelper.kt`
-  - `D:/laragon/www/POSE-2-MO-readonly/android-poc/app/src/main/java/com/trainingvalidator/poc/analysis/ElbowAngleEstimator.kt`
+  - `D:/laragon/www/POSE-2-MO-readonly/kmp-app/app/src/main/java/com/trainingvalidator/poc/ui/debug/DebugActivity.kt`
+  - `D:/laragon/www/POSE-2-MO-readonly/kmp-app/app/src/main/res/layout/activity_debug.xml`
+  - `D:/laragon/www/POSE-2-MO-readonly/kmp-app/app/src/main/res/layout/dialog_debug_settings.xml`
+  - `D:/laragon/www/POSE-2-MO-readonly/kmp-app/app/src/main/java/com/trainingvalidator/poc/video/VideoManager.kt`
+  - `D:/laragon/www/POSE-2-MO-readonly/kmp-app/app/src/main/java/com/trainingvalidator/poc/pose/PoseLandmarkerHelper.kt`
+  - `D:/laragon/www/POSE-2-MO-readonly/kmp-app/app/src/main/java/com/trainingvalidator/poc/analysis/ElbowAngleEstimator.kt`
 - KMP الحالي:
-  - `android-poc/settings.gradle.kts`
-  - `android-poc/core/pose-capture/src/androidMain/kotlin/com/movit/core/posecapture/android/MediaPipePoseDetector.kt`
-  - `android-poc/core/pose-capture/src/androidMain/kotlin/com/movit/core/posecapture/android/LandmarkSmoother.kt`
-  - `android-poc/core/training-engine/src/commonMain/kotlin/com/movit/core/training/geometry/ElbowAngleEstimator.kt`
-  - `android-poc/core/training-engine/src/commonMain/kotlin/com/movit/core/training/position/PositionValidator.kt`
-  - `android-poc/core/training-engine/src/commonMain/kotlin/com/movit/core/training/position/CameraPositionDetector.kt`
-  - `android-poc/core/training-engine/src/commonMain/kotlin/com/movit/core/training/position/PoseSceneDetector.kt`
-  - `android-poc/core/training-engine/src/commonMain/kotlin/com/movit/core/training/position/PoseSceneExpectation.kt`
-  - `android-poc/core/training-engine/src/commonMain/kotlin/com/movit/core/training/session/SetupReadinessGate.kt`
-  - `android-poc/core/designsystem/src/commonMain/kotlin/com/movit/designsystem/components/MovitSkeletonOverlay.kt`
-  - `android-poc/core/designsystem/src/commonMain/kotlin/com/movit/designsystem/components/SkeletonOverlayContract.kt`
-  - `android-poc/feature/training/src/commonMain/kotlin/com/movit/feature/training/TrainingDebugOverlay.kt`
-  - `android-poc/app/src/debug/AndroidManifest.xml`
+  - `kmp-app/settings.gradle.kts`
+  - `kmp-app/core/pose-capture/src/androidMain/kotlin/com/movit/core/posecapture/android/MediaPipePoseDetector.kt`
+  - `kmp-app/core/pose-capture/src/androidMain/kotlin/com/movit/core/posecapture/android/LandmarkSmoother.kt`
+  - `kmp-app/core/training-engine/src/commonMain/kotlin/com/movit/core/training/geometry/ElbowAngleEstimator.kt`
+  - `kmp-app/core/training-engine/src/commonMain/kotlin/com/movit/core/training/position/PositionValidator.kt`
+  - `kmp-app/core/training-engine/src/commonMain/kotlin/com/movit/core/training/position/CameraPositionDetector.kt`
+  - `kmp-app/core/training-engine/src/commonMain/kotlin/com/movit/core/training/position/PoseSceneDetector.kt`
+  - `kmp-app/core/training-engine/src/commonMain/kotlin/com/movit/core/training/position/PoseSceneExpectation.kt`
+  - `kmp-app/core/training-engine/src/commonMain/kotlin/com/movit/core/training/session/SetupReadinessGate.kt`
+  - `kmp-app/core/designsystem/src/commonMain/kotlin/com/movit/designsystem/components/MovitSkeletonOverlay.kt`
+  - `kmp-app/core/designsystem/src/commonMain/kotlin/com/movit/designsystem/components/SkeletonOverlayContract.kt`
+  - `kmp-app/feature/training/src/commonMain/kotlin/com/movit/feature/training/TrainingDebugOverlay.kt`
+  - `kmp-app/app/src/debug/AndroidManifest.xml`
 
 ---
 
@@ -312,7 +312,7 @@ Legacy Debug كان يعيد reset للحالة عند:
 
 تعديلات Gradle المطلوبة:
 
-- إضافة `include(":feature:training-debug")` في `android-poc/settings.gradle.kts`.
+- إضافة `include(":feature:training-debug")` في `kmp-app/settings.gradle.kts`.
 - module يعتمد على:
   - `:core:training-engine`
   - `:core:pose-capture`

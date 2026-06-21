@@ -595,12 +595,12 @@ Train:
 قبل تنفيذ `feature:train` يجب مراجعة:
 
 ```text
-android-poc/app/src/main/java/.../ui/train/TrainFragment.kt
-android-poc/app/src/main/java/.../ui/train/TrainingActivity.kt
-android-poc/app/src/main/java/.../ui/programs/ProgramWorkoutActivity.kt
-android-poc/app/src/main/res/layout/*train*
-android-poc/app/src/main/res/layout/*training*
-android-poc/app/src/main/res/layout/*program*
+kmp-app/app/src/main/java/.../ui/train/TrainFragment.kt
+kmp-app/app/src/main/java/.../ui/train/TrainingActivity.kt
+kmp-app/app/src/main/java/.../ui/programs/ProgramWorkoutActivity.kt
+kmp-app/app/src/main/res/layout/*train*
+kmp-app/app/src/main/res/layout/*training*
+kmp-app/app/src/main/res/layout/*program*
 ```
 
 استخدم `rg` لتحديد الملفات الفعلية لأن أسماء packages القديمة قد تختلف.
@@ -769,7 +769,7 @@ TrainStatusBanner
 ### 9.1 إنشاء الموديول
 
 ```text
-android-poc/feature/train/
+kmp-app/feature/train/
 ```
 
 وسجله:
@@ -1077,7 +1077,7 @@ Explore after Train quick action
 بعد ربط `feature:train` داخل `feature:shell`:
 
 ```bash
-cd android-poc
+cd kmp-app
 ./gradlew --console=plain :feature:shell:linkDebugFrameworkIosSimulatorArm64
 cd iosApp
 xcodegen

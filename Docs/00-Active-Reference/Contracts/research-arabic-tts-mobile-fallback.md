@@ -10,8 +10,8 @@
 
 | Location | Role |
 |----------|------|
-| [`android-poc/.../feedback/FeedbackManager.kt`](../android-poc/app/src/main/java/com/trainingvalidator/poc/training/feedback/FeedbackManager.kt) | Legacy `TextToSpeech`; `setLanguage(Locale.forLanguageTag("ar"))` for Arabic; **no voice selection** (gender/engine). |
-| [`android-poc/.../feedback/AudioFeedbackPlayer.kt`](../android-poc/app/src/main/java/com/trainingvalidator/poc/training/feedback/AudioFeedbackPlayer.kt) | Preferred path: cached audio; **TTS fallback** with same `setLanguage("ar")` pattern. |
+| [`kmp-app/.../feedback/FeedbackManager.kt`](../kmp-app/app/src/main/java/com/trainingvalidator/poc/training/feedback/FeedbackManager.kt) | Legacy `TextToSpeech`; `setLanguage(Locale.forLanguageTag("ar"))` for Arabic; **no voice selection** (gender/engine). |
+| [`kmp-app/.../feedback/AudioFeedbackPlayer.kt`](../kmp-app/app/src/main/java/com/trainingvalidator/poc/training/feedback/AudioFeedbackPlayer.kt) | Preferred path: cached audio; **TTS fallback** with same `setLanguage("ar")` pattern. |
 
 **Observed behavior:** The app relies on the **default Arabic voice** of whatever TTS engine the device uses (often Google “Speech Services” / Samsung / etc.). That default is frequently **female** and quality varies widely. There is no `setVoice()`, no explicit engine (`com.google.android.tts`), and no filtering by `Voice` features (e.g. male).
 

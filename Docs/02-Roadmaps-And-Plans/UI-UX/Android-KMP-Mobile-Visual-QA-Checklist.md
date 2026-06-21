@@ -1,7 +1,7 @@
 # Android KMP Mobile — Visual QA Checklist (WS-F)
 
 آخر تحديث: 2026-06-09  
-النطاق: `android-poc` · Movit KMP Shell (`MovitShellPilotActivity`)  
+النطاق: `kmp-app` · Movit KMP Shell (`MovitShellPilotActivity`)  
 المرجع البصري: [`prototypes/`](prototypes/) (HTML prototypes Phase 05)
 
 ---
@@ -19,7 +19,7 @@
 ### 1) بناء وتثبيت (debug)
 
 ```powershell
-cd android-poc
+cd kmp-app
 .\gradlew.bat --console=plain :app:installDebug
 ```
 
@@ -369,7 +369,7 @@ adb shell am start -n com.trainingvalidator.poc/com.movit.debug.MovitShellPilotA
 | `feature:reports` | `MovitReportsThemeBoundaryTest` |
 
 ```powershell
-cd android-poc
+cd kmp-app
 .\gradlew.bat --console=plain :feature:home:testDebugUnitTest :feature:train:testDebugUnitTest :feature:account:testDebugUnitTest :feature:reports:testDebugUnitTest
 ```
 

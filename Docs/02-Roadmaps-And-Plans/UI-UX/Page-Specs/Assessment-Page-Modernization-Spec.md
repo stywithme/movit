@@ -4,7 +4,7 @@
 
 ## Implementation Status
 
-- تم تنفيذ **Phase 05** لصفحة Assessment داخل `android-poc/feature/account`.
+- تم تنفيذ **Phase 05** لصفحة Assessment داخل `kmp-app/feature/account`.
 - التدفق: **PAR-Q (7 أسئلة)** → **Body scan (placeholder UI)** → **Results** (fake أو `GET level-profile` عند `MovitDataInstall`).
 - **لا كاميرا حية** — متعمد (Phase 07).
 - الاختبارات: `MovitAssessmentViewModelTest` · `AssessmentApiMapperTest`.

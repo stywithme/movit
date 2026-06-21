@@ -1,5 +1,5 @@
 /**
- * Generated catalog for mobile system messages (keys must match MobileMessageResolver + SystemMessageRegistry in android-poc).
+ * Generated catalog for mobile system messages (keys must match MobileMessageResolver + SystemMessageRegistry in kmp-app).
  */
 
 

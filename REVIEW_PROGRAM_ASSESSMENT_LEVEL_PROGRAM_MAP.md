@@ -5,7 +5,7 @@ Date: 2026-06-07
 Scope:
 - `backend/`
 - `Admin-Dashboard/`
-- `android-poc/`
+- `kmp-app/`
 - `backend/prisma/schema.prisma`
 
 ## Summary
@@ -69,8 +69,8 @@ Suggested verification:
 ### P1 - Android Train screen calculates current program day differently from backend
 
 Files:
-- `android-poc/app/src/main/java/com/trainingvalidator/poc/ui/train/TrainFragment.kt`
-- `android-poc/app/src/main/java/com/trainingvalidator/poc/storage/ProgramDayCalculator.kt`
+- `kmp-app/app/src/main/java/com/trainingvalidator/poc/ui/train/TrainFragment.kt`
+- `kmp-app/app/src/main/java/com/trainingvalidator/poc/storage/ProgramDayCalculator.kt`
 - `backend/src/modules/active-plan/plan-position.ts`
 - `backend/src/modules/mobile-sync/mobile-home.controller.ts`
 - `backend/src/modules/active-plan/active-plan.service.ts`
@@ -157,8 +157,8 @@ Suggested verification:
 ### P2 - Assessment upload sends legacy `fitnessLevel`; backend maps it with fixed 1-5 logic
 
 Files:
-- `android-poc/app/src/main/java/com/trainingvalidator/poc/assessment/AssessmentUploadService.kt`
-- `android-poc/app/src/main/java/com/trainingvalidator/poc/assessment/engine/LevelThresholdsManager.kt`
+- `kmp-app/app/src/main/java/com/trainingvalidator/poc/assessment/AssessmentUploadService.kt`
+- `kmp-app/app/src/main/java/com/trainingvalidator/poc/assessment/engine/LevelThresholdsManager.kt`
 - `backend/src/modules/assessment/assessment.service.ts`
 - `backend/src/lib/metrics/metrics-contract.ts`
 
@@ -272,7 +272,7 @@ Suggested verification:
 Files:
 - `backend/src/modules/programs/mobile-user-programs.controller.ts`
 - `backend/src/modules/active-plan/active-plan.controller.ts`
-- `android-poc/app/src/main/java/com/trainingvalidator/poc/network/MobileSyncApi.kt`
+- `kmp-app/app/src/main/java/com/trainingvalidator/poc/network/MobileSyncApi.kt`
 
 Problem:
 - Main Android flow uses `/mobile/plan/complete`, which correctly mutates active plan.

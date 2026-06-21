@@ -1,4 +1,4 @@
-# android-poc — تدفق المتدرب ونقاط الاتصال
+# kmp-app — تدفق المتدرب ونقاط الاتصال
 
 ## المصادقة والإقلاع
 
@@ -41,4 +41,4 @@
 
 ## ملف الشبكة المركزي
 
-`android-poc/app/src/main/java/com/trainingvalidator/poc/network/MobileSyncApi.kt` يجمع معظم مسارات REST أعلاه.
+`kmp-app/app/src/main/java/com/trainingvalidator/poc/network/MobileSyncApi.kt` يجمع معظم مسارات REST أعلاه.

@@ -2,7 +2,7 @@
 
 ## مصطلحات
 
-- **Onboarding في android-poc:** يشير إلى `OnboardingActivity` — شاشات تعريفية (3 صفحات) ثم الانتقال إلى `SignInActivity`. لا يوجد في هذا النشاط استدعاء لـ API لملف التدريب.
+- **Onboarding في kmp-app:** يشير إلى `OnboardingActivity` — شاشات تعريفية (3 صفحات) ثم الانتقال إلى `SignInActivity`. لا يوجد في هذا النشاط استدعاء لـ API لملف التدريب.
 - **سمات المتدرب في الخادم:** النموذج `TrainingProfile` في Prisma، علاقة 1:1 مع `User`، مع حقل `trainingGoal` على `User`.
 
 ## مخطط البيانات (Backend)
@@ -40,9 +40,9 @@
 - `focusHint`, `regionHints` عند تمريرها (تُستخدم في وصفات البرنامج بعد التقييم)
 - `biologicalSex`, `trainingLocation`
 
-## android-poc
+## kmp-app
 
-- **Onboarding:** `android-poc/.../ui/auth/OnboardingActivity.kt` — تفضيل `is_first_launch` فقط.
+- **Onboarding:** `kmp-app/.../ui/auth/OnboardingActivity.kt` — تفضيل `is_first_launch` فقط.
 - **ملف التدريب:** `PUT api/mobile/training-profile` من `ProfileActivity` (بحث عن `putTrainingProfile` في `ProfileActivity.kt`).
 - تعريف الـ Retrofit: `MobileSyncApi.kt` — `getTrainingProfile`, `putTrainingProfile`.
 

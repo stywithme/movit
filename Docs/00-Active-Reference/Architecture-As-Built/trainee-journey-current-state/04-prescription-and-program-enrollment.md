@@ -66,7 +66,7 @@
 - داخل `assessmentService.create` فقط عند **عدم** وجود برنامج نشط في الخطة (كما في ملف التقييم).
 - لا تُستدعى تلقائيًا عند إكمال البرنامج في `completeActiveProgram` (انظر ملف إكمال البرنامج).
 
-## android-poc
+## kmp-app
 
 - تسجيل يدوي: `MobileSyncApi.enrollProgram` → `POST api/mobile/plan/enroll`؛ يمر عبر `enrollment-check` في `ProgramDetailViewModel`.
 - بعد التقييم: `AssessmentResultActivity` يستدعي `enrollInProgram` عند عرض برنامج موصى به (انظر `AssessmentResultActivity.kt`).

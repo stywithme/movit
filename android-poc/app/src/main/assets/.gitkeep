@@ -1,4 +1,0 @@
-# MediaPipe pose model (pose_landmarker_full.task) is not committed.
-# CI: android-poc/scripts/fetch-pose-landmarker-model.sh (movit-android-release workflow).
-# Local: run the same script, or download from:
-# https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/latest/pose_landmarker_full.task

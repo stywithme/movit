@@ -43,11 +43,11 @@ setContent { MovitTheme { MovitAppShellRoute() } }
 
 | الآلية | المفتاح | الافتراضي |
 |--------|---------|-----------|
-| Gradle property | `movit.shell.launcher.enabled` في `android-poc/gradle.properties` | `false` |
+| Gradle property | `movit.shell.launcher.enabled` في `kmp-app/gradle.properties` | `false` |
 | BuildConfig | `BuildConfig.MOVIT_SHELL_LAUNCHER_ENABLED` | `false` |
 
 ```properties
-# android-poc/gradle.properties — للتجربة المحلية فقط (لا ترفع true إلى CI/release قبل الـ flip)
+# kmp-app/gradle.properties — للتجربة المحلية فقط (لا ترفع true إلى CI/release قبل الـ flip)
 # movit.shell.launcher.enabled=true
 ```
 
@@ -115,7 +115,7 @@ LegacyTrainingLauncher.startCameraExercise(
 **تحقق:**
 
 ```powershell
-cd android-poc
+cd kmp-app
 .\gradlew.bat --console=plain :app:dependencies --configuration releaseRuntimeClasspath
 ```
 
@@ -141,7 +141,7 @@ Release APK legacy يجب أن يبقى خفيفاً وخالياً من Compose
 
 ```powershell
 # بناء debug (shell عبر pilot launcher)
-cd android-poc
+cd kmp-app
 .\gradlew.bat --console=plain :app:assembleDebug
 
 # فتح shell بدون launcher debug (بعد تفعيل flag محلياً)

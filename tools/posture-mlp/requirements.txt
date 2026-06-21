@@ -1,4 +1,4 @@
-# Train/export posture MLP (Standing/Sitting/Lying) for android-poc
+# Train/export posture MLP (Standing/Sitting/Lying) for kmp-app
 # Python 3.10+ recommended
 mediapipe>=0.10.14,<0.11
 tensorflow-cpu>=2.15.0,<2.19

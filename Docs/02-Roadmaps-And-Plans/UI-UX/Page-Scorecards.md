@@ -4,7 +4,7 @@
 المرجع: [`Android-KMP-Mobile-UI-UX-Phase-Pre-06-Architecture-And-Production-Readiness-Plan.md`](Android-KMP-Mobile-UI-UX-Phase-Pre-06-Architecture-And-Production-Readiness-Plan.md) — WS-E
 
 > **مصدر النِسب الوحيد (canonical):** هذا الملف. [`Android-UI-UX-Modernization-Status.md`](Android-UI-UX-Modernization-Status.md) · [`Sync-App-Pages.md`](Sync-App-Pages.md) · [`Android-KMP-Mobile-UI-UX-Professional-Plan.md`](Android-KMP-Mobile-UI-UX-Professional-Plan.md) **تربط هنا** ولا تكرر النسب يدوياً.  
-> **أرقام الكود** (مفاتيح ar/en · اختبارات KMP · مكوّنات `Movit*`): [`generated/Docs-Stats-Snapshot.md`](generated/Docs-Stats-Snapshot.md) — `cd android-poc; .\gradlew.bat docsStats`
+> **أرقام الكود** (مفاتيح ar/en · اختبارات KMP · مكوّنات `Movit*`): [`generated/Docs-Stats-Snapshot.md`](generated/Docs-Stats-Snapshot.md) — `cd kmp-app; .\gradlew.bat docsStats`
 
 ## المنهجية
 
@@ -20,7 +20,7 @@
 | **Tests** | 10% | ViewModel / mapper / state unit tests |
 | **iOS readiness** | 5% | `compileKotlinIosSimulatorArm64` + factory |
 
-**مصادر التحقق:** `android-poc/feature/*`، `core/resources`، `feature/shell` — فحص 2026-06-10 (قراءة شاشات + `MovitInnerHost.kt` + Gradle unit tests).
+**مصادر التحقق:** `kmp-app/feature/*`، `core/resources`، `feature/shell` — فحص 2026-06-10 (قراءة شاشات + `MovitInnerHost.kt` + Gradle unit tests).
 
 ### تحقق Phase 05 (2026-06-12 — تبويبات رئيسية)
 

@@ -1,4 +1,4 @@
-﻿| | |
+| | |
 |---|---|
 | **Status** | `ACTIVE` |
 | **SSOT for** | Android exercise JSON contract |
@@ -11,7 +11,7 @@
 
 هذا المستند يوضح **كل الحقول (parameters)** الموجودة في ملفات تمارين الـ JSON داخل:
 
-- `android-poc/app/src/main/assets/exercises/*.json`
+- `kmp-app/app/src/main/assets/exercises/*.json`
 
 ويشرح:
 

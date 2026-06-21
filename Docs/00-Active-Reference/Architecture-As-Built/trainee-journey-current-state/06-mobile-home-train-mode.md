@@ -34,6 +34,6 @@
 
 دالة `buildAlerts` — أنواع مثل `reassessment_due`, `progression_applied`, `level_up`, `streak_at_risk` حسب حالة التدريب والتقدم غير المقروء.
 
-## android-poc
+## kmp-app
 
 `MobileSyncApi.getHomeData` → `GET api/mobile/home`؛ الاستهلاك في `HomeFragment` و`HomeRepository` (بحث في المشروع).

@@ -14,12 +14,12 @@
 
 | Layer | Path | Role |
 |-------|------|------|
-| **Calculation** | `android-poc/.../training/analytics/MetricsCalculator.kt` | ROM, symmetry, stability, velocity, VL, alignment, consistency, fatigue, tempo, 1RM, volume |
-| **Recording** | `android-poc/.../training/analytics/MotionRecorder.kt` | Per-rep frames → calls `MetricsCalculator.calculateRepMetrics` / planned workout aggregate |
-| **Rep score (live)** | `android-poc/.../training/engine/ScoreCalculator.kt` | Joint state → rep score during workout run |
-| **Report aggregate** | `android-poc/.../training/report/PostTrainingReport.kt` | `PerformanceSummary`, V2 fields, consistency helpers |
-| **UI cards** | `android-poc/.../training/report/PerformanceMetricsBuilder.kt` | Form / Safety / Control cards — **formats only**, no recalculation |
-| **Display filter** | `android-poc/.../ui/report/MetricDisplayBuilder.kt` | Which metrics show per exercise config |
+| **Calculation** | `kmp-app/.../training/analytics/MetricsCalculator.kt` | ROM, symmetry, stability, velocity, VL, alignment, consistency, fatigue, tempo, 1RM, volume |
+| **Recording** | `kmp-app/.../training/analytics/MotionRecorder.kt` | Per-rep frames → calls `MetricsCalculator.calculateRepMetrics` / planned workout aggregate |
+| **Rep score (live)** | `kmp-app/.../training/engine/ScoreCalculator.kt` | Joint state → rep score during workout run |
+| **Report aggregate** | `kmp-app/.../training/report/PostTrainingReport.kt` | `PerformanceSummary`, V2 fields, consistency helpers |
+| **UI cards** | `kmp-app/.../training/report/PerformanceMetricsBuilder.kt` | Form / Safety / Control cards — **formats only**, no recalculation |
+| **Display filter** | `kmp-app/.../ui/report/MetricDisplayBuilder.kt` | Which metrics show per exercise config |
 | **Backend persist** | `backend/prisma/schema.prisma` → `WorkoutExecutionMetrics`, `RepMetrics` | Integers scaled ×10 (see below) |
 | **Backend ingest** | `backend/src/modules/workout-executions/` | Maps mobile upload payload |
 | **Reports API** | `backend/src/modules/reports/` | Aggregates for program/week/day scopes |

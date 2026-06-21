@@ -4,7 +4,7 @@
 
 ## Implementation Status
 
-- تم تنفيذ `ExercisesLibraryScreen` و`WorkoutsLibraryScreen` داخل `android-poc/feature/library`.
+- تم تنفيذ `ExercisesLibraryScreen` و`WorkoutsLibraryScreen` داخل `kmp-app/feature/library`.
 - البيانات تُحمَّل عبر `LibraryRepository` → `ExploreRepository` (cache/API مشترك مع Explore).
 - الصور: `LibraryMediaImage` — Coil على Android، placeholder على iOS حتى دمج محمّل KMP.
 - النصوص: مفاتيح `library_*` في `:core:resources` (EN + AR).

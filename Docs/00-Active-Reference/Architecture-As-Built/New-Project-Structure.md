@@ -16,7 +16,7 @@
 
 المسار الأساسي:
 
-`android-poc/app/src/main/java/com/trainingvalidator/poc/ui`
+`kmp-app/app/src/main/java/com/trainingvalidator/poc/ui`
 
 ### التقسيم الحالي
 

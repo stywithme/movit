@@ -218,7 +218,7 @@ KMP الحالي: `readCache/writeCache` = JSON في `SharedPreferences`/`UserDe
 ## أوامر التحقق
 
 ```powershell
-cd android-poc
+cd kmp-app
 .\gradlew.bat --console=plain `
   :core:network:testDebugUnitTest `
   :core:data:testDebugUnitTest `

@@ -1,13 +1,13 @@
 # Posture MLP (Standing / Sitting / Lying)
 
-Trains a 16-feature skeleton MLP and exports TensorFlow Lite + normalization JSON for `android-poc`.
+Trains a 16-feature skeleton MLP and exports TensorFlow Lite + normalization JSON for `kmp-app`.
 
 ## Sync contract
 
 Feature order and formulas are defined in:
 
 - `feature_engineering.py`
-- `android-poc/.../PostureMlpFeatureExtractor.kt`
+- `kmp-app/.../PostureMlpFeatureExtractor.kt`
 
 Change both if you add or reorder features.
 
@@ -29,7 +29,7 @@ Or set `MEDIAPIPE_POSE_TASK` to the absolute path of any `.task` pose landmarker
 
 Default data folder: `Docs/train/` with subfolders `Standing/`, `Sitting/`, `Lying/`.
 
-Default output: `android-poc/app/src/main/assets/` (`posture_mlp.tflite`, `posture_mlp_norm.json`).
+Default output: `kmp-app/app/src/main/assets/` (`posture_mlp.tflite`, `posture_mlp_norm.json`).
 
 ```bash
 python tools/posture-mlp/train_posture_mlp.py

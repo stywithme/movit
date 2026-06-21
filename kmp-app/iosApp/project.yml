@@ -1,0 +1,130 @@
+# XcodeGen spec — generates iosApp.xcodeproj from text (no fragile pbxproj by hand).
+# On the Mac:  brew install xcodegen cocoapods  &&  cd kmp-app/iosApp  &&  xcodegen
+# Then open iosApp.xcworkspace (CocoaPods) — not iosApp.xcodeproj alone.
+name: iosApp
+options:
+  bundleIdPrefix: com.movit
+  # Runs after project generation; integrates MediaPipeTasksVision via Podfile.
+  postGenCommand: pod install
+  deploymentTarget:
+    # Align with kmp-app gradle ios-deployment-target (Compose MP 1.11 + Skiko/ICU 18.5).
+    iOS: "18.5"
+targets:
+  iosApp:
+    type: application
+    platform: iOS
+    sources:
+      - path: iosApp
+        excludes:
+          - Models/**
+    resources:
+      - path: iosApp/Models
+        includes:
+          - "**/*.task"
+      # Apple Privacy Manifest (2024+) — camera/motion usage strings remain in Info.plist.
+      - path: iosApp/PrivacyInfo.xcprivacy
+    info:
+      path: iosApp/Info.plist
+      properties:
+        CFBundleDisplayName: Movit
+        CADisableMinimumFrameDurationOnPhone: true
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+          UISceneConfigurations:
+            UIWindowSceneSessionRoleApplication:
+              - UISceneConfigurationName: Default Configuration
+                UISceneDelegateClassName: $(PRODUCT_MODULE_NAME).SceneDelegate
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+        NSCameraUsageDescription: "Movit needs the camera to track your form during live training."
+        NSMotionUsageDescription: "Movit uses motion sensors to correct pose tracking when your phone is tilted."
+        # Must match MOVIT_IOS_BACKGROUND_SYNC_TASK_ID in BackgroundSyncScheduler.ios.kt
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.movit.background-sync
+        UIBackgroundModes:
+          - fetch
+        ITSAppUsesNonExemptEncryption: false
+        GIDClientID: YOUR_IOS_CLIENT_ID.apps.googleusercontent.com
+        CFBundleURLTypes:
+          - CFBundleURLSchemes:
+              - com.googleusercontent.apps.YOUR_IOS_CLIENT_ID
+    # USER: Enable In-App Purchase for com.movit.iosApp in Apple Developer portal, then regenerate profiles.
+    # Template entitlement — see iosApp/iosApp.entitlements (com.apple.developer.in-app-purchases).
+    entitlements:
+      path: iosApp/iosApp.entitlements
+    dependencies:
+      - sdk: StoreKit.framework
+    attributes:
+      SystemCapabilities:
+        com.apple.InAppPurchase:
+          enabled: 1
+        com.apple.BackgroundModes:
+          enabled: 1
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.movit.iosApp
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # Static framework produced by :feature:shell (baseName = MovitApp)
+        FRAMEWORK_SEARCH_PATHS:
+          - "$(inherited)"
+          - "$(SRCROOT)/../feature/shell/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)"
+        OTHER_LDFLAGS:
+          - "$(inherited)"
+          - "-ObjC"
+          - "-framework"
+          - "MovitApp"
+          - "-lsqlite3"
+        LD_RUNPATH_SEARCH_PATHS:
+          - "$(inherited)"
+          - "@executable_path/Frameworks"
+        # Kotlin/Native no longer builds iosX64 in this project; keep Xcode's
+        # simulator build on arm64 so Compose resource sync does not request x86_64.
+        ONLY_ACTIVE_ARCH: YES
+        "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
+    preBuildScripts:
+      - name: "Require iosApp.xcworkspace (CocoaPods)"
+        basedOnDependencyAnalysis: false
+        script: |
+          # GoogleSignIn pulls AppAuth — those pods only build when the workspace is used.
+          if [ -f "$SRCROOT/Podfile.lock" ] && [ -z "${WORKSPACE_DIR:-}" ]; then
+            echo "error: Open iosApp.xcworkspace (not iosApp.xcodeproj)." >&2
+            echo "  cd kmp-app/iosApp && open iosApp.xcworkspace" >&2
+            exit 1
+          fi
+      - name: "Ensure pose_landmarker model in bundle"
+        basedOnDependencyAnalysis: true
+        inputFiles:
+          - "$(SRCROOT)/../app/src/main/assets/pose_landmarker_full.task"
+        outputFiles:
+          - "$(SRCROOT)/iosApp/Models/pose_landmarker_full.task"
+        script: |
+          set -e
+          MODEL="$SRCROOT/iosApp/Models/pose_landmarker_full.task"
+          ANDROID="$SRCROOT/../app/src/main/assets/pose_landmarker_full.task"
+          if [ -f "$ANDROID" ]; then
+            if [ ! -f "$MODEL" ] || [ "$ANDROID" -nt "$MODEL" ]; then
+              mkdir -p "$(dirname "$MODEL")"
+              cp "$ANDROID" "$MODEL"
+              echo "Copied pose_landmarker_full.task from Android assets."
+            fi
+            exit 0
+          fi
+          if [ -f "$MODEL" ]; then
+            exit 0
+          fi
+          echo "warning: pose_landmarker_full.task missing — MovitPoseLandmarkerBridge.isAvailable will be false."
+          echo "  Run: kmp-app/scripts/fetch-pose-landmarker-model.sh"
+          echo "  Or copy from app/src/main/assets/ after download (see app/src/main/assets/.gitkeep)."
+      - name: "Build MovitApp Kotlin framework"
+        basedOnDependencyAnalysis: true
+        path: scripts/embed-movit-framework.sh
+        inputFiles:
+          - "$(SRCROOT)/../gradlew"
+          - "$(SRCROOT)/.xcode.env"
+          - "$(SRCROOT)/scripts/embed-movit-framework.sh"
+        inputFileLists:
+          - "$(SRCROOT)/kmp-build-inputs.xcfilelist"
+        outputFiles:
+          - "$(SRCROOT)/../feature/shell/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)/MovitApp.framework/MovitApp"

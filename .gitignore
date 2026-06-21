@@ -20,9 +20,9 @@ out/
 *.dex
 *.class
 .gradle/
-android-poc/.kotlin/
+kmp-app/.kotlin/
 local.properties
-android-poc/api.properties
+kmp-app/api.properties
 *.iml
 .idea/
 *.keystore
@@ -85,7 +85,7 @@ ENV/
 # Java/Kotlin
 *.class
 *.jar
-!android-poc/gradle/wrapper/gradle-wrapper.jar
+!kmp-app/gradle/wrapper/gradle-wrapper.jar
 *.war
 *.ear
 hs_err_pid*

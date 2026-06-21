@@ -4,7 +4,7 @@
 
 ## Implementation Status
 
-- تم تنفيذ `MovitExploreScreen` داخل `android-poc/feature/explore` وربطها بـ `feature:shell`.
+- تم تنفيذ `MovitExploreScreen` داخل `kmp-app/feature/explore` وربطها بـ `feature:shell`.
 - أُغلقت فجوات Phase 05 مقابل `04-explore.html` و`ExploreFragment`: زر Filter، muscle-strip، workout-intro، focus pills، صور الوسائط، chips فرعية للتمارين.
 - التنقل يطابق legacy عبر effects: تمرين → `ExercisePrepare` (PreWorkout)، جلسة → `WorkoutSession` (WorkoutDetail).
 - «عرض الكل» داخل القسم يغيّر الفلتر الرئيسي ويمرّر التمرير داخل التبويب (لا يفتح Library مباشرة).

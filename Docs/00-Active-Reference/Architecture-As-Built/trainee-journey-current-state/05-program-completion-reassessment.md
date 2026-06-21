@@ -60,6 +60,6 @@
 
 واجهات الموبايل: `reassessment.controller.ts` — GET للجدول القادم والسجل، POST للجدولة اليدوية.
 
-## android-poc
+## kmp-app
 
 - `TrainFragment` بعد إكمال الأسبوع/البرنامج يستدعي `completeActiveProgram` ثم يفرع حسب `completion.nextAction` (انظر `TrainFragment.kt`): `reassess` → `PreScreeningActivity`؛ `next_program` → فتح `ProgramDetailActivity` بالـ slug بعد جلب البرنامج؛ `journey_summary` → تقرير أسبوعي؛ غير ذلك قائمة البرامج.

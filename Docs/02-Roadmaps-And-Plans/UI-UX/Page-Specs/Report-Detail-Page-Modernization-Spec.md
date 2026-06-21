@@ -4,7 +4,7 @@
 
 ## Implementation Status
 
-- تم تنفيذ `ReportDetailScreen` داخل `android-poc/feature/reports` مع 4 صفحات (Overview / Form / Fatigue / Tips).
+- تم تنفيذ `ReportDetailScreen` داخل `kmp-app/feature/reports` مع 4 صفحات (Overview / Form / Fatigue / Tips).
 - البيانات الحقيقية عبر `SharedReportDetailRepository` → `GET /api/mobile/reports/metrics?scope=exercise`.
 - Share / Export يطلقان effect إلى shell → `ShowLocalizedMessage` (placeholder موثق؛ legacy يشارك screenshot + نص).
 - Joint analysis: UI جاهز + `JointMetricsDto` في DTO؛ API backend لا يُرجع joints بعد — fallback نصي موضّح.

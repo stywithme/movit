@@ -4,7 +4,7 @@
 
 ## Implementation Status
 
-- تم تنفيذ أول نسخة KMP من صفحة Train داخل `android-poc/feature/train`.
+- تم تنفيذ أول نسخة KMP من صفحة Train داخل `kmp-app/feature/train`.
 - تم ربطها داخل `feature:shell` بدلاً من placeholder الخاص بـ `MovitAppDestination.Train`.
 - **دفعة 2026-06-09 — إغلاق فجوات `01-train.html`:**
   - `TrainWeekPreview`: تنقل أسبوع تفاعلي (`←/→`) عبر `weekOptions` + `selectedWeekIndex`.
@@ -21,12 +21,12 @@
 
 - المدخل القديم: `TrainFragment` داخل legacy Android `:app`.
 - الملفات الأساسية:
-  - `android-poc/app/src/main/java/com/trainingvalidator/poc/ui/train/TrainFragment.kt`
-  - `android-poc/app/src/main/res/layout/fragment_train.xml`
-  - `android-poc/app/src/main/java/com/trainingvalidator/poc/ui/programs/ProgramWorkoutActivity.kt`
-  - `android-poc/app/src/main/java/com/trainingvalidator/poc/ui/programs/ProgramDetailActivity.kt`
-  - `android-poc/app/src/main/java/com/trainingvalidator/poc/ui/programs/ProgramListActivity.kt`
-  - `android-poc/app/src/main/java/com/trainingvalidator/poc/ui/programs/WeeklyReportActivity.kt`
+  - `kmp-app/app/src/main/java/com/trainingvalidator/poc/ui/train/TrainFragment.kt`
+  - `kmp-app/app/src/main/res/layout/fragment_train.xml`
+  - `kmp-app/app/src/main/java/com/trainingvalidator/poc/ui/programs/ProgramWorkoutActivity.kt`
+  - `kmp-app/app/src/main/java/com/trainingvalidator/poc/ui/programs/ProgramDetailActivity.kt`
+  - `kmp-app/app/src/main/java/com/trainingvalidator/poc/ui/programs/ProgramListActivity.kt`
+  - `kmp-app/app/src/main/java/com/trainingvalidator/poc/ui/programs/WeeklyReportActivity.kt`
 - السلوك الحالي يعتمد على `HomeRepository.trainMode` عندما يكون متاحاً، ثم fallback إلى `ProgramRepository`.
 - الحالات القديمة المهمة:
   - لا يوجد assessment أو لا توجد plan.

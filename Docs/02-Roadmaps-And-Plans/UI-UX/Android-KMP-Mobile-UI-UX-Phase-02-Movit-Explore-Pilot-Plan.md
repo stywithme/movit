@@ -236,7 +236,7 @@ MovitErrorState
 الخيار الأفضل:
 
 ```text
-android-poc/feature/explore/
+kmp-app/feature/explore/
 ```
 
 وتسجيل:
@@ -419,7 +419,7 @@ Docs/02-Roadmaps-And-Plans/UI-UX/prototypes/00-components.html
 ### Build checks
 
 ```powershell
-cd android-poc
+cd kmp-app
 .\gradlew.bat :app:assembleDebug
 .\gradlew.bat :shared:testDebugUnitTest
 .\gradlew.bat :core:designsystem:testDebugUnitTest

@@ -44,7 +44,7 @@
 
 قيمة العمود `type` في `BodyScanResult` تُخزَّن كما أرسلها العميل؛ منطق الخادم أعلاه لا يغيّرها تلقائيًا عند الإنشاء في `assessment.service`.
 
-## android-poc
+## kmp-app
 
 - رفع التقييم: `MobileSyncApi.uploadAssessment` → `POST api/assessment`.
 - القالب: `AssessmentTemplateManager.resolve` يستدعي `resolveAssessmentTemplate` (انظر ملف قوالب التقييم).
