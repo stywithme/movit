@@ -13,8 +13,8 @@
 
 تمت المقارنة بين:
 
-- `D:/laragon/www/POSE-2-MO-readonly` كنسخة `MO` Legacy.
-- `D:/laragon/www/POSE-2` كنسخة KMP الحالية.
+- `D:/laragon/www/movit-MO-readonly` كنسخة `MO` Legacy.
+- `D:/laragon/www/movit` كنسخة KMP الحالية.
 - ملفات Legacy الأساسية:
   - `kmp-app/app/src/main/java/com/trainingvalidator/poc/ui/train/TrainingActivity.kt`
   - `kmp-app/app/src/main/java/com/trainingvalidator/poc/ui/training/TrainingViewModel.kt`
@@ -1709,7 +1709,7 @@ window=2s | cam=13fps(skipThrottle=7 target=10 ae=[10,10] analysis=320x240)
 
 ## 34) مراجعة كود مستقلة بعد التجربة الحقيقية (2026-06-14)
 
-> هذا القسم مبني على قراءة مباشرة للكود في `D:/laragon/www/POSE-2` مقابل worktree `D:/laragon/www/POSE-2-MO-readonly`، وليس على افتراض صحة الأقسام السابقة. عند وجود تعارض بين هذا القسم وأي حكم سابق في الوثيقة، هذا القسم هو المرجع الأحدث. لم يتم تعديل worktree `MO`.
+> هذا القسم مبني على قراءة مباشرة للكود في `D:/laragon/www/movit` مقابل worktree `D:/laragon/www/movit-MO-readonly`، وليس على افتراض صحة الأقسام السابقة. عند وجود تعارض بين هذا القسم وأي حكم سابق في الوثيقة، هذا القسم هو المرجع الأحدث. لم يتم تعديل worktree `MO`.
 
 ### 34.1 الحكم التنفيذي
 

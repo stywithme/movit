@@ -4,7 +4,7 @@
 
 # Elbow Angle / Depth Ambiguity — Knowledge Base (Facts & Alternatives Only)
 
-This document aggregates information, alternatives, and research references from the POSE-2 repository and related exports. **No recommendations or opinions** — only what appears in project docs, research summaries, and standard practice options.
+This document aggregates information, alternatives, and research references from the Movit repository and related exports. **No recommendations or opinions** — only what appears in project docs, research summaries, and standard practice options.
 
 **Primary internal sources:**
 - `Docs/New-Project/Joint-Debug/Solutions.md`
@@ -516,7 +516,7 @@ The following items were gathered via web search **outside** the git repo. They 
 |---------|------|
 | DepthAI + BlazePose integration (community project) | [github.com/geaxgx/depthai_blazepose](https://github.com/geaxgx/depthai_blazepose) |
 
-### 16.8 Relation to POSE-2 knowledge base
+### 16.8 Relation to Movit knowledge base
 
 - Items in §16.1–16.4 **overlap thematically** with repo exports (PoseMoE, AugLift, PersPose already summarized in `Docs/Reasearch/cursor_*.md`).
 - **Web-only additions** worth tracking separately: **3DPCNet** (canonicalization), **Kineo** (multi-RGB metric), **PoseMamba** (SSM temporal), **2025–2026 arXiv versions** of known methods.

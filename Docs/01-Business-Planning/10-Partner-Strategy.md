@@ -1,3 +1,5 @@
+> **Status:** `BUSINESS` — تخطيط منتج/سوق؛ ليس مواصفة تقنية.
+
 # Partner Strategy
 
 ## الهدف

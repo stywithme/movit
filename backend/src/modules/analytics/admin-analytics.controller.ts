@@ -69,14 +69,6 @@ export class AdminAnalyticsController {
     return { success: true, data: await this.reportsService.getRevenue(query) };
   }
 
-  @Get('bookings')
-  @UseGuards(AdminGuard)
-  @AdminOnly()
-  @CheckPermission('read', 'ReportBooking')
-  async getBookings(@Query() query: AnalyticsPeriodQuery) {
-    return { success: true, data: await this.reportsService.getBookings(query) };
-  }
-
   @Get('safety')
   @CheckPermission('read', 'ReportSafety')
   async getSafety(@Query() query: AnalyticsPeriodQuery) {

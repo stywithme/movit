@@ -1,3 +1,5 @@
+> **Status:** `BUSINESS` — تخطيط منتج/سوق؛ ليس مواصفة تقنية.
+
 # Resources and Team
 
 ## الهدف

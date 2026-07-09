@@ -22,7 +22,6 @@ type AdminWithRole = {
   email: string;
   name: string;
   isSuperAdmin: boolean;
-  isDoctor: boolean;
   isActive: boolean;
   createdAt: Date;
   modelHasRoles?: {
@@ -45,28 +44,16 @@ function toAdminPublic(admin: AdminWithRole): AdminPublic {
 
   const permissions = admin.isSuperAdmin
     ? [{ action: 'manage', subject: 'all' }]
-    : [
-      ...(role?.permissions.map(rp => ({
-        action: rp.permission.action,
-        subject: rp.permission.subject,
-      })) || []),
-      ...(admin.isDoctor ? [
-        { action: 'read', subject: 'Booking' },
-        { action: 'read', subject: 'BookingReport' },
-        { action: 'create', subject: 'BookingReport' },
-        { action: 'update', subject: 'BookingReport' },
-        { action: 'read', subject: 'DoctorWorkTime' },
-        { action: 'manage', subject: 'DoctorWorkTime' },
-        { action: 'manage', subject: 'CloseTime' },
-      ] : [])
-    ];
+    : role?.permissions.map(rp => ({
+      action: rp.permission.action,
+      subject: rp.permission.subject,
+    })) || [];
   return {
     id: admin.id,
     email: admin.email,
     name: admin.name,
     roleId,
     isSuperAdmin: admin.isSuperAdmin,
-    isDoctor: admin.isDoctor,
     isActive: admin.isActive,
     createdAt: admin.createdAt,
     permissions,

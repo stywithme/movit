@@ -2,32 +2,37 @@
 
 وثائق تعكس **ما يُفترض أن يطابق الكود اليوم**. عند التعارض، الكود يفوز حتى يُحدَّث الملف هنا.
 
-## فهارس SSOT
+## خريطة المواضيع (Topic → SSOT)
 
-| الفهرس | المحتوى |
-|--------|---------|
-| [`Product-Master/Journey-Index.md`](Product-Master/Journey-Index.md) | رحلة المستخدم: as-built vs planned |
-| [`Metrics/README.md`](Metrics/README.md) | المقاييس: as-built / catalog / roadmap |
-| [`../DOCUMENT-STANDARD.md`](../DOCUMENT-STANDARD.md) | معيار الترويسة والحالات |
+| Topic | SSOT file | ملاحظة |
+|-------|-----------|--------|
+| User journey (as-built vs planned) | [`Product-Master/Journey-Index.md`](Product-Master/Journey-Index.md) | جدول القدرات |
+| Trainee journey (code walkthrough) | [`Architecture-As-Built/trainee-journey-current-state/README.md`](Architecture-As-Built/trainee-journey-current-state/README.md) | 8 فصول |
+| Product blueprint (future) | [`Product-Master/Unified-User-Journey-Plan.md`](Product-Master/Unified-User-Journey-Plan.md) | `ROADMAP` ضمني |
+| Exercise JSON contract | [`Contracts/Exercise-JSON-Schema.md`](Contracts/Exercise-JSON-Schema.md) | Admin ↔ Android |
+| REST API | [`Contracts/API_ENDPOINTS.md`](Contracts/API_ENDPOINTS.md) | + `backend/API_ENDPOINTS.md` |
+| Workout naming | [`Contracts/Workout-Domain-Naming.md`](Contracts/Workout-Domain-Naming.md) | PlannedWorkout، WorkoutExecution |
+| Training engine | [`Engine/training-engine.md`](Engine/training-engine.md) | KMP frame pipeline |
+| Camera training (full stack) | [`Engine/Camera-Training-Engine-As-Built/README.md`](Engine/Camera-Training-Engine-As-Built/README.md) | Backend + mobile + engine + UI — **SSOT index** |
+| Position checks | [`Engine/Positions-Check-Concept.md`](Engine/Positions-Check-Concept.md) | |
+| Bilateral reps | [`Engine/Bilateral-Design.md`](Engine/Bilateral-Design.md) | |
+| Scene detection | [`Engine/pose-scene-detection-how-it-works.md`](Engine/pose-scene-detection-how-it-works.md) | |
+| Metrics (index) | [`Metrics/README.md`](Metrics/README.md) | ابدأ بـ As-Built |
+| Metrics as-built | [`Metrics/Metrics-As-Built.md`](Metrics/Metrics-As-Built.md) | **SSOT للكود** |
+| Metrics catalog | [`Metrics/Metrics-Complete-Reference.md`](Metrics/Metrics-Complete-Reference.md) | تعريفات |
+| Metrics backlog | [`Metrics/Metrics-Final-Framework.md`](Metrics-Final-Framework.md) | `ROADMAP` |
+| Post-training report | [`Product-Master/Post-Training-Report-Review.md`](Product-Master/Post-Training-Report-Review.md) | V1 UI / V2 data |
+| Payment (MyFatoorah) | [`Operations/Payment-gateway/README.md`](Operations/Payment-gateway/README.md) | `00`–`06` |
+| Workout domain migration | [`Operations/Workout-Domain-Migration-Runbook.md`](Operations/Workout-Domain-Migration-Runbook.md) | إنتاج |
+| C4 / structure | [`Architecture-As-Built/C4-Model.md`](Architecture-As-Built/C4-Model.md) | |
+| Workout run UX | [`Architecture-As-Built/workout-run-ux-flow.md`](Architecture-As-Built/workout-run-ux-flow.md) | |
+| Arabic TTS research | [`Contracts/research-arabic-tts-mobile-fallback.md`](Contracts/research-arabic-tts-mobile-fallback.md) | |
+| Structural changes log | [`../03-Evolution/README.md`](../03-Evolution/README.md) | ليس as-built |
+| Doc standard | [`../DOCUMENT-STANDARD.md`](../DOCUMENT-STANDARD.md) | |
 
-## الملفات الأساسية
+## لا تستخدم كمرجع حي
 
-| الملف | الاستخدام |
-|-------|-----------|
-| [`Contracts/Exercise-JSON-Schema.md`](Contracts/Exercise-JSON-Schema.md) | عقد JSON بين Admin و Android |
-| [`Contracts/API_ENDPOINTS.md`](Contracts/API_ENDPOINTS.md) | REST API |
-| [`Contracts/Workout-Domain-Naming.md`](Contracts/Workout-Domain-Naming.md) | تسمية Workout الموحّدة (PlannedWorkout، WorkoutExecution، …) |
-| [`Engine/training-engine.md`](Engine/training-engine.md) | محرك التدريب |
-| [`Metrics/Metrics-As-Built.md`](Metrics/Metrics-As-Built.md) | المقاييس كما في الكود (**SSOT**) |
-| [`Metrics/Metrics-Complete-Reference.md`](Metrics/Metrics-Complete-Reference.md) | كتالوج التعريفات |
-| [`Metrics/Metrics-Final-Framework.md`](Metrics/Metrics-Final-Framework.md) | backlog التحسين (`ROADMAP`) |
-| [`Architecture-As-Built/trainee-journey-current-state/`](Architecture-As-Built/trainee-journey-current-state/) | رحلة المتدرب كما في الكود |
-| [`Product-Master/Unified-User-Journey-Plan.md`](Product-Master/Unified-User-Journey-Plan.md) | مخطط المنتج المستقبلي |
-| [`Product-Master/Post-Training-Report-Review.md`](Product-Master/Post-Training-Report-Review.md) | تقرير ما بعد التمرين (V1/V2) |
-| [`Operations/Payment-gateway/README.md`](Operations/Payment-gateway/README.md) | الدفع والتشغيل |
-| [`Operations/Workout-Domain-Migration-Runbook.md`](Operations/Workout-Domain-Migration-Runbook.md) | ترحيل إنتاج توحيد Workout |
-
-## لا تستخدم من هنا
-
-- خطط في `02-Roadmaps-And-Plans/` كمرجع تنفيذ
-- أرشيف `03-Implemented-Archive/` كمواصفة حالية
+- `02-Roadmaps-And-Plans/` — خطط لم تُثبت
+- `03-Implemented-Archive/` — وثائق الخطط القديمة
+- `98-Redirects/` — إعادة توجيه فقط
+- `PAYMENT-RUNBOOK.md` — **محذوف** (كان لحجز الطبيب؛ انظر [`03-Evolution/2026/2026-06-booking-doctor-removal.md`](../03-Evolution/2026/2026-06-booking-doctor-removal.md))

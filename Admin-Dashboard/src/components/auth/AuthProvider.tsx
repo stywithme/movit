@@ -52,12 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const matchedRoute = matchProtectedAdminRoute(pathname);
 
         if (matchedRoute) {
-            // Check if user has 'read' permission for this subject
-            const isDoctorBookingRoute =
-                user.isDoctor &&
-                ['Booking', 'DoctorWorkTime', 'CloseTime', 'BookingReport'].includes(matchedRoute.subject);
-
-            if (!isDoctorBookingRoute && !can('read', matchedRoute.subject)) {
+            if (!can('read', matchedRoute.subject)) {
                 router.replace('/admin/unauthorized');
             }
         }

@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | `ACTIVE` |
 | **SSOT for** | Metrics documentation index |
-| **Verified** | 2026-05-29 |
+| **Verified** | 2026-06-22 |
 
 ---
 
@@ -12,9 +12,9 @@
 
 | # | الملف | الدور |
 |---|------|--------|
-| 1 | **[Metrics-As-Built.md](Metrics-As-Built.md)** | ما يُحسب فعلاً في الكود + خريطة الملفات (**ابدأ هنا**) |
-| 2 | **[Metrics-Complete-Reference.md](Metrics-Complete-Reference.md)** | كتالوج تعريفات، أمثلة، وتشابهات (مرجع منتج/محتوى) |
-| 3 | **[Metrics-Final-Framework.md](Metrics-Final-Framework.md)** | نقد علمي + **backlog** تحسينات (`ROADMAP`) |
+| 1 | **[Metrics-As-Built.md](Metrics-As-Built.md)** | Calc / UI / DB / Sync — **ابدأ هنا** |
+| 2 | **[Metrics-Complete-Reference.md](Metrics-Complete-Reference.md)** | كتالوج تعريفات ومنتج (18 مقياس + composites) |
+| 3 | **[Metrics-Final-Framework.md](../../02-Roadmaps-And-Plans/Metrics/Metrics-Final-Framework.md)** | نقد علمي + backlog (`ROADMAP`) |
 
 **لا تخلط:** الكتالوج ≠ as-built. الخطة ≠ الواقع. عند التعارض → [Metrics-As-Built.md](Metrics-As-Built.md).
 
@@ -23,18 +23,21 @@
 ## مسار البيانات (ملخص)
 
 ```
-TrainingEngine / MotionRecorder
+MovitTrainingEngine / MotionRecorder
         │
         ▼
-MetricsCalculator  ──► RepMetrics / WorkoutExecutionMetrics (models)
+MetricsCalculator  ──► RepMetrics / WorkoutExecutionMetrics
         │
-        ▼
-PostTrainingReport / PerformanceSummary
+        ├──► MovitPostTrainingReportBuilderV2 + ReportQualityScoring
+        │         └──► MovitPostTrainingReport (local JSON + optional legacyReport)
         │
-        ├──► PerformanceMetricsBuilder ──► UI cards (Form / Safety / Control)
+        ├──► MovitSessionReportUiMapper ──► ReportDetailScreen (4 tabs)
         │
-        └──► Execution upload ──► backend WorkoutExecutionMetrics + RepMetrics (Prisma)
+        └──► WorkoutUploadMapper ──► POST /mobile/workout-executions
+                  └──► WorkoutExecutionMetrics + RepMetrics (Prisma)
 ```
+
+**فجوة معروفة:** `velocityLoss` و `tempoConsistency` تُحسب على الجهاز ولا تُزامَن للباك إند — [Metrics-As-Built.md](Metrics-As-Built.md).
 
 ---
 
@@ -42,6 +45,6 @@ PostTrainingReport / PerformanceSummary
 
 | حدث | الإجراء |
 |-----|---------|
-| مقياس جديد في `MetricsCalculator` | حدّث As-Built + صف في Complete-Reference |
-| تغيير عرض UI فقط | Post-Training-Report-Review + As-Built إن لزم |
+| مقياس جديد في `MetricsCalculator` | As-Built matrix + عمود في Complete-Reference index |
+| تغيير عرض UI | [Post-Training-Report-Review.md](../Product-Master/Post-Training-Report-Review.md) + As-Built |
 | اقتراح علمي لم يُنفَّذ | Metrics-Final-Framework فقط |

@@ -28,10 +28,6 @@ export function Sidebar() {
 
   const canSeeItem = (item: NavItem) => {
     if (!item.requiredSubject) return true;
-
-    const bookingSubjects = ['Booking', 'DoctorWorkTime', 'CloseTime', 'BookingReport'];
-    if (user.isDoctor && bookingSubjects.includes(item.requiredSubject)) return true;
-
     return can('read', item.requiredSubject);
   };
 

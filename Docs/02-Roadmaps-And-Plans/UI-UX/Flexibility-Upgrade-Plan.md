@@ -1,6 +1,8 @@
 # خطة تحويل النظام إلى نظام مرن وقابل للتوسع
 
-> **المشروع**: POSE-2 — منصة تدريب ذكية  
+> **✅ IMPLEMENTED — المراحل 1–3 (2026-06):** المستويات الديناميكية (`/admin/levels` + `scoreToLevel` من DB)، قوالب الاختبار المرنة (`/admin/assessment-templates` + `resolve` للموبايل)، وإدارة البرامج مع حقول Prescription وخريطة البرامج (`/admin/programs`, `/admin/programs/map`) — **منفّذة في الكود**. المراحل 4+ (قواعد التقدم في الداشبورد، تحليلات موسّعة، …) ما زالت مخططة أو جزئية؛ راجع [07-admin-dashboard.md](../../00-Active-Reference/Architecture-As-Built/trainee-journey-current-state/07-admin-dashboard.md) للوضع الحالي.
+
+> **المشروع**: Movit — منصة تدريب ذكية  
 > **التاريخ**: فبراير 2026  
 > **الهدف**: تحويل النظام من بنية ثابتة (hardcoded) إلى نظام مرن بالكامل يمكن إدارته من لوحة التحكم
 

@@ -60,10 +60,3 @@ SK_KWT_vVZlnnAqu8jRByOWaRPNId4ShzEDNt256dvnjebuyzo52dXjAfRx2ixW5umjWSUx
 3. فتح الرابط وإتمام الدفع ببطاقة اختبار
 4. التحقق من وصول Webhook وتحديث الحالة
 5. التحقق من GET Payment Details وإرجاع `Status: SUCCESS`
-
-## ربط الاختبار مع Bookings
-
-1. استخدام `ExternalIdentifier` = `bookingId` عند إنشاء الفاتورة
-2. في Redirection URL: إضافة `?bookingId=xxx` للربط
-3. في Webhook: استخدام `Invoice.ExternalIdentifier` أو `MetaData.UDF1` لمعرفة الحجز
-4. تحديث `paymentStatus` و `paymentId` في جدول الحجوزات عند النجاح

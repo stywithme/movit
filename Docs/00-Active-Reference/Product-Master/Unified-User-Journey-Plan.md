@@ -7,7 +7,7 @@
 | **As-built** | [Journey-Index.md](Journey-Index.md) |
 | **Verified** | 2026-05-29 |
 
-> **Goal:** Transform POSE from a collection of powerful but disconnected systems  
+> **Goal:** Transform Movit from a collection of powerful but disconnected systems  
 > into a unified, intelligent coaching platform with a clear, trustworthy user journey.
 
 ---
@@ -48,7 +48,7 @@ The project has strong individual systems:
 
 ### The Vision
 
-POSE should operate as an **Elite Virtual Coach** — a system that:
+Movit should operate as an **Elite Virtual Coach** — a system that:
 
 1. **Understands** your body (Assessment)
 2. **Plans** your training (Prescription + Active Plan)
@@ -1141,7 +1141,7 @@ model ProgressionHistory {
 
 ---
 
-> **This plan is the blueprint for transforming POSE from a collection of powerful systems  
+> **This plan is the blueprint for transforming Movit from a collection of powerful systems  
 > into the Gold Standard of AI-powered training platforms.**
 >
 > Every system we've built has a clear role.  

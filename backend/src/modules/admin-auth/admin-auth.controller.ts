@@ -34,7 +34,6 @@ export class AdminAuthController {
         email: admin.email,
         roleId: admin.roleId,
         isSuperAdmin: admin.isSuperAdmin,
-        isDoctor: admin.isDoctor,
       });
       setAdminAuthCookie(res, token);
 

@@ -9,7 +9,6 @@ export interface AdminProfile {
     name: string;
     roleId: string | null;
     isSuperAdmin: boolean;
-    isDoctor: boolean;
     isActive: boolean;
     createdAt: string;
     permissions: Permission[];

@@ -1,6 +1,6 @@
-﻿> **Status:** `ARCHIVED` â€” implemented or superseded; not current product truth.
-> **Current SSOT:** `Docs/00-Active-Reference/Engine/training-engine.md`
-> **Archived:** 2026-05-29
+﻿> **Status:** `ARCHIVED` — implemented or superseded; not current product truth.
+> **Current SSOT:** [`Docs/00-Active-Reference/Engine/training-engine.md`](../../00-Active-Reference/Engine/training-engine.md) (`FeedbackRouter`, `FrameFeedbackEmitter`)
+> **Archived:** 2026-06-22
 
 # Feedback Messages Refactor Plan
 

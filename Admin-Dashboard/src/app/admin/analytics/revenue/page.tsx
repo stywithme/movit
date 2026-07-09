@@ -42,10 +42,9 @@ export default function RevenueAnalyticsPage() {
       <PageHeader title="Subscriptions & Revenue" description="Revenue trend, subscription mix, checkout conversion, and plan economics." />
       <PeriodFilter onRefresh={fetchData} />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <StatCard title="Total Revenue" value={formatCurrency(data?.summary.totalRevenue)} help={analyticsTerms.revenue} />
         <StatCard title="Subscription Revenue" value={formatCurrency(data?.summary.subscriptionRevenue)} help="Revenue collected from subscription records in the selected period." />
-        <StatCard title="Booking Revenue" value={formatCurrency(data?.summary.bookingRevenue)} help="Paid booking payment revenue in the selected period." />
         <StatCard title="ARPU" value={formatCurrency(data?.summary.arpu)} help={analyticsTerms.arpu} />
       </div>
 

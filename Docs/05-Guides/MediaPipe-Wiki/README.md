@@ -1,6 +1,6 @@
 # MediaPipe Wiki — مرجع احترافي
 
-توثيق شامل لـ **MediaPipe** و**Pose Estimation** في مشروع POSE-2، مع التركيز على التطبيق العملي بلغة **Kotlin** على منصة **Android**.
+توثيق شامل لـ **MediaPipe** و**Pose Estimation** في مشروع Movit، مع التركيز على التطبيق العملي بلغة **Kotlin** على منصة **Android**.
 
 ---
 
@@ -25,19 +25,21 @@
 
 ---
 
-## مسار الكود في المشروع
+## مسار الكود في المشروع (KMP)
 
 ```
 kmp-app/
-├── app/
-│   ├── build.gradle.kts          # tasks-vision:0.10.29
-│   └── src/main/
-│       ├── assets/
-│       │   ├── app_settings.json # إعدادات الرؤية والتسوية
-│       │   └── *.task            # نماذج pose_landmarker
-│       └── java/.../poc/
-│           ├── pose/             # PoseLandmarkerHelper, BodyLandmarks, JointLandmarkMapping
-│           ├── analysis/         # LandmarkSmoother, AngleCalculator
-│           ├── overlay/         # SkeletonOverlayView
-│           └── camera/           # CameraManager
+├── gradle/libs.versions.toml     # mediapipe-tasks-vision (tasks-vision)
+├── core/pose-capture/            # com.movit.core.posecapture
+│   ├── android/MediaPipePoseDetector.kt   # Pose Landmarker + CameraX bridge
+│   ├── android/CameraXFrameSource.kt
+│   ├── android/MediaPipeLandmarkMapper.kt
+│   ├── PoseLandmarkSmoother.kt
+│   └── boundary/trainingdebug/   # debug-only video/image pose sources
+├── core/training-engine/         # angles, PoseFrame, engine (see training-engine.md)
+└── feature/
+    ├── training/                 # production camera training
+    └── training-debug/           # debug lab (camera / video / image)
 ```
+
+**مرجع المحرك:** [`Docs/00-Active-Reference/Engine/training-engine.md`](../../00-Active-Reference/Engine/training-engine.md)

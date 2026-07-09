@@ -3,7 +3,7 @@ export const analyticsTerms = {
   newUsers: 'Users created during the selected period.',
   activeUsers: 'Users who recorded at least one workout execution in the selected period.',
   proUsers: 'Users currently marked as Pro.',
-  revenue: 'Subscription revenue plus paid booking revenue in the selected period.',
+  revenue: 'Subscription revenue in the selected period.',
   arpu: 'Average Revenue Per User. Subscription revenue divided by active subscriptions.',
   workoutExecutions: 'Completed workout executions uploaded by users in the selected period.',
   totalReps: 'All repetitions detected during workout executions.',

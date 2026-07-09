@@ -1,13 +1,38 @@
 | | |
 |---|---|
 | **Status** | `ACTIVE` |
-| **SSOT for** | Post-training report (V1 UI / V2 data layer) |
-| **Code** | `PostTrainingReport.kt`, `ReportPagerActivity`, `POST /mobile/workout-executions` |
-| **Verified** | 2026-05-29 |
+| **SSOT for** | Post-training report — as-built + target UX |
+| **Code** | `MovitPostTrainingReport.kt`, `ReportQualityScoring.kt`, `feature/reports/ReportDetailScreen.kt`, `POST /mobile/workout-executions` |
+| **Metrics pipeline** | [Metrics-As-Built.md](../Metrics/Metrics-As-Built.md) |
+| **Verified** | 2026-06-22 |
 
 # تقرير ما بعد التمرين — المراجعة والرؤية الجديدة
 
-> تحليل الوضع الحالي + خطة التحسين المتكاملة
+> **As-built (كود اليوم):** الأقسام 0–1 أدناه. **الرؤية (7 شاشات):** من §4 فصاعداً — `ROADMAP` UI، البيانات جزئياً جاهزة.
+
+---
+
+## 0. As-built — ما يعمل في KMP اليوم
+
+| Layer | Path | الحالة |
+|-------|------|--------|
+| Report builder | `core/training-engine/.../report/MovitPostTrainingReportBuilderV2.kt` | ✓ timeline, errors, tips, `overallQuality` |
+| Composite scores | `core/training-engine/.../report/ReportQualityScoring.kt` | ✓ Form / Safety / Control math |
+| Report UI | `feature/reports/ReportDetailScreen.kt` | ✓ 4 tabs: Overview · Form · Fatigue · Tips |
+| UI mapping | `feature/reports/MovitSessionReportUiMapper.kt` | ✓ maps domain report → `ReportDetailUi` |
+| Upload | `core/data/.../WorkoutUploadMapper.kt` → `POST /mobile/workout-executions` | ✓ metrics except VL / tempo consistency |
+| Backend | `WorkoutExecution` + `WorkoutExecutionMetrics` + `RepMetrics` | ✓ see [Metrics-As-Built](../Metrics/Metrics-As-Built.md) |
+
+**ما يُعرض فعلاً في `ReportDetailScreen`:**
+
+| Tab | محتوى | مقاييس V2 غير معروضة |
+|-----|--------|---------------------|
+| Overview | درجة واحدة (form أو overall)، sets/reps/duration، insight، hero | بطاقات Form/Safety/Control، QuickInsight، ROM، tempo، VL |
+| Form | تحليل مفاصل، best/worst rep، frame evidence | ROM، symmetry، form consistency |
+| Fatigue | drop-off bar، form-by-set chart | `fatigue_index`، `velocity_loss`، TUT، tempo |
+| Tips | نصائح + export | weight، volume، 1RM |
+
+**Legacy:** `ReportPagerActivity` (Android ViewPager) — **استُبدل** بـ Compose `ReportDetailScreen` في KMP.
 
 ---
 
@@ -15,16 +40,16 @@
 
 ### V1 vs V2 — أيهما يعمل؟
 
-| البعد | V1 (شغال) | V2 (جاهز لكن غير معروض) |
-|-------|-----------|-------------------------|
-| **واجهة المستخدم** | ViewPager2 بـ 5+ أنواع صفحات (Summary, Journey, KeyMoments, Tips, IndividualReps) | لا يوجد UI مخصص |
-| **البيانات** | `summary`, `repTimeline`, `errorAnalysis`, `consistency`, `dangerAlerts`, `perfectMoments` | `quickInsight`, `performanceMetrics` (Form/Safety/Control cards), `overallQuality`, `exerciseConfig` |
-| **البطاقات الثلاث** | غير موجودة كعنصر UI | `FormMetrics`, `SafetyMetrics`, `ControlMetrics` — محسوبة ومخزنة لكن لا تُعرض |
-| **QuickInsight** | غير موجود | محسوب (CELEBRATION / FOCUS_POINT / DANGER_WARNING) لكن لا يُعرض |
-| **Overall Quality** | غير موجود كـ score موحّد | محسوب (Form 40% + Safety 35% + Control 25%) لكن لا يُعرض |
-| **Metrics Config** | لا تتحكم بما يُعرض | `ExerciseConfigSnapshot` + `shouldShowMetric()` — جاهزة للتصفية |
+| البعد | As-built (KMP UI) | V2 data (engine) |
+|-------|-------------------|------------------|
+| **واجهة المستخدم** | `ReportDetailScreen`: 4 tabs scroll (Overview, Form, Fatigue, Tips) | — |
+| **البيانات** | `summary`, `repTimeline`, `errorAnalysis`, best/worst, tips, hero frames | `overallQuality` (form/safety/control/overall), execution metrics in report payload |
+| **البطاقات الثلاث** | **غير معروضة** | محسوبة في `ReportQualityScoring` + `MovitOverallQualityScore` |
+| **QuickInsight** | insight بسيط من mapper | CELEBRATION / FOCUS / DANGER logic في builder — **غير موصول للـ UI** |
+| **Overall Quality** | يُستخدم كـ hero score عند التوفر | محسوب — **لا يُعرض كبطاقات فرعية** |
+| **Metric filter** | لا | `ReportMetricsConfig.shouldShow()` — **غير موصول** |
 
-**الخلاصة:** البنية التحتية لـ V2 **مكتملة في طبقة البيانات**. ما ينقص هو **طبقة العرض فقط**. كل المقاييس الجديدة (VelocityLoss, TempoConsistency, Alignment من PositionChecks, LSI Symmetry, Trunk Stability) محسوبة ومخزنة. الـ UI الحالي يعرض V1 فقط.
+**الخلاصة:** محرك V2 و`ReportQualityScoring` **يعملان**. `ReportDetailScreen` يعرض **subset** من V1 (form-centric). بطاقات Form/Safety/Control ومقاييس kinematic/load **محسوبة ومخزنة جزئياً** لكن **لا تظهر** — انظر [Metrics-As-Built](../Metrics/Metrics-As-Built.md).
 
 ---
 
@@ -59,8 +84,8 @@
 ```
 
 حالياً:
-- **تمرين مفرد**: يفتح `ReportPagerActivity` مباشرة
-- **تمرين مخطط متعدد**: يفتح `WorkoutReportActivity` (RecyclerView بكل التمارين) → الضغط على أي تمرين يفتح `ReportPagerActivity` الخاص به
+- **تمرين مفرد / بعد التمرين:** `ReportDetailScreen` (KMP Compose)
+- **تمرين مخطط متعدد:** قائمة تمارين في reports flow → `ReportDetailScreen` لكل تمرين
 
 ---
 
@@ -109,7 +134,9 @@
 
 ---
 
-## 4. الرؤية الجديدة لهيكل التقرير
+## 4. الرؤية الجديدة لهيكل التقرير (`ROADMAP`)
+
+> الأقسام 4–8 تصف UX مستهدفاً — **ليس** as-built. التنفيذ الحالي: §0.
 
 ### 4.1 الهيكل العام: Planned Workout vs Exercise
 

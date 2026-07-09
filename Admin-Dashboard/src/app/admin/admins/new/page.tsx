@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Button, Checkbox, Input, Label, Select } from '@/components/ui';
+import { Button, Input, Label, Select } from '@/components/ui';
 import { FormShell, PageHeader } from '@/components/common';
 
 interface RoleOption {
@@ -20,7 +20,6 @@ export default function NewAdminPage() {
     email: '',
     password: '',
     roleId: '',
-    isDoctor: false,
   });
 
   useEffect(() => {
@@ -49,7 +48,6 @@ export default function NewAdminPage() {
           email: formData.email,
           password: formData.password,
           roleId: formData.roleId || null,
-          isDoctor: formData.isDoctor,
         }),
       });
 
@@ -89,7 +87,7 @@ export default function NewAdminPage() {
       <form onSubmit={handleSubmit}>
         <FormShell
           title="Admin Details"
-          description="Assign dashboard access and optional doctor privileges."
+          description="Assign dashboard access and role."
           footer={
             <Button type="submit" loading={saving} disabled={!canSubmit}>
               Create Admin
@@ -144,14 +142,6 @@ export default function NewAdminPage() {
               ...roles.map((role) => ({ value: role.id, label: role.name })),
             ]}
           />
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Checkbox
-            checked={formData.isDoctor}
-            onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, isDoctor: Boolean(checked) }))}
-          />
-          <Label>Is Doctor</Label>
         </div>
         </FormShell>
       </form>

@@ -23,7 +23,7 @@ Content-Type: application/json
   "Order": {
     "Amount": 10,
     "Currency": "KWD",
-    "ExternalIdentifier": "booking-123"
+    "ExternalIdentifier": "order-123"
   },
   "Customer": {
     "Name": "أحمد محمد",
@@ -37,7 +37,7 @@ Content-Type: application/json
   },
   "Language": "AR",
   "MetaData": {
-    "UDF1": "bookingId",
+    "UDF1": "orderId",
     "UDF2": "userId"
   }
 }
@@ -50,7 +50,7 @@ Content-Type: application/json
 | PaymentMethod | string | لا | `INVOICE` (كل الطرق)، `CARD`، `KNET`، `APPLE_PAY`، `GOOGLE_PAY` |
 | Order.Amount | number | نعم | المبلغ (أكبر من 0) |
 | Order.Currency | string | لا | KWD, SAR, AED, EGP, QAR, BHD, JOD, OMR |
-| Order.ExternalIdentifier | string | لا | معرف خارجي (مثل bookingId) يُرجع في Webhook |
+| Order.ExternalIdentifier | string | لا | معرف خارجي (مثل orderId) يُرجع في Webhook |
 | Customer.Name | string | لا | اسم العميل |
 | Customer.Mobile | object | حسب NotificationOption | رقم الجوال |
 | Customer.Email | string | حسب NotificationOption | البريد الإلكتروني |
@@ -81,14 +81,3 @@ Content-Type: application/json
 | PaymentId | معرف الدفعة (يُضاف بعد إتمام الدفع) |
 | PaymentURL | رابط صفحة الدفع — أرسله للعميل أو وجّهه إليه |
 | PaymentCompleted | هل اكتمل الدفع فوراً (مثلاً عند تعطيل 3DS) |
-
-## ربط مع Bookings
-
-لربط الدفع بحجز:
-
-1. استخدم `Order.ExternalIdentifier` أو `MetaData.UDF1` = `bookingId`
-2. في `IntegrationUrls.Redirection` استخدم مثلاً:  
-   `https://yourapp.com/payment/callback?bookingId={bookingId}`
-3. بعد الدفع، MyFatoorah يعيد التوجيه إلى الرابط مع `PaymentId` في الـ query
-4. استدعِ `GET /v3/payments/{PaymentId}` للتأكد من الحالة
-5. حدّث حالة الحجز إلى `paid` أو `pending` حسب النتيجة

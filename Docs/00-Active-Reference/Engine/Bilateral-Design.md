@@ -1,3 +1,10 @@
+| | |
+|---|---|
+| **Status** | `ACTIVE` |
+| **SSOT for** | Bilateral exercise config and runtime side switching |
+| **Code** | `com.movit.core.training.bilateral.BilateralController`, `MovitTrainingEngine` |
+| **Verified** | 2026-06-22 |
+
 # Bilateral Exercise Design
 
 ## Overview
@@ -131,55 +138,43 @@ The `trackedJoints` array continues to hold ALL joints. The TrainingEngine filte
 
 ---
 
-## Runtime Behavior (Android TrainingEngine)
+## Runtime behavior (KMP — as-built)
 
-### Joint Grouping at Init
+**Engine:** `MovitTrainingEngine` + `BilateralController` (`com.movit.core.training.bilateral`).
 
-```kotlin
-// At TrainingEngine initialization:
-val leftJoints = trackedJoints.filter { it.joint.startsWith("left_") }
-val rightJoints = trackedJoints.filter { it.joint.startsWith("right_") }
-val sharedJoints = trackedJoints.filter { 
-    !it.joint.startsWith("left_") && !it.joint.startsWith("right_") 
-}
+All tracked joints remain in config. The active side is applied at runtime by **mirroring angle lookup**, not by filtering the joint list.
 
-// Active joints for current side:
-fun getActiveJoints(side: BilateralSide): List<TrackedJoint> {
-    return when (side) {
-        LEFT  -> leftJoints + sharedJoints
-        RIGHT -> rightJoints + sharedJoints
-    }
-}
-```
+### Side state (`BilateralController`)
 
-### Per-Frame Processing
+| Field / method | Behavior |
+|----------------|----------|
+| `startSide` | From `bilateralConfig.startSide` (`"left"` / `"right"`) |
+| `currentSide` | Active anatomical side for this rep segment |
+| `isFlipped` | `true` when `currentSide != startSide` |
+| `onRepCounted(newCount)` | Flips side every N reps: `switchMode` `EVERY_REP` → 1; `AFTER_ALL_REPS` → `targetReps`; else `switchEvery` |
+| `resetToConfigStart()` | Called on `MovitTrainingEngine.start()` |
+
+`completionTargetReps()` may double the per-side target when `AFTER_ALL_REPS` (both sides complete one block).
+
+### Per-frame processing
 
 ```
-Frame arrives
-├── AngleCalculator calculates ALL angles (left + right + shared)
-├── JointAngleTracker filters to ACTIVE side's joints only
-├── AngleSmoother smooths active joints' angles
-├── PhaseStateMachine.update(smoothedPrimaryAngles)  ← works with any joint names
-├── FormValidator.getJointStateInfos(smoothedAngles)  ← validates active joints
-└── On rep complete → activeSide = activeSide.flip()
+PoseFrame
+├── JointAngleTracker.extractTrackedAngles(..., isFlipped = bilateral.isFlipped)
+│     └── buildAngleMap mirrors lookup codes via MIRROR_MAP when flipped
+├── FramePipelineExecutor → PhaseStateMachine, JointEvaluator (all configured joints)
+├── PositionValidator.validate(..., isBilateralFlipped, ...)
+├── RepCompletionCoordinator → bilateral.onRepCounted(repCount) on counted rep
+└── HoldExerciseCoordinator → bilateral.onRepCounted on hold completion
 ```
 
-### Minimal Engine Changes
+`JointAngleTracker` also dims the weaker side of `ANY_SIDE` pairs using landmark visibility (independent of bilateral flip).
 
-1. `JointAngleTracker.extractTrackedAngles()` — add `activeSide` filter
-2. `TrainingEngine.processFrame()` — switch side on rep complete
-3. `TrainingEngine` — store per-side rep data for symmetry
-4. `VisibilityMonitor` — check active side's joints only
+### What does not change at runtime
 
-### What Does NOT Change
-
-- `AngleCalculator` — calculates all angles already
-- `PhaseStateMachine` — just uses average of primary angles
-- `FormValidator` — validates whatever joints are passed
-- `LandmarkSmoother` — smooths all landmarks always
-- `SkeletonOverlayView` — shows active side's tracked joints
-- `PoseLandmarkerHelper` — no change
-- `CameraManager` — no change
+- Pose config still lists **both** sides' joints and mirrored position checks.
+- `PhaseStateMachine` averages primary joint angles present in the smoothed map.
+- Pose capture (`MediaPipePoseDetector`, landmark smoothing) is side-agnostic.
 
 ---
 

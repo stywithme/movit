@@ -1,51 +1,58 @@
 # Onboarding وجمع سمات المتدرب (Training Profile)
 
-## مصطلحات
+| | |
+|---|---|
+| **Status** | `ACTIVE` |
+| **SSOT for** | `TrainingProfile` schema + mobile onboarding flow |
+| **Code** | `backend/prisma/schema.prisma`, `kmp-app/feature/account/MovitOnboardingScreen.kt`, `backend/src/modules/training-profile/` |
+| **Verified** | 2026-06-22 |
 
-- **Onboarding في kmp-app:** يشير إلى `OnboardingActivity` — شاشات تعريفية (3 صفحات) ثم الانتقال إلى `SignInActivity`. لا يوجد في هذا النشاط استدعاء لـ API لملف التدريب.
-- **سمات المتدرب في الخادم:** النموذج `TrainingProfile` في Prisma، علاقة 1:1 مع `User`، مع حقل `trainingGoal` على `User`.
+---
+
+## Onboarding في KMP (منفّذ)
+
+| العنصر | الملف |
+|--------|--------|
+| شاشة 7 خطوات | `kmp-app/feature/account/.../MovitOnboardingScreen.kt` |
+| ViewModel | `MovitOnboardingViewModel.kt` |
+| Route | `MovitOnboardingRoute.kt` → `MovitInnerRoute.ProfileOnboarding` |
+| حفظ | `SharedOnboardingRepository.putTrainingProfile` |
+
+الخطوات (`OnboardingData.STEP_COUNT = 7`): عمر/جنس · مقاييس · خبرة وأيام/أسبوع · هدف · أيام التدريب · مكان/معدات · ملخص + `healthDisclaimerAccepted`.
+
+يُدفع تلقائيًا عند أول جلسة إذا الملف ناقص (`MovitAppShellViewModel` + `OnboardingCompletion`).
+
+---
 
 ## مخطط البيانات (Backend)
 
-المصدر: `backend/prisma/schema.prisma` — نموذج `TrainingProfile`.
+المصدر: `backend/prisma/schema.prisma` — `TrainingProfile` (1:1 مع `User`).
 
-حقول مخزّنة (غير حصرية للعرض في الواجهة):
+حقول رئيسية: `heightCm`, `weightKg`, `dateOfBirth`, `biologicalSex`, `currentActivityLevel`, `trainingExperienceMonths`, `resistanceExperience`, `availableDaysPerWeek`, `trainingWeekdays`, `maxWorkoutMinutes`, `availableEquipment`, `trainingLocation`, `knownInjuries`, `healthDisclaimerAccepted`.
 
-- `heightCm`, `weightKg`, `dateOfBirth`, `biologicalSex`
-- `currentActivityLevel`, `trainingExperienceMonths`, `resistanceExperience`
-- `availableDaysPerWeek`, `trainingWeekdays` (مصفوفة أرقام أيام 0=الأحد … 6=السبت)
-- `maxWorkoutMinutes`, `availableEquipment` (Json), `trainingLocation`, `knownInjuries` (Json)
-- `healthDisclaimerAccepted` (boolean)
+`User.trainingGoal` (`TrainingGoal` enum) يُحدَّث مع نفس الحمولة.
 
-`User.trainingGoal` من enum `TrainingGoal` ويُحدَّث من نفس حمولة ملف التدريب عند الإرسال.
+---
 
-## أنواع الـ API (Backend)
+## API
 
 | الطريقة | المسار | الملف |
 |--------|--------|--------|
 | GET | `/mobile/training-profile` | `backend/src/modules/training-profile/mobile-training-profile.controller.ts` |
-| PUT | `/mobile/training-profile` | نفس الملف — يستدعي `upsertTrainingProfile` |
+| PUT | `/mobile/training-profile` | `training-profile.service.ts` → `upsertTrainingProfile` |
 
-الخدمة: `backend/src/modules/training-profile/training-profile.service.ts` — `upsertTrainingProfile` يحدّث `User.trainingGoal` داخل معاملة ثم `upsert` على `TrainingProfile`.
+أنواع الحمولة: `training-profile.types.ts` — `TrainingProfilePayload`.
 
-أنواع الحمولة: `backend/src/modules/training-profile/training-profile.types.ts` — `TrainingProfilePayload`.
+عميل KMP: `MovitMobileApi` + `AccountSyncRepository` · DTO: `TrainingProfilePutRequest` في `core/network/dto/`.
 
-## بناء مجموعة السمات لمطابقة البرامج/القوالب
+---
 
-`buildUserAttributeSet` في `backend/src/lib/attribute-matching.ts` يبني `Set<string>` من:
+## مطابقة السمات
 
-- `requiredType` من التلميحات (افتراضيًا `training`) → رمز نطاق
-- هدف التدريب → رمز
-- عناصر `availableEquipment` من الملف الشخصي
-- `focusHint`, `regionHints` عند تمريرها (تُستخدم في وصفات البرنامج بعد التقييم)
-- `biologicalSex`, `trainingLocation`
+`buildUserAttributeSet` في `backend/src/lib/attribute-matching.ts` — هدف التدريب، معدات، جنس، مكان، تلميحات التقييم عند توفرها.
 
-## kmp-app
-
-- **Onboarding:** `kmp-app/.../ui/auth/OnboardingActivity.kt` — تفضيل `is_first_launch` فقط.
-- **ملف التدريب:** `PUT api/mobile/training-profile` من `ProfileActivity` (بحث عن `putTrainingProfile` في `ProfileActivity.kt`).
-- تعريف الـ Retrofit: `MobileSyncApi.kt` — `getTrainingProfile`, `putTrainingProfile`.
+---
 
 ## Admin-Dashboard
 
-لا توجد في المستودع (حسب البحث في المسارات الشائعة) صفحة إدارة مخصّصة لملف تدريب المستخدم النهائي؛ الإدارة تركز على البرامج، قوالب التقييم، المستويات، إلخ. تعديل سمات المتدرب يتم من تطبيق الموبايل أو أدوات أخرى خارج هذا المسار الموثّق هنا.
+لا صفحة إدارة لملف تدريب المستخدم النهائي؛ التعديل من تطبيق الموبايل فقط.

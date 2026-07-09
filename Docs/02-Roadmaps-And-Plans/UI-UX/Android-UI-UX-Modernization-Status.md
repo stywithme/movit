@@ -2,11 +2,15 @@
 
 آخر تحديث: 2026-06-10 (WS-7 docs sync · نِسب من [`Page-Scorecards.md`](Page-Scorecards.md) · أرقام كود من [`generated/Docs-Stats-Snapshot.md`](generated/Docs-Stats-Snapshot.md))
 
+> **Architecture SSOT (2026-06-22):** [`KMP-Mobile-As-Built.md`](../../00-Active-Reference/Architecture-As-Built/KMP-Mobile-As-Built.md) — use for launcher, modules, and navigation. Sections below marked **ARCHIVED** describe the pre–Phase 06 dual-app world.
+
 > **🔧 تصحيح 2026-06-09 (post-verification):** بناء Android الأخضر لم يكن يثبت iOS. التحقق بـ `compileKotlinIosSimulatorArm64` كشف: (1) `MovitData` كان يستخدم `GlobalContext` (JVM-only) فيكسر iOS — وهو سبب فشل macOS CI؛ (2) Koin رُفع 4.0.3→4.2.1 لـ Kotlin 2.3؛ (3) `when` غير شامل في `MovitInnerHost` (routes ميتة)؛ (4) `feature:library` ناقصها deps على core:data/network/resources. **كلها أُصلحت وتم التحقق:** Android assemble + tests أخضر، وiOS compile (كامل عبر shell) أخضر. الكود مرفوع (`58f403fc fix CI`)؛ يتبقّى التحقق من نتيجة macOS CI (`linkDebugFrameworkIosSimulatorArm64`).
 
 > **⚠️ بوابة قبل استكمال Phase 05:** بعد مراجعة الكود تبيّن وجود بقايا انتقالية وديون أساس تتعارض مع قرار **الانتقال الكامل بلا حلول وسط**. تم إنشاء [`Android-KMP-Mobile-UI-UX-Phase-Pre-05-Stabilization-And-Debt-Closure-Plan.md`](Android-KMP-Mobile-UI-UX-Phase-Pre-05-Stabilization-And-Debt-Closure-Plan.md) — **يجب إغلاق Pre-05 قبل إضافة أى شاشة جديدة** (Auth/Profile/Onboarding/Assessment). تصحيحات هذا المستند مدرجة أدناه.
 
 ## ملخص تنفيذي للمدير
+
+> **⛔ ARCHIVED (2026-06-22)** — The table below claims a parallel Legacy Android launcher and debug-only KMP shell. **Current reality:** `MovitMainActivity` is the production LAUNCHER; legacy XML UI is removed. See [`KMP-Mobile-As-Built.md`](../../00-Active-Reference/Architecture-As-Built/KMP-Mobile-As-Built.md).
 
 هذا المستند يجمع **حالتين متوازيتين** في مشروع `kmp-app`:
 
@@ -29,7 +33,7 @@
 - **Profile/Account:** `MovitProfileScreen` (**86%** في [`Page-Scorecards.md`](Page-Scorecards.md)) — Language/Appearance/Haptic غير فعّالة بعد.
 - تدريب حي بالكاميرا وML — **لم يُنقل** (مقصود تأجيله).
 - iOS يحتاج مزامنة مفاتيح تسجيل الدخول (`access_token`, `is_pro`, `active_user_program_id`) مع تطبيق iOS الأصلي.
-- **بوابة launcher (WS-C / Pre-06):** Movit shell ما زال debug-only — قرار مكتوب في [Launcher Gate](Android-KMP-Mobile-UI-UX-Launcher-Gate.md)؛ flip بعد 15/16 مفضل. Pre-06 **مغلقة** — [تقرير الإكمال](Android-KMP-Mobile-UI-UX-Phase-Pre-06-Completion-Report.md).
+- **بوابة launcher (WS-C / Pre-06):** ✅ **مغلقة** — `MovitMainActivity` = LAUNCHER (Phase 06). [Launcher Gate](Android-KMP-Mobile-UI-UX-Launcher-Gate.md) أُرشف.
 
 ---
 
@@ -48,7 +52,9 @@
 
 **نقطة الدخول للمعاينة:**
 
-- Android: `MovitShellPilotActivity` (debug فقط — ليس launcher).
+> **⛔ ARCHIVED (2026-06-22)** — Android production entry is `MovitMainActivity`, not `MovitShellPilotActivity`. Pilot activity remains for optional debug QA only.
+
+- Android: `MovitMainActivity` (production LAUNCHER) · `MovitShellPilotActivity` (debug QA only).
 - iOS: `iosApp` → `MainViewController()` → نفس Shell.
 
 مرجع تفصيلي صفحة بصفحة: [`Sync-App-Pages.md`](Sync-App-Pages.md) · scorecards: [`Page-Scorecards.md`](Page-Scorecards.md).
@@ -600,9 +606,10 @@ kmp-app/
 - **طبقة بيانات مشتركة:** `MovitData` + `Shared*Repository` + Ktor — Android وiOS من نفس المصدر.
 - `MovitPlatformBindings` يعزل Auth، base URL، كاش، Pro، active user program.
 - اختبارات وحدة: Explore merge، Train/Reports/Session mappers، shell state.
-- Shell debug-only — `releaseRuntimeClasspath` للـ legacy لم يتأثر.
 
-### ما يزال ديناً داخل legacy Android
+> **⛔ ARCHIVED (2026-06-22)** — «Shell debug-only — releaseRuntimeClasspath للـ legacy» لم يعد صحيحاً؛ release APK يشحن KMP shell عبر `MovitMainActivity`.
+
+### ما يزال ديناً (ما بعد poc)
 
 التفاصيل في القسم التالي. المهم هنا أن هذه الديون لا تمنع Phase 05، لكنها تمنع نسخ legacy architecture كما هي إلى KMP.
 
@@ -660,11 +667,14 @@ cd kmp-app
 .\gradlew :app:assembleDebug :feature:shell:linkDebugFrameworkIosSimulatorArm64 :feature:train:testDebugUnitTest :feature:reports:testDebugUnitTest :feature:library:testDebugUnitTest :core:data:testDebugUnitTest
 ```
 
-تشغيل Shell على Android (debug):
+تشغيل Shell على Android:
 
 ```text
-adb shell am start -n com.movit.androidApp/com.movit.debug.MovitShellPilotActivity
+adb shell am start -n com.movit.androidApp/com.movit.MovitMainActivity
 ```
+
+> **⛔ ARCHIVED** — الأمر القديم `MovitShellPilotActivity` للـ QA الاختياري فقط:  
+> `adb shell am start -n com.movit.androidApp/com.movit.debug.MovitShellPilotActivity`
 
 Android Studio ما زال مفيداً للمراجعة البصرية وتشغيل المحاكي:
 
@@ -843,7 +853,7 @@ Android Studio ما زال مفيداً للمراجعة البصرية وتشغ
 
 ### ما لم يُنجز في هذه الجلسة
 
-- **WS-G:** بوابة launcher — المعيار مكتوب؛ `MovitShellPilotActivity` ما زال debug-only.
+- **WS-G:** ✅ launcher flip — `MovitMainActivity` إنتاجي (Phase 06).
 - **Auth / Onboarding / Assessment / Level** — خارج نطاق Pre-05.
 - **iOS smoke يدوي** ببيانات حقيقية (token + pro + user program).
 - بيانات معاينة `ReportDetailPreviewData` ما زالت إنجليزية ثابتة.

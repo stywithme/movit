@@ -46,7 +46,7 @@ Webhook يسمح لـ MyFatoorah بإرسال إشعارات فورية لتطب
       "Id": "6409988",
       "Status": "PAID",
       "Reference": "2026000073",
-      "ExternalIdentifier": "booking-123"
+      "ExternalIdentifier": "order-123"
     },
     "Transaction": {
       "Id": "86781",
@@ -78,7 +78,7 @@ Webhook يسمح لـ MyFatoorah بإرسال إشعارات فورية لتطب
 ### مثال ترتيب التوقيع (PAYMENT_STATUS_CHANGED)
 
 ```
-Invoice.Id=6409988,Invoice.Status=PAID,Transaction.Status=SUCCESS,Transaction.PaymentId=07076409988323998875,Invoice.ExternalIdentifier=booking-123
+Invoice.Id=6409988,Invoice.Status=PAID,Transaction.Status=SUCCESS,Transaction.PaymentId=07076409988323998875,Invoice.ExternalIdentifier=order-123
 ```
 
 > إذا كانت قيمة أي خاصية `null` استخدم سلسلة فارغة `""`

@@ -1,149 +1,127 @@
-# التطبيق في المشروع — Android & Kotlin
+# التطبيق في المشروع — Android & Kotlin (KMP)
+
+> **Status:** `ACTIVE` — as-built MediaPipe integration in `core/pose-capture`.  
+> **Verified:** 2026-06-22
 
 ## نظرة عامة
 
-المشروع يستخدم **MediaPipe Pose Landmarker** عبر طبقة مساعدة مخصصة (`PoseLandmarkerHelper`) مع **CameraX** و**Kotlin**.
+المشروع يستخدم **MediaPipe Pose Landmarker** عبر `MediaPipePoseDetector` (`com.movit.core.posecapture.android`) مع **CameraX** في مسار التدريب الإنتاجي. وضع الفيديو متاح فقط في **`feature/training-debug`** (ليس إنتاجاً).
 
 ---
 
 ## التبعيات
 
 ```kotlin
-// app/build.gradle.kts
-implementation("com.google.mediapipe:tasks-vision:0.10.29")
+// kmp-app/gradle/libs.versions.toml
+mediapipe-tasks-vision = "0.10.33"  // com.google.mediapipe:tasks-vision
 ```
-
-> **ملاحظة**: الإصدار 0.10.29 يدعم 16KB page size المطلوب لـ Android 15+.
 
 ---
 
 ## بنية الكود
 
-### 1. PoseLandmarkerHelper
+### 1. MediaPipePoseDetector
 
-**المسار**: `com.trainingvalidator.poc.pose.PoseLandmarkerHelper`
+**المسار:** `kmp-app/core/pose-capture/src/androidMain/kotlin/com/movit/core/posecapture/android/MediaPipePoseDetector.kt`
 
-- غلاف حول `PoseLandmarker` لإدارة التهيئة والمعالجة
-- يدعم **LIVE_STREAM** (كاميرا) و**VIDEO** (فيديو مسجل)
-- يحول `ImageProxy` إلى `MPImage` ويعالج الدوران والانعكاس
+- يطبّق `com.movit.core.training.boundary.PoseDetector`
+- يغلّف `PoseLandmarker` (Tasks Vision API)
+- **LIVE_STREAM:** `detectAsync` من إطارات CameraX
+- يحوّل `ImageProxy` → `Bitmap` → `MPImage` مع دوران وانعكاس الكاميرا الأمامية
+- يمرّر النتيجة عبر `MediaPipeLandmarkMapper` و`PoseLandmarkSmoother` → `PoseFrameAssembler` → `PoseFrame`
 
 ```kotlin
-poseLandmarkerHelper = PoseLandmarkerHelper(context, listener)
-poseLandmarkerHelper.initialize(modelType = ModelType.FULL, useGpu = true)
-poseLandmarkerHelper.detectPose(imageProxy, isFrontCamera)
+// Typical wiring (Android DI: MovitPoseCaptureModule)
+val detector = MediaPipePoseDetector(context, poseRefiner, modelPort)
+detector.detect(imageProxy, isFrontCamera)
 ```
 
-### 2. ModelType و RunMode
+### 2. CameraXFrameSource
+
+**المسار:** `.../android/CameraXFrameSource.kt`
+
+- `ImageAnalysis` بنسبة 4:3، `RGBA_8888`، `STRATEGY_KEEP_ONLY_LATEST`
+- يغذّي `MediaPipePoseDetector` في مسار `feature/training`
+
+### 3. PoseFrame (common)
+
+**المسار:** `com.movit.core.training.model.PoseFrame` في `core/training-engine`
 
 ```kotlin
-enum class ModelType(val fileName: String, val displayName: String) {
-    FULL("pose_landmarker_full.task", "Full (Balanced)"),
-    HEAVY("pose_landmarker_heavy.task", "Heavy (Accuracy)")
-}
-
-enum class RunMode {
-    LIVE_STREAM,  // detectAsync
-    VIDEO         // detectForVideo
-}
-```
-
-### 3. PoseResult
-
-```kotlin
-data class PoseResult(
-    val landmarks: List<NormalizedLandmark>,
-    val worldLandmarks: List<Landmark>?,
-    val timestampMs: Long,
-    val inferenceTimeMs: Long,
-    val imageWidth: Int,
-    val imageHeight: Int,
-    val modelType: String,
-    val isFrontCamera: Boolean = false
+PoseFrame(
+    hasPose: Boolean,
+    landmarks: List<Landmark>?,
+    angles: JointAngles,
+    timestampMs: Long,
+    isFrontCamera: Boolean,
+    analysisImageWidth: Int,
+    analysisImageHeight: Int,
 )
 ```
 
----
+يستهلكه `MovitTrainingEngine.processFrame` و`SetupReadinessGate.validate`.
 
-## الكاميرا (CameraManager)
+### 4. نماذج Pose (debug)
 
-- **نسبة العرض**: 4:3 (`RATIO_4_3_FALLBACK_AUTO_STRATEGY`)
-- **صيغة الصورة**: `OUTPUT_IMAGE_FORMAT_RGBA_8888`
-- **استراتيجية الضغط**: `STRATEGY_KEEP_ONLY_LATEST`
+**المسار:** `com.movit.core.posecapture.boundary.trainingdebug.PoseModelType`
 
-```kotlin
-ImageAnalysis.Builder()
-    .setResolutionSelector(resolutionSelector)
-    .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
-    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-```
+- `FULL`, `HEAVY` — ملفات `.task` في assets
+- `AndroidPoseModelTypePort` / `PoseLandmarkerHeavyModelStore` — تفضيل النموذج على Android
 
 ---
 
 ## تحويل الإطار
 
-1. نسخ البكسلات من `ImageProxy.planes[0].buffer` إلى `Bitmap`
-2. تطبيق الدوران (`rotationDegrees`) والانعكاس (كاميرا أمامية)
-3. إنشاء `MPImage` عبر `BitmapImageBuilder`
-4. استدعاء `detectAsync(mpImage, timestamp)`
-
-> **مهم**: استخدام `SystemClock.uptimeMillis()` للـ timestamps في LIVE_STREAM.
+1. نسخ بكسلات `ImageProxy` إلى `Bitmap`
+2. تطبيق `rotationDegrees` وانعكاس الكاميرا الأمامية
+3. `BitmapImageBuilder` → `MPImage`
+4. `detectAsync(mpImage, timestamp)` — استخدم `SystemClock.uptimeMillis()` في LIVE_STREAM
 
 ---
 
-## الكاميرا الأمامية (Front Camera)
+## الكاميرا الأمامية
 
-- الصورة تُعكس قبل المعالجة
-- المعالم تُرجع كما هي (بدون تبديل LEFT/RIGHT)
-- المشروع يطبق **تبديل LEFT ↔ RIGHT** عند حساب الزوايا وعرض النتائج
-
-```kotlin
-// BodyLandmarks.getMirroredIndex(index)
-// JointAngles.mirrored()
-```
+- الإطار يُعكس في `MovitTrainingEngine` (`frame.mirrored()`) قبل استخراج الزوايا
+- `JointAngleTracker` و`VirtualLandmarks` تتعامل مع معالم MediaPipe كما هي (بدون swap LEFT/RIGHT في الطبقة السفلية)
 
 ---
 
-## التسوية (LandmarkSmoother)
+## التسوية (PoseLandmarkSmoother)
 
-- **One Euro Filter**: توازن بين الاستجابة والاستقرار
-- **EMA Legacy**: خيار بديل أبسط
-- إعدادات من `app_settings.json` → `SettingsManager`
+**المسار:** `com.movit.core.posecapture.PoseLandmarkSmoother`
 
-```json
-"smoothing": {
-  "preset": "custom",
-  "minCutoff": 3.0,
-  "beta": 0.05,
-  "useLegacyEMA": false
-}
-```
+- One Euro Filter (افتراضي) مع خيارات legacy EMA
+- يضيف معالم افتراضية: **neck (33)**, **spine (34)** عبر `VirtualLandmarks` في `core/training-engine`
 
 ---
 
-## المعالم الافتراضية (Virtual Landmarks)
+## وضع الفيديو (debug فقط)
 
-- **Neck (33)**: منتصف الكتفين
-- **Spine (34)**: منتصف الوركين
+| Module | Classes |
+|--------|---------|
+| `feature/training-debug` | `AndroidDebugVideoPoseSource`, `TrainingDebugViewModel` |
+| `core/pose-capture` | `TrainingDebugInputMode.VIDEO`, `TrainingDebugVideoFrameSelector` |
 
-تُحسب في `LandmarkSmoother.appendVirtualLandmarks()` وتُستخدم في `AngleCalculator` و`JointLandmarkMapping`.
+لا يوجد تشغيل فيديو في `feature/training` الإنتاجي.
 
 ---
 
 ## ProGuard
 
 ```pro
-# proguard-rules.pro
 -keep class com.google.mediapipe.** { *; }
 -dontwarn com.google.mediapipe.**
 ```
 
 ---
 
-## المراجع الداخلية
+## مراجع داخلية
 
-- `PoseLandmarkerHelper.kt`
-- `CameraManager.kt`
-- `BodyLandmarks.kt`
-- `JointLandmarkMapping.kt`
-- `LandmarkSmoother.kt`
-- `SkeletonOverlayView.kt`
+| File | Role |
+|------|------|
+| `MediaPipePoseDetector.kt` | Landmarker + frame conversion |
+| `CameraXFrameSource.kt` | Production camera |
+| `MediaPipeLandmarkMapper.kt` | Normalized → app `Landmark` |
+| `PoseLandmarkSmoother.kt` | Temporal smoothing |
+| `MovitPoseCaptureModule.kt` | Android DI wiring |
+| [`training-engine.md`](../../00-Active-Reference/Engine/training-engine.md) | Engine consumption of `PoseFrame` |

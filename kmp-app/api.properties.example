@@ -4,5 +4,6 @@
 # Precedence: local.properties > api.properties > defaults in app/build.gradle.kts
 api.mode=local
 api.port=4000
+# When api.mode=local, Gradle auto-writes this machine's LAN IP into local.properties on each build.
 api.physical_device_ip=192.168.1.18
 api.server_url=https://back.mongz.online/

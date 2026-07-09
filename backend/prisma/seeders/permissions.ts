@@ -12,7 +12,6 @@ const legacyReportSubjectMap: Record<string, string> = {
     AssessmentAnalytics: 'ReportAssessment',
     ProgressionAnalytics: 'ReportProgression',
     RevenueAnalytics: 'ReportRevenue',
-    BookingAnalytics: 'ReportBooking',
     SafetyAnalytics: 'ReportSafety',
     ContentAnalytics: 'ReportContent',
 };
@@ -110,7 +109,6 @@ const permissions = [
     { subject: 'ReportAssessment', action: 'read' },
     { subject: 'ReportProgression', action: 'read' },
     { subject: 'ReportRevenue', action: 'read' },
-    { subject: 'ReportBooking', action: 'read' },
     { subject: 'ReportSafety', action: 'read' },
     { subject: 'ReportContent', action: 'read' },
 
@@ -118,32 +116,7 @@ const permissions = [
     { subject: 'Upload', action: 'create' },
     { subject: 'Upload', action: 'delete' },
 
-    // DoctorWorkTime
-    { subject: 'DoctorWorkTime', action: 'read' },
-    { subject: 'DoctorWorkTime', action: 'create' },
-    { subject: 'DoctorWorkTime', action: 'update' },
-    { subject: 'DoctorWorkTime', action: 'delete' },
-
-    // CloseTime
-    { subject: 'CloseTime', action: 'read' },
-    { subject: 'CloseTime', action: 'create' },
-    { subject: 'CloseTime', action: 'update' },
-    { subject: 'CloseTime', action: 'delete' },
-
-    // Booking
-    { subject: 'Booking', action: 'read' },
-    { subject: 'Booking', action: 'create' },
-    { subject: 'Booking', action: 'update' },
-    { subject: 'Booking', action: 'delete' },
-
-    // BookingReport
-    { subject: 'BookingReport', action: 'read' },
-    { subject: 'BookingReport', action: 'create' },
-    { subject: 'BookingReport', action: 'update' },
-    { subject: 'BookingReport', action: 'delete' },
-
     // Plan
-    { subject: 'Plan', action: 'read' },
     { subject: 'Plan', action: 'create' },
     { subject: 'Plan', action: 'update' },
     { subject: 'Plan', action: 'delete' },

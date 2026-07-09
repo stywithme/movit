@@ -96,7 +96,7 @@
           "upRange": {
             "pad": {
               "max": 65,
-              "min": 24
+              "min": 25
             },
             "normal": {
               "max": 60,

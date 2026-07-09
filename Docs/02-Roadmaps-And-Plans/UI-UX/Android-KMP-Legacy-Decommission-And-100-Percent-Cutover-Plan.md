@@ -1,6 +1,7 @@
 # خطة الانتقال الكامل 100% إلى KMP — بدون جسور (إعادة كتابة من واقع الكود)
 
-**تاريخ الإصدار:** 2026-06-15 (إعادة كتابة كاملة)  
+**تاريخ الإصدار:** 2026-06-22 (تحديث: poc=0، launcher، أرشفة جسور قديمة)  
+**As-built SSOT:** [`KMP-Mobile-As-Built.md`](../../00-Active-Reference/Architecture-As-Built/KMP-Mobile-As-Built.md)  
 **الفرع:** `Base` / `codex/kmp-mobile-foundation`  
 **النطاق:** Android إنتاج أولاً — ثم iOS كمسار منفصل  
 **المبدأ الحاكم:** **لا جسور ولا حلول انتقالية.** كل وظيفة إما تُنقل إلى KMP أو تُبنى من جديد، ثم يُحذف المصدر القديم فوراً. لا `Legacy*`، لا `AuthManager` موازٍ، لا شاشات XML خارج Compose، لا أعلام rollback.
@@ -16,10 +17,11 @@
 | الإنجاز | الدليل في الكود |
 |---------|-----------------|
 | **صدفة KMP هي التطبيق الوحيد** | `MovitMainActivity` = LAUNCHER الوحيد في `AndroidManifest.xml` |
-| **حذف ~50 ألف سطر legacy UI/محرك** | لا `MainContainerActivity`، لا `TrainingActivity`، لا Fragments — بقي 11 ملف `poc/**` فقط |
+| **حذف ~50 ألف سطر legacy UI/محرك** | لا `MainContainerActivity`، لا `TrainingActivity`، لا Fragments |
+| **`com.trainingvalidator.poc` = 0 ملف** | الحزمة محذوفة بالكامل (2026-06) |
 | **محرك تدريب KMP** | `:core:training-engine` + `:core:pose-capture` + `:feature:training` |
-| **18 وحدة KMP** | shell + 8 features + 7 core + shared + build-logic |
-| **5 تبويبات + 16 مساراً داخلياً نشطاً** | Home, Train, Explore, Reports, Profile + library/training/account flows |
+| **19 وحدة Gradle** | shell + 9 features + 7 core + `:app` + `:shared` (انظر `settings.gradle.kts`) |
+| **5 وجهات + 15 مساراً داخلياً** | 4 تبويبات في الشريط + Profile من الأفاتار |
 | **`MovitDataInstall` بلا `import poc.*`** | مسار البيانات KMP نظيف |
 | **أعلام rollback محذوفة** | لا `movit.shell.*` في `gradle.properties`؛ لا `SplashActivity` |
 | **AAB ~40 MB** | انخفاض من ~230 MB |
@@ -29,11 +31,8 @@
 
 | العائق | الحجم | الخطورة |
 |--------|-------|---------|
-| **`LegacyBillingHost` → `AuthManager`/`ApiClient`** | ~250 سطر + Retrofit | **حرجة** — مسار إيرادات |
-| **`SubscriptionActivity` (XML/ViewBinding)** | ~576 سطر + layouts | **حرجة** — خارج KMP Compose |
-| **`AnalyticsStorage` + `LegacyWorkoutSyncDrain`** | ~430 سطر | **حرجة** — هجرة بيانات قدامى |
-| **`SettingsManager` + `AppSettings`** | ~790 سطر (معظمها ميت) | متوسطة — pose model prefs |
-| **`AppThemeManager` في `PoseApp`** | ~46 سطر | منخفضة — مكرر مع `AndroidMovitPlatform` |
+| **`SubscriptionActivity` (XML/ViewBinding)** | ~590 سطر + layouts | **حرجة** — خارج KMP Compose (يستخدم `MovitData`/Ktor، ليس `poc`) |
+| **`AnalyticsStorage` + `LegacyWorkoutSyncDrain`** | ~430 سطر في `com.movit.storage` | **حرجة** — هجرة executions قدامى إلى Outbox |
 | **كود ميت داخل KMP** | `MovitTrainingKmpGate`, `ExerciseLive`, `TrainingStartAction.Legacy` | منخفضة — ضوضاء |
 | **`feature:training-debug` في `shell` commonMain** | يُشحن في iOS framework | متوسطة — تلوث حدود الإنتاج |
 | **`boundary/trainingdebug` في `core:pose-capture`** | أنواع debug في core | متوسطة |
@@ -54,13 +53,13 @@
 
 | المعيار | مطلوب | الوضع الحالي |
 |---------|-------|--------------|
-| صفر ملفات في `com.trainingvalidator.poc` | ✅ | ❌ 11 ملف |
-| صفر Retrofit/Gson في `:app` | ✅ | ❌ للفوترة |
+| صفر ملفات في `com.trainingvalidator.poc` | ✅ | ✅ **0 ملف** |
+| صفر Retrofit/Gson في `:app` | ✅ | ✅ (فوترة عبر Ktor في Activity) |
 | صفر `ViewBinding`/XML layouts إنتاجية | ✅ | ❌ `SubscriptionActivity` |
-| صفر `Legacy*` classes | ✅ | ❌ `LegacyBillingHost`, `LegacyWorkoutSyncDrain`, `LegacyWorkoutUpload` |
-| صفر استيراد `poc.*` من أي مكان | ✅ | ❌ من `com.movit.billing` |
+| صفر `Legacy*` classes | ✅ | ❌ `LegacyWorkoutSyncDrain`, `LegacyWorkoutUpload`, `LegacyAnalyticsPendingCleaner` |
+| صفر استيراد `poc.*` من أي مكان | ✅ | ✅ |
 | LAUNCHER واحد → KMP shell | ✅ | ✅ |
-| auth/session من `core:data` فقط | ✅ | ❌ billing يستخدم `AuthManager` |
+| auth/session من `core:data` فقط | ✅ | ✅ shell path؛ billing يقرأ `MovitData` |
 | فوترة داخل KMP (Compose + `expect/actual`) | ✅ | ❌ Activity XML |
 | هجرة بيانات قدامى مُثبتة ثم migrator محذوف | ✅ | ❌ B3 حي |
 | smoke release على جهاز حقيقي | ✅ | ⏳ |
@@ -68,19 +67,11 @@
 
 ---
 
-## 2) جرد الكود المتبقي (واقع 2026-06-15)
+## 2) جرد الكود المتبقي (واقع 2026-06-22)
 
-### أ) `com.trainingvalidator.poc` — 11 ملف Kotlin (~1,800 سطر فعّال)
+### أ) `com.trainingvalidator.poc` — **0 ملف** ✅
 
-```
-PoseApp.kt
-network/ApiClient.kt · ApiConfig.kt · AuthApi.kt · AuthModels.kt
-storage/AnalyticsStorage.kt · AuthManager.kt · LegacyWorkoutUpload.kt
-training/config/AppSettings.kt · SettingsManager.kt
-ui/theme/AppThemeManager.kt
-```
-
-**لا يُحذف أي ملف قبل استبدال وظيفته في KMP.**
+الحزمة محذوفة. المتبقي تحت `com.movit` فقط (انظر ب).
 
 ### ب) `com.movit` — غلاف + جسور (~1,400 سطر)
 
@@ -92,13 +83,12 @@ ui/theme/AppThemeManager.kt
 | `MovitShellDeepLinkParser` | **غلاف شرعي** | يبقى |
 | `MovitPostLoginNavigator` | **غلاف شرعي** | يبقى |
 | `LegacyWorkoutSyncDrain` | **جسر — يُحذف** | بعد G6 |
-| `LegacyBillingHost` | **جسر — يُحذف** | WS-B1 |
-| `SubscriptionActivity` | **جسر — يُحذف** | WS-B2 |
-| `MovitTrainingEntryNavigator` | **ميت — يُحذف** | لا مستدعٍ حي |
+| `SubscriptionActivity` | **جسر — يُحذف** | WS-B6 |
+| `AnalyticsStorage` / `LegacyWorkoutUpload` | **جسر — يُحذف** | بعد G6 |
 
-### ج) `:feature:billing` — Android library (~199 سطر)
+### ج) `:feature:billing` — Android library
 
-شبكة Retrofit منفصلة. **يُدمج في `core:network` Ktor** أو يُحذف بعد نقل endpoints.
+منصّة Play Billing + تنسيق مع `core:network` (Ktor). **الهدف:** دمج منطق الدفع في `feature:account` Compose وحذف `SubscriptionActivity`.
 
 ### د) كود ميت داخل KMP (يُحذف فوراً — لا يحتاج نقل)
 
@@ -124,7 +114,7 @@ ui/theme/AppThemeManager.kt
 
 ---
 
-## 3) خريطة النظام KMP الحالي (18 وحدة)
+## 3) خريطة النظام KMP الحالي (19 وحدة)
 
 | الوحدة | الغرض | الحالة |
 |--------|--------|--------|
@@ -190,20 +180,20 @@ ui/theme/AppThemeManager.kt
 
 ### WS-B — قطع جسور الفوترة والجلسة (حرجة)
 
-**الهدف:** مسار إيرادات 100% KMP — صفر `AuthManager`/`ApiClient`/`LegacyBillingHost`.
+**الهدف:** مسار إيرادات 100% KMP Compose — حذف `SubscriptionActivity` XML.
 
 | # | المهمة | التفاصيل |
 |---|--------|----------|
-| B1 | نقل token refresh للفوترة إلى Ktor | `core:network` — interceptor يستخدم `SecureSessionStore` |
-| B2 | `BillingHost` actual يقرأ من `AndroidMovitPlatform` فقط | حذف `LegacyBillingHost.kt` |
+| B1 | توحيد checkout/verify في Ktor | `core:network` + `MovitData` session |
+| B2 | `BillingHost` actual يقرأ من `AndroidMovitPlatform` فقط | بدون تخزين auth منفصل |
 | B3 | دمج `:feature:billing` APIs في `core:network` | حذف Retrofit من `:feature:billing` |
 | B4 | شاشة اشتراك Compose في `feature:account` | `MovitSubscriptionScreen` → تنفيذ كامل (Play + MyFatoorah) |
 | B5 | `expect/actual` للمنصّة حيث يلزم | Android: Play Billing SDK؛ iOS: StoreKit (WS-H) |
 | B6 | حذف `SubscriptionActivity` + layouts XML + `viewBinding` من `:app` | `activity_subscription.xml`, `dialog_*` |
 | B7 | حذف `LaunchLegacySubscription` effect | `MovitAppShellEffect.kt`, `MovitShellHost.kt` |
-| B8 | حذف `AuthManager.kt`, `ApiClient.kt`, `ApiConfig.kt`, `AuthApi.kt`, `AuthModels.kt` | package `poc/network` + `poc/storage/AuthManager` |
+| B8 | حذف `AnalyticsStorage` بعد G6 | `app/.../storage/` |
 
-**بوابة B:** شراء اشتراك كامل على جهاز حقيقي (Play + MyFatoorah) بدون أي `poc.*`.
+**بوابة B:** شراء اشتراك كامل على جهاز حقيقي (Play + MyFatoorah) بدون `SubscriptionActivity`.
 
 ---
 
@@ -253,7 +243,7 @@ ui/theme/AppThemeManager.kt
 
 | # | المهمة | التفاصيل |
 |---|--------|----------|
-| F1 | حذف package `com.trainingvalidator.poc` بالكامل | بعد WS-B + WS-C + WS-D |
+| F1 | حذف `AnalyticsStorage` / `LegacyWorkoutSyncDrain` | بعد WS-C |
 | F2 | حذف Retrofit/Gson/OkHttp من `:app/build.gradle.kts` | |
 | F3 | حذف `viewBinding` من `:app` | |
 | F4 | دمج source sets `movitShellEnabled` + `movitShellHost` في `main` | تبسيط build |
@@ -313,7 +303,7 @@ ui/theme/AppThemeManager.kt
 | **G8** | `assembleRelease` + unit tests أخضر | ✅ Android |
 | **G8b** | lint/detekt أخضر | ⏳ |
 | **G8c** | iOS compile على Mac/CI | ❌ |
-| **G9** | صفر ملفات `poc/**` | ❌ |
+| **G9** | صفر ملفات `poc/**` | ✅ |
 | **G10** | صفر classes `Legacy*` | ❌ |
 
 ### Smoke checklist (G1b)
@@ -333,7 +323,7 @@ ui/theme/AppThemeManager.kt
 
 ## 7) Definition of Done — إنتاج Android 100% بدون جسور
 
-- [ ] صفر ملفات في `app/**/com/trainingvalidator/poc/`
+- [x] صفر ملفات في `app/**/com/trainingvalidator/poc/`
 - [ ] صفر `Legacy*` classes في المشروع
 - [ ] صفر Retrofit في `:app` و`:feature:billing` (مُدمج في Ktor أو محذوف)
 - [ ] صفر XML layouts إنتاجية (Compose فقط)
@@ -406,7 +396,8 @@ flowchart TD
 
 | المستند | الغرض |
 |---------|--------|
-| [`Android-KMP-Mobile-Screen-Inventory.md`](Android-KMP-Mobile-Screen-Inventory.md) | **يحتاج تحديث** — يصف legacy لم يعد موجوداً |
+| [`Android-KMP-Mobile-Screen-Inventory.md`](Android-KMP-Mobile-Screen-Inventory.md) | جرد KMP الحالي |
+| [`KMP-Mobile-As-Built.md`](../../00-Active-Reference/Architecture-As-Built/KMP-Mobile-As-Built.md) | **SSOT** هيكل وتنقل |
 | [`Android-KMP-Training-Engine-Legacy-MO-vs-Current-Difference-Audit.md`](Android-KMP-Training-Engine-Legacy-MO-vs-Current-Difference-Audit.md) | فجوات محرك التدريب |
 | [`Train-Calendar-Component-Redesign-Plan.md`](Train-Calendar-Component-Redesign-Plan.md) | WS-I4 |
 | [`Android-KMP-Training-Debug-Mode-Full-Migration-Plan.md`](Android-KMP-Training-Debug-Mode-Full-Migration-Plan.md) | WS-E |
@@ -420,7 +411,8 @@ flowchart TD
 |---------|--------|
 | 2026-06-14 | خطة أولية WS-1..WS-9 — حذف ~50k سطر، جسور B متبقية |
 | 2026-06-15 | **إعادة كتابة كاملة** من 5 مسوحات كود — تعريف جديد «بدون جسور»، مسارات WS-A..WS-I |
+| 2026-06-22 | poc=0، 19 وحدة، `MovitMainActivity` launcher، تحديث Screen Inventory و As-Built SSOT |
 
 ---
 
-*آخر تحديث: 2026-06-15 — مبني على استكشاف الكود الفعلي وليس على افتراضات الخطة السابقة.*
+*آخر تحديث: 2026-06-22 — مبني على استكشاف الكود الفعلي.*

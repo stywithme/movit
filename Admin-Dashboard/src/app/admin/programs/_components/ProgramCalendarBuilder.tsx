@@ -5,15 +5,16 @@ import { toast } from 'sonner';
 import {
   ArrowDown,
   ArrowUp,
-  CalendarDays,
   Copy,
   Dumbbell,
+  Moon,
   Plus,
   Timer,
   Trash2,
+  Activity,
+  X,
 } from 'lucide-react';
 import { Badge, Button, Input, Label, Select, Textarea, SearchableSelect } from '@/components/ui';
-import { AttributeSelect } from '@/components/forms/AttributeSelect';
 import type { LocalizedText } from '@/lib/types/localized';
 import { cn } from '@/lib/utils';
 import {
@@ -22,15 +23,12 @@ import {
   type PlannedWorkoutItemForm,
   type ProgramDayType,
   type WeekForm,
-  cloneDay,
   clonePlannedWorkout,
   cloneWeek,
-  createEmptyDay,
   createEmptyItem,
   createEmptyPlannedWorkout,
   createEmptyWeek,
   deriveDayTypeFields,
-  normalizeDay,
   normalizePlannedWorkout,
   normalizeWeek,
 } from '../_lib/program-calendar';
@@ -71,6 +69,30 @@ interface MuscleAttributeValue {
   code: string;
   name: LocalizedText;
 }
+
+const DAY_TYPE_META: Record<
+  ProgramDayType,
+  { label: string; icon: typeof Dumbbell; activeClass: string; mutedClass: string }
+> = {
+  training: {
+    label: 'Training',
+    icon: Dumbbell,
+    activeClass: 'border-primary bg-primary text-primary-foreground',
+    mutedClass: 'border-primary/30 bg-primary/5 text-primary',
+  },
+  rest: {
+    label: 'Rest',
+    icon: Moon,
+    activeClass: 'border-slate-600 bg-slate-600 text-white shadow-sm',
+    mutedClass: 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50',
+  },
+  active_recovery: {
+    label: 'Active Recovery',
+    icon: Activity,
+    activeClass: 'border-emerald-700 bg-emerald-700 text-white shadow-sm',
+    mutedClass: 'border-emerald-200 bg-emerald-50 text-emerald-600',
+  },
+};
 
 interface ProgramCalendarBuilderProps {
   weeks: WeekForm[];
@@ -221,46 +243,6 @@ export function ProgramCalendarBuilder({
     });
     setDurationWeeks(weeks.length + 1);
     setWeekTab(weekIndex + 1);
-    setSelected({ kind: 'day' });
-  };
-
-  const addDay = (weekIndex: number) => {
-    setWeeks((prev) =>
-      prev.map((week, wIndex) => {
-        if (wIndex !== weekIndex) return week;
-        const nextDayNumber = week.days.length + 1;
-        return { ...week, days: [...week.days, createEmptyDay(nextDayNumber)].map(normalizeDay) };
-      }),
-    );
-    const newDayIndex = (weeks[weekIndex]?.days.length ?? 0);
-    setDayTabByWeek((prev) => ({ ...prev, [weekIndex]: newDayIndex }));
-    setSelected({ kind: 'day' });
-  };
-
-  const removeDay = (weekIndex: number, dayIndex: number) => {
-    setWeeks((prev) =>
-      prev.map((week, wIndex) => {
-        if (wIndex !== weekIndex) return week;
-        return { ...week, days: week.days.filter((_, dIndex) => dIndex !== dayIndex).map(normalizeDay) };
-      }),
-    );
-    setDayTabByWeek((prev) => ({
-      ...prev,
-      [weekIndex]: Math.max(0, Math.min(prev[weekIndex] ?? 0, (weeks[weekIndex]?.days.length ?? 1) - 2)),
-    }));
-    setSelected({ kind: 'day' });
-  };
-
-  const duplicateDay = (weekIndex: number, dayIndex: number) => {
-    setWeeks((prev) =>
-      prev.map((week, wIndex) => {
-        if (wIndex !== weekIndex) return week;
-        const nextDays = [...week.days];
-        nextDays.splice(dayIndex + 1, 0, cloneDay(week.days[dayIndex]));
-        return { ...week, days: nextDays.map(normalizeDay) };
-      }),
-    );
-    setDayTabByWeek((prev) => ({ ...prev, [weekIndex]: dayIndex + 1 }));
     setSelected({ kind: 'day' });
   };
 
@@ -498,30 +480,6 @@ export function ProgramCalendarBuilder({
   };
 
   // ---- Summaries -----------------------------------------------------------
-  const getDaySummary = (day: DayForm) => {
-    if (day.dayType !== 'training') {
-      return day.dayType === 'rest' ? 'Rest day' : 'Active recovery';
-    }
-    const muscleLabels = day.targetMuscleIds
-      .map((id) => muscleLabelById.get(id))
-      .filter(Boolean)
-      .join(', ');
-    const items = day.plannedWorkouts.reduce((acc, plannedWorkout) => acc + plannedWorkout.items.length, 0);
-    const musclePart = muscleLabels ? `${muscleLabels} • ` : '';
-    return `${musclePart}${day.plannedWorkouts.length} planned workout(s) • ${items} item(s)`;
-  };
-
-  const getDayNodeTitle = (day: DayForm, dayIndex: number) => {
-    const muscleLabels = day.targetMuscleIds
-      .map((id) => muscleLabelById.get(id))
-      .filter(Boolean)
-      .join(', ');
-    if (muscleLabels) return muscleLabels;
-    if (day.dayType === 'rest') return 'Rest';
-    if (day.dayType === 'active_recovery') return 'Active recovery';
-    return `Day ${dayIndex + 1}`;
-  };
-
   const getPlannedWorkoutSummary = (plannedWorkout: PlannedWorkoutForm) => {
     const exerciseCount = plannedWorkout.items.filter((item) => item.type === 'exercise').length;
     const restCount = plannedWorkout.items.length - exerciseCount;
@@ -573,6 +531,7 @@ export function ProgramCalendarBuilder({
   }
 
   const isTrainingDay = activeDay.dayType === 'training';
+  const showInspectorAside = selected.kind !== 'day';
 
   return (
     <div className="space-y-5">
@@ -676,49 +635,62 @@ export function ProgramCalendarBuilder({
           </div>
         </div>
 
-        {/* Day navigator */}
-        <div className="flex flex-wrap items-center gap-2 border-t px-4 py-3">
-          <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Days</span>
-          {activeWeek.days.map((_, di) => (
-            <button
-              key={`day-tab-${activeWeekIndex}-${di}`}
-              type="button"
-              onClick={() => selectDay(di)}
-              className={cn(
-                'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
-                di === activeDayIndex
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:bg-accent',
-              )}
-            >
-              Day {di + 1}
-            </button>
-          ))}
-          <div className="ml-auto flex items-center gap-2">
-            <Button type="button" size="sm" variant="ghost" onClick={() => addDay(activeWeekIndex)}>
-              <Plus className="size-4" />
-              Add day
-            </Button>
-            <Button type="button" size="sm" variant="ghost" onClick={() => duplicateDay(activeWeekIndex, activeDayIndex)}>
-              <Copy className="size-4" />
-              Duplicate
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={() => removeDay(activeWeekIndex, activeDayIndex)}
-              disabled={activeWeek.days.length === 1}
-            >
-              <Trash2 className="size-4" />
-              Remove
-            </Button>
+        {/* Day navigator — fixed 7 days */}
+        <div className="border-t px-4 py-3">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Days (7-day cycle)
+            </span>
+          </div>
+          <div className="grid grid-cols-7 gap-2">
+            {activeWeek.days.map((day, di) => {
+              const meta = DAY_TYPE_META[day.dayType];
+              const Icon = meta.icon;
+              const isActive = di === activeDayIndex;
+              return (
+                <button
+                  key={`day-tab-${activeWeekIndex}-${di}`}
+                  type="button"
+                  onClick={() => selectDay(di)}
+                  className={cn(
+                    'flex flex-col items-center gap-1 rounded-lg border px-1 py-2 text-center transition-colors',
+                    isActive ? meta.activeClass : meta.mutedClass,
+                    isActive && 'ring-2 ring-offset-1',
+                    isActive && day.dayType === 'training' && 'ring-primary',
+                    isActive && day.dayType === 'rest' && 'ring-slate-600',
+                    isActive && day.dayType === 'active_recovery' && 'ring-emerald-700',
+                  )}
+                  title={meta.label}
+                >
+                  <span className={cn('text-[10px] font-semibold uppercase', !isActive && 'opacity-70')}>
+                    D{di + 1}
+                  </span>
+                  <Icon className="size-4" />
+                  <span className="text-[10px] leading-tight">{meta.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </section>
 
+      {/* Day status banner */}
+      <DayStatusBanner
+        day={activeDay}
+        dayIndex={activeDayIndex}
+        muscleOptions={muscleOptions}
+        loadingMuscleOptions={loadingMuscleOptions}
+        muscleLabelById={muscleLabelById}
+        onChange={(updates) => updateDay(activeWeekIndex, activeDayIndex, updates)}
+      />
+
       {/* Day flow + inspector */}
-      <div className="grid min-h-[520px] gap-5 xl:grid-cols-[minmax(380px,1fr)_420px]">
+      <div
+        className={cn(
+          'grid min-h-[520px] gap-5',
+          showInspectorAside && 'xl:grid-cols-[minmax(380px,1fr)_420px]',
+        )}
+      >
         {/* Flow */}
         <section className="min-w-0 rounded-xl border bg-background">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
@@ -741,23 +713,16 @@ export function ProgramCalendarBuilder({
           </div>
 
           <div className="space-y-3 p-4">
-            {/* Day node */}
-            <button
-              type="button"
-              onClick={() => setSelected({ kind: 'day' })}
-              className={cn(
-                'flex w-full items-center gap-3 rounded-lg border bg-card px-3 py-2 text-left transition-colors hover:bg-accent',
-                selected.kind === 'day' && 'border-primary bg-primary/5',
-              )}
-            >
-              <CalendarDays className="size-4 text-muted-foreground" />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold">
-                  {getDayNodeTitle(activeDay, activeDayIndex)}
-                </span>
-                <span className="text-xs text-muted-foreground">{getDaySummary(activeDay)}</span>
-              </span>
-            </button>
+            {!isTrainingDay ? (
+              <div className="rounded-lg border border-dashed bg-muted/30 py-10 text-center">
+                <p className="text-sm font-medium text-muted-foreground">
+                  This is a {activeDay.dayType === 'rest' ? 'rest' : 'active recovery'} day.
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Switch the day type to <span className="font-semibold">Training</span> above to add workouts.
+                </p>
+              </div>
+            ) : null}
 
             {activeDay.plannedWorkouts.map((plannedWorkout, pwIndex) => (
               <div key={plannedWorkout.id ?? `pw-${pwIndex}`} className="rounded-lg border bg-card">
@@ -897,25 +862,15 @@ export function ProgramCalendarBuilder({
         </section>
 
         {/* Inspector */}
+        {showInspectorAside ? (
         <aside className="rounded-xl border bg-background">
           <div className="border-b px-4 py-3">
             <h2 className="text-sm font-semibold">
-              {selected.kind === 'day' && 'Day settings'}
               {selected.kind === 'plannedWorkout' && 'Planned workout'}
               {selected.kind === 'item' && (selectedItem?.type === 'rest' ? 'Rest' : 'Exercise')}
             </h2>
           </div>
           <div className="space-y-5 p-4">
-            {selected.kind === 'day' && (
-              <DayInspector
-                key={`day-${activeWeekIndex}-${activeDayIndex}`}
-                day={activeDay}
-                muscleOptions={muscleOptions}
-                loadingMuscleOptions={loadingMuscleOptions}
-                onChange={(updates) => updateDay(activeWeekIndex, activeDayIndex, updates)}
-              />
-            )}
-
             {selected.kind === 'plannedWorkout' && selectedPlannedWorkout && (
               <PlannedWorkoutInspector
                 key={`pw-${activeWeekIndex}-${activeDayIndex}-${selected.pwIndex}`}
@@ -950,60 +905,136 @@ export function ProgramCalendarBuilder({
             )}
           </div>
         </aside>
+        ) : null}
       </div>
     </div>
   );
 }
 
-function DayInspector({
+function DayStatusBanner({
   day,
+  dayIndex,
   muscleOptions,
   loadingMuscleOptions,
+  muscleLabelById,
   onChange,
 }: {
   day: DayForm;
-  muscleOptions: Array<{ id: string; code: string; name: LocalizedText }>;
+  dayIndex: number;
+  muscleOptions: MuscleAttributeValue[];
   loadingMuscleOptions: boolean;
+  muscleLabelById: Map<string, string>;
   onChange: (updates: Partial<DayForm>) => void;
 }) {
+  const meta = DAY_TYPE_META[day.dayType];
+  const Icon = meta.icon;
+  const isTraining = day.dayType === 'training';
+  const showMuscles = isTraining || day.dayType === 'active_recovery';
+
   const handleDayTypeChange = (value: string) => {
     const dayType = value as ProgramDayType;
-    onChange({
-      ...deriveDayTypeFields(dayType),
-    });
+    const updates = deriveDayTypeFields(dayType);
+    if (dayType !== 'training' && day.plannedWorkouts.length > 0) {
+      if (
+        !window.confirm(
+          `Switching to ${dayType === 'rest' ? 'Rest' : 'Active Recovery'} will keep existing workouts but they won't be shown to the trainee on this day. Continue?`,
+        )
+      ) {
+        return;
+      }
+    }
+    onChange(updates);
   };
 
+  const addMuscle = (muscleId: string) => {
+    if (!muscleId || day.targetMuscleIds.includes(muscleId)) return;
+    onChange({ targetMuscleIds: [...day.targetMuscleIds, muscleId] });
+  };
+
+  const removeMuscle = (muscleId: string) => {
+    onChange({ targetMuscleIds: day.targetMuscleIds.filter((id) => id !== muscleId) });
+  };
+
+  const availableMuscleOptions = muscleOptions
+    .filter((m) => !day.targetMuscleIds.includes(m.id))
+    .map((m) => ({
+      value: m.id,
+      label: m.name.en || m.name.ar || m.code,
+    }));
+
   return (
-    <>
-      <div className="space-y-4">
-        <div>
-          <Label>Day type</Label>
-          <Select
-            value={day.dayType}
-            onChange={(e) => handleDayTypeChange(e.target.value)}
-            options={[
-              { value: 'training', label: 'Training' },
-              { value: 'rest', label: 'Rest' },
-              { value: 'active_recovery', label: 'Active recovery' },
-            ]}
-          />
+    <div className="space-y-2">
+      <div className="rounded-xl border bg-background px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <div
+              className={cn(
+                'flex size-10 shrink-0 items-center justify-center rounded-lg border',
+                meta.activeClass,
+              )}
+            >
+              <Icon className="size-5" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-sm font-semibold">Day {dayIndex + 1}</div>
+              <div className="text-xs text-muted-foreground">
+                {isTraining
+                  ? `${day.plannedWorkouts.length} planned workout(s) · ${day.plannedWorkouts.reduce((a, p) => a + p.items.length, 0)} item(s)`
+                  : meta.label + ' — no workouts'}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid w-full grid-cols-1 gap-4 sm:w-auto sm:grid-cols-2 sm:gap-4">
+            <div className="w-full sm:w-[180px]">
+              <Label className="mb-1.5 block text-xs font-medium text-muted-foreground">Type</Label>
+              <Select
+                value={day.dayType}
+                onChange={(e) => handleDayTypeChange(e.target.value)}
+                options={[
+                  { value: 'training', label: 'Training' },
+                  { value: 'rest', label: 'Rest' },
+                  { value: 'active_recovery', label: 'Active recovery' },
+                ]}
+              />
+            </div>
+            {showMuscles ? (
+              <div className="w-full sm:w-[180px]">
+                <Label className="mb-1.5 block text-xs font-medium text-muted-foreground">Target muscles</Label>
+                <SearchableSelect
+                  value=""
+                  onChange={(value) => {
+                    if (value) addMuscle(value);
+                  }}
+                  options={availableMuscleOptions}
+                  placeholder={loadingMuscleOptions ? 'Loading muscles...' : 'Add muscle'}
+                  searchPlaceholder="Search muscles..."
+                  disabled={loadingMuscleOptions}
+                />
+              </div>
+            ) : null}
+          </div>
         </div>
-        <AttributeSelect
-          label="Target muscles"
-          value={day.targetMuscleIds}
-          onChange={(value) => onChange({ targetMuscleIds: Array.isArray(value) ? value : [] })}
-          options={muscleOptions}
-          multiple
-          loading={loadingMuscleOptions}
-          placeholder="Select target muscles"
-        />
       </div>
-      <p className="text-xs text-muted-foreground">
-        {day.dayType === 'training'
-          ? 'Pick a planned workout or item from the flow on the left to edit its details.'
-          : 'Rest and active recovery days do not require planned workouts.'}
-      </p>
-    </>
+
+      {showMuscles && day.targetMuscleIds.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5 px-0.5">
+          {day.targetMuscleIds.map((muscleId) => (
+            <Badge key={muscleId} variant="secondary" className="gap-1 pr-1 font-normal">
+              {muscleLabelById.get(muscleId) ?? muscleId}
+              <button
+                type="button"
+                onClick={() => removeMuscle(muscleId)}
+                className="rounded-sm p-0.5 hover:bg-muted-foreground/20"
+                aria-label={`Remove ${muscleLabelById.get(muscleId) ?? muscleId}`}
+              >
+                <X className="size-3" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }
 

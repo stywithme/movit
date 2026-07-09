@@ -45,7 +45,6 @@ const SUBJECT_GROUP_MAP: Record<string, { name: string; group: string }> = {
     ReportAssessment: { name: 'Reports / Assessments', group: 'Reports' },
     ReportProgression: { name: 'Reports / Progression Engine', group: 'Reports' },
     ReportRevenue: { name: 'Reports / Revenue', group: 'Reports' },
-    ReportBooking: { name: 'Reports / Bookings & Clinic', group: 'Reports' },
     ReportSafety: { name: 'Reports / Safety & Risk', group: 'Reports' },
     ReportContent: { name: 'Reports / Content & Catalog', group: 'Reports' },
     // Administration
@@ -54,11 +53,6 @@ const SUBJECT_GROUP_MAP: Record<string, { name: string; group: string }> = {
     Role: { name: 'Roles', group: 'Admin' },
     System: { name: 'System Settings', group: 'Admin' },
     Config: { name: 'Configurations', group: 'Admin' },
-    // Booking System
-    Booking: { name: 'Bookings', group: 'Booking' },
-    DoctorWorkTime: { name: 'Doctor Work Times', group: 'Booking' },
-    CloseTime: { name: 'Close Times', group: 'Booking' },
-    BookingReport: { name: 'Medical Reports', group: 'Booking' },
     // Business (Merged into Admin as seen in your screenshot)
     Plan: { name: 'Subscription Plans', group: 'Admin' },
     Subscription: { name: 'User Subscriptions', group: 'Admin' },
@@ -93,6 +87,11 @@ const LEGACY_PERMISSION_SUBJECTS = new Set([
     'BookingAnalytics',
     'SafetyAnalytics',
     'ContentAnalytics',
+    'Booking',
+    'DoctorWorkTime',
+    'CloseTime',
+    'BookingReport',
+    'ReportBooking',
 ]);
 
 function isVisiblePermission(permission: { subject: string; action: string }) {

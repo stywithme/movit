@@ -5,7 +5,7 @@
 | **Status** | `ACTIVE` |
 | **SSOT in code** | `backend/src/domain/workout-contract.ts` |
 | **Migration runbook** | `backend/docs/WORKOUT_DOMAIN_MIGRATION_RUNBOOK.md` |
-| **Verified** | 2026-06-06 (P2 Docs sync) |
+| **Verified** | 2026-06-22 |
 
 ---
 
@@ -26,6 +26,8 @@
 | إكمال كتلة برنامج | `PlannedWorkoutReport` | `planned_workout_reports` | كان `ProgramSessionReport` |
 | تنفيذ تمرين واحد | `WorkoutExecution` | `workout_executions` | كان `TrainingSession` |
 | مقاييس التنفيذ | `WorkoutExecutionMetrics` | `workout_execution_metrics` | كان `SessionMetrics` |
+| مرحلة قالب (catalog) | `WorkoutPhase` | `workout_phases` | جديد — إحماء / أساسي / تهدئة |
+| ربط مرحلة داخل قالب | `WorkoutTemplatePhase` | `workout_template_phases` | ترتيب + overrides |
 
 ---
 
@@ -60,7 +62,6 @@
 
 | المصطلح | السياق |
 |---------|--------|
-| **Doctor / booking session** | حجوزات الطبيب، Google Meet، تقارير طبية |
 | **Auth session** | تسجيل الدخول، refresh token |
 | **Assessment session** | جلسة تقييم/Body Scan (`AssessmentSessionActivity`) |
 | **Payment session** | بوابة الدفع |
@@ -86,5 +87,6 @@
 | القديم | الجديد |
 |--------|--------|
 | `/admin/workouts` | `/admin/workout-templates` |
+| — | `/admin/workout-phases` — catalog المراحل |
 | محرر تمرينات البرنامج المخططة | `plannedWorkouts` / `PlannedWorkoutForm` |
 | تقارير تحليلات التنفيذ | `/admin/analytics/workout-executions/[id]/report` |

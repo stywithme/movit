@@ -2,7 +2,7 @@
 > **Current SSOT:** `Docs/00-Active-Reference/README.md`
 > **Archived:** 2026-05-29
 
-# وثيقة الهيكلة التقنية لمشروع FlexFit
+# وثيقة الهيكلة التقنية لمشروع Movit
 
 **الإصدار:** 1.0  
 **التاريخ:** يناير 2026  
@@ -11,7 +11,7 @@
 ---
 
 ## 1. الملخص التنفيذي
-يهدف المشروع لبناء تطبيق لياقة بدنية ذكي (**FlexFit**) يعمل على نظامي Android و iOS بكفاءة عالية (Native Performance) مع مشاركة المنطق البرمجي (Business Logic) بنسبة تزيد عن 80%. يعتمد التطبيق على تقنية Pose Estimation لتوجيه المستخدمين في الوقت الحقيقي.
+يهدف المشروع لبناء تطبيق لياقة بدنية ذكي (**Movit**) يعمل على نظامي Android و iOS بكفاءة عالية (Native Performance) مع مشاركة المنطق البرمجي (Business Logic) بنسبة تزيد عن 80%. يعتمد التطبيق على تقنية Pose Estimation لتوجيه المستخدمين في الوقت الحقيقي.
 
 ---
 
@@ -82,9 +82,9 @@
 ## 5. هيكلة المجلدات المقترحة (Project Structure)
 
 ```
-FlexFit/
+Movit/
 ├── shared/                          # الكود المشترك (Common Logic)
-│   ├── src/commonMain/kotlin/com/flexfit/
+│   ├── src/commonMain/kotlin/com/movit/
 │   │   ├── engine/                  # (المنقول من المشروع الحالي)
 │   │   │   ├── TrainingEngine.kt
 │   │   │   ├── FormValidator.kt
@@ -95,7 +95,7 @@ FlexFit/
 │   └── build.gradle.kts
 │
 ├── androidApp/                      # تطبيق أندرويد
-│   ├── src/main/java/com/flexfit/android/
+│   ├── src/main/java/com/movit/android/
 │   │   ├── ui/                      # Jetpack Compose UI
 │   │   ├── pose/                    # MediaPipe Android Wrapper
 │   │   └── MainActivity.kt

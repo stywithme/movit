@@ -14,11 +14,24 @@ if (!process.env.GEMINI_API_KEY) {
   console.warn('⚠️ GEMINI_API_KEY is not set. AI features will not work.');
 }
 
-/**
- * Gemini AI Client instance
- */
-export const geminiClient = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY || '',
+let geminiClientInstance: GoogleGenAI | null = null;
+
+export function getGeminiClient(): GoogleGenAI {
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY is not set. AI features are unavailable.');
+  }
+  if (!geminiClientInstance) {
+    geminiClientInstance = new GoogleGenAI({ apiKey });
+  }
+  return geminiClientInstance;
+}
+
+/** @deprecated Use getGeminiClient() — kept for existing imports. */
+export const geminiClient = new Proxy({} as GoogleGenAI, {
+  get(_target, prop, receiver) {
+    return Reflect.get(getGeminiClient(), prop, receiver);
+  },
 });
 
 /**

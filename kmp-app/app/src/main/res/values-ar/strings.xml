@@ -494,7 +494,6 @@
     <string name="subscription_feature_reports">تقارير واتجاهات متقدمة</string>
     <string name="subscription_feature_programs">برامج تدريب مخصصة</string>
     <string name="subscription_feature_video">أدوات مراجعة وتصدير الفيديو</string>
-    <string name="subscription_feature_doctor_sessions">%1$d تمارين دكتور مشمولة</string>
     <string name="subscription_feature_workouts">%1$d تمارين مشمولة</string>
     <string name="subscription_feature_exercises">%1$d حركات مشمولة</string>
     <string name="subscription_period_month">/شهر</string>
@@ -656,7 +655,7 @@
     <string name="errors">الأخطاء</string>
     <string name="stats">الإحصائيات</string>
     <string name="tips">نصائح</string>
-    <string name="way_to_fix">طريقة التصحيح</string>
+    <string name="how_to_fix">طريقة التصحيح</string>
     <string name="save_and_finish">حفظ وإنهاء</string>
     <string name="high_priority">أولوية عالية</string>
     <string name="perfect">ممتاز</string>

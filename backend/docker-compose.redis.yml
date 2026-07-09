@@ -3,11 +3,11 @@
 services:
   redis:
     image: redis:7.4-alpine
-    container_name: pose-redis
+    container_name: movit-redis
     ports:
       - "6380:6379"
     volumes:
-      - pose_redis_data:/data
+      - movit_redis_data:/data
     command: redis-server --appendonly yes
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -17,4 +17,4 @@ services:
       start_period: 5s
 
 volumes:
-  pose_redis_data:
+  movit_redis_data:

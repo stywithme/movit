@@ -38,7 +38,6 @@ data class SubscriptionPlanDto(
     val maxExercisesLimit: Int = 0,
     @SerialName("maxWorkoutTemplatesLimit")
     val maxWorkoutTemplatesLimit: Int = 0,
-    val freeDoctorSessionsLimit: Int = 0,
     val monthlyGooglePlayProductId: String? = null,
     val yearlyGooglePlayProductId: String? = null,
     val monthlyAppStoreProductId: String? = null,

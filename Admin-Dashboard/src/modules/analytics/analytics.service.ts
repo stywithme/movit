@@ -87,14 +87,6 @@ export interface RevenueAnalytics {
   plans: Array<{ id: string; name: string; isActive: boolean; monthlyPrice: number; yearlyPrice: number; currency: string }>;
 }
 
-export interface BookingAnalytics {
-  summary: Record<string, number>;
-  trend: ChartPoint[];
-  statuses: ChartPoint[];
-  paymentStatuses: ChartPoint[];
-  doctors: Array<{ name: string; value: number; reports: number }>;
-}
-
 export interface SafetyAnalytics {
   summary: Record<string, number>;
   trends: { dangerReps: ChartPoint[]; abandoned: ChartPoint[]; safetyScore: ChartPoint[] };
@@ -126,7 +118,6 @@ export const analyticsService = {
   training: (params?: AnalyticsParams) => getData<TrainingAnalytics>('/admin/analytics/training', params),
   progression: (params?: AnalyticsParams) => getData<ProgressionAnalytics>('/admin/analytics/progression', params),
   revenue: (params?: AnalyticsParams) => getData<RevenueAnalytics>('/admin/analytics/revenue', params),
-  bookings: (params?: AnalyticsParams) => getData<BookingAnalytics>('/admin/analytics/bookings', params),
   safety: (params?: AnalyticsParams) => getData<SafetyAnalytics>('/admin/analytics/safety', params),
   content: (params?: AnalyticsParams) => getData<ContentAnalytics>('/admin/analytics/content', params),
   programs: (params?: AnalyticsParams) => getData<any[]>('/admin/analytics/programs', params),

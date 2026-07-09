@@ -19,7 +19,7 @@ import {
     createPayment,
     getPaymentDetails,
     verifyWebhookSignature,
-} from '@/modules/booking-payments/myfatoorah.client';
+} from '@/lib/payments/myfatoorah.client';
 import {
     cancelGooglePlaySubscription,
     verifyGooglePlaySubscription,
@@ -101,11 +101,8 @@ export class SubscriptionService {
     }
 
     private async paymentCurrency(plan: any): Promise<string> {
-        const [systemCurrency, bookingCurrency] = await Promise.all([
-            this.prisma.system.findUnique({ where: { key: 'currency' } }),
-            this.prisma.system.findUnique({ where: { key: 'booking_currency' } }),
-        ]);
-        return systemCurrency?.value || bookingCurrency?.value || plan.currency || DEFAULT_PAYMENT_CURRENCY;
+        const systemCurrency = await this.prisma.system.findUnique({ where: { key: 'currency' } });
+        return systemCurrency?.value || plan.currency || DEFAULT_PAYMENT_CURRENCY;
     }
 
     private addPeriod(start: Date, billingPeriod: BillingPeriod): Date {

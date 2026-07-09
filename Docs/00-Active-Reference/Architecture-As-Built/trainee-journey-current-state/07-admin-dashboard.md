@@ -1,42 +1,53 @@
-# Admin-Dashboard — ما يخص مسار المتدرب
+# Admin-Dashboard — مسار المتدرب
 
-## التنقل (Sidebar)
+| | |
+|---|---|
+| **Status** | `ACTIVE` |
+| **SSOT for** | Admin pages consumed by trainee journey |
+| **Code** | `Admin-Dashboard/src/app/admin/`, `Admin-Dashboard/src/components/layout/Sidebar.tsx` |
+| **Verified** | 2026-06-22 |
 
-المصدر: `Admin-Dashboard/src/components/layout/Sidebar.tsx` — عناصر ذات صلة:
+---
+
+## التنقل
+
+`Sidebar.tsx` — عناصر ذات صلة:
 
 - Programs → `/admin/programs`
 - Programs & map → `/admin/programs/map`
 - Assessment Templates → `/admin/assessment-templates`
-- Levels → `/admin/levels`؛ تحليلات مستويات → `/admin/analytics/levels`
+- Levels → `/admin/levels` · Analytics → `/admin/analytics/levels`
 
-## البرامج (Programs)
+**ملغى:** مسارات Booking / Doctor work-time / Close-time — أُزيلت من المنتج.
 
-- قائمة: `src/app/admin/programs/page.tsx` — استدعاءات `/api/admin/programs`.
-- إنشاء/تعديل: `src/app/admin/programs/new/page.tsx`, `src/app/admin/programs/[id]/edit/page.tsx`.
-- الحقول ذات الصلة بالوصفة في الـ backend تشمل `levelRangeMin`/`Max`, `programAttributes`, `exitRecommendations`, `nextProgramId`, `autoAssignable`, `isPublished`, `weeklyPlannedWorkoutsTarget`, إلخ (انظر مخطط Prisma في `backend/prisma/schema.prisma`).
+---
 
-## خريطة البرامج والقوالب
+## البرامج
 
-- `src/app/admin/programs/map/page.tsx` — يجلب برامج وقوالب تقييم لعرض العلاقات وروابط التحرير.
+- قائمة/تحرير: `src/app/admin/programs/`
+- حقول الوصفة: `levelRangeMin/Max`, `programAttributes`, `exitRecommendations`, `nextProgramId`, `autoAssignable`, `weeklyPlannedWorkoutsTarget`, …
+
+---
 
 ## قوالب التقييم
 
-- قائمة: `src/app/admin/assessment-templates/page.tsx` — نشر/إلغاء نشر، حذف.
-- إنشاء/تعديل: `new/page.tsx`, `[id]/edit/page.tsx` — استدعاءات `/api/admin/assessment-templates`.
+`src/app/admin/assessment-templates/` — نشر، تحرير، حذف → `/api/admin/assessment-templates`.
 
-## المستويات (Levels)
+---
 
-- `src/app/admin/levels/page.tsx` — CRUD عبر `/api/admin/levels` (حسب تنفيذ مسار الـ API في المشروع).
-- هذه السجلات تغذي `scoreToLevel` في الـ backend عبر جدول `Level` (`entryThreshold`, `maxThreshold`, …).
+## المستويات
 
-## قواعد التقدم (Progression Rules)
+`src/app/admin/levels/` — CRUD → جدول `Level` يغذي `scoreToLevel` في الخادم.
 
-الإدارة من الـ backend: `backend/src/modules/progression/progression-rules-admin.controller.ts` — مسارات `admin/progression-rules`. لوحة الإدارة قد تستدعيها عبر طبقة API إن وُجدت في `Admin-Dashboard/src/app/api/...` (يُنصح بالبحث عن `progression-rules` في المشروع عند إضافة واجهة).
+---
 
-## صلاحيات الوصول (Middleware)
+## قواعد التقدم
 
-`Admin-Dashboard/src/middleware.ts` يربط المسارات بمواضيع مثل `Program`, `ProgramMap`, `AssessmentTemplate`.
+`backend/src/modules/progression/progression-rules-admin.controller.ts` — `admin/progression-rules`.
 
-## ما لا يُدار عادة من هذه الصفحات
+---
 
-- ملف التدريب الفردي للمستخدم (`TrainingProfile`) — لا توجد صفحة مخصّصة في نتائج البحث المستخدمة لهذا التوثيق.
+## ما لا يُدار من اللوحة
+
+- `TrainingProfile` للمستخدم النهائي — لا صفحة مخصّصة.
+- حجز المواعيد — ملغى.

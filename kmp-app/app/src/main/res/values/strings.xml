@@ -351,7 +351,6 @@
     <string name="subscription_feature_reports">Advanced reports and trends</string>
     <string name="subscription_feature_programs">Personalized programs</string>
     <string name="subscription_feature_video">Video review and export tools</string>
-    <string name="subscription_feature_doctor_sessions">%1$d doctor sessions included</string>
     <string name="subscription_feature_workouts">%1$d workouts included</string>
     <string name="subscription_feature_exercises">%1$d exercises included</string>
     <string name="subscription_period_month">/month</string>
@@ -540,7 +539,7 @@
     <string name="errors">Errors</string>
     <string name="stats">Stats</string>
     <string name="tips">Tips</string>
-    <string name="way_to_fix">How to Fix</string>
+    <string name="how_to_fix">How to Fix</string>
     <string name="save_and_finish">Save &amp; Finish</string>
     <string name="high_priority">High Priority</string>
     <string name="perfect">Perfect</string>

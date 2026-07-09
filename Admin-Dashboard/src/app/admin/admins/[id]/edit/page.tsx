@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { Button, Checkbox, Input, Label, Select } from '@/components/ui';
+import { Button, Input, Label, Select } from '@/components/ui';
 import { FormShell, PageHeader } from '@/components/common';
 
 interface Admin {
@@ -13,7 +13,6 @@ interface Admin {
   roleId: string | null;
   role?: { id: string; name: string } | null;
   isActive: boolean;
-  isDoctor: boolean;
 }
 
 interface RoleOption {
@@ -33,7 +32,6 @@ export default function EditAdminPage() {
     email: '',
     roleId: '',
     password: '',
-    isDoctor: false,
   });
 
   // Fetch roles
@@ -63,7 +61,6 @@ export default function EditAdminPage() {
             email: admin.email || '',
             roleId: admin.roleId || '',
             password: '',
-            isDoctor: admin.isDoctor || false,
           });
         } else {
           router.push('/admin/admins');
@@ -91,7 +88,6 @@ export default function EditAdminPage() {
           name: formData.name,
           email: formData.email,
           roleId: formData.roleId || null,
-          isDoctor: formData.isDoctor,
         }),
       });
 
@@ -151,7 +147,7 @@ export default function EditAdminPage() {
       <form onSubmit={handleSubmit}>
         <FormShell
           title="Admin Details"
-          description="Manage profile, role assignment, and doctor access."
+          description="Manage profile and role assignment."
           footer={
             <Button type="submit" loading={saving} disabled={!canSubmit}>
               Save Changes
@@ -202,14 +198,6 @@ export default function EditAdminPage() {
               Remove role
             </button>
           )}
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Checkbox
-            checked={formData.isDoctor}
-            onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, isDoctor: Boolean(checked) }))}
-          />
-          <Label>Is Doctor</Label>
         </div>
 
         <div className="space-y-2">

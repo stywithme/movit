@@ -85,16 +85,16 @@ export function SearchableSelect({
           disabled={disabled}
           aria-label={ariaLabel}
           className={cn(
-            'w-full flex items-center justify-between gap-2 px-4 py-3 rounded-lg border-2 transition-colors text-left',
-            'text-gray-900 font-medium',
-            'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
-            'disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-70 disabled:text-gray-600',
-            'border-gray-300 bg-white',
-            className
+            'relative flex h-9 w-full items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 py-1 pr-9 text-left text-sm shadow-xs transition-[color,box-shadow] outline-none',
+            'focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
+            'disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50',
+            className,
           )}
         >
-          <span className={cn('truncate', value ? 'text-gray-900' : 'text-gray-600')}>{selectedLabel}</span>
-          <ChevronDown className="h-4 w-4 shrink-0 text-gray-600" />
+          <span className={cn('truncate', value ? 'text-foreground' : 'text-muted-foreground')}>
+            {selectedLabel}
+          </span>
+          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         </button>
       </Popover.Trigger>
       <Popover.Portal>

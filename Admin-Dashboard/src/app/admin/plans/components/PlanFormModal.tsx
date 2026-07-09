@@ -36,7 +36,6 @@ export function PlanFormModal({ plan, onClose, onSuccess }: Props) {
     const [discount, setDiscount] = useState(plan?.discount?.toString() || '0');
     const [maxWorkoutTemplates, setMaxWorkoutTemplates] = useState(plan?.maxWorkoutTemplatesLimit?.toString() || '0');
     const [maxExercises, setMaxExercises] = useState(plan?.maxExercisesLimit?.toString() || '0');
-    const [freeSessions, setFreeSessions] = useState(plan?.freeDoctorSessionsLimit?.toString() || '0');
     const [monthlyGooglePlayProductId, setMonthlyGooglePlayProductId] = useState(plan?.monthlyGooglePlayProductId || '');
     const [yearlyGooglePlayProductId, setYearlyGooglePlayProductId] = useState(plan?.yearlyGooglePlayProductId || '');
     const [isActive, setIsActive] = useState(plan ? plan.isActive : true);
@@ -55,7 +54,6 @@ export function PlanFormModal({ plan, onClose, onSuccess }: Props) {
                 discount: parseFloat(discount),
                 maxWorkoutTemplatesLimit: parseInt(maxWorkoutTemplates, 10),
                 maxExercisesLimit: parseInt(maxExercises, 10),
-                freeDoctorSessionsLimit: parseInt(freeSessions, 10),
                 monthlyGooglePlayProductId: monthlyGooglePlayProductId.trim() || null,
                 yearlyGooglePlayProductId: yearlyGooglePlayProductId.trim() || null,
                 isActive,
@@ -145,7 +143,7 @@ export function PlanFormModal({ plan, onClose, onSuccess }: Props) {
                             <Input
                                 value={monthlyGooglePlayProductId}
                                 onChange={(e) => setMonthlyGooglePlayProductId(e.target.value)}
-                                placeholder="pose_pro_monthly"
+                                placeholder="movit_pro_monthly"
                             />
                         </div>
                         <div className="space-y-2">
@@ -153,12 +151,12 @@ export function PlanFormModal({ plan, onClose, onSuccess }: Props) {
                             <Input
                                 value={yearlyGooglePlayProductId}
                                 onChange={(e) => setYearlyGooglePlayProductId(e.target.value)}
-                                placeholder="pose_pro_yearly"
+                                placeholder="movit_pro_yearly"
                             />
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-4 border-t pt-4 md:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-4 border-t pt-4 md:grid-cols-2">
                         <div className="space-y-2">
                             <Label>Max Workout Templates Limit</Label>
                             <Input type="number" value={maxWorkoutTemplates} onChange={(e) => setMaxWorkoutTemplates(e.target.value)} placeholder="0 for unlimited" />
@@ -166,10 +164,6 @@ export function PlanFormModal({ plan, onClose, onSuccess }: Props) {
                         <div className="space-y-2">
                             <Label>Max Exercises Limit</Label>
                             <Input type="number" value={maxExercises} onChange={(e) => setMaxExercises(e.target.value)} placeholder="0 for unlimited" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Free Dr. Sessions</Label>
-                            <Input type="number" value={freeSessions} onChange={(e) => setFreeSessions(e.target.value)} placeholder="0" />
                         </div>
                     </div>
 

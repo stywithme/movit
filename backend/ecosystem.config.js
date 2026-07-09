@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'pose-backend',
+      name: 'movit-backend',
       script: 'dist/src/main.js',
       instances: 1,
       autorestart: true,

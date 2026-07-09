@@ -1,3 +1,5 @@
+> **Status:** `BUSINESS` — تخطيط منتج/سوق؛ ليس مواصفة تقنية.
+
 # Beta Measurement
 
 ## الهدف
@@ -28,7 +30,7 @@
 
 ## North Star Metric
 
-نسبة من استمروا أسبوعين وأظهروا تطوراً شخصياً قابلاً للقياس (التعريف الكامل في `16-Correct-Planned Workout-Definition.md`).
+نسبة من استمروا أسبوعين وأظهروا تطوراً شخصياً قابلاً للقياس (التعريف الكامل في [`16-Correct-Session-Definition.md`](16-Correct-Session-Definition.md)).
 
 "3 جلسات محتسبة في 7 أيام" = مؤشر تفعيل مبكر (leading)، لا تعريف النجاح.
 

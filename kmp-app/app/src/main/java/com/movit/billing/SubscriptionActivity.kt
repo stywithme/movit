@@ -310,9 +310,6 @@ class SubscriptionActivity : AppCompatActivity(), PurchasesUpdatedListener {
             lines += "✓ ${getString(R.string.subscription_feature_workouts, plan.maxWorkoutTemplatesLimit)}"
         }
         if (plan.maxExercisesLimit > 0) lines += "✓ ${getString(R.string.subscription_feature_exercises, plan.maxExercisesLimit)}"
-        if (plan.freeDoctorSessionsLimit > 0) {
-            lines += "✓ ${getString(R.string.subscription_feature_doctor_sessions, plan.freeDoctorSessionsLimit)}"
-        }
         if (lines.isEmpty()) lines += defaultFeatureLines()
         return lines.distinct()
     }

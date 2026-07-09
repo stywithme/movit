@@ -26,14 +26,16 @@
 | [06-Discussion-Core-Principles.md](06-Discussion-Core-Principles.md) | الحمل التدريجي، الخصوصية، التفرد، الأمان، القيود |
 | [07-References-By-Theme.md](07-References-By-Theme.md) | **دليل المراجع** مجمّعاً حسب الموضوع مع أرقام المراجع من الورقة |
 | [08-Supplemental-Digital-Content.md](08-Supplemental-Digital-Content.md) | **فهرس الملحقات الرقمية (D323)** — Appendices 1–27 من موقع المجلة |
-| [09-POSE-Integration-Roadmap.md](09-POSE-Integration-Roadmap.md) | **خارطة ربط النتائج بمشروع POSE** — مقترحات تفعيل/إضافة/تبسيط بأولويات |
-| [10-Progression-Prescription-Deep-Dive.md](10-Progression-Prescription-Deep-Dive.md) | **التقدم والتوصيف بعمق** — كل العوامل المؤثرة وأفضل الطرق للوصول للأهداف |
-| [11-Final-Progression-Spec.md](11-Final-Progression-Spec.md) | **المواصفات النهائية** — خطة تنفيذ واضحة خطوة بخطوة |
+| [09-Movit-Integration-Roadmap.md](09-Movit-Integration-Roadmap.md) | **redirect** → [`Integration-Gap-Tracker.md`](../../00-Active-Reference/Engine/Integration-Gap-Tracker.md) |
+| [10-Progression-Prescription-Deep-Dive.md](10-Progression-Prescription-Deep-Dive.md) | **بحث:** التقدم والتوصيف بعمق |
+| [11-Final-Progression-Spec.md](11-Final-Progression-Spec.md) | **redirect** → [`Progression-Spec-Gaps.md`](../../00-Active-Reference/Engine/Progression-Spec-Gaps.md) |
 
 ## ملاحظة عن «دخول المصادر»
 
 الورقة تعتمد على **137 مراجعة منهجية** وآلاف المشاركين في الدراسات الأصلية. الوصول إلى **كل** المقالات المفردة يتطلب اشتراكات مؤسسية أو PubMed abstracts. الملف [07-References-By-Theme.md](./07-References-By-Theme.md) يصف **أهم مجموعات المراجع** وكيف تُستخدم للبحث (DOI / PubMed).
 
-## صلة المشروع (POSE)
+## صلة المشروع (Movit)
 
-محاور مفيدة لتطبيقاتكم: **شدة الحمل (%1RM)**، **الحجم (مجموعات/أسبوع)**، **الترتيب داخل الجلسة**، **التدريب القائم على السرعة (VBT)**، **الوظيفة الجسدية** (مشي، توازن، كرسي)، و**عدم إلزامية الرفع حتى الفشل** — كلها مذكورة صراحة في التحليل أدناه.
+محاور مفيدة لتطبيقاتكم: **شدة الحمل (%1RM)**، **الحجم (مجموعات/أسبوع)**، **الترتيب داخل الجلسة**، **التدريب القائم على السرعة (VBT)**، **الوظيفة الجسدية** — كلها مذكورة في التحليل أعلاه.
+
+**فجوات التنفيذ والربط بالكود** (ليست بحثاً): [`Integration-Gap-Tracker.md`](../../00-Active-Reference/Engine/Integration-Gap-Tracker.md) و [`Progression-Spec-Gaps.md`](../../00-Active-Reference/Engine/Progression-Spec-Gaps.md).

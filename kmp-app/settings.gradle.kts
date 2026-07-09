@@ -35,3 +35,6 @@ include(":feature:training-debug")
 include(":feature:account")
 include(":feature:shell")
 include(":feature:billing")
+
+// Keep api.physical_device_ip aligned with this machine when api.mode=local.
+apply(from = "gradle/sync-local-api-ip.gradle.kts")

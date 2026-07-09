@@ -18,7 +18,6 @@ export interface AdminJwtPayload {
   email: string;
   roleId: string | null;
   isSuperAdmin: boolean;
-  isDoctor: boolean;
   type: 'admin';
   iat?: number;
   exp?: number;

@@ -7,7 +7,6 @@
     discount?: number;
     maxExercisesLimit?: number;
     maxWorkoutTemplatesLimit?: number;
-    freeDoctorSessionsLimit?: number;
     monthlyGooglePlayProductId?: string;
     yearlyGooglePlayProductId?: string;
     monthlyAppStoreProductId?: string;

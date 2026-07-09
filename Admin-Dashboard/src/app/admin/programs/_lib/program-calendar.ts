@@ -72,10 +72,10 @@ export const createEmptyPlannedWorkout = (sortOrder: number): PlannedWorkoutForm
 
 export const createEmptyDay = (dayNumber: number): DayForm => ({
   dayNumber,
-  dayType: 'training',
-  isRestDay: false,
+  dayType: 'rest',
+  isRestDay: true,
   targetMuscleIds: [],
-  plannedWorkouts: [createEmptyPlannedWorkout(0)],
+  plannedWorkouts: [],
 });
 
 export const createEmptyWeek = (weekNumber: number): WeekForm => ({

@@ -7,12 +7,12 @@
 المراجع التي تمت مراجعتها مباشرة:
 
 - Legacy readonly:
-  - `D:/laragon/www/POSE-2-MO-readonly/kmp-app/app/src/main/java/com/trainingvalidator/poc/ui/debug/DebugActivity.kt`
-  - `D:/laragon/www/POSE-2-MO-readonly/kmp-app/app/src/main/res/layout/activity_debug.xml`
-  - `D:/laragon/www/POSE-2-MO-readonly/kmp-app/app/src/main/res/layout/dialog_debug_settings.xml`
-  - `D:/laragon/www/POSE-2-MO-readonly/kmp-app/app/src/main/java/com/trainingvalidator/poc/video/VideoManager.kt`
-  - `D:/laragon/www/POSE-2-MO-readonly/kmp-app/app/src/main/java/com/trainingvalidator/poc/pose/PoseLandmarkerHelper.kt`
-  - `D:/laragon/www/POSE-2-MO-readonly/kmp-app/app/src/main/java/com/trainingvalidator/poc/analysis/ElbowAngleEstimator.kt`
+  - `D:/laragon/www/movit-MO-readonly/kmp-app/app/src/main/java/com/trainingvalidator/poc/ui/debug/DebugActivity.kt`
+  - `D:/laragon/www/movit-MO-readonly/kmp-app/app/src/main/res/layout/activity_debug.xml`
+  - `D:/laragon/www/movit-MO-readonly/kmp-app/app/src/main/res/layout/dialog_debug_settings.xml`
+  - `D:/laragon/www/movit-MO-readonly/kmp-app/app/src/main/java/com/trainingvalidator/poc/video/VideoManager.kt`
+  - `D:/laragon/www/movit-MO-readonly/kmp-app/app/src/main/java/com/trainingvalidator/poc/pose/PoseLandmarkerHelper.kt`
+  - `D:/laragon/www/movit-MO-readonly/kmp-app/app/src/main/java/com/trainingvalidator/poc/analysis/ElbowAngleEstimator.kt`
 - KMP الحالي:
   - `kmp-app/settings.gradle.kts`
   - `kmp-app/core/pose-capture/src/androidMain/kotlin/com/movit/core/posecapture/android/MediaPipePoseDetector.kt`

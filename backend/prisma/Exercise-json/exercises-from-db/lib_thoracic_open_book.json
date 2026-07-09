@@ -96,7 +96,7 @@
           "upRange": {
             "pad": {
               "max": 70,
-              "min": 18
+              "min": 19
             },
             "normal": {
               "max": 62,
@@ -117,7 +117,7 @@
           },
           "downRange": {
             "pad": {
-              "max": 25,
+              "max": 17,
               "min": 0
             },
             "normal": {

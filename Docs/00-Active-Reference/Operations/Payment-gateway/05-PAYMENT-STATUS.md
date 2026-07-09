@@ -92,11 +92,6 @@ GET /v3/payments/{paymentId}
 | PAID | الفاتورة مدفوعة (يوجد معاملة ناجحة) |
 | PENDING | معلقة (كل المعاملات فاشلة أو قيد التنفيذ أو ملغاة) |
 
-### ربط مع Bookings
-
-- استخدم `Invoice.ExternalIdentifier` أو `MetaData` لمعرفة الـ `bookingId`
-- عند `Transaction.Status = SUCCESS`: حدّث الحجز إلى `payment_pending` → `pending` أو `paid` حسب منطقك
-
 ---
 
 ## المرونة (Resilience)

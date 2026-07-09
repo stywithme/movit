@@ -78,9 +78,9 @@
 ## P2 — تنظيف الهوية (Movit — تم 2026-06-17)
 
 ### 8. إعادة تسمية الثيم والبراند الميت ✅
-- `Theme.WayToFix` → `Theme.Movit` (+ Splash/Training/Dialog).
-- `TextAppearance.WayToFix.*` / `Widget.WayToFix.*` → `*.Movit.*`.
-- Deep links: `waytofix://` → `movit://`.
+- `Theme.Movit` (+ Splash/Training/Dialog).
+- `TextAppearance.Movit.*` / `Widget.Movit.*`.
+- Deep links: `movit://`.
 - احذف `Theme.TrainingValidatorPoC` (legacy alias) بعد التأكد من عدم استخدامه — **متبقٍ**.
 
 ---
@@ -99,4 +99,4 @@
 - [x] 5. حذف ApiClient.init الزائد (مكانين)
 - [x] 6. حذف MainActivity الميّت (بعد التأكد)
 - [x] 7. توحيد estimateSessionDuration (overload لـ ProgramSession في ProgramSessionFormatting)
-- [x] 8. إعادة تسمية الثيم/البراند (WayToFix → Movit)
+- [x] 8. إعادة تسمية الثيم/البراند (Movit)

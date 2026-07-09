@@ -2,8 +2,7 @@
 
 | مجلد | المحتوى |
 |------|---------|
-| [`Superseded/`](Superseded/) | نسخ مكررة أو مستبدلة (مقاييس قديمة، ملخص معمارية عربي، FlexFit…) |
-| [`Cancelled-Features/`](Cancelled-Features/) | حجوزات / booking — **ملغى في التخطيط التجاري** |
+| [`Superseded/`](Superseded/) | نسخ مكررة أو مستبدلة (مقاييس قديمة، ملخص معمارية عربي، خطط استراتيجية قديمة…) |
 | [`Criticism-Reviews/`](Criticism-Reviews/) | مراجعات داخلية لخطط |
 | [`Legacy-Plans/`](Legacy-Plans/) | وثائق قديمة |
 

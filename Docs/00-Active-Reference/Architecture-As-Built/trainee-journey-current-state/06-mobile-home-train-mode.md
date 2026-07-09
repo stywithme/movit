@@ -1,39 +1,49 @@
-# الشاشة الرئيسية للموبايل: `GET /mobile/home` و`trainMode`
+# الشاشة الرئيسية: `GET /mobile/home` و`trainMode`
 
-## المتحكم
+| | |
+|---|---|
+| **Status** | `ACTIVE` |
+| **SSOT for** | Mobile home payload and trainMode states |
+| **Code** | `backend/src/modules/mobile-sync/mobile-home.controller.ts`, `kmp-app/feature/home/`, `kmp-app/feature/train/TrainApiMapper.kt` |
+| **Verified** | 2026-06-22 |
 
-`backend/src/modules/mobile-sync/mobile-home.controller.ts` — دالة `buildHomeData` و`buildTrainMode`.
+---
 
-## بيانات المستخدم في الاستجابة
+## Backend
 
-- من `UserLevelProfile` الأحدث: `user.level`, `levelCode` (عبر `buildLevelProgress`), `bodyScore` من آخر `BodyScanResult`.
-- إحصاءات و`recentWorkoutExecutions` من جداول التدريب.
+المتحكم: `mobile-home.controller.ts` — `buildHomeData`, `buildTrainMode`, `buildAlerts`.
+
+**بيانات المستخدم:** `UserLevelProfile`، `bodyScore`، إحصاءات، `recentWorkoutExecutions`.
+
+---
 
 ## حالات `trainMode.status`
 
-المذكورة في تعليق الملف ورمز `buildTrainMode`:
+| الحالة | الشرط |
+|--------|--------|
+| `no_assessment` | لا `BodyScanResult` |
+| `reassessment_due` | `ReassessmentSchedule` `pending` و`scheduledDate <= now` |
+| `no_plan` | تقييم موجود لكن لا فتحة/برنامج نشط |
+| `program_complete` | `position.isProgramComplete` |
+| `rest_day` | يوم راحة أو خارج الجدول أو `day_complete` |
+| `active` | تمرين مخطط غير مكتمل |
 
-| الحالة | الشرط (من الكود) |
-|--------|-------------------|
-| `no_assessment` | لا يوجد `BodyScanResult` للمستخدم |
-| `reassessment_due` | يوجد `ReassessmentSchedule` بحالة `pending` و`scheduledDate <= now` |
-| `no_plan` | يوجد تقييم لكن لا فتحة خطة نشطة أو لا برنامج مرتبط بالفتحة النشطة |
-| `program_complete` | منطق الموضع في البرنامج يعتبر البرنامج مكتملًا (`position.isProgramComplete`) |
-| `rest_day` | يوم راحة في القالب، أو يوم خارج جدول المستخدم، أو كل التمارين المخططة لليوم مكتملة (`day_complete`) |
-| `active` | يوم تدريب مع تمرين مخطط غير مكتمل |
-
-**ملاحظة:** استعلام `pendingReassessment` في `buildHomeData` يستخدم `status: 'pending'` فقط (لا يشمل `overdue` في هذا الاستعلام)، بينما فرع `reassessment_due` يقارن التاريخ لجدول `pending`.
-
-## مصادر البيانات داخل `buildTrainMode`
-
-- `activePlan` مع `programs where status: 'active'`.
-- `resolveTrainingPositionMeta`, `countTrainingDaySlots`, `getLastPlannedWorkoutCompletedAt` — من وحدات الخطة.
-- `effectivePlanService.getEffectivePlan` لعدّ التمارين الفعلية للتمرين المخطط الحالي عند الحالة `active`.
-
-## التنبيهات (`alerts`)
-
-دالة `buildAlerts` — أنواع مثل `reassessment_due`, `progression_applied`, `level_up`, `streak_at_risk` حسب حالة التدريب والتقدم غير المقروء.
+---
 
 ## kmp-app
 
-`MobileSyncApi.getHomeData` → `GET api/mobile/home`؛ الاستهلاك في `HomeFragment` و`HomeRepository` (بحث في المشروع).
+| الطبقة | الملف |
+|--------|--------|
+| HTTP | `MovitMobileApi.fetchHome` → `GET api/mobile/home` |
+| Cache + sync | `HomeSyncRepository.kt` · `MovitSyncOrchestrator` |
+| Home UI | `SharedHomeRepository` · `MovitHomeViewModel` |
+| Train UI | `MovitTrainViewModel` · `TrainApiMapper` (يحوّل `trainMode` إلى `TrainDashboardStatus`) |
+| إصلاح trainMode | `HomeTrainModeHydrator.kt` عند تعارض assessment/no-plan |
+
+التبويبان Home وTrain يستهلكان نفس مصدر البيانات؛ التوجيه إلى Assessment/Workout عبر `MovitAppShellViewModel` effects.
+
+---
+
+## تنبيهات
+
+`buildAlerts` — `reassessment_due`, `progression_applied`, `level_up`, `streak_at_risk`.

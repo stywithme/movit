@@ -8,7 +8,6 @@ export interface Plan {
     discount: number;
     maxExercisesLimit: number;
     maxWorkoutTemplatesLimit: number;
-    freeDoctorSessionsLimit: number;
     monthlyGooglePlayProductId?: string | null;
     yearlyGooglePlayProductId?: string | null;
     features?: any;
@@ -26,7 +25,6 @@ export interface CreatePlanDto {
     discount?: number;
     maxExercisesLimit?: number;
     maxWorkoutTemplatesLimit?: number;
-    freeDoctorSessionsLimit?: number;
     monthlyGooglePlayProductId?: string | null;
     yearlyGooglePlayProductId?: string | null;
     features?: any;

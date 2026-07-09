@@ -1,7 +1,14 @@
+| | |
+|---|---|
+| **Status** | `ACTIVE` |
+| **SSOT for** | Pose scene detection (direction, posture, region) |
+| **Code** | `com.movit.core.training.position.*` in `kmp-app/core/training-engine/` |
+| **Verified** | 2026-06-22 |
+
 # Pose Scene Detection — How Each State Is Detected
 
-> Current implementation as of Feb 2026.  
-> Source files: `CameraPositionDetector.kt`, `BodyPostureDetector.kt`, `VisibleRegionDetector.kt`, `PoseSceneDetector.kt`, `PosePosition.kt`
+> As-built geometric detectors in KMP.  
+> Source: `CameraPositionDetector.kt`, `BodyPostureDetector.kt`, `VisibleRegionDetector.kt`, `PoseSceneDetector.kt`, `PoseSceneExpectation.kt` under `com.movit.core.training.position`.
 
 ---
 
@@ -15,7 +22,9 @@ Detection runs on **3 independent axes** every frame:
 | **Posture** | `BodyPostureDetector` | STANDING / LYING_PRONE / LYING_SUPINE / LYING_SIDE / SITTING |
 | **Region** | `VisibleRegionDetector` | FULL_BODY / UPPER_BODY / LOWER_BODY |
 
-`PoseSceneDetector` wraps all three with **majority-vote rolling windows** (7 frames, 5 required) and a warm-up mode that trusts raw results for the first 4 frames.
+`PoseSceneDetector` wraps all three with **majority-vote rolling windows** (default 7 frames, 5 required). `StableCameraDetector` has its own warm-up that trusts raw results for the first 4 frames.
+
+**Consumers:** `SetupReadinessGate` (setup scene axes), `PositionValidator` (camera-aware check axes; locks scene on first valid frame during training).
 
 ---
 

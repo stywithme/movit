@@ -90,7 +90,7 @@
             },
             "warning": {
               "min": 140,
-              "max": 180
+              "max": 149
             }
           },
           "stateMessages": {

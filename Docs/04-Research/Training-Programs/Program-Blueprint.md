@@ -1,14 +1,41 @@
-# مخطط منظومة البرامج التدريبية في POSE
+# مخطط منظومة البرامج التدريبية في Movit
 
-> الوثيقة المرجعية النهائية لبناء منظومة البرامج التدريبية في POSE.
+| | |
+|---|---|
+| **Status** | `ROADMAP` |
+| **SSOT for** | تصميم منظومة البرامج (مستهدف) — ليس as-built |
+| **As-built journey** | [`trainee-journey-current-state/`](../../00-Active-Reference/Architecture-As-Built/trainee-journey-current-state/) |
+| **Integration gaps** | [`Integration-Gap-Tracker.md`](../../00-Active-Reference/Engine/Integration-Gap-Tracker.md), [`Progression-Spec-Gaps.md`](../../00-Active-Reference/Engine/Progression-Spec-Gaps.md) |
+| **Verified** | 2026-06-22 |
+
+> الوثيقة المرجعية النهائية لبناء منظومة البرامج التدريبية في Movit.
 >
 > هذه الوثيقة تركز على الخطة المعتمدة نفسها: ما الذي سنبنيه، كيف سيتكامل، وما الذي سيبقى خارج النطاق.
+> **للوضع الحالي في الكود** (onboarding، prescription، effective-plan) راجع [trainee-journey](../../00-Active-Reference/Architecture-As-Built/trainee-journey-current-state/README.md) — لا تُكرَّر تفاصيل المسار هنا.
+---
+
+## حالة التنفيذ (Implementation status)
+
+> **آخر تحديث:** 2026-06-22 · مرجع سريع فقط — **لا يُكرّر** as-built. التفاصيل التشغيلية: [`04-prescription-and-program-enrollment.md`](../../00-Active-Reference/Architecture-As-Built/trainee-journey-current-state/04-prescription-and-program-enrollment.md), [`05-program-completion-reassessment.md`](../../00-Active-Reference/Architecture-As-Built/trainee-journey-current-state/05-program-completion-reassessment.md).
+
+| القدرة | الحالة | ملاحظة |
+|--------|--------|--------|
+| هيكل Program → Week → Day → PlannedWorkout | ✅ منفّذ | Prisma + Admin + mobile sync |
+| Prescription Engine (`rankAndPick`, attribute matching) | ✅ منفّذ | `prescription.service.ts` |
+| Program attributes + `prescriptionPriority` | ✅ منفّذ | Admin Prescription Settings |
+| Enrollment / Active Plan | ✅ منفّذ | `active-plan.service.ts` |
+| Program completion + exit criteria | ✅ منفّذ | `programCompletionService` |
+| Progression rules (admin) | ✅ منفّذ | `progression-rules` module |
+| WorkoutTemplate phases (catalog + nested editor) | ✅ منفّذ | [`Workout-Phases-Refactor-Plan.md`](../../03-Implemented-Archive/Platform/Workout-Phases-Refactor-Plan.md) |
+| Effective Plan / manual overrides layer | ⚠️ جزئي | بعض الحقول والمسارات موجودة |
+| Difficulty Ladders / عائلات تمارين متدرجة | ❌ مخطط | §766 — غير منفّذ |
+| Coach fork / نسخ مخصّصة per-user | ⚠️ جزئي | `forkedFromId` في schema |
 
 ---
 
 ## الغرض
 
-هذه الوثيقة تعتمد النموذج النهائي لمنظومة البرامج التدريبية في POSE، وتحدد:
+هذه الوثيقة تعتمد النموذج النهائي لمنظومة البرامج التدريبية في Movit، وتحدد:
 
 - شكل البرنامج داخل النظام
 - طبقات المنظومة وعلاقاتها
@@ -30,7 +57,7 @@
 
 ## الملخص التنفيذي
 
-منظومة البرامج في POSE تعتمد على 4 ركائز:
+منظومة البرامج في Movit تعتمد على 4 ركائز:
 
 1. **مكتبة برامج يدوية قوية** يبنيها Admin أو Coach.
 2. **Selection Algorithm** يختار البرنامج الأنسب من المكتبة.
@@ -40,7 +67,75 @@
    - Progression State
    - Manual Overrides
 
-البرنامج في POSE ليس قائمة تمارين، بل **وصفة تدريبية قابلة للتسكين والتخصيص والتطور**.
+البرنامج في Movit ليس قائمة تمارين، بل **وصفة تدريبية قابلة للتسكين والتخصيص والتطور**.
+
+---
+
+## حالة التنفيذ (Implementation status)
+
+> **Legend:** `INTEGRATED` = في الكود ويُستخدم · `PARTIAL` = موجود جزئياً أو بلا سلوك كامل · `NOT` = غير منفّذ
+>
+> As-built للمتدرب: [`trainee-journey-current-state/`](../../00-Active-Reference/Architecture-As-Built/trainee-journey-current-state/)
+
+### المرحلة 1 — تثبيت الدومين
+
+| البند | الحالة | مراجع الكود |
+|-------|--------|-------------|
+| `User.trainingGoal` | INTEGRATED | `backend/prisma/schema.prisma`, `training-profile.service.ts` |
+| `Program.programType` (SYSTEM/COACH/CUSTOM) | INTEGRATED | `schema.prisma`, `program-assignment.ts` |
+| `programDomain` (TRAINING/MOBILITY/THERAPEUTIC) | PARTIAL | عبر `programAttributes` + `getEffectiveProgramDomain()` — ليس حقل `Program` مباشر |
+| `TrainingProfile` 1:1 | INTEGRATED | `training-profile` module, `trainee-journey` §01 |
+| `UserProgramExerciseProgressionState` | INTEGRATED | `progression.service.ts` |
+| فصل التدرج عن تعديل القالب | INTEGRATED | التدرج يكتب في state لا في `PlannedWorkoutItem` |
+
+### المرحلة 2 — Effective Plan
+
+| البند | الحالة | مراجع الكود |
+|-------|--------|-------------|
+| `UserProgramOverride` | INTEGRATED | `schema.prisma`, `effective-plan.service.ts` |
+| `GET …/effective-plan` | INTEGRATED | `mobile-user-programs.controller.ts` |
+| دمج Template + State + Overrides | INTEGRATED | `effective-plan.service.ts` |
+| `allowedSubstitutions` | PARTIAL | `exercise-substitutions.service.ts` — نطاق محدود |
+
+### المرحلة 3 — Auto-Assignment
+
+| البند | الحالة | مراجع الكود |
+|-------|--------|-------------|
+| عقد التسكين (`autoAssignable`, نطاق مستوى، معدات…) | PARTIAL | `program-assignment.ts`, `prescription.service.ts` |
+| `assignmentReason` | INTEGRATED | `active-plan.service.ts`, `assessment.service.ts` |
+| `limitingFactor` في الترجيح | PARTIAL | منطق في prescription — ليس UI كامل |
+
+### المرحلة 4 — Progression + Suggestion
+
+| البند | الحالة | مراجع الكود |
+|-------|--------|-------------|
+| `goal-defaults.ts` | INTEGRATED | `backend/src/constants/goal-defaults.ts` |
+| Suggestion layer (عرض فقط) | INTEGRATED | `effective-plan.service.ts` → `buildSuggestion` |
+| تدرج مرتبط بـ `trainingGoal` | INTEGRATED | `progression.service.ts`, `archetype-defaults.ts` |
+| Quality Gate (form, completion, ROM, streak) | INTEGRATED | `progression.service.ts` |
+| `intensityPercentage` محسوب | PARTIAL | الحقل في schema/DTO — لا يُملأ تلقائياً عند الحفظ |
+| `velocityLoss` في بوابة الجودة | PARTIAL | يُحسب في `MetricsCalculator.kt` — لا يوقف الترقية في backend |
+| RPE / RIR | NOT | — |
+| حجم أسبوعي per muscle | NOT | — |
+| Beginner vs Advanced عرض | PARTIAL | `MovitTrainingPreferences.trainingDisplayMode` — إخفاء مقاييس متقدمة غير مكتمل |
+| ترتيب تمارين ذكي (حمل أولاً) | NOT | `sortOrder` يدوي فقط |
+
+### كيانات المخطط vs Schema
+
+| البند في المخطط | الحالة | ملاحظة |
+|-----------------|--------|--------|
+| `PlannedWorkoutItem.role` | NOT | `WorkoutBlockRole` على `WorkoutPhase` وليس على العنصر |
+| `PlannedWorkoutItem.intent` | PARTIAL | `WorkoutItemIntent` على `Exercise` وليس per-item |
+| `familyKey` / `familyOrder` | INTEGRATED | `Exercise` في schema — سلالم curated محدودة في seed |
+| `weekType` DELOAD | PARTIAL | enum موجود؛ استخدام منتج محدود |
+| `role = TEST` + Exit Review | PARTIAL | reassessment في `program-completion.service.ts` — ليس دور TEST صريح |
+
+### ACSM-linked (تفاصيل في Engine)
+
+| البند | الحالة | مرجع |
+|-------|--------|------|
+| فجوات التكامل العامة | ROADMAP | [`Integration-Gap-Tracker.md`](../../00-Active-Reference/Engine/Integration-Gap-Tracker.md) |
+| فجوات التقدم والاقتراح | ROADMAP | [`Progression-Spec-Gaps.md`](../../00-Active-Reference/Engine/Progression-Spec-Gaps.md) |
 
 ---
 
@@ -1009,7 +1104,7 @@ GET /api/mobile/user-programs/:id/effective-plan?week=2&day=3
 - Volume per muscle كمتغير رئيسي للتضخم
 - Power RT (concentric بأقصى سرعة) للقدرة
 
-### اجتهاد تصميمي لـ POSE (منطقي لكن ليس ACSM مباشرة)
+### اجتهاد تصميمي لـ Movit (منطقي لكن ليس ACSM مباشرة)
 
 - `programDomain = THERAPEUTIC` — توسعة منتج
 - `role = CORRECTIVE` و `role = TEST` — تصنيف داخلي للجلسة
@@ -1064,7 +1159,7 @@ GET /api/mobile/user-programs/:id/effective-plan?week=2&day=3
 
 ## الخلاصة النهائية
 
-الخطة المعتمدة في POSE هي:
+الخطة المعتمدة في Movit هي:
 
 1. مكتبة برامج يدوية قوية
 2. تسكين يعتمد على `Profile + Goal + Assessment`

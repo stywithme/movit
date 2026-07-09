@@ -126,7 +126,6 @@ object MobileApiContractRegistry {
         BackendOnlyEndpoint("GET", "api/assessment/history", "Assessment history UI not ported"),
         BackendOnlyEndpoint("GET", "api/assessment/{id}", "Assessment detail UI not ported"),
         BackendOnlyEndpoint("DELETE", "api/assessment/{id}", "Assessment delete needs product decision"),
-        BackendOnlyEndpoint("GET", "api/bookings/rules", "Booking feature out of Movit product scope"),
         BackendOnlyEndpoint("GET", "api/exercises/{id}/substitutions", "Admin id route; mobile slug route covered"),
     )
 
@@ -149,7 +148,7 @@ object MobileApiContractRegistry {
         deferredEndpoints.map { "${it.method} ${it.path}" }.toSet()
 
     /**
-     * Canonical backend mobile route inventory (76-row parity matrix + assessment progress).
+     * Canonical backend mobile route inventory (75-row parity matrix + assessment progress).
      * Every entry must be KMP-covered, deferred, or backend-only.
      */
     val backendMobileRouteInventory: Set<String>

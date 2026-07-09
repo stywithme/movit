@@ -33,12 +33,11 @@ class BackendMobileContractCoverageTest {
     @Test
     fun deferredListExcludesImplementedRoutes() {
         val deferred = MobileApiContractRegistry.deferredEndpointKeys
-        assertTrue("GET api/bookings/rules" !in deferred, "bookings moved to backend-only")
         assertTrue("GET api/exercises/{id}/substitutions" !in deferred, "admin route moved to backend-only")
     }
 
     @Test
     fun backendOnlyInventoryMatchesParityAuditCount() {
-        assertEquals(18, MobileApiContractRegistry.backendOnlyEndpoints.size)
+        assertEquals(17, MobileApiContractRegistry.backendOnlyEndpoints.size)
     }
 }

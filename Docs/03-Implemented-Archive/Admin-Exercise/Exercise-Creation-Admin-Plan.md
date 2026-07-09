@@ -4,7 +4,7 @@
 
 # 📋 Exercise Creation System - Development Plan
 
-> **Project:** POSE-2 Back-Admin  
+> **Project:** Movit Back-Admin  
 > **Version:** 1.0  
 > **Date:** January 2026  
 > **Status:** Planning Phase

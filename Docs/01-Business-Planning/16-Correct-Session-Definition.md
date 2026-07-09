@@ -1,6 +1,8 @@
+> **Status:** `BUSINESS` — تخطيط منتج/سوق؛ ليس مواصفة تقنية.
+
 # Correct Workout Definition (Counted Workout)
 
-> **تسمية (2026-06):** اسم الملف تاريخي. «التمرين المحتسب» هنا = **workout run** يُحتسب للاستمرار/streak (`WorkoutExecution` / `PlannedWorkoutReport`) — وليس auth session ولا assessment session ولا doctor session. انظر [`Workout-Domain-Naming.md`](../00-Active-Reference/Contracts/Workout-Domain-Naming.md).
+> **تسمية (2026-06):** اسم الملف تاريخي. «التمرين المحتسب» هنا = **workout run** يُحتسب للاستمرار/streak (`WorkoutExecution` / `PlannedWorkoutReport`) — وليس auth session ولا assessment session. انظر [`Workout-Domain-Naming.md`](../00-Active-Reference/Contracts/Workout-Domain-Naming.md).
 
 ## تحديث جوهري (قرار المؤسس)
 

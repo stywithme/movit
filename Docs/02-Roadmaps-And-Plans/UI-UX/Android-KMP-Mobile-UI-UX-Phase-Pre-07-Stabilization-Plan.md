@@ -33,7 +33,7 @@ Phase 07 (نقل التدريب الحي/الكاميرا إلى KMP) **ليست
 
 ### 1) فجوة العقود (≈45 endpoint في legacy غير موجودة في KMP)
 
-legacy Retrofit (`MobileSyncApi` 383 سطراً · `AuthApi` · `SubscriptionApi` · `BookingApi`) يحوي **67** endpoint؛ `MovitMobileApi` (KMP) يحوي **22**. الناقص — مجمّعاً حسب الحاجة:
+legacy Retrofit (`MobileSyncApi` 383 سطراً · `AuthApi` · `SubscriptionApi`) يحوي **66** endpoint؛ `MovitMobileApi` (KMP) يحوي **22**. الناقص — مجمّعاً حسب الحاجة:
 
 **🔴 مدخلات Phase 07 المباشرة (كتلة حاجزة):**
 ```
@@ -73,7 +73,7 @@ POST api/mobile/prescription/recommend · POST api/mobile/reassessment/request
 **⚪ خارج نطاق المنتج الحالي (توثَّق كمتروكة):**
 ```
 auth/google (Google bridge مؤجَّل) · auth/reset-password · auth/profile PATCH
-subscriptions/* (StoreKit مخفى) · api/bookings/rules (BookingApi كامل)
+subscriptions/* (StoreKit مخفى)
 ```
 
 ### 2) فجوة DTO (حقول يرجعها الباك اند ولا يستهلكها KMP)

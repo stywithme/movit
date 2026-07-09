@@ -13,7 +13,7 @@
 | [00-OVERVIEW.md](./00-OVERVIEW.md) | نظرة عامة، طرق التكامل، العملات |
 | [01-AUTHENTICATION.md](./01-AUTHENTICATION.md) | التوثيق، مفاتيح API، عناوين الخوادم |
 | [02-INTEGRATION-METHODS.md](./02-INTEGRATION-METHODS.md) | Embedded، Hosted، Invoicing، Direct |
-| [03-CREATING-PAYMENTS.md](./03-CREATING-PAYMENTS.md) | إنشاء الفواتير، روابط الدفع، ربط مع Bookings |
+| [03-CREATING-PAYMENTS.md](./03-CREATING-PAYMENTS.md) | إنشاء الفواتير وروابط الدفع |
 | [04-WEBHOOK.md](./04-WEBHOOK.md) | إعداد Webhook، التوقيع، أنواع الأحداث |
 | [05-PAYMENT-STATUS.md](./05-PAYMENT-STATUS.md) | تحديث الحالة، Redirection، GET Payment Details |
 | [06-TESTING.md](./06-TESTING.md) | بيئة الاختبار، بطاقات الاختبار، التحقق |

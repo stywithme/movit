@@ -23,7 +23,6 @@ const LEGACY_REPORT_SUBJECTS: Record<string, Subject> = {
   AssessmentAnalytics: 'ReportAssessment',
   ProgressionAnalytics: 'ReportProgression',
   RevenueAnalytics: 'ReportRevenue',
-  BookingAnalytics: 'ReportBooking',
   SafetyAnalytics: 'ReportSafety',
   ContentAnalytics: 'ReportContent',
 };

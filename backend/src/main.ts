@@ -30,8 +30,8 @@ async function bootstrap() {
   });
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('POSE API')
-    .setDescription('POSE Backend REST API')
+    .setTitle('Movit API')
+    .setDescription('Movit Backend REST API')
     .setVersion('1.0')
     .addBearerAuth(
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT', in: 'header' },

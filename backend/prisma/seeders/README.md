@@ -1,41 +1,49 @@
 # Exercise seeders
 
+## Production runbook (fresh database)
+
+```bash
+npm run prisma:generate
+npm run prisma:migrate:deploy
+npm run seed:base
+npm run seed:full
+```
+
+Set `ADMIN_SEED_EMAIL` and `ADMIN_SEED_PASSWORD` before `seed:base` to bootstrap the super admin.
+
+## Seed commands
+
+| Command | Purpose |
+|---------|---------|
+| `npm run seed:base` | Reference data only: attributes, levels, pose positions, workout phases, permissions, system config |
+| `npm run seed:full` | `seed:base` + exercises, workouts, programs, assessments, progression |
+| `npm run seed:demo` | `seed:full` + demo users and synthetic history (`SEED_DEMO=true`) |
+| `npm run seed:missing-exercises` | Partial upsert for missing-exercises JSON only (no DB clear) |
+| `npm run seed:reset:full` | Local dev: wipe + full reseed (replaces legacy `prisma:seed`) |
+
+### Flags (`prisma/seed.ts`)
+
+- `--mode=base|full`
+- `--reset` — clear content tables before seed (use `--reset=all` for full wipe)
+- `--wipe-message-templates` — also delete TTS/audio message templates
+- `--demo` — include demo users and user programs
+
 ## Layout
 
-- **`Exercise-json/exercises-from-db/*.json`** — **Canonical exercise library** for `prisma:seed` (one JSON per `slug`; pose variants + checks live in-file). Export path: `prisma/export-exercises-json-from-db.ts`.
-- **`Exercise-json/workouts/*.json`** — Sample workouts (references exercise slugs from the library above).
-- **`curated-extension-rows.ts` + `curated-catalog-extension.ts`** — **Fallback only**: extra catalog rows not yet present as JSON files (skipped automatically when the same slug exists in `exercises-from-db`).
-- **`curated-pose-blueprints.ts`** — Default pose variants by `movementPattern` when no override exists.
-- **`curated-pose-overrides.ts`** — Per-slug pose variants (joints, checks, feedback) for `lib_*` exercises that must not use the generic blueprint.
-- **`phase-range-builders.ts`** — Reusable `phaseRanges` / `phaseStateMessages` helpers for secondary joints (see file header for conventions).
-- **`pose-variant-seed-helper.ts`** — Writes `poseVariant`, `positionCheck`, message templates, and assignments from JSON-shaped data.
-- **`messages.ts`** — Stable `code` message templates (supports preserve-audio re-seed).
-- **`clear.ts` / `seed.ts`** — Database clear modes and entrypoint (`npm run prisma:seed` vs `prisma:seed:full`).
+- **`Exercise-json/exercises-from-db/*.json`** — Canonical exercise library (mobile contract validated).
+- **`Exercise-json/missing-exercises/exercises-from-db/*.json`** — Incremental batch from CSV.
+- **`Exercise-json/workouts/*.json`** — Sample workout templates.
+- **`seeders/exercise-json-batch.ts`** — Shared validated import for full and partial seeds.
+- **`seeders/workout-phases.ts`** — Warm-up / main / cool-down catalog (moved out of migrations).
+- **`seeders/seed-orchestrator.ts`** — Ordered pipeline for base and full modes.
 
-## When to add what
+## When to add exercises
 
-1. **New exercise** — Add `Exercise-json/exercises-from-db/<slug>.json` (re-seed). Optional: add a row to `exercise-manifest.ts` if inference is wrong for `movementPattern` / `familyKey`.
-2. **Curated extension without JSON yet** — Add tuple to `curated-extension-rows.ts`; once a JSON file exists for that slug, the row is ignored on seed.
-3. **Angles change by phase** — Use `phaseRanges` (and optionally `phaseStateMessages`) on **secondary** joints; keep `range` populated for the Admin UI template.
+1. Add `Exercise-json/exercises-from-db/<slug>.json` and run `seed:full` or `seed:missing-exercises` for a batch.
+2. All JSON must pass `validateExerciseConfig()` from `src/lib/types/android-schema.ts`.
+3. Optional: add `exercise-manifest.ts` override when inference is wrong.
 
-## Commands
+## Migrations policy
 
-- `npm run prisma:seed` — Reseed while preserving `feedback_message_templates` audio when possible.
-- `npm run prisma:seed:full` — Full clear including message templates.
-
-## Classification notes (`familyKey` vs `movementPattern`)
-
-- **`movementPattern`** drives rep logic and default pose blueprints.
-- **`familyKey`** groups analytics / UI; it may differ when the exercise is **hybrid** (e.g. wall sit + press, thruster) — those use `conditioning_family` while the pattern stays `PUSH_VERTICAL` / `SQUAT` for counting.
-- **Jefferson curl** uses `HINGE` + `hinge_pattern_family` (loaded hinge) even when tagged mobility.
-
-## Feedback templates
-
-- **`joint_state`** — primary / secondary non-phase `stateMessages`.
-- **`joint_state_phase`** — secondary `phaseStateMessages`; assignment `context` = `phase:state` (e.g. `bottom:warning`), optional `zone` = `up` | `down` for zone-based values. Seeder creates these from `phaseStateMessages` in JSON / overrides so TTS audio can attach per phase in the dashboard.
-
-## Cooldown / `minErrorFrames` (seed defaults)
-
-- Holds & slow mobility: higher `cooldownMs` (2500–3500), `minErrorFrames` 5–8.
-- Dynamic strength: moderate cooldown (1800–2500), `minErrorFrames` 3–5.
-- Power / jump / swing: lower cooldown (1500–2000), `minErrorFrames` 3–4; `severity: tip` uses slightly higher frames than `error` to reduce noise.
+- Migrations are **DDL only** (single production baseline).
+- Reference/catalog data lives in seeders, not in `migration.sql` files.

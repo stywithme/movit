@@ -1,5 +1,5 @@
-> **Status:** `ARCHIVED` â€” implemented or superseded; not current product truth.
-> **Current SSOT:** `Docs/00-Active-Reference/Product-Master/Post-Training-Report-Review.md`
+> **Status:** `ARCHIVED` — not current product truth.
+> **Current SSOT:** [Post-Training-Report-Review.md](../../00-Active-Reference/Product-Master/Post-Training-Report-Review.md)
 > **Archived:** 2026-05-29
 
 # خطة تطوير تقرير ما بعد التمرين (Post-Training Report)

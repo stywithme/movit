@@ -6,95 +6,91 @@
 | **SSOT for** | User journey truth table (code vs blueprint) |
 | **As-built detail** | [`../Architecture-As-Built/trainee-journey-current-state/`](../Architecture-As-Built/trainee-journey-current-state/) |
 | **Planned detail** | [`Unified-User-Journey-Plan.md`](Unified-User-Journey-Plan.md) |
-| **Verified** | 2026-05-29 |
+| **Verified** | 2026-06-22 |
 
 ---
 
-## كيف تقرأ هذا الجدول
+## كيف تقرأ الجدول
 
 | العمود | المعنى |
 |--------|--------|
-| **As-built** | ما يعمل في الكود اليوم (`kmp-app`, `backend`, `Admin-Dashboard`) |
-| **Planned** | ما تصفه الخطة الموحّدة (مارس 2026) |
-| **Gap** | فجوة يجب إغلاقها قبل اعتبار الميزة «منجزة» |
+| **As-built** | ما يعمل في الكود اليوم |
+| **Planned** | ما تصفه الخطة الموحّدة |
+| **Gap** | ما يمنع اعتبار الميزة «منجزة» |
 
-**قاعدة:** عند التعارض، **العمود As-built + الكود** يفوزان حتى تُحدَّث الخطة أو يُنفَّذ التغيير.
+عند التعارض: **As-built + الكود** يفوزان.
 
 ---
 
-## ملخص تنفيذي
+## ملخص
 
-| الحالة | العدد (تقريبي) |
-|--------|----------------|
-| ✅ متوافق (يعمل كما في الخطة) | 8 |
-| 🟡 جزئي (أساس موجود، UX/ربط ناقص) | 7 |
-| 🔴 فجوة (مخطط لكن غير مربوط) | 5 |
-| ⏸ مؤجّل / ملغى في التخطيط | 2 |
+| الحالة | تقريبًا |
+|--------|---------|
+| ✅ متوافق | 10 |
+| 🟡 جزئي | 7 |
+| 🔴 فجوة | 3 |
+| ⏸ ملغى/مؤجّل | 2 |
 
 ---
 
 ## الجدول الرئيسي
 
-| # | Capability | As-built (اليوم) | Planned (الخطة) | Gap / ملاحظة |
-|---|------------|------------------|-----------------|---------------|
-| 1 | **Onboarding UI** | `OnboardingActivity` — 3 شاشات تعريفية → `SignInActivity` فقط | جمع أهداف، وقت، أيام، خصوصية، «لماذا نسأل» | 🔴 لا يملأ `TrainingProfile` — انظر [01-onboarding](../Architecture-As-Built/trainee-journey-current-state/01-onboarding-and-training-profile.md) |
-| 2 | **Training profile** | `PUT /mobile/training-profile` + `TrainingProfile` في Prisma | نفس الحقول + ربط بـ onboarding | 🟡 API جاهز؛ واجهة جمع غير مربوطة بالـ POC |
-| 3 | **Assessment resolve** | `GET /mobile/assessment-templates/resolve` (initial / progression) | تقييم أولي + إعادة تقييم like-for-like | ✅ |
-| 4 | **Body scan / level** | `POST /api/assessment` → `BodyScanResult` + `UserLevelProfile` | Trust Before Training → مستوى 1–5 | ✅ أساس قوي؛ نصوص النتيجة قد تحتاج تحسين محتوى |
-| 5 | **Prescription** | `prescriptionService.recommend` + سمات المستخدم | برنامج 28 يوم مخصّص | 🟡 المحرك موجود؛ محتوى البرنامج/التمارين مسؤولية CMS |
-| 6 | **Plan enroll** | `POST /mobile/plan/enroll` + تلقائي بعد أول تقييم | Active Plan واحد واضح | ✅ |
-| 7 | **Home / trainMode** | `GET /mobile/home` — `no_assessment`, `reassessment_due`, `no_plan`, `rest_day`, `active`, … | شاشة قيادة: Today's Mission + تقدم | 🟡 المنطق موجود؛ UX «مهمة اليوم» أقل وضوحاً من المخطط |
-| 8 | **Train mode (guided)** | `ProgramWorkoutActivity` + `WorkoutTrainingEngine` + خطة أسبوع/يوم | مسار موجّه بالكامل | ✅ |
-| 9 | **Explore mode** | `ExercisesFragment` / تمارين حرة + جلسات مستقلة | Free Gym + Quick Start + لا progression تلقائي | 🟡 التمارين الحرة موجودة؛ فصل Train/Explore في Home أضعف من المخطط |
-| 10 | **Workout run training** | `TrainingEngine` + rep/hold + تقارير لكل تمرين | Every Rep Counts + coaching loop | ✅ |
-| 11 | **Post-training report** | V1 UI (`ReportPagerActivity`); V2 metrics محسوبة غير معروضة بالكامل | بطاقات Form/Safety/Control + Quick Insight | 🟡 انظر [Post-Training-Report-Review.md](Post-Training-Report-Review.md) |
-| 12 | **Backend workout execution sync** | `POST /mobile/workout-executions`, planned-workout `complete` → `WorkoutExecutionMetrics` / `RepMetrics` | نفس الحلقة | ✅ |
-| 13 | **Reports hub** | `GET /mobile/reports/metrics` + `TrainFragment` | تقارير أسبوعية بمعنى واضح | 🟡 API موجود؛ تجربة «تطور» قيد التحسين |
-| 14 | **Progression engine** | `programCompletionService`, `nextAction`, فتحات الخطة | تكيّف تلقائي بعد الجلسات | 🟡 قواعد موجودة؛ ربط Explore بلا progression صحيح |
-| 15 | **Reassessment** | `ReassessmentSchedule`, `reassessment_due` على Home | إعادة تقييم أسبوع 2–4 لإثبات التطور | 🟡 جدولة موجودة؛ استعلام `pending` vs `overdue` يحتاج توحيد |
-| 16 | **Retention / events** | أجزاء في الكود + [18-Retention-Engine-Code-Map](../../01-Business-Planning/18-Retention-Engine-Code-Map.md) | محرك بقاء + أحداث beta | 🟡 تذكرة [17-Events](../../01-Business-Planning/17-Events-Implementation-Ticket.md) |
-| 17 | **Payment / booking** | بوابة دفع موثّقة في Operations | — | ⏸ الحجوزات **ملغاة** — `99-Archive/Cancelled-Features/` |
-| 18 | **Admin content** | قوالب تقييم، برامج، تمارين، `Exercise-JSON-Schema` | محتوى 20 مستخدماً beta | 🟡 أدوات جاهزة؛ الجاهزية محتوى ([21-Content-Readiness](../../01-Business-Planning/21-Content-Readiness.md)) |
-| 19 | **Privacy (on-device)** | Pose على الجهاز؛ لا رفع فيديو في المسار الأساسي | نص صريح قبل الكاميرا | 🟡 قرار منتج محسوم؛ UI نص الخصوصية قد يكون ناقصاً |
-| 20 | **Aha moment** | تمرين تجريبي ممكن عبر مسارات متفرقة | «حركة واحدة» موجّهة في onboarding | 🔴 غير موحّد كمسار واحد — [19-Onboarding-and-Aha-Spec](../../01-Business-Planning/19-Onboarding-and-Aha-Spec.md) |
+| # | Capability | As-built (اليوم) | Planned | Gap |
+|---|------------|------------------|---------|-----|
+| 1 | **Onboarding UI** | `MovitOnboardingScreen` — 7 خطوات → `PUT /mobile/training-profile` | جمع أهداف، وقت، أيام، خصوصية | ✅ — [01](../Architecture-As-Built/trainee-journey-current-state/01-onboarding-and-training-profile.md) |
+| 2 | **Training profile** | نفس الـ API + Prisma `TrainingProfile`؛ يُملأ من Onboarding | ربط بمسار أول دخول | ✅ |
+| 3 | **Assessment resolve** | `GET /mobile/assessment-templates/resolve`؛ KMP يمرّر `mode` | initial + progression | ✅ — [02](../Architecture-As-Built/trainee-journey-current-state/02-assessment-templates-and-resolve.md) |
+| 4 | **Body scan / level** | `MovitAssessmentScreen` + كاميرا حية (Android) → `POST /api/assessment` | Trust Before Training → مستوى 1–5 | ✅ أساس؛ تحسين المحتوى اختياري — [03](../Architecture-As-Built/trainee-journey-current-state/03-body-scan-level-profile.md) |
+| 5 | **Prescription** | `prescriptionService.recommend` | برنامج مخصّص | 🟡 المحرك موجود؛ المحتوى CMS — [04](../Architecture-As-Built/trainee-journey-current-state/04-prescription-and-program-enrollment.md) |
+| 6 | **Plan enroll** | `POST /mobile/plan/enroll` + تلقائي بعد أول تقييم | Active Plan واحد | ✅ |
+| 7 | **Home / trainMode** | `GET /mobile/home` → `MovitHomeViewModel` / `MovitTrainViewModel` | Today's Mission | 🟡 المنطق موجود؛ UX أقل وضوحًا — [06](../Architecture-As-Built/trainee-journey-current-state/06-mobile-home-train-mode.md) |
+| 8 | **Train mode (guided)** | `MovitTrainRoute` → `MovitInnerRoute.WorkoutSession` + `TrainingSessionViewModel` | مسار موجّه | ✅ — [08-kmp-mobile](../Architecture-As-Built/trainee-journey-current-state/08-kmp-mobile.md) |
+| 9 | **Explore mode** | `MovitExploreRoute` — تمارين/برامج حرة | Free Gym + Quick Start | 🟡 موجود؛ فصل Train/Explore في Home أضعف |
+| 10 | **Workout run** | `MovitTrainingEngine` + rep/hold + metrics | Every Rep Counts | ✅ |
+| 11 | **Post-training report** | تقارير في `MovitReportsRoute` + metrics خادم | بطاقات Form/Safety/Control | 🟡 [Post-Training-Report-Review.md](Post-Training-Report-Review.md) |
+| 12 | **Workout execution sync** | `POST /mobile/workout-executions` + planned-workout `complete` | نفس الحلقة | ✅ |
+| 13 | **Reports hub** | `GET /mobile/reports/metrics` + تبويب Reports | تقارير أسبوعية | 🟡 API موجود؛ تجربة التطور قيد التحسين |
+| 14 | **Progression engine** | `programCompletionService`, `nextAction` | تكيّف تلقائي | 🟡 قواعد خادم؛ Explore بلا progression |
+| 15 | **Reassessment** | `reassessment_due` على home/train + `Assessment(mode=progression)` | إعادة تقييم دورية | 🟡 جدولة موجودة؛ `pending` vs `overdue` — [05](../Architecture-As-Built/trainee-journey-current-state/05-program-completion-reassessment.md) |
+| 16 | **Retention / events** | لا عميل أحداث في KMP | محرك بقاء + beta events | 🔴 غير منفّذ — [17-Events](../../01-Business-Planning/17-Events-Implementation-Ticket.md) |
+| 17 | **Payment** | `SubscriptionActivity` + بوابة موثّقة | اشتراك منتج | ⏸ مؤجّل في المنتج الحالي |
+| 18 | **Admin content** | قوالب، برامج، تمارين | محتوى beta | 🟡 أدوات جاهزة — [21-Content-Readiness](../../01-Business-Planning/21-Content-Readiness.md) |
+| 19 | **Privacy (on-device)** | Pose على الجهاز؛ لا رفع فيديو | نص قبل الكاميرا | 🟡 قرار محسوم؛ نص UI قد يكون ناقصًا |
+| 20 | **Aha moment** | لا مسار موحّد | «حركة واحدة» في onboarding | 🔴 غير منفّذ — [19-Onboarding-and-Aha-Spec](../../01-Business-Planning/19-Onboarding-and-Aha-Spec.md) |
+| — | **Booking** | — | حجز جلسات | ⏸ **ملغى** (أُزيل من backend وAdmin) |
 
 ---
 
-## مسار مبسّط (مرجع سريع)
+## مسار مرجعي
 
 ```mermaid
 flowchart TD
-  A[Sign in] --> B{BodyScanResult?}
-  B -->|No| C[Assessment / Scan]
-  B -->|Yes| D[GET /mobile/home]
-  C --> E[Level + optional auto-enroll]
-  E --> D
-  D --> F{trainMode}
-  F -->|active| G[Program planned workout / Train]
-  F -->|no_plan| H[Enroll / prescription]
-  F -->|reassessment_due| C
-  G --> I[TrainingEngine + Reports]
-  I --> J[POST planned workouts + metrics]
-  J --> D
+  A[MovitMainActivity] --> B{مسجّل؟}
+  B -->|لا| C[Auth]
+  B -->|نعم| D{TrainingProfile؟}
+  D -->|ناقص| E[Onboarding 7 steps]
+  D -->|كامل| F[Shell tabs]
+  E --> F
+  F --> G{تقييم؟}
+  G -->|لا| H[Assessment + camera]
+  G -->|نعم| I[home trainMode]
+  H --> I
+  I --> J[WorkoutSession]
 ```
 
 ---
 
-## روابط التفصيل
+## روابط
 
 | طبقة | الوثيقة |
 |------|---------|
-| As-built (كود) | [trainee-journey-current-state/README.md](../Architecture-As-Built/trainee-journey-current-state/README.md) |
-| Planned (منتج) | [Unified-User-Journey-Plan.md](Unified-User-Journey-Plan.md) |
-| Beta / قياس | [14-Beta-Measurement.md](../../01-Business-Planning/14-Beta-Measurement.md), [16-Correct-Planned Workout-Definition.md](../../01-Business-Planning/16-Correct-Planned Workout-Definition.md) |
+| As-built (فهرس) | [trainee-journey-current-state/README.md](../Architecture-As-Built/trainee-journey-current-state/README.md) |
+| KMP shell | [08-kmp-mobile.md](../Architecture-As-Built/trainee-journey-current-state/08-kmp-mobile.md) |
+| Planned | [Unified-User-Journey-Plan.md](Unified-User-Journey-Plan.md) |
 | محرك التدريب | [training-engine.md](../Engine/training-engine.md) |
 
 ---
 
-## صيانة هذا الملف
+## صيانة
 
-عند دمج PR يغيّر رحلة المستخدم:
-
-1. حدّث الصف في الجدول + رمز الحالة.
-2. حدّث الملف المناسب في `trainee-journey-current-state/` إن لزم.
-3. غيّر `Verified` في الترويسة.
+عند PR يغيّر رحلة المستخدم: حدّث الصف + الملف في `trainee-journey-current-state/` + `Verified`.

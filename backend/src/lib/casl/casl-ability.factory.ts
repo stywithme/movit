@@ -26,17 +26,6 @@ export class CaslAbilityFactory {
             return build();
         }
 
-        // Hardcoded Doctor Permissions
-        if (admin.isDoctor) {
-            can('read', 'Booking');
-            can('read', 'BookingReport');
-            can('create', 'BookingReport');
-            can('update', 'BookingReport');
-            can('read', 'DoctorWorkTime');
-            can('manage', 'DoctorWorkTime');
-            can('manage', 'CloseTime');
-        }
-
         const mhr = await this.prisma.modelHasRole.findFirst({
             where: { modelId: admin.id, modelType: 'Admin' },
             include: {
@@ -69,7 +58,6 @@ export class CaslAbilityFactory {
                 AssessmentAnalytics: 'ReportAssessment',
                 ProgressionAnalytics: 'ReportProgression',
                 RevenueAnalytics: 'ReportRevenue',
-                BookingAnalytics: 'ReportBooking',
                 SafetyAnalytics: 'ReportSafety',
                 ContentAnalytics: 'ReportContent',
             };

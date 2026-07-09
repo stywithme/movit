@@ -1,29 +1,32 @@
 # Backend Contract Matrix — Legacy · KMP · الحالة
 
-آخر تحديث: **2026-06-11**
+آخر تحديث: **2026-06-22**
 النطاق: Phase Pre-07 · **WS-1 + P3 (قراءات UI + Outbox WS-2) + P1 Assessment**
 المبدأ: **لا تغيير عقد** — KMP يستهلك نفس المسارات/الحقول التي يستهلكها legacy.
+
+**مرجع الباك اند الكامل (as-built):** [`API_ENDPOINTS.md`](../../00-Active-Reference/Contracts/API_ENDPOINTS.md) — **249** route مسجّلة في `app.module.ts` (بدون حجز/طبيب — أُزيلت 2026-06-22). Swagger: `/api/docs`.
 
 ## ملخص
 
 | المصدر | العدد |
 |--------|------:|
-| Legacy Retrofit (`MobileSyncApi` + `AuthApi` + `SubscriptionApi` + `BookingApi`) | **65** |
+| **Backend REST (كل المسارات المسجّلة)** | **249** |
+| Legacy Retrofit (`MobileSyncApi` + `AuthApi` + `SubscriptionApi`) | **64** |
 | Legacy OkHttp (`WorkoutSyncService` — `POST workout-executions`) | **1** |
-| Legacy consumers (Retrofit + OkHttp · `allLegacyConsumerEndpoints`) | **66** |
+| Legacy consumers (Retrofit + OkHttp · `allLegacyConsumerEndpoints`) | **65** |
 | KMP `MovitMobileApi` (`kmpCoveredEndpoints`) | **48** |
 | مغطّى من legacy في KMP (`kmpCovered` ∩ legacy consumers) | **47** |
 | KMP-only (ليس في أي legacy consumer · `kmpOnlyEndpoints`) | **1** — `GET programs/{id}` فقط |
-| متروك عمداً (ضمن deferred) | **12** |
-| إجمالي المؤجَّل / phantom / parity | **19** (`deferredEndpoints` — يشمل pause/resume phantom) |
+| متروك عمداً (ضمن deferred) | **11** |
+| إجمالي المؤجَّل / phantom / parity | **18** (`deferredEndpoints` — يشمل pause/resume phantom) |
 
-### تصنيف الـ19 المؤجّلة الحالية
+### تصنيف الـ18 المؤجّلة الحالية
 
 | التصنيف | العدد | الوصف |
 |---------|------:|-------|
-| ⚪ **متروك عمداً** | **12** | خارج نطاق المنتج الحالي |
+| ⚪ **متروك عمداً** | **11** | خارج نطاق المنتج الحالي |
 | 🟡 **Parity/UI لاحق** | **5** | `workout-executions/stats` · `prescription/recommend` · `enrollment-check` · `reassessment/request` · `overrides` list |
-| 🟣 **Phantom بلا backend route** | **2** | `plan/pause` · `plan/resume` |
+| 🟣 **Phantom بلا backend route** | **2** | `plan/pause` · `plan/resume` (لا تُوثَّق في SSOT) |
 | 🔶 **KMP فقط (ليس في legacy Retrofit)** | **1** | `GET programs/{id}` export كامل |
 
 ---
@@ -159,12 +162,6 @@
 | POST | `api/mobile/subscriptions/google-play/verify` | ✅ | ❌ | — | ⚪ متروك |
 | POST | `api/mobile/subscriptions/cancel` | ✅ | ❌ | — | ⚪ متروك |
 
-### Bookings (`BookingApi`)
-
-| Method | Path | Legacy | KMP | DTO | الحالة |
-|--------|------|:------:|:---:|-----|--------|
-| GET | `api/bookings/rules` | ✅ | ❌ | — | ⚪ متروك — BookingApi كامل خارج النطاق |
-
 ---
 
 ## فجوات DTO المغلقة في WS-1
@@ -211,7 +208,7 @@
 
 ## مراجع الكود
 
-- Legacy: `kmp-app/app/.../network/MobileSyncApi.kt` · `AuthApi.kt` · `SubscriptionApi.kt` · `BookingApi.kt`
+- Legacy: `kmp-app/app/.../network/MobileSyncApi.kt` · `AuthApi.kt` · `SubscriptionApi.kt`
 - KMP: `kmp-app/core/network/.../MovitMobileApi.kt`
 - DTOs: `dto/HomeDto.kt` · `dto/PlanSyncDto.kt` · `dto/TrainingApiDto.kt`
 - اختبارات: `MovitMobileApiContractTest.kt`

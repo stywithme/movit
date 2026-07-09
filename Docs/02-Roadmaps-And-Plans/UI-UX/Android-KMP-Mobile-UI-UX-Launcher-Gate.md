@@ -1,5 +1,10 @@
 # Launcher Gate — Movit KMP Shell vs Legacy Android
 
+> **⛔ ARCHIVED (2026-06-22)** — This gate document is obsolete. Production launcher is **`MovitMainActivity`** (`MAIN`/`LAUNCHER` in `app/src/main/AndroidManifest.xml`). There is no `SplashActivity`, no `movit.shell.launcher.enabled` flip, and no parallel legacy tab app.  
+> **Current SSOT:** [`KMP-Mobile-As-Built.md`](../../00-Active-Reference/Architecture-As-Built/KMP-Mobile-As-Built.md) §2.
+
+---
+
 آخر تحديث: **2026-06-09** (Pre-06 WS-C)
 
 ## القرار (2026-06-09)

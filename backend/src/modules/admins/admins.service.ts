@@ -17,7 +17,6 @@ const adminSelect = {
   name: true,
   email: true,
   isSuperAdmin: true,
-  isDoctor: true,
   isActive: true,
   createdAt: true,
   updatedAt: true,
@@ -93,7 +92,6 @@ export const adminsService = {
    */
   async list(filters?: {
     isActive?: boolean;
-    isDoctor?: boolean;
     search?: string;
     page?: number;
     limit?: number;
@@ -114,10 +112,6 @@ export const adminsService = {
 
     if (filters?.isActive !== undefined) {
       where.isActive = filters.isActive;
-    }
-
-    if (filters?.isDoctor !== undefined) {
-      where.isDoctor = filters.isDoctor;
     }
 
     if (filters?.search) {
@@ -173,7 +167,6 @@ export const adminsService = {
         name: data.name,
         email: data.email.toLowerCase(),
         password: hashedPassword,
-        isDoctor: data.isDoctor ?? false,
       },
       select: adminSelect,
     });
@@ -199,7 +192,6 @@ export const adminsService = {
         name: data.name,
         email: data.email ? data.email.toLowerCase() : undefined,
         isActive: data.isActive,
-        isDoctor: data.isDoctor,
       },
       select: adminSelect,
     });

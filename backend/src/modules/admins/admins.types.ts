@@ -10,7 +10,6 @@ export interface CreateAdminInput {
   email: string;
   password: string;
   roleId?: string | null;
-  isDoctor?: boolean;
 }
 
 export interface UpdateAdminInput {
@@ -18,5 +17,4 @@ export interface UpdateAdminInput {
   email?: string;
   roleId?: string | null;
   isActive?: boolean;
-  isDoctor?: boolean;
 }

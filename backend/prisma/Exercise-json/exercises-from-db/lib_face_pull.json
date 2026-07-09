@@ -216,7 +216,7 @@
           "joint": "spine",
           "role": "secondary",
           "startPose": {
-            "max": 185,
+            "max": 180,
             "min": 165
           },
           "stateMessages": {
@@ -231,15 +231,15 @@
           },
           "range": {
             "pad": {
-              "max": 185,
+              "max": 180,
               "min": 158
             },
             "normal": {
-              "max": 185,
+              "max": 180,
               "min": 165
             },
             "perfect": {
-              "max": 182,
+              "max": 180,
               "min": 170
             },
             "warning": {
@@ -675,15 +675,15 @@
             "joint": "spine",
             "range": {
               "pad": {
-                "max": 185,
+                "max": 180,
                 "min": 158
               },
               "normal": {
-                "max": 185,
+                "max": 180,
                 "min": 165
               },
               "perfect": {
-                "max": 182,
+                "max": 180,
                 "min": 170
               },
               "warning": {
@@ -692,7 +692,7 @@
               }
             },
             "startPose": {
-              "max": 185,
+              "max": 180,
               "min": 165
             },
             "stateMessages": {

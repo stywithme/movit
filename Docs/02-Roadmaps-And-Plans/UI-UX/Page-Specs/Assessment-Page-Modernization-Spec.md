@@ -1,18 +1,20 @@
 # Assessment Page Modernization Spec
 
-آخر تحديث: 2026-06-09
+| | |
+|---|---|
+| **Status** | `ROADMAP` |
+| **As-built** | [08-kmp-mobile.md](../../../00-Active-Reference/Architecture-As-Built/trainee-journey-current-state/08-kmp-mobile.md) |
+| **Verified** | 2026-06-22 |
 
 ## Implementation Status
 
-- تم تنفيذ **Phase 05** لصفحة Assessment داخل `kmp-app/feature/account`.
-- التدفق: **PAR-Q (7 أسئلة)** → **Body scan (placeholder UI)** → **Results** (fake أو `GET level-profile` عند `MovitDataInstall`).
-- **لا كاميرا حية** — متعمد (Phase 07).
-- الاختبارات: `MovitAssessmentViewModelTest` · `AssessmentApiMapperTest`.
+- التدفق المنفّذ: **PAR-Q (7 أسئلة)** → **Body scan (كاميرا حية على Android وiOS)** → **Results** + `POST api/assessment`.
+- `AssessmentBodyScanEngine` + `AssessmentCameraHost` (CameraX على Android).
+- الاختبارات: `MovitAssessmentViewModelTest` · `AssessmentBodyScanEngineTest` · `AssessmentApiMapperTest`.
 
 ## Current Implementation
 
-- **Legacy:** `PreScreeningActivity` → `AssessmentSessionActivity` → `AssessmentResultActivity`
-- **KMP:** `MovitAssessmentScreen` · `MovitAssessmentViewModel` · `MovitAssessmentRoute`
+- **KMP (as-built):** `MovitAssessmentScreen` · `MovitAssessmentViewModel` · `MovitAssessmentRoute`
 - **Repository:** `SharedAssessmentRepository` (يعيد استخدام `LevelProfileDetailDto` للنتائج عند توفر API)
 - **Prototype:** [`13-assessment.html`](../prototypes/13-assessment.html)
 
@@ -28,7 +30,7 @@
 | Phase | محتوى |
 |-------|--------|
 | PreScreening | عنوان، تحذير PAR-Q+، 7 أسئلة نعم/لا، شريط تقدم، Continue |
-| BodyScan | إطار منقط، تلميح الحركة (2/3)، Hold position، بطاقة Camera active + % |
+| BodyScan | `AssessmentCameraHost` + إطار منقط، تلميح الحركة، تقدم المسح % |
 | Results | Hero body score، domains، region tiles، insights، Browse / Home |
 
 ## UX Target
@@ -59,7 +61,7 @@
 | `FakeAssessmentPreviewData` | معاينة / غير مسجّل |
 | `MovitData.account.fetchLevelProfile()` | bodyScore · domains · regions · limitingFactors → `AssessmentApiMapper` |
 
-لا upload assessment في Phase 05 (يتطلب كاميرا + engine).
+`SharedAssessmentRepository.submitBodyScan` → `POST api/assessment` عند إكمال المسح.
 
 ## i18n
 
@@ -71,15 +73,11 @@
 - ViewModel: phases، PAR-Q warning، repository results، back navigation.
 - Mapper: level label، domains، limiting insights.
 
-## Out of Scope (Phase 07)
-
-- `AssessmentEngine` مشترك · CameraX · MediaPipe · رفع نتائج فحص حي.
-
 ## Definition of Done
 
 - [x] 3 phases PreScreening / BodyScan / Results
-- [x] 7 أسئلة PAR-Q (parity مع legacy `ParqQuestions`)
-- [x] Body scan placeholder (بدون كاميرا)
+- [x] 7 أسئلة PAR-Q
+- [x] Body scan بكاميرا حية + رفع `POST api/assessment`
 - [x] Results مع domains + regions + insights
 - [x] `SharedAssessmentRepository` + mapper
 - [x] ViewModel + mapper unit tests (≥50% bucket)

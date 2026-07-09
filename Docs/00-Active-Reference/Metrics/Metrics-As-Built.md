@@ -3,10 +3,13 @@
 | | |
 |---|---|
 | **Status** | `ACTIVE` |
-| **SSOT for** | What the app calculates and stores today |
+| **SSOT for** | What the app calculates, displays, stores, and syncs today |
 | **Catalog (definitions)** | [Metrics-Complete-Reference.md](Metrics-Complete-Reference.md) |
-| **Improvement backlog** | [Metrics-Final-Framework.md](Metrics-Final-Framework.md) |
-| **Verified** | 2026-05-29 |
+| **Improvement backlog** | [Metrics-Final-Framework.md](../../02-Roadmaps-And-Plans/Metrics/Metrics-Final-Framework.md) |
+| **Code** | `MetricsCalculator.kt`, `MotionRecorder.kt`, `ReportQualityScoring.kt`, `ReportDetailScreen.kt`, Prisma `WorkoutExecutionMetrics` / `RepMetrics` |
+| **Verified** | 2026-06-22 |
+
+Legend for pipeline columns: **Calc** = computed on device · **UI** = shown in KMP report · **DB** = Prisma relational fields · **Sync** = `POST /mobile/workout-executions` via `WorkoutUploadMapper`
 
 ---
 
@@ -14,96 +17,101 @@
 
 | Layer | Path | Role |
 |-------|------|------|
-| **Calculation** | `kmp-app/.../training/analytics/MetricsCalculator.kt` | ROM, symmetry, stability, velocity, VL, alignment, consistency, fatigue, tempo, 1RM, volume |
-| **Recording** | `kmp-app/.../training/analytics/MotionRecorder.kt` | Per-rep frames → calls `MetricsCalculator.calculateRepMetrics` / planned workout aggregate |
-| **Rep score (live)** | `kmp-app/.../training/engine/ScoreCalculator.kt` | Joint state → rep score during workout run |
-| **Report aggregate** | `kmp-app/.../training/report/PostTrainingReport.kt` | `PerformanceSummary`, V2 fields, consistency helpers |
-| **UI cards** | `kmp-app/.../training/report/PerformanceMetricsBuilder.kt` | Form / Safety / Control cards — **formats only**, no recalculation |
-| **Display filter** | `kmp-app/.../ui/report/MetricDisplayBuilder.kt` | Which metrics show per exercise config |
-| **Backend persist** | `backend/prisma/schema.prisma` → `WorkoutExecutionMetrics`, `RepMetrics` | Integers scaled ×10 (see below) |
+| **Per-rep + session aggregate** | `kmp-app/core/training-engine/.../journal/MetricsCalculator.kt` | ROM, symmetry, stability, velocity, VL, alignment, form consistency, fatigue, tempo consistency, 1RM, volume |
+| **Recording** | `kmp-app/core/training-engine/.../journal/MotionRecorder.kt` | Per-rep frames → `MetricsCalculator` / `WorkoutExecutionMetrics` |
+| **Live rep score** | `kmp-app/core/training-engine/.../engine/ScoreCalculator.kt` | Joint state → rep score during workout run |
+| **Report analysis** | `kmp-app/core/training-engine/.../report/MovitPostTrainingReportBuilderV2.kt` | Timeline, errors, tips, `MovitOverallQualityScore` |
+| **Composite scores** | `kmp-app/core/training-engine/.../report/ReportQualityScoring.kt` | Form / Safety / Control card math (ported from legacy builder) |
+| **Metric visibility config** | `kmp-app/core/training-engine/.../config/ExerciseConfigTypes.kt` → `ReportMetricsConfig.shouldShow()` | Which metrics an exercise may expose (UI not wired yet) |
+| **Report UI** | `kmp-app/feature/reports/ReportDetailScreen.kt` | Compose: Overview · Form · Fatigue · Tips (4 tabs) |
+| **UI mapping** | `kmp-app/feature/reports/MovitSessionReportUiMapper.kt` | `MovitPostTrainingReport` → `ReportDetailUi` |
+| **Upload mapper** | `kmp-app/core/data/.../WorkoutUploadMapper.kt` | `WorkoutExecutionMetrics` → `ExecutionMetricsDto` |
+| **Backend persist** | `backend/prisma/schema.prisma` → `WorkoutExecutionMetrics`, `RepMetrics` | Relational metrics (see gaps below) |
 | **Backend ingest** | `backend/src/modules/workout-executions/` | Maps mobile upload payload |
 | **Reports API** | `backend/src/modules/reports/` | Aggregates for program/week/day scopes |
 
 ---
 
-## Storage scale (Android → Backend)
+## Storage scale (device → backend)
 
-Most kinematic/quality values are stored as **int × 10** (e.g. `1000` = 100.0%).
+Internal models use **int × 10** for most percentages (e.g. `1000` = 100.0%). `WorkoutUploadMapper` divides by 10 before API upload.
 
-| Field | Unit in docs | Stored as |
-|-------|--------------|-----------|
-| `formScore`, `alignmentAccuracy`, `stability`, `symmetry` | % | 0–1000 |
-| `rom` | degrees | degrees × 10 in pipeline; verify per field in upload mapper |
-| `tempo` | ms phases | `Json` array |
-| `velocity` | °/s (angular) | × 100 in calculator comments |
-
----
-
-## Per-metric as-built
-
-| Code | Calculated in | Shown in UI (V2 builder) | Uploaded to backend | Notes |
-|------|---------------|---------------------------|---------------------|-------|
-| `form_score` / rep score | `ScoreCalculator` → rep record | Form card (state %) | `RepMetrics.score`, `WorkoutExecutionMetrics.avgFormScore` | Weighted joint states |
-| `rep_count` | `RepCounter` | Summary | planned workout payload | Rep-based only |
-| `duration` | workout run timers | Summary | `totalDurationMs` | Always |
-| `rom` | `MetricsCalculator.calculateROM` | Form card if enabled | `RepMetrics.rom`, `avgRom` | **Raw** max−min°, not % of target |
-| `symmetry` | `calculateSymmetry` / `calculateBilateralRomSymmetry` | Form card (LSI path for bilateral) | `avgSymmetry` | LSI for alternating bilateral |
-| `stability` | `calculateTrunkStability` (spine) or `calculateStability` (hip fallback) | Safety card | `avgStability`, per-rep `stability` | Not COP / force plate |
-| `tempo` | phase timings from `PhaseStateMachine` | Control card | `tempo` JSON | Ecc / iso / con ms |
-| `tut` | sum of rep durations (`PerformanceMetricsBuilder` — not full workout run time) | Control card | `totalTUT` | Fixed vs old “workout duration” |
-| `hold_duration` | `HoldTimer` / hold coordinator | Hold exercises | via duration fields | Hold-only |
-| `alignment` | `calculateAlignmentAccuracy` (PERFECT/NORMAL frames) + **also** PositionCheck severity in Safety builder | Safety (PositionCheck-based in V2) | `avgAlignmentAccuracy` | Dual sources — see gap below |
-| `form_consistency` | `calculateFormConsistency` / `FromScores` / DTW in report | Form card | `formConsistency` | Method depends on data |
-| `fatigue_index` | `calculateFatigueIndex` | Control card | `fatigueIndex` | Score-drop based |
-| `tempo_consistency` | `calculateTempoConsistency*` | Control card | nullable on planned workout | Implemented |
-| `velocity` | `calculateVelocity` (concentric phase) | optional | `avgVelocity` | Angular, not bar speed |
-| `velocity_loss` | per-rep + `calculateVelocityLoss` | Control card | derived in report | **Implemented** |
-| `weight` / `volume` / `est_1rm` | `calculateVolume`, `calculateEst1RM` | Load section | `totalVolume`, `est1RM` | Manual weight input |
-| **Safety score** | `PerformanceMetricsBuilder.calculateSafetyScore` | V2 data, **V1 UI** may hide | in report JSON | Composite |
-| **Control score** | `calculateControlScore` | V2 data | in report JSON | Composite |
-| **Overall quality** | weights 40/35/25 Form/Safety/Control | V2 data | in report JSON | Not primary V1 UI |
-
-**Report UI:** V1 = `ReportPagerActivity` multi-page. V2 metrics computed and stored; full card UI still incomplete — see [Post-Training-Report-Review.md](../Product-Master/Post-Training-Report-Review.md).
+| Field | Unit in UI/docs | Device model | Prisma / DTO |
+|-------|-----------------|--------------|--------------|
+| `formScore`, `alignmentAccuracy`, `stability`, `symmetry` | % | 0–1000 | int (uploaded as float %) |
+| `rom` | degrees | raw ° in `Short` | int (uploaded as float; mapper ÷10) |
+| `tempo` | ms per phase | `List<Int>` [E, I, C] | `Json` |
+| `velocity` | °/s (angular) | ÷10 in calculator | optional int / float |
+| `velocityLoss`, `tempoConsistency` | % | 0–1000 in `WorkoutExecutionMetrics` | **not in Prisma or DTO** |
 
 ---
 
-## Known gaps (doc ↔ code)
+## 18 metrics — pipeline matrix
 
-| Topic | As-built today | Documented target (roadmap) |
-|-------|----------------|----------------------------|
-| ROM display | Degrees / avg ROM | ROM Achievement % vs `upPose`/`downPose` — **PLANNED** |
-| Alignment | Joint-state % + PositionCheck severities in Safety | Merge into single SSOT metric — **PARTIAL** |
-| CoM stability | Trunk angle variance (spine) | CoM from landmarks — **PLANNED** (different formula) |
-| Movement smoothness | — | **NOT IMPLEMENTED** |
-| V2 report cards | Data layer ready | UI exposure — **PARTIAL** |
+| Code | Calc | UI | DB | Sync | Notes |
+|------|:----:|:--:|:--:|:----:|-------|
+| `form_score` | ✓ | ✓ | ✓ | ✓ | Live: `ScoreCalculator`. Report hero: avg rep score or `overallQuality.score` when present. `RepMetrics.score`, `avgFormScore`. |
+| `rep_count` | ✓ | ✓ | ✓ | ✓ | `totalReps` / `countedReps` on `WorkoutExecution`. |
+| `duration` | ✓ | ✓ | ✓ | ✓ | `durationMs` on execution. |
+| `rom` | ✓ | — | ✓ | ✓ | Raw max−min°. Not shown as dedicated metric in `ReportDetailScreen`. |
+| `symmetry` | ✓ | — | ✓ | ✓ | Frame diff or LSI (`calculateBilateralRomSymmetry`). |
+| `stability` | ✓ | — | ✓ | ✓ | Spine variance preferred; hip midpoint fallback. |
+| `tempo` | ✓ | — | ✓ | ✓ | Phase timings [ecc, iso, con] per rep + `avgTempo`. |
+| `tut` | ✓ | — | ✓ | ✓ | `totalTUT` = Σ rep `durationMs`. |
+| `hold_duration` | ✓ | partial | — | partial | Hold summary in report JSON / UI duration label; no dedicated Prisma column. |
+| `alignment` | ✓ | — | ✓ | ✓ | `calculateAlignmentAccuracy`: % frames with all joints in good states — **not** PositionCheck severities. |
+| `form_consistency` | ✓ | — | ✓ | ✓ | DTW (≥4 reps) in calculator; backend may recompute from scores. |
+| `fatigue_index` | ✓ | partial | ✓ | ✓ | Calculated; UI shows timeline-derived fatigue **message**, not rep #. |
+| `tempo_consistency` | ✓ | — | — | — | **Gap:** in `WorkoutExecutionMetrics` model only; omitted from `ExecutionMetricsDto` / Prisma. |
+| `velocity` | ✓ | — | ✓ | ✓ | Auto from concentric phase (angular °/s). |
+| `velocity_loss` | ✓ | — | — | — | **Gap:** per-rep + session max in engine; not in Prisma, DTO, or KMP upload mapper. |
+| `weight` | input | — | ✓ | ✓ | `maxWeight`, per-rep `weightKg`. |
+| `volume` | ✓ | — | ✓ | ✓ | `calculateVolume`: Σ weight for **counted** reps only. |
+| `est_1rm` | ✓ | — | ✓ | ✓ | Epley from max weight + counted reps. |
 
-Full backlog with scientific rationale: [Metrics-Final-Framework.md](Metrics-Final-Framework.md#implementation-status-vs-code-2026-05-29).
+### Composite scores (not separate DB columns)
+
+| Score | Calc | UI | Stored | Sync |
+|-------|:----:|:--:|:------:|:----:|
+| **Form** (V2 card) | ✓ `ReportQualityScoring` | — | `legacyReport` JSON → `overallQuality.formScore` | optional `legacyReport` |
+| **Safety** | ✓ | — | same | optional |
+| **Control** | ✓ | — | same | optional |
+| **Overall quality** | ✓ 40/35/25 (rep) or 35/40/25 (hold) | partial | same | optional |
+
+`ReportDetailScreen` does **not** render Form / Safety / Control cards. Hero uses a single score (form or overall when enriched). See [Post-Training-Report-Review.md](../Product-Master/Post-Training-Report-Review.md).
 
 ---
 
-## Recommendation implementation status
+## Report UI as-built (KMP)
 
-Synced from [Metrics-Final-Framework.md](Metrics-Final-Framework.md) against codebase on **2026-05-29**:
+| Tab | Content | Metrics surfaced |
+|-----|---------|------------------|
+| **Overview** | Form score (large), sets/reps/duration, insight, hero frame | `form_score`, `rep_count`, `duration`, hold duration label |
+| **Form** | Joint error breakdown, best/worst rep scores, frame evidence | Derived from `errorAnalysis` / timeline — not ROM/symmetry/FC cards |
+| **Fatigue** | Session-quality drop-off bar, form-by-set chart | Frame drop rate + rep timeline — **not** `fatigue_index` or `velocity_loss` |
+| **Tips** | Coaching tips, export action | Text from report builder |
 
-| Recommendation | Status |
-|----------------|--------|
-| Trunk stability (spine variance) vs hip fallback | **IMPLEMENTED** |
-| Bilateral LSI ROM symmetry | **IMPLEMENTED** |
-| Velocity loss (VBT-style) | **IMPLEMENTED** |
-| TUT = sum of rep durations | **IMPLEMENTED** |
-| Tempo consistency across reps | **IMPLEMENTED** |
-| Safety/Control composite scores (V2) | **IMPLEMENTED** (data); UI **PARTIAL** |
-| Alignment from PositionValidator in Safety card | **IMPLEMENTED** in builder |
-| ROM Achievement % vs target config | **PLANNED** |
-| CoM-based body stability | **PLANNED** |
-| Merge Alignment into Form as single SSOT | **PLANNED** (product decision) |
-| Movement smoothness (jerk) | **PLANNED** |
-| Volume = sets × reps × load (verify mapper) | **VERIFY** on upload path |
+Post-workout navigation: `feature/reports/ReportDetailScreen.kt` (replaces legacy `ReportPagerActivity`).
+
+---
+
+## Known gaps
+
+| Topic | As-built | Target (roadmap) |
+|-------|----------|------------------|
+| `velocity_loss` / `tempo_consistency` sync | Engine + local model only | Add to DTO, Prisma, upload mapper |
+| V2 Form/Safety/Control cards | Computed in `ReportQualityScoring` + stored in report JSON | Expose in `ReportDetailScreen` |
+| ROM display | Degrees in DB | ROM Achievement % vs target pose |
+| Alignment | Joint-state frame % | PositionCheck-based alignment in Safety |
+| `performanceMetrics` JSON field | Always `null` in serializer | Structured card payload |
+| Metric filter in UI | `ReportMetricsConfig.shouldShow()` exists | Not wired in reports feature |
+
+Backlog detail: [Metrics-Final-Framework.md](../../02-Roadmaps-And-Plans/Metrics/Metrics-Final-Framework.md).
 
 ---
 
 ## When you change code
 
-1. Update this file (table row + `Verified` date).
-2. Update [Metrics-Complete-Reference.md](Metrics-Complete-Reference.md) if user-facing definition changes.
-3. Move completed roadmap items in [Metrics-Final-Framework.md](Metrics-Final-Framework.md) to **IMPLEMENTED** in the status table.
+1. Update this file (matrix row + `Verified` date).
+2. Update the as-built columns in [Metrics-Complete-Reference.md](Metrics-Complete-Reference.md#فهرس-سريع) if pipeline changes.
+3. Move completed roadmap items in [Metrics-Final-Framework.md](../../02-Roadmaps-And-Plans/Metrics/Metrics-Final-Framework.md).

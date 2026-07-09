@@ -22,7 +22,7 @@ Big-bang rename removing training-domain `Session` terminology. Deploy backend, 
 
 ## Maintenance window
 
-1. **Stop writes**: `pm2 stop pose-backend` (and block mobile traffic if needed).
+1. **Stop writes**: `pm2 stop movit-backend` (and block mobile traffic if needed).
 2. **Backup**:
    ```bash
    pg_dump -Fc -f pose_pre_workout_rename.dump "$DATABASE_URL"

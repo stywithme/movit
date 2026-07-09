@@ -13,7 +13,6 @@ const legacyPermissionSubjects = [
     'AssessmentAnalytics',
     'ProgressionAnalytics',
     'RevenueAnalytics',
-    'BookingAnalytics',
     'SafetyAnalytics',
     'ContentAnalytics',
 ];

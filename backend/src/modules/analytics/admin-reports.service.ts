@@ -141,7 +141,6 @@ export class AdminReportsService {
       activeWorkoutExecutions,
       proUsers,
       subscriptions,
-      bookingPayments,
       workoutExecutions,
       prevWorkoutExecutions,
       executionMetrics,
@@ -157,10 +156,6 @@ export class AdminReportsService {
       prisma.subscription.findMany({
         where: { ...this.dateWhere('createdAt', period), status: { in: ['active', 'paid', 'completed'] } },
         select: { amountPaid: true, createdAt: true, status: true, billingPeriod: true },
-      }),
-      prisma.bookingPayment.findMany({
-        where: { ...this.dateWhere('createdAt', period), status: { in: ['paid', 'completed', 'authorized'] } },
-        select: { totalAmount: true, createdAt: true, status: true },
       }),
       prisma.workoutExecution.findMany({
         where: this.dateWhere('timestamp', period),
@@ -180,8 +175,7 @@ export class AdminReportsService {
     ]);
 
     const activeUsers = new Set(activeWorkoutExecutions.map((s) => s.userId)).size;
-    const revenue = subscriptions.reduce((sum, s) => sum + toNumber(s.amountPaid), 0)
-      + bookingPayments.reduce((sum, p) => sum + toNumber(p.totalAmount), 0);
+    const revenue = subscriptions.reduce((sum, s) => sum + toNumber(s.amountPaid), 0);
     const avgFormScore = executionMetrics.length
       ? round(executionMetrics.reduce((sum, m) => sum + (m.avgFormScore ?? 0), 0) / executionMetrics.length)
       : 0;
@@ -205,10 +199,7 @@ export class AdminReportsService {
       trends: {
         workoutExecutions: groupByDate(workoutExecutions, (s) => s.timestamp, () => 1, period.bucket),
         revenue: groupByDate(
-          [
-            ...subscriptions.map((s) => ({ date: s.createdAt, value: toNumber(s.amountPaid) })),
-            ...bookingPayments.map((p) => ({ date: p.createdAt, value: toNumber(p.totalAmount) })),
-          ],
+          subscriptions.map((s) => ({ date: s.createdAt, value: toNumber(s.amountPaid) })),
           (item) => item.date,
           (item) => item.value,
           period.bucket,
@@ -404,29 +395,23 @@ export class AdminReportsService {
   async getRevenue(query: AnalyticsPeriodQuery = {}) {
     const prisma = await getPrisma();
     const period = this.resolvePeriod(query);
-    const [subscriptions, checkouts, plans, bookingPayments] = await Promise.all([
+    const [subscriptions, checkouts, plans] = await Promise.all([
       prisma.subscription.findMany({ where: this.dateWhere('createdAt', period), include: { plan: true } }),
       prisma.subscriptionCheckout.findMany({ where: this.dateWhere('createdAt', period), include: { plan: true } }),
       prisma.plan.findMany({ select: { id: true, name: true, isActive: true, monthlyPrice: true, yearlyPrice: true, currency: true } }),
-      prisma.bookingPayment.findMany({ where: { ...this.dateWhere('createdAt', period), status: { in: ['paid', 'completed', 'authorized'] } } }),
     ]);
     const subscriptionRevenue = subscriptions.reduce((sum, s) => sum + toNumber(s.amountPaid), 0);
-    const bookingRevenue = bookingPayments.reduce((sum, p) => sum + toNumber(p.totalAmount), 0);
     const activeSubscriptions = await prisma.subscription.count({ where: { status: 'active', endDate: { gte: new Date() } } });
 
     return {
       summary: {
         subscriptionRevenue: round(subscriptionRevenue, 2),
-        bookingRevenue: round(bookingRevenue, 2),
-        totalRevenue: round(subscriptionRevenue + bookingRevenue, 2),
+        totalRevenue: round(subscriptionRevenue, 2),
         activeSubscriptions,
         arpu: activeSubscriptions ? round(subscriptionRevenue / activeSubscriptions, 2) : 0,
       },
       revenueTrend: groupByDate(
-        [
-          ...subscriptions.map((s) => ({ date: s.createdAt, value: toNumber(s.amountPaid) })),
-          ...bookingPayments.map((p) => ({ date: p.createdAt, value: toNumber(p.totalAmount) })),
-        ],
+        subscriptions.map((s) => ({ date: s.createdAt, value: toNumber(s.amountPaid) })),
         (i) => i.date,
         (i) => i.value,
         period.bucket,
@@ -446,34 +431,6 @@ export class AdminReportsService {
         monthlyPrice: toNumber(plan.monthlyPrice),
         yearlyPrice: toNumber(plan.yearlyPrice),
         currency: plan.currency,
-      })),
-    };
-  }
-
-  async getBookings(query: AnalyticsPeriodQuery = {}) {
-    const prisma = await getPrisma();
-    const period = this.resolvePeriod(query);
-    const [bookings, payments, reports] = await Promise.all([
-      prisma.booking.findMany({
-        where: this.dateWhere('createdAt', period),
-        include: { admin: { select: { id: true, name: true, email: true } } },
-      }),
-      prisma.bookingPayment.findMany({ where: this.dateWhere('createdAt', period) }),
-      prisma.bookingReport.findMany({ where: this.dateWhere('createdAt', period), select: { adminId: true, createdAt: true } }),
-    ]);
-    return {
-      summary: {
-        totalBookings: bookings.length,
-        paidRevenue: round(payments.filter((p) => ['paid', 'completed', 'authorized'].includes(p.status)).reduce((sum, p) => sum + toNumber(p.totalAmount), 0), 2),
-        reportsCompleted: reports.length,
-        cancellationRate: this.safePercent(bookings.filter((b) => b.status === 'canceled').length, bookings.length),
-      },
-      trend: groupByDate(bookings, (b) => b.createdAt, () => 1, period.bucket),
-      statuses: this.countBy(bookings, (b) => b.status),
-      paymentStatuses: this.countBy(payments, (p) => p.status),
-      doctors: this.countBy(bookings, (b) => b.admin?.name ?? b.admin?.email ?? 'Unassigned').map((row) => ({
-        ...row,
-        reports: reports.filter((r) => bookings.some((b) => b.adminId === r.adminId)).length,
       })),
     };
   }
@@ -620,7 +577,6 @@ export class AdminReportsService {
         bodyScanResults: { orderBy: { completedAt: 'desc' }, take: 10 },
         workoutExecutions: { orderBy: { timestamp: 'desc' }, take: 20, include: { exercise: { select: { name: true, slug: true } }, executionMetrics: true } },
         subscriptions: { orderBy: { createdAt: 'desc' }, take: 5, include: { plan: true } },
-        bookings: { orderBy: { startAt: 'desc' }, take: 10 },
       },
     });
     if (!user) return null;
@@ -647,7 +603,6 @@ export class AdminReportsService {
         avgFormScore: execution.executionMetrics?.avgFormScore ?? null,
       })),
       subscriptions: user.subscriptions,
-      bookings: user.bookings,
     };
   }
 

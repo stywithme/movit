@@ -1,43 +1,7 @@
-# Onboarding and Aha Spec
+# Moved
 
-## الهدف
+This implementation spec moved to:
 
-تصميم أول تجربة توصّل المستخدم للحظة "ده فاهمني" بأسرع وقت وأقل احتكاك. مبني على الشاشات الموجودة.
+**[`02-Roadmaps-And-Plans/Product/19-Onboarding-and-Aha-Spec.md`](../02-Roadmaps-And-Plans/Product/19-Onboarding-and-Aha-Spec.md)**
 
-## لحظة الـ Aha (التعريف)
-
-أول **تصحيح فوري دقيق ومفهوم** على حركة المستخدم بالكاميرا. هي اللحظة التي تثبت القيمة. كل ما قبلها طريق لها، وكل ما بعدها بناء عادة.
-
-## المسار الحالي (من الكود)
-
-Splash ← SignIn/SignUp ← `OnboardingActivity` ← `PreScreeningActivity` (Safety Gate) ← `AssessmentSessionActivity` ← `AssessmentResultActivity` ← `LevelProfileActivity` ← Plan ← `MainContainerActivity` (Home) ← today planned workout ← `TrainingActivity` ← `WorkoutReportActivity`.
-
-## المشكلة المحتملة
-
-لحظة الـ Aha (أول تصحيح) تأتي **متأخرة** — بعد onboarding + safety gate + تقييم كامل. هذا يخالف "اجعل أول قيمة قريبة جدًا" (ملف 09).
-
-## المقترح: لحظة Aha مصغّرة قبل التقييم الكامل
-
-- بعد onboarding القصير مباشرة، اعرض **"جرّب حركة واحدة"** (تمرين سهل، 20-30 ثانية) بتصحيح فوري — قبل الـ safety gate الكامل والتقييم.
-- الهدف: يشعر بالقيمة في أول أقل من 90 ثانية، فيكمل الباقي بثقة (Trust before training).
-- السلامة: لو ظهرت إجابات خطر في onboarding، تخطَّ التجربة المباشرة وحوّل للـ safety gate فوراً.
-
-## مبادئ الـ Onboarding (قرارات تصميم)
-
-- **أقل الأسئلة**: الهدف، مستوى النشاط، الوقت المتاح، أيام التدريب، الطول/الوزن، قيود أو ألم (ملف 04). لا تزِد.
-- **خطوة واحدة لكل شاشة**.
-- **اشرح لماذا تسأل** كل سؤال (يبني ثقة).
-- **الخصوصية مبكراً**: "الفيديو لا يخرج من جهازك" تظهر قبل أول فتح للكاميرا (ملف 03).
-
-## المقاييس (تُربط بملف 17)
-
-- `onboarding_completed` rate.
-- الزمن من install حتى أول `workout_first_rep` (وقت الوصول للـ Aha).
-- نسبة من يصل للـ Aha المصغّر.
-- التسرّب لكل شاشة.
-
-## معايير القبول
-
-- المستخدم يصل لأول تصحيح فوري في أقل من 90 ثانية من أول فتح (في المسار المصغّر).
-- onboarding ضمن عدد الأسئلة المحدد، بلا شاشة اختيارات بلا توجيه.
-- بعد التقييم، خطوة واحدة واضحة (today planned workout) عبر `TrainModeData.status`.
+Business context: [`04-MVP-Scope.md`](04-MVP-Scope.md).

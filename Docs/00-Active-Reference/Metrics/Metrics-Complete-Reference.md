@@ -2,42 +2,43 @@
 |---|---|
 | **Status** | `ACTIVE` |
 | **SSOT for** | Metrics catalog (definitions & UX) |
-| **Code** | `MetricsCalculator.kt`, `MotionRecorder.kt`, `PerformanceMetricsBuilder.kt`, Prisma `WorkoutExecutionMetrics` / `RepMetrics` |
+| **Code** | `journal/MetricsCalculator.kt`, `journal/MotionRecorder.kt`, `report/ReportQualityScoring.kt`, Prisma `WorkoutExecutionMetrics` / `RepMetrics` |
 | **See also** | [Metrics README](README.md), [As-Built](Metrics-As-Built.md) |
-| **Verified** | 2026-05-29 |
+| **Verified** | 2026-06-22 |
 
 # دليل المقاييس الشامل — Complete Metrics Reference
 
 > **As-built (كود):** [Metrics-As-Built.md](Metrics-As-Built.md) · **فهرس:** [README.md](README.md)  
-> مرجع تعريفات ومنتج — عند التعارض مع الكود، As-Built يفوز.
+> مرجع تعريفات ومنتج — عند التعارض مع الكود، As-Built يفوز.  
+> أعمدة As-built: **Calc** · **UI** · **DB** · **Sync** — تفاصيل في [Metrics-As-Built.md](Metrics-As-Built.md).
 
 ---
 
 ## فهرس سريع
 
-| # | الكود | الاسم (عربي) | الاسم (إنجليزي) | الفئة | الوحدة | متطلبات |
-|---|-------|-------------|-----------------|-------|--------|---------|
-| 1 | `form_score` | جودة الأداء | Form Score | Core | % | دائماً |
-| 2 | `rep_count` | عدد العدات | Rep Count | Core | عدد | Rep-based فقط |
-| 3 | `duration` | المدة | Duration | Core | ثانية | دائماً |
-| 4 | `rom` | المدى الحركي | Range of Motion | Kinematic | درجة ° | Rep-based فقط |
-| 5 | `symmetry` | التوازن | Symmetry | Kinematic | % | Bilateral فقط |
-| 6 | `stability` | الثبات | Stability | Kinematic | % | دائماً (أولوية Hold) |
-| 7 | `tempo` | الإيقاع | Tempo | Temporal | ثانية | Rep-based فقط |
-| 8 | `tut` | الوقت تحت الضغط | Time Under Tension | Temporal | ثانية | Rep-based فقط |
-| 9 | `hold_duration` | مدة الثبات | Hold Duration | Temporal | ثانية | Hold فقط |
-| 10 | `alignment` | دقة المحاذاة | Alignment Accuracy | Quality | % | تمارين بها Position Checks |
-| 11 | `form_consistency` | ثبات الشكل | Form Consistency | Quality | % | ≥ 4 عدات |
-| 12 | `fatigue_index` | نقطة التعب | Fatigue Index | Quality | # رقم عدة | ≥ 4 عدات |
-| 13 | `tempo_consistency` | ثبات الإيقاع | Tempo Consistency | Quality | % | ≥ 3 عدات |
-| 14 | `velocity` | السرعة | Velocity | Power | °/ث | يدوي (غير تلقائي) |
-| 15 | `velocity_loss` | فقدان السرعة | Velocity Loss | Power | % | ≥ 3 عدات |
-| 16 | `weight` | الوزن | Weight | Load | كجم | إدخال يدوي |
-| 17 | `volume` | الحجم الكلي | Total Volume | Load | كجم | إدخال يدوي |
-| 18 | `est_1rm` | القوة القصوى | Est. 1RM | Load | كجم | إدخال يدوي |
-| — | *composite* | نقاط الأمان | Safety Score | Composite | % | محسوب |
-| — | *composite* | نقاط التحكم | Control Score | Composite | % | محسوب |
-| — | *composite* | الجودة الشاملة | Overall Quality | Composite | % | محسوب |
+| # | الكود | الاسم (عربي) | الفئة | Calc | UI | DB | Sync |
+|---|-------|-------------|-------|:----:|:--:|:--:|:----:|
+| 1 | `form_score` | جودة الأداء | Core | ✓ | ✓ | ✓ | ✓ |
+| 2 | `rep_count` | عدد العدات | Core | ✓ | ✓ | ✓ | ✓ |
+| 3 | `duration` | المدة | Core | ✓ | ✓ | ✓ | ✓ |
+| 4 | `rom` | المدى الحركي | Kinematic | ✓ | — | ✓ | ✓ |
+| 5 | `symmetry` | التوازن | Kinematic | ✓ | — | ✓ | ✓ |
+| 6 | `stability` | الثبات | Kinematic | ✓ | — | ✓ | ✓ |
+| 7 | `tempo` | الإيقاع | Temporal | ✓ | — | ✓ | ✓ |
+| 8 | `tut` | الوقت تحت الضغط | Temporal | ✓ | — | ✓ | ✓ |
+| 9 | `hold_duration` | مدة الثبات | Temporal | ✓ | ~ | — | ~ |
+| 10 | `alignment` | دقة المحاذاة | Quality | ✓ | — | ✓ | ✓ |
+| 11 | `form_consistency` | ثبات الشكل | Quality | ✓ | — | ✓ | ✓ |
+| 12 | `fatigue_index` | نقطة التعب | Quality | ✓ | ~ | ✓ | ✓ |
+| 13 | `tempo_consistency` | ثبات الإيقاع | Quality | ✓ | — | — | — |
+| 14 | `velocity` | السرعة | Power | ✓ | — | ✓ | ✓ |
+| 15 | `velocity_loss` | فقدان السرعة | Power | ✓ | — | — | — |
+| 16 | `weight` | الوزن | Load | in | — | ✓ | ✓ |
+| 17 | `volume` | الحجم الكلي | Load | ✓ | — | ✓ | ✓ |
+| 18 | `est_1rm` | القوة القصوى | Load | ✓ | — | ✓ | ✓ |
+| — | *composite* | Safety / Control / Overall | Composite | ✓ | — | JSON | ~ |
+
+**رموز:** ✓ = نعم · — = لا · ~ = جزئي · in = إدخال يدوي
 
 ---
 
@@ -586,7 +587,7 @@ Bicep Curl — 6 عدات بمدد [3.2s, 3.1s, 3.3s, 3.0s, 3.2s, 3.1s]:
 | **الكود** | `velocity` |
 | **الوحدة** | °/ث (درجة في الثانية) |
 | **الفئة** | Power |
-| **متى يظهر** | إدراج يدوي (غير تلقائي) |
+| **متى يظهر** | Rep-based — يُحسب تلقائياً من المرحلة المركزية |
 
 **الوصف:**
 متوسط السرعة الزاوية أثناء المرحلة المركزية (Concentric) للحركة. يعبّر عن مدى سرعة المتدرب في رفع الحمل.

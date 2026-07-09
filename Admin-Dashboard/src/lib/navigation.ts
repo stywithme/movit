@@ -3,7 +3,6 @@ import {
   BarChart3,
   Activity,
   CalendarDays,
-  CalendarX,
   DollarSign,
   CreditCard,
   Dumbbell,
@@ -24,7 +23,6 @@ import {
   TrendingUp,
   UserCircle,
   Users,
-  Clock,
 } from 'lucide-react';
 import type { Subject } from '@/lib/types/permissions';
 
@@ -71,15 +69,6 @@ export const navGroups: NavGroup[] = [
     ],
   },
   {
-    title: 'Booking System',
-    items: [
-      { title: 'Bookings', href: '/admin/bookings', icon: CalendarDays, requiredSubject: 'Booking' },
-      { title: 'Work Times', href: '/admin/doctor-work-time', icon: Clock, requiredSubject: 'DoctorWorkTime' },
-      { title: 'Close Times', href: '/admin/close-time', icon: CalendarX, requiredSubject: 'CloseTime' },
-      { title: 'Medical Reports', href: '/admin/booking-reports', icon: BarChart3, requiredSubject: 'BookingReport' },
-    ],
-  },
-  {
     title: 'Reports',
     items: [
       { title: 'Overview', href: '/admin/analytics', icon: BarChart3, requiredSubject: 'ReportOverview', exact: true },
@@ -92,7 +81,6 @@ export const navGroups: NavGroup[] = [
       { title: 'Assessments', href: '/admin/analytics/assessments', icon: BarChart3, requiredSubject: 'ReportAssessment' },
       { title: 'Progression', href: '/admin/analytics/progression', icon: TrendingUp, requiredSubject: 'ReportProgression' },
       { title: 'Revenue', href: '/admin/analytics/revenue', icon: DollarSign, requiredSubject: 'ReportRevenue' },
-      { title: 'Bookings', href: '/admin/analytics/bookings', icon: CalendarDays, requiredSubject: 'ReportBooking' },
       { title: 'Safety', href: '/admin/analytics/safety', icon: ShieldAlert, requiredSubject: 'ReportSafety' },
       { title: 'Content', href: '/admin/analytics/content', icon: Tags, requiredSubject: 'ReportContent' },
     ],

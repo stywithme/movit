@@ -18,7 +18,6 @@ export class AdminsController {
     @Req() req: Request,
     @Query('status') status?: string,
     @Query('search') search?: string,
-    @Query('isDoctor') isDoctor?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string
   ) {
@@ -29,7 +28,6 @@ export class AdminsController {
     try {
       const result = await adminsService.list({
         isActive,
-        isDoctor: isDoctor ? isDoctor === 'true' : undefined,
         search: search || undefined,
         page: parsedPage,
         limit: parsedLimit,
@@ -66,7 +64,6 @@ export class AdminsController {
         email: body.email,
         password: body.password,
         roleId: body.roleId || null,
-        isDoctor: body.isDoctor,
       });
 
       res.status(201);
@@ -112,7 +109,6 @@ export class AdminsController {
             email: body?.email,
             roleId: body?.roleId,
             isActive: body?.isActive,
-            isDoctor: body?.isDoctor,
           }, canAccessSuperAdmins);
 
       return { success: true, data: admin };

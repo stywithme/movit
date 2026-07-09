@@ -1,6 +1,6 @@
-> **Status:** `ARCHIVED` â€” implemented or superseded; not current product truth.
-> **Current SSOT:** `Docs/00-Active-Reference/Engine/Positions-Check-Concept.md`
-> **Archived:** 2026-05-29
+> **Status:** `ARCHIVED` — implemented or superseded; not current product truth.
+> **Current SSOT:** [`Docs/00-Active-Reference/Engine/Positions-Check-Concept.md`](../../00-Active-Reference/Engine/Positions-Check-Concept.md)
+> **Archived:** 2026-06-22
 
 # 📋 خطة تنفيذ Position-Based Validation System (V2)
 

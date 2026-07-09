@@ -32,14 +32,9 @@ import { AssessmentTemplatesModule } from './modules/assessment-templates';
 import { CaslModule } from './lib/casl/casl.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { GuardsModule } from './lib/guards/guards.module';
-import { DoctorWorkTimeModule } from './modules/doctor-work-time/doctor-work-time.module';
-import { CloseTimeModule } from './modules/close-time/close-time.module';
-import { BookingModule } from './modules/booking/booking.module';
-import { BookingReportModule } from './modules/booking-report/booking-report.module';
 import { SystemModule } from './modules/system/system.module';
 import { PlanModule } from './modules/plan/plan.module';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
-import { BookingPaymentsModule } from './modules/booking-payments/booking-payments.module';
 import { UserExercisePreferencesModule } from './modules/user-exercise-preferences/user-exercise-preferences.module';
 import { TrainingProfileModule } from './modules/training-profile/training-profile.module';
 
@@ -89,14 +84,9 @@ import { TrainingProfileModule } from './modules/training-profile/training-profi
     CaslModule,
     PermissionsModule,
     GuardsModule,
-    DoctorWorkTimeModule,
-    CloseTimeModule,
-    BookingModule,
-    BookingReportModule,
     SystemModule,
     PlanModule,
     SubscriptionModule,
-    BookingPaymentsModule,
     UserExercisePreferencesModule,
     TrainingProfileModule,
   ],
