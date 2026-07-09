@@ -18,7 +18,7 @@ class SharedReportDetailRepository : ReportDetailRepository {
         val language = platform.preferredLanguage()
         val strings = ReportDetailStrings.load(language)
 
-        TrainingSessionReportCache.get(reportId)?.let { cached ->
+        TrainingSessionReportCache.getMergedForDisplay(reportId)?.let { cached ->
             return AppResult.Success(MovitSessionReportUiMapper.mapPostTraining(cached, strings))
         }
         TrainingSessionReportCache.getSession(reportId)?.let { session ->

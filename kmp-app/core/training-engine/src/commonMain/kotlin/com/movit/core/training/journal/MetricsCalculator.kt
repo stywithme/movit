@@ -30,7 +30,7 @@ object MetricsCalculator {
         val stability = if (stabilityJointIndex != null) {
             calculateTrunkStability(frames, stabilityJointIndex)
         } else {
-            hipIndices?.let { calculateStability(frames, it) } ?: 1000
+            hipIndices?.let { calculateStability(frames, it) }
         }
 
         return RepMetrics(
@@ -52,11 +52,11 @@ object MetricsCalculator {
     private fun createEmptyRepMetrics(phaseTimings: List<Int>, score: Short): RepMetrics = RepMetrics(
         rom = 0,
         symmetry = null,
-        stability = 1000,
+        stability = null,
         tempo = phaseTimings,
         velocity = null,
         formScore = score,
-        alignmentAccuracy = 1000,
+        alignmentAccuracy = null,
         velocityLoss = null,
     )
 
@@ -94,11 +94,13 @@ object MetricsCalculator {
         val avgRom = repMetricsList.map { it.rom }.average().toInt().toShort()
         val avgSymmetry = repMetricsList.mapNotNull { it.symmetry }.takeIf { it.isNotEmpty() }
             ?.average()?.toInt()?.toShort()
-        val avgStability = repMetricsList.map { it.stability }.average().toInt().toShort()
+        val avgStability = repMetricsList.mapNotNull { it.stability }.takeIf { it.isNotEmpty() }
+            ?.average()?.toInt()?.toShort()
         val avgVelocity = repMetricsList.mapNotNull { it.velocity }.takeIf { it.isNotEmpty() }
             ?.average()?.toInt()?.toShort()
         val avgFormScore = repMetricsList.map { it.formScore }.average().toInt().toShort()
-        val avgAlignment = repMetricsList.map { it.alignmentAccuracy }.average().toInt().toShort()
+        val avgAlignment = repMetricsList.mapNotNull { it.alignmentAccuracy }.takeIf { it.isNotEmpty() }
+            ?.average()?.toInt()?.toShort()
         val avgTempo = List(3) { index ->
             repMetricsList.map { it.tempo.getOrElse(index) { 0 } }.average().toInt()
         }
@@ -134,11 +136,11 @@ object MetricsCalculator {
     private fun createEmptyWorkoutExecutionMetrics(): WorkoutExecutionMetrics = WorkoutExecutionMetrics(
         avgRom = 0,
         avgSymmetry = null,
-        avgStability = 1000,
+        avgStability = null,
         avgTempo = listOf(0, 0, 0),
         avgVelocity = null,
         avgFormScore = 0,
-        avgAlignmentAccuracy = 1000,
+        avgAlignmentAccuracy = null,
         totalTUT = 0,
         totalVolume = null,
         maxWeight = null,
@@ -148,6 +150,23 @@ object MetricsCalculator {
         velocityLoss = null,
         tempoConsistency = null,
     )
+
+    fun calculatePrimaryROM(frames: List<FrameSample>, primaryIndices: List<Int>): Short {
+        if (frames.isEmpty() || primaryIndices.isEmpty()) return 0
+        return primaryIndices.maxOfOrNull { calculateROM(frames, it) } ?: 0
+    }
+
+    fun primaryJointIndexForVelocity(frames: List<FrameSample>, primaryIndices: List<Int>): Int {
+        val concentric = frames.filter { it.phase == PhaseCode.CONCENTRIC }
+        primaryIndices.firstOrNull { index ->
+            concentric.count { it.isJointAngleValid(index) } >= 2
+        }?.let { return it }
+
+        for (index in primaryIndices) {
+            if (frames.any { it.isJointAngleValid(index) }) return index
+        }
+        return primaryIndices.firstOrNull() ?: 0
+    }
 
     fun calculateROM(frames: List<FrameSample>, jointIndex: Int): Short {
         if (frames.isEmpty() || jointIndex < 0) return 0
@@ -182,24 +201,17 @@ object MetricsCalculator {
         val avgRight = rightRepsRom.map { it.toInt() }.average()
         val maxAvg = maxOf(avgLeft, avgRight)
         val minAvg = minOf(avgLeft, avgRight)
-        if (maxAvg <= 0) return 1000
+        if (maxAvg <= 0) return null
         return (minAvg / maxAvg * 1000).toInt().coerceIn(0, 1000).toShort()
     }
 
-    fun calculateTrunkStability(frames: List<FrameSample>, spineIndex: Int): Short {
-        if (frames.isEmpty()) return 1000
-        val spineAngles = frames.mapNotNull { frame ->
-            val value = frame.angles.getOrNull(spineIndex) ?: return@mapNotNull null
-            if (value == JOINT_SKIPPED_ANGLE_SENTINEL) return@mapNotNull null
-            value.toInt()
-        }
-        if (spineAngles.size < 2) return 1000
-        val std = standardDeviation(spineAngles)
-        return ((1 - std / 300.0).coerceIn(0.0, 1.0) * 1000).toInt().toShort()
+    fun calculateTrunkStability(frames: List<FrameSample>, spineIndex: Int): Short? {
+        val spineAngles = extractValidAngles(frames, spineIndex) ?: return null
+        return stabilityScoreFromDetrendedSpread(spineAngles, spreadScale = 300.0)
     }
 
-    fun calculateStability(frames: List<FrameSample>, hipIndices: Pair<Int, Int>): Short {
-        if (frames.isEmpty()) return 1000
+    fun calculateStability(frames: List<FrameSample>, hipIndices: Pair<Int, Int>): Short? {
+        if (frames.isEmpty()) return null
         val midpoints = frames.mapNotNull { frame ->
             val left = frame.angles.getOrNull(hipIndices.first) ?: return@mapNotNull null
             val right = frame.angles.getOrNull(hipIndices.second) ?: return@mapNotNull null
@@ -208,9 +220,7 @@ object MetricsCalculator {
             }
             (left.toInt() + right.toInt()) / 2
         }
-        if (midpoints.size < 2) return 1000
-        val std = standardDeviation(midpoints)
-        return ((1 - std / 500.0).coerceIn(0.0, 1.0) * 1000).toInt().toShort()
+        return stabilityScoreFromDetrendedSpread(midpoints, spreadScale = 500.0)
     }
 
     fun calculateVelocity(frames: List<FrameSample>, jointIndex: Int): Short? {
@@ -229,12 +239,22 @@ object MetricsCalculator {
         return (angleDelta / timeSec / 10).toInt().coerceIn(0, Short.MAX_VALUE.toInt()).toShort()
     }
 
-    fun calculateAlignmentAccuracy(frames: List<FrameSample>): Short {
-        if (frames.isEmpty()) return 1000
-        val goodFrames = frames.count { frame ->
-            frame.states?.all { StateCode.isGood(it) } ?: true
+    fun calculateAlignmentAccuracy(frames: List<FrameSample>): Short? {
+        if (frames.isEmpty()) return null
+        var lastStates: ByteArray? = null
+        var framesWithStates = 0
+        var goodFrames = 0
+        for (frame in frames) {
+            frame.states?.let { lastStates = it }
+            val effectiveStates = frame.states ?: lastStates ?: continue
+            if (effectiveStates.isEmpty()) continue
+            framesWithStates++
+            if (effectiveStates.all { StateCode.isGood(it) }) {
+                goodFrames++
+            }
         }
-        return (goodFrames.toFloat() / frames.size * 1000).toInt().coerceIn(0, 1000).toShort()
+        if (framesWithStates == 0) return null
+        return (goodFrames.toFloat() / framesWithStates * 1000).toInt().coerceIn(0, 1000).toShort()
     }
 
     fun calculateFormConsistency(reps: List<RepRecord>, jointIndex: Int): Short? {
@@ -271,6 +291,7 @@ object MetricsCalculator {
         return calculateFatigueIndexFromScores(reps.map { it.score / 10f })
     }
 
+    /** Returns 1-based onset rep (`fatigueOnsetRep` semantics), not a percentage. */
     fun calculateFatigueIndexFromScores(scores: List<Float>): Short? {
         if (scores.size < 4) return null
         val halfSize = scores.size / 2
@@ -313,6 +334,41 @@ object MetricsCalculator {
 
     fun calculateVolume(reps: List<RepRecord>): Float =
         reps.filter { it.isCounted() }.sumOf { (it.weightKg ?: 0f).toDouble() }.toFloat()
+
+    private fun extractValidAngles(frames: List<FrameSample>, jointIndex: Int): List<Int>? {
+        if (frames.isEmpty()) return null
+        val angles = frames.mapNotNull { frame ->
+            val value = frame.angles.getOrNull(jointIndex) ?: return@mapNotNull null
+            if (value == JOINT_SKIPPED_ANGLE_SENTINEL) return@mapNotNull null
+            value.toInt()
+        }
+        return angles.takeIf { it.size >= 2 }
+    }
+
+    private fun stabilityScoreFromDetrendedSpread(angles: List<Int>, spreadScale: Double): Short? {
+        if (angles.size < 2) return null
+        val std = detrendedStandardDeviation(angles)
+        return ((1 - std / spreadScale).coerceIn(0.0, 1.0) * 1000).toInt().toShort()
+    }
+
+    /** Residual spread after removing a linear trend — avoids punishing intentional joint movement. */
+    private fun detrendedStandardDeviation(values: List<Int>): Double {
+        if (values.size < 3) return standardDeviation(values)
+        val n = values.size
+        val meanIndex = (n - 1) / 2.0
+        val meanValue = values.average()
+        var slopeNumerator = 0.0
+        var slopeDenominator = 0.0
+        for (index in 0 until n) {
+            val centeredIndex = index - meanIndex
+            slopeNumerator += centeredIndex * (values[index] - meanValue)
+            slopeDenominator += centeredIndex * centeredIndex
+        }
+        val slope = if (slopeDenominator == 0.0) 0.0 else slopeNumerator / slopeDenominator
+        val intercept = meanValue - slope * meanIndex
+        val residuals = values.indices.map { index -> values[index] - (intercept + slope * index) }
+        return standardDeviation(residuals.map { it.toInt() })
+    }
 
     private fun standardDeviation(values: List<Int>): Double {
         if (values.size < 2) return 0.0

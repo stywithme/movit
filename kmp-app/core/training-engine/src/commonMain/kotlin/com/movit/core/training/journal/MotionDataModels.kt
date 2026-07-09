@@ -96,11 +96,13 @@ data class RepRecord(
 data class RepMetrics(
     val rom: Short,
     val symmetry: Short?,
-    val stability: Short,
+    /** Null when insufficient spine/hip angle samples — not a perfect score. */
+    val stability: Short?,
     val tempo: List<Int>,
     val velocity: Short?,
     val formScore: Short,
-    val alignmentAccuracy: Short,
+    /** Null when no joint-state samples were recorded for the rep. */
+    val alignmentAccuracy: Short?,
     val velocityLoss: Short? = null,
 )
 
@@ -108,16 +110,22 @@ data class RepMetrics(
 data class WorkoutExecutionMetrics(
     val avgRom: Short,
     val avgSymmetry: Short?,
-    val avgStability: Short,
+    /** Null when reps lacked enough stability samples — not a perfect score. */
+    val avgStability: Short?,
     val avgTempo: List<Int>,
     val avgVelocity: Short?,
     val avgFormScore: Short,
-    val avgAlignmentAccuracy: Short,
+    /** Null when reps lacked joint-state coverage — not a perfect score. */
+    val avgAlignmentAccuracy: Short?,
     val totalTUT: Int,
     val totalVolume: Float?,
     val maxWeight: Float?,
     val est1RM: Float?,
     val formConsistency: Short? = null,
+    /**
+     * 1-based rep index when form first dropped below 80% of the first-half average (`fatigueOnsetRep` semantics).
+     * Serialized as `fatigueIndex` for API compatibility — not a 0–100 percentage.
+     */
     val fatigueIndex: Short? = null,
     val velocityLoss: Short? = null,
     val tempoConsistency: Short? = null,
@@ -194,7 +202,11 @@ fun anglesToShortArray(
     if (jointName in skippedJointCodes) {
         JOINT_SKIPPED_ANGLE_SENTINEL
     } else {
-        val angle = angles[jointName] ?: 0.0
-        (angle * 10).toInt().coerceIn(0, 1800).toShort()
+        val angle = angles[jointName]
+        if (angle == null) {
+            JOINT_SKIPPED_ANGLE_SENTINEL
+        } else {
+            (angle * 10).toInt().coerceIn(0, 1800).toShort()
+        }
     }
 }

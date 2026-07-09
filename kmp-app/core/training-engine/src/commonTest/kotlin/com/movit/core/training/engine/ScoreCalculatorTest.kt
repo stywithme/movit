@@ -55,9 +55,18 @@ class ScoreCalculatorTest {
     }
 
     @Test
-    fun calculateHoldScore_dangerInvalidates() {
+    fun calculateHoldScore_transientDangerBelowThresholdDoesNotInvalidate() {
         val result = ScoreCalculator.calculateHoldScore(
             mapOf(JointState.DANGER to 50L, JointState.PERFECT to 950L),
+        )
+        assertTrue(result.score > 0f)
+        assertFalse(result.isInvalidated)
+    }
+
+    @Test
+    fun calculateHoldScore_sustainedDangerInvalidates() {
+        val result = ScoreCalculator.calculateHoldScore(
+            mapOf(JointState.DANGER to 300L, JointState.PERFECT to 700L),
         )
         assertEquals(0f, result.score)
         assertTrue(result.isInvalidated)

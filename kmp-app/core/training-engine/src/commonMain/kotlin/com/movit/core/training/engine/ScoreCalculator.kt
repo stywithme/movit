@@ -4,6 +4,7 @@ object ScoreCalculator {
     const val PRIMARY_JOINT_WEIGHT = 1.0f
     const val SECONDARY_JOINT_WEIGHT = 0.3f
     const val DANGER_PENALTY_PER_JOINT = 15f
+    private const val HOLD_DANGER_INVALIDATION_MS = 300L
 
     fun getScoreRate(state: JointState): Float = when (state) {
         JointState.PERFECT -> 100f
@@ -99,7 +100,7 @@ object ScoreCalculator {
         val dangerTime = stateTimeMs[JointState.DANGER] ?: 0L
         val totalTime = perfectTime + normalTime + padTime + warningTime + dangerTime
 
-        if (dangerTime > 0) {
+        if (dangerTime >= HOLD_DANGER_INVALIDATION_MS) {
             return HoldScoreResult(
                 score = 0f,
                 isInvalidated = true,

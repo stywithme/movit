@@ -9,51 +9,58 @@ import com.movit.core.training.engine.currentTimeMillis
 class MovitRepReplaySampler(
     private val timeProvider: () -> Long = { currentTimeMillis() },
 ) {
-    private val replayFramesByRep = linkedMapOf<Int, MutableList<MovitReplayFrameRef>>()
-    private val replayStartTimesByRep = mutableMapOf<Int, Long>()
+    private data class RepCaptureKey(val setNumber: Int, val repNumber: Int)
 
-    fun canSample(repNumber: Int): Boolean {
+    private val replayFramesByRep = linkedMapOf<RepCaptureKey, MutableList<MovitReplayFrameRef>>()
+    private val replayStartTimesByRep = mutableMapOf<RepCaptureKey, Long>()
+
+    fun canSample(repNumber: Int, setNumber: Int = 1): Boolean {
         if (repNumber < 1) return false
-        val list = replayFramesByRep[repNumber]
+        val list = replayFramesByRep[RepCaptureKey(setNumber, repNumber)]
         return list == null || list.size < MAX_FRAMES_PER_REP
     }
 
     fun tryRegisterFrame(
         repNumber: Int,
         frameUri: String,
+        setNumber: Int = 1,
         capturedAtMs: Long = timeProvider(),
     ): Boolean {
         if (repNumber < 1) return false
-        val list = replayFramesByRep.getOrPut(repNumber) { mutableListOf() }
+        val repKey = RepCaptureKey(setNumber, repNumber)
+        val list = replayFramesByRep.getOrPut(repKey) { mutableListOf() }
         if (list.size >= MAX_FRAMES_PER_REP) return false
-        val startedAt = replayStartTimesByRep.getOrPut(repNumber) { capturedAtMs }
+        val startedAt = replayStartTimesByRep.getOrPut(repKey) { capturedAtMs }
         list += MovitReplayFrameRef(
             frameUri = frameUri,
             offsetMs = capturedAtMs - startedAt,
         )
-        enforceRollingWindow(keepRep = repNumber)
+        enforceRollingWindow(keepRep = repKey)
         return true
     }
 
-    fun clipForRep(repNumber: Int): MovitRepReplayClip? {
-        val frames = replayFramesByRep[repNumber] ?: return null
+    fun clipForRep(repNumber: Int, setNumber: Int = 1): MovitRepReplayClip? {
+        val frames = replayFramesByRep[RepCaptureKey(setNumber, repNumber)] ?: return null
         if (frames.size < MIN_FRAMES_FOR_CLIP) return null
-        return MovitRepReplayClip(repNumber = repNumber, frames = frames.toList())
+        return MovitRepReplayClip(repNumber = repNumber, setNumber = setNumber, frames = frames.toList())
     }
 
-    fun clips(): List<MovitRepReplayClip> =
-        replayFramesByRep.keys.mapNotNull(::clipForRep)
+    fun clips(setNumber: Int? = null): List<MovitRepReplayClip> =
+        replayFramesByRep.keys
+            .filter { setNumber == null || it.setNumber == setNumber }
+            .mapNotNull { clipForRep(it.repNumber, it.setNumber) }
 
     fun clear() {
         replayFramesByRep.clear()
         replayStartTimesByRep.clear()
     }
 
-    private fun enforceRollingWindow(keepRep: Int) {
+    private fun enforceRollingWindow(keepRep: RepCaptureKey) {
         while (replayFramesByRep.size > MAX_TRACKED_REPS) {
             val candidates = replayFramesByRep.keys.filter { it != keepRep }
             if (candidates.isEmpty()) break
-            val evictRep = candidates.maxOrNull() ?: break
+            val evictRep = candidates.maxWithOrNull(compareBy<RepCaptureKey> { it.setNumber }.thenBy { it.repNumber })
+                ?: break
             replayFramesByRep.remove(evictRep)
             replayStartTimesByRep.remove(evictRep)
         }

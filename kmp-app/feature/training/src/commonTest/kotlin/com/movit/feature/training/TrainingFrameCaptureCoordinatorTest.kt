@@ -104,6 +104,24 @@ class TrainingFrameCaptureCoordinatorTest {
         assertEquals(1, manager.captures().size)
     }
 
+    @Test
+    fun beginSet_cancelsPendingCaptureFromPreviousSet() = runBlocking {
+        val manager = MovitPeakFrameCaptureManager()
+        val coordinator = TrainingFrameCaptureCoordinator(
+            sessionId = "session-1",
+            scope = this,
+            snapshotPort = DelayedSnapshotPort(),
+            manager = manager,
+        )
+
+        coordinator.beginSet(1)
+        coordinator.onPhaseChanged(Phase.BOTTOM, repInProgress = 1)
+        coordinator.beginSet(2)
+        delay(50)
+
+        assertTrue(manager.captures().isEmpty())
+    }
+
     private class DelayedSnapshotPort : TrainingFrameSnapshotPort {
         override val isAvailable: Boolean = true
 

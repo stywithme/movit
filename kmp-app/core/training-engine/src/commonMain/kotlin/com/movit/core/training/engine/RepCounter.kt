@@ -14,12 +14,14 @@ class RepCounter(
     companion object {
         private const val POSITION_ERROR_PENALTY = 15f
         private const val POSITION_WARNING_PENALTY = 6f
+        private const val MIN_REP_SEVERITY_FRAMES = 2
     }
 
     private class PrimaryRepZoneTracker {
         var bestUpQuality: JointStateInfo? = null
         var bestDownQuality: JointStateInfo? = null
         var worstSeverityInfo: JointStateInfo? = null
+        private var severityFrameCount = 0
 
         private fun pickBetterQuality(current: JointStateInfo?, candidate: JointStateInfo): JointStateInfo {
             if (current == null) return candidate
@@ -57,12 +59,16 @@ class RepCounter(
         fun ingestFromEval(eval: JointEvalInput, stateInfo: JointStateInfo) {
             when (eval.state) {
                 JointState.WARNING, JointState.DANGER -> {
-                    val cur = worstSeverityInfo
-                    if (cur == null || eval.state.isWorseThan(cur.state)) {
-                        worstSeverityInfo = stateInfo
+                    severityFrameCount++
+                    if (severityFrameCount >= MIN_REP_SEVERITY_FRAMES) {
+                        val cur = worstSeverityInfo
+                        if (cur == null || eval.state.isWorseThan(cur.state)) {
+                            worstSeverityInfo = stateInfo
+                        }
                     }
                 }
                 else -> {
+                    severityFrameCount = 0
                     if (!eval.isScorableForRepQuality) return
                     when (eval.zoneType) {
                         ZoneType.UP_ZONE ->
@@ -244,7 +250,14 @@ class RepCounter(
     }
 
     fun setPhaseTimings(timings: Map<Phase, Long>) {
-        currentPhaseTimings = timings.mapKeys { it.key.name.lowercase() }
+        currentPhaseTimings = timings
+            .filterKeys { it in MOVEMENT_TRACKING_PHASES }
+            .mapKeys { it.key.name.lowercase() }
+    }
+
+    fun discardCurrentRepAttempt(reason: RepIncompleteReason) {
+        if (!shouldDiscardRepAttemptOnIncomplete(reason)) return
+        resetCurrentRepTracking()
     }
 
     fun getCurrentWorstState(): JointState = currentRepWorstState

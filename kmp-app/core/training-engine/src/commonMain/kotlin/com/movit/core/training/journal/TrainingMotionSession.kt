@@ -2,6 +2,7 @@ package com.movit.core.training.journal
 
 import com.movit.core.training.bilateral.BilateralSide
 import com.movit.core.training.config.ExerciseConfig
+import com.movit.core.training.config.JointRole
 import com.movit.core.training.engine.JointStateInfo
 import com.movit.core.training.engine.Phase
 import com.movit.core.training.engine.RepResult
@@ -28,8 +29,17 @@ class TrainingMotionSession(
         ?.map { it.joint }
         ?: emptyList()
 
+    private val primaryJointIndices: List<Int> = exerciseConfig
+        .getPoseVariant(poseVariantIndex)
+        ?.trackedJoints
+        ?.mapIndexedNotNull { index, joint ->
+            index.takeIf { joint.role == JointRole.PRIMARY }
+        }
+        ?: emptyList()
+
     private val recorder = MotionRecorder(
         trackedJoints = trackedJointCodes,
+        primaryJointIndices = primaryJointIndices.ifEmpty { listOf(0) },
         exerciseId = exerciseSlug,
         defaultWeightKg = defaultWeightKg,
         weightUnit = weightUnit,
@@ -93,6 +103,10 @@ class TrainingMotionSession(
     fun isActive(): Boolean = recorder.isActive()
 
     fun completedRepCount(): Int = recorder.completedRepCount()
+
+    fun discardCurrentRepAttempt() {
+        recorder.discardCurrentRepAttempt()
+    }
 
     fun sessionQualityMeta(
         visibilityPauseCount: Int = 0,

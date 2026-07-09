@@ -27,6 +27,12 @@ data class ReportDetailStrings(
     suspend fun worstRep(repNumber: Int): String =
         localizedString(language, "report_detail_worst_rep", repNumber)
 
+    suspend fun bestRepInThisSet(repNumber: Int): String =
+        localizedString(language, "report_detail_best_rep_in_set", repNumber)
+
+    suspend fun worstRepInThisSet(repNumber: Int): String =
+        localizedString(language, "report_detail_worst_rep_in_set", repNumber)
+
     suspend fun holdAchievement(percent: Int): String =
         localizedString(language, "report_detail_hold_achievement", percent)
 

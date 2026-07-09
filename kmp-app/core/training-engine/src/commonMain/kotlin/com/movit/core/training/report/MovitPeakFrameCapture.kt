@@ -19,6 +19,7 @@ enum class MovitPeakCaptureType {
 data class MovitPeakFrameCapture(
     val id: String,
     val repNumber: Int,
+    val setNumber: Int = 1,
     val phaseCode: Byte,
     val capturedAtMs: Long,
     val captureType: MovitPeakCaptureType,

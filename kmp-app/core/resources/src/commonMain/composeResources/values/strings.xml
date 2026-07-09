@@ -432,6 +432,8 @@
     <string name="report_detail_worst_set">Worst · Set %1$d</string>
     <string name="report_detail_best_rep">Best · Rep %1$d</string>
     <string name="report_detail_worst_rep">Worst · Rep %1$d</string>
+    <string name="report_detail_best_rep_in_set">Best in this set · Rep %1$d</string>
+    <string name="report_detail_worst_rep_in_set">Worst in this set · Rep %1$d</string>
     <string name="report_detail_hold_achievement">Held %1$d%% of target</string>
     <string name="report_detail_fatigue_not_enough">Not enough sets to estimate fatigue yet.</string>
     <string name="report_detail_form_dropped">Form dropped %1$d%% from set 1 to set %2$d.</string>
@@ -452,6 +454,7 @@
     <string name="report_detail_fatigue_a11y">Fatigue %1$s, index %2$d percent</string>
     <string name="report_detail_rep_compare_a11y">%1$s, score %2$d</string>
     <string name="report_detail_form_by_set_a11y">Form by set chart</string>
+    <string name="report_detail_form_by_set_single">Form by set appears after you complete more than one set.</string>
     <string name="report_detail_preview_personal_best">Personal best</string>
     <string name="report_detail_preview_insight_title">Excellent depth consistency</string>
     <string name="report_detail_preview_insight_message">Hip crease stayed below knee line on 95% of reps.</string>

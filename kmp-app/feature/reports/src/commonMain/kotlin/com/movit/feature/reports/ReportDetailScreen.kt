@@ -485,32 +485,41 @@ private fun ReportFatiguePage(report: ReportDetailUi) {
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.W800,
                 )
-                val chartItems = report.formBySetValues.mapIndexed { index, value ->
-                    val label = report.formBySetLabels.getOrElse(index) {
-                        movitText("report_detail_set_short", index + 1)
+                if (report.formBySetValues.size < 2) {
+                    Text(
+                        text = movitText("report_detail_form_by_set_single"),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = movit.textSecondary,
+                        modifier = Modifier.padding(top = MovitSpacing.sm),
+                    )
+                } else {
+                    val chartItems = report.formBySetValues.mapIndexed { index, value ->
+                        val label = report.formBySetLabels.getOrElse(index) {
+                            movitText("report_detail_set_short", index + 1)
+                        }
+                        MovitBarChartItem(
+                            value = value,
+                            label = label,
+                            highlighted = value == report.formBySetValues.maxOrNull(),
+                        )
                     }
-                    MovitBarChartItem(
-                        value = value,
-                        label = label,
-                        highlighted = value == report.formBySetValues.maxOrNull(),
+                    val chartDescription = buildString {
+                        append(movitText("report_detail_form_by_set_a11y"))
+                        append(": ")
+                        append(
+                            chartItems.joinToString(", ") { item ->
+                                "${item.label} ${item.value.roundToInt()}"
+                            },
+                        )
+                    }
+                    MovitBarChart(
+                        items = chartItems,
+                        modifier = Modifier
+                            .padding(top = MovitSpacing.md)
+                            .semantics { contentDescription = chartDescription },
+                        highlightColor = movit.success,
                     )
                 }
-                val chartDescription = buildString {
-                    append(movitText("report_detail_form_by_set_a11y"))
-                    append(": ")
-                    append(
-                        chartItems.joinToString(", ") { item ->
-                            "${item.label} ${item.value.roundToInt()}"
-                        },
-                    )
-                }
-                MovitBarChart(
-                    items = chartItems,
-                    modifier = Modifier
-                        .padding(top = MovitSpacing.md)
-                        .semantics { contentDescription = chartDescription },
-                    highlightColor = movit.success,
-                )
             }
         }
     }

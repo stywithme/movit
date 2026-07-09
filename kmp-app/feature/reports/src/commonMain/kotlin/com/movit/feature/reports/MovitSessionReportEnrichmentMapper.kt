@@ -40,6 +40,7 @@ internal object MovitSessionReportEnrichmentMapper {
         bestReps: List<MovitBestRepHighlight>,
         worstRep: MovitWorstRepHighlight?,
         repTimeline: List<MovitRepTimelineEntry>,
+        setSummaries: List<MovitSetSummary> = emptyList(),
         strings: ReportDetailStrings,
     ): List<ReportRepCompareUi> {
         val best = bestReps.firstOrNull()
@@ -48,15 +49,26 @@ internal object MovitSessionReportEnrichmentMapper {
         val worst = worstRep
             ?: repTimeline.filter { it.isWorstRep }.minByOrNull { it.score }?.toWorstHighlight()
             ?: repTimeline.minByOrNull { it.score }?.toWorstHighlight()
-        if (best == null || worst == null || best.repNumber == worst.repNumber) return emptyList()
+        if (best == null || worst == null || best.repNumber == worst.repNumber && best.setNumber == worst.setNumber) {
+            return emptyList()
+        }
+        val multiSet = setSummaries.size > 1 || repTimeline.map { it.setNumber }.distinct().size > 1
         return listOf(
             ReportRepCompareUi(
-                label = strings.bestRep(best.repNumber),
+                label = if (multiSet) {
+                    "${strings.setShort(best.setNumber)} · ${strings.bestRep(best.repNumber)}"
+                } else {
+                    strings.bestRepInThisSet(best.repNumber)
+                },
                 score = best.score.roundToInt().coerceIn(0, 100),
                 isBest = true,
             ),
             ReportRepCompareUi(
-                label = strings.worstRep(worst.repNumber),
+                label = if (multiSet) {
+                    "${strings.setShort(worst.setNumber)} · ${strings.worstRep(worst.repNumber)}"
+                } else {
+                    strings.worstRepInThisSet(worst.repNumber)
+                },
                 score = worst.score.roundToInt().coerceIn(0, 100),
                 isBest = false,
             ),
@@ -166,8 +178,8 @@ internal object MovitSessionReportEnrichmentMapper {
     }
 
     private fun MovitRepTimelineEntry.toBestHighlight(): MovitBestRepHighlight =
-        MovitBestRepHighlight(repNumber = repNumber, durationMs = durationMs, score = score)
+        MovitBestRepHighlight(repNumber = repNumber, setNumber = setNumber, durationMs = durationMs, score = score)
 
     private fun MovitRepTimelineEntry.toWorstHighlight(): MovitWorstRepHighlight =
-        MovitWorstRepHighlight(repNumber = repNumber, durationMs = durationMs, score = score)
+        MovitWorstRepHighlight(repNumber = repNumber, setNumber = setNumber, durationMs = durationMs, score = score)
 }

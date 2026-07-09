@@ -38,16 +38,22 @@ object MovitSessionReportUiMapper {
             bestReps = report.bestReps,
             worstRep = report.worstRep,
             repTimeline = report.repTimeline,
+            setSummaries = report.setSummaries,
             strings = strings,
         )
         val (formBySetValues, formBySetLabels) = if (report.repTimeline.isNotEmpty() || report.setSummaries.isNotEmpty()) {
-            MovitSessionReportEnrichmentMapper.mapFormBySet(
+            val mapped = MovitSessionReportEnrichmentMapper.mapFormBySet(
                 report.repTimeline,
                 report.setSummaries,
                 strings,
             )
+            if (mapped.first.size < 2) {
+                emptyList<Float>() to emptyList()
+            } else {
+                mapped
+            }
         } else {
-            listOf(formScore.toFloat()) to listOf(strings.setShort(1))
+            emptyList<Float>() to emptyList()
         }
         val tips = MovitSessionReportEnrichmentMapper.mapTips(
             improvementTips = report.improvementTips,
@@ -71,7 +77,9 @@ object MovitSessionReportUiMapper {
             exerciseName = report.exerciseName.get(strings.language),
             formScore = resolvedFormScore,
             badgeLabel = summary.rating.name.takeIf { summary.shouldCelebrate },
-            sets = formBySetLabels.size.takeIf { it > 0 }?.toString() ?: "1",
+            sets = report.setSummaries.size.takeIf { it > 0 }?.toString()
+                ?: formBySetLabels.size.takeIf { it > 0 }?.toString()
+                ?: "1",
             reps = summary.totalReps.toString(),
             durationLabel = durationLabel,
             overviewInsightTitle = strings.sessionOverview,

@@ -58,6 +58,10 @@ class TrainingSessionWriteHooks(
         motionSession = null
     }
 
+    fun discardCurrentRepAttempt() {
+        motionSession?.discardCurrentRepAttempt()
+    }
+
     fun resolveSessionQualityMeta(
         visibilityPauseCount: Int = 0,
         cameraWarningCount: Int = 0,
@@ -84,6 +88,8 @@ class TrainingSessionWriteHooks(
         exerciseConfig: ExerciseConfig,
         sessionQuality: SessionQualityMeta? = null,
         holdData: MovitHoldReportData? = null,
+        setNumber: Int = 1,
+        repsTarget: Int? = null,
     ): MovitPostTrainingReport = MovitPostTrainingReportBuilder.build(
         upload = upload,
         summary = resolveSummaryForReport(summary, upload),
@@ -93,6 +99,8 @@ class TrainingSessionWriteHooks(
         peakFrameCaptures = peakFrameCaptures,
         repReplayClips = repReplayClips,
         holdData = holdData,
+        setNumber = setNumber,
+        repsTarget = repsTarget ?: summary.totalReps,
     )
 
     private fun resolveSummaryForReport(

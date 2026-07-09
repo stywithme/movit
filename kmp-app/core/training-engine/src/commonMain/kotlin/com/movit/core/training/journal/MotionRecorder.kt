@@ -11,6 +11,7 @@ import kotlin.random.Random
  */
 class MotionRecorder(
     private val trackedJoints: List<String>,
+    private val primaryJointIndices: List<Int> = listOf(0),
     private val exerciseId: String,
     private val defaultWeightKg: Float? = null,
     private val weightUnit: String = "kg",
@@ -25,6 +26,7 @@ class MotionRecorder(
     private var maxFramesWarningLogged = false
     private val completedRepMetrics = mutableListOf<RepMetricsData>()
     private var primaryJointIndex: Int = 0
+    private var primaryIndices: List<Int> = listOf(0)
     private var leftJointIndex: Int? = null
     private var rightJointIndex: Int? = null
     private var hipIndices: Pair<Int, Int>? = null
@@ -64,10 +66,9 @@ class MotionRecorder(
 
         if (currentRepBuffer.size >= MAX_FRAMES_PER_REP) {
             if (!maxFramesWarningLogged) maxFramesWarningLogged = true
-            framesDropped += currentRepBuffer.size.coerceAtLeast(1)
-            currentRepBuffer.clear()
+            framesDropped++
+            currentRepBuffer.removeAt(0)
             lastStates = null
-            currentRepStartT = (timestamp - recordingStartMs).toInt()
         }
 
         val relativeT = (timestamp - recordingStartMs).toInt()
@@ -92,6 +93,13 @@ class MotionRecorder(
             jointCoverageNumerator += angleArray.count { it != JOINT_SKIPPED_ANGLE_SENTINEL }
         }
         if (currentRepBuffer.size == 1) currentRepStartT = relativeT
+    }
+
+    fun discardCurrentRepAttempt() {
+        if (!isRecording) return
+        currentRepBuffer.clear()
+        lastStates = null
+        maxFramesWarningLogged = false
     }
 
     fun finalizeRep(
@@ -120,7 +128,11 @@ class MotionRecorder(
                 ?: phaseTimings["push"]?.toInt() ?: phaseTimings["pull"]?.toInt() ?: 0,
         )
 
-        val velocity = MetricsCalculator.calculateVelocity(currentRepBuffer, primaryJointIndex)
+        val velocityJointIndex = MetricsCalculator.primaryJointIndexForVelocity(
+            currentRepBuffer,
+            primaryIndices,
+        )
+        val velocity = MetricsCalculator.calculateVelocity(currentRepBuffer, velocityJointIndex)
         val velocityLoss = if (bestVelocity != null && bestVelocity!! > 0 && velocity != null) {
             val loss = ((bestVelocity!! - velocity).toFloat() / bestVelocity!! * 1000).toInt()
             loss.coerceIn(0, 1000).toShort()
@@ -134,12 +146,12 @@ class MotionRecorder(
         val stability = if (spineJointIndex != null) {
             MetricsCalculator.calculateTrunkStability(currentRepBuffer, spineJointIndex!!)
         } else {
-            hipIndices?.let { MetricsCalculator.calculateStability(currentRepBuffer, it) } ?: 1000
+            hipIndices?.let { MetricsCalculator.calculateStability(currentRepBuffer, it) }
         }
 
         val repSide = normalizeSide(side)
         val repMetrics = RepMetrics(
-            rom = MetricsCalculator.calculateROM(currentRepBuffer, primaryJointIndex),
+            rom = MetricsCalculator.calculatePrimaryROM(currentRepBuffer, primaryIndices),
             symmetry = if (repSide == null && leftJointIndex != null && rightJointIndex != null) {
                 MetricsCalculator.calculateSymmetry(currentRepBuffer, leftJointIndex!!, rightJointIndex!!)
             } else {
@@ -251,7 +263,10 @@ class MotionRecorder(
     }
 
     private fun setupJointIndices() {
-        primaryJointIndex = 0
+        primaryIndices = primaryJointIndices
+            .filter { it in trackedJoints.indices }
+            .ifEmpty { listOf(0).filter { trackedJoints.isNotEmpty() } }
+        primaryJointIndex = primaryIndices.firstOrNull() ?: 0
         val leftKnee = trackedJoints.indexOfFirst { it.contains("left_knee", ignoreCase = true) }
         val rightKnee = trackedJoints.indexOfFirst { it.contains("right_knee", ignoreCase = true) }
         if (leftKnee >= 0 && rightKnee >= 0) {
@@ -272,11 +287,13 @@ class MotionRecorder(
         val avgSymmetry = calculateBilateralSymmetryFromSides()
             ?: repMetricsList.mapNotNull { it.symmetry }.takeIf { it.isNotEmpty() }
                 ?.average()?.toInt()?.toShort()
-        val avgStability = repMetricsList.map { it.stability }.average().toInt().toShort()
+        val avgStability = repMetricsList.mapNotNull { it.stability }.takeIf { it.isNotEmpty() }
+            ?.average()?.toInt()?.toShort()
         val avgVelocity = repMetricsList.mapNotNull { it.velocity }.takeIf { it.isNotEmpty() }
             ?.average()?.toInt()?.toShort()
         val avgFormScore = repMetricsList.map { it.formScore }.average().toInt().toShort()
-        val avgAlignment = repMetricsList.map { it.alignmentAccuracy }.average().toInt().toShort()
+        val avgAlignment = repMetricsList.mapNotNull { it.alignmentAccuracy }.takeIf { it.isNotEmpty() }
+            ?.average()?.toInt()?.toShort()
         val avgTempo = List(3) { index ->
             repMetricsList.map { it.tempo.getOrElse(index) { 0 } }.average().toInt()
         }
@@ -306,9 +323,7 @@ class MotionRecorder(
             formConsistency = MetricsCalculator.calculateFormConsistencyFromScores(scores),
             fatigueIndex = MetricsCalculator.calculateFatigueIndexFromScores(scores),
             velocityLoss = repMetricsList.mapNotNull { it.velocityLoss }.maxOrNull(),
-            tempoConsistency = MetricsCalculator.calculateTempoConsistency(
-                completedRepMetrics.map { it.durationMs },
-            ),
+            tempoConsistency = MetricsCalculator.calculateTempoConsistencyFromRepMetrics(repMetricsList),
         )
     }
 
@@ -321,11 +336,11 @@ class MotionRecorder(
     private fun emptyExecutionMetrics(): WorkoutExecutionMetrics = WorkoutExecutionMetrics(
         avgRom = 0,
         avgSymmetry = null,
-        avgStability = 1000,
+        avgStability = null,
         avgTempo = listOf(0, 0, 0),
         avgVelocity = null,
         avgFormScore = 0,
-        avgAlignmentAccuracy = 1000,
+        avgAlignmentAccuracy = null,
         totalTUT = 0,
         totalVolume = null,
         maxWeight = null,

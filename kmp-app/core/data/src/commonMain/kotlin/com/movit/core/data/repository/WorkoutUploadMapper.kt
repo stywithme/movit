@@ -48,21 +48,21 @@ object WorkoutUploadMapper {
     private fun RepMetrics.toDto(): RepMetricsDto = RepMetricsDto(
         rom = rom / 10f,
         symmetry = symmetry?.let { it / 10f },
-        stability = stability / 10f,
+        stability = stability?.let { it / 10f },
         tempo = tempo.toList(),
         velocity = velocity?.toFloat(),
         formScore = formScore / 10f,
-        alignmentAccuracy = alignmentAccuracy / 10f,
+        alignmentAccuracy = alignmentAccuracy?.let { it / 10f },
     )
 
     private fun WorkoutExecutionMetrics.toDto(): ExecutionMetricsDto = ExecutionMetricsDto(
         avgRom = avgRom / 10f,
         avgSymmetry = avgSymmetry?.let { it / 10f },
-        avgStability = avgStability / 10f,
+        avgStability = avgStability?.let { it / 10f },
         avgTempo = avgTempo,
         avgVelocity = avgVelocity?.toFloat(),
         avgFormScore = avgFormScore / 10f,
-        avgAlignmentAccuracy = avgAlignmentAccuracy / 10f,
+        avgAlignmentAccuracy = avgAlignmentAccuracy?.let { it / 10f },
         totalTUT = totalTUT,
         totalVolume = totalVolume,
         maxWeight = maxWeight,

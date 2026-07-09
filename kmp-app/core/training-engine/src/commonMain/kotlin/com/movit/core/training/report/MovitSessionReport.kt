@@ -73,7 +73,7 @@ object MovitSessionReportBuilder {
         )
         return MovitSessionReport(
             totalExercises = 1,
-            totalSetsCompleted = setsCompleted,
+            totalSetsCompleted = 1,
             totalSetsPlanned = totalSets,
             totalReps = summary.totalReps,
             totalDurationMs = summary.durationMs,
@@ -96,26 +96,56 @@ object MovitSessionReportBuilder {
         reportId: String? = null,
         poseVariantIndex: Int = summary.poseVariantIndex,
     ): MovitSessionReport {
-        val nextExercise = MovitExerciseSessionReport(
-            exerciseSlug = exerciseSlug,
-            exerciseName = exerciseName.en,
-            setsCompleted = setsCompleted,
-            totalSets = totalSets,
-            totalReps = summary.totalReps,
-            averageAccuracy = summary.countedRatio * 100f,
-            averageFormScore = summary.averageScore,
-            reportId = reportId,
-            workoutId = upload.id,
-            poseVariantIndex = poseVariantIndex,
-        )
-        val exercises = existing.exerciseReports + nextExercise
+        val existingIndex = existing.exerciseReports.indexOfFirst { it.exerciseSlug == exerciseSlug }
+        val isNewExercise = existingIndex < 0
+        val mergedExercise = if (existingIndex >= 0) {
+            val prev = existing.exerciseReports[existingIndex]
+            val weightedForm = weightedAverageBySet(
+                previousAverage = prev.averageFormScore,
+                previousSetsCompleted = prev.setsCompleted,
+                newSetValue = summary.averageScore,
+            )
+            val weightedAccuracy = weightedAverageBySet(
+                previousAverage = prev.averageAccuracy,
+                previousSetsCompleted = prev.setsCompleted,
+                newSetValue = summary.countedRatio * 100f,
+            )
+            prev.copy(
+                setsCompleted = setsCompleted,
+                totalSets = maxOf(prev.totalSets, totalSets),
+                totalReps = prev.totalReps + summary.totalReps,
+                averageAccuracy = weightedAccuracy,
+                averageFormScore = weightedForm,
+                reportId = reportId ?: prev.reportId,
+                workoutId = upload.id,
+                poseVariantIndex = poseVariantIndex,
+            )
+        } else {
+            MovitExerciseSessionReport(
+                exerciseSlug = exerciseSlug,
+                exerciseName = exerciseName.en,
+                setsCompleted = setsCompleted,
+                totalSets = totalSets,
+                totalReps = summary.totalReps,
+                averageAccuracy = summary.countedRatio * 100f,
+                averageFormScore = summary.averageScore,
+                reportId = reportId,
+                workoutId = upload.id,
+                poseVariantIndex = poseVariantIndex,
+            )
+        }
+        val exercises = if (existingIndex >= 0) {
+            existing.exerciseReports.toMutableList().also { it[existingIndex] = mergedExercise }
+        } else {
+            existing.exerciseReports + mergedExercise
+        }
         val totalReps = exercises.sumOf { it.totalReps }
         val avgAccuracy = if (exercises.isEmpty()) 0f else exercises.map { it.averageAccuracy }.average().toFloat()
         val avgForm = if (exercises.isEmpty()) 0f else exercises.map { it.averageFormScore }.average().toFloat()
         return existing.copy(
             totalExercises = exercises.size,
-            totalSetsCompleted = existing.totalSetsCompleted + setsCompleted,
-            totalSetsPlanned = existing.totalSetsPlanned + totalSets,
+            totalSetsCompleted = existing.totalSetsCompleted + 1,
+            totalSetsPlanned = existing.totalSetsPlanned + if (isNewExercise) totalSets else 0,
             totalReps = totalReps,
             totalDurationMs = existing.totalDurationMs + summary.durationMs,
             averageAccuracy = avgAccuracy,
@@ -124,6 +154,16 @@ object MovitSessionReportBuilder {
             reportIds = existing.reportIds + listOfNotNull(reportId),
             executionIds = existing.executionIds + upload.id,
         )
+    }
+
+    private fun weightedAverageBySet(
+        previousAverage: Float,
+        previousSetsCompleted: Int,
+        newSetValue: Float,
+    ): Float {
+        val prevSets = previousSetsCompleted.coerceAtLeast(0)
+        if (prevSets == 0) return newSetValue
+        return ((previousAverage * prevSets) + newSetValue) / (prevSets + 1)
     }
 
     fun toAssessmentResult(

@@ -174,6 +174,7 @@ data class MovitRepTimelineEntry(
 @Serializable
 data class MovitBestRepHighlight(
     val repNumber: Int,
+    val setNumber: Int = 1,
     val durationMs: Long,
     val score: Float,
     val worstState: JointState = JointState.PERFECT,
@@ -186,6 +187,7 @@ data class MovitBestRepHighlight(
 @Serializable
 data class MovitWorstRepHighlight(
     val repNumber: Int,
+    val setNumber: Int = 1,
     val durationMs: Long,
     val score: Float,
     val errorCount: Int = 0,

@@ -106,11 +106,11 @@ data class PlannedWorkoutReportDto(
 data class RepMetricsDto(
     val rom: Float,
     val symmetry: Float? = null,
-    val stability: Float,
+    val stability: Float? = null,
     val tempo: List<Int> = emptyList(),
     val velocity: Float? = null,
     val formScore: Float,
-    val alignmentAccuracy: Float,
+    val alignmentAccuracy: Float? = null,
 )
 
 @Serializable
@@ -128,11 +128,11 @@ data class RepMetricsDataDto(
 data class ExecutionMetricsDto(
     val avgRom: Float,
     val avgSymmetry: Float? = null,
-    val avgStability: Float,
+    val avgStability: Float? = null,
     val avgTempo: List<Int> = emptyList(),
     val avgVelocity: Float? = null,
     val avgFormScore: Float,
-    val avgAlignmentAccuracy: Float,
+    val avgAlignmentAccuracy: Float? = null,
     val totalTUT: Int,
     val totalVolume: Float? = null,
     val maxWeight: Float? = null,

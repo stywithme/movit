@@ -32,10 +32,20 @@ class TrainingFrameCaptureCoordinator(
     private var captureSeq: Int = 0,
     private var replaySeq: Int = 0,
 ) {
+    var currentSetNumber: Int = 1
+        private set
+
     private var lastHoldSampleElapsedMs = -1L
     private val pendingCaptureJobs = mutableListOf<Job>()
     private var replaySamplerJob: Job? = null
     private var replayRepProvider: (() -> Int)? = null
+
+    fun beginSet(setNumber: Int) {
+        if (setNumber > 1) {
+            resetForNextSet()
+        }
+        currentSetNumber = setNumber.coerceAtLeast(1)
+    }
 
     fun onPhaseChanged(phase: Phase, repInProgress: Int, angles: JointAngles? = null) {
         if (phase == Phase.BOTTOM) {
@@ -112,7 +122,7 @@ class TrainingFrameCaptureCoordinator(
 
     fun onRepCompleted(repNumber: Int, isCounted: Boolean) {
         if (isCounted) {
-            manager.markBestRep(repNumber)
+            manager.markBestRep(repNumber, currentSetNumber)
         }
     }
 
@@ -121,13 +131,10 @@ class TrainingFrameCaptureCoordinator(
         stopReplaySampler()
         replayRepProvider = repInProgress
         replaySamplerJob = scope.launch {
+            sampleReplayFrame()
             while (isActive) {
                 delay(MovitRepReplaySampler.SAMPLE_INTERVAL_MS)
-                val repNumber = replayRepProvider?.invoke() ?: continue
-                if (repNumber < 1 || !replaySampler.canSample(repNumber)) continue
-                val captureId = nextReplayCaptureId(repNumber)
-                val persisted = snapshotPort.persistReplaySnapshot(sessionId, captureId) ?: continue
-                replaySampler.tryRegisterFrame(repNumber, persisted.localPath)
+                sampleReplayFrame()
             }
         }
     }
@@ -138,22 +145,30 @@ class TrainingFrameCaptureCoordinator(
         replayRepProvider = null
     }
 
-    fun captures(): List<MovitPeakFrameCapture> = manager.captures()
+    fun captures(): List<MovitPeakFrameCapture> =
+        manager.captures().filter { it.setNumber == currentSetNumber }
 
-    fun replayClips(): List<MovitRepReplayClip> = replaySampler.clips()
+    fun replayClips(): List<MovitRepReplayClip> = replaySampler.clips(currentSetNumber)
 
     /** Waits for in-flight snapshot jobs before building post-training reports. */
     suspend fun awaitPendingCaptures() {
         pendingCaptureJobs.toList().joinAll()
     }
 
-    fun resetForNextExercise() {
+    fun resetForNextSet() {
         stopReplaySampler()
         lastHoldSampleElapsedMs = -1L
         captureSeq = 0
         replaySeq = 0
+        pendingCaptureJobs.forEach { it.cancel() }
         pendingCaptureJobs.clear()
+        manager.clear()
         replaySampler.clear()
+    }
+
+    fun resetForNextExercise() {
+        resetForNextSet()
+        currentSetNumber = 1
     }
 
     private fun requestCapture(
@@ -163,7 +178,8 @@ class TrainingFrameCaptureCoordinator(
         errorKey: String? = null,
         angles: JointAngles? = null,
     ) {
-        if (!manager.canCapture(captureType, repNumber, errorKey)) return
+        val setNumber = currentSetNumber
+        if (!manager.canCapture(captureType, repNumber, setNumber, errorKey)) return
         if (!snapshotPort.isAvailable) return
         val captureId = nextCaptureId()
         val angleMap = angles?.toMap().orEmpty()
@@ -172,6 +188,7 @@ class TrainingFrameCaptureCoordinator(
             manager.tryRegister(
                 MovitPeakFrameCaptureManager.RegisterRequest(
                     repNumber = repNumber,
+                    setNumber = setNumber,
                     phaseCode = phase.ordinal.toByte(),
                     captureType = captureType,
                     localPath = persisted.localPath,
@@ -186,14 +203,23 @@ class TrainingFrameCaptureCoordinator(
         job.invokeOnCompletion { pendingCaptureJobs.remove(job) }
     }
 
-    private fun nextCaptureId(): String {
-        captureSeq += 1
-        return "frame-$sessionId-$captureSeq"
+    private suspend fun sampleReplayFrame() {
+        val repNumber = replayRepProvider?.invoke() ?: return
+        val setNumber = currentSetNumber
+        if (repNumber < 1 || !replaySampler.canSample(repNumber, setNumber)) return
+        val captureId = nextReplayCaptureId(repNumber, setNumber)
+        val persisted = snapshotPort.persistReplaySnapshot(sessionId, captureId) ?: return
+        replaySampler.tryRegisterFrame(repNumber, persisted.localPath, setNumber)
     }
 
-    private fun nextReplayCaptureId(repNumber: Int): String {
+    private fun nextCaptureId(): String {
+        captureSeq += 1
+        return "frame-$sessionId-set$currentSetNumber-$captureSeq"
+    }
+
+    private fun nextReplayCaptureId(repNumber: Int, setNumber: Int = currentSetNumber): String {
         replaySeq += 1
-        return "rep${repNumber}_replay_${replaySeq - 1}"
+        return "set${setNumber}_rep${repNumber}_replay_${replaySeq - 1}"
     }
 
     private companion object {

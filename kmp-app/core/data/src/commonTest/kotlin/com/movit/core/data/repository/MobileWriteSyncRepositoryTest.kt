@@ -118,6 +118,44 @@ class MobileWriteSyncRepositoryTest {
     }
 
     @Test
+    fun uploadWorkoutExecution_withoutAuth_enqueuesForReplayAfterSignIn() {
+        runBlocking {
+            val apiCalls = AtomicInteger(0)
+            val engine = MockEngine {
+                apiCalls.incrementAndGet()
+                respond(okBody, HttpStatusCode.OK, jsonHeaders)
+            }
+            val platform = FakeMovitPlatformBindings(auth = null)
+            val localStore = testLocalStore(platform)
+            val repo = testMobileWriteRepository(engine, platform, localStore)
+
+            val request = WorkoutExecutionUploadRequestDto(
+                id = "exec-guest-1",
+                exerciseId = "squat",
+                timestamp = 1L,
+                durationMs = 1000,
+                totalReps = 5,
+                countedReps = 5,
+                invalidReps = 0,
+                executionMetrics = ExecutionMetricsDto(
+                    avgRom = 9f,
+                    avgStability = 8f,
+                    avgFormScore = 8f,
+                    avgAlignmentAccuracy = 8f,
+                    totalTUT = 1000,
+                ),
+            )
+            val result = repo.uploadWorkoutExecution(request)
+
+            assertTrue(result is AppResult.Success)
+            assertEquals(0, apiCalls.get())
+            val outbox = localStore.getOutboxById("exec-guest-1")
+            assertEquals(OutboxStatus.PENDING, outbox?.status)
+            assertEquals(OutboxOperationType.WORKOUT_EXECUTION_UPLOAD, outbox?.type)
+        }
+    }
+
+    @Test
     fun completePlannedWorkout_withoutAuth_fails() {
         runBlocking {
             val platform = FakeMovitPlatformBindings(auth = null)

@@ -32,11 +32,13 @@ object MovitPostTrainingReportBuilderV2 {
         holdData: MovitHoldReportData? = null,
         poseVariantIndex: Int = 0,
         totalReps: Int = performanceSummary.totalReps,
+        setNumber: Int = 1,
+        repsTarget: Int = totalReps,
     ): MovitPostTrainingReportAnalysis {
-        val dangerAlerts = generateDangerAlerts(repDetails, exerciseConfig, frameCaptures, poseVariantIndex)
-        val perfectMoments = generatePerfectMoments(repDetails, exerciseConfig, frameCaptures, poseVariantIndex)
-        val bestReps = findBestRepsByScore(repDetails, frameCaptures)
-        val worstRep = findWorstRep(repDetails, frameCaptures, exerciseConfig, poseVariantIndex)
+        val dangerAlerts = generateDangerAlerts(repDetails, exerciseConfig, frameCaptures, poseVariantIndex, setNumber)
+        val perfectMoments = generatePerfectMoments(repDetails, exerciseConfig, frameCaptures, poseVariantIndex, setNumber)
+        val bestReps = findBestRepsByScore(repDetails, frameCaptures, setNumber)
+        val worstRep = findWorstRep(repDetails, frameCaptures, exerciseConfig, poseVariantIndex, setNumber)
         val bestRepFrame = bestReps.firstOrNull()?.frameCapture
             ?: resolveFrameForRep(
                 repNumber = bestReps.firstOrNull()?.repNumber ?: 0,
@@ -44,6 +46,7 @@ object MovitPostTrainingReportBuilderV2 {
                 preferredTypes = listOf(MovitPeakCaptureType.BEST_REP, MovitPeakCaptureType.PEAK_FRAME),
                 maxNeighborDistance = 0,
                 strictTypes = true,
+                setNumber = setNumber,
             ).takeIf { bestReps.isNotEmpty() }
         val errorAnalysis = generateErrorAnalysis(
             repDetails = repDetails,
@@ -59,6 +62,7 @@ object MovitPostTrainingReportBuilderV2 {
             worstRepNumber = worstRep?.repNumber,
             frameCaptures = frameCaptures,
             poseVariantIndex = poseVariantIndex,
+            setNumber = setNumber,
         )
         val consistency = calculateConsistency(repDetails)
         val tips = generateTips(errorAnalysis, exerciseConfig, dangerAlerts, totalReps, poseVariantIndex)
@@ -99,6 +103,20 @@ object MovitPostTrainingReportBuilderV2 {
             heroFrame = heroFrame,
             overallQuality = overallQuality,
             exerciseConfig = configSnapshot,
+            setSummaries = listOf(
+                MovitSetSummary(
+                    setNumber = setNumber,
+                    repsCompleted = repDetails.size,
+                    repsTarget = repsTarget,
+                    averageScore = performanceSummary.averageScore,
+                    durationMs = performanceSummary.durationMs,
+                    countedReps = performanceSummary.countedReps,
+                    invalidatedReps = performanceSummary.invalidatedReps,
+                    weightKg = performanceSummary.weightKg,
+                    dominantState = repDetails.maxByOrNull { it.worstState.priority }?.worstState
+                        ?: JointState.NORMAL,
+                ),
+            ),
         )
     }
 
@@ -107,6 +125,7 @@ object MovitPostTrainingReportBuilderV2 {
         exerciseConfig: ExerciseConfig,
         frameCaptures: List<MovitPeakFrameCapture>,
         poseVariantIndex: Int,
+        setNumber: Int,
     ): List<MovitDangerAlert> {
         val dangerReps = repDetails.filter { it.worstState == JointState.DANGER }
         if (dangerReps.isEmpty()) return emptyList()
@@ -132,6 +151,7 @@ object MovitPostTrainingReportBuilderV2 {
                     MovitPeakCaptureType.PEAK_FRAME,
                 ),
                 jointHint = jointCode,
+                setNumber = setNumber,
             )
             MovitDangerAlert(
                 repNumber = rep.repNumber,
@@ -151,6 +171,7 @@ object MovitPostTrainingReportBuilderV2 {
         exerciseConfig: ExerciseConfig,
         frameCaptures: List<MovitPeakFrameCapture>,
         poseVariantIndex: Int,
+        setNumber: Int,
     ): List<MovitPerfectMoment> {
         val perfectReps = repDetails.filter { it.worstState == JointState.PERFECT }
         if (perfectReps.isEmpty()) return emptyList()
@@ -165,6 +186,7 @@ object MovitPostTrainingReportBuilderV2 {
                 preferredTypes = listOf(MovitPeakCaptureType.BEST_REP, MovitPeakCaptureType.PEAK_FRAME),
                 maxNeighborDistance = 0,
                 strictTypes = true,
+                setNumber = setNumber,
             )
             val motivational = motivationals.getOrNull(index % motivationals.size.coerceAtLeast(1))
                 ?: LocalizedText("ممتاز! أداء مثالي!", "Excellent! Perfect form!")
@@ -181,6 +203,7 @@ object MovitPostTrainingReportBuilderV2 {
     private fun findBestRepsByScore(
         repDetails: List<RepResult>,
         frameCaptures: List<MovitPeakFrameCapture>,
+        setNumber: Int,
     ): List<MovitBestRepHighlight> {
         val bestPoolRaw = when {
             repDetails.any { MovitRepQuality.fromRep(it) == MovitRepQuality.CLEAN } ->
@@ -204,10 +227,12 @@ object MovitPostTrainingReportBuilderV2 {
                 preferredTypes = listOf(MovitPeakCaptureType.BEST_REP, MovitPeakCaptureType.PEAK_FRAME),
                 maxNeighborDistance = 1,
                 strictTypes = true,
+                setNumber = setNumber,
             )
             val displayInfo = ReportStateDisplayConfig.getDisplayInfo(rep.worstState)
             MovitBestRepHighlight(
                 repNumber = rep.repNumber,
+                setNumber = setNumber,
                 durationMs = calculateRepDuration(rep),
                 score = rep.score,
                 worstState = rep.worstState,
@@ -223,6 +248,7 @@ object MovitPostTrainingReportBuilderV2 {
         frameCaptures: List<MovitPeakFrameCapture>,
         exerciseConfig: ExerciseConfig,
         poseVariantIndex: Int,
+        setNumber: Int,
     ): MovitWorstRepHighlight? {
         if (repDetails.isEmpty()) return null
 
@@ -259,10 +285,12 @@ object MovitPostTrainingReportBuilderV2 {
                 MovitPeakCaptureType.PEAK_FRAME,
             ),
             jointHint = jointHint,
+            setNumber = setNumber,
         )
 
         return MovitWorstRepHighlight(
             repNumber = worstRep.repNumber,
+            setNumber = setNumber,
             durationMs = calculateRepDuration(worstRep),
             score = worstRep.score,
             errorCount = worstRep.getTotalErrorCount() + worstRep.positionWarningCount,
@@ -356,6 +384,7 @@ object MovitPostTrainingReportBuilderV2 {
         worstRepNumber: Int?,
         frameCaptures: List<MovitPeakFrameCapture>,
         poseVariantIndex: Int,
+        setNumber: Int,
     ): List<MovitRepTimelineEntry> = repDetails.map { rep ->
         val isBest = rep.repNumber in bestRepNumbers
         val isWorst = rep.repNumber == worstRepNumber
@@ -384,9 +413,11 @@ object MovitPostTrainingReportBuilderV2 {
             ),
             jointHint = rep.errors.firstOrNull()?.jointCode,
             maxNeighborDistance = 0,
+            setNumber = setNumber,
         )
         MovitRepTimelineEntry(
             repNumber = rep.repNumber,
+            setNumber = setNumber,
             status = status,
             durationMs = calculateRepDuration(rep),
             errors = errors,
@@ -593,16 +624,18 @@ object MovitPostTrainingReportBuilderV2 {
         jointHint: String? = null,
         maxNeighborDistance: Int = 2,
         strictTypes: Boolean = false,
+        setNumber: Int? = null,
     ): MovitPeakFrameCapture? {
         if (frames.isEmpty() || repNumber < 1) return null
+        val scopedFrames = setNumber?.let { set -> frames.filter { it.setNumber == set } } ?: frames
 
         fun pickForRep(rep: Int): MovitPeakFrameCapture? {
             for (type in preferredTypes) {
-                val list = frames.filter { it.repNumber == rep && it.captureType == type }
+                val list = scopedFrames.filter { it.repNumber == rep && it.captureType == type }
                 list.firstOrNull()?.let { return it }
             }
             if (strictTypes) return null
-            return frames.firstOrNull { it.repNumber == rep }
+            return scopedFrames.firstOrNull { it.repNumber == rep }
         }
 
         pickForRep(repNumber)?.let { return it }

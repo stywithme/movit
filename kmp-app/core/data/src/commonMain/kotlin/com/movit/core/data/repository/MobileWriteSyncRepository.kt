@@ -190,13 +190,14 @@ class MobileWriteSyncRepository(
     /**
      * Offline-safe upload for a single exercise execution (camera / training metrics).
      * Uses [WorkoutExecutionUploadRequestDto.id] as the stable outbox idempotency key.
+     *
+     * Guest sessions enqueue locally without auth (same durable outbox path as offline);
+     * [OfflineWriteQueue.replayPending] uploads after sign-in.
      */
     suspend fun uploadWorkoutExecution(
         request: WorkoutExecutionUploadRequestDto,
         operationId: String? = null,
     ): AppResult<String> {
-        if (!hasAuth()) return AppResult.Failure("Sign in to upload workout data.")
-
         val id = operationId ?: request.id
         offlineWrites.enqueueWorkoutExecutionUpload(request, operationId = id)
         return AppResult.Success(id)

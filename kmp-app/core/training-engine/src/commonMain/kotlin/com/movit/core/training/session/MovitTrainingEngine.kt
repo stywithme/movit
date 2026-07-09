@@ -26,6 +26,7 @@ import com.movit.core.training.config.TrackedJoint
 import com.movit.core.training.config.TrackingMode
 import com.movit.core.training.engine.JointError
 import com.movit.core.training.engine.RepIncompleteReason
+import com.movit.core.training.engine.shouldDiscardRepAttemptOnIncomplete
 
 import com.movit.core.training.config.phaseTimingConfig
 
@@ -407,11 +408,22 @@ class MovitTrainingEngine(
 
     init {
 
+        bilateral.onSideChanged = {
+            angleSmoother.reset()
+            jointEvaluator.reset()
+        }
+
         stateMachine.onPhaseChanged = { _, current -> onPhaseChanged?.invoke(current) }
 
         stateMachine.onRepCompleted = { repCompletion.onPhaseMachineWantsComplete() }
 
-        stateMachine.onRepIncomplete = { reason -> onRepIncomplete?.invoke(reason) }
+        stateMachine.onRepIncomplete = { reason ->
+            if (shouldDiscardRepAttemptOnIncomplete(reason)) {
+                repCounter.discardCurrentRepAttempt(reason)
+                stateMachine.clearTimings()
+            }
+            onRepIncomplete?.invoke(reason)
+        }
 
         repCounter.onRepCountChanged = { count, score, isCounted ->
 
@@ -707,29 +719,20 @@ class MovitTrainingEngine(
                 angleExtract.skippedJointCodes,
             )
 
-        }
-
-
-
-        val jointErrors = JointErrorCollection.collectJointErrors(frameResult.jointEvals)
-
-        for (error in jointErrors) {
-            repCounter.addError(error)
-            if (frameFeedback.shouldEmitJointError(error)) {
-                val message = frameResult.jointEvals[error.jointCode]?.messages?.firstOrNull()
-                onJointErrorFeedback?.invoke(error, message)
+            val jointErrors = JointErrorCollection.collectJointErrors(frameResult.jointEvals)
+            for (error in jointErrors) {
+                repCounter.addError(error)
+                if (frameFeedback.shouldEmitJointError(error)) {
+                    val message = frameResult.jointEvals[error.jointCode]?.messages?.firstOrNull()
+                    onJointErrorFeedback?.invoke(error, message)
+                }
             }
-        }
 
-
-
-        pipelineResult.positionResult?.let { pv ->
-
-            pv.errors.forEach { repCounter.addPositionError(it) }
-
-            pv.warnings.forEach { repCounter.addPositionWarning(it.checkId) }
-
-            pv.tips.forEach { repCounter.addPositionTip(it.checkId) }
+            pipelineResult.positionResult?.let { pv ->
+                pv.errors.forEach { repCounter.addPositionError(it) }
+                pv.warnings.forEach { repCounter.addPositionWarning(it.checkId) }
+                pv.tips.forEach { repCounter.addPositionTip(it.checkId) }
+            }
 
         }
 

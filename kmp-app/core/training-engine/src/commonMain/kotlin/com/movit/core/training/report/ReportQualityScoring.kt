@@ -48,31 +48,25 @@ internal object ReportQualityScoring {
     ): Float {
         if (totalReps <= 0) return 50f
 
-        if (tempoConsistency != null || velocityLoss != null || formConsistency != null) {
-            val tcScore = tempoConsistency ?: 80f
-            val vlScore = if (velocityLoss != null) (100f - velocityLoss) else 85f
-            val fcScore = formConsistency ?: 80f
-            val fatiguePenalty = if (fatigueIndex != null) {
-                val fatigueRatio = fatigueIndex.toFloat() / totalReps
-                (fatigueRatio * 100f).coerceIn(30f, 100f)
-            } else {
-                100f
+        data class Weighted(val score: Float, val weight: Float)
+        val weightedParts = buildList {
+            tempoConsistency?.let { add(Weighted(it, 0.30f)) }
+            velocityLoss?.let { add(Weighted((100f - it).coerceIn(0f, 100f), 0.25f)) }
+            formConsistency?.let { add(Weighted(it, 0.25f)) }
+            fatigueIndex?.let {
+                val fatigueRatio = it.toFloat() / totalReps
+                add(Weighted((100f - (fatigueRatio * 30f)).coerceIn(0f, 100f), 0.20f))
             }
-            return (
-                tcScore * 0.30f +
-                    vlScore * 0.25f +
-                    fcScore * 0.25f +
-                    fatiguePenalty * 0.20f
-                ).coerceIn(0f, 100f)
+        }
+        if (weightedParts.isNotEmpty()) {
+            val totalWeight = weightedParts.sumOf { part -> part.weight.toDouble() }.toFloat()
+            return weightedParts
+                .sumOf { part -> (part.score * (part.weight / totalWeight)).toDouble() }
+                .toFloat()
+                .coerceIn(0f, 100f)
         }
 
-        var score = 80f
-        if (fatigueIndex == null) {
-            score += 10f
-        } else {
-            val fatigueRatio = fatigueIndex.toFloat() / totalReps
-            score -= (fatigueRatio * 30f)
-        }
+        var score = 50f
         consistency?.let { metrics ->
             val variationRatio = if (metrics.averageDurationMs > 0) {
                 metrics.variationMs.toFloat() / metrics.averageDurationMs

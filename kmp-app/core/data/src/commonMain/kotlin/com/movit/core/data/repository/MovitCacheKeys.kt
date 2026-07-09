@@ -36,6 +36,15 @@ object MovitCacheKeys {
     fun plannedWorkoutReportKey(plannedWorkoutId: String): String =
         "planned_workout_report_$plannedWorkoutId"
 
+    fun postTrainingReportKey(reportId: String): String = "post_training_report_$reportId"
+
+    fun sessionReportKey(reportId: String): String = "session_report_$reportId"
+
+    fun exerciseSetReportsIndexKey(sessionExerciseKey: String): String =
+        "exercise_set_reports_$sessionExerciseKey"
+
+    fun reportSessionExerciseKey(reportId: String): String = "report_session_exercise_$reportId"
+
     const val SESSION_STORE = "session_cache"
 
     const val SESSION_JOURNAL_STORE = "session_journal_cache"

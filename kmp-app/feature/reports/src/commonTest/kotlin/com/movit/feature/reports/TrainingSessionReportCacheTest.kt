@@ -98,6 +98,71 @@ class TrainingSessionReportCacheTest {
     }
 
     @Test
+    fun getMergedForDisplay_mergesIndexedSiblingSetReports() {
+        val sessionKey = "session:squat"
+        val setOne = samplePostTrainingReport("upload-set-1").copy(
+            setSummaries = listOf(
+                com.movit.core.training.report.MovitSetSummary(
+                    setNumber = 1,
+                    repsCompleted = 2,
+                    repsTarget = 2,
+                    averageScore = 80f,
+                    durationMs = 1_000,
+                    countedReps = 2,
+                    invalidatedReps = 0,
+                ),
+            ),
+            repTimeline = listOf(
+                com.movit.core.training.report.MovitRepTimelineEntry(
+                    repNumber = 1,
+                    durationMs = 1_000,
+                    score = 75f,
+                    setNumber = 1,
+                ),
+                com.movit.core.training.report.MovitRepTimelineEntry(
+                    repNumber = 2,
+                    durationMs = 1_000,
+                    score = 80f,
+                    setNumber = 1,
+                ),
+            ),
+        )
+        val setTwo = samplePostTrainingReport("upload-set-2").copy(
+            setSummaries = listOf(
+                com.movit.core.training.report.MovitSetSummary(
+                    setNumber = 2,
+                    repsCompleted = 2,
+                    repsTarget = 2,
+                    averageScore = 95f,
+                    durationMs = 1_000,
+                    countedReps = 2,
+                    invalidatedReps = 0,
+                ),
+            ),
+            repTimeline = listOf(
+                com.movit.core.training.report.MovitRepTimelineEntry(
+                    repNumber = 1,
+                    durationMs = 1_000,
+                    score = 95f,
+                    setNumber = 2,
+                ),
+                com.movit.core.training.report.MovitRepTimelineEntry(
+                    repNumber = 2,
+                    durationMs = 1_000,
+                    score = 90f,
+                    setNumber = 2,
+                ),
+            ),
+        )
+        TrainingSessionReportCache.put("upload-set-1", setOne, sessionKey, 1)
+        TrainingSessionReportCache.put("upload-set-2", setTwo, sessionKey, 2)
+
+        val merged = TrainingSessionReportCache.getMergedForDisplay("upload-set-2")
+        assertEquals(2, merged?.setSummaries?.size)
+        assertEquals(95f, merged?.bestReps?.single()?.score)
+    }
+
+    @Test
     fun sharedRepository_readsCachedSessionReport() = runBlocking {
         val report = samplePostTrainingReport()
         TrainingSessionReportCache.put("upload-42", report)

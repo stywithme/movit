@@ -99,6 +99,8 @@ data class MovitPerformanceSummary(
     val avgStability: Float? = null,
     val formConsistency: Float? = null,
     val fatigueIndex: Int? = null,
+    /** Full count of reps with DANGER worst-state — not capped like [MovitPostTrainingReport.dangerAlerts]. */
+    val dangerRepCount: Int = 0,
 )
 
 @Serializable
@@ -198,6 +200,8 @@ object MovitPostTrainingReportBuilder {
         workoutId: String = upload.id,
         timestamp: Long = upload.timestamp,
         poseVariantIndex: Int = summary.poseVariantIndex,
+        setNumber: Int = 1,
+        repsTarget: Int = summary.totalReps,
     ): MovitPostTrainingReport {
         val stateBreakdown = when {
             summary.repDetails.isNotEmpty() -> MovitStateBreakdown.fromRepDetails(summary.repDetails)
@@ -223,9 +227,14 @@ object MovitPostTrainingReportBuilder {
             weightUnit = weightUnit,
             avgRom = metrics.avgRom.takeIf { it > 0 }?.let { it / 10f },
             avgSymmetry = metrics.avgSymmetry?.let { it / 10f },
-            avgStability = metrics.avgStability.takeIf { it > 0 }?.let { it / 10f },
+            avgStability = metrics.avgStability?.takeIf { it > 0 }?.let { it / 10f },
             formConsistency = metrics.formConsistency?.let { it / 10f },
             fatigueIndex = metrics.fatigueIndex?.toInt(),
+            dangerRepCount = when {
+                summary.repDetails.isNotEmpty() ->
+                    summary.repDetails.count { it.worstState == JointState.DANGER }
+                else -> stateBreakdown.dangerCount
+            },
         )
         val executionQuality = sessionQuality?.let { MovitExecutionQuality.fromSessionQuality(it) }
             ?: MovitExecutionQuality(
@@ -244,6 +253,8 @@ object MovitPostTrainingReportBuilder {
                 holdData = holdData,
                 poseVariantIndex = poseVariantIndex,
                 totalReps = summary.totalReps,
+                setNumber = setNumber,
+                repsTarget = repsTarget,
             )
         } else {
             MovitPostTrainingReportAnalysis()
@@ -349,6 +360,7 @@ object PostTrainingReportLegacyJson {
         summary.avgStability?.let { put("avgStability", JsonPrimitive(roundScore(it))) }
         summary.formConsistency?.let { put("formConsistency", JsonPrimitive(roundScore(it))) }
         summary.fatigueIndex?.let { put("fatigueIndex", JsonPrimitive(it)) }
+        put("dangerRepCount", JsonPrimitive(summary.dangerRepCount))
     }
 
     private fun encodeExecutionQuality(quality: MovitExecutionQuality): JsonObject = buildJsonObject {
@@ -464,6 +476,7 @@ object PostTrainingReportLegacyJson {
     private fun encodePeakCapture(capture: MovitPeakFrameCapture): JsonObject = buildJsonObject {
         put("id", JsonPrimitive(capture.id))
         put("repNumber", JsonPrimitive(capture.repNumber))
+        put("setNumber", JsonPrimitive(capture.setNumber))
         put("phase", JsonPrimitive(capture.phaseCode.toInt()))
         put("timestamp", JsonPrimitive(capture.capturedAtMs))
         put("captureType", JsonPrimitive(capture.captureType.name))
@@ -622,6 +635,7 @@ object PostTrainingReportLegacyJson {
             add(
                 buildJsonObject {
                     put("repNumber", JsonPrimitive(clip.repNumber))
+                    put("setNumber", JsonPrimitive(clip.setNumber))
                     clip.posterFrameUri?.let { put("posterFrameUri", JsonPrimitive(it)) }
                     put("durationMs", JsonPrimitive(clip.durationMs))
                     put(

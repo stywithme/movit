@@ -21,6 +21,7 @@ data class MovitReplayFrameRef(
 @Serializable
 data class MovitRepReplayClip(
     val repNumber: Int,
+    val setNumber: Int = 1,
     val frames: List<MovitReplayFrameRef>,
 ) {
     val posterFrameUri: String?

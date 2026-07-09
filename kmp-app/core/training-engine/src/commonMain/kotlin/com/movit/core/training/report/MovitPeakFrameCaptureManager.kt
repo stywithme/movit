@@ -12,6 +12,7 @@ class MovitPeakFrameCaptureManager(
 ) {
     data class RegisterRequest(
         val repNumber: Int,
+        val setNumber: Int = 1,
         val phaseCode: Byte,
         val captureType: MovitPeakCaptureType,
         val localPath: String,
@@ -22,9 +23,11 @@ class MovitPeakFrameCaptureManager(
         val id: String? = null,
     )
 
+    private data class RepCaptureKey(val setNumber: Int, val repNumber: Int)
+
     private val captures = mutableListOf<MovitPeakFrameCapture>()
-    private val peakByRep = mutableMapOf<Int, MovitPeakFrameCapture>()
-    private val errorsByRep = mutableMapOf<Int, MutableSet<String>>()
+    private val peakByRep = mutableMapOf<RepCaptureKey, MovitPeakFrameCapture>()
+    private val errorsByRep = mutableMapOf<RepCaptureKey, MutableSet<String>>()
     private val lastErrorCaptureAt = mutableMapOf<String, Long>()
 
     private var dangerCount = 0
@@ -35,6 +38,7 @@ class MovitPeakFrameCaptureManager(
     fun canCapture(
         captureType: MovitPeakCaptureType,
         repNumber: Int,
+        setNumber: Int = 1,
         errorKey: String? = null,
         nowMs: Long = timeProvider(),
     ): Boolean = when (captureType) {
@@ -44,30 +48,35 @@ class MovitPeakFrameCaptureManager(
                     nowMs - lastDangerCaptureAt >= DANGER_CAPTURE_COOLDOWN_MS
                 )
         }
-        MovitPeakCaptureType.PEAK_FRAME -> !peakByRep.containsKey(repNumber)
+        MovitPeakCaptureType.PEAK_FRAME -> !peakByRep.containsKey(RepCaptureKey(setNumber, repNumber))
         MovitPeakCaptureType.ERROR_FRAME -> {
             val key = errorKey ?: return false
-            val perRep = errorsByRep.getOrPut(repNumber) { mutableSetOf() }
+            val repKey = RepCaptureKey(setNumber, repNumber)
+            val perRep = errorsByRep.getOrPut(repKey) { mutableSetOf() }
             if (key in perRep) return false
-            val cooldownKey = "$repNumber:$key"
+            val cooldownKey = "$setNumber:$repNumber:$key"
             val lastCapture = lastErrorCaptureAt[cooldownKey]
             lastCapture == null || nowMs - lastCapture >= ERROR_CAPTURE_COOLDOWN_MS
         }
         MovitPeakCaptureType.HOLD_SAMPLE -> holdSampleCount < MAX_HOLD_SAMPLES
-        MovitPeakCaptureType.BEST_REP -> bestRepCount < MAX_BEST_REPS && peakByRep.containsKey(repNumber)
+        MovitPeakCaptureType.BEST_REP -> {
+            bestRepCount < MAX_BEST_REPS && peakByRep.containsKey(RepCaptureKey(setNumber, repNumber))
+        }
     }
 
     fun tryRegister(request: RegisterRequest): MovitPeakFrameCapture? {
         val capturedAtMs: Long = request.capturedAtMs ?: timeProvider()
-        if (!canCapture(request.captureType, request.repNumber, request.errorKey, capturedAtMs)) {
+        if (!canCapture(request.captureType, request.repNumber, request.setNumber, request.errorKey, capturedAtMs)) {
             return null
         }
         val captureId: String = request.id ?: idGenerator()
+        val repKey = RepCaptureKey(request.setNumber, request.repNumber)
         val hasError = request.captureType == MovitPeakCaptureType.DANGER_FRAME ||
             request.captureType == MovitPeakCaptureType.ERROR_FRAME
         val capture = MovitPeakFrameCapture(
             id = captureId,
             repNumber = request.repNumber,
+            setNumber = request.setNumber,
             phaseCode = request.phaseCode,
             capturedAtMs = capturedAtMs,
             captureType = request.captureType,
@@ -85,11 +94,11 @@ class MovitPeakFrameCaptureManager(
                 dangerCount++
                 lastDangerCaptureAt = capturedAtMs
             }
-            MovitPeakCaptureType.PEAK_FRAME -> peakByRep[request.repNumber] = capture
+            MovitPeakCaptureType.PEAK_FRAME -> peakByRep[repKey] = capture
             MovitPeakCaptureType.ERROR_FRAME -> {
                 val key = request.errorKey ?: return null
-                errorsByRep.getOrPut(request.repNumber) { mutableSetOf() }.add(key)
-                lastErrorCaptureAt["${request.repNumber}:$key"] = capturedAtMs
+                errorsByRep.getOrPut(repKey) { mutableSetOf() }.add(key)
+                lastErrorCaptureAt["${request.setNumber}:${request.repNumber}:$key"] = capturedAtMs
             }
             MovitPeakCaptureType.HOLD_SAMPLE -> holdSampleCount++
             MovitPeakCaptureType.BEST_REP -> {
@@ -100,15 +109,16 @@ class MovitPeakFrameCaptureManager(
         return capture
     }
 
-    fun markBestRep(repNumber: Int): Boolean {
-        val peak = peakByRep[repNumber] ?: return false
+    fun markBestRep(repNumber: Int, setNumber: Int = 1): Boolean {
+        val repKey = RepCaptureKey(setNumber, repNumber)
+        val peak = peakByRep[repKey] ?: return false
         if (peak.captureType == MovitPeakCaptureType.BEST_REP) return false
         if (bestRepCount >= MAX_BEST_REPS) return false
         val index = captures.indexOfFirst { it.id == peak.id }
         if (index < 0) return false
         val updated = peak.copy(captureType = MovitPeakCaptureType.BEST_REP)
         captures[index] = updated
-        peakByRep[repNumber] = updated
+        peakByRep[repKey] = updated
         bestRepCount++
         return true
     }

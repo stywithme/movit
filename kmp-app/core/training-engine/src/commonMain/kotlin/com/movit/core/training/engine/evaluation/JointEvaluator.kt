@@ -159,9 +159,9 @@ class JointEvaluator(
     ): JointState {
         val previousState = previousStates[jointCode]
         if (previousState == null) {
-            val initial = if (rawState == JointState.DANGER && !isOutwardFallback) JointState.WARNING else rawState
+            val initial = if (rawState == JointState.DANGER) JointState.WARNING else rawState
             previousStates[jointCode] = initial
-            dangerFrameCounts[jointCode] = if (rawState == JointState.DANGER && !isOutwardFallback) 1 else 0
+            dangerFrameCounts[jointCode] = if (rawState == JointState.DANGER) 1 else 0
             return initial
         }
         if (rawState != JointState.DANGER) dangerFrameCounts[jointCode] = 0
@@ -172,8 +172,19 @@ class JointEvaluator(
             return rawState
         }
         if (isOutwardFallback) {
+            if (rawState == JointState.DANGER && previousState != JointState.DANGER) {
+                val count = (dangerFrameCounts[jointCode] ?: 0) + 1
+                dangerFrameCounts[jointCode] = count
+                if (count >= policy.minDangerFrames) {
+                    previousStates[jointCode] = JointState.DANGER
+                    return JointState.DANGER
+                }
+                return previousState
+            }
             previousStates[jointCode] = rawState
-            dangerFrameCounts[jointCode] = 0
+            if (rawState != JointState.DANGER) {
+                dangerFrameCounts[jointCode] = 0
+            }
             return rawState
         }
         val hysteresisDegree = policy.statePairHysteresis(previousState, rawState)

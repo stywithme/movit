@@ -15,6 +15,7 @@ import com.movit.core.training.config.LocalizedText
 import com.movit.core.training.diagnostics.TrainingPipelineDiagnostics
 import com.movit.core.training.engine.Phase
 import com.movit.core.training.engine.RepIncompleteReason
+import com.movit.core.training.engine.shouldDiscardRepAttemptOnIncomplete
 import com.movit.core.training.engine.ZoneType
 import com.movit.feature.reports.TrainingSessionReportCache
 import com.movit.core.training.engine.ErrorType
@@ -669,6 +670,9 @@ class TrainingSessionViewModel(
   }
 
   private fun submitRepIncompleteFeedback(reason: RepIncompleteReason) {
+    if (shouldDiscardRepAttemptOnIncomplete(reason)) {
+      writeHooks.discardCurrentRepAttempt()
+    }
     applyVignetteCue(VignetteCue.WARNING)
     val copy = RepIncompleteFeedback.defaultCopy(reason)
     val code = RepIncompleteFeedback.messageCode(reason)
@@ -943,7 +947,14 @@ class TrainingSessionViewModel(
         setsCompleted = setsCompleted,
         totalSets = totalSets,
       )
-    } ?: writeHooks.buildSessionReport(upload, summary, config)
+    } ?: MovitSessionReportBuilder.fromExerciseExecution(
+        upload = upload,
+        summary = summary,
+        exerciseSlug = activeSlug,
+        exerciseName = config.name,
+        setsCompleted = setsCompleted,
+        totalSets = totalSets,
+      )
   }
 
   private suspend fun finalizePlannedWorkoutDay() {
@@ -1022,8 +1033,15 @@ class TrainingSessionViewModel(
       config,
       sessionQuality = resolveSessionQualityMeta(),
       holdData = engine?.snapshotHoldReportData(),
+      setNumber = _state.value.currentSetNumber,
+      repsTarget = activeTargetReps,
     )
-    TrainingSessionReportCache.put(upload.id, report)
+    TrainingSessionReportCache.put(
+      upload.id,
+      report,
+      sessionExerciseKey = "$sessionId:$activeSlug",
+      setNumber = _state.value.currentSetNumber,
+    )
     if (exploreBatch == null) {
       markReportAvailable(upload.id)
     }
@@ -1039,6 +1057,8 @@ class TrainingSessionViewModel(
         it,
         sessionQuality = resolveSessionQualityMeta(),
         holdData = engine?.snapshotHoldReportData(),
+        setNumber = _state.value.currentSetNumber,
+        repsTarget = activeTargetReps,
       )
     }
     val legacyJson = postReport?.let { writeCoordinator.encodePostTrainingReport(it) }
@@ -1059,7 +1079,14 @@ class TrainingSessionViewModel(
       is com.movit.shared.AppResult.Success -> {
         val reportId = result.value
         TrainingSessionReportCache.rekeyPostTraining(upload.id, reportId)
-        postReport?.let { TrainingSessionReportCache.put(reportId, it.copy(id = reportId, workoutId = reportId)) }
+        postReport?.let {
+          TrainingSessionReportCache.put(
+            reportId,
+            it.copy(id = reportId, workoutId = reportId),
+            sessionExerciseKey = "$sessionId:$activeSlug",
+            setNumber = _state.value.currentSetNumber,
+          )
+        }
         markReportAvailable(reportId)
       }
       is com.movit.shared.AppResult.Failure -> Unit
@@ -1096,6 +1123,9 @@ class TrainingSessionViewModel(
     writeHooks.detach()
     writeHooks = createWriteHooks()
     frameCaptureCoordinator = createFrameCaptureCoordinator()
+    val nextSetNumber = (flowCoordinator?.state?.value as? TrainingSessionFlowCoordinator.State.PreExercise)?.setNumber
+      ?: _state.value.currentSetNumber
+    frameCaptureCoordinator.beginSet(nextSetNumber)
     engine = buildEngine()
     wireEngineCallbacks()
     exerciseConfig?.poseVariants?.getOrNull(activePoseVariantIndex)?.feedbackMessages?.let(feedback::setRandomMessages)
@@ -1162,6 +1192,7 @@ class TrainingSessionViewModel(
     val flowProgress = flowCoordinator.workoutProgressPercent()
     when (flowState) {
       is TrainingSessionFlowCoordinator.State.PreExercise -> {
+        frameCaptureCoordinator.beginSet(flowState.setNumber)
         _state.update {
           it.copy(
             workoutFlowPhase = WorkoutFlowPhase.PRE_EXERCISE,

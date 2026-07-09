@@ -57,9 +57,61 @@ class MetricsCalculatorTest {
         assertEquals(850, upload.executionMetrics.avgFormScore)
     }
 
-    private fun frame(t: Int, knee: Int): FrameSample = FrameSample(
+    @Test
+    fun calculateBilateralRomSymmetry_zeroRom_returnsNull() {
+        val result = MetricsCalculator.calculateBilateralRomSymmetry(
+            leftRepsRom = listOf(0, 0),
+            rightRepsRom = listOf(0, 0),
+        )
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun calculateTrunkStability_linearTrend_scoresHigherThanRawSpread() {
+        val frames = (0 until 10).map { index ->
+            frame(t = index * 100, knee = 900 + index * 50)
+        }
+        val spineIndex = 0
+        val detrended = MetricsCalculator.calculateTrunkStability(frames, spineIndex)
+        assertNotNull(detrended)
+        assertTrue(detrended!! > 800)
+    }
+
+    @Test
+    fun calculateTrunkStability_linearTrendWithNoise_scoresLowerThanSmoothTrend() {
+        val smooth = (0 until 12).map { index ->
+            frame(t = index * 100, knee = 900 + index * 40)
+        }
+        val noisy = smooth.mapIndexed { index, sample ->
+            val jitter = if (index % 3 == 0) 120 else 0
+            frame(t = sample.t, knee = sample.angles[0].toInt() + jitter)
+        }
+        val smoothScore = MetricsCalculator.calculateTrunkStability(smooth, 0)!!
+        val noisyScore = MetricsCalculator.calculateTrunkStability(noisy, 0)!!
+        assertTrue(smoothScore > noisyScore)
+    }
+
+    @Test
+    fun calculateAlignmentAccuracy_expandsCompressedRepeatedStates() {
+        val frames = (0 until 10).map { index ->
+            frame(
+                t = index * 100,
+                knee = 900,
+                states = when (index) {
+                    0 -> byteArrayOf(StateCode.NORMAL)
+                    9 -> byteArrayOf(StateCode.DANGER)
+                    else -> null
+                },
+            )
+        }
+
+        assertEquals(900, MetricsCalculator.calculateAlignmentAccuracy(frames))
+    }
+
+    private fun frame(t: Int, knee: Int, states: ByteArray? = null): FrameSample = FrameSample(
         t = t,
         phase = PhaseCode.ECCENTRIC,
         angles = shortArrayOf(knee.toShort()),
+        states = states,
     )
 }

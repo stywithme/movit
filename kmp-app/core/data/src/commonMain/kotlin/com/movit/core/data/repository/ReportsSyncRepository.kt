@@ -134,12 +134,17 @@ open class ReportsSyncRepository(
             success = true,
             scope = "exercise",
             summary = (existing?.summary).let { summary ->
+                val prevSets = summary?.setsCompleted ?: 0
                 com.movit.core.network.dto.ExerciseMetricsSummaryDto(
                     exerciseSlug = slug,
                     exerciseName = summary?.exerciseName ?: slug.replace('-', ' '),
-                    averageFormScore = formScore,
+                    averageFormScore = computeWeightedAverageFormScore(
+                        previousAverage = summary?.averageFormScore,
+                        previousSetsCompleted = prevSets,
+                        newSetFormScore = formScore,
+                    ),
                     averageCompletionRate = summary?.averageCompletionRate,
-                    setsCompleted = (summary?.setsCompleted ?: 0) + 1,
+                    setsCompleted = prevSets + 1,
                     setsPlanned = summary?.setsPlanned,
                     totalReps = (summary?.totalReps ?: 0) + request.countedReps,
                     totalDurationMs = (summary?.totalDurationMs ?: 0L) + request.durationMs,
