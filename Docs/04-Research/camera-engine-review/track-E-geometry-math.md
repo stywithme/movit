@@ -115,7 +115,7 @@ Parity lock: `poseFrameMirrored_appliesAngleSwap_only` asserts `frame.landmarks 
 - **Impact**: Systematic loss of intended 3D joint geometry for non-elbow limbs on Android and iOS; phase/rep decisions can diverge from legacy 3D behavior (parity fixtures already show 2D≠3D for bent knee).
 - **Fix-sketch**: Change gate to `world.size >= 33` (or max limb index+1); or `ensureAppended(world)` too; add assemble-path test with 33-world + 33-norm asserting 3D knee.
 - **Effort**: S
-- **Verified-by**: pending
+- **Verified-by**: adversarial-grok-4.5-xhigh
 
 ### [E-02] `ensureAppended` second call per frame is a cheap no-op (PF-10 part 1)
 - **Severity**: P3
@@ -163,7 +163,7 @@ Parity lock: `poseFrameMirrored_appliesAngleSwap_only` asserts `frame.landmarks 
 - **Impact**: Realistic lens-switch race; debug+training contamination; stale HOLD/smooth state across exercises → wrong elbow angles for up to hundreds of ms.
 - **Fix-sketch**: Per-detector or per-session `ElbowAngleEstimator` instance; reset on engine `start` and iOS lens switch; synchronize or confine to one thread.
 - **Effort**: M
-- **Verified-by**: pending
+- **Verified-by**: adversarial-grok-4.5-xhigh
 
 ### [E-06] Triple smoothing stack latency unmeasured (PF-19 math)
 - **Severity**: P2

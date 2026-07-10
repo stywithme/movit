@@ -308,7 +308,7 @@ So for camera TRAINING they are **not** both live; they are **copy-paste twins**
 - **Impact**: Overlapping mutation of phase machine / rep counter / smoother / visibility state; plausible wrong rep or phase glitch at session start / resume; Main-thread hitch if `processPoseFrame` runs on UI thread.
 - **Fix-sketch**: Single ingress thread for all `processFrame` calls; or re-read state immediately before supervisor signal and never emit `ProcessFrame` from VM path; delete supervisor `ProcessFrame` if bypass is permanent; make gate atomic + confine engine to one dispatcher.
 - **Effort**: M
-- **Verified-by**: pending
+- **Verified-by**: adversarial-grok-4.5-xhigh
 
 ### [C-02] `FrameIngressGate` non-atomic / no memory visibility
 - **Severity**: P1
@@ -320,7 +320,7 @@ So for camera TRAINING they are **not** both live; they are **copy-paste twins**
 - **Impact**: Gate fails open under C-01 overlap; droppedFrameCount under-counts true races.
 - **Fix-sketch**: `AtomicBoolean.compareAndSet` (or Mutex) + document single-thread contract enforced at call site.
 - **Effort**: S
-- **Verified-by**: pending
+- **Verified-by**: adversarial-grok-4.5-xhigh
 
 ### [C-03] `ProcessFrame` action is TRAINING-only; setup uses dead `ValidatePose` handler
 - **Severity**: P3
@@ -416,7 +416,7 @@ So for camera TRAINING they are **not** both live; they are **copy-paste twins**
 - **Impact**: Lost/double transitions at the same countdown boundary as C-01; corrupted NoPose timers.
 - **Fix-sketch**: Confine supervisor to one dispatcher (channel of signals processed serially) or synchronize `processSignal`.
 - **Effort**: M
-- **Verified-by**: pending
+- **Verified-by**: adversarial-grok-4.5-xhigh
 
 ---
 

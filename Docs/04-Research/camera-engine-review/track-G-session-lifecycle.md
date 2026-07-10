@@ -294,7 +294,7 @@ States (`SessionRunState.kt`): IDLE → SETUP_POSE → COUNTDOWN → TRAINING �
 - **Impact**: Realistic fast Finish after target-reached can drop the last exercise upload / report cache.
 - **Fix-sketch**: Gate Finish until finalize ack; or finalize synchronously before `isComplete`; or use a scope that outlives VM for upload; block `detach` until finalize done.
 - **Effort**: M
-- **Verified-by**: pending
+- **Verified-by**: adversarial-grok-4.5-xhigh
 
 ### [G-02] Preference rebuild replaces engine outside TRAINING and orphans journal
 - **Severity**: P1
@@ -306,7 +306,7 @@ States (`SessionRunState.kt`): IDLE → SETUP_POSE → COUNTDOWN → TRAINING �
 - **Impact**: Mid-session settings change after pause can silently stop counting/recording for the rest of the set.
 - **Fix-sketch**: Skip rebuild unless IDLE/SETUP (or never-started); if rebuild after start, re-attach journal + `seedCompletedRepCount` + restore `isRunning`/pause.
 - **Effort**: M
-- **Verified-by**: pending
+- **Verified-by**: adversarial-grok-4.5-xhigh
 
 ### [G-03] Immediate engine rebuild on first preferences emission
 - **Severity**: P2

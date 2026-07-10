@@ -197,14 +197,14 @@ Production `commonMain` / `feature/training` have **no** callers of `SessionOrch
 ### [D-03] Mirrored landmarks + `isFrontCamera=true` desync `left_elbow` angle vs visibility
 - **Severity**: P1
 - **Type**: Correctness
-- **Status**: CONFIRMED
+- **Status**: REFUTED
 - **Related-PF**: PF-11
 - **Files**: `.../session/MovitTrainingEngine.kt:610-664`, `.../geometry/JointLandmarkMapping.kt:83-99`, `.../engine/JointAngleTracker.kt:113-120`, `.../position/PositionValidator.kt:142-147`, `.../posecapture/android/MediaPipePoseDetector.kt:207-211`
 - **Evidence**: Capture leaves landmarks unmirrored; engine mirrors buffer/angles once, then passes **original** `frame.isFrontCamera` into `computeJointVisibility` / `PositionValidator`. Trace (D4): mirrored `left_elbow` angle = anatomical right; visibility with flag remaps indices to anatomical left. Position checks XOR-mirror names onto the already-swapped buffer → anatomical left for a `left_elbow` check.
 - **Impact**: Visibility pause/warn and position issues can track the **opposite** limb from phase/scoring angles on front camera — false pauses or missed occlusions; form feedback on wrong side.
 - **Fix-sketch**: After `mirrored()`, pass `isFrontCamera=false` into extract/visibility/validator **or** stop pre-mirroring landmarks and keep a single remapping layer. Align with `SetupReadinessGate` once contract is chosen. Add a parity unit test with asymmetric L/R visibility.
 - **Effort**: M
-- **Verified-by**: pending
+- **Verified-by**: adversarial-grok-4.5-xhigh
 
 ### [D-04] Position validation always runs scene detection even when phase checks are inactive
 - **Severity**: P2
