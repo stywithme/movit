@@ -2,53 +2,63 @@ package com.movit.feature.library
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertIs
+import kotlin.test.assertNull
 
+/**
+ * Legacy [WorkoutRunProgressStore] advance tests kept as documentation of retired
+ * between-exercise prepare navigation. Modern finish uses [resolveWorkoutRunFinish].
+ */
 class WorkoutRunProgressTest {
 
     @Test
-    fun advanceAfterExercise_emitsRestBeforeNextSet() {
-        WorkoutRunProgressStore.clear("w1")
-        val config = WorkoutFlowConfigUi(
+    fun resolveWorkoutRunFinish_whenComplete_clearsActiveRun() {
+        WorkoutRunStore.clearAll()
+        val snapshot = WorkoutRunSnapshot(
             workoutId = "w1",
-            title = "Test",
-            subtitle = "Sub",
-            exercises = listOf(
-                WorkoutFlowExerciseUi(
-                    id = "ex-1",
-                    exerciseSlug = "squat",
-                    name = "Squat",
-                    sets = 3,
-                    reps = 10,
-                    durationSeconds = null,
+            title = "t",
+            blocks = listOf(
+                WorkoutRunBlock.Exercise(
+                    exerciseId = "ex-1",
+                    slug = "squat",
+                    displayName = "Squat",
+                    phaseRole = "MAIN",
+                    target = ExerciseTarget.Reps(10),
+                    sets = 2,
+                    restBetweenSetsMs = 30_000,
+                    restAfterExerciseMs = 45_000,
+                    poseVariantIndex = 0,
+                    weightPerSetKg = null,
                 ),
             ),
-            restBetweenSetsSeconds = 45,
         )
-        val nav = WorkoutRunProgressStore.advanceAfterExercise("w1", config, completedExerciseIndex = 0)
-        assertIs<WorkoutRunPostNav.Rest>(nav)
-        assertEquals("ex-1", nav.upNextExerciseId)
-        assertEquals(45, nav.restSeconds)
-        assertEquals(2, WorkoutRunProgressStore.read("w1").currentSet)
+        WorkoutRunStore.start(workoutId = "w1", snapshot = snapshot)
+        assertEquals(WorkoutRunFinishNav.Complete, resolveWorkoutRunFinish("w1", true))
+        assertNull(WorkoutRunStore.activeForWorkout("w1"))
     }
 
     @Test
-    fun advanceAfterExercise_emitsRestBeforeNextExercise() {
-        WorkoutRunProgressStore.clear("w2")
-        val config = WorkoutFlowConfigUi(
+    fun resolveWorkoutRunFinish_whenIncomplete_abandonsAndReturnsToSession() {
+        WorkoutRunStore.clearAll()
+        val snapshot = WorkoutRunSnapshot(
             workoutId = "w2",
-            title = "Test",
-            subtitle = "Sub",
-            exercises = listOf(
-                WorkoutFlowExerciseUi("ex-1", "squat", "Squat", sets = 1, reps = 10, durationSeconds = null),
-                WorkoutFlowExerciseUi("ex-2", "lunge", "Lunge", sets = 1, reps = 10, durationSeconds = null),
+            title = "t",
+            blocks = listOf(
+                WorkoutRunBlock.Exercise(
+                    exerciseId = "ex-1",
+                    slug = "squat",
+                    displayName = "Squat",
+                    phaseRole = "MAIN",
+                    target = ExerciseTarget.Reps(10),
+                    sets = 1,
+                    restBetweenSetsMs = 0,
+                    restAfterExerciseMs = 0,
+                    poseVariantIndex = 0,
+                    weightPerSetKg = null,
+                ),
             ),
-            restBetweenSetsSeconds = 60,
         )
-        WorkoutRunProgressStore.write("w2", WorkoutRunProgress(exerciseIndex = 0, currentSet = 1))
-        val nav = WorkoutRunProgressStore.advanceAfterExercise("w2", config, completedExerciseIndex = 0)
-        assertIs<WorkoutRunPostNav.Rest>(nav)
-        assertEquals("ex-2", nav.upNextExerciseId)
-        assertEquals(60, nav.restSeconds)
+        WorkoutRunStore.start(workoutId = "w2", snapshot = snapshot)
+        assertEquals(WorkoutRunFinishNav.BackToSession, resolveWorkoutRunFinish("w2", false))
+        assertNull(WorkoutRunStore.activeForWorkout("w2"))
     }
 }

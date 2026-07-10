@@ -12,20 +12,6 @@ enum class ProgramDayStatus {
     Rest,
 }
 
-enum class ProgramEditReason {
-    ScheduleChanged,
-    EquipmentMissing,
-    TooEasyHard,
-    InjuryDiscomfort,
-}
-
-enum class ProgramEditScope {
-    PlanSettings,
-    WeekCalendar,
-    DaySessions,
-    ExerciseTargets,
-}
-
 data class ProgramStatUi(
     val value: String,
     val label: String,
@@ -100,16 +86,13 @@ data class ProgramEditSessionUi(
 )
 
 data class ProgramEditUiState(
-    val selectedReason: ProgramEditReason = ProgramEditReason.ScheduleChanged,
-    val selectedScope: ProgramEditScope = ProgramEditScope.DaySessions,
-    val weeklyTarget: Int = 3,
-    val startDateLabel: String = "",
-    val pauseCalendar: Boolean = false,
     val showSaveToast: Boolean = false,
     val editingWeekNumber: Int = 1,
     val editingDayNumber: Int = 2,
     val editingDayTitle: String = "",
     val daySessions: List<ProgramEditSessionUi> = emptyList(),
+    val isDayPlanAvailable: Boolean = false,
+    val dayPlanErrorKey: String? = null,
     val isSaving: Boolean = false,
     val saveError: String? = null,
     val isDirty: Boolean = false,
@@ -149,6 +132,7 @@ data class ProgramDetailUiState(
     val weekOffline: WeekOfflineUiState = WeekOfflineUiState(),
     val edit: ProgramEditUiState = ProgramEditUiState(),
     val isStarting: Boolean = false,
+    val actionMessage: String? = null,
     /** UX.5 — thin offline banner when the device has no network. */
     val isOffline: Boolean = false,
     val errorMessage: String? = null,

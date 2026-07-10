@@ -20,6 +20,7 @@ data class MovitExploreUiState(
     val programs: List<ExploreItemUi> = emptyList(),
     val errorMessage: String? = null,
     val isRefreshing: Boolean = false,
+    val isOffline: Boolean = false,
     val scrollToWorkouts: Boolean = false,
     val scrollToExercises: Boolean = false,
 ) {

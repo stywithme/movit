@@ -70,6 +70,7 @@ fun ReportDetailScreen(
     onExport: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
+    onDone: (() -> Unit)? = null,
 ) {
     val report = state.report
     Box(modifier = modifier.fillMaxSize()) {
@@ -109,6 +110,16 @@ fun ReportDetailScreen(
                             ReportDetailPage.Form -> ReportFormPage(report)
                             ReportDetailPage.Fatigue -> ReportFatiguePage(report)
                             ReportDetailPage.Tips -> ReportTipsPage(report, onExport = onExport)
+                        }
+                        if (onDone != null) {
+                            MovitButton(
+                                text = movitText("report_detail_done"),
+                                onClick = onDone,
+                                variant = MovitButtonVariant.Filled,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = MovitSpacing.lg),
+                            )
                         }
                     }
                 }

@@ -453,45 +453,116 @@ sealed interface WorkoutRunBlock {
 
 ### المرحلة A - صحة التشغيل
 
-- [ ] إضافة canonical `WorkoutRunSnapshot` وtyped targets.
-- [ ] إصلاح mapping للـ rest/phase/variant/duration/weight.
-- [ ] إضافة `runId` وعزل uploads/reports/journals.
-- [ ] بناء session report عام لكل workout.
-- [ ] إصلاح report navigation والعودة.
-- [ ] إضافة ViewModel keys لكل routes المعتمدة على args.
+- [x] إضافة canonical `WorkoutRunSnapshot` وtyped targets.
+- [x] إصلاح mapping للـ rest/phase/variant/duration/weight.
+- [x] إضافة `runId` وعزل uploads/reports/journals.
+- [x] بناء session report عام لكل workout.
+- [x] إصلاح report navigation والعودة.
+- [x] إضافة ViewModel keys لكل routes المعتمدة على args.
 
 شرط الإغلاق: workout المعروضة في التفاصيل تطابق snapshot والمحرك والتقرير field-by-field.
 
 ### المرحلة B - إطلاق موحد
 
-- [ ] إنشاء Launch Coordinator و`LaunchReadiness`.
-- [ ] توصيل Explore وTrain بنفس `WorkoutLaunchRequest`.
-- [ ] إزالة network setup من final Start.
-- [ ] منع double launch.
-- [ ] إزالة `WorkoutRunProgressStore` من flow الحديث.
-- [ ] فصل Workout Preview عن Start workout.
+- [x] إنشاء Launch Coordinator و`LaunchReadiness`.
+- [x] توصيل Explore وTrain بنفس `WorkoutLaunchRequest` typed.
+- [x] إزالة network setup من final Start.
+- [x] منع double launch.
+- [x] إزالة `WorkoutRunProgressStore` من flow الحديث.
+- [x] فصل Workout Preview عن Start workout.
 
 شرط الإغلاق: نفس workout من Explore وTrain تنتج نفس snapshot ونفس route sequence؛ الاختلاف فقط source وreturn target.
 
+### تنفيذ P1.1
+
+- **LaunchReadiness** (`LaunchReadiness.kt`): Preparing / Ready / OfflineReady / Blocked / Launching / LoadingContent — يتحكم في CTA فقط.
+- **Preflight** في `WorkoutSessionViewModel` عند تحميل الجلسة: `ensureAll` لكل exercise slugs في الـ snapshot (ليس أول تمرين فقط). المحتوى يبقى ظاهراً أثناء Preparing.
+- **Start cache-only**: `ExercisePrepareViewModel.requestTrainingStart` لم يعد يستدعي ensure/network؛ التحضير على الدخول (solo/workout_first).
+- **Double launch**: حالة `Launching` تتجاهل الضغطات التالية حتى فشل/إعادة تعيين.
+- **Train open**: `MovitAppShellViewModel.openWorkoutLaunch` يفتح `WorkoutSession` فوراً ويزامن في الخلفية (لا انتظار sync قبل الدفع).
+- **CTA strings**: `session_cta_preparing` / offline / launching + dock في `WorkoutSessionScreen`.
+- **ملفات**: `LaunchReadiness.kt`, `TrainingConfigEnsure.ensureAll`, `WorkoutSessionViewModel/Screen/Route`, `ExercisePrepareViewModel/Screen`, `MovitAppShellViewModel`.
+- **اختبارات**: `WorkoutSessionLaunchReadinessTest` (double-tap + CTA keys).
+- **تم لاحقاً**: `WorkoutLaunchRequest` + `WorkoutLaunchCoordinator` (انظر «تنفيذ المتبقي — وظيفي»).
+
+### تنفيذ P1.2
+
+- **مصدر التقدم**: `WorkoutRunStore` (Phase A) + `TrainingSessionFlowCoordinator`؛ `resolveWorkoutRunFinish` بدل `WorkoutRunProgressStore` في `MovitInnerHost`.
+- **`WorkoutRunProgressStore`**: مُعلَّم `@Deprecated`؛ اختبارات الاستئناف/الإنهاء نُقلت إلى `resolveWorkoutRunFinish`.
+- **`ExercisePrepareMode` typed**: `SoloStart` / `WorkoutPreview(runDraftId, exerciseId)` / `WorkoutFirstExercise(runId)` عبر `ExercisePrepareModeCodec`؛ UI phase منفصل `ExercisePreparePhase` (Prepare/Rest).
+- **Preview**: Start من المعاينة يُصدر `ReturnToWorkoutSession` (رجوع) ولا يغيّر start index؛ Start الجلسة يستخدم `lockStartIndex` + index 0.
+- **ملفات**: `ExercisePrepareLaunchMode.kt`, `ExercisePrepareViewModel/Effect/Screen/Route`, `MovitInnerRoute.runId`, `MovitInnerHost`, `TrainingStartResolver.lockStartIndex`.
+- **اختبارات**: `ExercisePrepareModeTest`, `WorkoutTrainingFinishResolverTest`, `WorkoutRunProgressTest` (مهاجَرة).
+- **متبقٍ / محوّل مؤقت**: `runDraftId` = workoutId حتى مسودات Phase A؛ Rest route بين التمارين متقاعد (المنسّق يملك الراحة داخل الجلسة).
+
+**Blocker ملاحظة**: بناء `:feature:library:testAndroidHostTest` فشل أثناء المحاولة بسبب `MethodTooLargeException` في `TrainStrings` (وحدة `core:resources`) — يبدو من تضخم strings لمرحلة أخرى، وليس من منطق P1.1/P1.2.
+
 ### المرحلة C - Train UX
 
-- [ ] إزالة التعديلات المحلية من `TrainTodayCard`.
-- [ ] جعل كل session/day action typed ومحددا.
-- [ ] إضافة Resume وCatch-up وReport targets الصحيحة.
-- [ ] الحفاظ على اختيار الأسبوع واليوم خلال refresh.
-- [ ] تبسيط CTA hierarchy لكل dashboard status.
-- [ ] prefetch عند تحديد أي يوم قابل للتشغيل.
+- [x] إزالة التعديلات المحلية من `TrainTodayCard`.
+- [x] جعل كل session/day action typed ومحددا.
+- [x] إضافة Resume وCatch-up وReport targets الصحيحة.
+- [x] الحفاظ على اختيار الأسبوع واليوم خلال refresh.
+- [x] تبسيط CTA hierarchy لكل dashboard status.
+- [x] prefetch عند تحديد أي يوم قابل للتشغيل.
 
 شرط الإغلاق: كل CTA في Train يصف الوجهة الفعلية ويفتح العنصر الذي ضغطه المستخدم تحديدا.
 
+### تنفيذ P1.3
+
+- `TrainTodayCard`: أزيلت `MovitStepper` المحلية؛ المعاينة read-only؛ كل جلسة تستدعي `StartSession(target)` الخاص بها.
+- `WorkoutSessionViewModel`/`WorkoutSessionScreen`: Explore (`context == null`) يحفظ في `WorkoutFlowCache` كـ run draft؛ زر «Customize this run»؛ `Start` معطّل أثناء `isSaving`؛ فشل الحفظ يبقي المحتوى مع `saveError` + Retry.
+- اختبارات: `WorkoutSessionStateTest.saveFailure_keepsSessionVisibleWithSaveError`.
+
+### تنفيذ Train UX §6
+
+- ترتيب المحتوى: Today + CTA أساسي ثم week strip ثم readiness/report.
+- `TrainReportTargetUi` + `MovitTrainEffect.OpenReport`؛ CompletedToday/day completed → `View day report` وليس Weekly Report عام.
+- Missed/InProgress: catch-up/resume عبر `launchTarget`؛ `selectedWeekNumber`/`selectedDayNumber` تُحفظ عبر Cached→Fresh.
+- اختبارات: `MovitTrainStateTest` (session B، catch-up، selection preserved، typed reports).
+- **تحديث وظيفي**: عند وجود `PlannedWorkoutReportExportDto` محلّي لـ `plannedWorkoutId` يُمرَّر `reportId` إلى `TrainReportTargetUi.ProgramDay` → `ReportDetail`. بدون كاش sync يُعرض CTA «عرض تقرير الأسبوع» و`ProgramWeek` — لا يُسمى WeeklyReport بتقرير يوم.
+
 ### المرحلة D - الاستمرارية والصقل
 
-- [ ] Save and exit / End workout confirmation.
-- [ ] durable run resume عبر process recreation.
-- [ ] RestPanel موسعة.
-- [ ] Program selected-week experience.
-- [ ] stale content/error behavior موحد.
-- [ ] accessibility وanalytics للأحداث الأساسية.
+- [x] Save and exit / End workout confirmation.
+- [x] durable run resume عبر process recreation.
+- [x] RestPanel موسعة (reps + duration/weight عند توفرها في snapshot).
+- [x] Program selected-week experience.
+- [x] stale content/error behavior موحد.
+- [x] accessibility وanalytics للأحداث الأساسية.
+
+### تنفيذ المتبقي — صقل
+
+- **`TrainStrings` MethodTooLarge:** `load()` قُسّم إلى `loadCore` / `loadCopy` / `loadStatus` لتجاوز حد بايت كود JVM على Android.
+- **Analytics:** `MovitTrainingAnalytics` في `:shared` — facade بـ println sink افتراضي (لا SDK منتج بعد)؛ start workout، complete run، save&exit، end workout، open report.
+- **A11y:** week strip (`Role.Button` + selected + وصف اليوم)، rest controls (+15s/skip)، exit dialog (contentDescription على الأزرار).
+- **Shell:** `MovitAppShellViewModel` يستخدم `backgroundScope` (`Dispatchers.Default`) بدل `viewModelScope` للـ sync/onboarding/guest-outbox — يزيل حساسية `authOpenOnboarding` لغياب Main في host tests.
+- **اختبارات:** `MovitTrainingAnalyticsTest`؛ إعادة تشغيل host tests أدناه.
+
+### تنفيذ P1.4
+
+- **سلوك:** Back في setup بلا تقدم → pop عادي. أثناء training/rest/paused أو مع progress → حوار Continue / Save and exit / End workout. Save يحفظ cursor (exercise/set/block) في `WorkoutRunStore` دون finalize. End يعمل abandon + حذف journal. WorkoutSession يعرض Resume أساسي + Restart مع تأكيد.
+- **ملفات:** `TrainingSessionExitPolicy` / ViewModel exit teardown، `TrainingSessionScreen` exit dialog، `WorkoutRunModels` progress + durable sidecar، `WorkoutSessionScreen` Resume/Restart، `TrainingSessionFlowCoordinator.startAt`.
+- **اختبارات:** `TrainingSessionExitPolicyTest`، `WorkoutRunStoreResumeTest`، `TrainingSessionFlowCoordinatorTest.startAt_resumesMidSet`.
+- **حدود المنصة:** الـ sidecar مشترك Android/iOS عبر `MovitLocalStore` JSON. **تحديث:** snapshot الكامل + source/return/done يُحفظان مع cursor في `WorkoutRunStore` (نفس المتجر). payloads قديمة بلا snapshot تبقى cursor-only حتى إعادة تحميل الجلسة.
+
+### تنفيذ P2.1 — Rest وUp Next
+
+- `RestPanel` يميّز rest بين sets/exercises، يعرض Set x/y أو اسم التمرين التالي، target reps/duration/weight عند توفرها، وthumbnail اختياري من config cache.
+- `RestControlsDock` يوفّر Skip / +15s / Pause متسقة مع ExercisePrepare داخل TrainingSession (بدون route جديد).
+- `TrainingSessionFlowCoordinator.extendRest()` + pause في ViewModel.
+
+### تنفيذ P2.2 — Program preview
+
+- تفاصيل الأسبوع المحدد فقط؛ أُزيل `.take(1)` extra week card.
+- default week: enrolled → `isCurrent`، غير enrolled → week 1، مع احترام `initialWeekNumber`.
+- `isStarting` يعطّل CTA ويعرض `program_starting` في dock؛ فشل enrollment → `actionMessage` banner لا full-screen error.
+
+### تنفيذ P2.3 — Freshness وerrors
+
+- `SharedExploreRepository.observeExploreContent()` عبر `staleWhileRevalidate` (مثل Train).
+- Explore يحافظ query/filter عند Cached→Fresh؛ full-screen error فقط بدون محتوى.
+- Shell يؤجّل `dataRevision` refresh أثناء inner route ويطبّقه عند الرجوع.
 
 ## 9. الاختبارات المطلوبة
 
@@ -539,12 +610,194 @@ sealed interface WorkoutRunBlock {
 
 لا يعتبر التدفق مكتملا إلا عند تحقق الآتي:
 
-- لا توجد بيانات workout تسقط بين API وtraining engine.
-- لا يوجد network setup غير متوقع بعد الضغط على Start.
-- لا توجد controls تغير الشكل فقط دون تغيير الجلسة.
-- كل run معزولة بهوية مستقلة وقابلة للاستئناف.
-- Train وExplore يستخدمان نفس المسارات ونفس snapshot ونفس التقرير.
-- report النهائي يمثل النطاق الصحيح ويمكن الخروج منه بلا loop.
-- Back والخروج والاستئناف سلوكهم واضح ومختبر.
-- cached/fresh/offline/error states لا تمسح عمل المستخدم أو اختياره.
-- جميع اختبارات المراحل A-D ناجحة على Android وiOS للأجزاء المشتركة.
+- [x] لا توجد بيانات workout تسقط بين API وtraining engine *(duration/weight يصلان للمحرك بعد إصلاح تدريب/خروج؛ EffectivePlan DTO ما زال ناقصاً لبعض الحقول)*.
+- [x] لا يوجد network setup غير متوقع بعد الضغط على Start.
+- [x] لا توجد controls تغير الشكل فقط دون تغيير الجلسة.
+- [x] كل run معزولة بهوية مستقلة وقابلة للاستئناف.
+- [x] Train وExplore يستخدمان نفس المسارات ونفس snapshot ونفس التقرير.
+- [x] report النهائي يمثل النطاق الصحيح ويمكن الخروج منه بلا loop.
+- [x] Back والخروج والاستئناف سلوكهم واضح ومختبر *(Save/End يسقطان Prepare+Training)*.
+- [x] cached/fresh/offline/error states لا تمسح عمل المستخدم أو اختياره *(مع تحفظات وكيل الجلسة)*.
+- [ ] جميع اختبارات المراحل A-D ناجحة على Android وiOS — Android host suites جزئياً؛ **iOS host suite الكامل لم يُثبت**.
+
+---
+
+## 11. سجل التنفيذ
+
+### تنفيذ P0.1
+
+**ما تغيّر:** نموذج canonical `WorkoutRunSnapshot` / `WorkoutRunBlock` / `ExerciseTarget`؛ تمرير phase/variant/restBetween/restAfter/duration/weight من DTO → session UI → snapshot → `TrainingFlowItem` دون default reps=12 للتمارين الزمنية.
+
+**ملفات رئيسية:** `WorkoutRunModels.kt`, `WorkoutTemplateSessionMapper.kt`, `WorkoutSessionModels.kt`, `WorkoutFlowModels.kt`, `WorkoutTrainingLaunch.kt`, `TrainingSessionFlowCoordinator.kt` (`targetDurationSeconds`, advance past Rest).
+
+**اختبارات:** `WorkoutRunSnapshotMappingTest`, `WorkoutTrainingLaunchTest`, `WorkoutFlowPhaseRoleLaunchTest`.
+
+**مخاطر متبقية:** EffectivePlan DTO لا يحمل `variantIndex`/`restAfterExerciseMs` بعد؛ Program path يعتمد على Rest blocks الصريحة في الخطة.
+
+### تنفيذ P0.2
+
+**ما تغيّر:** `finalizeWorkoutRun()` لكل مصادر الـ workout (ليس planned فقط)؛ `ReportTarget` typed؛ استبدال stack الرحلة عبر `ReplaceWorkoutJourneyWithReport`؛ Back/Done عبر `ReturnTarget`؛ one-shot report navigation.
+
+**ملفات رئيسية:** `TrainingSessionViewModel.kt`, `MovitTrainingRoutes.kt`, `MovitInnerHost.kt`, `MovitAppShellViewModel.kt`, `MovitAppShellEvent.kt`, `MovitInnerRoute.kt`, `MovitReportsRoute.kt`, `ReportDetailScreen.kt`.
+
+**اختبارات:** `WorkoutRunNavigationIsolationTest` (replace stack, Back بلا loop, Done→Train).
+
+**مخاطر متبقية:** زر Done يعتمد على مفتاح `report_detail_done`؛ تقارير solo exercise ما زالت per-upload عند غياب run/flow.
+
+### تنفيذ P0.3
+
+**ما تغيّر:** `WorkoutRunId` عند Start؛ `WorkoutRunStore` يعزل uploads (`workoutGroupId = runId`) وreports/journals عبر `sessionId = runId`؛ ViewModel keys: `workout-session:`, `training-session:`, `report-detail:`, `weekly-report:`.
+
+**ملفات رئيسية:** `WorkoutRunModels.kt` / Store, `MovitLibraryRoutes.kt`, `TrainingStartResolver.kt`, `ExercisePrepareViewModel.kt`, routes أعلاه.
+
+**اختبارات:** repeat-run distinct ids في `WorkoutRunSnapshotMappingTest`؛ A/B isolation في `WorkoutRunNavigationIsolationTest`.
+
+**مخاطر متبقية لـ B/C/D:** Phase B ما زال يملك LaunchReadiness / إزالة `WorkoutRunProgressStore`؛ Phase D يملك durable resume persistence الأعمق؛ لا تلمس TrainTodayCard / RestPanel polish من هنا.
+
+### تحقق التكامل
+
+تاريخ: 2026-07-10 · JDK: Android Studio JBR 21.0.8
+
+**الحكم:** أقرب لـ Definition of Done §10 بعد الجولة الوظيفية — `WorkoutLaunchRequest` + durable snapshot + day reportId من الكاش محلولة؛ تبقى فجوات iOS suite وhydrate لـ plannedWorkoutReports عند غياب الكاش.
+
+**تصحيحات التكامل المطبّقة في هذه الجولة:**
+1. `IosMovitPlatform.cleanupOrphanFrameCaptures` — إصلاح استدعاء `contentsOfDirectoryAtPath` (وسيط زائد كان يكسر `:core:data:compileKotlinIosArm64`).
+2. `WorkoutSessionViewModel.runPreflight` — مسار sync عند `!MovitData.isInstalled`؛ preflight الحقيقي على `persistScope` بدل `viewModelScope` (كان يكسر host tests بلا Main).
+3. `toggleEditMode` persist عبر `persistScope` (نفس سبب Main).
+4. اختبارات: void bodies لـ JUnit4؛ اشتراك SharedFlow قبل emit؛ `saveFailure` يستخدم session بـ program `context` لأن Explore صار draft محلي دائماً ينجح.
+5. §8: `WorkoutLaunchRequest` typed — **أُغلق** في «تنفيذ المتبقي — وظيفي».
+
+**حالة الـ blockers السابقة:**
+- `SharedExploreRepository` + `ExploreStrings.load`: **محلولة** (التحميل داخل `flow { }` ثم تمرير `strings`).
+- `ExercisePrepareLaunchMode` / `Random` import: **سليمة**.
+- `TrainStrings` / MethodTooLarge: **محلولة** (`load` مقسّم إلى ثلاث دوال مساعدة).
+
+**نتائج الاختبار (host / JBR 21):**
+| Module | Result |
+|---|---|
+| `:feature:library` (LaunchReadiness, PrepareMode, SessionState, RunStoreResume, FinishResolver, SnapshotMapping, LaunchRequest) | PASS |
+| `:feature:train` (full hostTest) | PASS |
+| `:feature:training` (`TrainingSessionExitPolicyTest`) | PASS |
+| `:feature:shell` (`WorkoutRunNavigationIsolationTest`, launch/report wiring) | PASS |
+| `:core:training-engine` (`TrainingSessionFlowCoordinatorTest`) | PASS |
+| `:core:data:compileKotlinIosArm64` | PASS بعد إصلاح platform |
+| `:feature:reports:compileKotlinIosArm64` | PASS بعد إصلاح `toSortedMap` → `sortedBy` |
+| `:feature:*:compileAndroidMain` (data/library/training/train/shell/reports/explore) | PASS |
+
+**فجوات متبقية مقابل §10:**
+- day `reportId` يعتمد على hydrate لـ `plannedWorkoutReports` في sync؛ بدون كاش يُعرض CTA أسبوعي صادق (`ProgramWeek`) — لا تُختلق IDs ولا يُسمى Weekly بتقرير يوم.
+- iOS: `compileKotlinIosArm64` لـ reports/shell/library مُتحقق؛ host test suite الكامل على Native لم يُشغَّل بعد.
+- accessibility / analytics و`authOpenOnboarding`: مُبلَّغ عنها محلولة من وكيل شقيق — لم تُعاد مراجعتها هنا.
+
+### تنفيذ المتبقي — وظيفي
+
+تاريخ: 2026-07-10
+
+**ما شُحن:**
+1. **`WorkoutLaunchRequest` + `WorkoutLaunchCoordinator`** — مصدر / workoutRef / returnTarget / requestedStart؛ Explore وTrain وProgram Detail وWorkouts library وcatch-up يحوّلون النية ثم يفتحون نفس `WorkoutSessionRoute` عبر `openWorkoutLaunch` / `remember`.
+2. **Durable full run snapshot** — sidecar ثانٍ في نفس `WorkoutRunStore` (`DurableWorkoutRunSnapshotCodec`) يحفظ blocks + source/return/done؛ `rebuildRecordFromDurable` بعد process death؛ Resume يفضّل snapshot durable إن كان startable.
+3. **Train day report** — `TrainApiMapper.cachedPlannedReportId` من `MovitData.reports.readCachedPlannedWorkoutReport`؛ shell يفتح `ReportDetail` عند وجود id.
+
+**اختبارات:** `WorkoutLaunchRequestTest`, `WorkoutRunStoreResumeTest` (snapshot roundtrip + rebuild), `MovitAppShellStateTest` (launch wiring + ProgramDay with reportId).
+
+**متبقٍ بصدق:** iOS host test suite الكامل؛ hydrate لـ `plannedWorkoutReports` عند غياب الكاش (CTA أسبوعي صادق حتى يتوفر day reportId).
+
+### إصلاح مراجعة — iOS/Shell/UX
+
+تاريخ: 2026-07-10
+
+**P0 — iOS compile:** `TrainingSessionReportCache.listSetReportIds` — استبدال `toSortedMap()` (JVM-only) بـ `sortedBy` + `associate` في commonMain. **تحقق:** `:feature:reports:compileKotlinIosArm64`.
+
+**P1 — Program launch:** `MovitInnerHost` — `onStartSession` / `onOpenDaySession` / `onSwitchWorkout` / `onOpenCatchUpDay` تمر عبر `rememberProgramWorkoutLaunch` → `WorkoutLaunchCoordinator.fromProgramDetail` / `fromTrainProgramDay` مع أسبوع مُستخرج من `WorkoutSessionKeys.parse` (لا `initialWeekNumber` الثابت).
+
+**P2 — UX:**
+- `RestPanel` — duration (`targetDurationSeconds`) وweight (`weightPerSetKg` للمجموعة التالية) عند توفرها في flow snapshot.
+- Train day report — بدون `reportId` محلي: CTA `program_flow_view_week_report` + `TrainReportTargetUi.ProgramWeek`؛ مع id: `train_view_day_report` + `ReportDetail`.
+- Analytics — `MovitTrainingAnalytics` يبقى println facade؛ موثّق صراحةً (لا SDK وهمي).
+
+**اختبارات:** `TrainApiMapperTest` (completed-today label + ProgramWeek)؛ `:feature:train` / `:feature:shell` / `:feature:library` host tests PASS؛ iOS compile reports/shell/library/training PASS.
+
+**§8/§10:** RestPanel موسعة [x]؛ analytics [x] مع تحفظ println؛ DoD iOS host suite [ ].
+
+### إصلاح مراجعة — جلسة/Store
+
+تاريخ: 2026-07-10
+
+**P1 — OfflineReady جزئي:** [x] `evaluateLaunchReadiness` لم يعد يعطي `OfflineReady` عند وجود config واحد فقط؛ OfflineReady/Ready فقط عندما **كل** configs التمارين محلية، وإلا `Blocked(training_config_offline_unavailable)`.
+
+**P1 — Resume يعيد بناء الخطة:** [x] `handleResumeWorkoutClicked` يفضّل snapshot الـ durable المحفوظ؛ يتحقق من تطابق index↔slug؛ عند عدم التطابق: abandon + `Blocked(session_resume_plan_mismatch)` + مسار Restart — بلا إعادة تعيين صامتة على خطة جديدة.
+
+**P1 — عزل المستخدم:** [x] `ownerUserId` على السجل + sidecar؛ `clearWorkoutRunStore` + `WorkoutRunStoreBridge` على logout وaccount switch؛ `WORKOUT_RUN_STORE` يبقى محفوظاً عبر session-expiry `clearReadCaches` فقط لنفس المستخدم.
+
+**P1 — Fresh يمسح التعديلات:** [x] تجاهل Cached/Fresh أثناء `isEditMode` / `isSaving` / `Launching` / sheet مفتوح حتى لا تُستبدل مسودة المستخدم.
+
+**P1 — هدف وهمي 12 reps:** [x] `toRunSnapshot` لا يخترع `Reps(12)`؛ الهدف المفقود → `Reps(0)` و`!isStartable` / Blocked.
+
+**اختبارات:** `WorkoutSessionLaunchReadinessTest` (all-configs OfflineReady + durable preference)؛ `WorkoutRunStoreResumeTest` (foreign owner + bridge clear)؛ `WorkoutRunSnapshotMappingTest` (no fake 12)； `AccountSwitchClearsForeignCacheTest` (workout run wipe).
+
+**متبقٍ بصدق:** تشغيل host suite على الجهاز؛ sibling agents يملكون TrainingSession engine/exit/report وRestPanel/iOS UX.
+
+### إصلاح مراجعة — تدريب/خروج
+
+تاريخ: 2026-07-10
+
+**P0 — duration/weight إلى المحرك:** [x] `MovitTrainingEngine` يقبل `targetDurationSecondsOverride` + يستخدم `sessionWeightKg`؛ `TrainingSessionViewModel.buildEngine` / `applyFlowExercise` يمرّران `TrainingFlowItem.targetDurationSeconds` و`weightPerSetKg` (حسب رقم المجموعة).
+
+**P0 — Save/End لا يعودان إلى Prepare قديم:** [x] `TrainingSessionEffect.ExitWorkoutJourney` + `MovitAppShellEvent.ExitWorkoutJourney` يسقطان `TrainingSession` و`ExercisePrepare` معاً ويعودان إلى `WorkoutSession` (أو التبويب). Back من setup بلا تقدم يبقى pop واحد.
+
+**P1 — تقرير متراكم بعد Save/exit:** [x] `WorkoutRunStore.saveAccumulatedReport` / sidecar `workout_run_accum_*`؛ يُحفظ عند كل `accumulateDayReport` وعند Save؛ يُستعاد في `TrainingSessionViewModel` init؛ يُحفظ عبر `start(same runId)`.
+
+**ملفات:** `MovitTrainingEngine.kt`, `TrainingFlowEngineOverrides.kt`, `TrainingSessionViewModel.kt`, `TrainingSessionEffect.kt`, `MovitTrainingRoutes.kt`, `MovitAppShellEvent/ViewModel.kt`, `MovitInnerHost.kt`, `WorkoutRunModels.kt`.
+
+**اختبارات:** `MovitTrainingEngineSessionOverridesTest`, `TrainingFlowEngineOverridesTest`, `WorkoutRunNavigationIsolationTest.exitWorkoutJourney_*`, `WorkoutRunStoreResumeTest.saveAccumulatedReport_*`, `TrainingSessionExitPolicyTest`.
+
+**§10 / DoD:** duration/weight إلى المحرك [x]؛ Exit journey [x]؛ accumulated report durable [x]. **لم يُشغَّل** iOS host suite الكامل هنا — DoD iOS يبقى [ ].
+
+**متبقٍ بصدق:** تحقق يدوي لـ Resume من وسط workout بعد Save؛ iOS shared tests.
+
+### تحقق إصلاح المراجعة
+
+تاريخ: 2026-07-10 · JDK: Android Studio JBR 21.0.8
+
+**الحكم:** **ليس merge-ready لـ DoD §10 الكامل** — كل بنود P0/P1 المراجعة صارت صحيحة في الكود بعد إصلاح تكامل واحد، وAndroid host + iOS `compileKotlinIosArm64` تمرّ، لكن **iOS host test suite الكامل ما زال غير مُشغَّل** (DoD يبقى مفتوحاً).
+
+**تصحيح تكامل وُجد كاذباً مقابل ادعاء المراجعة:**
+1. `WorkoutFlowConfigUi.toTrainingFlowItems` كان ما زال يخترع `reps ?: 12` رغم أن `toRunSnapshot` يمنع الهدف الوهمي — أُصلح إلى `?: 0`؛ `ExercisePrepareViewModel` يفضّل target من flow ولا يخترع 12؛ تعليق مضلّل في `TrainingConfigEnsure` عن OfflineReady الجزئي صُحّح.
+
+**Spot-check P0 (كلها TRUE بعد الإصلاح):**
+| # | الادعاء | الحالة |
+|---|---|---|
+| 1 | لا `toSortedMap` في reports common؛ iOS reports compile | [x] `sortedBy`+`associate`؛ `:feature:reports:compileKotlinIosArm64` PASS |
+| 2 | duration + weightPerSet يصلان `MovitTrainingEngine` | [x] `TrainingFlowEngineOverrides` → `buildEngine` |
+| 3 | Save/End يسقطان Prepare+Training معاً | [x] `ExitWorkoutJourney` → `exitWorkoutJourney()` |
+
+**Spot-check P1 (كلها TRUE بعد الإصلاح):**
+| # | الادعاء | الحالة |
+|---|---|---|
+| 4 | OfflineReady فقط عند كل configs محلية | [x] |
+| 5 | Resume يفضّل durable؛ mismatch → Blocked | [x] |
+| 6 | accumulated day report durable عبر Save/VM recreate | [x] |
+| 7 | WorkoutRunStore user-scoped / clear على logout/switch | [x] |
+| 8 | Fresh لا يمسح edit/save/launch drafts | [x] |
+| 9 | Program catch-up/switch عبر `WorkoutLaunchRequest`؛ week من session | [x] |
+| 10 | لا اختراع Reps(12)؛ غير startable / Blocked | [x] بعد إصلاح flow-config fallback |
+
+**Spot-check P2:** RestPanel duration/weight [x]؛ day CTA أسبوعي صادق بلا reportId [x]؛ analytics ما زال println facade موثّق [x].
+
+**مصفوفة compile/test (هذه الجولة):**
+| Target | Result |
+|---|---|
+| `:feature:reports|library|training|shell|train:compileKotlinIosArm64` | PASS |
+| `:feature:*` + `:core:data|training-engine:compileAndroidMain` (المذكورة) | PASS |
+| `:feature:library|training|train|shell:testAndroidHostTest` | PASS |
+| `:core:training-engine:testAndroidHostTest` | PASS |
+| `:core:data` `AccountSwitchClearsForeignCacheTest` | PASS |
+| `:shared` `MovitTrainingAnalyticsTest` | PASS |
+| iOS host test suite الكامل | **لم يُشغَّل** |
+
+**متبقٍ حقيقي (ليس polish):**
+- DoD: iOS host suites على Native.
+- hydrate لـ `plannedWorkoutReports` عند غياب الكاش (CTA أسبوعي صادق حتى يتوفر day reportId — سلوك مقصود حالياً).
+- تحقق يدوي: Resume من وسط workout بعد Save and exit.
+- `WorkoutSessionSheets` ما زال يستخدم `?: 12` كافتراضي UI لمسودة التعديل عند الزيادة/النقصان — ليس مسار Start؛ لا يُعتبر اختراع هدف تشغيل.
+

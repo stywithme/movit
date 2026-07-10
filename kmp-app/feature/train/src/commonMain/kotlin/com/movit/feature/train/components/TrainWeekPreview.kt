@@ -39,14 +39,22 @@ fun TrainWeekPreview(
     onPreviousWeek: (() -> Unit)? = null,
     onNextWeek: (() -> Unit)? = null,
     onDayClick: ((Int) -> Unit)? = null,
-    onDayAction: (() -> Unit)? = null,
+    onDayAction: ((TrainWeekDayDetailUi) -> Unit)? = null,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm)) {
         MovitWeekStrip(
             modifier = modifier,
             title = week.title,
             subtitle = week.subtitle,
-            days = week.days.map { it.toMovitWeekDay() },
+            days = week.days.mapIndexed { index, day ->
+                day.toMovitWeekDay(
+                    selectedSuffix = if (selectedDayIndex == index) {
+                        movitText("train_a11y_week_day_selected")
+                    } else {
+                        null
+                    },
+                )
+            },
             selectedIndex = selectedDayIndex,
             onDayClick = onDayClick,
             onPreviousWeek = onPreviousWeek.takeIf { canGoPrevious },
@@ -74,7 +82,7 @@ fun TrainWeekPreview(
 @Composable
 private fun TrainDayDetailCard(
     detail: TrainWeekDayDetailUi,
-    onAction: (() -> Unit)?,
+    onAction: ((TrainWeekDayDetailUi) -> Unit)?,
 ) {
     MovitCard(variant = MovitCardVariant.Filled) {
         Row(
@@ -105,7 +113,7 @@ private fun TrainDayDetailCard(
             if (detail.actionLabel != null && onAction != null) {
                 MovitButton(
                     text = detail.actionLabel,
-                    onClick = onAction,
+                    onClick = { onAction(detail) },
                     variant = if (detail.isCompleted) MovitButtonVariant.Tonal else MovitButtonVariant.Filled,
                     size = MovitButtonSize.Small,
                 )
@@ -114,7 +122,7 @@ private fun TrainDayDetailCard(
     }
 }
 
-private fun TrainWeekDayUi.toMovitWeekDay(): MovitWeekDay = MovitWeekDay(
+private fun TrainWeekDayUi.toMovitWeekDay(selectedSuffix: String? = null): MovitWeekDay = MovitWeekDay(
     label = label,
     dayNumber = dayNumber,
     state = when (state) {
@@ -137,6 +145,10 @@ private fun TrainWeekDayUi.toMovitWeekDay(): MovitWeekDay = MovitWeekDay(
                 append(", ")
                 append(it.title)
             }
+        }
+        if (selectedSuffix != null) {
+            append(", ")
+            append(selectedSuffix)
         }
     },
 )

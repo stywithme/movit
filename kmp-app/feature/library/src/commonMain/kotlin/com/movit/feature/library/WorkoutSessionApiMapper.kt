@@ -231,8 +231,10 @@ object WorkoutSessionApiMapper {
         val sets = item.sets ?: item.suggestion?.suggestedSets ?: 1
         val reps = item.targetReps ?: item.suggestion?.suggestedReps
         val durationSeconds = item.targetDuration ?: item.suggestion?.suggestedDuration
-        val restSeconds = ((item.restBetweenSetsMs ?: 60_000) / 1000)
-        val weight = item.weightPerSet?.firstOrNull()?.toFloat()
+        val restBetweenMs = (item.restBetweenSetsMs ?: 60_000).toLong()
+        val restSeconds = (restBetweenMs / 1000).toInt()
+        val weightList = item.weightPerSet?.map { it.toFloat() }
+        val weight = weightList?.firstOrNull()
             ?: item.suggestion?.suggestedWeightKg?.toFloat()
 
         return WorkoutSessionBlockUi.Exercise(
@@ -251,6 +253,9 @@ object WorkoutSessionApiMapper {
             restLabel = WorkoutSessionFormatting.restLabel(restSeconds),
             weightLabel = WorkoutSessionFormatting.weightLabel(weight),
             phaseRole = normalizeRoleKey(item.phaseRole),
+            variantIndex = item.variantIndex?.coerceAtLeast(0) ?: 0,
+            restBetweenSetsMs = restBetweenMs,
+            weightPerSetKg = weightList ?: weight?.let { listOf(it) },
         )
     }
 

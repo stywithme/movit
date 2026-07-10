@@ -180,7 +180,7 @@ class SqlDelightMovitLocalStore(
             val preserved = mutableMapOf<Pair<String, String>, String>()
             jsonQueries.selectAllStoreKeys().executeAsList().forEach { row ->
                 val keep =
-                    row.store == MovitCacheKeys.AUTH_LIFECYCLE_STORE ||
+                    MovitClearScopeKeys.isDurableJsonStore(row.store) ||
                         (
                             row.store == MovitCacheKeys.REPORTS_STORE &&
                                 MovitClearScopeKeys.isDurableReportsKey(row.cache_key)
@@ -206,20 +206,27 @@ class SqlDelightMovitLocalStore(
         }
     }
 
+    override suspend fun clearWorkoutRunStore() {
+        withContext(Dispatchers.IO) {
+            jsonQueries.selectAllStoreKeys().executeAsList()
+                .filter { it.store == MovitCacheKeys.WORKOUT_RUN_STORE }
+                .forEach { row ->
+                    jsonQueries.deleteByStoreAndKey(row.store, row.cache_key)
+                }
+        }
+    }
+
     override suspend fun clearDurableWrites() {
         withContext(Dispatchers.IO) {
             outboxQueries.deleteAll()
             journalQueries.deleteAllJournals()
+            clearWorkoutRunStore()
             jsonQueries.selectAllStoreKeys().executeAsList()
                 .filter {
-                    it.store == MovitCacheKeys.REPORTS_STORE &&
-                        MovitClearScopeKeys.isDurableReportsKey(it.cache_key)
+                    (it.store == MovitCacheKeys.REPORTS_STORE &&
+                        MovitClearScopeKeys.isDurableReportsKey(it.cache_key)) ||
+                        it.store == MovitCacheKeys.AUTH_LIFECYCLE_STORE
                 }
-                .forEach { row ->
-                    jsonQueries.deleteByStoreAndKey(row.store, row.cache_key)
-                }
-            jsonQueries.selectAllStoreKeys().executeAsList()
-                .filter { it.store == MovitCacheKeys.AUTH_LIFECYCLE_STORE }
                 .forEach { row ->
                     jsonQueries.deleteByStoreAndKey(row.store, row.cache_key)
                 }

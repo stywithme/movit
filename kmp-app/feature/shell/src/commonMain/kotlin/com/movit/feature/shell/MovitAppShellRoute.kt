@@ -5,7 +5,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.movit.core.data.MovitData
@@ -84,16 +86,36 @@ private fun MovitAppShellRouteContent(
     val state by shellViewModel.state.collectAsState()
     val language = LocalMovitLanguage.current
 
-    LaunchedEffect(state.dataRevision, state.selectedDestination) {
+    var deferredDataRefresh by remember { mutableStateOf(false) }
+
+    LaunchedEffect(state.dataRevision) {
         if (state.dataRevision == 0) return@LaunchedEffect
-        kotlinx.coroutines.delay(300)
-        when (state.selectedDestination) {
-            MovitAppDestination.Home -> homeViewModel.load(isRefresh = false)
-            MovitAppDestination.Train -> trainViewModel.load(isRefresh = false)
-            MovitAppDestination.Explore -> exploreViewModel.load(isRefresh = false)
-            MovitAppDestination.Reports -> reportsViewModel.load(isRefresh = false)
-            MovitAppDestination.Profile -> Unit
+        if (state.innerStack.isNotEmpty()) {
+            deferredDataRefresh = true
+            return@LaunchedEffect
         }
+        kotlinx.coroutines.delay(300)
+        refreshVisibleTab(
+            destination = state.selectedDestination,
+            homeViewModel = homeViewModel,
+            trainViewModel = trainViewModel,
+            exploreViewModel = exploreViewModel,
+            reportsViewModel = reportsViewModel,
+        )
+        deferredDataRefresh = false
+    }
+
+    LaunchedEffect(state.innerStack.isEmpty(), deferredDataRefresh) {
+        if (!state.innerStack.isEmpty() || !deferredDataRefresh || state.dataRevision == 0) return@LaunchedEffect
+        kotlinx.coroutines.delay(300)
+        refreshVisibleTab(
+            destination = state.selectedDestination,
+            homeViewModel = homeViewModel,
+            trainViewModel = trainViewModel,
+            exploreViewModel = exploreViewModel,
+            reportsViewModel = reportsViewModel,
+        )
+        deferredDataRefresh = false
     }
 
     LaunchedEffect(state.localeRevision, state.selectedDestination) {
@@ -147,4 +169,20 @@ private fun MovitAppShellRouteContent(
         onTrainEffect = onTrainEffect,
         onShellEffect = shellViewModel::emitShellEffect,
     )
+}
+
+private suspend fun refreshVisibleTab(
+    destination: MovitAppDestination,
+    homeViewModel: MovitHomeViewModel,
+    trainViewModel: MovitTrainViewModel,
+    exploreViewModel: MovitExploreViewModel,
+    reportsViewModel: MovitReportsViewModel,
+) {
+    when (destination) {
+        MovitAppDestination.Home -> homeViewModel.load(isRefresh = false)
+        MovitAppDestination.Train -> trainViewModel.load(isRefresh = false)
+        MovitAppDestination.Explore -> exploreViewModel.load(isRefresh = false)
+        MovitAppDestination.Reports -> reportsViewModel.load(isRefresh = false)
+        MovitAppDestination.Profile -> Unit
+    }
 }

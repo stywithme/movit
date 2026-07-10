@@ -53,7 +53,6 @@ internal object WorkoutTemplateSessionMapper {
         val title = meta.name.localized(language).ifBlank { strings.workoutFallback }
         val durationMinutes = meta.estimatedDurationMin ?: 30
         val placeholderSlug = meta.slug.ifBlank { slugOrId }
-        val catalog = exerciseBySlug[placeholderSlug]
 
         return WorkoutSessionUi(
             id = placeholderSlug,
@@ -61,29 +60,9 @@ internal object WorkoutTemplateSessionMapper {
             subtitle = "",
             exerciseCount = meta.exerciseCount.coerceAtLeast(1),
             durationLabel = "~${durationMinutes}m",
-            setCount = 3,
-            sections = listOf(
-                WorkoutSessionSectionUi(
-                    title = strings.phaseTitle("MAIN"),
-                    phaseRole = "MAIN",
-                    items = listOf(
-                        WorkoutSessionBlockUi.Exercise(
-                            id = placeholderSlug,
-                            exerciseSlug = placeholderSlug,
-                            index = 1,
-                            name = catalog?.name ?: title,
-                            category = catalog?.category.orEmpty(),
-                            imageUrl = catalog?.imageUrl ?: meta.coverImageUrl,
-                            sets = 3,
-                            reps = 12,
-                            restSeconds = 60,
-                            setsLabel = WorkoutSessionFormatting.setsLabel(3, 12, null),
-                            restLabel = WorkoutSessionFormatting.restLabel(60),
-                            phaseRole = "MAIN",
-                        ),
-                    ),
-                ),
-            ),
+            setCount = 0,
+            // Metadata is display-only. Never invent executable exercises or targets.
+            sections = emptyList(),
             context = null,
         )
     }
@@ -123,7 +102,7 @@ internal object WorkoutTemplateSessionMapper {
         return WorkoutSessionSectionUi(
             title = phase.name.localized(language).ifBlank { strings.phaseTitle(role) },
             phaseRole = role,
-            items = mapTemplateExercises(phase.exercises, language, strings, exerciseBySlug),
+            items = mapTemplateExercises(phase.exercises, language, strings, exerciseBySlug, phaseRole = role),
         )
     }
 
@@ -132,6 +111,7 @@ internal object WorkoutTemplateSessionMapper {
         language: String,
         strings: SessionStrings,
         exerciseBySlug: Map<String, ExerciseCatalogEntry>,
+        phaseRole: String = "MAIN",
     ): List<WorkoutSessionBlockUi> {
         val blocks = mutableListOf<WorkoutSessionBlockUi>()
         var index = 0
@@ -139,7 +119,7 @@ internal object WorkoutTemplateSessionMapper {
             .sortedBy { it.sortOrder }
             .forEach { item ->
                 index += 1
-                blocks += mapExercise(item, index, language, strings, exerciseBySlug)
+                blocks += mapExercise(item, index, language, strings, exerciseBySlug, phaseRole = phaseRole)
                 val restMs = item.restAfterExerciseMs ?: 0L
                 if (restMs > 0) {
                     val seconds = (restMs / 1000).toInt().coerceAtLeast(1)
@@ -159,14 +139,19 @@ internal object WorkoutTemplateSessionMapper {
         language: String,
         strings: SessionStrings,
         exerciseBySlug: Map<String, ExerciseCatalogEntry>,
+        phaseRole: String = "MAIN",
     ): WorkoutSessionBlockUi.Exercise {
         val slug = item.exercise.slug.ifBlank { item.exercise.id }
         val catalog = exerciseBySlug[slug]
         val sets = item.sets?.coerceAtLeast(1) ?: 1
         val reps = item.targetReps
         val durationSeconds = item.targetDuration
-        val restSeconds = ((item.restBetweenSetsMs ?: 60_000L) / 1000).toInt()
-        val weight = item.weightPerSet?.firstOrNull()?.toFloat()
+        val restBetweenMs = item.restBetweenSetsMs ?: 60_000L
+        val restSeconds = (restBetweenMs / 1000).toInt()
+        val restAfterMs = item.restAfterExerciseMs ?: 0L
+        val restAfterSeconds = (restAfterMs / 1000).toInt()
+        val weightList = item.weightPerSet?.map { it.toFloat() }
+        val weight = weightList?.firstOrNull()
         val category = catalog?.category?.ifBlank {
             item.exercise.attributes.firstOrNull()?.name?.localized(language).orEmpty()
         }.orEmpty()
@@ -188,7 +173,12 @@ internal object WorkoutTemplateSessionMapper {
             setsLabel = WorkoutSessionFormatting.setsLabel(sets, reps, durationSeconds),
             restLabel = WorkoutSessionFormatting.restLabel(restSeconds),
             weightLabel = WorkoutSessionFormatting.weightLabel(weight),
-            phaseRole = "MAIN",
+            phaseRole = phaseRole,
+            variantIndex = item.variantIndex,
+            restAfterExerciseSeconds = restAfterSeconds,
+            restBetweenSetsMs = restBetweenMs,
+            restAfterExerciseMs = restAfterMs,
+            weightPerSetKg = weightList,
         )
     }
 

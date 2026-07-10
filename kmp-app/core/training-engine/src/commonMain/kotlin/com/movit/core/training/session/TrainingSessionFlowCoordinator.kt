@@ -50,11 +50,24 @@ class TrainingSessionFlowCoordinator(
     val state: StateFlow<State> = _state.asStateFlow()
 
     fun start() {
-        itemIndex = 0
-        setIndex = 1
+        startAt(itemIndex = 0, setNumber = 1)
+    }
+
+    /** Resume mid-workout at [itemIndex] / [setNumber] (1-based set). */
+    fun startAt(itemIndex: Int, setNumber: Int = 1) {
+        this.itemIndex = itemIndex.coerceAtLeast(0)
+        this.setIndex = setNumber.coerceAtLeast(1)
         previousExerciseRestMs = DEFAULT_REST_BETWEEN_EXERCISES_MS
+        if (this.itemIndex > 0) {
+            val prev = items.getOrNull(this.itemIndex - 1) as? TrainingFlowItem.Exercise
+            if (prev != null) previousExerciseRestMs = prev.restAfterExerciseMs
+        }
         moveToCurrentItem()
     }
+
+    fun currentItemIndex(): Int = itemIndex
+
+    fun currentSetIndex(): Int = setIndex
 
     fun markExercising() {
         _state.value = State.Training
@@ -78,11 +91,25 @@ class TrainingSessionFlowCoordinator(
     }
 
     fun onRestCompleted() {
+        // Explicit Rest items sit at itemIndex while the timer runs; advance past them.
+        if (items.getOrNull(itemIndex) is TrainingFlowItem.Rest) {
+            itemIndex++
+            setIndex = 1
+        }
         moveToCurrentItem()
     }
 
     fun skipRest() {
         onRestCompleted()
+    }
+
+    fun extendRest(extraMs: Long) {
+        val rest = _state.value as? State.Rest ?: return
+        if (extraMs <= 0L) return
+        _state.value = rest.copy(
+            remainingMs = rest.remainingMs + extraMs,
+            totalMs = rest.totalMs + extraMs,
+        )
     }
 
     /**
@@ -228,6 +255,8 @@ sealed class TrainingFlowItem {
         val displayName: String,
         val sets: Int = 1,
         val targetReps: Int = 12,
+        /** When set, this is a time-based target (reps may be 0). */
+        val targetDurationSeconds: Int? = null,
         val restBetweenSetsMs: Long = 30_000L,
         val restAfterExerciseMs: Long = 60_000L,
         val tip: String? = null,
@@ -235,6 +264,7 @@ sealed class TrainingFlowItem {
         val phaseRole: String? = null,
         /** Index into [com.movit.core.training.config.ExerciseConfig.poseVariants]. */
         val poseVariantIndex: Int = 0,
+        val weightPerSetKg: List<Float>? = null,
     ) : TrainingFlowItem()
 
     data class Rest(val durationMs: Long) : TrainingFlowItem()

@@ -17,7 +17,10 @@ import com.movit.core.training.engine.Phase
 import com.movit.core.training.engine.RepIncompleteReason
 import com.movit.core.training.engine.shouldDiscardRepAttemptOnIncomplete
 import com.movit.core.training.engine.ZoneType
+import com.movit.feature.library.ReportTarget
+import com.movit.feature.library.WorkoutRunStore
 import com.movit.feature.reports.TrainingSessionReportCache
+import com.movit.shared.training.MovitTrainingAnalytics
 import com.movit.core.training.engine.ErrorType
 import com.movit.core.training.boundary.TrainingFrameSnapshotPort
 import com.movit.core.training.engine.JointError
@@ -96,6 +99,7 @@ class TrainingSessionViewModel(
   private val exerciseNameOverride: String = "",
   private val language: String = "en",
   private val sessionId: String = exerciseSlug,
+  private val runId: String? = null,
   private val isAssessmentMode: Boolean = false,
   private val flowItems: List<TrainingFlowItem>? = null,
   private val startExerciseIndex: Int = 0,
@@ -113,6 +117,8 @@ class TrainingSessionViewModel(
 ) : ViewModel() {
   private var activeSlug: String = exerciseSlug
   private var activeTargetReps: Int = targetReps
+  private var activeTargetDurationSeconds: Int? = null
+  private var activeSessionWeightKg: Float? = null
   private var activeExerciseName: String = exerciseNameOverride
   private var activePoseVariantIndex: Int = routePoseVariantIndex
   private var exerciseConfig: ExerciseConfig? = configRepository.getBySlug(activeSlug)?.config
@@ -127,10 +133,14 @@ class TrainingSessionViewModel(
   private var phasePauseSnapshot: PhasePauseSnapshot? = null
   /** UX.3 / P1.5: orphan journal awaiting resume or discard. */
   private var pendingResumeJournal: SessionJournalSnapshot? = null
+  /** P1.4: exit teardown already ran — onDispose StopSession is a no-op. */
+  private var exitTornDown: Boolean = false
+  private var pausedForExitPrompt: Boolean = false
 
   private val flowCoordinator = flowItems?.let { TrainingSessionFlowCoordinator(it) }
   private var restTimerJob: Job? = null
   private var restNearEndAnnounced = false
+  private var restPaused = false
 
   private val supervisor = SessionSupervisor(setupValidation = setupValidation)
   private val readinessGate = SetupReadinessGate(setupValidation, deviceTiltPort)
@@ -182,7 +192,20 @@ class TrainingSessionViewModel(
     when (event) {
       TrainingSessionEvent.StartWorkoutExercise -> startWorkoutExercise()
       TrainingSessionEvent.SkipRest -> skipRest()
-      TrainingSessionEvent.StopSession -> stopSession()
+      TrainingSessionEvent.ToggleRestPause -> toggleRestPause()
+      TrainingSessionEvent.AddRestTime -> addRestTime()
+      TrainingSessionEvent.StopSession -> {
+        if (!exitTornDown) {
+          // Unexpected dispose (nav / process): persist when there is progress.
+          if (TrainingSessionExitPolicy.hasProgressWorthSaving(_state.value) ||
+            TrainingSessionExitPolicy.shouldConfirmExit(_state.value)
+          ) {
+            tearDownForExit(persist = true, abandon = false)
+          } else {
+            tearDownForExit(persist = false, abandon = false)
+          }
+        }
+      }
       is TrainingSessionEvent.PoseFrameReceived -> onPoseFrame(event.frame)
       TrainingSessionEvent.CameraReady -> onCameraReady()
       TrainingSessionEvent.CameraSwitchStarted -> onCameraSwitchStarted()
@@ -192,16 +215,20 @@ class TrainingSessionViewModel(
       TrainingSessionEvent.Stop -> stop()
       is TrainingSessionEvent.HostBackgrounded -> onHostBackgrounded(event.nowMs ?: defaultLifecycleNowMs())
       is TrainingSessionEvent.HostForegrounded -> onHostForegrounded(event.nowMs ?: defaultLifecycleNowMs())
-      TrainingSessionEvent.BackPressed -> {
-        stopSession()
-        _effects.tryEmit(TrainingSessionEffect.NavigateBack)
-      }
+      TrainingSessionEvent.BackPressed -> onBackPressed()
+      TrainingSessionEvent.ExitContinue -> onExitContinue()
+      TrainingSessionEvent.ExitSaveAndExit -> onExitSaveAndExit()
+      TrainingSessionEvent.ExitEndWorkout -> onExitEndWorkout()
       TrainingSessionEvent.FinishClicked -> {
         stopSession()
         _effects.tryEmit(TrainingSessionEffect.Finish(_state.value.isWorkoutComplete))
       }
       TrainingSessionEvent.ViewReportClicked -> {
         _state.value.reportDetailId?.let { reportId ->
+          MovitTrainingAnalytics.trackOpenReport(
+            reportId = reportId,
+            scope = if (flowCoordinator != null) "workout" else "exercise",
+          )
           _effects.tryEmit(TrainingSessionEffect.ViewReport(reportId))
         }
       }
@@ -214,7 +241,18 @@ class TrainingSessionViewModel(
     lastFrameTimestampMs.takeIf { it > 0 } ?: sessionStartMs
 
   init {
-    activePoseVariantIndex = resolveActivePoseVariantIndex()
+    val resumeSet = runId?.let { WorkoutRunStore.get(it)?.progress?.currentSet } ?: 1
+    flowCoordinator?.startAt(itemIndex = 0, setNumber = resumeSet)
+    // Prefer flow item (resume mid-workout) over route slug/reps so engine matches the cursor.
+    flowCoordinator?.currentExerciseOrNull()?.let { applyFlowExercise(it, resumeSet) }
+      ?: run {
+        activePoseVariantIndex = resolveActivePoseVariantIndex()
+        applyFlowOverridesFromItem(
+          flowItems?.firstOrNull() as? TrainingFlowItem.Exercise,
+          setNumber = resumeSet,
+        )
+      }
+    accumulatedDayReport = runId?.let { WorkoutRunStore.getAccumulatedReport(it) }
     writeHooks = createWriteHooks()
     engine = buildEngine()
     feedback.onVisualMessage = { visual -> applyVisualMessage(visual) }
@@ -225,7 +263,6 @@ class TrainingSessionViewModel(
     wireEngineCallbacks()
     startPoseFrameWorker()
     exerciseConfig?.poseVariants?.getOrNull(activePoseVariantIndex)?.feedbackMessages?.let(feedback::setRandomMessages)
-    flowCoordinator?.start()
     syncFlowUi()
     if (flowCoordinator == null) {
       maybePromptOrLoadExercise()
@@ -236,6 +273,10 @@ class TrainingSessionViewModel(
   }
 
   fun startWorkoutExercise() {
+    val setNumber = flowCoordinator?.currentSetIndex()
+      ?: _state.value.currentSetNumber.coerceAtLeast(1)
+    flowCoordinator?.currentExerciseOrNull()?.let { applyFlowOverridesFromItem(it, setNumber) }
+    rebuildEngineIfNeeded()
     flowCoordinator?.markExercising()
     maybePromptOrLoadExercise()
     syncFlowUi()
@@ -244,13 +285,142 @@ class TrainingSessionViewModel(
   fun skipRest() {
     restTimerJob?.cancel()
     restNearEndAnnounced = false
+    restPaused = false
     flowCoordinator?.skipRest()
     syncFlowUi()
   }
 
+  fun toggleRestPause() {
+    if (flowCoordinator?.state?.value !is TrainingSessionFlowCoordinator.State.Rest) return
+    restPaused = !restPaused
+    _state.update { it.copy(isRestPaused = restPaused) }
+  }
+
+  fun addRestTime() {
+    flowCoordinator?.extendRest(15_000L)
+    syncFlowUi()
+  }
+
   fun stopSession(): Long {
+    if (exitTornDown) return 0L
     supervisor.processSignal(SupervisorSignal.StopRequested)
     return engine?.stop()?.durationMs ?: 0L
+  }
+
+  private fun onBackPressed() {
+    if (_state.value.exitPrompt != null) return
+    if (!TrainingSessionExitPolicy.shouldConfirmExit(_state.value)) {
+      tearDownForExit(persist = false, abandon = false)
+      _effects.tryEmit(TrainingSessionEffect.NavigateBack)
+      return
+    }
+    if (_state.value.runState == SessionRunState.TRAINING) {
+      pause()
+      pausedForExitPrompt = true
+    }
+    _state.update { it.copy(exitPrompt = TrainingSessionExitPrompt) }
+  }
+
+  private fun onExitContinue() {
+    _state.update { it.copy(exitPrompt = null) }
+    if (pausedForExitPrompt) {
+      pausedForExitPrompt = false
+      resume()
+    }
+  }
+
+  private fun onExitSaveAndExit() {
+    _state.update { it.copy(exitPrompt = null) }
+    pausedForExitPrompt = false
+    MovitTrainingAnalytics.trackSaveAndExit(runId)
+    tearDownForExit(persist = true, abandon = false)
+    emitExitNavigation()
+  }
+
+  private fun onExitEndWorkout() {
+    _state.update { it.copy(exitPrompt = null) }
+    pausedForExitPrompt = false
+    MovitTrainingAnalytics.trackEndWorkout(runId)
+    tearDownForExit(persist = false, abandon = true)
+    emitExitNavigation()
+  }
+
+  /** Save/End must drop Prepare+Training; inactive setup Back stays a single pop. */
+  private fun emitExitNavigation() {
+    _effects.tryEmit(TrainingSessionEffect.ExitWorkoutJourney)
+  }
+
+  /**
+   * Quiet teardown for Save/exit / End / inactive-setup pop.
+   * Avoids [stopSession] → ShowCompleted → finalize (which would advance the run).
+   */
+  private fun tearDownForExit(persist: Boolean, abandon: Boolean) {
+    if (exitTornDown) return
+    exitTornDown = true
+    restTimerJob?.cancel()
+    restPaused = false
+    if (persist) {
+      persistOpenRunProgress()
+    } else if (abandon) {
+      abandonOpenRun()
+      writeCoordinator.deleteJournal("$sessionId:$activeSlug")
+    }
+    writeHooks.detach()
+    runCatching { engine?.stop() }
+    supervisor.reset()
+    resetSetupVoiceState()
+    readinessGate.reset()
+    countdown.release()
+  }
+
+  private fun persistOpenRunProgress() {
+    val workoutKey = resolveWorkoutKey() ?: return
+    val relativeIndex = flowCoordinator?.currentItemIndex() ?: 0
+    val absoluteIndex = startExerciseIndex + relativeIndex
+    val setNumber = flowCoordinator?.currentSetIndex()
+      ?: _state.value.currentSetNumber.coerceAtLeast(1)
+    val phase = when {
+      _state.value.isResting || _state.value.workoutFlowPhase == WorkoutFlowPhase.REST -> "REST"
+      _state.value.runState == SessionRunState.TRAINING -> "TRAINING"
+      else -> "PRE_EXERCISE"
+    }
+    if (runId != null) {
+      WorkoutRunStore.saveProgress(
+        runId = runId,
+        exerciseIndex = absoluteIndex,
+        currentSet = setNumber,
+        exerciseSlug = activeSlug,
+        blockPhase = phase,
+      )
+      accumulatedDayReport?.let { WorkoutRunStore.saveAccumulatedReport(runId, it) }
+    } else {
+      WorkoutRunStore.saveProgressForWorkout(
+        workoutId = workoutKey,
+        exerciseIndex = absoluteIndex,
+        currentSet = setNumber,
+        exerciseSlug = activeSlug,
+        blockPhase = phase,
+      )
+      val activeRunId = WorkoutRunStore.activeForWorkout(workoutKey)?.runId?.value
+      if (activeRunId != null && accumulatedDayReport != null) {
+        WorkoutRunStore.saveAccumulatedReport(activeRunId, accumulatedDayReport!!)
+      }
+    }
+  }
+
+  private fun abandonOpenRun() {
+    when {
+      runId != null -> WorkoutRunStore.abandon(runId)
+      else -> resolveWorkoutKey()?.let { WorkoutRunStore.abandonActiveForWorkout(it) }
+    }
+  }
+
+  private fun resolveWorkoutKey(): String? {
+    if (runId != null) return WorkoutRunStore.get(runId)?.workoutId
+    if (flowCoordinator != null || plannedWorkout != null || uploadContext != null) {
+      return sessionId.takeIf { it.isNotBlank() && it != exerciseSlug } ?: sessionId
+    }
+    return null
   }
 
   fun onPoseFrame(frame: PoseFrame?) {
@@ -440,6 +610,12 @@ class TrainingSessionViewModel(
     )
     if (wasTraining) {
       pause()
+    }
+    // P1.4: durable enough for process recreation — checkpoint run cursor while backgrounded.
+    if (TrainingSessionExitPolicy.hasProgressWorthSaving(_state.value) ||
+      TrainingSessionExitPolicy.shouldConfirmExit(_state.value)
+    ) {
+      persistOpenRunProgress()
     }
   }
 
@@ -908,14 +1084,16 @@ class TrainingSessionViewModel(
         flowCoordinator.onExerciseCompleted()
         when (flowCoordinator.state.value) {
           TrainingSessionFlowCoordinator.State.WorkoutComplete -> {
-            finalizePlannedWorkoutDay()
+            finalizeWorkoutRun()
             _state.update {
               it.copy(
                 isComplete = true,
                 isWorkoutComplete = true,
                 runState = SessionRunState.COMPLETED,
-                reportDetailId = it.reportDetailId,
               )
+            }
+            _state.value.reportDetailId?.let { reportId ->
+              _effects.tryEmit(TrainingSessionEffect.ViewReport(reportId))
             }
           }
           is TrainingSessionFlowCoordinator.State.Rest -> {
@@ -928,12 +1106,14 @@ class TrainingSessionViewModel(
           }
         }
       } else {
-        finalizePlannedWorkoutDay()
+        finalizeWorkoutRun()
         _state.update {
           it.copy(
             isComplete = true,
-            reportDetailId = it.reportDetailId,
           )
+        }
+        _state.value.reportDetailId?.let { reportId ->
+          _effects.tryEmit(TrainingSessionEffect.ViewReport(reportId))
         }
       }
     }
@@ -964,24 +1144,58 @@ class TrainingSessionViewModel(
         setsCompleted = setsCompleted,
         totalSets = totalSets,
       )
+    // P1: durable with the open run so Save/exit + VM recreate keep prior work.
+    val persistRunId = runId
+      ?: resolveWorkoutKey()?.let { WorkoutRunStore.activeForWorkout(it)?.runId?.value }
+    if (persistRunId != null) {
+      WorkoutRunStore.saveAccumulatedReport(persistRunId, accumulatedDayReport!!)
+    }
   }
 
-  private suspend fun finalizePlannedWorkoutDay() {
-    val planned = plannedWorkout ?: return
+  private suspend fun finalizeWorkoutRun() {
     val report = accumulatedDayReport ?: return
-    writeHooks.completePlannedDay(
-      workoutId = planned.plannedWorkoutId,
-      report = report,
-      programId = planned.programId,
-      weekNumber = planned.weekNumber,
-      dayNumber = planned.dayNumber,
-      workoutGroupId = uploadContext?.workoutGroupId,
-      onOutcome = { recordWriteOutcome(it, TrainingSessionWriteDiagnostics.WriteKind.PLANNED_COMPLETE) },
-    )
-    TrainingSessionReportCache.putSession(planned.plannedWorkoutId, report)
-    markReportAvailable(planned.plannedWorkoutId)
+    val planned = plannedWorkout
+    val reportId = runId
+      ?: uploadContext?.workoutGroupId
+      ?: planned?.plannedWorkoutId
+      ?: sessionId.takeIf { flowCoordinator != null }
+      ?: return
+
+    if (planned != null) {
+      writeHooks.completePlannedDay(
+        workoutId = planned.plannedWorkoutId,
+        report = report,
+        programId = planned.programId,
+        weekNumber = planned.weekNumber,
+        dayNumber = planned.dayNumber,
+        workoutGroupId = uploadContext?.workoutGroupId ?: runId,
+        onOutcome = { recordWriteOutcome(it, TrainingSessionWriteDiagnostics.WriteKind.PLANNED_COMPLETE) },
+      )
+    }
+
+    TrainingSessionReportCache.putSession(reportId, report)
+    val reportTarget = when {
+      planned != null -> ReportTarget.ProgramDay(
+        reportId = reportId,
+        plannedWorkoutId = planned.plannedWorkoutId,
+        programId = planned.programId,
+        weekNumber = planned.weekNumber,
+        dayNumber = planned.dayNumber,
+      )
+      runId != null || flowCoordinator != null ->
+        ReportTarget.WorkoutRun(reportId = reportId, runId = runId ?: reportId)
+      else -> ReportTarget.Exercise(reportId = reportId)
+    }
+    runId?.let {
+      WorkoutRunStore.complete(it, reportTarget)
+      MovitTrainingAnalytics.trackCompleteRun(it)
+    }
+    markReportAvailable(reportId, asSessionReport = true)
     applyWriteStatus()
   }
+
+  /** @deprecated use [finalizeWorkoutRun] — kept as alias for planned-only call sites. */
+  private suspend fun finalizePlannedWorkoutDay() = finalizeWorkoutRun()
 
   private fun recordWriteOutcome(
     result: com.movit.shared.AppResult<String>,
@@ -1052,7 +1266,9 @@ class TrainingSessionViewModel(
       sessionExerciseKey = "$sessionId:$activeSlug",
       setNumber = _state.value.currentSetNumber,
     )
-    markReportAvailable(upload.id)
+    if (!isWorkoutRunSession()) {
+      markReportAvailable(upload.id)
+    }
   }
 
   private suspend fun enqueueUpload(upload: WorkoutUpload, summary: ExerciseWorkoutSummary) {
@@ -1094,30 +1310,31 @@ class TrainingSessionViewModel(
             setNumber = _state.value.currentSetNumber,
           )
         }
-        markReportAvailable(reportId)
+        if (!isWorkoutRunSession()) {
+          markReportAvailable(reportId)
+        }
       }
       is com.movit.shared.AppResult.Failure -> Unit
     }
   }
 
-  private fun markReportAvailable(reportId: String) {
-    TrainingPipelineDiagnostics.logMilestone("report ready id=$reportId")
+  private fun isWorkoutRunSession(): Boolean =
+    flowCoordinator != null || runId != null || uploadContext?.workoutGroupId != null
+
+  private fun markReportAvailable(reportId: String, asSessionReport: Boolean = false) {
+    TrainingPipelineDiagnostics.logMilestone("report ready id=$reportId session=$asSessionReport")
     _state.update { it.copy(reportDetailId = reportId) }
   }
 
   private fun reloadForNextFlowItem() {
     val exercise = flowCoordinator?.currentExerciseOrNull() ?: return
-    activeSlug = exercise.slug
-    activeTargetReps = exercise.targetReps
-    activeExerciseName = exercise.displayName
-    activePoseVariantIndex = resolveActivePoseVariantIndex(exercise)
-    exerciseConfig = configRepository.getBySlug(activeSlug)?.config
+    val nextSetNumber = (flowCoordinator?.state?.value as? TrainingSessionFlowCoordinator.State.PreExercise)?.setNumber
+      ?: _state.value.currentSetNumber
+    applyFlowExercise(exercise, nextSetNumber)
     engine?.stop()
     writeHooks.detach()
     writeHooks = createWriteHooks()
     frameCaptureCoordinator = createFrameCaptureCoordinator()
-    val nextSetNumber = (flowCoordinator?.state?.value as? TrainingSessionFlowCoordinator.State.PreExercise)?.setNumber
-      ?: _state.value.currentSetNumber
     frameCaptureCoordinator.beginSet(nextSetNumber)
     engine = buildEngine()
     wireEngineCallbacks()
@@ -1145,12 +1362,28 @@ class TrainingSessionViewModel(
     }
   }
 
+  private fun applyFlowExercise(exercise: TrainingFlowItem.Exercise, setNumber: Int) {
+    activeSlug = exercise.slug
+    activeTargetReps = exercise.targetReps
+    activeExerciseName = exercise.displayName.ifBlank { activeExerciseName }
+    activePoseVariantIndex = resolveActivePoseVariantIndex(exercise)
+    applyFlowOverridesFromItem(exercise, setNumber)
+    exerciseConfig = configRepository.getBySlug(activeSlug)?.config
+  }
+
+  private fun applyFlowOverridesFromItem(exercise: TrainingFlowItem.Exercise?, setNumber: Int) {
+    activeTargetDurationSeconds = TrainingFlowEngineOverrides.targetDurationSeconds(exercise)
+    activeSessionWeightKg = TrainingFlowEngineOverrides.weightKgForSet(exercise, setNumber)
+  }
+
   private fun startRestTimer() {
     restTimerJob?.cancel()
     restNearEndAnnounced = false
+    restPaused = false
     restTimerJob = viewModelScope.launch {
       while (isActive) {
         delay(1_000L)
+        if (restPaused) continue
         val completed = flowCoordinator?.tickRest(1_000L) == true
         syncFlowUi()
         maybeAnnounceRestNearEnd()
@@ -1204,10 +1437,18 @@ class TrainingSessionViewModel(
           it.copy(
             workoutFlowPhase = WorkoutFlowPhase.REST,
             isResting = true,
+            isRestPaused = restPaused,
             currentSetNumber = flowState.setNumber,
             totalSets = flowState.totalSets,
             restSecondsRemaining = ((flowState.remainingMs + 999L) / 1_000L).toInt(),
             nextExerciseName = flowState.nextExercise.displayName,
+            restNextTargetReps = flowState.nextExercise.targetReps,
+            restNextTargetDurationSeconds = flowState.nextExercise.targetDurationSeconds?.takeIf { it > 0 },
+            restNextTargetWeightKg = restTargetWeightKg(flowState),
+            restPreviewImageUrl = restPreviewImageUrl(
+              slug = flowState.nextExercise.slug,
+              variantIndex = flowState.nextExercise.poseVariantIndex,
+            ),
             restTip = flowState.tip,
             restContext = flowState.restContext.name,
             workoutFlowProgressPercent = flowProgress,
@@ -1394,10 +1635,18 @@ class TrainingSessionViewModel(
 
   private fun buildEngine(): MovitTrainingEngine? {
     val config = exerciseConfig ?: return null
+    // Refresh weight for the current set when advancing sets of the same exercise.
+    val flowExercise = flowCoordinator?.currentExerciseOrNull()
+      ?: flowItems?.firstOrNull() as? TrainingFlowItem.Exercise
+    val setNumber = flowCoordinator?.currentSetIndex()
+      ?: _state.value.currentSetNumber.coerceAtLeast(1)
+    applyFlowOverridesFromItem(flowExercise, setNumber)
     return MovitTrainingEngine(
       exerciseConfig = config,
       poseVariantIndex = activePoseVariantIndex,
       targetRepsOverride = activeTargetReps,
+      sessionWeightKg = activeSessionWeightKg,
+      targetDurationSecondsOverride = activeTargetDurationSeconds,
       deviceTiltPort = deviceTiltPort,
       timingPolicy = timingPolicy,
     )
@@ -1472,6 +1721,22 @@ class TrainingSessionViewModel(
 
   private fun resolveExerciseName(): String =
     activeExerciseName.ifBlank { exerciseConfig?.displayName(language).orEmpty() }
+
+  private fun restTargetWeightKg(flowState: TrainingSessionFlowCoordinator.State.Rest): Float? {
+    return TrainingFlowEngineOverrides.weightKgForRestPreview(
+      exercise = flowState.nextExercise,
+      upcomingSetNumber = flowState.setNumber,
+      restContext = flowState.restContext,
+    )
+  }
+
+  private fun restPreviewImageUrl(slug: String, variantIndex: Int): String? {
+    if (!MovitData.isInstalled) return null
+    val resolvedSlug = MovitData.trainingConfig.resolveAvailableSlug(slug) ?: slug
+    val config = MovitData.trainingConfig.getExercise(resolvedSlug) ?: return null
+    return config.poseVariants.getOrNull(variantIndex)?.positionImageUrl
+      ?: config.poseVariants.firstOrNull()?.positionImageUrl
+  }
 
   private fun resolveActivePoseVariantIndex(
     flowExercise: TrainingFlowItem.Exercise? = flowCoordinator?.currentExerciseOrNull()
@@ -1619,8 +1884,13 @@ data class TrainingSessionUiState(
   val totalSets: Int = 1,
   val restSecondsRemaining: Int = 0,
   val nextExerciseName: String = "",
+  val restNextTargetReps: Int = 0,
+  val restNextTargetDurationSeconds: Int? = null,
+  val restNextTargetWeightKg: Float? = null,
+  val restPreviewImageUrl: String? = null,
   val restTip: String? = null,
   val restContext: String = "",
+  val isRestPaused: Boolean = false,
   val runState: SessionRunState = SessionRunState.IDLE,
   val repCount: Int = 0,
   val liveFormPercent: Int = 0,
@@ -1666,12 +1936,16 @@ data class TrainingSessionUiState(
   val uploadNotice: String? = null,
   /** UX.3: non-null while the resume-or-discard dialog is showing. */
   val resumePrompt: TrainingSessionResumePrompt? = null,
+  /** P1.4: non-null while Continue / Save and exit / End workout is showing. */
+  val exitPrompt: TrainingSessionExitPrompt? = null,
 )
 
 data class TrainingSessionResumePrompt(
   val completedReps: Int,
   val exerciseSlug: String,
 )
+
+data object TrainingSessionExitPrompt
 
 /** Camera is only needed during live setup/training — not after completion or rest. */
 fun TrainingSessionUiState.requiresCamera(): Boolean =

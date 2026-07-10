@@ -34,6 +34,13 @@ object MovitTrainPreviewData {
                     statusLabel = "Today",
                     isWorkout = true,
                     actionLabel = "Start session",
+                    launchTarget = TrainWorkoutLaunchUi(
+                        programSlug = "full-body-4-week",
+                        programId = "prog-full-body",
+                        weekNumber = 2,
+                        dayNumber = 4,
+                        plannedWorkoutId = "pw-lower",
+                    ),
                 ),
             ),
             TrainWeekDayUi("Fri", "5", TrainWeekDayState.Upcoming),
@@ -79,6 +86,13 @@ object MovitTrainPreviewData {
         exerciseCountLabel = "5 exercises",
         focusLabel = "Strength + control",
         primaryActionLabel = "Start workout",
+        primaryLaunchTarget = TrainWorkoutLaunchUi(
+            programSlug = "full-body-4-week",
+            programId = "prog-full-body",
+            weekNumber = 2,
+            dayNumber = 3,
+            plannedWorkoutId = "pw-lower",
+        ),
         sessions = listOf(
             TrainWorkoutSessionUi(
                 title = "Lower Body Strength",
@@ -86,6 +100,13 @@ object MovitTrainPreviewData {
                 durationLabel = "~22 min",
                 exerciseCountLabel = "5 exercises",
                 actionLabel = "Start session",
+                launchTarget = TrainWorkoutLaunchUi(
+                    programSlug = "full-body-4-week",
+                    programId = "prog-full-body",
+                    weekNumber = 2,
+                    dayNumber = 3,
+                    plannedWorkoutId = "pw-lower",
+                ),
                 thumbnailUrl = "https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&w=200&q=70",
                 items = listOf(
                     TrainWorkoutItemUi("EX", "Squat", "3 sets · 12 reps"),
@@ -100,6 +121,13 @@ object MovitTrainPreviewData {
                 durationLabel = "~12 min",
                 exerciseCountLabel = "4 exercises",
                 actionLabel = "Start session",
+                launchTarget = TrainWorkoutLaunchUi(
+                    programSlug = "full-body-4-week",
+                    programId = "prog-full-body",
+                    weekNumber = 2,
+                    dayNumber = 3,
+                    plannedWorkoutId = "pw-mobility",
+                ),
                 thumbnailUrl = "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=200&q=70",
                 items = listOf(
                     TrainWorkoutItemUi("EX", "Hip opener", "2 sets · 30 sec"),
@@ -221,7 +249,13 @@ object MovitTrainPreviewData {
             durationLabel = "38 min",
             exerciseCountLabel = "9 exercises",
             focusLabel = "88% form score",
-            primaryActionLabel = "View report",
+            primaryActionLabel = "View day report",
+            reportTarget = TrainReportTargetUi.ProgramDay(
+                programId = "prog-full-body",
+                weekNumber = 2,
+                dayNumber = 3,
+                plannedWorkoutId = "pw-lower",
+            ),
             sessions = todayWorkout.sessions.map { session ->
                 session.copy(
                     isCompleted = true,

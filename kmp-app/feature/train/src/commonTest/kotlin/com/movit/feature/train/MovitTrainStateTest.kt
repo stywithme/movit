@@ -78,7 +78,7 @@ class MovitTrainStateTest {
     }
 
     @Test
-    fun startWorkoutWithoutLaunchTarget_emitsOpenProgramList() {
+    fun startSessionWithoutLaunchTarget_emitsOpenProgramList() {
         runBlocking {
             val viewModel = MovitTrainViewModel()
             val effectDeferred = async {
@@ -87,8 +87,188 @@ class MovitTrainStateTest {
                 }
             }
             yield()
-            viewModel.onEvent(MovitTrainEvent.StartWorkoutClicked)
-            assertEquals(MovitTrainEffect.OpenProgramList, effectDeferred.await())
+            viewModel.onEvent(
+                MovitTrainEvent.StartSession(
+                    TrainWorkoutLaunchUi(
+                        programSlug = "missing",
+                        programId = "",
+                        weekNumber = 1,
+                        dayNumber = 1,
+                        plannedWorkoutId = "",
+                    ),
+                ),
+            )
+            assertEquals(
+                MovitTrainEffect.OpenProgramWorkout(
+                    TrainWorkoutLaunchUi(
+                        programSlug = "missing",
+                        programId = "",
+                        weekNumber = 1,
+                        dayNumber = 1,
+                        plannedWorkoutId = "",
+                    ),
+                ),
+                effectDeferred.await(),
+            )
+        }
+    }
+
+    @Test
+    fun startSession_emitsOpenProgramWorkoutForTarget() {
+        runBlocking {
+            val target = TrainWorkoutLaunchUi(
+                programSlug = "prog-full-body",
+                programId = "prog-full-body",
+                weekNumber = 2,
+                dayNumber = 3,
+                plannedWorkoutId = "pw-mobility",
+            )
+            val viewModel = MovitTrainViewModel(repository = FakeTrainRepository())
+            val effectDeferred = async {
+                withTimeout(5_000) {
+                    viewModel.effects.first()
+                }
+            }
+            yield()
+            viewModel.onEvent(MovitTrainEvent.StartSession(target))
+            assertEquals(MovitTrainEffect.OpenProgramWorkout(target), effectDeferred.await())
+        }
+    }
+
+    @Test
+    fun sessionBStart_emitsMobilityTarget() {
+        runBlocking {
+            val mobilityTarget = TrainWorkoutLaunchUi(
+                programSlug = "full-body-4-week",
+                programId = "prog-full-body",
+                weekNumber = 2,
+                dayNumber = 3,
+                plannedWorkoutId = "pw-mobility",
+            )
+            val viewModel = MovitTrainViewModel(repository = FakeTrainRepository())
+            viewModel.load(isRefresh = true)
+            val effectDeferred = async {
+                withTimeout(5_000) {
+                    viewModel.effects.first()
+                }
+            }
+            yield()
+            viewModel.onEvent(MovitTrainEvent.StartSession(mobilityTarget))
+            assertEquals(MovitTrainEffect.OpenProgramWorkout(mobilityTarget), effectDeferred.await())
+        }
+    }
+
+    @Test
+    fun cachedThenFresh_preservesWeekAndDaySelection() {
+        runBlocking {
+            val freshWeek = MovitTrainPreviewData.week.copy(
+                title = "Week 2 refreshed",
+                days = MovitTrainPreviewData.week.days.map { day ->
+                    if (day.dayNumber == "4") {
+                        day.copy(detail = day.detail?.copy(title = "Lower Body Strength (fresh)"))
+                    } else {
+                        day
+                    }
+                },
+            )
+            val fresh = MovitTrainPreviewData.activePlan.copy(
+                week = freshWeek,
+                weekOptions = listOf(
+                    MovitTrainPreviewData.week1,
+                    freshWeek,
+                    MovitTrainPreviewData.week3,
+                ),
+            )
+            val viewModel = MovitTrainViewModel(
+                repository = FakeTrainRepository(
+                    dashboard = MovitTrainPreviewData.activePlan,
+                    freshDashboard = fresh,
+                ),
+            )
+            viewModel.load(isRefresh = true)
+            viewModel.onEvent(MovitTrainEvent.DayClicked(3))
+            assertEquals(3, viewModel.state.value.selectedDayIndex)
+            assertEquals(4, viewModel.state.value.selectedDayNumber)
+
+            viewModel.load(isRefresh = true)
+
+            assertEquals(1, viewModel.state.value.selectedWeekIndex)
+            assertEquals(2, viewModel.state.value.selectedWeekNumber)
+            assertEquals(3, viewModel.state.value.selectedDayIndex)
+            assertEquals(4, viewModel.state.value.selectedDayNumber)
+            assertEquals(
+                "Lower Body Strength (fresh)",
+                viewModel.state.value.dashboard?.weekOptions?.get(1)?.days?.get(3)?.detail?.title,
+            )
+        }
+    }
+
+    @Test
+    fun missedDayAction_emitsCatchUpTarget() {
+        runBlocking {
+            val missedDetail = TrainWeekDayDetailUi(
+                title = "Upper Body",
+                infoLabel = "4 exercises",
+                statusLabel = "Missed",
+                isWorkout = true,
+                actionLabel = "Start catch-up",
+                launchTarget = TrainWorkoutLaunchUi(
+                    programSlug = "prog-1",
+                    programId = "prog-1",
+                    weekNumber = 1,
+                    dayNumber = 1,
+                    plannedWorkoutId = "pw-missed",
+                ),
+            )
+            val viewModel = MovitTrainViewModel()
+            val effectDeferred = async {
+                withTimeout(5_000) {
+                    viewModel.effects.first()
+                }
+            }
+            yield()
+            viewModel.onEvent(MovitTrainEvent.DayActionClicked(missedDetail))
+            assertEquals(
+                MovitTrainEffect.OpenProgramWorkout(missedDetail.launchTarget!!),
+                effectDeferred.await(),
+            )
+        }
+    }
+
+    @Test
+    fun viewReport_emitsOpenReportForDayTarget() {
+        runBlocking {
+            val viewModel = MovitTrainViewModel(
+                repository = FakeTrainRepository(MovitTrainPreviewData.completedToday),
+            )
+            viewModel.load()
+            val effectDeferred = async {
+                withTimeout(5_000) {
+                    viewModel.effects.first()
+                }
+            }
+            yield()
+            viewModel.onEvent(
+                MovitTrainEvent.ViewReport(
+                    TrainReportTargetUi.ProgramDay(
+                        programId = "prog-full-body",
+                        weekNumber = 2,
+                        dayNumber = 3,
+                        plannedWorkoutId = "pw-lower",
+                    ),
+                ),
+            )
+            assertEquals(
+                MovitTrainEffect.OpenReport(
+                    TrainReportTargetUi.ProgramDay(
+                        programId = "prog-full-body",
+                        weekNumber = 2,
+                        dayNumber = 3,
+                        plannedWorkoutId = "pw-lower",
+                    ),
+                ),
+                effectDeferred.await(),
+            )
         }
     }
 
@@ -175,11 +355,20 @@ class MovitTrainStateTest {
                 }
             }
             yield()
-            viewModel.onEvent(MovitTrainEvent.ViewReportClicked)
+            viewModel.onEvent(
+                MovitTrainEvent.ViewReport(
+                    TrainReportTargetUi.ProgramWeek(
+                        programId = "prog-full-body",
+                        weekNumber = 2,
+                    ),
+                ),
+            )
             assertEquals(
-                MovitTrainEffect.OpenWeeklyReport(
-                    programId = "prog-full-body",
-                    weekNumber = 2,
+                MovitTrainEffect.OpenReport(
+                    TrainReportTargetUi.ProgramWeek(
+                        programId = "prog-full-body",
+                        weekNumber = 2,
+                    ),
                 ),
                 effectDeferred.await(),
             )

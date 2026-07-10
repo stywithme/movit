@@ -33,6 +33,17 @@ class ProgramDetailViewModelTest {
         metadata = listOf("4 weeks", "3 days/week"),
     )
 
+    private val editableDayPlan = EffectivePlanPayloadDto(
+        userProgramId = "up-1",
+        programId = "program-starter",
+        weekNumber = 1,
+        dayNumber = 2,
+        plannedWorkouts = listOf(
+            editableWorkout("session-am", "Morning session", "ex-squat", 0),
+            editableWorkout("session-pm", "Evening session", "ex-hinge", 1),
+        ),
+    )
+
     @Test
     fun load_mapsStatsWithoutFakeWeeks() = kotlinx.coroutines.runBlocking {
         val viewModel = ProgramDetailViewModel(
@@ -46,7 +57,8 @@ class ProgramDetailViewModelTest {
         assertEquals(0, state.weeks.size)
         assertEquals(4, state.stats.size)
         assertEquals("4 weeks", state.stats.first().value)
-        assertTrue(state.edit.daySessions.isNotEmpty())
+        assertTrue(state.edit.daySessions.isEmpty())
+        assertEquals(false, state.edit.isDayPlanAvailable)
     }
 
     @Test
@@ -94,21 +106,41 @@ class ProgramDetailViewModelTest {
 
         val key = viewModel.startProgramAndGetSessionKey()
         assertNull(key)
-        assertEquals("Enrollment failed.", viewModel.state.value.errorMessage)
+        assertEquals("Enrollment failed.", viewModel.state.value.actionMessage)
+        assertEquals("Starter Strength Plan", viewModel.state.value.title)
     }
 
     @Test
-    fun editSave_incrementsCustomEdits() = kotlinx.coroutines.runBlocking {
+    fun initialWeekNumber_honoredAfterLoad() = kotlinx.coroutines.runBlocking {
+        val viewModel = ProgramDetailViewModel(
+            programId = "program-starter",
+            initialWeekNumber = 3,
+            repository = FakeProgramLibraryRepository(sampleProgram),
+        )
+        viewModel.load()
+        kotlinx.coroutines.delay(50)
+
+        assertEquals(3, viewModel.state.value.selectedWeekNumber)
+    }
+
+    @Test
+    fun editSave_withoutEffectivePlan_isBlocked() = kotlinx.coroutines.runBlocking {
+        var saveCalls = 0
         val viewModel = ProgramDetailViewModel(
             programId = "program-starter",
             repository = FakeProgramLibraryRepository(sampleProgram),
+            saveDayCustomizations = { _, _, _, _ ->
+                saveCalls += 1
+                AppResult.Success(Unit)
+            },
         )
         viewModel.load()
         viewModel.onSaveEdit()
         delay(50)
 
-        assertEquals(1, viewModel.state.value.enrollment.customEditsCount)
-        assertTrue(viewModel.state.value.edit.showSaveToast)
+        assertEquals(0, saveCalls)
+        assertEquals(0, viewModel.state.value.enrollment.customEditsCount)
+        assertTrue(viewModel.state.value.edit.saveError != null)
     }
 
     @Test
@@ -116,6 +148,8 @@ class ProgramDetailViewModelTest {
         val viewModel = ProgramDetailViewModel(
             programId = "program-starter",
             repository = FakeProgramLibraryRepository(sampleProgram),
+            loadEffectiveDayPlan = { _, _, _ -> AppResult.Success(editableDayPlan) },
+            activeUserProgramIdProvider = { "up-1" },
         )
         viewModel.load()
         val firstId = viewModel.state.value.edit.daySessions.first().id
@@ -133,6 +167,8 @@ class ProgramDetailViewModelTest {
         val viewModel = ProgramDetailViewModel(
             programId = "program-starter",
             repository = FakeProgramLibraryRepository(sampleProgram),
+            loadEffectiveDayPlan = { _, _, _ -> AppResult.Success(editableDayPlan) },
+            activeUserProgramIdProvider = { "up-1" },
             saveDayCustomizations = { _, week, day, request ->
                 savedRequest = request
                 assertEquals(1, week)
@@ -270,6 +306,27 @@ class ProgramDetailViewModelTest {
 
         assertEquals(WeekOfflineStatus.Ready, viewModel.state.value.weekOffline.status)
     }
+
+    private fun editableWorkout(
+        id: String,
+        title: String,
+        exerciseId: String,
+        sortOrder: Int,
+    ): EffectivePlannedWorkoutDto = EffectivePlannedWorkoutDto(
+        id = id,
+        name = mapOf("en" to title),
+        sortOrder = sortOrder,
+        items = listOf(
+            EffectivePlanItemDto(
+                id = exerciseId,
+                type = "exercise",
+                exerciseId = exerciseId,
+                sets = 3,
+                targetReps = 10,
+                restBetweenSetsMs = 60_000,
+            ),
+        ),
+    )
 }
 
 private class FakeProgramLibraryRepository(

@@ -63,6 +63,7 @@ internal val movitArabicStrings: Map<String, String> = mapOf(
     "program_flow_report_hero_eyebrow" to "ملخص الأسبوع %1\$d",
     "program_flow_report_hero_title" to "أسبوع رائع!",
     "program_flow_report_hero_subtitle" to "أكملت %1\$d من %2\$d جلسات مخططة.",
+    "report_detail_done" to "تم",
     "report_detail_preview_personal_best" to "أفضل إنجاز شخصي",
     "report_detail_preview_insight_title" to "ثبات ممتاز في العمق",
     "report_detail_preview_insight_message" to "خط الورك بقي تحت مستوى الركبة في 95% من التكرارات.",
@@ -74,4 +75,7 @@ internal val movitArabicStrings: Map<String, String> = mapOf(
     "report_detail_preview_tip2_title" to "حافظ على محاذاة الركبتين مع أصابع القدم",
     "report_detail_preview_tip2_message" to "انحراف طفيف للداخل في المجموعة 4 — ركّز على دفع الركبتين للخارج.",
     "report_detail_preview_fatigue_message" to "انخفض الأداء 6% من المجموعة 1 إلى 4 — ضمن المعدل الطبيعي.",
+    "program_edit_day_sync_required" to "اتصل بالإنترنت وزامن هذا اليوم قبل تعديله.",
+    "program_edit_enroll_first" to "ابدأ هذا البرنامج أولاً قبل تعديل جلساته.",
+    "program_edit_day_no_sessions" to "لا توجد جلسات قابلة للتعديل في هذا اليوم.",
 )

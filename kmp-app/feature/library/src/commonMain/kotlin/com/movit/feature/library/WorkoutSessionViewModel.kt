@@ -2,8 +2,12 @@ package com.movit.feature.library
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.movit.core.data.MovitData
 import com.movit.core.data.cache.CacheState
+import com.movit.core.data.repository.TrainingConfigEnsureResult
+import com.movit.core.data.repository.ensureAll
 import com.movit.shared.AppResult
+import com.movit.shared.training.MovitTrainingAnalytics
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -13,7 +17,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
@@ -30,6 +36,11 @@ data class WorkoutSessionUiState(
     val showCatchUpDialog: Boolean = false,
     val catchUpDialogDismissed: Boolean = false,
     val snackbarMessageKey: String? = null,
+    val saveError: String? = null,
+    val launchReadiness: LaunchReadiness = LaunchReadiness.LoadingContent,
+    /** P1.4 — open run for Resume primary / Restart secondary. */
+    val openRun: WorkoutRunOpenState? = null,
+    val showRestartConfirm: Boolean = false,
 )
 
 class WorkoutSessionViewModel(
@@ -41,6 +52,7 @@ class WorkoutSessionViewModel(
     private val _effects = MutableSharedFlow<WorkoutSessionEffect>(extraBufferCapacity = 1)
     val effects: SharedFlow<WorkoutSessionEffect> = _effects.asSharedFlow()
     private val persistScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private var preflightJob: Job? = null
 
     fun onEvent(event: WorkoutSessionEvent) {
         when (event) {
@@ -76,9 +88,27 @@ class WorkoutSessionViewModel(
             WorkoutSessionEvent.SwitchEditToSwap -> switchEditSheetToSwap()
             is WorkoutSessionEvent.SelectPlannedWorkout -> handlePlannedWorkoutSelected(event.plannedWorkoutId)
             WorkoutSessionEvent.StartWorkoutClicked -> handleStartWorkoutClicked()
+            WorkoutSessionEvent.ResumeWorkoutClicked -> handleResumeWorkoutClicked()
+            WorkoutSessionEvent.RestartWorkoutClicked -> {
+                _state.update { it.copy(showRestartConfirm = true) }
+            }
+            WorkoutSessionEvent.ConfirmRestartWorkout -> {
+                _state.update { it.copy(showRestartConfirm = false, openRun = null) }
+                WorkoutRunStore.abandonActiveForWorkout(workoutId)
+                handleStartWorkoutClicked()
+            }
+            WorkoutSessionEvent.DismissRestartConfirm -> {
+                _state.update { it.copy(showRestartConfirm = false) }
+            }
             is WorkoutSessionEvent.OpenExerciseClicked -> handleOpenExerciseClicked(event.exerciseId)
             WorkoutSessionEvent.RetryClicked -> {
-                viewModelScope.launch { load() }
+                when (_state.value.launchReadiness) {
+                    is LaunchReadiness.Blocked -> runPreflight(_state.value.session)
+                    else -> viewModelScope.launch { load() }
+                }
+            }
+            WorkoutSessionEvent.RetrySaveClicked -> {
+                viewModelScope.launch { persistSession() }
             }
             WorkoutSessionEvent.SnackbarConsumed -> consumeSnackbar()
         }
@@ -96,15 +126,142 @@ class WorkoutSessionViewModel(
         _effects.tryEmit(WorkoutSessionEffect.SwitchWorkout(sessionKey))
     }
 
+    private fun handleResumeWorkoutClicked() {
+        val open = _state.value.openRun ?: return handleStartWorkoutClicked()
+        val readiness = _state.value.launchReadiness
+        when (readiness) {
+            is LaunchReadiness.Blocked -> {
+                runPreflight(_state.value.session)
+                return
+            }
+            LaunchReadiness.Ready,
+            LaunchReadiness.OfflineReady,
+            -> Unit
+            LaunchReadiness.Launching,
+            LaunchReadiness.Preparing,
+            LaunchReadiness.LoadingContent,
+            -> return
+        }
+        val session = _state.value.session
+        val existing = WorkoutRunStore.activeForWorkout(workoutId)
+        // Prefer durable saved snapshot when resuming — never remap cursor onto a fresh plan.
+        val snapshot = resolveResumeSnapshot(
+            durableSnapshot = existing?.snapshot,
+            sessionSnapshot = session?.toRunSnapshot(),
+        ) ?: return
+        if (!snapshot.isStartable) {
+            applyLaunchReadiness(LaunchReadiness.Blocked("session_exercise_target_invalid"))
+            return
+        }
+        val progress = existing?.progress ?: WorkoutRunProgressCursor(
+            exerciseIndex = open.exerciseIndex,
+            currentSet = open.currentSet,
+            blockPhase = open.blockPhase,
+            exerciseSlug = open.exerciseSlug,
+        )
+        if (!resumeProgressMatchesSnapshot(progress, snapshot)) {
+            WorkoutRunStore.abandonActiveForWorkout(workoutId)
+            _state.update {
+                it.copy(
+                    openRun = null,
+                    showRestartConfirm = true,
+                    launchReadiness = LaunchReadiness.Blocked("session_resume_plan_mismatch"),
+                )
+            }
+            return
+        }
+        val launch = WorkoutLaunchCoordinator.peek(workoutId)
+        WorkoutRunStore.start(
+            workoutId = workoutId,
+            snapshot = snapshot,
+            source = WorkoutRunSource.Resume,
+            returnTarget = launch?.returnTarget
+                ?: existing?.returnTarget
+                ?: ReturnTarget.WorkoutSession(workoutId),
+            doneTarget = launch?.let { WorkoutLaunchCoordinator.doneTargetFor(it) }
+                ?: existing?.doneTarget
+                ?: if (session?.context != null) ReturnTarget.Train else ReturnTarget.Explore,
+            runId = WorkoutRunId(open.runId),
+            progress = progress,
+        )
+        session?.let { WorkoutFlowCache.put(workoutId, WorkoutFlowMapper.fromSession(it)) }
+        val exerciseId = snapshot.exercises.getOrNull(progress.exerciseIndex)?.exerciseId
+            ?: session?.let { WorkoutFlowMapper.fromSession(it).exercises.firstOrNull()?.id }
+            ?: return
+        if (!_state.value.launchReadiness.canStart()) return
+        _state.update { it.copy(launchReadiness = LaunchReadiness.Launching) }
+        val emitted = _effects.tryEmit(WorkoutSessionEffect.ResumeWorkout(exerciseId, open.runId))
+        if (!emitted) {
+            _state.update {
+                it.copy(
+                    launchReadiness = if (readiness is LaunchReadiness.OfflineReady) {
+                        LaunchReadiness.OfflineReady
+                    } else {
+                        LaunchReadiness.Ready
+                    },
+                )
+            }
+        }
+    }
+
     private fun handleStartWorkoutClicked() {
+        if (_state.value.isSaving) return
+        val readiness = _state.value.launchReadiness
+        when (readiness) {
+            is LaunchReadiness.Blocked -> {
+                runPreflight(_state.value.session)
+                return
+            }
+            LaunchReadiness.Ready,
+            LaunchReadiness.OfflineReady,
+            -> Unit
+            LaunchReadiness.Launching,
+            LaunchReadiness.Preparing,
+            LaunchReadiness.LoadingContent,
+            -> return
+        }
         val session = _state.value.session ?: return
+        val snapshot = session.toRunSnapshot()
+        if (!snapshot.isStartable) {
+            applyLaunchReadiness(LaunchReadiness.Blocked("session_exercise_target_invalid"))
+            return
+        }
         val firstExercise = WorkoutFlowMapper.fromSession(session).exercises.firstOrNull() ?: return
-        _effects.tryEmit(WorkoutSessionEffect.StartWorkout(firstExercise.id))
+        // Prevent double launch until effect is consumed / navigation fails.
+        if (!_state.value.launchReadiness.canStart()) return
+        _state.update { it.copy(launchReadiness = LaunchReadiness.Launching) }
+        MovitTrainingAnalytics.trackStartWorkout(
+            workoutId = workoutId,
+            source = session.context?.programId ?: "explore",
+        )
+        val emitted = _effects.tryEmit(WorkoutSessionEffect.StartWorkout(firstExercise.id))
+        if (!emitted) {
+            _state.update {
+                it.copy(
+                    launchReadiness = if (readiness is LaunchReadiness.OfflineReady) {
+                        LaunchReadiness.OfflineReady
+                    } else {
+                        LaunchReadiness.Ready
+                    },
+                )
+            }
+        }
+    }
+
+    /** Called by route if navigation fails after Launching. */
+    fun resetLaunchReadinessAfterFailedNav() {
+        if (_state.value.launchReadiness !is LaunchReadiness.Launching) return
+        runPreflight(_state.value.session)
     }
 
     private fun handleOpenExerciseClicked(exerciseId: String) {
         if (_state.value.session != null) {
-            _effects.tryEmit(WorkoutSessionEffect.OpenExercise(exerciseId))
+            _effects.tryEmit(
+                WorkoutSessionEffect.OpenExercise(
+                    exerciseId = exerciseId,
+                    runDraftId = workoutId,
+                ),
+            )
         }
     }
 
@@ -119,12 +276,25 @@ class WorkoutSessionViewModel(
 
     suspend fun load() {
         if (_state.value.session == null) {
-            _state.update { it.copy(isLoading = true, errorMessage = null) }
+            _state.update {
+                it.copy(
+                    isLoading = true,
+                    errorMessage = null,
+                    launchReadiness = LaunchReadiness.LoadingContent,
+                )
+            }
         }
         repository.observeSession(workoutId).collect { cacheState ->
             when (cacheState) {
-                is CacheState.Cached -> applyLoadedSession(cacheState.value.recalculated())
-                is CacheState.Fresh -> applyLoadedSession(cacheState.value.recalculated())
+                is CacheState.Cached -> {
+                    if (shouldPreserveLocalSessionDraft()) return@collect
+                    applyLoadedSession(cacheState.value.recalculated())
+                }
+                is CacheState.Fresh -> {
+                    // Ignore Fresh while editing / saving / launching so in-progress edits aren't clobbered.
+                    if (shouldPreserveLocalSessionDraft()) return@collect
+                    applyLoadedSession(cacheState.value.recalculated())
+                }
                 is CacheState.Error -> _state.update {
                     it.copy(isLoading = false, errorMessage = cacheState.message)
                 }
@@ -133,16 +303,102 @@ class WorkoutSessionViewModel(
         }
     }
 
-    fun toggleEditMode() {
-        val wasEditing = _state.value.isEditMode
-        if (wasEditing) {
-            persistScope.launch { persistSession() }
+    private fun shouldPreserveLocalSessionDraft(): Boolean {
+        val current = _state.value
+        if (current.session == null) return false
+        return current.isEditMode ||
+            current.isSaving ||
+            current.launchReadiness is LaunchReadiness.Launching ||
+            current.activeSheet != null
+    }
+
+    private fun runPreflight(session: WorkoutSessionUi?) {
+        if (session == null) {
+            _state.update { it.copy(launchReadiness = LaunchReadiness.LoadingContent) }
+            return
         }
-        _state.update {
-            it.copy(
-                isEditMode = !wasEditing,
-                activeSheet = null,
+        preflightJob?.cancel()
+        // Preview / JVM host tests have no Main dispatcher; keep Start usable without viewModelScope.
+        if (!MovitData.isInstalled) {
+            applyLaunchReadiness(LaunchReadiness.Ready)
+            return
+        }
+        // ponytail: Default scope — preflight must not require Main (host tests / early init).
+        preflightJob = persistScope.launch {
+            applyLaunchReadiness(LaunchReadiness.Preparing)
+            applyLaunchReadiness(evaluateLaunchReadiness(session))
+        }
+    }
+
+    private fun applyLaunchReadiness(readiness: LaunchReadiness) {
+        _state.update { current ->
+            if (current.launchReadiness is LaunchReadiness.Launching) current
+            else current.copy(launchReadiness = readiness)
+        }
+    }
+
+    private suspend fun evaluateLaunchReadiness(session: WorkoutSessionUi): LaunchReadiness {
+        val config = WorkoutFlowMapper.fromSession(session)
+        val slugs = config.exercises.map { it.exerciseSlug }.filter { it.isNotBlank() }
+        if (slugs.isEmpty()) {
+            return LaunchReadiness.Blocked("session_no_exercises")
+        }
+        val snapshot = session.toRunSnapshot()
+        if (!snapshot.isStartable) {
+            return LaunchReadiness.Blocked("session_exercise_target_invalid")
+        }
+        if (!MovitData.isInstalled) {
+            // Preview / JVM tests without MovitData — allow Start so UI/tests can exercise launch.
+            return LaunchReadiness.Ready
+        }
+        MovitData.bootstrapLocalCaches()
+        val repo = MovitData.trainingConfig
+        val allCached = slugs.all { slug ->
+            repo.resolveAvailableSlug(slug, normalizeTrainingSlug(slug)) != null ||
+                repo.supports(slug) ||
+                repo.supports(normalizeTrainingSlug(slug))
+        }
+        if (allCached) {
+            val online = MovitData.requirePlatform().isNetworkAvailable()
+            return if (online) LaunchReadiness.Ready else LaunchReadiness.OfflineReady
+        }
+        val online = MovitData.requirePlatform().isNetworkAvailable()
+        if (!online) {
+            // Partial cache is not OfflineReady — every exercise config must be local.
+            return resolveOfflineConfigReadiness(allConfigsAvailable = false)
+        }
+        val templateId = workoutId.takeUnless { it.startsWith("session:") }
+        val ensured = runCatching {
+            repo.ensureAll(
+                slugs = slugs,
+                workoutTemplateId = templateId,
             )
+        }.getOrElse {
+            TrainingConfigEnsureResult.Unavailable(
+                TrainingConfigEnsureResult.Unavailable.Reason.NotFoundAfterSync,
+            )
+        }
+        return when (ensured) {
+            TrainingConfigEnsureResult.Available -> LaunchReadiness.Ready
+            is TrainingConfigEnsureResult.Unavailable -> when (ensured.reason) {
+                TrainingConfigEnsureResult.Unavailable.Reason.Offline ->
+                    LaunchReadiness.Blocked("training_config_offline_unavailable")
+                TrainingConfigEnsureResult.Unavailable.Reason.NotFoundAfterSync ->
+                    LaunchReadiness.Blocked("training_config_first_use_online")
+            }
+        }
+    }
+
+
+    fun toggleEditMode() {
+        if (_state.value.isEditMode) {
+            // persistScope: host tests have no Main dispatcher (same as skipWarmup).
+            persistScope.launch {
+                persistSession()
+                _state.update { it.copy(isEditMode = false, activeSheet = null) }
+            }
+        } else {
+            _state.update { it.copy(isEditMode = true, saveError = null) }
         }
     }
 
@@ -223,6 +479,7 @@ class WorkoutSessionViewModel(
                                     name = candidate.name,
                                     category = candidate.subtitle.substringBefore(" ·").ifBlank { block.category },
                                     imageUrl = candidate.imageUrl ?: block.imageUrl,
+                                    variantIndex = 0,
                                 )
                             } else {
                                 block
@@ -255,15 +512,15 @@ class WorkoutSessionViewModel(
                 sets = 3,
                 reps = 12,
                 restSeconds = 60,
-                setsLabel = "3 × 12",
-                restLabel = "60s rest",
+                setsLabel = WorkoutSessionFormatting.setsLabel(3, 12, null),
+                restLabel = WorkoutSessionFormatting.restLabel(60),
                 phaseRole = section.phaseRole,
             )
             val updatedSections = session.sections.toMutableList()
             updatedSections[sectionIndex] = section.copy(items = section.items + newExercise)
             session.copy(sections = updatedSections).recalculated()
         }
-        dismissSheet()
+        openEditSheet(newId)
     }
 
     fun openEditSheet(exerciseId: String) {
@@ -453,7 +710,12 @@ class WorkoutSessionViewModel(
                 expandedPlannedWorkoutId = selectedId ?: current.expandedPlannedWorkoutId,
                 catchUpPrompt = dayContext.catchUpPrompt,
                 showCatchUpDialog = dayContext.catchUpPrompt != null && !current.catchUpDialogDismissed,
+                openRun = WorkoutRunStore.openStateForWorkout(workoutId),
             )
+        }
+        // Keep content visible; readiness only drives the Start dock.
+        if (_state.value.launchReadiness !is LaunchReadiness.Launching) {
+            runPreflight(session)
         }
     }
 
@@ -494,14 +756,27 @@ class WorkoutSessionViewModel(
 
     private suspend fun persistSession() {
         val session = _state.value.session ?: return
-        if (session.context == null) return
-        _state.update { it.copy(isSaving = true) }
-        when (val result = repository.saveSession(session)) {
-            is AppResult.Success -> _state.update { it.copy(isSaving = false) }
-            is AppResult.Failure -> _state.update {
-                it.copy(isSaving = false, errorMessage = result.message)
+        _state.update { it.copy(isSaving = true, saveError = null) }
+        val result = if (session.context == null) {
+            saveLocalRunDraft(session)
+            AppResult.Success(Unit)
+        } else {
+            repository.saveSession(session)
+        }
+        when (result) {
+            is AppResult.Success -> {
+                _state.update { it.copy(isSaving = false) }
+                runPreflight(_state.value.session)
+            }
+            is AppResult.Failure -> {
+                _state.update { it.copy(isSaving = false, saveError = result.message) }
+                emitSnackbar("session_save_failed")
             }
         }
+    }
+
+    private fun saveLocalRunDraft(session: WorkoutSessionUi) {
+        WorkoutFlowCache.put(workoutId, WorkoutFlowMapper.fromSession(session))
     }
 
     private fun updateSession(transform: (WorkoutSessionUi) -> WorkoutSessionUi) {
@@ -549,4 +824,45 @@ class WorkoutSessionViewModel(
             },
         )
     }
+
+    override fun onCleared() {
+        preflightJob?.cancel()
+        persistScope.cancel()
+        super.onCleared()
+    }
+}
+
+/** OfflineReady only when every exercise config is local — never for a partial cache. */
+internal fun resolveOfflineConfigReadiness(allConfigsAvailable: Boolean): LaunchReadiness =
+    if (allConfigsAvailable) {
+        LaunchReadiness.OfflineReady
+    } else {
+        LaunchReadiness.Blocked("training_config_offline_unavailable")
+    }
+
+/**
+ * Prefer the durable open-run snapshot when resuming so a refreshed plan cannot
+ * silently remap the saved cursor onto a different exercise order.
+ */
+internal fun resolveResumeSnapshot(
+    durableSnapshot: WorkoutRunSnapshot?,
+    sessionSnapshot: WorkoutRunSnapshot?,
+): WorkoutRunSnapshot? = when {
+    durableSnapshot != null && durableSnapshot.isStartable -> durableSnapshot
+    sessionSnapshot != null && sessionSnapshot.isStartable -> sessionSnapshot
+    durableSnapshot != null -> durableSnapshot
+    else -> sessionSnapshot
+}
+
+/** Index↔slug must match; blank slug (legacy cursor) is accepted when the index is in range. */
+internal fun resumeProgressMatchesSnapshot(
+    progress: WorkoutRunProgressCursor,
+    snapshot: WorkoutRunSnapshot,
+): Boolean {
+    val exercises = snapshot.exercises
+    if (exercises.isEmpty()) return false
+    val atIndex = exercises.getOrNull(progress.exerciseIndex) ?: return false
+    if (progress.exerciseSlug.isBlank()) return true
+    return normalizeTrainingSlug(atIndex.slug) == normalizeTrainingSlug(progress.exerciseSlug) ||
+        atIndex.exerciseId == progress.exerciseSlug
 }

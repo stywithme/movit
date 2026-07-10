@@ -13,8 +13,10 @@ data class WorkoutFlowExerciseUi(
     val reps: Int?,
     val durationSeconds: Int?,
     val restSeconds: Int = 60,
+    val restAfterExerciseSeconds: Int = 0,
     val phaseRole: String? = "MAIN",
     val variantIndex: Int = 0,
+    val weightPerSetKg: List<Float>? = null,
 )
 
 data class WorkoutFlowConfigUi(
@@ -122,6 +124,7 @@ sealed interface TrainingStartAction {
         val plannedWorkout: PlannedWorkoutLaunch? = null,
         val startExerciseIndex: Int = 0,
         val poseVariantIndex: Int = 0,
+        val runId: String? = null,
     ) : TrainingStartAction
 }
 
@@ -163,9 +166,12 @@ object WorkoutFlowCache {
 internal object WorkoutFlowMapper {
     fun fromSession(session: WorkoutSessionUi, restBetweenSetsSeconds: Int = 60): WorkoutFlowConfigUi {
         val exercises = session.sectionsForTraining()
-            .flatMap { it.items }
-            .filterIsInstance<WorkoutSessionBlockUi.Exercise>()
-            .map { block ->
+            .flatMap { section ->
+                section.items.filterIsInstance<WorkoutSessionBlockUi.Exercise>().map { block ->
+                    block to section.phaseRole
+                }
+            }
+            .map { (block, sectionRole) ->
                 WorkoutFlowExerciseUi(
                     id = block.id,
                     exerciseSlug = block.exerciseSlug,
@@ -174,7 +180,12 @@ internal object WorkoutFlowMapper {
                     reps = block.reps,
                     durationSeconds = block.durationSeconds,
                     restSeconds = block.restSeconds,
-                    phaseRole = block.phaseRole,
+                    restAfterExerciseSeconds = block.restAfterExerciseSeconds.takeIf { it > 0 }
+                        ?: (block.restAfterExerciseMs / 1000).toInt(),
+                    phaseRole = block.phaseRole.ifBlank { sectionRole },
+                    variantIndex = block.variantIndex,
+                    weightPerSetKg = block.weightPerSetKg
+                        ?: block.weightKg?.let { listOf(it) },
                 )
             }
         return WorkoutFlowConfigUi(

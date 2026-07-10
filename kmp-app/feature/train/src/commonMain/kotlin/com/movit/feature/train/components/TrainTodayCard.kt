@@ -20,7 +20,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -44,12 +43,12 @@ import com.movit.designsystem.components.MovitMetricRow
 import com.movit.designsystem.components.MovitSectionHeader
 import com.movit.designsystem.components.MovitSessionCard
 import com.movit.designsystem.components.MovitSessionItem
-import com.movit.designsystem.components.MovitStepper
 import com.movit.designsystem.movitColors
 import com.movit.feature.train.TrainDashboardStatus
 import com.movit.feature.train.TrainDashboardUi
 import com.movit.feature.train.TrainTodayWorkoutUi
 import com.movit.feature.train.TrainWorkoutItemUi
+import com.movit.feature.train.TrainWorkoutLaunchUi
 import com.movit.feature.train.TrainWorkoutSessionUi
 import com.movit.resources.movitText
 
@@ -58,6 +57,7 @@ fun TrainTodayCard(
     dashboard: TrainDashboardUi,
     onPrimaryAction: () -> Unit,
     modifier: Modifier = Modifier,
+    onSessionAction: ((TrainWorkoutLaunchUi) -> Unit)? = null,
     onViewJourney: (() -> Unit)? = null,
     onWhatsNext: (() -> Unit)? = null,
 ) {
@@ -89,22 +89,20 @@ fun TrainTodayCard(
                 )
             }
             else -> {
+                PrimaryWorkoutCta(
+                    status = dashboard.status,
+                    today = today,
+                    onPrimaryAction = onPrimaryAction,
+                )
                 SessionList(
                     sessions = today.sessions,
-                    status = dashboard.status,
-                    onPrimaryAction = onPrimaryAction,
+                    onSessionAction = onSessionAction,
                 )
                 if (dashboard.status == TrainDashboardStatus.CompletedToday) {
                     MovitBanner(
                         title = movitText("train_day_complete"),
                         message = movitText("train_day_complete_summary", today.subtitle, today.durationLabel),
                         variant = MovitBannerVariant.Success,
-                    )
-                    MovitButton(
-                        text = movitText("train_view_day_summary"),
-                        onClick = onPrimaryAction,
-                        variant = MovitButtonVariant.Text,
-                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
             }
@@ -113,18 +111,44 @@ fun TrainTodayCard(
 }
 
 @Composable
+private fun PrimaryWorkoutCta(
+    status: TrainDashboardStatus,
+    today: TrainTodayWorkoutUi,
+    onPrimaryAction: () -> Unit,
+) {
+    if (status == TrainDashboardStatus.CompletedToday) {
+        MovitButton(
+            text = today.primaryActionLabel,
+            onClick = onPrimaryAction,
+            modifier = Modifier.fillMaxWidth(),
+            variant = MovitButtonVariant.Filled,
+            leadingIcon = Icons.Default.PlayArrow,
+        )
+        return
+    }
+    if (today.primaryLaunchTarget != null || status == TrainDashboardStatus.ActivePlan) {
+        val startA11y = movitText("train_a11y_start_workout")
+        MovitButton(
+            text = today.primaryActionLabel,
+            onClick = onPrimaryAction,
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = startA11y },
+            leadingIcon = Icons.Default.PlayArrow,
+        )
+    }
+}
+
+@Composable
 private fun SessionList(
     sessions: List<TrainWorkoutSessionUi>,
-    status: TrainDashboardStatus,
-    onPrimaryAction: () -> Unit,
+    onSessionAction: ((TrainWorkoutLaunchUi) -> Unit)?,
 ) {
     val defaultExpanded = sessions.indexOfFirst { !it.isCompleted }.takeIf { it >= 0 } ?: 0
     var expandedIndex by remember(sessions) { mutableIntStateOf(defaultExpanded) }
-    val setsState = remember { mutableStateMapOf<String, Int>() }
 
     Column(verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm)) {
         sessions.forEachIndexed { index, session ->
-            val sessionKey = session.title
             val sessionSubtitle = "${session.subtitle} · ${session.durationLabel}"
             MovitSessionCard(
                 title = session.title,
@@ -150,24 +174,14 @@ private fun SessionList(
                 ),
                 actionContentDescription = movitText("train_a11y_session_start", session.title),
                 thumbnailContentDescription = movitText("train_a11y_session_thumbnail", session.title),
-                actionLabel = movitText("train_start_session"),
-                onActionClick = if (!session.isCompleted) onPrimaryAction else null,
+                actionLabel = session.actionLabel,
+                onActionClick = session.launchTarget?.let { target ->
+                    { onSessionAction?.invoke(target) }
+                },
                 footerNote = if (session.isCompleted) {
                     movitText("train_form_footer_steady", 88)
                 } else {
                     null
-                },
-                itemTrailing = { itemIndex, item ->
-                    if (!item.isRest && status == TrainDashboardStatus.ActivePlan) {
-                        val key = "$sessionKey-${item.title}"
-                        val sets = setsState.getOrPut(key) { parseSets(item.subtitle) }
-                        MovitStepper(
-                            value = sets,
-                            onDecrement = { setsState[key] = (sets - 1).coerceAtLeast(1) },
-                            onIncrement = { setsState[key] = sets + 1 },
-                            minValue = 1,
-                        )
-                    }
                 },
             )
         }
@@ -327,11 +341,6 @@ private fun TrainWorkoutItemUi.toSessionItem(): MovitSessionItem = MovitSessionI
     subtitle = subtitle,
     isRest = isRest,
 )
-
-private fun parseSets(subtitle: String): Int {
-    val match = Regex("(\\d+)\\s*sets", RegexOption.IGNORE_CASE).find(subtitle)
-    return match?.groupValues?.get(1)?.toIntOrNull() ?: 3
-}
 
 @Composable
 private fun sectionTitle(status: TrainDashboardStatus, today: TrainTodayWorkoutUi): String = when (status) {

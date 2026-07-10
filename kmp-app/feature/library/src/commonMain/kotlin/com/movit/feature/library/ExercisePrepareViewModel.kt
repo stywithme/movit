@@ -14,12 +14,8 @@ import kotlinx.coroutines.flow.update
 import com.movit.core.data.MovitData
 import com.movit.core.data.repository.TrainingConfigEnsureResult
 import com.movit.core.data.repository.ensure
+import com.movit.core.training.session.TrainingFlowItem
 import kotlinx.coroutines.launch
-
-enum class ExercisePrepareMode {
-    Prepare,
-    Rest,
-}
 
 data class ExercisePrepareUi(
     val id: String,
@@ -45,7 +41,8 @@ data class ExercisePrepareUi(
 
 data class ExercisePrepareUiState(
     val isLoading: Boolean = false,
-    val mode: ExercisePrepareMode = ExercisePrepareMode.Prepare,
+    val phase: ExercisePreparePhase = ExercisePreparePhase.Prepare,
+    val launchMode: ExercisePrepareMode = ExercisePrepareMode.SoloStart,
     val exercise: ExercisePrepareUi? = null,
     val upNextExercise: ExercisePrepareUi? = null,
     val restSeconds: Int = 30,
@@ -53,29 +50,43 @@ data class ExercisePrepareUiState(
     val errorMessage: String? = null,
     val isEnsuringConfig: Boolean = false,
     val trainingConfigUnavailableMessage: String? = null,
+    val isLaunching: Boolean = false,
 ) {
+    /** Alias for older call sites/tests during Prepare/Rest rename. */
+    val mode: ExercisePreparePhase get() = phase
+
     val displayExercise: ExercisePrepareUi?
-        get() = when (mode) {
-            ExercisePrepareMode.Prepare -> exercise
-            ExercisePrepareMode.Rest -> upNextExercise ?: exercise
+        get() = when (phase) {
+            ExercisePreparePhase.Prepare -> exercise
+            ExercisePreparePhase.Rest -> upNextExercise ?: exercise
         }
 
     val headerProgressPercent: Int
-        get() = when (mode) {
-            ExercisePrepareMode.Prepare -> exercise?.sessionProgressPercent ?: 20
-            ExercisePrepareMode.Rest -> 40
+        get() = when (phase) {
+            ExercisePreparePhase.Prepare -> exercise?.sessionProgressPercent ?: 20
+            ExercisePreparePhase.Rest -> 40
         }
+
+    val isPreviewOnly: Boolean
+        get() = launchMode is ExercisePrepareMode.WorkoutPreview
 }
 
 class ExercisePrepareViewModel(
     private val exerciseId: String,
     private val workoutId: String? = null,
-    private val initialMode: ExercisePrepareMode = ExercisePrepareMode.Prepare,
+    private val launchMode: ExercisePrepareMode = ExercisePrepareMode.SoloStart,
+    private val initialPhase: ExercisePreparePhase = ExercisePreparePhase.Prepare,
     private val initialRestSeconds: Int? = null,
     private val upNextExerciseId: String? = null,
     private val repository: LibraryRepository = defaultLibraryRepository(),
 ) : ViewModel() {
-    private val _state = MutableStateFlow(ExercisePrepareUiState(isLoading = true))
+    private val _state = MutableStateFlow(
+        ExercisePrepareUiState(
+            isLoading = true,
+            launchMode = launchMode,
+            phase = initialPhase,
+        ),
+    )
     val state: StateFlow<ExercisePrepareUiState> = _state.asStateFlow()
     private val _effects = MutableSharedFlow<ExercisePrepareEffect>(extraBufferCapacity = 1)
     val effects: SharedFlow<ExercisePrepareEffect> = _effects.asSharedFlow()
@@ -128,7 +139,7 @@ class ExercisePrepareViewModel(
             _state.update {
                 it.copy(
                     isLoading = false,
-                    mode = initialMode,
+                    phase = initialPhase,
                     exercise = exercise,
                     upNextExercise = upNext,
                     restSeconds = restSeconds,
@@ -145,14 +156,20 @@ class ExercisePrepareViewModel(
                 ),
                 workoutId = workoutId,
             )
-            if (initialMode == ExercisePrepareMode.Rest) {
+            // Preflight on enter — Start stays cache-only.
+            if (initialPhase == ExercisePreparePhase.Prepare &&
+                launchMode !is ExercisePrepareMode.WorkoutPreview
+            ) {
+                preflightConfig(slug = configSlug, workoutTemplateId = workoutId)
+            }
+            if (initialPhase == ExercisePreparePhase.Rest) {
                 startRestTimer()
             }
         }
     }
 
     fun enterRestMode() {
-        _state.update { it.copy(mode = ExercisePrepareMode.Rest, isRestPaused = false) }
+        _state.update { it.copy(phase = ExercisePreparePhase.Rest, isRestPaused = false) }
         startRestTimer()
     }
 
@@ -170,7 +187,7 @@ class ExercisePrepareViewModel(
         if (!enableRestTicker) return
         restTimerJob?.cancel()
         restTimerJob = viewModelScope.launch {
-            while (_state.value.mode == ExercisePrepareMode.Rest) {
+            while (_state.value.phase == ExercisePreparePhase.Rest) {
                 delay(REST_TICK_MS)
                 _state.update { current -> applyRestSecondTick(current) }
             }
@@ -186,7 +203,12 @@ class ExercisePrepareViewModel(
     }
 
     fun requestTrainingStart(workoutId: String? = null) {
-        if (_state.value.isEnsuringConfig) return
+        if (_state.value.isEnsuringConfig || _state.value.isLaunching) return
+        // Preview must not start training or change workout start index.
+        if (launchMode is ExercisePrepareMode.WorkoutPreview) {
+            _effects.tryEmit(ExercisePrepareEffect.ReturnToWorkoutSession)
+            return
+        }
         val exercise = _state.value.displayExercise ?: return
         viewModelScope.launch {
             val slug = exercise.legacyFileName.ifBlank { exercise.exerciseSlug }
@@ -200,53 +222,23 @@ class ExercisePrepareViewModel(
                 snapshot = cacheSnapshot,
                 workoutId = workoutId,
             )
-            _state.update {
-                it.copy(
-                    isEnsuringConfig = true,
-                    trainingConfigUnavailableMessage = null,
-                )
-            }
-            val ensured = runCatching {
-                ensureTrainingConfig(
-                    slug = slug,
-                    workoutTemplateId = workoutId,
-                )
-            }.getOrElse {
-                TrainingConfigEnsureResult.Unavailable(
-                    TrainingConfigEnsureResult.Unavailable.Reason.NotFoundAfterSync,
-                )
-            }
-            val resolvedSnapshot = inspectTrainingConfigCache(
-                slug = slug,
-                exerciseId = exercise.id,
-                exerciseName = exercise.name,
-            )
-            if (ensured is TrainingConfigEnsureResult.Unavailable) {
-                val message = when (ensured.reason) {
-                    TrainingConfigEnsureResult.Unavailable.Reason.Offline ->
-                        "training_config_offline_unavailable"
-                    TrainingConfigEnsureResult.Unavailable.Reason.NotFoundAfterSync ->
-                        "training_config_first_use_online"
-                }
-                _state.update {
-                    it.copy(
-                        isEnsuringConfig = false,
-                        trainingConfigUnavailableMessage = message,
-                    )
-                }
-                logTrainingConfigCache(
-                    context = "start_blocked",
-                    snapshot = resolvedSnapshot,
-                    workoutId = workoutId,
-                    extra = "reason=${ensured.reason}",
-                )
-                return@launch
-            }
-            val reps = exercise.reps.filter { it.isDigit() }.toIntOrNull() ?: 12
+            _state.update { it.copy(isLaunching = true, trainingConfigUnavailableMessage = null) }
+            // Cache-only Start — no network ensure here (P1.1).
+            val lockStartIndex = launchMode is ExercisePrepareMode.WorkoutFirstExercise
+            val runRecord = workoutId?.let { WorkoutRunStore.activeForWorkout(it) }
+            val startIndex = runRecord?.progress?.exerciseIndex?.takeIf { it > 0 } ?: 0
             val flowConfig = workoutId?.let { WorkoutFlowCache.get(it) }
-            val progress = workoutId?.let { WorkoutRunProgressStore.read(it) }
-            val startIndex = progress?.exerciseIndex ?: 0
-            val flowItems = flowConfig?.toTrainingFlowItems(startIndex)
+            val flowItems = when {
+                runRecord != null && runRecord.snapshot.blocks.isNotEmpty() ->
+                    runRecord.snapshot.toTrainingFlowItems(startIndex)
+                flowConfig != null && lockStartIndex -> flowConfig.toTrainingFlowItems(startIndex)
+                else -> flowConfig?.toTrainingFlowItems(startIndex)
+            }
+            // Prefer flow target; never invent 12 when reps are missing.
+            val reps = (flowItems?.firstOrNull() as? TrainingFlowItem.Exercise)
+                ?.targetReps
+                ?: exercise.reps.filter { it.isDigit() }.toIntOrNull()
+                ?: 0
             val action = resolveTrainingStart(
                 slug = slug,
                 exerciseName = exercise.name,
@@ -255,17 +247,18 @@ class ExercisePrepareViewModel(
                 flowItems = flowItems,
                 startExerciseIndex = startIndex,
                 exerciseId = exercise.id,
+                lockStartIndex = lockStartIndex,
             )
             if (action == null) {
                 _state.update {
                     it.copy(
-                        isEnsuringConfig = false,
+                        isLaunching = false,
                         trainingConfigUnavailableMessage = "training_config_first_use_online",
                     )
                 }
                 logTrainingConfigCache(
                     context = "start_blocked",
-                    snapshot = resolvedSnapshot,
+                    snapshot = cacheSnapshot,
                     workoutId = workoutId,
                     extra = "reason=no_cached_config",
                 )
@@ -273,13 +266,13 @@ class ExercisePrepareViewModel(
             }
             _state.update {
                 it.copy(
-                    isEnsuringConfig = false,
+                    isLaunching = false,
                     trainingConfigUnavailableMessage = null,
                 )
             }
             logTrainingConfigCache(
                 context = "start_launching",
-                snapshot = resolvedSnapshot,
+                snapshot = cacheSnapshot,
                 workoutId = workoutId,
                 extra = "launchSlug=${(action as? TrainingStartAction.KmpLive)?.slug}",
             )
@@ -329,6 +322,30 @@ class ExercisePrepareViewModel(
     private fun prepareLanguage(): String =
         if (MovitData.isInstalled) MovitData.requirePlatform().preferredLanguage() else "en"
 
+    private suspend fun preflightConfig(slug: String, workoutTemplateId: String?) {
+        _state.update { it.copy(isEnsuringConfig = true, trainingConfigUnavailableMessage = null) }
+        val ensured = runCatching {
+            ensureTrainingConfig(slug = slug, workoutTemplateId = workoutTemplateId)
+        }.getOrElse {
+            TrainingConfigEnsureResult.Unavailable(
+                TrainingConfigEnsureResult.Unavailable.Reason.NotFoundAfterSync,
+            )
+        }
+        if (ensured is TrainingConfigEnsureResult.Unavailable) {
+            val message = when (ensured.reason) {
+                TrainingConfigEnsureResult.Unavailable.Reason.Offline ->
+                    "training_config_offline_unavailable"
+                TrainingConfigEnsureResult.Unavailable.Reason.NotFoundAfterSync ->
+                    "training_config_first_use_online"
+            }
+            _state.update {
+                it.copy(isEnsuringConfig = false, trainingConfigUnavailableMessage = message)
+            }
+        } else {
+            _state.update { it.copy(isEnsuringConfig = false, trainingConfigUnavailableMessage = null) }
+        }
+    }
+
     private suspend fun ensureTrainingConfig(
         slug: String,
         workoutTemplateId: String?,
@@ -343,12 +360,11 @@ class ExercisePrepareViewModel(
             workoutTemplateId = workoutTemplateId,
         )
     }
-
 }
 
 internal fun transitionRestToPrepare(state: ExercisePrepareUiState): ExercisePrepareUiState =
     state.copy(
-        mode = ExercisePrepareMode.Prepare,
+        phase = ExercisePreparePhase.Prepare,
         exercise = state.upNextExercise ?: state.exercise,
         upNextExercise = null,
         isRestPaused = false,
@@ -372,7 +388,7 @@ internal fun formatRestTimer(seconds: Int): String {
 }
 
 internal fun applyRestSecondTick(state: ExercisePrepareUiState): ExercisePrepareUiState {
-    if (state.mode != ExercisePrepareMode.Rest || state.isRestPaused) return state
+    if (state.phase != ExercisePreparePhase.Rest || state.isRestPaused) return state
     return when {
         state.restSeconds <= 1 -> transitionRestToPrepare(state)
         else -> state.copy(restSeconds = state.restSeconds - 1)

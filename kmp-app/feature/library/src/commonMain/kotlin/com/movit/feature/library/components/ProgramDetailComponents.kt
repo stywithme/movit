@@ -61,8 +61,6 @@ import com.movit.feature.library.ProgramDayStatus
 import com.movit.feature.library.ProgramDayUi
 import com.movit.feature.library.ProgramDetailCardUi
 import com.movit.feature.library.ProgramEditExerciseUi
-import com.movit.feature.library.ProgramEditReason
-import com.movit.feature.library.ProgramEditScope
 import com.movit.feature.library.ProgramEditSessionUi
 import com.movit.feature.library.ProgramEditUiState
 import com.movit.feature.library.ProgramEnrollmentUi
@@ -689,10 +687,6 @@ private fun ProgramDetailInfoCard(
 @Composable
 fun ProgramEditPanel(
     edit: ProgramEditUiState,
-    onReasonSelected: (ProgramEditReason) -> Unit,
-    onScopeSelected: (ProgramEditScope) -> Unit,
-    onWeeklyTargetChange: (Int) -> Unit,
-    onPauseToggle: () -> Unit,
     onSessionMove: (sessionId: String, direction: Int) -> Unit,
     onExerciseParamChange: (
         sessionId: String,
@@ -713,26 +707,12 @@ fun ProgramEditPanel(
         verticalArrangement = Arrangement.spacedBy(MovitSpacing.lg),
     ) {
         MovitSectionHeader(
-            title = movitText("program_edit_why_title"),
-            subtitle = movitText("program_edit_customize"),
+            title = movitText("program_edit_customize"),
+            subtitle = movitText("program_edit_note"),
             actionLabel = movitText("program_save"),
             onActionClick = onSave,
+            enabled = edit.isDayPlanAvailable && edit.isDirty && !edit.isSaving,
         )
-        Surface(
-            shape = RoundedCornerShape(MovitRadius.lg),
-            color = MaterialTheme.movitColors.limeTint,
-            border = androidx.compose.foundation.BorderStroke(
-                1.dp,
-                MaterialTheme.movitColors.success.copy(alpha = 0.35f),
-            ),
-        ) {
-            Text(
-                text = movitText("program_edit_note"),
-                modifier = Modifier.padding(MovitSpacing.md),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.movitColors.textSecondary,
-            )
-        }
         if (edit.showSaveToast) {
             Surface(
                 shape = RoundedCornerShape(MovitRadius.lg),
@@ -748,23 +728,29 @@ fun ProgramEditPanel(
                 }
             }
         }
-        ProgramReasonGrid(selected = edit.selectedReason, onSelected = onReasonSelected)
-        MovitSectionHeader(title = movitText("program_scope_title"), subtitle = movitText("program_scope_sub"))
-        ProgramScopeList(selected = edit.selectedScope, onSelected = onScopeSelected)
-        ProgramImpactCard(edit = edit)
-        ProgramSettingsStack(
-            edit = edit,
-            onWeeklyTargetChange = onWeeklyTargetChange,
-            onPauseToggle = onPauseToggle,
-        )
-        ProgramEditDaySection(
-            edit = edit,
-            onSessionMove = onSessionMove,
-            onExerciseParamChange = onExerciseParamChange,
-            onRemoveSession = onRemoveSession,
-            onRemoveExercise = onRemoveExercise,
-            onResetDay = onResetDay,
-        )
+        if (edit.isDayPlanAvailable) {
+            ProgramImpactCard(edit = edit)
+            ProgramEditDaySection(
+                edit = edit,
+                onSessionMove = onSessionMove,
+                onExerciseParamChange = onExerciseParamChange,
+                onRemoveSession = onRemoveSession,
+                onRemoveExercise = onRemoveExercise,
+                onResetDay = onResetDay,
+            )
+        } else {
+            Surface(
+                shape = RoundedCornerShape(MovitRadius.lg),
+                color = MaterialTheme.colorScheme.errorContainer,
+            ) {
+                Text(
+                    text = movitText(edit.dayPlanErrorKey ?: "program_edit_day_sync_required"),
+                    modifier = Modifier.padding(MovitSpacing.md),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                )
+            }
+        }
         edit.saveError?.let { message ->
             Surface(
                 shape = RoundedCornerShape(MovitRadius.lg),
@@ -784,89 +770,6 @@ fun ProgramEditPanel(
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.movitColors.textTertiary,
             )
-        }
-    }
-}
-
-@Composable
-private fun ProgramReasonGrid(
-    selected: ProgramEditReason,
-    onSelected: (ProgramEditReason) -> Unit,
-) {
-    val reasons = listOf(
-        ProgramEditReason.ScheduleChanged to movitText("program_reason_schedule"),
-        ProgramEditReason.EquipmentMissing to movitText("program_reason_equipment"),
-        ProgramEditReason.TooEasyHard to movitText("program_reason_intensity"),
-        ProgramEditReason.InjuryDiscomfort to movitText("program_reason_injury"),
-    )
-    Column(verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm)) {
-        reasons.chunked(2).forEach { row ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
-            ) {
-                row.forEach { (reason, title) ->
-                    val active = reason == selected
-                    MovitCard(
-                        modifier = Modifier.weight(1f),
-                        variant = if (active) MovitCardVariant.Outlined else MovitCardVariant.Filled,
-                        onClick = { onSelected(reason) },
-                    ) {
-                        Text(text = title, fontWeight = FontWeight.W800, style = MaterialTheme.typography.bodySmall)
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ProgramScopeList(
-    selected: ProgramEditScope,
-    onSelected: (ProgramEditScope) -> Unit,
-) {
-    val scopes = listOf(
-        ProgramEditScope.PlanSettings to movitText("program_scope_plan"),
-        ProgramEditScope.WeekCalendar to movitText("program_scope_week"),
-        ProgramEditScope.DaySessions to movitText("program_scope_day"),
-        ProgramEditScope.ExerciseTargets to movitText("program_scope_exercise"),
-    )
-    Column(verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm)) {
-        scopes.forEachIndexed { index, (scope, title) ->
-            val active = scope == selected
-            MovitCard(
-                variant = if (active) MovitCardVariant.Outlined else MovitCardVariant.Filled,
-                onClick = { onSelected(scope) },
-            ) {
-                Row(
-                    modifier = Modifier.padding(MovitSpacing.md),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(MovitSpacing.md),
-                ) {
-                    Surface(
-                        modifier = Modifier.size(34.dp),
-                        shape = RoundedCornerShape(13.dp),
-                        color = if (active) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.movitColors.surface2
-                        },
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = "${index + 1}",
-                                fontWeight = FontWeight.W800,
-                                color = if (active) {
-                                    MaterialTheme.colorScheme.onPrimary
-                                } else {
-                                    MaterialTheme.movitColors.textSecondary
-                                },
-                            )
-                        }
-                    }
-                    Text(text = title, fontWeight = FontWeight.W800, modifier = Modifier.weight(1f))
-                }
-            }
         }
     }
 }
@@ -1183,98 +1086,13 @@ private fun ImpactRow(label: String, value: String) {
 }
 
 @Composable
-private fun ProgramSettingsStack(
-    edit: ProgramEditUiState,
-    onWeeklyTargetChange: (Int) -> Unit,
-    onPauseToggle: () -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm)) {
-        SettingRow(
-            label = movitText("program_setting_start_date"),
-            desc = movitText("program_setting_start_date_sub"),
-            value = edit.startDateLabel,
-        )
-        MovitCard(variant = MovitCardVariant.Filled) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(MovitSpacing.md),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(text = movitText("program_setting_weekly"), fontWeight = FontWeight.W800)
-                    Text(
-                        text = movitText("program_setting_weekly_sub"),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.movitColors.textTertiary,
-                    )
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(MovitSpacing.sm), verticalAlignment = Alignment.CenterVertically) {
-                    MovitButton(text = "−", onClick = { onWeeklyTargetChange(-1) }, variant = MovitButtonVariant.Outlined)
-                    Text(text = edit.weeklyTarget.toString(), fontWeight = FontWeight.W800)
-                    MovitButton(text = "+", onClick = { onWeeklyTargetChange(1) }, variant = MovitButtonVariant.Outlined)
-                }
-            }
-        }
-        MovitCard(variant = MovitCardVariant.Filled, onClick = onPauseToggle) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(MovitSpacing.md),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(text = movitText("program_setting_pause"), fontWeight = FontWeight.W800)
-                    Text(
-                        text = movitText("program_setting_pause_sub"),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.movitColors.textTertiary,
-                    )
-                }
-                MovitTag(
-                    text = if (edit.pauseCalendar) movitText("program_paused") else movitText("program_active"),
-                    variant = if (edit.pauseCalendar) MovitTagVariant.Blue else MovitTagVariant.Lime,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SettingRow(label: String, desc: String, value: String) {
-    MovitCard(variant = MovitCardVariant.Filled) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(MovitSpacing.md),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = label, fontWeight = FontWeight.W800)
-                Text(text = desc, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.movitColors.textTertiary)
-            }
-            Surface(
-                shape = RoundedCornerShape(MovitRadius.full),
-                color = MaterialTheme.movitColors.surface2,
-            ) {
-                Text(
-                    text = value,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                    fontWeight = FontWeight.W800,
-                    style = MaterialTheme.typography.labelMedium,
-                )
-            }
-        }
-    }
-}
-
-@Composable
 fun ProgramStartDock(
     title: String,
     subtitle: String,
     ctaLabel: String,
     onStart: () -> Unit,
     modifier: Modifier = Modifier,
+    isLoading: Boolean = false,
 ) {
     val dockA11y = movitText("program_a11y_start_dock", title, subtitle)
     MovitCard(
@@ -1297,7 +1115,12 @@ fun ProgramStartDock(
                     color = MaterialTheme.movitColors.textTertiary,
                 )
             }
-            MovitButton(text = ctaLabel, onClick = onStart, variant = MovitButtonVariant.Filled)
+            MovitButton(
+                text = if (isLoading) movitText("program_starting") else ctaLabel,
+                onClick = onStart,
+                variant = MovitButtonVariant.Filled,
+                enabled = !isLoading,
+            )
         }
     }
 }

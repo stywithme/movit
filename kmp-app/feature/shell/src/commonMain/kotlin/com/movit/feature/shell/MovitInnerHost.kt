@@ -10,9 +10,15 @@ import com.movit.feature.account.MovitProfileRoute
 import com.movit.feature.account.MovitProfileViewModel
 import com.movit.feature.library.ExercisePrepareRoute
 import com.movit.feature.library.ExercisesLibraryRoute
+import com.movit.feature.library.LaunchSource
+import com.movit.feature.library.ReturnTarget
 import com.movit.feature.library.WorkoutFlowCache
-import com.movit.feature.library.WorkoutRunPostNav
-import com.movit.feature.library.WorkoutRunProgressStore
+import com.movit.feature.library.WorkoutLaunchCoordinator
+import com.movit.feature.library.WorkoutLaunchRequest
+import com.movit.feature.library.WorkoutRunFinishNav
+import com.movit.feature.library.WorkoutRunStore
+import com.movit.feature.library.WorkoutSessionKeys
+import com.movit.feature.library.resolveWorkoutRunFinish
 import com.movit.feature.library.ProgramDetailRoute
 import com.movit.feature.library.ProgramListRoute
 import com.movit.feature.library.WeeklyReportEffect
@@ -50,7 +56,12 @@ fun MovitInnerHost(
         MovitInnerRoute.WorkoutsLibrary -> {
             WorkoutsLibraryRoute(
                 onBack = onBack,
-                onItemClick = { onNavigate(MovitInnerRoute.WorkoutSession(it)) },
+                onItemClick = { workoutId ->
+                    WorkoutLaunchCoordinator.remember(
+                        WorkoutLaunchCoordinator.fromExploreWorkout(workoutId),
+                    )
+                    onNavigate(MovitInnerRoute.WorkoutSession(workoutId))
+                },
                 modifier = modifier,
             )
         }
@@ -87,9 +98,17 @@ fun MovitInnerHost(
                 initialWeekNumber = route.initialWeekNumber,
                 onBack = onBack,
                 onStartSession = { sessionKey ->
+                    rememberProgramWorkoutLaunch(
+                        sessionKey = sessionKey,
+                        priorSource = LaunchSource.Program,
+                    )
                     onNavigate(MovitInnerRoute.WorkoutSession(sessionKey))
                 },
                 onOpenDaySession = { sessionKey ->
+                    rememberProgramWorkoutLaunch(
+                        sessionKey = sessionKey,
+                        priorSource = LaunchSource.Program,
+                    )
                     onNavigate(MovitInnerRoute.WorkoutSession(sessionKey))
                 },
                 onViewWeeklyReport = { weekNumber ->
@@ -107,26 +126,40 @@ fun MovitInnerHost(
             WorkoutSessionRoute(
                 workoutId = route.workoutId,
                 onBack = onBack,
-                onExerciseClick = {
-                    onNavigate(
-                        MovitInnerRoute.ExercisePrepare(
-                            exerciseId = it,
-                            workoutId = route.workoutId,
-                        ),
-                    )
-                },
-                onStartWorkout = { exerciseId ->
+                onExerciseClick = { exerciseId, runDraftId ->
                     onNavigate(
                         MovitInnerRoute.ExercisePrepare(
                             exerciseId = exerciseId,
                             workoutId = route.workoutId,
+                            prepareMode = com.movit.feature.library.ExercisePrepareModeCodec.PREVIEW,
+                            runId = runDraftId,
+                        ),
+                    )
+                },
+                onStartWorkout = { exerciseId, runId ->
+                    onNavigate(
+                        MovitInnerRoute.ExercisePrepare(
+                            exerciseId = exerciseId,
+                            workoutId = route.workoutId,
+                            prepareMode = com.movit.feature.library.ExercisePrepareModeCodec.WORKOUT_FIRST,
+                            runId = runId,
                         ),
                     )
                 },
                 onSwitchWorkout = { sessionKey ->
+                    rememberProgramWorkoutLaunch(
+                        sessionKey = sessionKey,
+                        priorSource = WorkoutLaunchCoordinator.peek(route.workoutId)?.source
+                            ?: LaunchSource.Program,
+                    )
                     onNavigate(MovitInnerRoute.WorkoutSession(sessionKey))
                 },
                 onOpenCatchUpDay = { sessionKey ->
+                    rememberProgramWorkoutLaunch(
+                        sessionKey = sessionKey,
+                        priorSource = WorkoutLaunchCoordinator.peek(route.workoutId)?.source
+                            ?: LaunchSource.Train,
+                    )
                     onNavigate(MovitInnerRoute.WorkoutSession(sessionKey))
                 },
                 onSnackbar = { key ->
@@ -151,6 +184,7 @@ fun MovitInnerHost(
                     flowItems = route.flowItems,
                     startExerciseIndex = route.startExerciseIndex,
                     poseVariantIndex = route.poseVariantIndex,
+                    runId = route.runId,
                     uploadContext = resolveTrainingUploadContext(route),
                     plannedWorkout = route.plannedWorkout?.let { planned ->
                         PlannedWorkoutContext(
@@ -163,16 +197,29 @@ fun MovitInnerHost(
                 ),
                 onBack = onBack,
                 onFinish = { isWorkoutFlowComplete ->
+                    if (isWorkoutFlowComplete) {
+                        // Report navigation replaces the journey; Finish is a no-op for complete runs.
+                        return@TrainingSessionRoute
+                    }
                     handleWorkoutTrainingFinish(
                         workoutId = route.workoutId,
-                        completedExerciseIndex = route.startExerciseIndex,
-                        isWorkoutFlowComplete = isWorkoutFlowComplete,
+                        isWorkoutFlowComplete = false,
                         onNavigate = onNavigate,
                         onBack = onBack,
                     )
                 },
                 onViewReport = { reportId ->
-                    onNavigate(MovitInnerRoute.ReportDetail(reportId))
+                    val run = route.runId?.let { WorkoutRunStore.get(it) }
+                    onShellEvent(
+                        MovitAppShellEvent.ReplaceWorkoutJourneyWithReport(
+                            reportId = reportId,
+                            returnTarget = run?.returnTarget,
+                            doneTarget = run?.doneTarget,
+                        ),
+                    )
+                },
+                onExitWorkoutJourney = {
+                    onShellEvent(MovitAppShellEvent.ExitWorkoutJourney)
                 },
                 modifier = modifier,
             )
@@ -182,6 +229,7 @@ fun MovitInnerHost(
                 exerciseId = route.exerciseId,
                 workoutId = route.workoutId,
                 prepareMode = route.prepareMode,
+                runId = route.runId,
                 restSeconds = route.restSeconds,
                 upNextExerciseId = route.upNextExerciseId,
                 onBack = onBack,
@@ -199,7 +247,30 @@ fun MovitInnerHost(
         is MovitInnerRoute.ReportDetail -> {
             ReportDetailRoute(
                 reportId = route.reportId,
-                onBack = onBack,
+                onBack = {
+                    when (route.returnTarget) {
+                        ReturnTarget.Train,
+                        ReturnTarget.Explore,
+                        is ReturnTarget.ProgramDetail,
+                        -> onShellEvent(
+                            MovitAppShellEvent.NavigateReportReturn(
+                                target = route.returnTarget,
+                                clearInner = true,
+                            ),
+                        )
+                        is ReturnTarget.WorkoutSession,
+                        null,
+                        -> onBack()
+                    }
+                },
+                onDone = {
+                    onShellEvent(
+                        MovitAppShellEvent.NavigateReportReturn(
+                            target = route.doneTarget ?: route.returnTarget ?: ReturnTarget.Explore,
+                            clearInner = true,
+                        ),
+                    )
+                },
                 onEffect = { effect ->
                     when (effect) {
                         is ReportDetailEffect.ShareRequested,
@@ -276,18 +347,60 @@ fun MovitInnerHost(
     }
 }
 
+private fun rememberProgramWorkoutLaunch(
+    sessionKey: String,
+    priorSource: LaunchSource,
+): String {
+    val parsed = WorkoutSessionKeys.parse(sessionKey)
+    val request: WorkoutLaunchRequest = when {
+        parsed != null && priorSource == LaunchSource.Train ->
+            WorkoutLaunchCoordinator.fromTrainProgramDay(
+                programId = parsed.programId,
+                weekNumber = parsed.weekNumber,
+                dayNumber = parsed.dayNumber,
+                plannedWorkoutId = parsed.plannedWorkoutId,
+            )
+        parsed != null && priorSource == LaunchSource.Program ->
+            WorkoutLaunchCoordinator.fromProgramDetail(
+                programId = parsed.programId,
+                weekNumber = parsed.weekNumber,
+                dayNumber = parsed.dayNumber,
+                plannedWorkoutId = parsed.plannedWorkoutId,
+            )
+        parsed != null ->
+            WorkoutLaunchCoordinator.fromSessionKey(
+                sessionWorkoutId = sessionKey,
+                source = priorSource,
+                returnTarget = ReturnTarget.ProgramDetail(
+                    programId = parsed.programId,
+                    weekNumber = parsed.weekNumber,
+                ),
+            )
+        else ->
+            WorkoutLaunchCoordinator.fromSessionKey(
+                sessionWorkoutId = sessionKey,
+                source = priorSource,
+                returnTarget = ReturnTarget.Train,
+            )
+    }
+    return WorkoutLaunchCoordinator.remember(request)
+}
+
 private fun resolveTrainingUploadContext(route: MovitInnerRoute.TrainingSession): WorkoutUploadContext? {
     route.plannedWorkout?.let { planned ->
         return WorkoutUploadContext(
-            workoutGroupId = planned.plannedWorkoutId,
+            workoutGroupId = route.runId ?: planned.plannedWorkoutId,
             context = "program",
         )
     }
     val workoutId = route.workoutId
     if (route.flowItems != null && !workoutId.isNullOrBlank()) {
+        val groupId = route.runId
+            ?: WorkoutRunStore.activeForWorkout(workoutId)?.workoutGroupId
+            ?: WorkoutFlowCache.workoutGroupIdOrNull(workoutId)
+            ?: WorkoutFlowCache.ensureWorkoutGroupId(workoutId)
         return WorkoutUploadContext(
-            workoutGroupId = WorkoutFlowCache.workoutGroupIdOrNull(workoutId)
-                ?: WorkoutFlowCache.ensureWorkoutGroupId(workoutId),
+            workoutGroupId = groupId,
             workoutTemplateId = workoutId,
         )
     }
@@ -296,7 +409,6 @@ private fun resolveTrainingUploadContext(route: MovitInnerRoute.TrainingSession)
 
 private fun handleWorkoutTrainingFinish(
     workoutId: String?,
-    completedExerciseIndex: Int,
     isWorkoutFlowComplete: Boolean,
     onNavigate: (MovitInnerRoute) -> Unit,
     onBack: () -> Unit,
@@ -305,27 +417,10 @@ private fun handleWorkoutTrainingFinish(
         onBack()
         return
     }
-    val config = WorkoutFlowCache.get(workoutId)
-    when (
-        val nav = WorkoutRunProgressStore.onTrainingSessionFinish(
-            workoutId = workoutId,
-            config = config,
-            completedExerciseIndex = completedExerciseIndex,
-            isWorkoutFlowComplete = isWorkoutFlowComplete,
-        )
-    ) {
-        WorkoutRunPostNav.BackToRun,
-        WorkoutRunPostNav.Complete,
+    when (resolveWorkoutRunFinish(workoutId, isWorkoutFlowComplete)) {
+        WorkoutRunFinishNav.BackToSession,
+        WorkoutRunFinishNav.Complete,
         -> onNavigate(MovitInnerRoute.WorkoutSession(workoutId))
-        is WorkoutRunPostNav.Rest -> onNavigate(
-            MovitInnerRoute.ExercisePrepare(
-                exerciseId = nav.restingExerciseId,
-                workoutId = workoutId,
-                prepareMode = "rest",
-                restSeconds = nav.restSeconds,
-                upNextExerciseId = nav.upNextExerciseId,
-            ),
-        )
     }
 }
 
@@ -347,6 +442,7 @@ private fun handleTrainingStart(
                     plannedWorkout = action.plannedWorkout,
                     startExerciseIndex = action.startExerciseIndex,
                     poseVariantIndex = action.poseVariantIndex,
+                    runId = action.runId,
                 ),
             )
         }

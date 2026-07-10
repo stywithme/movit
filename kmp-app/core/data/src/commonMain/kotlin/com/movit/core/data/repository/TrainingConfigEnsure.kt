@@ -78,6 +78,78 @@ suspend fun TrainingConfigRepository.ensure(
     )
 }
 
+/**
+ * Preflight for a whole workout snapshot: prepare configs for every exercise slug.
+ * Uses one template fetch when possible (not per-exercise Start).
+ */
+suspend fun TrainingConfigRepository.ensureAll(
+    slugs: Collection<String>,
+    workoutTemplateId: String? = null,
+    sync: MovitSyncOrchestrator? = null,
+    api: MovitMobileApi? = null,
+    platform: MovitPlatformBindings? = null,
+): TrainingConfigEnsureResult {
+    val normalized = slugs.map { it.trim() }.filter { it.isNotBlank() }.distinct()
+    if (normalized.isEmpty()) return TrainingConfigEnsureResult.Available
+    if (normalized.all { supports(it) }) return TrainingConfigEnsureResult.Available
+
+    val resolvedPlatform = platform ?: MovitData.requirePlatform()
+    val resolvedSync = sync ?: MovitData.sync
+    val resolvedApi = api ?: MovitData.koin().get()
+    val templateId = workoutTemplateId?.sanitizeWorkoutTemplateId()
+
+    if (!resolvedPlatform.isNetworkAvailable()) {
+        val anyCached = normalized.any { supports(it) }
+        return if (anyCached) {
+            // Partial cache is still Offline — callers must require ALL configs for OfflineReady.
+            TrainingConfigEnsureResult.Unavailable(TrainingConfigEnsureResult.Unavailable.Reason.Offline)
+        } else {
+            TrainingConfigEnsureResult.Unavailable(TrainingConfigEnsureResult.Unavailable.Reason.Offline)
+        }
+    }
+
+    if (templateId != null) {
+        fetchAndApplyWorkoutTemplateConfigs(
+            templateId = templateId,
+            api = resolvedApi,
+            platform = resolvedPlatform,
+            repository = this,
+        )
+        if (normalized.all { supports(it) }) return TrainingConfigEnsureResult.Available
+    }
+
+    runSyncAttempt(resolvedSync, forceCheck = true)
+    if (normalized.all { supports(it) }) return TrainingConfigEnsureResult.Available
+
+    if (templateId != null) {
+        fetchAndApplyWorkoutTemplateConfigs(
+            templateId = templateId,
+            api = resolvedApi,
+            platform = resolvedPlatform,
+            repository = this,
+        )
+        if (normalized.all { supports(it) }) return TrainingConfigEnsureResult.Available
+    }
+
+    // Fall back: ensure each missing slug individually (still no full refresh).
+    for (slug in normalized) {
+        if (supports(slug)) continue
+        val one = ensure(
+            slug = slug,
+            workoutTemplateId = workoutTemplateId,
+            sync = resolvedSync,
+            api = resolvedApi,
+            platform = resolvedPlatform,
+        )
+        if (one is TrainingConfigEnsureResult.Unavailable) return one
+    }
+    return if (normalized.all { supports(it) }) {
+        TrainingConfigEnsureResult.Available
+    } else {
+        TrainingConfigEnsureResult.Unavailable(TrainingConfigEnsureResult.Unavailable.Reason.NotFoundAfterSync)
+    }
+}
+
 private suspend fun runSyncAttempt(
     sync: MovitSyncOrchestrator,
     forceCheck: Boolean = false,

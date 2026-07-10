@@ -16,6 +16,18 @@ sealed interface MovitAppShellEvent {
     data class DestinationSelected(val destination: MovitAppDestination) : MovitAppShellEvent
     data class InnerRoutePushed(val route: MovitInnerRoute) : MovitAppShellEvent
     data object InnerRoutePopped : MovitAppShellEvent
+    /** Drop Prepare+Training for the completed run and place ReportDetail as the journey end. */
+    data class ReplaceWorkoutJourneyWithReport(
+        val reportId: String,
+        val returnTarget: com.movit.feature.library.ReturnTarget? = null,
+        val doneTarget: com.movit.feature.library.ReturnTarget? = null,
+    ) : MovitAppShellEvent
+    /** Save and exit / End workout — drop Prepare+Training, keep WorkoutSession (or tab). */
+    data object ExitWorkoutJourney : MovitAppShellEvent
+    data class NavigateReportReturn(
+        val target: com.movit.feature.library.ReturnTarget,
+        val clearInner: Boolean = true,
+    ) : MovitAppShellEvent
     data class ExploreEffectReceived(val effect: MovitExploreEffect) : MovitAppShellEvent
     data class ExploreItemSelected(val itemId: String) : MovitAppShellEvent
     data class HomeEffectReceived(val effect: MovitHomeEffect) : MovitAppShellEvent

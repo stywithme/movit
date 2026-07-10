@@ -345,6 +345,9 @@
     <string name="train_day_complete">اكتمل اليوم!</string>
     <string name="train_day_complete_summary">%1$s · الإجمالي %2$s</string>
     <string name="train_view_day_summary">عرض ملخص اليوم</string>
+    <string name="train_view_day_report">عرض تقرير اليوم</string>
+    <string name="train_start_catch_up">بدء التعويض</string>
+    <string name="train_resume_workout">استئناف التمرين</string>
     <string name="train_form_footer_steady">درجة الأداء %1$d%% · تحكم ثابت</string>
     <string name="train_tomorrow_preview">غداً: %1$s · %2$d تمارين</string>
     <string name="train_whats_next">ما التالي</string>
@@ -402,10 +405,12 @@
     <string name="train_a11y_session_expanded">%1$s، %2$s، موسّع، انقر مرتين للطي</string>
     <string name="train_a11y_session_start">بدء جلسة %1$s</string>
     <string name="train_a11y_session_thumbnail">صورة مصغّرة لـ %1$s</string>
+    <string name="train_a11y_week_day_selected">محدد</string>
 
     <!-- Report detail -->
     <string name="report_detail_loading">جاري تحميل التقرير…</string>
     <string name="report_detail_back">رجوع</string>
+    <string name="report_detail_done">تم</string>
     <string name="report_detail_share">مشاركة</string>
     <string name="report_detail_page_overview">نظرة عامة</string>
     <string name="report_detail_page_form">الأداء</string>
@@ -472,6 +477,8 @@
     <!-- Workout session -->
     <string name="session_back">رجوع</string>
     <string name="session_edit">تعديل</string>
+    <string name="session_customize_run">تخصيص هذه الجلسة</string>
+    <string name="session_save_failed">تعذّر حفظ التغييرات</string>
     <string name="session_done">تم</string>
     <string name="session_add_exercise">إضافة تمرين</string>
     <string name="session_rest">راحة</string>
@@ -481,6 +488,18 @@
     <string name="session_sets">مجموعات</string>
     <string name="session_ready_to_train">جاهز للتدريب</string>
     <string name="session_start">ابدأ</string>
+    <string name="session_cta_preparing">جارٍ التحضير…</string>
+    <string name="session_cta_offline_ready">ابدأ دون اتصال</string>
+    <string name="session_cta_offline_ready_hint">جاهز دون اتصال — الرفع لاحقاً</string>
+    <string name="session_cta_launching">جارٍ البدء…</string>
+    <string name="session_no_exercises">لا توجد تمارين لبدء هذا التمرين.</string>
+    <string name="prepare_preview_hint">معاينة التمرين</string>
+    <string name="prepare_back_to_workout">العودة للتمرين</string>
+    <string name="session_resume">استئناف</string>
+    <string name="session_restart">إعادة البدء</string>
+    <string name="session_restart_confirm_title">إعادة بدء التمرين؟</string>
+    <string name="session_restart_confirm_message">سيُمسح التقدم المحفوظ لهذا التمرين.</string>
+    <string name="session_restart_confirm">إعادة البدء</string>
     <string name="session_summary">%1$d تمارين · %2$s</string>
     <string name="session_editing">تعديل</string>
     <string name="session_saving">حفظ…</string>
@@ -590,6 +609,9 @@
     <string name="program_edit_remove_exercise">إزالة التمرين</string>
     <string name="program_edit_reset_day">إعادة ضبط اليوم</string>
     <string name="program_edit_saving">جاري حفظ نسختك…</string>
+    <string name="program_edit_day_sync_required">اتصل بالإنترنت وزامن هذا اليوم قبل تعديله.</string>
+    <string name="program_edit_enroll_first">ابدأ هذا البرنامج أولاً قبل تعديل جلساته.</string>
+    <string name="program_edit_day_no_sessions">لا توجد جلسات قابلة للتعديل في هذا اليوم.</string>
     <string name="program_impact_sync">حمولة المزامنة</string>
     <string name="program_impact_sync_value">%1$d جلسات</string>
     <string name="program_not_found">البرنامج غير موجود.</string>
@@ -664,6 +686,8 @@
     <string name="prepare_stat_rest">راحة</string>
     <string name="prepare_add_rest">+15</string>
     <string name="prepare_skip_rest">تخطي</string>
+    <string name="training_session_rest_add_time_a11y">إضافة 15 ثانية للراحة</string>
+    <string name="training_session_rest_skip_a11y">تخطي الراحة</string>
     <string name="prepare_training_bridge_unavailable">تدريب الكاميرا غير متاح على هذا الجهاز بعد.</string>
     <string name="prepare_pose_variant">زاوية الكاميرا</string>
     <string name="prepare_a11y_hero_image">صورة معاينة التمرين</string>
@@ -773,6 +797,11 @@
     <string name="training_session_rest_title">راحة</string>
     <string name="training_session_rest_timer">%1$d ث</string>
     <string name="training_session_rest_next">التالي: %1$s</string>
+    <string name="training_session_rest_between_sets">راحة بين المجموعات</string>
+    <string name="training_session_rest_between_exercises">راحة قبل التمرين التالي</string>
+    <string name="training_session_rest_set_progress">المجموعة %1$d من %2$d</string>
+    <string name="training_session_rest_target_reps">الهدف: %1$d تكرار</string>
+    <string name="training_session_rest_target_duration">الهدف: ثبات %1$d ث</string>
     <string name="training_session_complete_title">اكتملت المجموعة</string>
     <string name="training_session_view_report">عرض التقرير</string>
     <string name="training_session_complete_summary">%1$d تكرار · شكل %2$d%%</string>
@@ -787,6 +816,11 @@
     <string name="training_session_resume_prior_message">لديك جلسة سابقة (%1$d عدات) — استئناف أم بدء من جديد؟</string>
     <string name="training_session_resume_prior_continue">استئناف</string>
     <string name="training_session_resume_prior_start_fresh">بدء من جديد</string>
+    <string name="training_session_exit_title">مغادرة التمرين؟</string>
+    <string name="training_session_exit_message">يمكن حفظ تقدمك لاستئنافه لاحقاً.</string>
+    <string name="training_session_exit_continue">متابعة التمرين</string>
+    <string name="training_session_exit_save">حفظ والخروج</string>
+    <string name="training_session_exit_end">إنهاء التمرين</string>
     <string name="training_session_stop">إيقاف</string>
     <string name="training_session_form_label">الشكل</string>
     <string name="training_phase_ready">استعد</string>

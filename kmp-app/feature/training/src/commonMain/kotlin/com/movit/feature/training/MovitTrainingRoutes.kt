@@ -38,6 +38,7 @@ data class TrainingSessionRouteArgs(
   val plannedWorkout: PlannedWorkoutContext? = null,
   val language: String = "en",
   val poseVariantIndex: Int = 0,
+  val runId: String? = null,
 )
 
 @Composable
@@ -74,6 +75,7 @@ fun TrainingSessionRoute(
   onBack: () -> Unit,
   onFinish: (isWorkoutFlowComplete: Boolean) -> Unit,
   onViewReport: (String) -> Unit = {},
+  onExitWorkoutJourney: () -> Unit = onBack,
   modifier: Modifier = Modifier,
 ) {
   val feedbackPorts = rememberTrainingFeedbackPorts(language = args.language)
@@ -83,13 +85,16 @@ fun TrainingSessionRoute(
   val poseModelPort = remember {
     runCatching { MovitData.koin().get<PoseModelTypePort>() }.getOrNull()
   }
-  val viewModel: TrainingSessionViewModel = viewModel {
+  val viewModel: TrainingSessionViewModel = viewModel(
+    key = "training-session-${args.runId ?: args.workoutId ?: args.exerciseSlug}",
+  ) {
     TrainingSessionViewModel(
       exerciseSlug = args.exerciseSlug,
       targetReps = args.targetReps,
       exerciseNameOverride = args.exerciseName,
       language = args.language,
-      sessionId = args.workoutId ?: args.exerciseSlug,
+      sessionId = args.runId ?: args.workoutId ?: args.exerciseSlug,
+      runId = args.runId,
       flowItems = args.flowItems,
       uploadContext = args.uploadContext,
       plannedWorkout = args.plannedWorkout,
@@ -109,6 +114,9 @@ fun TrainingSessionRoute(
   var useFrontCamera by remember { mutableStateOf(true) }
   var debugFps by remember { mutableIntStateOf(0) }
   var previousFlowPhase by remember { mutableStateOf<WorkoutFlowPhase?>(null) }
+  var reportNavigationConsumed by remember(args.runId, args.workoutId, args.exerciseSlug) {
+    mutableStateOf(false)
+  }
   LaunchedEffect(state.workoutFlowPhase) {
     val prev = previousFlowPhase
     previousFlowPhase = state.workoutFlowPhase
@@ -122,15 +130,23 @@ fun TrainingSessionRoute(
   LaunchedEffect(viewModel) {
     viewModel.effects.collect { effect ->
       when (effect) {
-        is TrainingSessionEffect.ViewReport -> onViewReport(effect.reportId)
+        is TrainingSessionEffect.ViewReport -> {
+          if (!reportNavigationConsumed) {
+            reportNavigationConsumed = true
+            onViewReport(effect.reportId)
+          }
+        }
         is TrainingSessionEffect.Finish -> onFinish(effect.isWorkoutFlowComplete)
         TrainingSessionEffect.NavigateBack -> onBack()
+        TrainingSessionEffect.ExitWorkoutJourney -> onExitWorkoutJourney()
       }
     }
   }
+  // One-shot: only auto-open report once per session identity (no report loop on Back).
   LaunchedEffect(state.isComplete, state.reportDetailId) {
     val reportId = state.reportDetailId ?: return@LaunchedEffect
-    if (!state.isComplete) return@LaunchedEffect
+    if (!state.isComplete || reportNavigationConsumed) return@LaunchedEffect
+    reportNavigationConsumed = true
     onViewReport(reportId)
   }
   DisposableEffect(viewModel) {
@@ -157,6 +173,8 @@ fun TrainingSessionRoute(
     onFinish = { viewModel.onEvent(TrainingSessionEvent.FinishClicked) },
     onViewReport = { viewModel.onEvent(TrainingSessionEvent.ViewReportClicked) },
     onSkipRest = { viewModel.onEvent(TrainingSessionEvent.SkipRest) },
+    onToggleRestPause = { viewModel.onEvent(TrainingSessionEvent.ToggleRestPause) },
+    onAddRestTime = { viewModel.onEvent(TrainingSessionEvent.AddRestTime) },
     onFlipCamera = {
       viewModel.onEvent(TrainingSessionEvent.CameraSwitchStarted)
       useFrontCamera = !useFrontCamera
@@ -172,6 +190,9 @@ fun TrainingSessionRoute(
     },
     onResumePriorSession = { viewModel.onEvent(TrainingSessionEvent.ResumePriorSession) },
     onDiscardPriorSession = { viewModel.onEvent(TrainingSessionEvent.DiscardPriorSession) },
+    onExitContinue = { viewModel.onEvent(TrainingSessionEvent.ExitContinue) },
+    onExitSaveAndExit = { viewModel.onEvent(TrainingSessionEvent.ExitSaveAndExit) },
+    onExitEndWorkout = { viewModel.onEvent(TrainingSessionEvent.ExitEndWorkout) },
     debugFps = debugFps.takeIf { isTrainingDebugBuild() },
     cameraSlot = {
       if (state.requiresCamera()) {

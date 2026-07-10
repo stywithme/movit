@@ -53,7 +53,10 @@ fun ReportDetailRoute(
     onBack: () -> Unit,
     onEffect: (ReportDetailEffect) -> Unit = {},
     modifier: Modifier = Modifier,
-    viewModel: ReportDetailViewModel = viewModel { ReportDetailViewModel(reportId) },
+    onDone: (() -> Unit)? = null,
+    viewModel: ReportDetailViewModel = viewModel(key = "report-detail-$reportId") {
+        ReportDetailViewModel(reportId)
+    },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
@@ -88,6 +91,7 @@ fun ReportDetailRoute(
     ReportDetailScreen(
         state = state,
         onBack = onBack,
+        onDone = onDone,
         onPageSelected = { viewModel.onEvent(ReportDetailEvent.PageSelected(it)) },
         onShare = { viewModel.onEvent(ReportDetailEvent.ShareClicked) },
         onExport = { viewModel.onEvent(ReportDetailEvent.ExportClicked) },

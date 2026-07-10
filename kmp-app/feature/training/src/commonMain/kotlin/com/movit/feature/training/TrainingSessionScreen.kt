@@ -36,6 +36,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -65,6 +67,8 @@ fun TrainingSessionScreen(
     onFinish: () -> Unit,
     onViewReport: () -> Unit = {},
     onSkipRest: () -> Unit,
+    onToggleRestPause: () -> Unit = {},
+    onAddRestTime: () -> Unit = {},
     cameraSlot: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     onFlipCamera: (() -> Unit)? = null,
@@ -73,6 +77,9 @@ fun TrainingSessionScreen(
     onApplyTrainingSettings: (TrainingSessionSettingsSelection) -> Unit = {},
     onResumePriorSession: () -> Unit = {},
     onDiscardPriorSession: () -> Unit = {},
+    onExitContinue: () -> Unit = {},
+    onExitSaveAndExit: () -> Unit = {},
+    onExitEndWorkout: () -> Unit = {},
     debugFps: Int? = null,
 ) {
     var showSettingsDialog by remember { mutableStateOf(false) }
@@ -193,7 +200,17 @@ fun TrainingSessionScreen(
                         modifier = Modifier.align(Alignment.TopCenter),
                     )
 
-                    if (state.requiresCamera()) {
+                    val isResting = state.isResting || state.workoutFlowPhase == WorkoutFlowPhase.REST
+                    if (isResting) {
+                        RestControlsDock(
+                            secondsRemaining = state.restSecondsRemaining,
+                            isPaused = state.isRestPaused,
+                            onTogglePause = onToggleRestPause,
+                            onAddTime = onAddRestTime,
+                            onSkip = onSkipRest,
+                            modifier = Modifier.align(Alignment.BottomCenter),
+                        )
+                    } else if (state.requiresCamera()) {
                         TrainingSessionLiveBottomBar(
                             state = state,
                             localizedPhase = localizedPhase,
@@ -244,6 +261,41 @@ fun TrainingSessionScreen(
             dismissButton = {
                 TextButton(onClick = onDiscardPriorSession) {
                     Text(movitText("training_session_resume_prior_start_fresh"))
+                }
+            },
+        )
+    }
+
+    if (state.exitPrompt != null) {
+        val continueA11y = movitText("training_session_exit_continue")
+        val saveA11y = movitText("training_session_exit_save")
+        val endA11y = movitText("training_session_exit_end")
+        AlertDialog(
+            onDismissRequest = onExitContinue,
+            title = { Text(movitText("training_session_exit_title")) },
+            text = { Text(movitText("training_session_exit_message")) },
+            confirmButton = {
+                TextButton(
+                    onClick = onExitContinue,
+                    modifier = Modifier.semantics { contentDescription = continueA11y },
+                ) {
+                    Text(movitText("training_session_exit_continue"))
+                }
+            },
+            dismissButton = {
+                Column {
+                    TextButton(
+                        onClick = onExitSaveAndExit,
+                        modifier = Modifier.semantics { contentDescription = saveA11y },
+                    ) {
+                        Text(movitText("training_session_exit_save"))
+                    }
+                    TextButton(
+                        onClick = onExitEndWorkout,
+                        modifier = Modifier.semantics { contentDescription = endA11y },
+                    ) {
+                        Text(movitText("training_session_exit_end"))
+                    }
                 }
             },
         )
@@ -318,7 +370,14 @@ private fun TrainingSessionStateOverlay(
         if (state.isResting || state.workoutFlowPhase == WorkoutFlowPhase.REST) {
             RestPanel(
                 secondsRemaining = state.restSecondsRemaining,
+                restContext = state.restContext,
                 nextExerciseName = state.nextExerciseName,
+                currentSetNumber = state.currentSetNumber,
+                totalSets = state.totalSets,
+                nextTargetReps = state.restNextTargetReps,
+                nextTargetDurationSeconds = state.restNextTargetDurationSeconds,
+                nextTargetWeightKg = state.restNextTargetWeightKg,
+                previewImageUrl = state.restPreviewImageUrl,
                 tip = state.restTip,
                 modifier = Modifier.align(Alignment.Center),
             )

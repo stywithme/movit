@@ -16,22 +16,46 @@ data class PlannedWorkoutLaunch(
 fun WorkoutFlowConfigUi.toTrainingFlowItems(
     startExerciseIndex: Int = 0,
 ): List<TrainingFlowItem> {
-    val restMs = restBetweenSetsSeconds.coerceAtLeast(0) * 1_000L
+    val defaultRestMs = restBetweenSetsSeconds.coerceAtLeast(0) * 1_000L
     return exercises
         .drop(startExerciseIndex.coerceAtLeast(0))
         .map { exercise ->
-            val exerciseRestMs = exercise.restSeconds.coerceAtLeast(0) * 1_000L
+            val betweenMs = exercise.restSeconds.coerceAtLeast(0) * 1_000L
+            val afterMs = exercise.restAfterExerciseSeconds.coerceAtLeast(0) * 1_000L
+            val isDuration = exercise.durationSeconds != null && exercise.reps == null
             TrainingFlowItem.Exercise(
                 slug = resolveFlowExerciseSlug(exercise),
                 displayName = exercise.name,
                 sets = exercise.sets.coerceAtLeast(1),
-                targetReps = exercise.reps ?: 12,
-                restBetweenSetsMs = exerciseRestMs.takeIf { it > 0 } ?: restMs,
-                restAfterExerciseMs = exerciseRestMs.takeIf { it > 0 } ?: restMs,
+                // No invented targets — missing reps → 0 (same as toRunSnapshot / !isStartable).
+                targetReps = when {
+                    isDuration -> 0
+                    else -> exercise.reps ?: 0
+                },
+                targetDurationSeconds = exercise.durationSeconds.takeIf { isDuration || exercise.reps == null },
+                restBetweenSetsMs = betweenMs.takeIf { it > 0 } ?: defaultRestMs,
+                restAfterExerciseMs = afterMs.takeIf { it > 0 }
+                    ?: betweenMs.takeIf { it > 0 }
+                    ?: defaultRestMs,
                 phaseRole = exercise.phaseRole,
                 poseVariantIndex = exercise.variantIndex,
+                weightPerSetKg = exercise.weightPerSetKg,
             )
         }
+}
+
+/**
+ * Prefer canonical [WorkoutRunSnapshot] when available; falls back to [WorkoutFlowConfigUi].
+ */
+fun resolveTrainingFlowItems(
+    workoutId: String,
+    startExerciseIndex: Int = 0,
+): List<TrainingFlowItem>? {
+    WorkoutRunStore.activeForWorkout(workoutId)?.snapshot?.let { snapshot ->
+        if (!snapshot.isStartable) return null
+        return snapshot.toTrainingFlowItems(startExerciseIndex)
+    }
+    return WorkoutFlowCache.get(workoutId)?.toTrainingFlowItems(startExerciseIndex)
 }
 
 private fun resolveFlowExerciseSlug(exercise: WorkoutFlowExerciseUi): String {

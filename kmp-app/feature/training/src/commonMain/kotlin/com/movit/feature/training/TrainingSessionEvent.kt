@@ -5,6 +5,8 @@ import com.movit.core.training.model.PoseFrame
 sealed interface TrainingSessionEvent {
     data object StartWorkoutExercise : TrainingSessionEvent
     data object SkipRest : TrainingSessionEvent
+    data object ToggleRestPause : TrainingSessionEvent
+    data object AddRestTime : TrainingSessionEvent
     data object StopSession : TrainingSessionEvent
     data class PoseFrameReceived(val frame: PoseFrame?) : TrainingSessionEvent
     data object CameraReady : TrainingSessionEvent
@@ -16,6 +18,9 @@ sealed interface TrainingSessionEvent {
     data class HostBackgrounded(val nowMs: Long? = null) : TrainingSessionEvent
     data class HostForegrounded(val nowMs: Long? = null) : TrainingSessionEvent
     data object BackPressed : TrainingSessionEvent
+    data object ExitContinue : TrainingSessionEvent
+    data object ExitSaveAndExit : TrainingSessionEvent
+    data object ExitEndWorkout : TrainingSessionEvent
     data object FinishClicked : TrainingSessionEvent
     data object ViewReportClicked : TrainingSessionEvent
     /** UX.3: continue from an orphan journal checkpoint. */

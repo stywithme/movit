@@ -16,6 +16,18 @@ class TrainingSessionFlowCoordinatorTest {
     )
 
     @Test
+    fun startAt_resumesMidSet() {
+        val coordinator = TrainingSessionFlowCoordinator(listOf(squat))
+        coordinator.startAt(itemIndex = 0, setNumber = 2)
+
+        val state = coordinator.state.value
+        assertIs<TrainingSessionFlowCoordinator.State.PreExercise>(state)
+        assertEquals(2, state.setNumber)
+        assertEquals(0, coordinator.currentItemIndex())
+        assertEquals(2, coordinator.currentSetIndex())
+    }
+
+    @Test
     fun start_opensPreExerciseForFirstItem() {
         val coordinator = TrainingSessionFlowCoordinator(listOf(squat))
         coordinator.start()
@@ -51,6 +63,19 @@ class TrainingSessionFlowCoordinatorTest {
         val state = coordinator.state.value
         assertIs<TrainingSessionFlowCoordinator.State.PreExercise>(state)
         assertEquals(2, state.setNumber)
+    }
+
+    @Test
+    fun extendRest_addsRemainingTime() {
+        val coordinator = TrainingSessionFlowCoordinator(listOf(squat))
+        coordinator.start()
+        coordinator.markExercising()
+        coordinator.onExerciseCompleted()
+
+        coordinator.extendRest(15_000L)
+        val rest = coordinator.state.value
+        assertIs<TrainingSessionFlowCoordinator.State.Rest>(rest)
+        assertEquals(20_000L, rest.remainingMs)
     }
 
     @Test

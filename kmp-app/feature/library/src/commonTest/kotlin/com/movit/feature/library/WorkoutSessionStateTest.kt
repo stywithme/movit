@@ -142,9 +142,65 @@ class WorkoutSessionStateTest {
             ?: 0
         assertEquals(before + 1, after)
     }
+
+    @Test
+    fun saveFailure_keepsSessionVisibleWithSaveError() {
+        val viewModel = WorkoutSessionViewModel(
+            workoutId = "preview",
+            repository = FailingSaveWorkoutSessionRepository,
+        )
+        kotlinx.coroutines.runBlocking {
+            viewModel.load()
+            viewModel.toggleEditMode()
+            viewModel.deleteExercise("ex-barbell-squat")
+            viewModel.toggleEditMode()
+            // persistScope is Default — wait until save settles.
+            var spins = 0
+            while (viewModel.state.value.isSaving && spins < 50) {
+                kotlinx.coroutines.delay(20)
+                spins++
+            }
+            kotlinx.coroutines.delay(50)
+        }
+        val state = viewModel.state.value
+        assertNotNull(state.session)
+        assertEquals("Save failed", state.saveError)
+        assertEquals(null, state.errorMessage)
+    }
 }
 
-private object PreviewWorkoutSessionRepository : WorkoutSessionRepository {
+private object FailingSaveWorkoutSessionRepository : WorkoutSessionRepository {
+    override suspend fun loadSession(workoutId: String): AppResult<WorkoutSessionUi> =
+        AppResult.Success(
+            WorkoutSessionPreviewData.preview.copy(
+                // Program/Train path persists via saveSession; Explore uses local draft only.
+                context = WorkoutSessionContextUi(
+                    programId = "prog-1",
+                    programSlug = "prog-1",
+                    weekNumber = 1,
+                    dayNumber = 1,
+                    plannedWorkoutId = "preview",
+                ),
+            ),
+        )
+
+    override suspend fun loadDayContext(workoutId: String): SessionDayContext = SessionDayContext()
+
+    override suspend fun saveSession(session: WorkoutSessionUi): AppResult<Unit> =
+        AppResult.Failure("Save failed")
+
+    override suspend fun saveFlowCustomization(workoutId: String, config: WorkoutFlowConfigUi): AppResult<Unit> =
+        AppResult.Success(Unit)
+
+    override suspend fun sessionKeyForDay(programId: String, weekNumber: Int, dayNumber: Int): String? = null
+
+    override suspend fun findSwapCandidates(query: String, replacingSlug: String): List<SessionSwapCandidateUi> =
+        emptyList()
+
+    override suspend fun findAddExerciseCandidates(query: String): List<SessionSwapCandidateUi> = emptyList()
+}
+
+internal object PreviewWorkoutSessionRepository : WorkoutSessionRepository {
     override suspend fun loadSession(workoutId: String): AppResult<WorkoutSessionUi> =
         AppResult.Success(WorkoutSessionPreviewData.preview)
 

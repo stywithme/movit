@@ -355,7 +355,7 @@ async function buildTrainMode(
   if (!hasActiveProgram) {
     const prisma = await getPrisma();
     fallbackUserProgram = await prisma.userProgram.findFirst({
-      where: { userId, isActive: true, deletedAt: null },
+      where: { userId, isActive: true },
       orderBy: { updatedAt: 'desc' },
       include: {
         program: {

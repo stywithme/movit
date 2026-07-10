@@ -188,7 +188,7 @@ class IosMovitPlatform(
         val root = docs.URLByAppendingPathComponent("frame_captures") ?: return 0
         val path = root.path ?: return 0
         if (!fm.fileExistsAtPath(path)) return 0
-        val children = fm.contentsOfDirectoryAtPath(path, null, null) as? List<*> ?: return 0
+        val children = fm.contentsOfDirectoryAtPath(path, null) as? List<*> ?: return 0
         var removed = 0
         for (name in children) {
             val sessionId = name as? String ?: continue

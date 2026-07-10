@@ -2,6 +2,7 @@ package com.movit.feature.train
 
 sealed interface MovitTrainEffect {
     data class OpenProgramWorkout(val target: TrainWorkoutLaunchUi) : MovitTrainEffect
+    data class OpenReport(val target: TrainReportTargetUi) : MovitTrainEffect
     data object OpenProgramList : MovitTrainEffect
     data object OpenAssessment : MovitTrainEffect
     data class OpenProgramDetail(val programId: String) : MovitTrainEffect

@@ -27,7 +27,12 @@ sealed interface WorkoutSessionEvent {
     data object SwitchEditToSwap : WorkoutSessionEvent
     data class SelectPlannedWorkout(val plannedWorkoutId: String) : WorkoutSessionEvent
     data object StartWorkoutClicked : WorkoutSessionEvent
+    data object ResumeWorkoutClicked : WorkoutSessionEvent
+    data object RestartWorkoutClicked : WorkoutSessionEvent
+    data object ConfirmRestartWorkout : WorkoutSessionEvent
+    data object DismissRestartConfirm : WorkoutSessionEvent
     data class OpenExerciseClicked(val exerciseId: String) : WorkoutSessionEvent
     data object RetryClicked : WorkoutSessionEvent
+    data object RetrySaveClicked : WorkoutSessionEvent
     data object SnackbarConsumed : WorkoutSessionEvent
 }

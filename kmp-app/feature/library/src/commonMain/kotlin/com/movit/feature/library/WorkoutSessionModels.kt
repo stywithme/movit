@@ -73,11 +73,18 @@ sealed interface WorkoutSessionBlockUi {
         val weightLabel: String? = null,
         val restLabel: String,
         val sets: Int = 3,
-        val reps: Int? = 12,
+        val reps: Int? = null,
         val durationSeconds: Int? = null,
+        /** Rest between sets (seconds) — UI display. */
         val restSeconds: Int = 60,
         val weightKg: Float? = null,
         val phaseRole: String = "MAIN",
+        val variantIndex: Int = 0,
+        /** Rest after this exercise (seconds); may also appear as a following Rest block. */
+        val restAfterExerciseSeconds: Int = 0,
+        val restBetweenSetsMs: Long = 0L,
+        val restAfterExerciseMs: Long = 0L,
+        val weightPerSetKg: List<Float>? = null,
     ) : WorkoutSessionBlockUi
 
     data class Rest(

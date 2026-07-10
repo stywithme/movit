@@ -37,6 +37,7 @@ class WorkoutSessionApiMapperTest {
                             exerciseId = "ex-1",
                             sets = 3,
                             targetReps = 12,
+                            variantIndex = 2,
                             restBetweenSetsMs = 60_000,
                             sortOrder = 0,
                             phaseRole = "MAIN",
@@ -76,7 +77,9 @@ class WorkoutSessionApiMapperTest {
         assertEquals("pw-1", session.context?.plannedWorkoutId)
         val blocks = session.sections.single().items
         assertEquals(2, blocks.size)
-        assertEquals("barbell-squat", (blocks[0] as WorkoutSessionBlockUi.Exercise).exerciseSlug)
+        val exercise = blocks[0] as WorkoutSessionBlockUi.Exercise
+        assertEquals("barbell-squat", exercise.exerciseSlug)
+        assertEquals(2, exercise.variantIndex)
         }
     }
 }

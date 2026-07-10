@@ -105,6 +105,13 @@ interface MovitLocalStore {
      */
     suspend fun clearDurableWrites()
 
+    /**
+     * Open-workout run progress / snapshot sidecars — cleared on logout and account switch
+     * so the next user cannot Resume another account's run. Preserved across session-expiry
+     * [clearReadCaches] (same device, same user).
+     */
+    suspend fun clearWorkoutRunStore()
+
     /** Full wipe — logout / delete account. Equivalent to read + durable. */
     suspend fun clearAllUserData() {
         clearReadCaches()

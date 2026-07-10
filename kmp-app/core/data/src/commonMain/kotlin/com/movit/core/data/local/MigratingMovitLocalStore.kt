@@ -89,6 +89,8 @@ class MigratingMovitLocalStore(
 
     override suspend fun clearDurableWrites() = sqlStore.clearDurableWrites()
 
+    override suspend fun clearWorkoutRunStore() = sqlStore.clearWorkoutRunStore()
+
     override suspend fun clearAllUserData() = sqlStore.clearAllUserData()
 
     override fun upsertSessionJournal(

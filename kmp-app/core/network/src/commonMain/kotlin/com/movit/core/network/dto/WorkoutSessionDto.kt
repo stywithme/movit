@@ -36,6 +36,7 @@ data class EffectivePlanItemDto(
     val sets: Int? = null,
     val targetReps: Int? = null,
     val targetDuration: Int? = null,
+    val variantIndex: Int? = null,
     val restBetweenSetsMs: Int? = null,
     val weightPerSet: List<Double>? = null,
     val restDurationMs: Int? = null,

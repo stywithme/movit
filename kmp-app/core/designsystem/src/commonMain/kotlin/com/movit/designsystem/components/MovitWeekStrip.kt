@@ -31,8 +31,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -194,6 +197,10 @@ private fun WeekDayCell(
             .then(cellModifier)
             .clearAndSetSemantics {
                 day.contentDescription?.let { contentDescription = it }
+                if (onClick != null) {
+                    role = Role.Button
+                }
+                this.selected = selected
             }
             .padding(1.dp),
         horizontalAlignment = Alignment.CenterHorizontally,

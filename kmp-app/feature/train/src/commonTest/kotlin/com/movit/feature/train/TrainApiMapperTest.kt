@@ -1,5 +1,6 @@
 package com.movit.feature.train
 
+import com.movit.resources.localizedString
 import com.movit.resources.strings.TrainStrings
 import com.movit.core.network.dto.HomeDataDto
 import com.movit.core.network.dto.HomeStatsDto
@@ -62,14 +63,29 @@ class TrainApiMapperTest {
             val data = HomeDataDto(
                 trainMode = TrainModeDto(
                     status = "active",
-                    todayWorkout = TrainTodayWorkoutDto(isCompleted = true),
+                    activeProgram = TrainActiveProgramDto(
+                        id = "prog-1",
+                        name = mapOf("en" to "Full Body Plan"),
+                        weekNumber = 2,
+                        dayNumber = 3,
+                        totalWeeks = 4,
+                        weekProgress = WeekProgressDto(completed = 2, total = 5),
+                    ),
+                    todayWorkout = TrainTodayWorkoutDto(
+                        isCompleted = true,
+                        plannedWorkoutId = "pw-lower",
+                    ),
                 ),
             )
 
             val dashboard = TrainApiMapper.map(data, language = "en", strings = strings)
 
             assertEquals(TrainDashboardStatus.CompletedToday, dashboard.status)
-            assertEquals(strings.viewReport, dashboard.today?.primaryActionLabel)
+            assertEquals(
+                localizedString("en", "program_flow_view_week_report"),
+                dashboard.today?.primaryActionLabel,
+            )
+            assertTrue(dashboard.today?.reportTarget is TrainReportTargetUi.ProgramWeek)
         }
     }
 
@@ -232,7 +248,8 @@ class TrainApiMapperTest {
 
             assertEquals(TrainWeekDayState.Missed, dashboard.week.days[0].state)
             assertEquals(strings.statusMissed, dashboard.week.days[0].detail?.statusLabel)
-            assertEquals(null, dashboard.week.days[0].detail?.actionLabel)
+            assertEquals(localizedString("en", "train_start_catch_up"), dashboard.week.days[0].detail?.actionLabel)
+            assertEquals("pw-missed", dashboard.week.days[0].detail?.launchTarget?.plannedWorkoutId)
         }
     }
 

@@ -5,10 +5,6 @@ sealed interface ProgramDetailEvent {
     data class WeekSelected(val weekNumber: Int) : ProgramDetailEvent
     data class DaySelected(val dayNumber: Int) : ProgramDetailEvent
     data object StartProgramClicked : ProgramDetailEvent
-    data class EditReasonSelected(val reason: ProgramEditReason) : ProgramDetailEvent
-    data class EditScopeSelected(val scope: ProgramEditScope) : ProgramDetailEvent
-    data class WeeklyTargetChange(val delta: Int) : ProgramDetailEvent
-    data object PauseCalendarToggle : ProgramDetailEvent
     data class SessionMove(val sessionId: String, val direction: Int) : ProgramDetailEvent
     data class ExerciseParamChange(
         val sessionId: String,

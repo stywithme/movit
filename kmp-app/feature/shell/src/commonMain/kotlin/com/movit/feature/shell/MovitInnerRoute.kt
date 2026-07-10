@@ -2,6 +2,7 @@ package com.movit.feature.shell
 
 import com.movit.core.training.session.TrainingFlowItem
 import com.movit.feature.library.PlannedWorkoutLaunch
+import com.movit.feature.library.ReturnTarget
 
 /**
  * Stack entries for inner pages (no bottom nav — prototype sess-top + back).
@@ -20,7 +21,9 @@ sealed interface MovitInnerRoute {
     data class ExercisePrepare(
         val exerciseId: String,
         val workoutId: String? = null,
-        val prepareMode: String = "prepare",
+        /** Encoded [com.movit.feature.library.ExercisePrepareMode] / rest phase. */
+        val prepareMode: String = "solo",
+        val runId: String? = null,
         val restSeconds: Int? = null,
         val upNextExerciseId: String? = null,
     ) : MovitInnerRoute
@@ -33,8 +36,13 @@ sealed interface MovitInnerRoute {
         val plannedWorkout: PlannedWorkoutLaunch? = null,
         val startExerciseIndex: Int = 0,
         val poseVariantIndex: Int = 0,
+        val runId: String? = null,
     ) : MovitInnerRoute
-    data class ReportDetail(val reportId: String) : MovitInnerRoute
+    data class ReportDetail(
+        val reportId: String,
+        val returnTarget: ReturnTarget? = null,
+        val doneTarget: ReturnTarget? = null,
+    ) : MovitInnerRoute
     data object Auth : MovitInnerRoute
     /** Account / settings — opened from header avatar, not the bottom nav. */
     data object Profile : MovitInnerRoute

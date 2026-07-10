@@ -47,10 +47,6 @@ fun ProgramDetailScreen(
     onDaySelected: (Int) -> Unit,
     onOpenDaySession: (String) -> Unit,
     onStartProgram: () -> Unit,
-    onEditReasonSelected: (ProgramEditReason) -> Unit,
-    onEditScopeSelected: (ProgramEditScope) -> Unit,
-    onWeeklyTargetChange: (Int) -> Unit,
-    onPauseCalendarToggle: () -> Unit,
     onSessionMove: (sessionId: String, direction: Int) -> Unit,
     onExerciseParamChange: (
         sessionId: String,
@@ -69,7 +65,7 @@ fun ProgramDetailScreen(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val isOverview = state.selectedTab == ProgramDetailTab.Overview
+    val isOverview = state.selectedTab == ProgramDetailTab.Overview || !state.enrollment.isEnrolled
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
@@ -102,6 +98,7 @@ fun ProgramDetailScreen(
                             if (state.enrollment.isEnrolled) "program_start_next" else "program_start",
                         ),
                         onStart = onStartProgram,
+                        isLoading = state.isStarting,
                         modifier = Modifier.padding(MovitSpacing.lg),
                     )
                 }
@@ -132,6 +129,7 @@ fun ProgramDetailScreen(
                         text = movitText("program_start"),
                         onClick = onStartProgram,
                         variant = MovitButtonVariant.Filled,
+                        enabled = !state.isStarting,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(MovitSpacing.lg),
@@ -141,8 +139,8 @@ fun ProgramDetailScreen(
         },
     ) { padding ->
         when {
-            state.isLoading -> MovitLoadingState(message = movitText("program_loading"))
-            state.errorMessage != null -> MovitErrorState(
+            state.isLoading && state.title.isBlank() -> MovitLoadingState(message = movitText("program_loading"))
+            state.errorMessage != null && state.title.isBlank() -> MovitErrorState(
                 title = movitText("common_error_title"),
                 message = when (val error = state.errorMessage) {
                     "program_not_found",
@@ -177,22 +175,38 @@ fun ProgramDetailScreen(
                             )
                         }
                     }
+                    state.actionMessage?.let { message ->
+                        Surface(
+                            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.92f),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(
+                                text = message,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.padding(MovitSpacing.sm),
+                                textAlign = TextAlign.Center,
+                            )
+                        }
+                    }
                     ProgramHeroSection(
                         title = state.title,
                         description = state.description,
                         kickers = state.kickers,
                         imageUrl = state.imageUrl,
                     )
-                    MovitSegmentedControl(
-                        options = listOf(
-                            movitText("program_tab_overview"),
-                            movitText("program_tab_edit"),
-                        ),
-                        selectedIndex = if (isOverview) 0 else 1,
-                        onOptionSelected = { index ->
-                            onTabSelected(if (index == 0) ProgramDetailTab.Overview else ProgramDetailTab.Edit)
-                        },
-                    )
+                    if (state.enrollment.isEnrolled) {
+                        MovitSegmentedControl(
+                            options = listOf(
+                                movitText("program_tab_overview"),
+                                movitText("program_tab_edit"),
+                            ),
+                            selectedIndex = if (isOverview) 0 else 1,
+                            onOptionSelected = { index ->
+                                onTabSelected(if (index == 0) ProgramDetailTab.Overview else ProgramDetailTab.Edit)
+                            },
+                        )
+                    }
                     ProgramStatGrid(stats = state.stats)
                     if (state.enrollment.isEnrolled) {
                         ProgramCopyCard(
@@ -213,10 +227,6 @@ fun ProgramDetailScreen(
                     } else {
                         ProgramEditPanel(
                             edit = state.edit,
-                            onReasonSelected = onEditReasonSelected,
-                            onScopeSelected = onEditScopeSelected,
-                            onWeeklyTargetChange = onWeeklyTargetChange,
-                            onPauseToggle = onPauseCalendarToggle,
                             onSessionMove = onSessionMove,
                             onExerciseParamChange = onExerciseParamChange,
                             onRemoveSession = onRemoveSession,
@@ -270,10 +280,6 @@ private fun ProgramOverviewContent(
             onOpenSession = onOpenDaySession,
         )
     }
-    state.weeks
-        .filter { it.weekNumber != selectedWeek?.weekNumber && !it.isCurrent }
-        .take(1)
-        .forEach { week -> ProgramWeekCard(week = week) }
     MovitSectionHeader(
         title = movitText("program_details_title"),
         subtitle = movitText("program_details_sub"),

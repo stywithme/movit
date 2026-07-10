@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -27,6 +28,8 @@ import com.movit.designsystem.components.MovitButtonVariant
 import com.movit.designsystem.components.MovitCard
 import com.movit.designsystem.components.MovitCardVariant
 import com.movit.designsystem.components.MovitErrorState
+import com.movit.designsystem.components.MovitInsightCard
+import com.movit.designsystem.components.MovitInsightVariant
 import com.movit.designsystem.components.MovitInnerPageHeader
 import com.movit.designsystem.components.MovitLoadingState
 import com.movit.designsystem.components.MovitSectionHeader
@@ -52,7 +55,12 @@ fun WorkoutSessionScreen(
     onAddExercise: () -> Unit,
     onAddRest: () -> Unit,
     onStartWorkout: () -> Unit,
+    onResumeWorkout: () -> Unit = onStartWorkout,
+    onRestartWorkout: () -> Unit = {},
+    onConfirmRestart: () -> Unit = {},
+    onDismissRestartConfirm: () -> Unit = {},
     onRetry: () -> Unit,
+    onRetrySave: () -> Unit = onRetry,
     onDismissSheet: () -> Unit,
     onSwapQueryChange: (String) -> Unit,
     onSwapCandidateSelected: (String) -> Unit,
@@ -79,10 +87,15 @@ fun WorkoutSessionScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             val editToggleA11y = movitText("session_a11y_toggle_edit")
+            val isExploreSession = session?.context == null
             MovitInnerPageHeader(
                 onBack = onBack,
                 backContentDescription = movitText("session_back"),
-                actionLabel = if (state.isEditMode) movitText("session_done") else movitText("session_edit"),
+                actionLabel = when {
+                    state.isEditMode -> movitText("session_done")
+                    isExploreSession -> movitText("session_customize_run")
+                    else -> movitText("session_edit")
+                },
                 actionIcon = if (state.isEditMode) Icons.Default.Check else Icons.Default.Edit,
                 onAction = onToggleEdit,
                 modifier = Modifier
@@ -96,8 +109,23 @@ fun WorkoutSessionScreen(
                     exerciseCount = session.exerciseCount,
                     durationLabel = session.durationLabel,
                     showSkipWarmup = session.hasWarmupSection() && !session.warmupSkipped,
+                    launchReadiness = state.launchReadiness,
+                    openRun = state.openRun,
+                    isSaving = state.isSaving,
                     onSkipWarmup = onSkipWarmup,
-                    onStart = onStartWorkout,
+                    onStart = {
+                        when (state.launchReadiness) {
+                            is LaunchReadiness.Blocked -> onRetry()
+                            else -> onStartWorkout()
+                        }
+                    },
+                    onResume = {
+                        when (state.launchReadiness) {
+                            is LaunchReadiness.Blocked -> onRetry()
+                            else -> onResumeWorkout()
+                        }
+                    },
+                    onRestart = onRestartWorkout,
                     modifier = Modifier.padding(MovitSpacing.lg),
                 )
             } else if (state.isEditMode) {
@@ -131,8 +159,8 @@ fun WorkoutSessionScreen(
         },
     ) { padding ->
         when {
-            state.isLoading -> MovitLoadingState(message = movitText("session_loading"))
-            state.errorMessage != null -> MovitErrorState(
+            state.isLoading && session == null -> MovitLoadingState(message = movitText("session_loading"))
+            state.errorMessage != null && session == null -> MovitErrorState(
                 title = movitText("common_error_title"),
                 message = state.errorMessage,
                 actionLabel = movitText("common_retry"),
@@ -149,6 +177,22 @@ fun WorkoutSessionScreen(
                         .padding(horizontal = MovitSpacing.lg),
                     verticalArrangement = Arrangement.spacedBy(MovitSpacing.md),
                 ) {
+                    state.saveError?.let { message ->
+                        Column(verticalArrangement = Arrangement.spacedBy(MovitSpacing.sm)) {
+                            MovitInsightCard(
+                                title = movitText("session_save_failed"),
+                                message = message,
+                                icon = Icons.Default.Warning,
+                                variant = MovitInsightVariant.Warning,
+                            )
+                            MovitButton(
+                                text = movitText("common_retry"),
+                                onClick = onRetrySave,
+                                variant = MovitButtonVariant.Text,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
                     if (state.plannedWorkoutCards.size > 1) {
                         SessionPlannedWorkoutCards(
                             cards = state.plannedWorkoutCards,
@@ -251,6 +295,23 @@ fun WorkoutSessionScreen(
             },
         )
     }
+    if (state.showRestartConfirm) {
+        AlertDialog(
+            onDismissRequest = onDismissRestartConfirm,
+            title = { Text(movitText("session_restart_confirm_title")) },
+            text = { Text(movitText("session_restart_confirm_message")) },
+            confirmButton = {
+                TextButton(onClick = onConfirmRestart) {
+                    Text(movitText("session_restart_confirm"))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismissRestartConfirm) {
+                    Text(movitText("session_cancel"))
+                }
+            },
+        )
+    }
     WorkoutSessionSheets(
         activeSheet = state.activeSheet,
         session = session,
@@ -272,11 +333,24 @@ private fun SessionStartDock(
     exerciseCount: Int,
     durationLabel: String,
     showSkipWarmup: Boolean,
+    launchReadiness: LaunchReadiness,
+    openRun: WorkoutRunOpenState?,
+    isSaving: Boolean = false,
     onSkipWarmup: () -> Unit,
     onStart: () -> Unit,
+    onResume: () -> Unit,
+    onRestart: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val startA11y = movitText("session_a11y_start_workout")
+    val ctaEnabled = !isSaving && when (launchReadiness) {
+        LaunchReadiness.Ready,
+        LaunchReadiness.OfflineReady,
+        is LaunchReadiness.Blocked,
+        -> true
+        else -> false
+    }
+    val hasOpenRun = openRun != null
     MovitCard(
         modifier = modifier.fillMaxWidth(),
         variant = MovitCardVariant.Elevated,
@@ -290,7 +364,11 @@ private fun SessionStartDock(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = movitText("session_ready_to_train"),
+                        text = if (hasOpenRun) {
+                            movitText("session_resume")
+                        } else {
+                            movitText(launchReadiness.statusLabelKey())
+                        },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.W800,
                     )
@@ -301,14 +379,28 @@ private fun SessionStartDock(
                     )
                 }
                 MovitButton(
-                    text = movitText("session_start"),
-                    onClick = onStart,
+                    text = if (hasOpenRun) {
+                        movitText("session_resume")
+                    } else {
+                        movitText(launchReadiness.ctaLabelKey())
+                    },
+                    onClick = if (hasOpenRun) onResume else onStart,
+                    enabled = ctaEnabled,
                     variant = MovitButtonVariant.Filled,
                     leadingIcon = Icons.Default.PlayArrow,
                     modifier = Modifier.semantics { contentDescription = startA11y },
                 )
             }
-            if (showSkipWarmup) {
+            if (hasOpenRun) {
+                MovitButton(
+                    text = movitText("session_restart"),
+                    onClick = onRestart,
+                    enabled = ctaEnabled,
+                    variant = MovitButtonVariant.Text,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            if (showSkipWarmup && !hasOpenRun) {
                 val skipWarmupA11y = movitText("session_a11y_skip_warmup")
                 MovitButton(
                     text = movitText("session_skip_warmup"),

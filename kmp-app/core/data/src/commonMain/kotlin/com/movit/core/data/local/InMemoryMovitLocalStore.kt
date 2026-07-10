@@ -163,7 +163,7 @@ class InMemoryMovitLocalStore : MovitLocalStore {
             if (sep < 0) return@filterKeys false
             val store = fullKey.substring(0, sep)
             val key = fullKey.substring(sep + 2)
-            store == MovitCacheKeys.AUTH_LIFECYCLE_STORE ||
+            MovitClearScopeKeys.isDurableJsonStore(store) ||
                 (store == MovitCacheKeys.REPORTS_STORE && MovitClearScopeKeys.isDurableReportsKey(key))
         }
         jsonCache.clear()
@@ -171,9 +171,19 @@ class InMemoryMovitLocalStore : MovitLocalStore {
         syncMetadata.clear()
     }
 
+    override suspend fun clearWorkoutRunStore() {
+        val toRemove = jsonCache.keys.filter { fullKey ->
+            val sep = fullKey.indexOf("::")
+            if (sep < 0) return@filter false
+            fullKey.substring(0, sep) == MovitCacheKeys.WORKOUT_RUN_STORE
+        }
+        toRemove.forEach { jsonCache.remove(it) }
+    }
+
     override suspend fun clearDurableWrites() {
         outbox.clear()
         sessionJournals.clear()
+        clearWorkoutRunStore()
         val toRemove = jsonCache.keys.filter { fullKey ->
             val sep = fullKey.indexOf("::")
             if (sep < 0) return@filter false

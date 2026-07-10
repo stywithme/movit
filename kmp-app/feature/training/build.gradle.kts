@@ -23,6 +23,7 @@ kotlin {
             implementation(project(":core:training-engine"))
             implementation(project(":core:pose-capture"))
             implementation(project(":feature:reports"))
+            implementation(project(":feature:library"))
             movitComposeUi()
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)

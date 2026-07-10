@@ -47,7 +47,7 @@ class ExercisePrepareStateTest {
         viewModel.enterRestMode()
 
         val state = viewModel.state.value
-        assertEquals(ExercisePrepareMode.Rest, state.mode)
+        assertEquals(ExercisePreparePhase.Rest, state.mode)
         assertEquals("Reverse Lunge", state.displayExercise?.name)
         assertEquals(40, state.headerProgressPercent)
     }
@@ -67,7 +67,7 @@ class ExercisePrepareStateTest {
         viewModel.skipRest()
 
         val state = viewModel.state.value
-        assertEquals(ExercisePrepareMode.Prepare, state.mode)
+        assertEquals(ExercisePreparePhase.Prepare, state.mode)
         assertEquals(false, state.isRestPaused)
     }
 
@@ -123,19 +123,19 @@ class ExercisePrepareStateTest {
     @Test
     fun restTick_decrementsAndReturnsToPrepareAtZero() {
         val resting = ExercisePrepareUiState(
-            mode = ExercisePrepareMode.Rest,
+            phase = ExercisePreparePhase.Rest,
             restSeconds = 2,
         )
         assertEquals(1, applyRestSecondTick(resting).restSeconds)
         val done = applyRestSecondTick(resting.copy(restSeconds = 1))
-        assertEquals(ExercisePrepareMode.Prepare, done.mode)
+        assertEquals(ExercisePreparePhase.Prepare, done.mode)
         assertEquals(0, done.restSeconds)
     }
 
     @Test
     fun restTick_respectsPause() {
         val paused = ExercisePrepareUiState(
-            mode = ExercisePrepareMode.Rest,
+            phase = ExercisePreparePhase.Rest,
             restSeconds = 10,
             isRestPaused = true,
         )

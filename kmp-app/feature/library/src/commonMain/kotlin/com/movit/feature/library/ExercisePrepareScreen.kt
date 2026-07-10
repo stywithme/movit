@@ -72,9 +72,9 @@ fun ExercisePrepareScreen(
     modifier: Modifier = Modifier,
 ) {
     val exercise = state.displayExercise
-    val headerTitleKey = when (state.mode) {
-        ExercisePrepareMode.Prepare -> "prepare_title"
-        ExercisePrepareMode.Rest -> "prepare_rest_title"
+    val headerTitleKey = when (state.phase) {
+        ExercisePreparePhase.Prepare -> "prepare_title"
+        ExercisePreparePhase.Rest -> "prepare_rest_title"
     }
 
     Scaffold(
@@ -100,16 +100,17 @@ fun ExercisePrepareScreen(
         },
         bottomBar = {
             when {
-                state.mode == ExercisePrepareMode.Prepare && state.exercise != null -> {
+                state.phase == ExercisePreparePhase.Prepare && state.exercise != null -> {
                     PrepareStartDock(
                         sessionSummary = state.exercise.sessionSummary,
                         onStart = onStart,
-                        enabled = !state.isEnsuringConfig,
-                        isEnsuringConfig = state.isEnsuringConfig,
+                        enabled = !state.isEnsuringConfig && !state.isLaunching,
+                        isEnsuringConfig = state.isEnsuringConfig || state.isLaunching,
+                        isPreviewOnly = state.isPreviewOnly,
                         modifier = Modifier.padding(MovitSpacing.lg),
                     )
                 }
-                state.mode == ExercisePrepareMode.Rest -> {
+                state.phase == ExercisePreparePhase.Rest -> {
                     RestTimerDock(
                         timerText = formatRestTimer(state.restSeconds),
                         isPaused = state.isRestPaused,
@@ -125,19 +126,13 @@ fun ExercisePrepareScreen(
     ) { padding ->
         when {
             state.isLoading -> MovitLoadingState(message = movitText("prepare_loading"))
-            state.isEnsuringConfig -> MovitLoadingState(message = movitText("training_config_ensuring"))
             state.errorMessage != null -> MovitErrorState(
                 title = movitText("common_error_title"),
                 message = movitText(state.errorMessage),
                 actionLabel = movitText("common_retry"),
                 onRetry = onRetry,
             )
-            state.trainingConfigUnavailableMessage != null -> MovitErrorState(
-                title = movitText("training_config_unavailable_title"),
-                message = movitText(state.trainingConfigUnavailableMessage),
-                actionLabel = movitText("training_config_sync_now"),
-                onRetry = onStart,
-            )
+            // Keep content visible while preparing; banner via dock / unavailable message below.
             exercise != null -> {
                 Column(
                     modifier = Modifier
@@ -148,7 +143,14 @@ fun ExercisePrepareScreen(
                         .padding(bottom = MovitSpacing.md),
                     verticalArrangement = Arrangement.spacedBy(MovitSpacing.lg),
                 ) {
-                    if (state.mode == ExercisePrepareMode.Rest) {
+                    if (state.trainingConfigUnavailableMessage != null) {
+                        Text(
+                            text = movitText(state.trainingConfigUnavailableMessage),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.movitColors.textSecondary,
+                        )
+                    }
+                    if (state.phase == ExercisePreparePhase.Rest) {
                         MovitTag(
                             text = movitText("prepare_up_next"),
                             variant = MovitTagVariant.Coral,
@@ -447,6 +449,7 @@ private fun PrepareStartDock(
     onStart: () -> Unit,
     enabled: Boolean,
     isEnsuringConfig: Boolean,
+    isPreviewOnly: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     MovitCard(
@@ -461,7 +464,13 @@ private fun PrepareStartDock(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = movitText("session_ready_to_train"),
+                    text = movitText(
+                        when {
+                            isPreviewOnly -> "prepare_preview_hint"
+                            isEnsuringConfig -> "session_cta_preparing"
+                            else -> "session_ready_to_train"
+                        },
+                    ),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.W800,
                 )
@@ -472,10 +481,16 @@ private fun PrepareStartDock(
                 )
             }
             MovitButton(
-                text = movitText(if (isEnsuringConfig) "training_config_ensuring" else "session_start"),
+                text = movitText(
+                    when {
+                        isPreviewOnly -> "prepare_back_to_workout"
+                        isEnsuringConfig -> "training_config_ensuring"
+                        else -> "session_start"
+                    },
+                ),
                 onClick = onStart,
                 variant = MovitButtonVariant.Filled,
-                enabled = enabled,
+                enabled = enabled || isPreviewOnly,
                 leadingIcon = Icons.Default.PlayArrow,
             )
         }

@@ -18,6 +18,7 @@ export interface EffectivePlanItem {
   sets: number | null;
   targetReps: number | null;
   targetDuration: number | null;
+  variantIndex: number | null;
   restBetweenSetsMs: number | null;
   weightKg: number | null;
   weightPerSet: Prisma.JsonValue | null;
@@ -46,6 +47,7 @@ export interface EffectivePlannedWorkout {
   name: Prisma.JsonValue;
   sortOrder: number;
   workoutTemplateId: string;
+  estimatedDurationMin: number | null;
   items: EffectivePlanItem[];
 }
 
@@ -64,6 +66,7 @@ type PlannedWorkoutItemRow = {
   sets: number | null;
   targetReps: number | null;
   targetDuration: number | null;
+  variantIndex: number | null;
   restBetweenSetsMs: number | null;
   weightKg: number | null;
   weightPerSet: Prisma.JsonValue | null;
@@ -136,6 +139,7 @@ function mergeProgression(
     sets: item.sets,
     targetReps: item.targetReps,
     targetDuration: item.targetDuration,
+    variantIndex: item.variantIndex,
     restBetweenSetsMs: item.restBetweenSetsMs,
     weightKg: item.weightKg,
     weightPerSet: item.weightPerSet,
@@ -186,6 +190,7 @@ function applyOverride(
     ...(typeof patch.weightKg === 'number' ? { weightKg: patch.weightKg } : {}),
     ...(typeof patch.targetReps === 'number' ? { targetReps: patch.targetReps } : {}),
     ...(typeof patch.targetDuration === 'number' ? { targetDuration: patch.targetDuration } : {}),
+    ...(typeof patch.variantIndex === 'number' ? { variantIndex: patch.variantIndex } : {}),
     ...(typeof patch.sets === 'number' ? { sets: patch.sets } : {}),
     ...(typeof patch.restBetweenSetsMs === 'number'
       ? { restBetweenSetsMs: patch.restBetweenSetsMs }
@@ -226,6 +231,7 @@ function buildAddedItem(
     sets: typeof patch.sets === 'number' ? patch.sets : null,
     targetReps: typeof patch.targetReps === 'number' ? patch.targetReps : null,
     targetDuration: typeof patch.targetDuration === 'number' ? patch.targetDuration : null,
+    variantIndex: typeof patch.variantIndex === 'number' ? patch.variantIndex : null,
     restBetweenSetsMs:
       typeof patch.restBetweenSetsMs === 'number' ? patch.restBetweenSetsMs : null,
     weightKg: typeof patch.weightKg === 'number' ? patch.weightKg : null,
@@ -244,6 +250,117 @@ function buildAddedItem(
     ...base,
     suggestion: buildSuggestion(base, undefined, trainingGoal),
   };
+}
+
+type JsonRecord = Record<string, unknown>;
+
+function asJsonRecord(value: unknown): JsonRecord | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as JsonRecord)
+    : null;
+}
+
+function finiteNumber(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function nullableNumber(value: unknown, fallback: number | null): number | null {
+  if (value === null) return null;
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function normalizeCustomizedItem(
+  value: unknown,
+  base: EffectivePlanItem | undefined,
+  fallbackSortOrder: number,
+  trainingGoal: TrainingGoal,
+): EffectivePlanItem | null {
+  const row = asJsonRecord(value);
+  if (!row) return null;
+  const id = typeof row.id === 'string' && row.id ? row.id : base?.id;
+  if (!id) return null;
+  const type = row.type === PlannedWorkoutItemType.rest || row.type === 'rest'
+    ? PlannedWorkoutItemType.rest
+    : row.type === PlannedWorkoutItemType.exercise || row.type === 'exercise'
+      ? PlannedWorkoutItemType.exercise
+      : base?.type;
+  if (!type) return null;
+
+  const exerciseId = row.exerciseId === null
+    ? null
+    : typeof row.exerciseId === 'string'
+      ? row.exerciseId
+      : base?.exerciseId ?? null;
+  if (type === PlannedWorkoutItemType.exercise && !exerciseId) return null;
+
+  const merged: Omit<EffectivePlanItem, 'suggestion' | 'skipped'> = {
+    id,
+    type,
+    exerciseId,
+    sets: nullableNumber(row.sets, base?.sets ?? null),
+    targetReps: nullableNumber(row.targetReps, base?.targetReps ?? null),
+    targetDuration: nullableNumber(row.targetDuration, base?.targetDuration ?? null),
+    variantIndex: nullableNumber(row.variantIndex, base?.variantIndex ?? null),
+    restBetweenSetsMs: nullableNumber(row.restBetweenSetsMs, base?.restBetweenSetsMs ?? null),
+    weightKg: nullableNumber(row.weightKg, base?.weightKg ?? null),
+    weightPerSet: (row.weightPerSet as Prisma.JsonValue | undefined) ?? base?.weightPerSet ?? null,
+    notes: (row.notes as Prisma.JsonValue | undefined) ?? base?.notes ?? null,
+    restDurationMs: nullableNumber(row.restDurationMs, base?.restDurationMs ?? null),
+    sortOrder: finiteNumber(row.sortOrder, base?.sortOrder ?? fallbackSortOrder),
+    phaseIndex: nullableNumber(row.phaseIndex, base?.phaseIndex ?? null) ?? undefined,
+    phaseRole: typeof row.phaseRole === 'string' ? row.phaseRole : base?.phaseRole,
+    intent: base?.intent ?? null,
+    coachingNotes: base?.coachingNotes ?? null,
+    substitutionCandidates: base?.substitutionCandidates,
+  };
+  return {
+    ...merged,
+    skipped: typeof row.skipped === 'boolean' ? row.skipped : base?.skipped,
+    suggestion: base?.suggestion ?? buildSuggestion(merged, undefined, trainingGoal),
+  };
+}
+
+/** Applies the full-day mobile customization snapshot over the freshly computed plan. */
+export function applyDayCustomizations(
+  plannedWorkouts: EffectivePlannedWorkout[],
+  customizations: Prisma.JsonValue | null,
+  weekNumber: number,
+  dayNumber: number,
+  trainingGoal: TrainingGoal,
+): EffectivePlannedWorkout[] {
+  const root = asJsonRecord(customizations);
+  const customized = root?.[`day_${weekNumber}_${dayNumber}`];
+  if (!Array.isArray(customized)) return plannedWorkouts;
+
+  const baseById = new Map(plannedWorkouts.map((workout) => [workout.id, workout]));
+  return customized.flatMap((value, workoutIndex) => {
+    const row = asJsonRecord(value);
+    const id = typeof row?.id === 'string' ? row.id : null;
+    const base = id ? baseById.get(id) : undefined;
+    if (!row || !id || !base || !Array.isArray(row.items)) return [];
+    const baseItems = new Map(base.items.map((item) => [item.id, item]));
+    const items = row.items.flatMap((itemValue, itemIndex) => {
+      const itemRow = asJsonRecord(itemValue);
+      const itemId = typeof itemRow?.id === 'string' ? itemRow.id : '';
+      const normalized = normalizeCustomizedItem(
+        itemValue,
+        baseItems.get(itemId),
+        itemIndex,
+        trainingGoal,
+      );
+      return normalized ? [normalized] : [];
+    });
+    return [{
+      ...base,
+      name: (asJsonRecord(row.name) as Prisma.JsonValue | null) ?? base.name,
+      sortOrder: finiteNumber(row.sortOrder, workoutIndex),
+      estimatedDurationMin: nullableNumber(
+        row.estimatedDurationMin,
+        base.estimatedDurationMin,
+      ),
+      items: items.sort((a, b) => a.sortOrder - b.sortOrder),
+    }];
+  }).sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
 /** Count non-skipped exercise items for home / today-plan summaries. */
@@ -336,6 +453,7 @@ export const effectivePlanService = {
             sets: exercise.sets,
             targetReps: exercise.targetReps,
             targetDuration: exercise.targetDuration,
+            variantIndex: exercise.variantIndex,
             restBetweenSetsMs: exercise.restBetweenSetsMs,
             weightKg: exercise.weightKg,
             weightPerSet: exercise.weightPerSet,
@@ -374,6 +492,7 @@ export const effectivePlanService = {
               sets: null,
               targetReps: null,
               targetDuration: null,
+              variantIndex: null,
               restBetweenSetsMs: null,
               weightKg: null,
               weightPerSet: null,
@@ -390,6 +509,7 @@ export const effectivePlanService = {
                   sets: null,
                   targetReps: null,
                   targetDuration: null,
+                  variantIndex: null,
                   restBetweenSetsMs: null,
                   weightKg: null,
                   weightPerSet: null,
@@ -410,16 +530,28 @@ export const effectivePlanService = {
         name: plannedWorkoutRow.name as Prisma.JsonValue,
         sortOrder: plannedWorkoutRow.sortOrder,
         workoutTemplateId: plannedWorkoutRow.workoutTemplateId,
+        estimatedDurationMin:
+          plannedWorkoutRow.estimatedDurationMin ??
+          plannedWorkoutRow.workoutTemplate.estimatedDurationMin ??
+          null,
         items: items.map((item, index) => ({ ...item, sortOrder: index })),
       };
     });
+
+    const customizedWorkouts = applyDayCustomizations(
+      plannedWorkouts,
+      up.customizations,
+      weekNumber,
+      dayNumber,
+      trainingGoal,
+    );
 
     return {
       userProgramId,
       programId: up.programId,
       weekNumber,
       dayNumber,
-      plannedWorkouts,
+      plannedWorkouts: customizedWorkouts,
     };
   },
 };

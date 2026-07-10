@@ -85,7 +85,7 @@ class MovitExploreStateTest {
     @Test
     fun viewModel_queryChanged_updatesFilteredExercises() {
         runBlocking {
-            val viewModel = MovitExploreViewModel(FakeExploreRepository())
+            val viewModel = MovitExploreViewModel(FakeExploreRepository().asContentSource())
             viewModel.load(isRefresh = false)
             viewModel.onEvent(MovitExploreEvent.QueryChanged("core"))
             val state = viewModel.state.value
@@ -100,7 +100,7 @@ class MovitExploreStateTest {
     @Test
     fun viewModel_filterSelected_updatesState() {
         runBlocking {
-            val viewModel = MovitExploreViewModel(FakeExploreRepository())
+            val viewModel = MovitExploreViewModel(FakeExploreRepository().asContentSource())
             viewModel.load(isRefresh = false)
             viewModel.onEvent(MovitExploreEvent.FilterSelected(ExploreFilter.Programs))
             assertTrue(viewModel.state.value.programs.all { it.type == ExploreItemType.Program })
@@ -110,7 +110,7 @@ class MovitExploreStateTest {
     @Test
     fun viewModel_seeAllWorkouts_emitsWorkoutsLibrary() {
         runBlocking {
-            val viewModel = MovitExploreViewModel(FakeExploreRepository())
+            val viewModel = MovitExploreViewModel(FakeExploreRepository().asContentSource())
             val effectDeferred = async {
                 withTimeout(5_000) { viewModel.effects.first() }
             }
@@ -123,7 +123,7 @@ class MovitExploreStateTest {
     @Test
     fun viewModel_seeAllExercises_emitsExercisesLibrary() {
         runBlocking {
-            val viewModel = MovitExploreViewModel(FakeExploreRepository())
+            val viewModel = MovitExploreViewModel(FakeExploreRepository().asContentSource())
             val effectDeferred = async {
                 withTimeout(5_000) { viewModel.effects.first() }
             }
@@ -136,7 +136,7 @@ class MovitExploreStateTest {
     @Test
     fun viewModel_itemClicked_emitsWorkoutSessionEffect() {
         runBlocking {
-            val viewModel = MovitExploreViewModel(FakeExploreRepository())
+            val viewModel = MovitExploreViewModel(FakeExploreRepository().asContentSource())
             val effectDeferred = async {
                 withTimeout(5_000) { viewModel.effects.first() }
             }
@@ -149,7 +149,7 @@ class MovitExploreStateTest {
     @Test
     fun viewModel_itemClicked_emitsOpenProgramDetailForProgram() {
         runBlocking {
-            val viewModel = MovitExploreViewModel(FakeExploreRepository())
+            val viewModel = MovitExploreViewModel(FakeExploreRepository().asContentSource())
             val effectDeferred = async {
                 withTimeout(5_000) { viewModel.effects.first() }
             }
@@ -162,7 +162,7 @@ class MovitExploreStateTest {
     @Test
     fun viewModel_itemClicked_emitsExercisePrepareEffect() {
         runBlocking {
-            val viewModel = MovitExploreViewModel(FakeExploreRepository())
+            val viewModel = MovitExploreViewModel(FakeExploreRepository().asContentSource())
             val effectDeferred = async {
                 withTimeout(5_000) { viewModel.effects.first() }
             }
@@ -175,7 +175,7 @@ class MovitExploreStateTest {
     @Test
     fun viewModel_filterButton_togglesSecondaryFilters() {
         runBlocking {
-            val viewModel = MovitExploreViewModel(FakeExploreRepository())
+            val viewModel = MovitExploreViewModel(FakeExploreRepository().asContentSource())
             viewModel.load(isRefresh = false)
             assertTrue(viewModel.state.value.secondaryFiltersVisible)
             viewModel.onEvent(MovitExploreEvent.FilterButtonClicked)
@@ -186,7 +186,7 @@ class MovitExploreStateTest {
     @Test
     fun viewModel_refresh_loadsWithoutBlockingInitialSpinner() {
         runBlocking {
-            val viewModel = MovitExploreViewModel(FakeExploreRepository())
+            val viewModel = MovitExploreViewModel(FakeExploreRepository().asContentSource())
             viewModel.load(isRefresh = false)
             assertFalse(viewModel.state.value.isRefreshing)
             viewModel.load(isRefresh = true)
@@ -199,9 +199,32 @@ class MovitExploreStateTest {
     @Test
     fun errorState_preservedFromRepository() {
         runBlocking {
-            val viewModel = MovitExploreViewModel(FakeExploreRepository(shouldFail = true))
+            val viewModel = MovitExploreViewModel(FakeExploreRepository(shouldFail = true).asContentSource())
             viewModel.load(isRefresh = false)
             assertEquals("Unable to load explore content.", viewModel.state.value.errorMessage)
+        }
+    }
+
+    @Test
+    fun freshUpdate_preservesQueryAndFilter() {
+        runBlocking {
+            val fresh = MovitExplorePreviewData.content.copy(
+                workouts = MovitExplorePreviewData.workouts + MovitExplorePreviewData.workouts.first().copy(
+                    id = "workout-extra",
+                    title = "Extra Core Blast",
+                ),
+            )
+            val viewModel = MovitExploreViewModel(
+                FakeExploreRepository(freshContent = fresh).asContentSource(),
+            )
+            viewModel.load(isRefresh = false)
+            viewModel.onEvent(MovitExploreEvent.QueryChanged("core"))
+            viewModel.onEvent(MovitExploreEvent.FilterSelected(ExploreFilter.Workouts))
+
+            val state = viewModel.state.value
+            assertEquals("core", state.query)
+            assertEquals(ExploreFilter.Workouts, state.selectedFilter)
+            assertTrue(state.workouts.all { it.title.contains("core", ignoreCase = true) })
         }
     }
 }

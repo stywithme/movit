@@ -5,6 +5,9 @@ import com.movit.core.training.session.TrainingFlowItem
 
 /**
  * Resolves training launch from local cache only — no sync/ensure on the Start path.
+ *
+ * @param lockStartIndex when true (workout Start / [ExercisePrepareMode.WorkoutFirstExercise]),
+ *   never re-derive index from the prepare exercise id (preview must not change start).
  */
 suspend fun resolveTrainingStart(
     slug: String,
@@ -14,6 +17,7 @@ suspend fun resolveTrainingStart(
     flowItems: List<TrainingFlowItem>? = null,
     startExerciseIndex: Int = 0,
     exerciseId: String? = null,
+    lockStartIndex: Boolean = false,
 ): TrainingStartAction? {
     if (!MovitData.isInstalled) return null
     MovitData.bootstrapLocalCaches()
@@ -36,28 +40,46 @@ suspend fun resolveTrainingStart(
     if (workoutId.isNullOrBlank()) return kmp
 
     val plannedWorkout = resolvePlannedWorkoutLaunch(workoutId, sessionContext = null)
+    val run = WorkoutRunStore.activeForWorkout(workoutId)
     val config = WorkoutFlowCache.get(workoutId)
-    if (config == null) {
+    if (run == null && config == null) {
         return kmp.copy(
             flowItems = flowItems,
             plannedWorkout = plannedWorkout,
             startExerciseIndex = startExerciseIndex,
+            runId = null,
         )
     }
 
-    val resolvedIndex = if (startExerciseIndex > 0) {
-        startExerciseIndex
-    } else {
-        config.exercises.indexOfFirst { item ->
-            item.exerciseSlug.equals(normalized, ignoreCase = true) ||
-                (exerciseId != null && item.id == exerciseId)
-        }.let { index -> if (index >= 0) index else 0 }
+    // ponytail: lockStartIndex covers WorkoutFirstExercise; unlocked path keeps solo-in-workout match.
+    val resolvedIndex = when {
+        lockStartIndex || flowItems != null -> startExerciseIndex.coerceAtLeast(0)
+        startExerciseIndex > 0 -> startExerciseIndex
+        else -> {
+            val exercises = run?.snapshot?.exercises.orEmpty()
+            if (exercises.isNotEmpty()) {
+                exercises.indexOfFirst { item ->
+                    item.slug.equals(normalized, ignoreCase = true) ||
+                        (exerciseId != null && item.exerciseId == exerciseId)
+                }.let { index -> if (index >= 0) index else 0 }
+            } else {
+                config!!.exercises.indexOfFirst { item ->
+                    item.exerciseSlug.equals(normalized, ignoreCase = true) ||
+                        (exerciseId != null && item.id == exerciseId)
+                }.let { index -> if (index >= 0) index else 0 }
+            }
+        }
     }
 
+    val resolvedFlow = flowItems
+        ?: run?.snapshot?.toTrainingFlowItems(resolvedIndex)
+        ?: config?.toTrainingFlowItems(resolvedIndex)
+
     return kmp.copy(
-        flowItems = flowItems ?: config.toTrainingFlowItems(resolvedIndex),
+        flowItems = resolvedFlow,
         plannedWorkout = plannedWorkout,
         startExerciseIndex = resolvedIndex,
+        runId = run?.runId?.value,
     )
 }
 

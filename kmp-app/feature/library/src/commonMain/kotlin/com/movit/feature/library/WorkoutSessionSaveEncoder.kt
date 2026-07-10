@@ -75,6 +75,7 @@ object WorkoutSessionSaveEncoder {
                             restBetweenSetsMs = block.restSeconds * 1000,
                             weightPerSet = weightList ?: original?.weightPerSet,
                             phaseRole = block.phaseRole,
+                            variantIndex = block.variantIndex,
                             sortOrder = original?.sortOrder ?: 0,
                         )
                     }

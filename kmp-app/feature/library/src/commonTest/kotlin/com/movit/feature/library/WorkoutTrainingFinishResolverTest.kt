@@ -2,63 +2,78 @@ package com.movit.feature.library
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertIs
+import kotlin.test.assertNull
 
 class WorkoutTrainingFinishResolverTest {
 
     @Test
-    fun onTrainingSessionFinish_whenWorkoutFlowComplete_clearsProgress() {
-        WorkoutRunProgressStore.clear("w-complete")
-        WorkoutRunProgressStore.write("w-complete", WorkoutRunProgress(exerciseIndex = 1, currentSet = 2))
-        val config = twoExerciseConfig("w-complete")
+    fun onTrainingSessionFinish_whenWorkoutFlowComplete_closesRun() {
+        WorkoutRunStore.clearAll()
+        val snapshot = twoExerciseSnapshot("w-complete")
+        WorkoutRunStore.start(workoutId = "w-complete", snapshot = snapshot)
 
-        val nav = WorkoutRunProgressStore.onTrainingSessionFinish(
+        val nav = resolveWorkoutRunFinish(
             workoutId = "w-complete",
-            config = config,
-            completedExerciseIndex = 0,
             isWorkoutFlowComplete = true,
         )
 
-        assertEquals(WorkoutRunPostNav.Complete, nav)
-        assertEquals(WorkoutRunProgress(), WorkoutRunProgressStore.read("w-complete"))
+        assertEquals(WorkoutRunFinishNav.Complete, nav)
+        assertNull(WorkoutRunStore.activeForWorkout("w-complete"))
     }
 
     @Test
-    fun onTrainingSessionFinish_whenSingleExerciseStillAdvancesProgress() {
-        WorkoutRunProgressStore.clear("w-partial")
-        val config = twoExerciseConfig("w-partial")
+    fun onTrainingSessionFinish_whenIncomplete_returnsToSession_withoutRestRoute() {
+        WorkoutRunStore.clearAll()
+        val snapshot = twoExerciseSnapshot("w-partial")
+        WorkoutRunStore.start(workoutId = "w-partial", snapshot = snapshot)
 
-        val nav = WorkoutRunProgressStore.onTrainingSessionFinish(
+        val nav = resolveWorkoutRunFinish(
             workoutId = "w-partial",
-            config = config,
-            completedExerciseIndex = 0,
             isWorkoutFlowComplete = false,
         )
 
-        assertIs<WorkoutRunPostNav.Rest>(nav)
-        assertEquals("ex-2", nav.upNextExerciseId)
+        assertEquals(WorkoutRunFinishNav.BackToSession, nav)
+        assertNull(WorkoutRunStore.activeForWorkout("w-partial"))
     }
 
     @Test
-    fun onTrainingSessionFinish_withoutConfig_returnsBackToRun() {
-        WorkoutRunProgressStore.clear("w-missing")
-        val nav = WorkoutRunProgressStore.onTrainingSessionFinish(
+    fun onTrainingSessionFinish_withoutActiveRun_stillReturnsNav() {
+        WorkoutRunStore.clearAll()
+        val nav = resolveWorkoutRunFinish(
             workoutId = "w-missing",
-            config = null,
-            completedExerciseIndex = 0,
             isWorkoutFlowComplete = false,
         )
-        assertEquals(WorkoutRunPostNav.BackToRun, nav)
+        assertEquals(WorkoutRunFinishNav.BackToSession, nav)
     }
 
-    private fun twoExerciseConfig(workoutId: String): WorkoutFlowConfigUi = WorkoutFlowConfigUi(
+    private fun twoExerciseSnapshot(workoutId: String): WorkoutRunSnapshot = WorkoutRunSnapshot(
         workoutId = workoutId,
         title = "Test",
-        subtitle = "Sub",
-        exercises = listOf(
-            WorkoutFlowExerciseUi("ex-1", "squat", "Squat", sets = 1, reps = 10, durationSeconds = null),
-            WorkoutFlowExerciseUi("ex-2", "lunge", "Lunge", sets = 1, reps = 10, durationSeconds = null),
+        blocks = listOf(
+            WorkoutRunBlock.Exercise(
+                exerciseId = "ex-1",
+                slug = "squat",
+                displayName = "Squat",
+                phaseRole = "MAIN",
+                target = ExerciseTarget.Reps(10),
+                sets = 1,
+                restBetweenSetsMs = 0,
+                restAfterExerciseMs = 45_000,
+                poseVariantIndex = 0,
+                weightPerSetKg = null,
+            ),
+            WorkoutRunBlock.Exercise(
+                exerciseId = "ex-2",
+                slug = "lunge",
+                displayName = "Lunge",
+                phaseRole = "MAIN",
+                target = ExerciseTarget.Reps(10),
+                sets = 1,
+                restBetweenSetsMs = 0,
+                restAfterExerciseMs = 0,
+                poseVariantIndex = 0,
+                weightPerSetKg = null,
+            ),
         ),
-        restBetweenSetsSeconds = 45,
     )
 }

@@ -55,6 +55,11 @@ object MovitCacheKeys {
 
     fun sessionJournalKey(sessionId: String): String = "session_journal_$sessionId"
 
+    /** Durable open-workout run progress (P1.4) — survives process death + session expiry. */
+    const val WORKOUT_RUN_STORE = "workout_run_cache"
+
+    fun workoutRunKey(workoutId: String): String = "workout_run_$workoutId"
+
     const val DAY_CUSTOMIZATION_STORE = "day_customization_cache"
 
     /** Legacy Android prefs namespace for day overrides (keys used [programId], not [userProgramId]). */

@@ -63,6 +63,18 @@ data class TrainProgramUi(
     val gradeLabel: String,
 )
 
+sealed interface TrainReportTargetUi {
+    data class ProgramWeek(val programId: String, val weekNumber: Int) : TrainReportTargetUi
+    data class ProgramDay(
+        val programId: String,
+        val weekNumber: Int,
+        val dayNumber: Int,
+        val plannedWorkoutId: String,
+        val reportId: String? = null,
+    ) : TrainReportTargetUi
+    data class WorkoutRun(val reportId: String) : TrainReportTargetUi
+}
+
 data class TrainTodayWorkoutUi(
     val title: String,
     val subtitle: String,
@@ -70,6 +82,8 @@ data class TrainTodayWorkoutUi(
     val exerciseCountLabel: String,
     val focusLabel: String,
     val primaryActionLabel: String,
+    val primaryLaunchTarget: TrainWorkoutLaunchUi? = null,
+    val reportTarget: TrainReportTargetUi? = null,
     val sessions: List<TrainWorkoutSessionUi> = emptyList(),
 )
 
@@ -126,6 +140,7 @@ data class TrainWeekDayDetailUi(
     val isCompleted: Boolean = false,
     val actionLabel: String? = null,
     val launchTarget: TrainWorkoutLaunchUi? = null,
+    val reportTarget: TrainReportTargetUi? = null,
 )
 
 data class TrainReadinessUi(

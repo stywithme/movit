@@ -95,7 +95,7 @@ object TrainingSessionReportCache {
 
     private fun listSetReportIds(sessionExerciseKey: String): Map<Int, String> {
         val memory = setReportsBySessionExercise[sessionExerciseKey]
-        if (memory != null && memory.isNotEmpty()) return memory.toSortedMap()
+        if (memory != null && memory.isNotEmpty()) return sortedBySetNumber(memory)
         val disk = persistentStore()?.listExerciseSetReportIds(sessionExerciseKey).orEmpty()
         if (disk.isNotEmpty()) {
             setReportsBySessionExercise[sessionExerciseKey] = disk.toMutableMap()
@@ -103,6 +103,10 @@ object TrainingSessionReportCache {
                 reportSessionExerciseKeys[reportId] = sessionExerciseKey
             }
         }
-        return disk
+        return sortedBySetNumber(disk)
     }
+
+    /** ponytail: LinkedHashMap from sorted entries — `toSortedMap` is JVM-only. */
+    private fun sortedBySetNumber(map: Map<Int, String>): Map<Int, String> =
+        map.entries.sortedBy { it.key }.associate { it.key to it.value }
 }

@@ -2,10 +2,12 @@ package com.movit.feature.explore
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.movit.core.data.repository.defaultExploreRepository
+import com.movit.core.data.MovitData
+import com.movit.core.data.cache.CacheState
+import com.movit.core.data.repository.ExploreContentSource
+import com.movit.core.data.repository.defaultExploreContentSource
 import com.movit.core.model.ExploreItemType
 import com.movit.core.model.ExploreItemUi
-import com.movit.core.model.ExploreRepository
 import com.movit.shared.AppResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -19,7 +21,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class MovitExploreViewModel(
-    private val repository: ExploreRepository = defaultExploreRepository(),
+    private val repository: ExploreContentSource = defaultExploreContentSource(),
 ) : ViewModel() {
     private val _state = MutableStateFlow(MovitExploreUiState())
     val state: StateFlow<MovitExploreUiState> = _state.asStateFlow()
@@ -37,37 +39,41 @@ class MovitExploreViewModel(
     }
 
     suspend fun load(isRefresh: Boolean) {
-        _state.update {
-            it.copy(
-                isLoading = !isRefresh,
-                isRefreshing = isRefresh,
-                errorMessage = null,
-            )
-        }
-        val result = withContext(Dispatchers.Default) {
-            if (isRefresh) {
-                repository.refreshExploreContent()
-            } else {
-                repository.getExploreContent()
+        if (isRefresh) {
+            _state.update { it.copy(isRefreshing = true, errorMessage = null) }
+            when (val result = withContext(Dispatchers.Default) { repository.refreshExploreContent() }) {
+                is AppResult.Success -> {
+                    applyContent(result.value)
+                    _state.update { it.copy(isRefreshing = false, errorMessage = null) }
+                }
+                is AppResult.Failure -> _state.update {
+                    it.copy(
+                        isRefreshing = false,
+                        errorMessage = if (hasCachedContent()) it.errorMessage else result.message,
+                    )
+                }
             }
+            return
         }
-        when (result) {
-            is AppResult.Success -> {
-                cachedFeatured = result.value.featured
-                cachedWorkouts = result.value.workouts
-                cachedExercises = result.value.exercises
-                cachedPrograms = result.value.programs
-                publishFiltered()
-                _state.update { it.copy(isLoading = false, isRefreshing = false) }
-            }
-            is AppResult.Failure -> {
-                _state.update {
+
+        if (!hasCachedContent()) {
+            _state.update { it.copy(isLoading = true, errorMessage = null) }
+        } else {
+            _state.update { it.copy(isRefreshing = true, errorMessage = null) }
+        }
+
+        repository.observeExploreContent().collect { cacheState ->
+            when (cacheState) {
+                is CacheState.Cached -> applyContent(cacheState.value)
+                is CacheState.Fresh -> applyContent(cacheState.value)
+                is CacheState.Error -> _state.update {
                     it.copy(
                         isLoading = false,
                         isRefreshing = false,
-                        errorMessage = result.message,
+                        errorMessage = cacheState.message,
                     )
                 }
+                is CacheState.Loading -> Unit
             }
         }
     }
@@ -133,6 +139,28 @@ class MovitExploreViewModel(
             }
         }
     }
+
+    private fun applyContent(content: com.movit.core.model.ExploreContent) {
+        cachedFeatured = content.featured
+        cachedWorkouts = content.workouts
+        cachedExercises = content.exercises
+        cachedPrograms = content.programs
+        publishFiltered()
+        _state.update {
+            it.copy(
+                isLoading = false,
+                isRefreshing = false,
+                errorMessage = null,
+                isOffline = MovitData.isInstalled && !MovitData.requirePlatform().isNetworkAvailable(),
+            )
+        }
+    }
+
+    private fun hasCachedContent(): Boolean =
+        cachedFeatured.isNotEmpty() ||
+            cachedWorkouts.isNotEmpty() ||
+            cachedExercises.isNotEmpty() ||
+            cachedPrograms.isNotEmpty()
 
     private fun publishFiltered() {
         val current = _state.value

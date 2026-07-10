@@ -1,6 +1,8 @@
 package com.movit.feature.train
 
 import com.movit.resources.strings.TrainStrings
+import com.movit.resources.localizedString
+import com.movit.core.data.MovitData
 import com.movit.core.network.dto.ExploreDataDto
 import com.movit.core.network.dto.ExploreProgramDto
 import com.movit.core.network.dto.HomeDataDto
@@ -168,6 +170,28 @@ object TrainApiMapper {
             .takeIf { it > 0 }
             ?: todayWorkout?.estimatedMinutes
             ?: 0
+        val primaryLaunch = sessions.firstOrNull { !it.isCompleted && it.launchTarget != null }?.launchTarget
+            ?: sessions.firstOrNull { it.launchTarget != null }?.launchTarget
+        val plannedId = todayWorkout?.plannedWorkoutId.orEmpty()
+        val dayReportId = cachedPlannedReportId(plannedId)
+        val reportTarget = if (status == TrainDashboardStatus.CompletedToday && activeProgram != null) {
+            if (!dayReportId.isNullOrBlank()) {
+                TrainReportTargetUi.ProgramDay(
+                    programId = activeProgram.id,
+                    weekNumber = activeProgram.weekNumber,
+                    dayNumber = activeProgram.dayNumber,
+                    plannedWorkoutId = plannedId,
+                    reportId = dayReportId,
+                )
+            } else {
+                TrainReportTargetUi.ProgramWeek(
+                    programId = activeProgram.id,
+                    weekNumber = activeProgram.weekNumber,
+                )
+            }
+        } else {
+            null
+        }
 
         return TrainTodayWorkoutUi(
             title = todayTitle(status, todayWorkout, language, strings),
@@ -175,11 +199,18 @@ object TrainApiMapper {
             durationLabel = if (totalMinutes > 0) strings.minEst(totalMinutes) else strings.dash,
             exerciseCountLabel = strings.exercisesCount(exerciseCount),
             focusLabel = strings.training,
-            primaryActionLabel = if (status == TrainDashboardStatus.CompletedToday) {
-                strings.viewReport
-            } else {
-                strings.startSession
+            primaryActionLabel = when (status) {
+                TrainDashboardStatus.CompletedToday -> {
+                    if (!dayReportId.isNullOrBlank()) {
+                        localizedString(language, "train_view_day_report")
+                    } else {
+                        localizedString(language, "program_flow_view_week_report")
+                    }
+                }
+                else -> strings.startSession
             },
+            primaryLaunchTarget = primaryLaunch,
+            reportTarget = reportTarget,
             sessions = sessions,
         )
     }
@@ -212,6 +243,7 @@ object TrainApiMapper {
                 strings.workoutNOfM(workout.completedWorkoutsCount + 1, workout.allWorkoutsCount)
             else -> strings.ready
         }
+        val isInProgress = !isCompleted && workout.completedWorkoutsCount > 0
 
         return listOf(
             TrainWorkoutSessionUi(
@@ -219,7 +251,11 @@ object TrainApiMapper {
                 subtitle = subtitle,
                 durationLabel = workout.estimatedMinutes?.let { strings.minEst(it) } ?: strings.dash,
                 exerciseCountLabel = strings.exercisesCount(workout.exerciseCount),
-                actionLabel = if (isCompleted) strings.viewSummary else strings.startSession,
+                actionLabel = when {
+                    isCompleted -> localizedString(language, "train_view_day_report")
+                    isInProgress -> localizedString(language, "train_resume_workout")
+                    else -> strings.startSession
+                },
                 isCompleted = isCompleted,
                 launchTarget = launchTarget,
             ),
@@ -363,7 +399,9 @@ object TrainApiMapper {
             append(strings.exercisesCount(exercises))
             workout?.estimatedMinutes?.takeIf { it > 0 }?.let { append(" · ${strings.minEst(it)}") }
         }
-        val isStartable = state == TrainWeekDayState.Today || state == TrainWeekDayState.InProgress
+        val isStartable = state == TrainWeekDayState.Today ||
+            state == TrainWeekDayState.InProgress ||
+            state == TrainWeekDayState.Missed
         val launchTarget = if (isStartable && workout != null && workout.plannedWorkoutId.isNotBlank()) {
             TrainWorkoutLaunchUi(
                 programSlug = activeProgram.id,
@@ -375,6 +413,25 @@ object TrainApiMapper {
         } else {
             null
         }
+        val dayReportId = workout?.plannedWorkoutId?.let { cachedPlannedReportId(it) }
+        val reportTarget = if (state == TrainWeekDayState.Completed && workout != null) {
+            if (!dayReportId.isNullOrBlank()) {
+                TrainReportTargetUi.ProgramDay(
+                    programId = activeProgram.id,
+                    weekNumber = weekNumber,
+                    dayNumber = day.dayNumber,
+                    plannedWorkoutId = workout.plannedWorkoutId,
+                    reportId = dayReportId,
+                )
+            } else {
+                TrainReportTargetUi.ProgramWeek(
+                    programId = activeProgram.id,
+                    weekNumber = weekNumber,
+                )
+            }
+        } else {
+            null
+        }
         val statusLabel = when (state) {
             TrainWeekDayState.Completed -> strings.statusCompleted
             TrainWeekDayState.Today -> strings.statusToday
@@ -383,8 +440,18 @@ object TrainApiMapper {
             else -> strings.statusUpcoming
         }
         val actionLabel = when {
-            isStartable -> strings.startSession
-            state == TrainWeekDayState.Completed -> strings.viewSummary
+            state == TrainWeekDayState.Missed && launchTarget != null ->
+                localizedString(language, "train_start_catch_up")
+            state == TrainWeekDayState.InProgress && launchTarget != null ->
+                localizedString(language, "train_resume_workout")
+            isStartable && launchTarget != null -> strings.startSession
+            state == TrainWeekDayState.Completed -> {
+                if (!dayReportId.isNullOrBlank()) {
+                    localizedString(language, "train_view_day_report")
+                } else {
+                    localizedString(language, "program_flow_view_week_report")
+                }
+            }
             else -> null
         }
         return TrainWeekDayDetailUi(
@@ -395,6 +462,7 @@ object TrainApiMapper {
             isCompleted = state == TrainWeekDayState.Completed,
             actionLabel = actionLabel,
             launchTarget = launchTarget,
+            reportTarget = reportTarget,
         )
     }
 
@@ -606,6 +674,17 @@ object TrainApiMapper {
         TrainQuickActionUi("reports", strings.quickReports, strings.quickReportsSub),
         TrainQuickActionUi("preferences", strings.quickTune, strings.quickTuneSub),
     )
+
+    /**
+     * Day report id when sync has hydrated [PlannedWorkoutReportExportDto] for this planned workout.
+     * Home/trainMode DTOs do not carry reportId — without a cached export, UI uses ProgramWeek + week-report label.
+     */
+    private fun cachedPlannedReportId(plannedWorkoutId: String): String? {
+        if (plannedWorkoutId.isBlank() || !MovitData.isInstalled) return null
+        return runCatching {
+            MovitData.reports.readCachedPlannedWorkoutReport(plannedWorkoutId)?.id
+        }.getOrNull()?.takeIf { it.isNotBlank() }
+    }
 
     private fun Map<String, String>.localized(language: String): String {
         val primary = if (language == "ar") this["ar"] else this["en"]

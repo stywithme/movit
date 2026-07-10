@@ -108,18 +108,32 @@ private fun TrainDashboardContent(
     dashboard: TrainDashboardUi,
     onEvent: (MovitTrainEvent) -> Unit,
 ) {
+    val today = dashboard.today
     val onPrimaryAction: () -> Unit = {
         when (dashboard.status) {
-            TrainDashboardStatus.ActivePlan -> onEvent(MovitTrainEvent.StartWorkoutClicked)
+            TrainDashboardStatus.ActivePlan -> {
+                val target = today?.primaryLaunchTarget
+                if (target != null) {
+                    onEvent(MovitTrainEvent.StartSession(target))
+                } else {
+                    onEvent(MovitTrainEvent.ExploreProgramsClicked)
+                }
+            }
             TrainDashboardStatus.NoAssessment,
             TrainDashboardStatus.ReassessmentDue,
             -> onEvent(MovitTrainEvent.AssessmentClicked)
             TrainDashboardStatus.NoPlan,
             TrainDashboardStatus.RestDay,
             -> onEvent(MovitTrainEvent.ExploreProgramsClicked)
-            TrainDashboardStatus.CompletedToday,
-            TrainDashboardStatus.ProgramComplete,
-            -> onEvent(MovitTrainEvent.ViewReportClicked)
+            TrainDashboardStatus.CompletedToday -> {
+                val reportTarget = today?.reportTarget
+                if (reportTarget != null) {
+                    onEvent(MovitTrainEvent.ViewReport(reportTarget))
+                } else {
+                    onEvent(MovitTrainEvent.ExploreProgramsClicked)
+                }
+            }
+            TrainDashboardStatus.ProgramComplete -> onEvent(MovitTrainEvent.ViewJourneyClicked)
         }
     }
 
@@ -136,6 +150,14 @@ private fun TrainDashboardContent(
         )
     }
 
+    TrainTodayCard(
+        dashboard = dashboard,
+        onPrimaryAction = onPrimaryAction,
+        onSessionAction = { onEvent(MovitTrainEvent.StartSession(it)) },
+        onViewJourney = { onEvent(MovitTrainEvent.ViewJourneyClicked) },
+        onWhatsNext = { onEvent(MovitTrainEvent.WhatsNextClicked) },
+    )
+
     val weekOptions = dashboard.weekOptions.ifEmpty { listOf(dashboard.week) }
     val selectedWeek = weekOptions.getOrElse(state.selectedWeekIndex) { dashboard.week }
         .takeIf { dashboard.week.days.isNotEmpty() }
@@ -149,16 +171,9 @@ private fun TrainDashboardContent(
             onPreviousWeek = { onEvent(MovitTrainEvent.PreviousWeekClicked) },
             onNextWeek = { onEvent(MovitTrainEvent.NextWeekClicked) },
             onDayClick = { onEvent(MovitTrainEvent.DayClicked(it)) },
-            onDayAction = { onEvent(MovitTrainEvent.DayActionClicked) },
+            onDayAction = { onEvent(MovitTrainEvent.DayActionClicked(it)) },
         )
     }
-
-    TrainTodayCard(
-        dashboard = dashboard,
-        onPrimaryAction = onPrimaryAction,
-        onViewJourney = { onEvent(MovitTrainEvent.ViewJourneyClicked) },
-        onWhatsNext = { onEvent(MovitTrainEvent.WhatsNextClicked) },
-    )
 
     if (shouldShowReadiness(dashboard.status)) {
         TrainReadinessCard(readiness = dashboard.readiness)
@@ -168,7 +183,21 @@ private fun TrainDashboardContent(
         dashboard.report?.let { report ->
             TrainReportSection(
                 report = report,
-                onViewReport = { onEvent(MovitTrainEvent.ViewReportClicked) },
+                onViewReport = {
+                    val program = dashboard.program
+                    if (program != null) {
+                        onEvent(
+                            MovitTrainEvent.ViewReport(
+                                TrainReportTargetUi.ProgramWeek(
+                                    programId = program.id,
+                                    weekNumber = program.weekNumber,
+                                ),
+                            ),
+                        )
+                    } else {
+                        onEvent(MovitTrainEvent.ExploreProgramsClicked)
+                    }
+                },
             )
         }
     }

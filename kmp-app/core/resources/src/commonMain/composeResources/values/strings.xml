@@ -351,6 +351,9 @@
     <string name="train_day_complete">Day complete!</string>
     <string name="train_day_complete_summary">%1$s · Total %2$s</string>
     <string name="train_view_day_summary">View day summary</string>
+    <string name="train_view_day_report">View day report</string>
+    <string name="train_start_catch_up">Start catch-up</string>
+    <string name="train_resume_workout">Resume workout</string>
     <string name="train_form_footer_steady">Form score %1$d%% · steady control</string>
     <string name="train_tomorrow_preview">Tomorrow: %1$s · %2$d exercises</string>
     <string name="train_whats_next">What\'s next</string>
@@ -408,10 +411,12 @@
     <string name="train_a11y_session_expanded">%1$s, %2$s, expanded, double tap to collapse</string>
     <string name="train_a11y_session_start">Start session %1$s</string>
     <string name="train_a11y_session_thumbnail">Thumbnail for %1$s</string>
+    <string name="train_a11y_week_day_selected">Selected</string>
 
     <!-- Report detail -->
     <string name="report_detail_loading">Loading report…</string>
     <string name="report_detail_back">Back</string>
+    <string name="report_detail_done">Done</string>
     <string name="report_detail_share">Share</string>
     <string name="report_detail_page_overview">Overview</string>
     <string name="report_detail_page_form">Form</string>
@@ -478,6 +483,8 @@
     <!-- Workout session -->
     <string name="session_back">Back</string>
     <string name="session_edit">Edit</string>
+    <string name="session_customize_run">Customize this run</string>
+    <string name="session_save_failed">Could not save changes</string>
     <string name="session_done">Done</string>
     <string name="session_add_exercise">Add exercise</string>
     <string name="session_rest">Rest</string>
@@ -487,6 +494,15 @@
     <string name="session_sets">Sets</string>
     <string name="session_ready_to_train">Ready to train</string>
     <string name="session_start">Start</string>
+    <string name="session_cta_preparing">Preparing…</string>
+    <string name="session_cta_offline_ready">Start offline</string>
+    <string name="session_cta_offline_ready_hint">Ready offline — uploads later</string>
+    <string name="session_cta_launching">Starting…</string>
+    <string name="session_no_exercises">This workout has no exercises to start.</string>
+    <string name="session_exercise_target_invalid">One or more exercises are missing reps or duration. Fix the workout before starting.</string>
+    <string name="session_resume_plan_mismatch">Your saved progress no longer matches this workout. Restart to continue.</string>
+    <string name="prepare_preview_hint">Exercise preview</string>
+    <string name="prepare_back_to_workout">Back to workout</string>
     <string name="session_summary">%1$d exercises · %2$s</string>
     <string name="session_editing">editing</string>
     <string name="session_saving">saving…</string>
@@ -596,6 +612,9 @@
     <string name="program_edit_remove_exercise">Remove exercise</string>
     <string name="program_edit_reset_day">Reset day</string>
     <string name="program_edit_saving">Saving your copy…</string>
+    <string name="program_edit_day_sync_required">Connect and sync this day before editing it.</string>
+    <string name="program_edit_enroll_first">Start this program before editing its sessions.</string>
+    <string name="program_edit_day_no_sessions">There are no editable sessions on this day.</string>
     <string name="program_impact_sync">Sync payload</string>
     <string name="program_impact_sync_value">%1$d sessions</string>
     <string name="program_not_found">Program not found.</string>
@@ -670,6 +689,8 @@
     <string name="prepare_stat_rest">Rest</string>
     <string name="prepare_add_rest">+15</string>
     <string name="prepare_skip_rest">Skip</string>
+    <string name="training_session_rest_add_time_a11y">Add 15 seconds to rest</string>
+    <string name="training_session_rest_skip_a11y">Skip rest</string>
     <string name="prepare_training_bridge_unavailable">Camera training is not available on this device yet.</string>
     <string name="prepare_pose_variant">Camera angle</string>
     <string name="prepare_a11y_hero_image">Exercise preview image</string>
@@ -732,6 +753,11 @@
     <string name="training_session_rest_title">Rest</string>
     <string name="training_session_rest_timer">%1$d s</string>
     <string name="training_session_rest_next">Next: %1$s</string>
+    <string name="training_session_rest_between_sets">Rest between sets</string>
+    <string name="training_session_rest_between_exercises">Rest before next exercise</string>
+    <string name="training_session_rest_set_progress">Set %1$d of %2$d</string>
+    <string name="training_session_rest_target_reps">Target: %1$d reps</string>
+    <string name="training_session_rest_target_duration">Target: %1$d s hold</string>
     <string name="training_session_complete_title">Set complete</string>
     <string name="training_session_view_report">View report</string>
     <string name="training_session_complete_summary">%1$d reps · %2$d%% form</string>
@@ -746,6 +772,11 @@
     <string name="training_session_resume_prior_message">You have a previous session (%1$d reps). Resume or start over?</string>
     <string name="training_session_resume_prior_continue">Resume</string>
     <string name="training_session_resume_prior_start_fresh">Start over</string>
+    <string name="training_session_exit_title">Leave workout?</string>
+    <string name="training_session_exit_message">Your progress can be saved so you can resume later.</string>
+    <string name="training_session_exit_continue">Continue workout</string>
+    <string name="training_session_exit_save">Save and exit</string>
+    <string name="training_session_exit_end">End workout</string>
     <string name="training_session_stop">Stop</string>
     <string name="training_session_form_label">Form</string>
     <string name="training_phase_ready">Ready</string>

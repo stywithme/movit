@@ -18,6 +18,7 @@ import com.movit.core.data.outbox.LegacyAnalyticsPendingCleaner
 import com.movit.core.data.outbox.LegacyWorkoutSyncGate
 import com.movit.core.data.outbox.OfflineWriteQueue
 import com.movit.core.data.outbox.OutboxReplayAcquisition
+import com.movit.core.data.outbox.WorkoutRunStoreBridge
 import com.movit.core.data.platform.MovitPlatformBindings
 import com.movit.core.data.repository.AccountSyncRepository
 import com.movit.core.data.repository.ExploreSyncRepository
@@ -160,6 +161,7 @@ object MovitData {
         if (!isInstalled) return
         val koin = koin()
         koin.get<MovitLocalStore>().clearDurableWrites()
+        WorkoutRunStoreBridge.clearMemoryIfRegistered()
         LegacyAnalyticsPendingCleaner.clearIfRegistered()
         koin.get<GuestOutboxAttributionGate>().clearAcceptance()
         clearLastKnownUserId()
@@ -188,6 +190,9 @@ object MovitData {
         val previous = readLastKnownUserId()
         if (previous != null && previous != userId) {
             clearReadCaches()
+            // Open runs are user-owned — do not let the next account Resume the prior user's session.
+            store.clearWorkoutRunStore()
+            WorkoutRunStoreBridge.clearMemoryIfRegistered()
             store.deleteOutboxOwnedByOtherUsers(userId)
             gate.clearAcceptance()
         }

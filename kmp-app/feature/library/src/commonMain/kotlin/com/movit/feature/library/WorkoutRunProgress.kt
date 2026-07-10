@@ -16,6 +16,11 @@ sealed interface WorkoutRunPostNav {
     ) : WorkoutRunPostNav
 }
 
+/**
+ * @deprecated Modern flow uses [WorkoutRunStore] + [TrainingSessionFlowCoordinator].
+ * Kept only for any residual callers; do not use in new code.
+ */
+@Deprecated("Use WorkoutRunStore + TrainingSessionFlowCoordinator")
 object WorkoutRunProgressStore {
     private val byWorkoutId = mutableMapOf<String, WorkoutRunProgress>()
 

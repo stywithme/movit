@@ -112,6 +112,9 @@ class MovitTrainingEngine(
 
     private val sessionWeightUnit: String = "kg",
 
+    /** Session/flow override for hold duration (seconds). Wins over config when > 0. */
+    targetDurationSecondsOverride: Int? = null,
+
     private val deviceTiltPort: DeviceTiltPort? = null,
 
     private val stabilityPolicy: StabilityPolicy = StabilityPolicy.default(),
@@ -145,11 +148,13 @@ class MovitTrainingEngine(
 
     private val isHoldExercise: Boolean = exerciseConfig.isHoldExercise()
 
-    private val targetDurationMs: Long? = exerciseConfig.repCountingConfig.duration
+    private val targetDurationMs: Long? = (
+        targetDurationSecondsOverride?.takeIf { it > 0 }
+            ?: exerciseConfig.repCountingConfig.duration?.takeIf { it > 0 }
+        )?.let { it * 1_000L }
 
-        ?.takeIf { it > 0 }
-
-        ?.let { it * 1_000L }
+    /** Test/observability: resolved hold target after session overrides. */
+    internal fun resolvedTargetDurationMs(): Long? = targetDurationMs
 
 
 

@@ -8,13 +8,14 @@ import kotlinx.coroutines.flow.flow
 class FakeTrainRepository(
     private val dashboard: TrainDashboardUi = MovitTrainPreviewData.activePlan,
     private val shouldFail: Boolean = false,
+    private val freshDashboard: TrainDashboardUi? = null,
 ) : TrainRepository {
 
     override suspend fun getTrainDashboard(): AppResult<TrainDashboardUi> {
         return if (shouldFail) {
             AppResult.Failure("Unable to load training dashboard.")
         } else {
-            AppResult.Success(dashboard)
+            AppResult.Success(freshDashboard ?: dashboard)
         }
     }
 

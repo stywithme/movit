@@ -36,6 +36,11 @@ class AccountSwitchClearsForeignCacheTest {
             "user-a",
         )
         localStore.writeJsonCache(MovitCacheKeys.HOME_STORE, MovitCacheKeys.HOME_DATA, """{"user":"a"}""")
+        localStore.writeJsonCache(
+            MovitCacheKeys.WORKOUT_RUN_STORE,
+            MovitCacheKeys.workoutRunKey("w-a"),
+            "run-a|w-a|0|1|PRE_EXERCISE|squat|Active|1|user-a",
+        )
         localStore.insertOutbox(
             OutboxEntry(
                 id = "a-op",
@@ -62,6 +67,12 @@ class AccountSwitchClearsForeignCacheTest {
         val prompt = MovitData.onAuthenticatedSession("user-b")
 
         assertNull(localStore.readJsonCache(MovitCacheKeys.HOME_STORE, MovitCacheKeys.HOME_DATA))
+        assertNull(
+            localStore.readJsonCache(
+                MovitCacheKeys.WORKOUT_RUN_STORE,
+                MovitCacheKeys.workoutRunKey("w-a"),
+            ),
+        )
         assertNull(localStore.getOutboxById("a-op"))
         assertNotNull(localStore.getOutboxById("guest-op"))
         assertEquals("user-b", localStore.readJsonCache(MovitCacheKeys.AUTH_LIFECYCLE_STORE, MovitCacheKeys.LAST_KNOWN_USER_ID))

@@ -83,6 +83,8 @@ class WorkoutTemplateSessionMapperTest {
         assertNotNull(session)
         assertEquals("quick-legs", session.id)
         assertEquals("Quick Legs", session.title)
-        assertTrue(session.sections.isNotEmpty())
+        assertTrue(session.sections.isEmpty())
+        assertEquals(0, session.setCount)
+        assertTrue(!session.toRunSnapshot().isStartable)
     }
 }

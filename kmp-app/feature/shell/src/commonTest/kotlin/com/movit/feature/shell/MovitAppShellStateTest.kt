@@ -5,8 +5,11 @@ import com.movit.feature.account.MovitAuthEffect
 import com.movit.feature.account.MovitProfileEffect
 import com.movit.feature.explore.MovitExploreEffect
 import com.movit.feature.home.MovitHomeEffect
+import com.movit.feature.library.WorkoutSessionKeys
 import com.movit.feature.reports.MovitReportsEffect
 import com.movit.feature.train.MovitTrainEffect
+import com.movit.feature.train.TrainReportTargetUi
+import com.movit.feature.train.TrainWorkoutLaunchUi
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -141,6 +144,84 @@ class MovitAppShellStateTest {
         val viewModel = MovitAppShellViewModel()
         viewModel.onEvent(MovitAppShellEvent.TrainEffectReceived(MovitTrainEffect.OpenProgramList))
         assertEquals(MovitInnerRoute.ProgramList, viewModel.state.value.currentInnerRoute)
+    }
+
+    @Test
+    fun trainOpenReport_programDayWithoutReportId_pushesWeeklyReport() {
+        val viewModel = MovitAppShellViewModel()
+        viewModel.onEvent(
+            MovitAppShellEvent.TrainEffectReceived(
+                MovitTrainEffect.OpenReport(
+                    TrainReportTargetUi.ProgramDay(
+                        programId = "prog-full-body",
+                        weekNumber = 2,
+                        dayNumber = 3,
+                        plannedWorkoutId = "pw-lower",
+                    ),
+                ),
+            ),
+        )
+        assertEquals(
+            MovitInnerRoute.WeeklyReport("prog-full-body", weekNumber = 2),
+            viewModel.state.value.currentInnerRoute,
+        )
+    }
+
+    @Test
+    fun trainOpenReport_programDayWithReportId_pushesReportDetail() {
+        val viewModel = MovitAppShellViewModel()
+        viewModel.onEvent(
+            MovitAppShellEvent.TrainEffectReceived(
+                MovitTrainEffect.OpenReport(
+                    TrainReportTargetUi.ProgramDay(
+                        programId = "prog-full-body",
+                        weekNumber = 2,
+                        dayNumber = 3,
+                        plannedWorkoutId = "pw-lower",
+                        reportId = "pwr-day-42",
+                    ),
+                ),
+            ),
+        )
+        assertEquals(
+            MovitInnerRoute.ReportDetail("pwr-day-42"),
+            viewModel.state.value.currentInnerRoute,
+        )
+    }
+
+    @Test
+    fun exploreAndTrain_openWorkout_viaLaunchRequest_sameWorkoutSessionRoute() {
+        val exploreVm = MovitAppShellViewModel()
+        exploreVm.onEvent(
+            MovitAppShellEvent.ExploreEffectReceived(
+                MovitExploreEffect.OpenWorkoutSession("workout-lower-body"),
+            ),
+        )
+        assertEquals(
+            MovitInnerRoute.WorkoutSession("workout-lower-body"),
+            exploreVm.state.value.currentInnerRoute,
+        )
+
+        val trainVm = MovitAppShellViewModel()
+        trainVm.onEvent(
+            MovitAppShellEvent.TrainEffectReceived(
+                MovitTrainEffect.OpenProgramWorkout(
+                    TrainWorkoutLaunchUi(
+                        programSlug = "prog-1",
+                        programId = "prog-1",
+                        weekNumber = 2,
+                        dayNumber = 3,
+                        plannedWorkoutId = "pw-1",
+                    ),
+                ),
+            ),
+        )
+        assertEquals(
+            MovitInnerRoute.WorkoutSession(
+                WorkoutSessionKeys.encode("prog-1", 2, 3, "pw-1"),
+            ),
+            trainVm.state.value.currentInnerRoute,
+        )
     }
 
     @Test

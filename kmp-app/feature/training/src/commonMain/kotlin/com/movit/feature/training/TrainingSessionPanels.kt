@@ -5,13 +5,19 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.ui.draw.scale
 import androidx.compose.material3.MaterialTheme
@@ -24,6 +30,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -270,11 +278,45 @@ fun CountdownOverlay(
 @Composable
 fun RestPanel(
     secondsRemaining: Int,
+    restContext: String,
     nextExerciseName: String,
+    currentSetNumber: Int,
+    totalSets: Int,
+    nextTargetReps: Int,
+    nextTargetDurationSeconds: Int? = null,
+    nextTargetWeightKg: Float? = null,
+    previewImageUrl: String? = null,
     tip: String?,
     modifier: Modifier = Modifier,
 ) {
     val movit = MaterialTheme.movitColors
+    val betweenSets = restContext == "BETWEEN_SETS"
+    val titleKey = if (betweenSets) {
+        "training_session_rest_between_sets"
+    } else {
+        "training_session_rest_between_exercises"
+    }
+    val upNextText = if (betweenSets) {
+        movitText("training_session_rest_set_progress", currentSetNumber, totalSets)
+    } else {
+        movitText("training_session_rest_next", nextExerciseName)
+    }
+    val targetLines = buildList {
+        if (nextTargetReps > 0) {
+            add(movitText("training_session_rest_target_reps", nextTargetReps))
+        }
+        nextTargetDurationSeconds?.let { seconds ->
+            add(movitText("training_session_rest_target_duration", seconds))
+        }
+        nextTargetWeightKg?.let { kg ->
+            val label = if (kg == kg.toLong().toFloat()) {
+                kg.toLong().toString()
+            } else {
+                kg.toString()
+            }
+            add(movitText("session_weight_kg", label))
+        }
+    }
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -290,7 +332,7 @@ fun RestPanel(
             verticalArrangement = Arrangement.spacedBy(MovitSpacing.md),
         ) {
             Text(
-                text = movitText("training_session_rest_title"),
+                text = movitText(titleKey),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.W900,
                 color = MaterialTheme.colorScheme.onPrimary,
@@ -302,15 +344,143 @@ fun RestPanel(
                 fontWeight = FontWeight.W900,
                 color = MaterialTheme.colorScheme.onPrimary,
             )
+            if (!previewImageUrl.isNullOrBlank()) {
+                MovitRemoteImage(
+                    imageUrl = previewImageUrl,
+                    contentDescription = nextExerciseName,
+                    placeholderLabel = nextExerciseName.take(1).uppercase(),
+                    modifier = Modifier
+                        .size(72.dp)
+                        .clip(RoundedCornerShape(16.dp)),
+                )
+            }
             Text(
-                text = movitText("training_session_rest_next", nextExerciseName),
+                text = upNextText,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.W800,
                 color = movit.onInkVeil88,
                 textAlign = TextAlign.Center,
             )
+            if (targetLines.isNotEmpty()) {
+                targetLines.forEach { line ->
+                    Text(
+                        text = line,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.W700,
+                        color = movit.onInkVeil70,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
             if (!tip.isNullOrBlank()) {
                 MovitGlassMessage(text = tip, severity = GlassMessageSeverity.INFO)
+            }
+        }
+    }
+}
+
+@Composable
+fun RestControlsDock(
+    secondsRemaining: Int,
+    isPaused: Boolean,
+    onTogglePause: () -> Unit,
+    onAddTime: () -> Unit,
+    onSkip: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val movit = MaterialTheme.movitColors
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = MovitSpacing.lg, vertical = MovitSpacing.md),
+        horizontalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Surface(
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(20.dp),
+            color = movit.inkVeil78,
+            contentColor = movit.onInk,
+            border = BorderStroke(1.dp, movit.onInkVeil18),
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = MovitSpacing.md, vertical = MovitSpacing.sm),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(MovitSpacing.sm),
+            ) {
+                Text(
+                    text = movitText("training_session_rest_timer", secondsRemaining),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.W800,
+                )
+                RestControlMiniButton(
+                    icon = if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
+                    onClick = onTogglePause,
+                    contentDescription = movitText(
+                        if (isPaused) "training_session_resume" else "training_session_pause",
+                    ),
+                )
+                RestControlMiniButton(
+                    text = movitText("prepare_add_rest"),
+                    onClick = onAddTime,
+                    contentDescription = movitText("training_session_rest_add_time_a11y"),
+                )
+            }
+        }
+        val skipRestA11y = movitText("training_session_rest_skip_a11y")
+        MovitButton(
+            text = movitText("prepare_skip_rest"),
+            onClick = onSkip,
+            variant = MovitButtonVariant.Filled,
+            modifier = Modifier.semantics {
+                contentDescription = skipRestA11y
+            },
+        )
+    }
+}
+
+@Composable
+private fun RestControlMiniButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    text: String? = null,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    contentDescription: String? = null,
+) {
+    val movit = MaterialTheme.movitColors
+    Surface(
+        onClick = onClick,
+        modifier = modifier
+            .height(36.dp)
+            .then(if (text != null) Modifier else Modifier.size(36.dp))
+            .then(
+                if (contentDescription != null) {
+                    Modifier.semantics { this.contentDescription = contentDescription }
+                } else {
+                    Modifier
+                },
+            ),
+        shape = RoundedCornerShape(10.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.18f),
+        contentColor = movit.onInk,
+        border = BorderStroke(1.dp, movit.onInkVeil18),
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.padding(horizontal = if (text != null) 10.dp else 0.dp),
+        ) {
+            when {
+                icon != null -> Icon(
+                    imageVector = icon,
+                    contentDescription = contentDescription,
+                    modifier = Modifier.size(17.dp),
+                )
+                text != null -> Text(
+                    text = text,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.W800,
+                )
             }
         }
     }

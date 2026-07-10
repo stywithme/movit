@@ -4,4 +4,6 @@ sealed interface TrainingSessionEffect {
     data class ViewReport(val reportId: String) : TrainingSessionEffect
     data class Finish(val isWorkoutFlowComplete: Boolean) : TrainingSessionEffect
     data object NavigateBack : TrainingSessionEffect
+    /** Drop TrainingSession + ExercisePrepare for this run (Save/End), land on WorkoutSession. */
+    data object ExitWorkoutJourney : TrainingSessionEffect
 }

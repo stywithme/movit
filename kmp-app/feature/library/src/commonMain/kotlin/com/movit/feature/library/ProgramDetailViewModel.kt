@@ -75,6 +75,18 @@ class ProgramDetailViewModel(
 
     ) -> AppResult<Unit> = defaultSaveDayCustomizations(),
 
+    private val loadEffectiveDayPlan: suspend (
+
+        userProgramId: String,
+
+        weekNumber: Int,
+
+        dayNumber: Int,
+
+    ) -> AppResult<EffectivePlanPayloadDto> = defaultLoadEffectiveDayPlan(),
+
+    private val activeUserProgramIdProvider: () -> String? = defaultActiveUserProgramIdProvider(),
+
     private val prefetchWeekOffline: suspend (
 
         ProgramExportDto,
@@ -109,14 +121,14 @@ class ProgramDetailViewModel(
 
     private var enrollment = ProgramEnrollmentUi(isEnrolled = false)
 
-    private var selectedWeekNumber = initialWeekNumber ?: 1
+    private val initialWeekOverride = initialWeekNumber
+    private var hasResolvedDefaultWeek = initialWeekOverride != null
+
+    private var selectedWeekNumber = initialWeekOverride ?: 1
 
     private var selectedDayNumber: Int? = null
 
-    private var editState = ProgramEditUiState(
-        startDateLabel = "Jun 2",
-        editingWeekNumber = selectedWeekNumber,
-    )
+    private var editState = ProgramEditUiState(editingWeekNumber = selectedWeekNumber)
 
 
 
@@ -148,26 +160,14 @@ class ProgramDetailViewModel(
             is ProgramDetailEvent.DaySelected -> onDaySelected(event.dayNumber)
 
             ProgramDetailEvent.StartProgramClicked -> {
-
+                if (_state.value.isStarting) return
                 viewModelScope.launch {
-
-                    startProgramAndGetSessionKey()?.let { key ->
-
-                        _effects.emit(ProgramDetailEffect.StartSession(key))
-
-                    }
-
+                    _state.update { it.copy(isStarting = true, actionMessage = null) }
+                    val key = startProgramAndGetSessionKey()
+                    _state.update { it.copy(isStarting = false) }
+                    key?.let { _effects.emit(ProgramDetailEffect.StartSession(it)) }
                 }
-
             }
-
-            is ProgramDetailEvent.EditReasonSelected -> onEditReasonSelected(event.reason)
-
-            is ProgramDetailEvent.EditScopeSelected -> onEditScopeSelected(event.scope)
-
-            is ProgramDetailEvent.WeeklyTargetChange -> onWeeklyTargetChange(event.delta)
-
-            ProgramDetailEvent.PauseCalendarToggle -> onPauseCalendarToggle()
 
             is ProgramDetailEvent.SessionMove -> onSessionMove(event.sessionId, event.direction)
 
@@ -280,6 +280,8 @@ class ProgramDetailViewModel(
 
 
     fun onTabSelected(tab: ProgramDetailTab) {
+
+        if (tab == ProgramDetailTab.Edit && !enrollment.isEnrolled) return
 
         _state.update { it.copy(selectedTab = tab) }
 
@@ -469,73 +471,9 @@ class ProgramDetailViewModel(
 
 
 
-    fun onEditReasonSelected(reason: ProgramEditReason) {
-
-        editState = editState.copy(selectedReason = reason)
-
-        loadedProgram?.let { program ->
-
-            toastScope.launch { publish(program) }
-
-        }
-
-    }
-
-
-
-    fun onEditScopeSelected(scope: ProgramEditScope) {
-
-        editState = editState.copy(selectedScope = scope)
-
-        loadedProgram?.let { program ->
-
-            toastScope.launch { publish(program) }
-
-        }
-
-    }
-
-
-
-    fun onWeeklyTargetChange(delta: Int) {
-
-        val next = (editState.weeklyTarget + delta).coerceIn(1, 7)
-
-        editState = editState.copy(weeklyTarget = next, isDirty = true)
-
-        loadedProgram?.let { program ->
-
-            toastScope.launch { publish(program) }
-
-        }
-
-    }
-
-
-
-    fun onPauseCalendarToggle() {
-
-        editState = editState.copy(
-
-            pauseCalendar = !editState.pauseCalendar,
-
-            isDirty = true,
-
-        )
-
-        enrollment = enrollment.copy(isPaused = editState.pauseCalendar)
-
-        loadedProgram?.let { program ->
-
-            toastScope.launch { publish(program) }
-
-        }
-
-    }
-
-
-
     fun onSessionMove(sessionId: String, direction: Int) {
+
+        if (!editState.isDayPlanAvailable) return
 
         val sessions = editState.daySessions.toMutableList()
 
@@ -589,6 +527,8 @@ class ProgramDetailViewModel(
 
     ) {
 
+        if (!editState.isDayPlanAvailable) return
+
         editState = editState.copy(
 
             daySessions = editState.daySessions.map { session ->
@@ -639,6 +579,8 @@ class ProgramDetailViewModel(
 
     fun onRemoveSession(sessionId: String) {
 
+        if (!editState.isDayPlanAvailable) return
+
         removedSessionIds.add(sessionId)
 
         editState = editState.copy(
@@ -660,6 +602,8 @@ class ProgramDetailViewModel(
 
 
     fun onRemoveExercise(sessionId: String, exerciseId: String) {
+
+        if (!editState.isDayPlanAvailable) return
 
         removedExerciseIds.add(exerciseId)
 
@@ -723,33 +667,50 @@ class ProgramDetailViewModel(
 
         toastScope.launch {
 
+            val baseline = effectiveDayPlan
+
+            if (!editState.isDayPlanAvailable || baseline == null) {
+
+                editState = editState.copy(
+
+                    isSaving = false,
+
+                    saveError = localizedString(resolveLanguage(), "program_edit_day_sync_required"),
+
+                )
+
+                publish(program)
+
+                return@launch
+
+            }
+
+            if (!editState.isDirty) return@launch
+
             editState = editState.copy(isSaving = true, saveError = null)
 
             publish(program)
 
 
+            val userProgramId = baseline.userProgramId.takeIf { it.isNotBlank() }
 
-            val baseline = effectiveDayPlan
+                ?: activeUserProgramIdProvider()?.takeIf { it.isNotBlank() }
 
-                ?: ProgramDetailEditMapper.toBaselinePlan(
+            if (userProgramId == null) {
 
-                    sessions = editState.daySessions,
+                editState = editState.copy(
 
-                    userProgramId = "preview",
+                    isSaving = false,
 
-                    weekNumber = editState.editingWeekNumber,
-
-                    dayNumber = editState.editingDayNumber,
-
-                    programId = program.id,
+                    saveError = localizedString(resolveLanguage(), "program_edit_day_sync_required"),
 
                 )
 
+                publish(program)
 
+                return@launch
 
-            val shouldSyncDay = editState.isDirty && editState.daySessions.isNotEmpty()
-
-            if (shouldSyncDay) {
+            }
 
                 val request = ProgramEditSaveEncoder.encodeDayUpdate(
 
@@ -771,7 +732,7 @@ class ProgramDetailViewModel(
 
                     val result = saveDayCustomizations(
 
-                        resolveUserProgramId(),
+                        userProgramId,
 
                         editState.editingWeekNumber,
 
@@ -816,12 +777,6 @@ class ProgramDetailViewModel(
                     }
 
                 }
-
-            } else {
-
-                completeSave(program)
-
-            }
 
         }
 
@@ -899,7 +854,7 @@ class ProgramDetailViewModel(
 
                 is AppResult.Failure -> {
 
-                    _state.update { it.copy(errorMessage = result.message) }
+                    _state.update { it.copy(actionMessage = result.message) }
 
                     return null
 
@@ -929,23 +884,33 @@ class ProgramDetailViewModel(
 
         val dayNumber = resolveEditingDayNumber(weekNumber)
 
-        editState = editState.copy(editingDayNumber = dayNumber)
+        editState = editState.copy(
+
+            editingDayNumber = dayNumber,
+
+            isDayPlanAvailable = false,
+
+            dayPlanErrorKey = null,
+
+            saveError = null,
+
+        )
 
 
 
         val userProgramId = resolveUserProgramIdOrNull()
 
-        if (userProgramId != null && MovitData.isInstalled) {
+        if (userProgramId != null) {
 
             when (
 
-                val result = MovitData.workoutSession.syncEffectivePlan(
+                val result = loadEffectiveDayPlan(
 
-                    userProgramId = userProgramId,
+                    userProgramId,
 
-                    weekNumber = weekNumber,
+                    weekNumber,
 
-                    dayNumber = dayNumber,
+                    dayNumber,
 
                 )
 
@@ -955,11 +920,25 @@ class ProgramDetailViewModel(
 
                     effectiveDayPlan = result.value
 
+                    val sessions = ProgramDetailEditMapper.mapSessions(result.value, language)
+
                     editState = editState.copy(
 
-                        daySessions = ProgramDetailEditMapper.mapSessions(result.value, language),
+                        daySessions = sessions,
 
                         editingDayTitle = dayTitleFor(weekNumber, dayNumber, language),
+
+                        isDayPlanAvailable = sessions.isNotEmpty(),
+
+                        dayPlanErrorKey = if (sessions.isEmpty()) {
+
+                            "program_edit_day_no_sessions"
+
+                        } else {
+
+                            null
+
+                        },
 
                     )
 
@@ -975,45 +954,25 @@ class ProgramDetailViewModel(
 
 
 
-        effectiveDayPlan = ProgramDetailEditMapper.toBaselinePlan(
-
-            sessions = ProgramDetailEditMapper.fallbackSessions(
-
-                export = loadedProgramExport,
-
-                weekNumber = weekNumber,
-
-                dayNumber = dayNumber,
-
-                language = language,
-
-            ),
-
-            userProgramId = userProgramId.orEmpty(),
-
-            weekNumber = weekNumber,
-
-            dayNumber = dayNumber,
-
-            programId = program.id,
-
-        )
+        effectiveDayPlan = null
 
         editState = editState.copy(
 
-            daySessions = ProgramDetailEditMapper.fallbackSessions(
-
-                export = loadedProgramExport,
-
-                weekNumber = weekNumber,
-
-                dayNumber = dayNumber,
-
-                language = language,
-
-            ),
+            daySessions = emptyList(),
 
             editingDayTitle = dayTitleFor(weekNumber, dayNumber, language),
+
+            isDayPlanAvailable = false,
+
+            dayPlanErrorKey = if (enrollment.isEnrolled) {
+
+                "program_edit_day_sync_required"
+
+            } else {
+
+                "program_edit_enroll_first"
+
+            },
 
         )
 
@@ -1084,13 +1043,7 @@ class ProgramDetailViewModel(
 
     private fun resolveUserProgramIdOrNull(): String? =
 
-        if (MovitData.isInstalled) MovitData.requirePlatform().activeUserProgramId() else null
-
-
-
-    private fun resolveUserProgramId(): String =
-
-        resolveUserProgramIdOrNull() ?: "preview-user-program"
+        activeUserProgramIdProvider()?.takeIf { it.isNotBlank() }
 
 
 
@@ -1160,6 +1113,16 @@ class ProgramDetailViewModel(
 
         }.orEmpty()
 
+        if (!hasResolvedDefaultWeek && weeks.isNotEmpty()) {
+            selectedWeekNumber = initialWeekOverride
+                ?: if (enrollment.isEnrolled) {
+                    weeks.firstOrNull { it.isCurrent }?.weekNumber ?: weeks.first().weekNumber
+                } else {
+                    weeks.first().weekNumber
+                }
+            hasResolvedDefaultWeek = true
+        }
+
         val nextSession = loadedProgramExport?.let { export ->
 
             if (!MovitData.isInstalled) {
@@ -1221,6 +1184,8 @@ class ProgramDetailViewModel(
             weekOffline = resolveWeekOfflineState(program.id, selectedWeekNumber),
 
             isOffline = MovitData.isInstalled && !MovitData.requirePlatform().isNetworkAvailable(),
+
+            actionMessage = _state.value.actionMessage,
 
         )
 
@@ -1387,6 +1352,42 @@ private fun defaultSaveDayCustomizations(): suspend (
         )
 
     }
+
+}
+
+private fun defaultLoadEffectiveDayPlan(): suspend (
+
+    String,
+
+    Int,
+
+    Int,
+
+) -> AppResult<EffectivePlanPayloadDto> = { userProgramId, weekNumber, dayNumber ->
+
+    if (!MovitData.isInstalled) {
+
+        AppResult.Failure("program_edit_day_sync_required")
+
+    } else {
+
+        MovitData.workoutSession.syncEffectivePlan(
+
+            userProgramId = userProgramId,
+
+            weekNumber = weekNumber,
+
+            dayNumber = dayNumber,
+
+        )
+
+    }
+
+}
+
+private fun defaultActiveUserProgramIdProvider(): () -> String? = {
+
+    if (MovitData.isInstalled) MovitData.requirePlatform().activeUserProgramId() else null
 
 }
 

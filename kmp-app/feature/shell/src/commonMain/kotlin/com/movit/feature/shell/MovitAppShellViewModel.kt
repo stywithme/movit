@@ -1,7 +1,6 @@
 package com.movit.feature.shell
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.movit.core.data.MovitData
 import com.movit.core.data.platform.MovitConnectivitySignals
 import com.movit.core.data.sync.MovitSyncOrchestrator
@@ -18,12 +17,20 @@ import com.movit.core.model.ExploreItemType
 import com.movit.feature.explore.MovitExploreEffect
 import com.movit.feature.home.MovitHomeEffect
 import com.movit.feature.reports.MovitReportsEffect
+import com.movit.feature.library.RequestedStart
+import com.movit.feature.library.WorkoutLaunchCoordinator
+import com.movit.feature.library.WorkoutLaunchRequest
+import com.movit.feature.library.WorkoutRunStore
 import com.movit.feature.library.WorkoutSessionKeys
 import com.movit.feature.train.MovitTrainEffect
+import com.movit.feature.train.TrainReportTargetUi
 import com.movit.feature.train.TrainWorkoutLaunchUi
 import com.movit.resources.strings.SessionStrings
 import com.movit.shared.AppResult
 import com.movit.shared.PlatformInfo
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -31,9 +38,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 class MovitAppShellViewModel : ViewModel() {
+    // ponytail: host tests have no Main dispatcher (same as WorkoutSession preflight).
+    private val backgroundScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val _state = MutableStateFlow(MovitAppShellState())
     val state: StateFlow<MovitAppShellState> = _state.asStateFlow()
 
@@ -49,7 +59,7 @@ class MovitAppShellViewModel : ViewModel() {
             ShellSyncCoordinator.requestSync(forceCheck = true)
         }
         if (MovitData.isInstalled) {
-            viewModelScope.launch {
+            backgroundScope.launch {
                 MovitData.sessionExpiredEvents.collect {
                     popAllInner()
                     pushInner(MovitInnerRoute.Auth)
@@ -69,14 +79,14 @@ class MovitAppShellViewModel : ViewModel() {
             }
             if (bootstrap.hasActiveSession) {
                 // P2.11: await bootstrap before first sync (cold-start ordering).
-                viewModelScope.launch {
+                backgroundScope.launch {
                     MovitData.bootstrapLocalCaches()
                     maybeShowGuestOutboxPrompt()
                     requestSyncIfNeeded()
                 }
                 ensureOnboardingGateIfNeeded()
             }
-            viewModelScope.launch {
+            backgroundScope.launch {
                 MovitData.sync.cacheInvalidated.collect {
                     notifyCacheInvalidated()
                 }
@@ -98,7 +108,7 @@ class MovitAppShellViewModel : ViewModel() {
     }
 
     private fun ensureOnboardingGateIfNeeded() {
-        viewModelScope.launch {
+        backgroundScope.launch {
             if (!MovitData.isInstalled) return@launch
             if (!AuthBootstrapContext.fromMovitData().hasActiveSession) return@launch
             val needsOnboarding = defaultOnboardingRepository().resolveNeedsOnboarding()
@@ -112,7 +122,7 @@ class MovitAppShellViewModel : ViewModel() {
         if (!MovitData.isInstalled) return
         if (!AuthBootstrapContext.fromMovitData().hasActiveSession) return
 
-        viewModelScope.launch {
+        backgroundScope.launch {
             val outcome = MovitData.sync.syncIfNeeded(forceCheck = forceCheck)
             _syncOutcome.value = outcome
             // dataRevision / cacheInvalidated come from sync.cacheInvalidated (P2.10).
@@ -122,6 +132,7 @@ class MovitAppShellViewModel : ViewModel() {
     override fun onCleared() {
         MovitConnectivitySignals.setOnConnectivityRestored(null)
         ShellSyncCoordinator.clear()
+        backgroundScope.cancel()
         super.onCleared()
     }
 
@@ -162,6 +173,16 @@ class MovitAppShellViewModel : ViewModel() {
             }
             is MovitAppShellEvent.InnerRoutePushed -> pushInner(event.route)
             MovitAppShellEvent.InnerRoutePopped -> popInner()
+            is MovitAppShellEvent.ReplaceWorkoutJourneyWithReport -> replaceWorkoutJourneyWithReport(
+                reportId = event.reportId,
+                returnTarget = event.returnTarget,
+                doneTarget = event.doneTarget,
+            )
+            MovitAppShellEvent.ExitWorkoutJourney -> exitWorkoutJourney()
+            is MovitAppShellEvent.NavigateReportReturn -> navigateReportReturn(
+                target = event.target,
+                clearInner = event.clearInner,
+            )
             is MovitAppShellEvent.ExploreEffectReceived -> handleExploreEffect(event.effect)
             is MovitAppShellEvent.ExploreItemSelected -> {
                 pushInner(MovitInnerRoute.ExercisePrepare(event.itemId))
@@ -208,14 +229,12 @@ class MovitAppShellViewModel : ViewModel() {
                         MovitAppShellEffect.ShowLocalizedMessage("home_catch_up_unavailable"),
                     )
                 } else {
-                    pushInner(
-                        MovitInnerRoute.WorkoutSession(
-                            WorkoutSessionKeys.encode(
-                                programId = effect.programId,
-                                weekNumber = effect.weekNumber,
-                                dayNumber = effect.dayNumber,
-                                plannedWorkoutId = WorkoutSessionKeys.AUTO_PLANNED_WORKOUT,
-                            ),
+                    openWorkoutLaunch(
+                        WorkoutLaunchCoordinator.fromTrainProgramDay(
+                            programId = effect.programId,
+                            weekNumber = effect.weekNumber,
+                            dayNumber = effect.dayNumber,
+                            plannedWorkoutId = WorkoutSessionKeys.AUTO_PLANNED_WORKOUT,
                         ),
                     )
                 }
@@ -273,7 +292,7 @@ class MovitAppShellViewModel : ViewModel() {
         when (effect) {
             MovitAuthEffect.OpenShell -> {
                 popInner()
-                viewModelScope.launch {
+                backgroundScope.launch {
                     maybeShowGuestOutboxPrompt()
                     requestSyncIfNeeded(forceCheck = true)
                 }
@@ -281,7 +300,7 @@ class MovitAppShellViewModel : ViewModel() {
             MovitAuthEffect.OpenOnboarding -> {
                 popInner()
                 pushInner(MovitInnerRoute.ProfileOnboarding)
-                viewModelScope.launch {
+                backgroundScope.launch {
                     maybeShowGuestOutboxPrompt()
                     requestSyncIfNeeded(forceCheck = true)
                 }
@@ -311,7 +330,7 @@ class MovitAppShellViewModel : ViewModel() {
 
     private fun resolveGuestOutbox(accept: Boolean) {
         val userId = _state.value.guestOutboxUserId
-        viewModelScope.launch {
+        backgroundScope.launch {
             if (MovitData.isInstalled && userId != null) {
                 if (accept) {
                     MovitData.acceptGuestOutboxAttribution(userId)
@@ -405,38 +424,71 @@ class MovitAppShellViewModel : ViewModel() {
                     weekNumber = effect.weekNumber,
                 ),
             )
+            is MovitTrainEffect.OpenReport -> openTrainReport(effect.target)
             MovitTrainEffect.OpenExplore -> navigateTo(MovitAppDestination.Explore)
             MovitTrainEffect.OpenReports -> navigateTo(MovitAppDestination.Reports)
-            is MovitTrainEffect.OpenProgramWorkout -> {
-                openTrainWorkoutSession(effect.target)
-            }
+            is MovitTrainEffect.OpenProgramWorkout -> openTrainWorkoutSession(effect.target)
             is MovitTrainEffect.ShowMessage -> {
                 _effects.tryEmit(MovitAppShellEffect.ShowMessage(effect.message))
             }
         }
     }
 
-    private fun openTrainWorkoutSession(target: TrainWorkoutLaunchUi) {
-        val sessionKey = WorkoutSessionKeys.encode(
-            programId = target.programId,
-            weekNumber = target.weekNumber,
-            dayNumber = target.dayNumber,
-            plannedWorkoutId = target.plannedWorkoutId,
-        )
-        if (!MovitData.isInstalled) {
-            pushInner(MovitInnerRoute.WorkoutSession(sessionKey))
-            return
-        }
-
-        viewModelScope.launch {
-            val platform = MovitData.requirePlatform()
-            val strings = SessionStrings.load(platform.preferredLanguage())
-            val prepared = prepareTrainWorkoutSession(target)
-            if (prepared) {
-                pushInner(MovitInnerRoute.WorkoutSession(sessionKey))
-            } else {
-                _effects.emit(MovitAppShellEffect.ShowMessage(strings.noEnrollment))
+    private fun openTrainReport(target: TrainReportTargetUi) {
+        when (target) {
+            is TrainReportTargetUi.ProgramWeek -> pushInner(
+                MovitInnerRoute.WeeklyReport(
+                    programId = target.programId,
+                    weekNumber = target.weekNumber,
+                ),
+            )
+            is TrainReportTargetUi.ProgramDay -> {
+                val reportId = target.reportId
+                if (!reportId.isNullOrBlank()) {
+                    pushInner(MovitInnerRoute.ReportDetail(reportId))
+                } else {
+                    // Legacy/defensive — mapper should emit ProgramWeek when id is absent.
+                    pushInner(
+                        MovitInnerRoute.WeeklyReport(
+                            programId = target.programId,
+                            weekNumber = target.weekNumber,
+                        ),
+                    )
+                }
             }
+            is TrainReportTargetUi.WorkoutRun -> pushInner(MovitInnerRoute.ReportDetail(target.reportId))
+        }
+    }
+
+    private fun openTrainWorkoutSession(target: TrainWorkoutLaunchUi) {
+        openWorkoutLaunch(
+            request = WorkoutLaunchCoordinator.fromTrainProgramDay(
+                programId = target.programId,
+                weekNumber = target.weekNumber,
+                dayNumber = target.dayNumber,
+                plannedWorkoutId = target.plannedWorkoutId,
+            ),
+            prepareTrainTarget = target,
+        )
+    }
+
+    /**
+     * Single WorkoutSession entry for Explore / Train / catch-up.
+     * Resolves [WorkoutLaunchRequest] → session id, opens immediately; optional Train sync in background.
+     */
+    private fun openWorkoutLaunch(
+        request: WorkoutLaunchRequest,
+        prepareTrainTarget: TrainWorkoutLaunchUi? = null,
+    ) {
+        val sessionId = WorkoutLaunchCoordinator.remember(request)
+        if (request.requestedStart == RequestedStart.BeginFresh) {
+            WorkoutRunStore.abandonActiveForWorkout(sessionId)
+        }
+        // Open immediately — preflight/sync happens inside WorkoutSession (P1.1).
+        pushInner(MovitInnerRoute.WorkoutSession(sessionId))
+        if (prepareTrainTarget == null || !MovitData.isInstalled) return
+        backgroundScope.launch {
+            prepareTrainWorkoutSession(prepareTrainTarget)
         }
     }
 
@@ -477,14 +529,16 @@ class MovitAppShellViewModel : ViewModel() {
             is MovitExploreEffect.OpenProgramDetail -> pushInner(
                 MovitInnerRoute.ProgramDetail(programId = effect.programId),
             )
-            is MovitExploreEffect.OpenWorkoutSession -> pushInner(MovitInnerRoute.WorkoutSession(effect.workoutId))
+            is MovitExploreEffect.OpenWorkoutSession ->
+                openWorkoutLaunch(WorkoutLaunchCoordinator.fromExploreWorkout(effect.workoutId))
             is MovitExploreEffect.OpenExercisePrepare -> pushInner(
                 MovitInnerRoute.ExercisePrepare(exerciseId = effect.exerciseId),
             )
             is MovitExploreEffect.NavigateToItem -> {
                 when (effect.type) {
                     ExploreItemType.Exercise -> pushInner(MovitInnerRoute.ExercisePrepare(effect.id))
-                    ExploreItemType.Workout -> pushInner(MovitInnerRoute.WorkoutSession(effect.id))
+                    ExploreItemType.Workout ->
+                        openWorkoutLaunch(WorkoutLaunchCoordinator.fromExploreWorkout(effect.id))
                     ExploreItemType.Program -> pushInner(
                         MovitInnerRoute.ProgramDetail(programId = effect.id),
                     )
@@ -511,6 +565,66 @@ class MovitAppShellViewModel : ViewModel() {
 
     private fun popAllInner() {
         _state.update { it.copy(innerStack = emptyList()) }
+    }
+
+    /**
+     * Removes ExercisePrepare + TrainingSession for the completed run and places ReportDetail
+     * as the terminal route (no report loop on Back).
+     */
+    private fun replaceWorkoutJourneyWithReport(
+        reportId: String,
+        returnTarget: com.movit.feature.library.ReturnTarget?,
+        doneTarget: com.movit.feature.library.ReturnTarget?,
+    ) {
+        _state.update { state ->
+            val trimmed = state.innerStack.dropLastWhile { route ->
+                route is MovitInnerRoute.TrainingSession || route is MovitInnerRoute.ExercisePrepare
+            }
+            state.copy(
+                innerStack = trimmed + MovitInnerRoute.ReportDetail(
+                    reportId = reportId,
+                    returnTarget = returnTarget,
+                    doneTarget = doneTarget,
+                ),
+            )
+        }
+    }
+
+    /** Save and exit / End workout — pop Prepare+Training onto WorkoutSession (or empty). */
+    private fun exitWorkoutJourney() {
+        _state.update { state ->
+            state.copy(
+                innerStack = state.innerStack.dropLastWhile { route ->
+                    route is MovitInnerRoute.TrainingSession || route is MovitInnerRoute.ExercisePrepare
+                },
+            )
+        }
+    }
+
+    private fun navigateReportReturn(
+        target: com.movit.feature.library.ReturnTarget,
+        clearInner: Boolean,
+    ) {
+        if (clearInner) popAllInner()
+        when (target) {
+            com.movit.feature.library.ReturnTarget.Train -> navigateTo(MovitAppDestination.Train)
+            com.movit.feature.library.ReturnTarget.Explore -> navigateTo(MovitAppDestination.Explore)
+            is com.movit.feature.library.ReturnTarget.WorkoutSession -> {
+                if (clearInner) {
+                    pushInner(MovitInnerRoute.WorkoutSession(target.workoutId))
+                }
+            }
+            is com.movit.feature.library.ReturnTarget.ProgramDetail -> {
+                if (clearInner) {
+                    pushInner(
+                        MovitInnerRoute.ProgramDetail(
+                            programId = target.programId,
+                            initialWeekNumber = target.weekNumber,
+                        ),
+                    )
+                }
+            }
+        }
     }
 
     private fun navigateTo(destination: MovitAppDestination) {

@@ -75,7 +75,6 @@ internal object ProgramDetailMapper {
             enrollment = enrollment,
             nextSession = resolvedNextSession,
             edit = edit.copy(
-                weeklyTarget = weeklyTarget,
                 editingDayTitle = edit.editingDayTitle.ifBlank {
                     currentWeek?.days?.firstOrNull { it.status == ProgramDayStatus.Next }?.title
                         ?: currentWeek?.days?.firstOrNull()?.title.orEmpty()

@@ -15,6 +15,13 @@ object MovitClearScopeKeys {
             cacheKey.startsWith("exercise_set_reports_") ||
             cacheKey.startsWith("report_session_exercise_")
 
+    /** JSON stores preserved across session-expiry [MovitLocalStore.clearReadCaches]. */
+    fun isDurableJsonStore(store: String): Boolean =
+        store == MovitCacheKeys.AUTH_LIFECYCLE_STORE ||
+            // Open-run progress survives token expiry for the same user; wiped on logout
+            // and account switch via [MovitLocalStore.clearWorkoutRunStore].
+            store == MovitCacheKeys.WORKOUT_RUN_STORE
+
     /** Entire stores wiped by [MovitLocalStore.clearReadCaches] (except durable report keys). */
     val readCacheStores: Set<String> = setOf(
         MovitCacheKeys.HOME_STORE,

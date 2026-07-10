@@ -95,6 +95,14 @@ fun MovitExploreScreen(
                     .movitFloatingNavScrollPadding(),
                 verticalArrangement = Arrangement.spacedBy(MovitSpacing.lg),
             ) {
+            if (state.isOffline && hasContent) {
+                MovitInsightCard(
+                    title = movitText("training_offline_banner"),
+                    message = movitText("explore_offline_cached"),
+                    icon = Icons.Default.Warning,
+                    variant = MovitInsightVariant.Warning,
+                )
+            }
             ExploreSearchSection(
                 query = state.query,
                 onQueryChange = { onEvent(MovitExploreEvent.QueryChanged(it)) },

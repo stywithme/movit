@@ -293,8 +293,8 @@ private fun EditDetailsSheetContent(
                 value = reps,
                 minValue = 1,
                 maxValue = 100,
-                onDecrement = { onDraftChange { it.copy(reps = ((it.reps ?: 12) - 1).coerceAtLeast(1)) } },
-                onIncrement = { onDraftChange { it.copy(reps = ((it.reps ?: 12) + 1).coerceAtMost(100)) } },
+                onDecrement = { onDraftChange { it.copy(reps = ((it.reps ?: 1) - 1).coerceAtLeast(1)) } },
+                onIncrement = { onDraftChange { it.copy(reps = ((it.reps ?: 1) + 1).coerceAtMost(100)) } },
             )
         }
         EditStepperRow(
