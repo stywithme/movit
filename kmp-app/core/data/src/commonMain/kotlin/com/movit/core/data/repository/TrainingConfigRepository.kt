@@ -56,7 +56,12 @@ class TrainingConfigRepository(
 
     fun resolveBySlug(slug: String): ExerciseConfigRecord? {
         val canonical = resolveCanonicalSlug(slug)
-        parsedRecordCache.get(canonical)?.let { return it }
+        parsedRecordCache.get(canonical)?.let { cached ->
+            val library = messageLibraryCache?.read().orEmpty()
+            if (!ExerciseMessageLibraryMerger.needsResolve(cached, library)) return cached
+            // Library changed since this entry was cached — fall through to disk + re-resolve.
+            parsedRecordCache.remove(canonical)
+        }
         val record = readRecordFromDisk(canonical) ?: return null
         parsedRecordCache.put(canonical, record)
         return record
@@ -116,7 +121,7 @@ class TrainingConfigRepository(
     }
 
     /**
-     * Persists [messageLibrary] and merges template text into cached exercise configs (legacy parity).
+     * Persists [messageLibrary] and re-resolves cached exercise configs when the library fingerprint changed.
      * @return number of exercise records updated when merge ran on a non-empty cache.
      */
     fun applySyncMessageLibrary(
@@ -127,10 +132,12 @@ class TrainingConfigRepository(
         val slugs = readSlugIndex()
         if (slugs.isEmpty()) return 0
 
-        val merged = ExerciseMessageLibraryMerger.resolveRecords(
-            records = slugs.mapNotNull { slug -> readRecordFromDisk(slug) },
-            messageLibrary = messageLibrary,
-        )
+        val fp = ExerciseMessageLibraryMerger.fingerprint(messageLibrary)
+        val records = slugs.mapNotNull { slug -> readRecordFromDiskRaw(slug) }
+        val toUpdate = records.filter { it.messageLibraryFingerprint != fp }
+        if (toUpdate.isEmpty()) return 0
+
+        val merged = ExerciseMessageLibraryMerger.resolveRecords(toUpdate, messageLibrary)
         merged.forEach { record ->
             if (record.slug.isBlank()) return@forEach
             MovitCachePolicy.writeJson(
@@ -157,6 +164,7 @@ class TrainingConfigRepository(
             totalMessages = messageLibrary.size,
             totalWithAudio = withAudio,
             totalAssignments = assignmentsInCachedExercises,
+            // Keep id:code for sync-meta / drift parity with server stats (P2.6 content fp is per-record only).
             fingerprint = messageLibrary
                 .sortedBy { it.id }
                 .joinToString("|") { "${it.id}:${it.code}" },
@@ -198,20 +206,35 @@ class TrainingConfigRepository(
     }
 
     private fun readRecordFromDisk(slug: String): ExerciseConfigRecord? {
-        val record = MovitCachePolicy.readJson(
+        val record = readRecordFromDiskRaw(slug) ?: return null
+        return mergeRecordForRead(record)
+    }
+
+    /** Raw disk read without message-library re-resolve (avoids recursion in applySyncMessageLibrary). */
+    private fun readRecordFromDiskRaw(slug: String): ExerciseConfigRecord? =
+        MovitCachePolicy.readJson(
             localStore,
             MovitCacheKeys.EXERCISE_CONFIG_STORE,
             MovitCacheKeys.exerciseConfigKey(slug),
             ExerciseConfigRecord.serializer(),
-        ) ?: return null
-        return mergeRecordForRead(record)
-    }
+        )
 
     private fun mergeRecordForRead(record: ExerciseConfigRecord): ExerciseConfigRecord {
         val library = messageLibraryCache?.read().orEmpty()
         if (library.isEmpty()) return record
-        if (!ExerciseMessageLibraryMerger.hasUnresolvedAssignments(record, library)) return record
-        return ExerciseMessageLibraryMerger.resolveRecords(listOf(record), library).single()
+        if (!ExerciseMessageLibraryMerger.needsResolve(record, library)) return record
+        val resolved = ExerciseMessageLibraryMerger.resolveRecords(listOf(record), library).single()
+        // Lazy rewrite so stale merged text is cleaned and fingerprint is stamped.
+        if (resolved.slug.isNotBlank()) {
+            MovitCachePolicy.writeJson(
+                localStore,
+                MovitCacheKeys.EXERCISE_CONFIG_STORE,
+                MovitCacheKeys.exerciseConfigKey(resolved.slug),
+                resolved.withSanitizedConfig(),
+                ExerciseConfigRecord.serializer(),
+            )
+        }
+        return resolved
     }
 
     private fun mergeRecordForPersist(
@@ -219,7 +242,7 @@ class TrainingConfigRepository(
         messageLibrary: List<SyncMessageTemplateDto>,
     ): ExerciseConfigRecord {
         if (messageLibrary.isEmpty()) return record
-        if (!ExerciseMessageLibraryMerger.hasUnresolvedAssignments(record, messageLibrary)) return record
+        if (!ExerciseMessageLibraryMerger.needsResolve(record, messageLibrary)) return record
         return ExerciseMessageLibraryMerger.resolveRecords(listOf(record), messageLibrary).single()
     }
 

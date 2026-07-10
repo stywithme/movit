@@ -2,8 +2,11 @@ package com.movit.core.data.cache
 
 import com.movit.core.data.sync.currentTimeMs
 import com.movit.shared.AppResult
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.withContext
 
 /**
  * Stale-while-revalidate contract for screen reads (DS-0).
@@ -36,7 +39,7 @@ object StaleWhileRevalidate {
         fetchFresh: suspend () -> AppResult<T>,
     ): Flow<CacheState<T>> = flow {
         val startedAtMs = currentTimeMs()
-        val cached = readCached()
+        val cached = withContext(Dispatchers.IO) { readCached() }
 
         if (cached != null) {
             emit(CacheState.Cached(cached))

@@ -1,7 +1,11 @@
 package com.movit.core.data.outbox
 
+import com.movit.core.data.sync.OutboxFailureKind
+import com.movit.core.data.sync.classifyOutboxFailure
+import com.movit.core.network.MovitApiException
 import com.movit.core.network.MovitJson
 import com.movit.core.network.MovitMobileApi
+import com.movit.core.network.dto.PlanCompleteRequestDto
 
 internal class OutboxDispatcher(
     private val api: MovitMobileApi,
@@ -11,17 +15,26 @@ internal class OutboxDispatcher(
             when (entry.type) {
                 OutboxOperationType.PLANNED_WORKOUT_START -> {
                     val payload = MovitJson.decodeFromString<PlannedWorkoutStartOutboxPayload>(entry.payload)
-                    api.startPlannedWorkout(payload.workoutId, payload.request, authorization).getOrThrow()
+                    // P1.3: outbox operationId is the server idempotency key.
+                    val request = payload.request.copy(idempotencyKey = entry.id)
+                    api.startPlannedWorkout(payload.workoutId, request, authorization).getOrThrow()
                 }
                 OutboxOperationType.PLANNED_WORKOUT_COMPLETE -> {
                     val payload = MovitJson.decodeFromString<PlannedWorkoutCompleteOutboxPayload>(entry.payload)
-                    api.completePlannedWorkout(payload.workoutId, payload.request, authorization).getOrThrow()
+                    val request = payload.request.copy(idempotencyKey = entry.id)
+                    api.completePlannedWorkout(payload.workoutId, request, authorization).getOrThrow()
                 }
                 OutboxOperationType.PLANNED_WORKOUT_REPORT -> {
                     val payload = MovitJson.decodeFromString<PlannedWorkoutCompleteOutboxPayload>(entry.payload)
-                    api.reportPlannedWorkout(payload.workoutId, payload.request, authorization).getOrThrow()
+                    val request = payload.request.copy(idempotencyKey = entry.id)
+                    api.reportPlannedWorkout(payload.workoutId, request, authorization).getOrThrow()
                 }
-                OutboxOperationType.PLAN_COMPLETE -> api.completePlan(authorization).getOrThrow()
+                OutboxOperationType.PLAN_COMPLETE -> {
+                    api.completePlan(
+                        authorization = authorization,
+                        request = PlanCompleteRequestDto(idempotencyKey = entry.id),
+                    ).getOrThrow()
+                }
                 OutboxOperationType.EXERCISE_PREFERENCE_UPSERT -> {
                     val payload = MovitJson.decodeFromString<ExercisePreferenceUpsertOutboxPayload>(entry.payload)
                     api.upsertExercisePreference(payload.exerciseId, payload.request, authorization).getOrThrow()
@@ -32,7 +45,8 @@ internal class OutboxDispatcher(
                 }
                 OutboxOperationType.USER_PROGRAM_OVERRIDE_CREATE -> {
                     val payload = MovitJson.decodeFromString<UserProgramOverrideCreateOutboxPayload>(entry.payload)
-                    api.createUserProgramOverride(payload.userProgramId, payload.request, authorization).getOrThrow()
+                    val request = payload.request.copy(idempotencyKey = entry.id)
+                    api.createUserProgramOverride(payload.userProgramId, request, authorization).getOrThrow()
                 }
                 OutboxOperationType.USER_PROGRAM_OVERRIDE_DELETE -> {
                     val payload = MovitJson.decodeFromString<UserProgramOverrideDeleteOutboxPayload>(entry.payload)
@@ -64,13 +78,17 @@ internal class OutboxDispatcher(
         return result.fold(
             onSuccess = { OutboxDispatchOutcome.SUCCESS },
             onFailure = { error ->
-                val status = parseHttpStatusFromError(error.message)
-                when {
-                    status != null && OutboxConflictPolicy.isServerWins(status) ->
-                        OutboxDispatchOutcome.SERVER_WINS
-                    status != null && OutboxConflictPolicy.isPermanentClientError(status) ->
-                        OutboxDispatchOutcome.PERMANENT_FAILURE
-                    else -> OutboxDispatchOutcome.RETRYABLE
+                val status = (error as? MovitApiException)?.status
+                    ?: parseHttpStatusFromError(error.message)
+                if (status != null && OutboxConflictPolicy.isServerWins(status)) {
+                    OutboxDispatchOutcome.SERVER_WINS
+                } else if (status != null && OutboxConflictPolicy.isPermanentClientError(status)) {
+                    OutboxDispatchOutcome.PERMANENT_FAILURE
+                } else {
+                    when (classifyOutboxFailure(error)) {
+                        OutboxFailureKind.Network -> OutboxDispatchOutcome.RETRYABLE_NETWORK
+                        OutboxFailureKind.Unexpected -> OutboxDispatchOutcome.RETRYABLE_UNEXPECTED
+                    }
                 }
             },
         )

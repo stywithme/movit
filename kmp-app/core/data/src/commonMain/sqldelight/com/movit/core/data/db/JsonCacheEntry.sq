@@ -26,5 +26,14 @@ SELECT cache_key, json_payload
 FROM json_cache_entry
 WHERE store = ?;
 
+selectAllByStoreWithTimestamps:
+SELECT cache_key, json_payload, updated_at_epoch_ms
+FROM json_cache_entry
+WHERE store = ?;
+
+selectAllStoreKeys:
+SELECT store, cache_key
+FROM json_cache_entry;
+
 deleteAll:
 DELETE FROM json_cache_entry;

@@ -1,0 +1,37 @@
+{
+  "success": true,
+  "timestamp": "2026-07-10T12:00:00.000Z",
+  "data": {
+    "exercises": [],
+    "messageLibrary": [],
+    "systemMessages": [],
+    "deletedExerciseIds": [],
+    "workoutTemplates": [],
+    "deletedWorkoutTemplateIds": [],
+    "programs": [],
+    "deletedProgramIds": [],
+    "userPrograms": [],
+    "userExercisePreferences": [],
+    "plannedWorkoutReports": [],
+    "audioManifest": {
+      "baseUrl": "http://localhost/audio/tts",
+      "files": []
+    }
+  },
+  "meta": {
+    "totalExercises": 42,
+    "totalWorkoutTemplates": 10,
+    "totalPrograms": 3,
+    "isFullSync": false,
+    "serverVersion": "1.0.0",
+    "exercisesInResponse": 0,
+    "workoutTemplatesInResponse": 0,
+    "programsInResponse": 0,
+    "messageLibraryStats": {
+      "totalMessages": 100,
+      "totalWithAudio": 80,
+      "totalAssignments": 200,
+      "fingerprint": "0:0:0:200:100:80"
+    }
+  }
+}

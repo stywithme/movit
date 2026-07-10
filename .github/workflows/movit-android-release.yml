@@ -5,6 +5,7 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - 'kmp-app/**'
@@ -41,7 +42,7 @@ jobs:
       - name: Contract + core + feature unit tests (Pre-07 WS-6)
         run: |
           chmod +x ./gradlew
-          ./gradlew --console=plain \
+          ./gradlew --console=plain -PverifySqlMigrations=true \
             :core:network:testAndroidHostTest --tests "com.movit.core.network.contract.*" \
             :core:data:testDebugUnitTest \
             :core:training-engine:testDebugUnitTest \

@@ -72,7 +72,7 @@ data class SyncMessageTemplateDto(
     val code: String = "",
     val category: String = "",
     val context: String? = null,
-    val content: LocalizedNameDto = LocalizedNameDto(),
+    val content: SyncMessageContentDto = SyncMessageContentDto(),
 )
 
 @Serializable
@@ -80,6 +80,13 @@ data class SyncSystemMessageDto(
     val code: String = "",
     val content: LocalizedNameDto = LocalizedNameDto(),
     val updatedAt: String = "",
+)
+
+@Serializable
+data class UserProgramsApiResponse(
+    val success: Boolean = false,
+    val userPrograms: List<UserProgramExportDto> = emptyList(),
+    val error: String? = null,
 )
 
 @Serializable
@@ -91,8 +98,7 @@ data class UserProgramExportDto(
     val isActive: Boolean = false,
     val customizations: JsonElement? = null,
     val updatedAt: String? = null,
-    val pausedAt: String? = null,
-    val totalPausedDays: Int = 0,
+    // P3.8: pause fields removed from backend schema — do not reintroduce.
     val customizationsUpdatedAt: String? = null,
     val trainingWeekdays: List<Int>? = null,
 )

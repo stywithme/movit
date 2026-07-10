@@ -7,19 +7,29 @@ import com.movit.core.network.MovitMobileApi
 import com.movit.core.network.dto.ExploreDataDto
 import com.movit.core.network.dto.MobileSyncDataDto
 import com.movit.shared.AppResult
+import kotlin.concurrent.Volatile
 
 class ExploreSyncRepository(
     private val api: MovitMobileApi,
     private val platform: () -> MovitPlatformBindings,
     private val localStore: () -> MovitLocalStore,
 ) {
-    fun readCached(): ExploreDataDto? =
-        MovitCachePolicy.readJson(
+    @Volatile
+    private var memoizedExplore: ExploreDataDto? = null
+
+    fun readCached(): ExploreDataDto? {
+        memoizedExplore?.let { return it }
+        return MovitCachePolicy.readJson(
             localStore(),
             MovitCacheKeys.EXPLORE_STORE,
             MovitCacheKeys.EXPLORE_DATA,
             ExploreDataDto.serializer(),
-        )
+        ).also { memoizedExplore = it }
+    }
+
+    fun invalidateMemoized() {
+        memoizedExplore = null
+    }
 
     /** Thumbnail URL from the explore catalog cache (replaces legacy ExerciseRepository lookup). */
     fun exerciseImageUrl(slug: String): String? =
@@ -72,7 +82,18 @@ class ExploreSyncRepository(
             merged,
             ExploreDataDto.serializer(),
         )
+        memoizedExplore = merged
         return merged
+    }
+
+    /** P2.3: unify explore watermark with general sync timestamp. */
+    fun writeExploreLastSync(timestamp: String) {
+        if (timestamp.isBlank()) return
+        localStore().writeJsonCache(
+            MovitCacheKeys.EXPLORE_STORE,
+            MovitCacheKeys.EXPLORE_LAST_SYNC,
+            timestamp,
+        )
     }
 
     private suspend fun syncInternal(clearLastSync: Boolean, limit: Int?): AppResult<ExploreDataDto> {

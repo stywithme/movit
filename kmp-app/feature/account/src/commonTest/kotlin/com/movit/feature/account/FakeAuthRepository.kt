@@ -2,7 +2,7 @@ package com.movit.feature.account
 
 import com.movit.shared.AppResult
 
-class FakeAuthRepository(
+open class FakeAuthRepository(
     private val demoEmail: String = "demo@movit.app",
     private val demoPassword: String = "demo1234",
 ) : AuthRepository {

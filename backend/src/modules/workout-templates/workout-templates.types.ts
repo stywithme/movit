@@ -57,6 +57,8 @@ export interface WorkoutPhaseInput {
  */
 export interface WorkoutExerciseExport {
   exercise: string;        // Exercise slug
+  /** Localized display name (P3.6) — optional for older clients. */
+  name?: LocalizedText;
   variantIndex: number;
   targetReps?: number;
   targetRepsPerSet?: number[];

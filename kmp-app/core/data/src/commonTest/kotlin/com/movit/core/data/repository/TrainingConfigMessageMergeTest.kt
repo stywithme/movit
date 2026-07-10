@@ -3,7 +3,7 @@ package com.movit.core.data.repository
 import com.movit.core.data.cache.MessageLibraryCache
 import com.movit.core.data.local.InMemoryMovitLocalStore
 import com.movit.core.network.MovitJson
-import com.movit.core.network.dto.LocalizedNameDto
+import com.movit.core.network.dto.SyncMessageContentDto
 import com.movit.core.network.dto.SyncMessageTemplateDto
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -31,7 +31,7 @@ class TrainingConfigMessageMergeTest {
                 SyncMessageTemplateDto(
                     id = "msg-1",
                     code = "keep_going",
-                    content = LocalizedNameDto(en = "Keep going!"),
+                    content = SyncMessageContentDto(en = "Keep going!"),
                 ),
             ),
         )
@@ -51,7 +51,7 @@ class TrainingConfigMessageMergeTest {
                 SyncMessageTemplateDto(
                     id = "msg-1",
                     code = "keep_going",
-                    content = LocalizedNameDto(en = "Keep going!"),
+                    content = SyncMessageContentDto(en = "Keep going!"),
                 ),
             ),
         )

@@ -64,7 +64,7 @@ internal fun testOfflineWriteQueue(
     api: MovitMobileApi,
     platform: FakeMovitPlatformBindings,
     localStore: MovitLocalStore = testLocalStore(platform),
-): OfflineWriteQueue = OfflineWriteQueue(localStore, api) { platform }
+): OfflineWriteQueue = OfflineWriteQueue(localStore, api, { platform })
 
 internal fun testMobileWriteRepository(
     engine: MockEngine,

@@ -20,11 +20,13 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -69,6 +71,8 @@ fun TrainingSessionScreen(
     trainingPreferences: MovitTrainingPreferencesState = MovitTrainingPreferencesState(),
     useFrontCamera: Boolean = true,
     onApplyTrainingSettings: (TrainingSessionSettingsSelection) -> Unit = {},
+    onResumePriorSession: () -> Unit = {},
+    onDiscardPriorSession: () -> Unit = {},
     debugFps: Int? = null,
 ) {
     var showSettingsDialog by remember { mutableStateOf(false) }
@@ -128,6 +132,24 @@ fun TrainingSessionScreen(
             }
             else -> {
                 Box(modifier = Modifier.fillMaxSize()) {
+                    if (state.isOffline) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.92f),
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .statusBarsPadding()
+                                .padding(top = 56.dp)
+                                .padding(horizontal = MovitSpacing.md)
+                                .fillMaxWidth(),
+                        ) {
+                            Text(
+                                text = movitText("training_offline_banner"),
+                                style = MaterialTheme.typography.labelMedium,
+                                modifier = Modifier.padding(MovitSpacing.sm),
+                                textAlign = TextAlign.Center,
+                            )
+                        }
+                    }
                     cameraSlot()
 
                     if (state.requiresCamera()) {
@@ -203,6 +225,27 @@ fun TrainingSessionScreen(
                 showSettingsDialog = false
             },
             onDismiss = { showSettingsDialog = false },
+        )
+    }
+
+    val resumePrompt = state.resumePrompt
+    if (resumePrompt != null) {
+        AlertDialog(
+            onDismissRequest = onDiscardPriorSession,
+            title = { Text(movitText("training_session_resume_prior_title")) },
+            text = {
+                Text(movitText("training_session_resume_prior_message", resumePrompt.completedReps))
+            },
+            confirmButton = {
+                TextButton(onClick = onResumePriorSession) {
+                    Text(movitText("training_session_resume_prior_continue"))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDiscardPriorSession) {
+                    Text(movitText("training_session_resume_prior_start_fresh"))
+                }
+            },
         )
     }
 }

@@ -7,7 +7,6 @@ import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import com.movit.core.data.MovitData
 import com.movit.core.data.platform.MovitConnectivitySignals
-import com.movit.core.data.sync.BackgroundSyncScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -33,7 +32,7 @@ fun registerOutboxConnectivityReplay(context: Context) {
 
     val callback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
-            BackgroundSyncScheduler.requestNow()
+            // P2.11: single path — replay outbox then shell sync via connectivity signal (no requestNow).
             replayPendingOutboxIfInstalled()
             if (wasOffline) {
                 MovitConnectivitySignals.notifyConnectivityRestored()
@@ -62,6 +61,8 @@ private var outboxNetworkCallback: ConnectivityManager.NetworkCallback? = null
 internal fun replayPendingOutboxIfInstalled() {
     if (!MovitData.isInstalled) return
     replayScope.launch {
-        runCatching { MovitData.offlineWrites.replayPending() }
+        runCatching {
+            MovitData.offlineWrites.replayPending(OutboxReplayAcquisition.TrySkipIfBusy)
+        }
     }
 }

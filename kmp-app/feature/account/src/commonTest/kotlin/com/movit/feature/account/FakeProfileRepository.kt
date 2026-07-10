@@ -1,5 +1,6 @@
 ﻿package com.movit.feature.account
 
+import com.movit.core.data.repository.LogoutOutboxPreparation
 import com.movit.shared.AppResult
 
 object FakeProfilePreviewData {
@@ -28,6 +29,7 @@ class FakeProfileRepository(
     private val signedIn: Boolean = true,
     private var profile: ProfileUi = FakeProfilePreviewData.signedIn,
     private val shouldFail: Boolean = false,
+    private var pendingLogoutCount: Long = 0L,
 ) : ProfileRepository {
 
     override suspend fun loadProfile(): AppResult<ProfileUi> {
@@ -39,7 +41,13 @@ class FakeProfileRepository(
         }
     }
 
-    override suspend fun logout(): AppResult<Unit> {
+    override suspend fun prepareLogout(flushTimeoutMs: Long?): LogoutOutboxPreparation =
+        LogoutOutboxPreparation(pendingLogoutCount, flushAttempted = pendingLogoutCount > 0)
+
+    override suspend fun logout(discardPendingOutbox: Boolean): AppResult<Unit> {
+        if (!discardPendingOutbox && pendingLogoutCount > 0) {
+            return AppResult.Failure("pending_outbox:$pendingLogoutCount")
+        }
         return if (signedIn) {
             AppResult.Success(Unit)
         } else {
@@ -47,7 +55,10 @@ class FakeProfileRepository(
         }
     }
 
-    override suspend fun deleteAccount(): AppResult<Unit> {
+    override suspend fun deleteAccount(discardPendingOutbox: Boolean): AppResult<Unit> {
+        if (!discardPendingOutbox && pendingLogoutCount > 0) {
+            return AppResult.Failure("pending_outbox:$pendingLogoutCount")
+        }
         return if (signedIn) {
             AppResult.Success(Unit)
         } else {

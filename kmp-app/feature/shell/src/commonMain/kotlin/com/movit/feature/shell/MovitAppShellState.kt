@@ -9,6 +9,9 @@ data class MovitAppShellState(
     val themeMode: String = MovitThemeModeStorage.SYSTEM,
     val localeRevision: Int = 0,
     val dataRevision: Int = 0,
+    /** UX.7 — guest outbox attribution dialog (cold start / OpenShell safety net). */
+    val guestOutboxPromptCount: Int? = null,
+    val guestOutboxUserId: String? = null,
 ) {
     val currentInnerRoute: MovitInnerRoute?
         get() = innerStack.lastOrNull()

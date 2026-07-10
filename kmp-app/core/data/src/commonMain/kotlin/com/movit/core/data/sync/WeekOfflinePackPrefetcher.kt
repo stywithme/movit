@@ -152,9 +152,18 @@ class WeekOfflinePackPrefetcher(
     companion object {
         const val OFFLINE_STORE = "week_offline_cache"
         private const val READY_MARKER = "1"
+        private const val READY_KEY_PREFIX = "ready_"
 
         fun offlineReadyKey(programId: String, weekNumber: Int): String =
-            "ready_${programId}_$weekNumber"
+            "${READY_KEY_PREFIX}${programId}_$weekNumber"
+
+        /** Week numbers marked ready via [markWeekReady] — protected from effective-plan GC (F4). */
+        fun protectedOfflineWeekNumbers(bindings: MovitPlatformBindings): Set<Int> =
+            bindings.readAllCacheEntries(OFFLINE_STORE)
+                .asSequence()
+                .filter { (key, value) -> key.startsWith(READY_KEY_PREFIX) && value == READY_MARKER }
+                .mapNotNull { (key, _) -> key.substringAfterLast('_').toIntOrNull() }
+                .toSet()
 
         fun planFromProgram(program: ProgramExportDto, weekNumber: Int): WeekPrefetchPlan? {
             val week = program.weeks.firstOrNull { it.weekNumber == weekNumber } ?: return null

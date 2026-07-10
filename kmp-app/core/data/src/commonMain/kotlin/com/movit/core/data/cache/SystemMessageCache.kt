@@ -22,8 +22,18 @@ open class SystemMessageCache(
         }.getOrElse { emptyList() }
     }
 
+    /**
+     * Persist [messages]. Empty list clears the cache (B-N1: full sync with no system messages).
+     */
     open fun save(messages: List<SyncSystemMessageDto>) {
-        if (messages.isEmpty()) return
+        if (messages.isEmpty()) {
+            store.removeJsonCache(
+                MovitCacheKeys.SYSTEM_MESSAGE_STORE,
+                MovitCacheKeys.SYSTEM_MESSAGES_JSON,
+            )
+            SystemMessageRegistry.replaceAll(emptyList())
+            return
+        }
         store.writeJsonCache(
             MovitCacheKeys.SYSTEM_MESSAGE_STORE,
             MovitCacheKeys.SYSTEM_MESSAGES_JSON,

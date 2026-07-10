@@ -8,6 +8,9 @@ data class HomeApiResponse(
     val data: HomeDataDto? = null,
     val timestamp: String = "",
     val error: String? = null,
+    /** Client-only: ETag from response headers (P2.4). Not part of JSON body. */
+    @kotlinx.serialization.Transient
+    val etag: String? = null,
 )
 
 @Serializable

@@ -40,16 +40,23 @@ class MovitAppShellViewModel : ViewModel() {
     private val _syncOutcome = MutableStateFlow<MovitSyncOrchestrator.SyncOutcome?>(null)
     val syncOutcome: StateFlow<MovitSyncOrchestrator.SyncOutcome?> = _syncOutcome.asStateFlow()
 
+    private val _cacheInvalidated = MutableSharedFlow<Unit>(extraBufferCapacity = 8)
+    val cacheInvalidated: SharedFlow<Unit> = _cacheInvalidated.asSharedFlow()
+
     init {
         ShellSyncCoordinator.install { forceCheck -> requestSyncIfNeeded(forceCheck) }
         MovitConnectivitySignals.setOnConnectivityRestored {
             ShellSyncCoordinator.requestSync(forceCheck = true)
         }
         if (MovitData.isInstalled) {
-            MovitData.onSessionExpired = {
-                popAllInner()
-                pushInner(MovitInnerRoute.Auth)
+            viewModelScope.launch {
+                MovitData.sessionExpiredEvents.collect {
+                    popAllInner()
+                    pushInner(MovitInnerRoute.Auth)
+                }
             }
+            // Keep legacy callback as a no-op fallback for hosts that still assign it.
+            MovitData.onSessionExpired = null
             val platform = MovitData.requirePlatform()
             val bootstrap = AuthBootstrapContext.fromMovitData()
             val startupStack = resolveStartupInnerStack(bootstrap = bootstrap)
@@ -61,11 +68,18 @@ class MovitAppShellViewModel : ViewModel() {
                 )
             }
             if (bootstrap.hasActiveSession) {
+                // P2.11: await bootstrap before first sync (cold-start ordering).
                 viewModelScope.launch {
                     MovitData.bootstrapLocalCaches()
+                    maybeShowGuestOutboxPrompt()
+                    requestSyncIfNeeded()
                 }
-                requestSyncIfNeeded()
                 ensureOnboardingGateIfNeeded()
+            }
+            viewModelScope.launch {
+                MovitData.sync.cacheInvalidated.collect {
+                    notifyCacheInvalidated()
+                }
             }
         }
     }
@@ -76,6 +90,11 @@ class MovitAppShellViewModel : ViewModel() {
 
     fun onConnectivityRestored() {
         requestSyncIfNeeded(forceCheck = true)
+    }
+
+    fun notifyCacheInvalidated() {
+        _state.update { it.copy(dataRevision = it.dataRevision + 1) }
+        _cacheInvalidated.tryEmit(Unit)
     }
 
     private fun ensureOnboardingGateIfNeeded() {
@@ -96,9 +115,7 @@ class MovitAppShellViewModel : ViewModel() {
         viewModelScope.launch {
             val outcome = MovitData.sync.syncIfNeeded(forceCheck = forceCheck)
             _syncOutcome.value = outcome
-            if (outcome is MovitSyncOrchestrator.SyncOutcome.Success) {
-                _state.update { it.copy(dataRevision = it.dataRevision + 1) }
-            }
+            // dataRevision / cacheInvalidated come from sync.cacheInvalidated (P2.10).
         }
     }
 
@@ -167,6 +184,8 @@ class MovitAppShellViewModel : ViewModel() {
             is MovitAppShellEvent.OnboardingEffectReceived -> handleOnboardingEffect(event.effect)
             is MovitAppShellEvent.AssessmentEffectReceived -> handleAssessmentEffect(event.effect)
             is MovitAppShellEvent.LevelEffectReceived -> handleLevelEffect(event.effect)
+            MovitAppShellEvent.GuestOutboxAcceptClicked -> resolveGuestOutbox(accept = true)
+            MovitAppShellEvent.GuestOutboxDiscardClicked -> resolveGuestOutbox(accept = false)
         }
     }
 
@@ -254,18 +273,54 @@ class MovitAppShellViewModel : ViewModel() {
         when (effect) {
             MovitAuthEffect.OpenShell -> {
                 popInner()
-                requestSyncIfNeeded(forceCheck = true)
+                viewModelScope.launch {
+                    maybeShowGuestOutboxPrompt()
+                    requestSyncIfNeeded(forceCheck = true)
+                }
             }
             MovitAuthEffect.OpenOnboarding -> {
                 popInner()
                 pushInner(MovitInnerRoute.ProfileOnboarding)
-                requestSyncIfNeeded(forceCheck = true)
+                viewModelScope.launch {
+                    maybeShowGuestOutboxPrompt()
+                    requestSyncIfNeeded(forceCheck = true)
+                }
             }
             is MovitAuthEffect.ShowMessage -> {
                 _effects.tryEmit(MovitAppShellEffect.ShowMessage(effect.message))
             }
             is MovitAuthEffect.ShowLocalizedMessage -> {
                 _effects.tryEmit(MovitAppShellEffect.ShowLocalizedMessage(effect.key))
+            }
+        }
+    }
+
+    /** UX.7 safety net — cold start or OpenShell if auth UI did not already resolve the prompt. */
+    private suspend fun maybeShowGuestOutboxPrompt() {
+        if (!MovitData.isInstalled) return
+        if (_state.value.guestOutboxPromptCount != null) return
+        val prompt = MovitData.pendingGuestOutboxPrompt() ?: return
+        val userId = MovitData.requirePlatform().userId()?.takeIf { it.isNotBlank() } ?: return
+        _state.update {
+            it.copy(
+                guestOutboxPromptCount = prompt.guestRowCount,
+                guestOutboxUserId = userId,
+            )
+        }
+    }
+
+    private fun resolveGuestOutbox(accept: Boolean) {
+        val userId = _state.value.guestOutboxUserId
+        viewModelScope.launch {
+            if (MovitData.isInstalled && userId != null) {
+                if (accept) {
+                    MovitData.acceptGuestOutboxAttribution(userId)
+                } else {
+                    MovitData.discardGuestOutboxAttribution()
+                }
+            }
+            _state.update {
+                it.copy(guestOutboxPromptCount = null, guestOutboxUserId = null)
             }
         }
     }

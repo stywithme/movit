@@ -41,8 +41,21 @@ class SyncCatalogOfflineRepository(
         )
     }
 
-    fun readWorkoutTrainingConfig(templateId: String): WorkoutTemplateTrainingConfigDto? =
-        readWorkoutExport(templateId)?.let(WorkoutExportMapper::toTrainingConfig)
+    fun readWorkoutTrainingConfig(templateId: String): WorkoutTemplateTrainingConfigDto? {
+        readWorkoutExport(templateId)?.let { return WorkoutExportMapper.toTrainingConfig(it) }
+        // Lazy cleanup of legacy derived keys written before P2.12.
+        val legacyKey = MovitCacheKeys.workoutTemplateTrainingConfigKey(templateId)
+        val legacy = MovitCachePolicy.readJson(
+            localStore,
+            MovitCacheKeys.SESSION_STORE,
+            legacyKey,
+            WorkoutTemplateTrainingConfigDto.serializer(),
+        )
+        if (legacy != null) {
+            localStore.removeJsonCache(MovitCacheKeys.SESSION_STORE, legacyKey)
+        }
+        return legacy
+    }
 
     fun allProgramIds(): List<String> = readProgramIndex()
 
@@ -90,14 +103,7 @@ class SyncCatalogOfflineRepository(
                     workout,
                     WorkoutExportDto.serializer(),
                 )
-                val trainingConfigDto = WorkoutExportMapper.toTrainingConfig(workout)
-                MovitCachePolicy.writeJson(
-                    localStore,
-                    MovitCacheKeys.SESSION_STORE,
-                    MovitCacheKeys.workoutTemplateTrainingConfigKey(workout.id),
-                    trainingConfigDto,
-                    WorkoutTemplateTrainingConfigDto.serializer(),
-                )
+                // P2.12: do not persist derived training-config — derive on read via readWorkoutTrainingConfig.
                 index += workout.id
             }
             writeWorkoutIndex(index.toList())

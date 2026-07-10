@@ -53,6 +53,8 @@ data class PlannedWorkoutStartRequestDto(
     val weekNumber: Int,
     val dayNumber: Int,
     val startedAt: Long? = null,
+    /** Outbox operationId — server replay key (P1.3). */
+    val idempotencyKey: String? = null,
 )
 
 @Serializable
@@ -67,6 +69,8 @@ data class PlannedWorkoutCompleteRequestDto(
     val avgFormScore: Float? = null,
     val rpe: Int? = null,
     val report: JsonElement? = null,
+    /** Outbox operationId — server replay key (P1.3). */
+    val idempotencyKey: String? = null,
 )
 
 @Serializable

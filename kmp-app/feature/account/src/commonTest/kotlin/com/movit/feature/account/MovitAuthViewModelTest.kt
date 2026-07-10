@@ -177,6 +177,31 @@ class MovitAuthViewModelTest {
     }
 
     @Test
+    fun login_success_withGuestOutboxCount_showsDialogBeforeShell() = runBlocking {
+        val repository = object : FakeAuthRepository() {
+            override suspend fun login(email: String, password: String): AppResult<AuthSessionUi> {
+                val base = super.login(email, password)
+                return when (base) {
+                    is AppResult.Success -> AppResult.Success(base.value.copy(guestOutboxCount = 2))
+                    is AppResult.Failure -> base
+                }
+            }
+        }
+        val viewModel = MovitAuthViewModel(
+            repository = repository,
+            bootstrap = previewBootstrap(),
+            initialScreen = AuthScreen.SignIn,
+        )
+        viewModel.onEvent(MovitAuthEvent.EmailChanged("demo@movit.app"))
+        viewModel.onEvent(MovitAuthEvent.PasswordChanged("demo1234"))
+        viewModel.onEvent(MovitAuthEvent.SignInClicked)
+        yield()
+        delay(50)
+        assertEquals(2, viewModel.state.value.guestOutboxPromptCount)
+        assertEquals("demo-user", viewModel.state.value.authenticatedUserId)
+    }
+
+    @Test
     fun forgotPassword_successShowsSentState() = runBlocking {
         val viewModel = MovitAuthViewModel(
             repository = FakeAuthRepository(),

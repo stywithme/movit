@@ -134,6 +134,9 @@ object IosSubscriptionCoordinator {
             is AppResult.Success -> {
                 IosStoreKitBridgeRegistry.current()?.finishTransaction(transaction.transactionId)
                 runCatching { MovitData.account.fetchProfile() }
+                if (MovitData.requirePlatform().isProUser()) {
+                    runCatching { MovitData.reports.syncDashboard() }
+                }
                 if (showSuccessAlert) {
                     showIosBillingAlert("Subscription activated successfully.")
                 }

@@ -18,7 +18,7 @@ class PlanSyncRepository(
 
     /**
      * Enrolls in [programId] via `POST /api/mobile/plan/enroll`, then resolves the active
-     * [UserProgramExportDto.id] from `/api/mobile/sync`, persists it on the platform bindings,
+     * [UserProgramExportDto.id] from `GET /api/mobile/user-programs`, persists it on the platform bindings,
      * and refreshes home/train cache against the new enrollment.
      */
     suspend fun enrollProgram(programId: String): AppResult<String> {
@@ -33,8 +33,7 @@ class PlanSyncRepository(
             return AppResult.Failure(enrollResponse.error ?: "Enrollment failed.")
         }
 
-        val userPrograms = api.fetchSyncUserPrograms(
-            forceRefresh = true,
+        val userPrograms = api.fetchUserPrograms(
             authorization = auth,
         ).getOrElse { error ->
             return AppResult.Failure(error.message ?: "Enrollment sync failed.")
@@ -66,8 +65,8 @@ class PlanSyncRepository(
         }
 
         val needsFullSync = programId != null || cachedActiveId == null
-        val userPrograms = api.fetchSyncUserPrograms(
-            forceRefresh = needsFullSync,
+        val userPrograms = api.fetchUserPrograms(
+            updatedAfter = if (needsFullSync) null else readEnrollmentUpdatedAfter(),
             authorization = auth,
         ).getOrElse {
             return AppResult.Success(cachedActiveId)
@@ -92,4 +91,9 @@ class PlanSyncRepository(
         }
         return activePrograms.firstOrNull()?.id
     }
+
+    private fun readEnrollmentUpdatedAfter(): String? =
+        userProgramEnrollments.listAll()
+            .mapNotNull { it.updatedAt }
+            .maxOrNull()
 }

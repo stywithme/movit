@@ -24,11 +24,14 @@ class MovitHomeViewModel(
     private val _effects = MutableSharedFlow<MovitHomeEffect>(extraBufferCapacity = 1)
     val effects: SharedFlow<MovitHomeEffect> = _effects.asSharedFlow()
 
+    private var previousPendingCount: Long = -1L
+
     fun loadInitial() {
         viewModelScope.launch { load(isRefresh = false) }
     }
 
     suspend fun load(isRefresh: Boolean = false) {
+        refreshOutboxBadges()
         if (isRefresh) {
             _state.update { it.copy(isRefreshing = true, errorMessage = null) }
             when (val result = repository.getHomeDashboard()) {
@@ -40,6 +43,7 @@ class MovitHomeViewModel(
                     it.copy(isRefreshing = false, errorMessage = result.message)
                 }
             }
+            refreshOutboxBadges()
             return
         }
 
@@ -83,6 +87,23 @@ class MovitHomeViewModel(
                 }
                 is CacheState.Loading -> Unit
             }
+            refreshOutboxBadges()
+        }
+    }
+
+    private suspend fun refreshOutboxBadges() {
+        if (!MovitData.isInstalled) return
+        val queue = MovitData.offlineWrites
+        val pending = queue.pendingCount()
+        val failed = queue.failedCount()
+        val showSynced = previousPendingCount > 0 && pending == 0L && failed == 0L
+        previousPendingCount = pending
+        _state.update {
+            it.copy(
+                pendingUploadCount = pending,
+                failedUploadCount = failed,
+                showSyncedConfirmation = showSynced,
+            )
         }
     }
 
@@ -173,6 +194,14 @@ class MovitHomeViewModel(
                         dayNumber = catchUp.dayNumber,
                     ),
                 )
+            }
+            MovitHomeEvent.RetryFailedUploadsClicked -> {
+                viewModelScope.launch {
+                    if (MovitData.isInstalled) {
+                        MovitData.offlineWrites.retryFailedPermanent()
+                        refreshOutboxBadges()
+                    }
+                }
             }
         }
     }

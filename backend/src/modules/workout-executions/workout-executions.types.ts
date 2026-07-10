@@ -15,11 +15,12 @@ export { WorkoutExecutionContext };
 export interface RepMetrics {
   rom: number;              // Range of Motion ? 10
   symmetry: number | null;  // Bilateral symmetry ? 10
-  stability: number;        // Core stability ? 10
+  /** Null when the client lacked enough samples — not a perfect score. */
+  stability: number | null; // Core stability ? 10
   tempo: number[];          // [eccentric, iso, concentric] in ms
   velocity: number | null;  // Mean velocity ? 100
   formScore: number;        // Form score ? 10
-  alignmentAccuracy: number; // Alignment ? 10
+  alignmentAccuracy: number | null; // Alignment ? 10
 }
 
 export interface RepMetricsData {
@@ -40,11 +41,12 @@ export interface ExecutionMetrics {
   // Kinematic metrics (averages)
   avgRom: number;
   avgSymmetry: number | null;
-  avgStability: number;
+  /** Null when reps lacked enough stability samples — not a perfect score. */
+  avgStability: number | null;
   avgTempo: number[];
   avgVelocity: number | null;
   avgFormScore: number;
-  avgAlignmentAccuracy: number;
+  avgAlignmentAccuracy: number | null;
   
   // Temporal metrics
   totalTUT: number;         // Total Time Under Tension (ms)
@@ -234,6 +236,8 @@ export interface PlannedWorkoutStartPayload {
   weekNumber: number;
   dayNumber: number;
   startedAt?: number; // Unix timestamp
+  /** Client outbox operationId — replay-safe (P1.3). */
+  idempotencyKey?: string;
 }
 
 export interface PlannedWorkoutCompletePayload {
@@ -248,4 +252,6 @@ export interface PlannedWorkoutCompletePayload {
   /** User perceived exertion 1–10 after workout execution */
   rpe?: number;
   report?: Record<string, unknown>;
+  /** Client outbox operationId — replay-safe (P1.3). */
+  idempotencyKey?: string;
 }

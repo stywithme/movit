@@ -425,7 +425,23 @@ function exportPlannedWorkout(plannedWorkout: PlannedWorkoutWithTemplate) {
       sortOrder: exercise.sortOrder,
     })),
   }));
-  const items = flattenTemplatePhasesToProgramItems(templatePhases);
+  // P3.5: mark missing/unpublished exercises so mobile can filter safely.
+  const items = flattenTemplatePhasesToProgramItems(templatePhases, {
+    resolveExerciseMeta: (exerciseSlug) => {
+      for (const phase of plannedWorkout.workoutTemplate.phases) {
+        for (const row of phase.exercises) {
+          if (row.exercise?.slug === exerciseSlug) {
+            return {
+              intent: row.exercise.intent ?? null,
+              coachingNotes: row.exercise.coachingNotes,
+              deletedExercise: false,
+            };
+          }
+        }
+      }
+      return { deletedExercise: true };
+    },
+  });
   return {
     id: plannedWorkout.id,
     name: parseLocalizedText(plannedWorkout.name) || workoutExport?.name || { ar: '', en: '' },
@@ -1840,6 +1856,23 @@ export const programService = {
     };
     if (updatedAfter) {
       where.updatedAt = { gt: updatedAfter };
+      // H26 / P2.2: light id probe first — skip deep include when delta is empty.
+      const changedIds = await prisma.program.findMany({
+        where,
+        select: { id: true },
+        orderBy: { updatedAt: 'desc' },
+      });
+      if (changedIds.length === 0) {
+        return [];
+      }
+      const programs = await prisma.program.findMany({
+        where: { id: { in: changedIds.map((row) => row.id) } },
+        include: programFullInclude,
+        orderBy: { updatedAt: 'desc' },
+      });
+      return programs
+        .map((program) => this.buildProgramExport(program))
+        .filter((program): program is ProgramExport => program !== null);
     }
     const programs = await prisma.program.findMany({
       where,
@@ -1849,5 +1882,53 @@ export const programService = {
     return programs
       .map((program) => this.buildProgramExport(program))
       .filter((program): program is ProgramExport => program !== null);
+  },
+
+  /**
+   * Lightweight enrollment list for `GET /api/mobile/user-programs` (P2.1).
+   * Same shape as `userPrograms` in `/mobile/sync` — optional delta via `updatedAfter`.
+   */
+  async listUserProgramsForMobile(
+    userId: string,
+    updatedAfter?: Date,
+  ): Promise<import('@/modules/mobile-sync/mobile-sync.types').UserProgramExport[]> {
+    const prisma = await getPrisma();
+    const where: Prisma.UserProgramWhereInput = { userId };
+    if (updatedAfter) {
+      where.updatedAt = { gt: updatedAfter };
+    }
+
+    const [userProgramRows, trainingProfile] = await Promise.all([
+      prisma.userProgram.findMany({
+        where,
+        orderBy: { updatedAt: 'desc' },
+      }),
+      prisma.trainingProfile.findUnique({
+        where: { userId },
+        select: { trainingWeekdays: true },
+      }),
+    ]);
+    const trainingWeekdays = trainingProfile?.trainingWeekdays ?? [];
+
+    return userProgramRows.map((row) => ({
+      id: row.id,
+      programId: row.programId,
+      name: row.name
+        ? {
+            ar: typeof (row.name as Record<string, unknown>).ar === 'string'
+              ? ((row.name as Record<string, unknown>).ar as string)
+              : '',
+            en: typeof (row.name as Record<string, unknown>).en === 'string'
+              ? ((row.name as Record<string, unknown>).en as string)
+              : '',
+          }
+        : undefined,
+      startDate: row.startDate.toISOString(),
+      isActive: row.isActive,
+      customizations: (row.customizations as Record<string, unknown>) || null,
+      updatedAt: row.updatedAt.toISOString(),
+      customizationsUpdatedAt: row.customizationsUpdatedAt?.toISOString() ?? null,
+      trainingWeekdays,
+    }));
   },
 };

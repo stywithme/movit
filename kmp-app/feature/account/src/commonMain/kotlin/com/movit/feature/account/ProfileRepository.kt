@@ -1,5 +1,6 @@
 package com.movit.feature.account
 
+import com.movit.core.data.repository.LogoutOutboxPreparation
 import com.movit.shared.AppResult
 
 data class ProfileUi(
@@ -24,8 +25,9 @@ data class ProfileSettingsUpdate(
 
 interface ProfileRepository {
     suspend fun loadProfile(): AppResult<ProfileUi>
-    suspend fun logout(): AppResult<Unit>
-    suspend fun deleteAccount(): AppResult<Unit>
+    suspend fun prepareLogout(flushTimeoutMs: Long? = null): LogoutOutboxPreparation
+    suspend fun logout(discardPendingOutbox: Boolean = false): AppResult<Unit>
+    suspend fun deleteAccount(discardPendingOutbox: Boolean = false): AppResult<Unit>
     suspend fun updateSettings(update: ProfileSettingsUpdate): AppResult<ProfileUi>
     suspend fun setThemeMode(mode: String): AppResult<ProfileUi>
 }

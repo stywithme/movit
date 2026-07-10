@@ -2,7 +2,9 @@ package com.movit.core.data.repository
 
 import com.movit.core.data.cache.MovitCachePolicy
 import com.movit.core.data.local.MovitLocalStore
+import com.movit.core.data.outbox.OutboxPendingScan
 import com.movit.core.data.platform.MovitPlatformBindings
+import com.movit.core.network.MovitClock
 import com.movit.core.network.MovitJson
 import com.movit.core.network.MovitMobileApi
 import com.movit.core.network.dto.MetricsApiResponse
@@ -16,6 +18,9 @@ import com.movit.core.network.dto.WorkoutExecutionUploadRequestDto
 import com.movit.shared.AppResult
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
 
 open class ReportsSyncRepository(
     private val api: MovitMobileApi,
@@ -77,18 +82,28 @@ open class ReportsSyncRepository(
             readAllCachedPlannedWorkoutReports().isNotEmpty()
 
     /**
-     * Mirrors legacy [com.movit.storage.SyncManager]: only backfill reports
-     * that are not already present locally (pending offline completions win).
+     * PR-6 field merge: pending complete protects local; server wins id/completedAt/metrics;
+     * rich local [PlannedWorkoutReportExportDto.report] survives summary sync payloads.
      */
-    open fun hydrateFromSync(exports: List<PlannedWorkoutReportExportDto>) {
+    open fun hydrateFromSync(
+        exports: List<PlannedWorkoutReportExportDto>,
+        pendingPlannedWorkoutIds: Set<String> = emptySet(),
+    ) {
         if (exports.isEmpty()) return
         val store = localStore()
         val index = readPlannedWorkoutReportIndex(store).toMutableSet()
         for (export in exports) {
             val workoutId = export.plannedWorkoutId.ifBlank { export.id }
             if (workoutId.isBlank()) continue
-            if (readCachedPlannedWorkoutReport(workoutId) != null) continue
-            writePlannedWorkoutReport(store, workoutId, export.copy(plannedWorkoutId = workoutId))
+            if (workoutId in pendingPlannedWorkoutIds) continue
+
+            val existing = readCachedPlannedWorkoutReport(workoutId)
+            val merged = if (existing == null) {
+                export.copy(plannedWorkoutId = workoutId)
+            } else {
+                mergeReportFromServer(existing, export, workoutId)
+            }
+            writePlannedWorkoutReport(store, workoutId, merged)
             index += workoutId
         }
         writePlannedWorkoutReportIndex(store, index)
@@ -336,14 +351,14 @@ open class ReportsSyncRepository(
         val summary = current.summary ?: ReportDashboardSummaryDto(programId = programId)
         val repsDelta = request.totalReps ?: 0
         val durationDelta = request.totalDurationMs?.toLong() ?: 0L
+        val trainingDays = uniqueTrainingUtcDays()
         val updatedSummary = summary.copy(
             programId = programId ?: summary.programId,
-            daysTrained = (summary.daysTrained ?: 0) + 1,
+            daysTrained = trainingDays.size,
             totalReps = (summary.totalReps ?: 0) + repsDelta,
             totalTrainingTime = (summary.totalTrainingTime ?: 0L) + durationDelta,
             overallFormScore = request.avgFormScore ?: summary.overallFormScore,
-            currentStreak = ((summary.currentStreak ?: 0) + 1).takeIf { repsDelta > 0 }
-                ?: summary.currentStreak,
+            currentStreak = computeCurrentStreakFromUtcDays(trainingDays),
         )
         val patched = current.copy(
             success = true,
@@ -399,6 +414,72 @@ open class ReportsSyncRepository(
         )
     }
 
+    private fun uniqueTrainingUtcDays(): Set<Long> =
+        readAllCachedPlannedWorkoutReports()
+            .mapNotNull { completedAtToUtcDay(it.completedAt) }
+            .toSet()
+
     private fun formatEpochMillis(epochMs: Long?): String =
-        epochMs?.toString().orEmpty()
+        epochMs?.let(DayCustomizationLocalStore::formatEpochMsToIsoUtc).orEmpty()
+
+    companion object {
+        suspend fun pendingPlannedWorkoutIdsFromOutbox(localStore: MovitLocalStore): Set<String> =
+            OutboxPendingScan.pendingPlannedWorkoutIds(OutboxPendingScan.awaitingDispatch(localStore))
+
+        internal fun mergeReportFromServer(
+            local: PlannedWorkoutReportExportDto,
+            server: PlannedWorkoutReportExportDto,
+            workoutId: String,
+        ): PlannedWorkoutReportExportDto {
+            val report = when {
+                hasRichReport(server.report) -> server.report
+                hasRichReport(local.report) -> local.report
+                else -> server.report ?: local.report
+            }
+            return server.copy(
+                id = server.id.ifBlank { local.id }.ifBlank { workoutId },
+                plannedWorkoutId = workoutId,
+                programId = server.programId.ifBlank { local.programId },
+                weekNumber = server.weekNumber.takeIf { it != 0 } ?: local.weekNumber,
+                dayNumber = server.dayNumber.takeIf { it != 0 } ?: local.dayNumber,
+                startedAt = server.startedAt.ifBlank { local.startedAt },
+                completedAt = server.completedAt.ifBlank { local.completedAt },
+                status = server.status.ifBlank { local.status },
+                report = report,
+            )
+        }
+
+        internal fun hasRichReport(report: JsonElement?): Boolean {
+            if (report == null || report is JsonNull) return false
+            return report !is JsonObject || report.isNotEmpty()
+        }
+
+        internal fun completedAtToUtcDay(completedAt: String): Long? {
+            if (completedAt.isBlank()) return null
+            val epochMs = completedAt.toLongOrNull()
+                ?: DayCustomizationLocalStore.parseIsoToEpochMs(completedAt)
+                ?: return null
+            return epochMs.floorDiv(86_400_000L)
+        }
+
+        internal fun computeCurrentStreakFromUtcDays(days: Set<Long>): Int {
+            if (days.isEmpty()) return 0
+            val today = MovitClock.nowEpochMs() / 86_400_000L
+            val mostRecent = days.maxOrNull() ?: return 0
+            if (mostRecent < today - 1) return 0
+
+            var streak = 0
+            var expected = mostRecent
+            for (day in days.sortedDescending()) {
+                when {
+                    day == expected -> {
+                        streak++
+                        expected--
+                    }
+                    day < expected -> break
+                }
+            }
+            return streak
+        }
+    }
 }

@@ -20,6 +20,8 @@ data class PlannedWorkoutStartOutboxPayload(
 data class PlannedWorkoutCompleteOutboxPayload(
     val workoutId: String,
     val request: PlannedWorkoutCompleteRequestDto,
+    /** Optional session group — used to defer complete until executions for the same group flush. */
+    val workoutGroupId: String? = null,
 )
 
 /** Local override row for a program day (ported from legacy DayCustomizationStore). */

@@ -52,7 +52,7 @@ fun MovitProfileScreen(
     onEvent: (MovitProfileEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    when (state.activePicker) {
+    when (val picker = state.activePicker) {
         ProfilePicker.Language -> {
             val profile = state.profile
             if (profile != null) {
@@ -79,9 +79,25 @@ fun MovitProfileScreen(
                 onDismiss = { onEvent(MovitProfileEvent.LogoutDismissed) },
             )
         }
+        is ProfilePicker.LogoutPendingOutbox -> {
+            ProfilePendingOutboxLogoutDialog(
+                pendingCount = picker.pendingCount,
+                onUploadThenSignOut = { onEvent(MovitProfileEvent.LogoutUploadThenSignOut) },
+                onDiscardAndSignOut = { onEvent(MovitProfileEvent.LogoutDiscardPending) },
+                onDismiss = { onEvent(MovitProfileEvent.LogoutDismissed) },
+            )
+        }
         ProfilePicker.DeleteAccountConfirm -> {
             ProfileDeleteAccountConfirmDialog(
                 onConfirm = { onEvent(MovitProfileEvent.DeleteAccountConfirmed) },
+                onDismiss = { onEvent(MovitProfileEvent.DeleteAccountDismissed) },
+            )
+        }
+        is ProfilePicker.DeleteAccountPendingOutbox -> {
+            ProfilePendingOutboxDeleteAccountDialog(
+                pendingCount = picker.pendingCount,
+                onUploadThenDelete = { onEvent(MovitProfileEvent.DeleteAccountUploadThenDelete) },
+                onDiscardAndDelete = { onEvent(MovitProfileEvent.DeleteAccountDiscardPending) },
                 onDismiss = { onEvent(MovitProfileEvent.DeleteAccountDismissed) },
             )
         }
@@ -122,6 +138,8 @@ fun MovitProfileScreen(
                 state.profile != null -> {
                     ProfileContent(
                         profile = state.profile,
+                        syncItems = state.syncItems,
+                        isSyncBusy = state.isSyncBusy,
                         onEvent = onEvent,
                     )
                 }
@@ -133,6 +151,8 @@ fun MovitProfileScreen(
 @Composable
 private fun ProfileContent(
     profile: ProfileUi,
+    syncItems: List<ProfileSyncItemUi>,
+    isSyncBusy: Boolean,
     onEvent: (MovitProfileEvent) -> Unit,
 ) {
     ProfileHero(profile = profile, onEvent = onEvent)
@@ -161,6 +181,36 @@ private fun ProfileContent(
         },
     )
     val trainingProfileA11y = movitText("profile_training_profile_a11y")
+
+    SettingsGroup(title = movitText("profile_sync")) {
+        if (syncItems.isEmpty()) {
+            MovitListRow(
+                title = movitText("profile_sync_pending_empty"),
+                showChevron = false,
+            )
+        } else {
+            syncItems.forEach { item ->
+                val statusText = when (item.statusLabel) {
+                    "failed" -> movitText("profile_sync_item_failed")
+                    "inflight" -> movitText("profile_sync_item_inflight")
+                    else -> movitText("profile_sync_item_pending")
+                }
+                MovitListRow(
+                    title = item.typeLabel,
+                    subtitle = statusText,
+                    showChevron = false,
+                )
+            }
+        }
+        MovitListRow(
+            title = movitText("profile_sync_retry"),
+            onClick = { if (!isSyncBusy) onEvent(MovitProfileEvent.SyncRetryClicked) },
+        )
+        MovitListRow(
+            title = movitText("profile_sync_repair_catalog"),
+            onClick = { if (!isSyncBusy) onEvent(MovitProfileEvent.SyncRepairCatalogClicked) },
+        )
+    }
 
     SettingsGroup(title = movitText("profile_preferences")) {
         MovitListRow(

@@ -6,6 +6,7 @@
  * Updated: State-based system (no difficulty levels)
  */
 
+import { BadRequestException } from '@nestjs/common';
 import { getPrisma } from '@/lib/prisma/client';
 import { deleteByUrl } from '@/lib/storage';
 import type { LoadCapability, MovementPattern, WorkoutItemIntent } from '@prisma/client';
@@ -427,6 +428,19 @@ export const exerciseService = {
     if (data.countingMethodId !== undefined) updateData.countingMethodId = data.countingMethodId;
     if (data.repCountingConfig !== undefined) updateData.repCountingConfig = data.repCountingConfig;
     if (data.status !== undefined) updateData.status = data.status;
+    // P3.7: published exercise slugs are immutable (mobile catalogs key by slug).
+    if (data.slug !== undefined) {
+      const existing = await prisma.exercise.findUnique({
+        where: { id },
+        select: { status: true, slug: true },
+      });
+      if (existing?.status === 'published' && data.slug !== existing.slug) {
+        throw new BadRequestException('Cannot change slug of a published exercise');
+      }
+      if (existing?.status !== 'published') {
+        updateData.slug = data.slug;
+      }
+    }
     if (data.bilateralConfig !== undefined) {
       updateData.isBilateral = Boolean(data.bilateralConfig);
       updateData.bilateralConfig = data.bilateralConfig ? (data.bilateralConfig as object) : null;

@@ -24,6 +24,10 @@ class MovitBillingHost(
         withContext(Dispatchers.IO) {
             // fetchProfile() persists the refreshed isPro / subscriptionExpiry into the shared session.
             runCatching { MovitData.account.fetchProfile() }
+            // P2.11: after Pro purchase, refresh reports dashboard.
+            if (MovitData.requirePlatform().isProUser()) {
+                runCatching { MovitData.reports.syncDashboard() }
+            }
         }
     }
 }

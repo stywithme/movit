@@ -18,7 +18,15 @@ data class ReportDetailUiState(
     val report: ReportDetailUi? = null,
     val selectedPage: ReportDetailPage = ReportDetailPage.Overview,
     val errorMessage: String? = null,
+    /** UX.6 — pending / synced / failed. */
+    val uploadStatus: ReportUploadStatus = ReportUploadStatus.Synced,
 )
+
+enum class ReportUploadStatus {
+    Pending,
+    Synced,
+    Failed,
+}
 
 class ReportDetailViewModel(
     private val reportId: String,
@@ -48,7 +56,11 @@ class ReportDetailViewModel(
         when (val result = repository.getReportDetail(reportId)) {
             is AppResult.Success -> {
                 _state.update {
-                    it.copy(isLoading = false, report = result.value)
+                    it.copy(
+                        isLoading = false,
+                        report = result.value,
+                        uploadStatus = resolveUploadStatus(reportId),
+                    )
                 }
             }
             is AppResult.Failure -> {
@@ -56,6 +68,19 @@ class ReportDetailViewModel(
                     it.copy(isLoading = false, errorMessage = result.message)
                 }
             }
+        }
+    }
+
+    private suspend fun resolveUploadStatus(id: String): ReportUploadStatus {
+        if (!MovitData.isInstalled) return ReportUploadStatus.Synced
+        val entry = MovitData.offlineWrites.listVisibleOutbox().firstOrNull { it.id == id }
+            ?: return ReportUploadStatus.Synced
+        return when (entry.status) {
+            com.movit.core.data.outbox.OutboxStatus.FAILED_PERMANENT -> ReportUploadStatus.Failed
+            com.movit.core.data.outbox.OutboxStatus.PENDING,
+            com.movit.core.data.outbox.OutboxStatus.IN_FLIGHT,
+            -> ReportUploadStatus.Pending
+            else -> ReportUploadStatus.Synced
         }
     }
 

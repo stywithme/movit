@@ -56,6 +56,7 @@ object MobileApiContractRegistry {
         "GET api/mobile/programs/{id}/preview",
         "GET api/mobile/user-programs/{id}/progress-metrics",
         "GET api/mobile/user-programs/{id}/effective-plan",
+        "GET api/mobile/user-programs",
         "GET api/mobile/exercises/substitutions",
         "PUT api/mobile/user-programs/{id}",
         "POST api/mobile/auth/login",

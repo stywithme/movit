@@ -149,5 +149,7 @@ data class ProgramDetailUiState(
     val weekOffline: WeekOfflineUiState = WeekOfflineUiState(),
     val edit: ProgramEditUiState = ProgramEditUiState(),
     val isStarting: Boolean = false,
+    /** UX.5 — thin offline banner when the device has no network. */
+    val isOffline: Boolean = false,
     val errorMessage: String? = null,
 )

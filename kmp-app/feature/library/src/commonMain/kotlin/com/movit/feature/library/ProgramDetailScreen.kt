@@ -13,8 +13,11 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import com.movit.designsystem.MovitSpacing
 import com.movit.designsystem.components.MovitButton
 import com.movit.designsystem.components.MovitButtonVariant
@@ -161,6 +164,19 @@ fun ProgramDetailScreen(
                         .padding(horizontal = MovitSpacing.lg),
                     verticalArrangement = Arrangement.spacedBy(MovitSpacing.lg),
                 ) {
+                    if (state.isOffline) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.92f),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(
+                                text = movitText("training_offline_banner"),
+                                style = MaterialTheme.typography.labelMedium,
+                                modifier = Modifier.padding(MovitSpacing.sm),
+                                textAlign = TextAlign.Center,
+                            )
+                        }
+                    }
                     ProgramHeroSection(
                         title = state.title,
                         description = state.description,

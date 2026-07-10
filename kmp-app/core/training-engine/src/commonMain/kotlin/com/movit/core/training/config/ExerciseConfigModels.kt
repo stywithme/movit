@@ -148,6 +148,8 @@ data class ExerciseConfigRecord(
     val slug: String = "",
     val updatedAt: String = "",
     val config: ExerciseConfig = ExerciseConfig(),
+    /** Library fingerprint stamped when message assignments were last resolved. Empty = never stamped. */
+    val messageLibraryFingerprint: String = "",
 ) {
     fun withSanitizedConfig(): ExerciseConfigRecord = copy(config = config.sanitizeDefaults())
 
@@ -157,11 +159,13 @@ data class ExerciseConfigRecord(
             slug: String,
             updatedAt: String,
             config: ExerciseConfig,
+            messageLibraryFingerprint: String = "",
         ): ExerciseConfigRecord = ExerciseConfigRecord(
             id = id,
             slug = slug,
             updatedAt = updatedAt,
             config = config.sanitizeDefaults(),
+            messageLibraryFingerprint = messageLibraryFingerprint,
         )
     }
 }

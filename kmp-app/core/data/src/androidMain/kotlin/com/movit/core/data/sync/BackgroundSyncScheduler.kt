@@ -18,15 +18,16 @@ actual object BackgroundSyncScheduler {
     actual fun schedule() {
         val context = runCatching { MovitAndroidRuntime.applicationContext }.getOrNull() ?: return
 
-        val constraints = Constraints.Builder()
+        val periodicConstraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
+            .setRequiresBatteryNotLow(true)
             .build()
 
         val request = PeriodicWorkRequestBuilder<MovitBackgroundSyncWorker>(
             SYNC_INTERVAL_HOURS,
             TimeUnit.HOURS,
         )
-            .setConstraints(constraints)
+            .setConstraints(periodicConstraints)
             .build()
 
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
@@ -34,7 +35,7 @@ actual object BackgroundSyncScheduler {
             ExistingPeriodicWorkPolicy.UPDATE,
             request,
         )
-        enqueueOneTimeSync(context, constraints)
+        enqueueOneTimeSync(context, oneTimeConstraints())
     }
 
     actual fun cancel() {
@@ -45,11 +46,13 @@ actual object BackgroundSyncScheduler {
 
     internal fun requestNow() {
         val context = runCatching { MovitAndroidRuntime.applicationContext }.getOrNull() ?: return
-        val constraints = Constraints.Builder()
+        enqueueOneTimeSync(context, oneTimeConstraints())
+    }
+
+    private fun oneTimeConstraints(): Constraints =
+        Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
-        enqueueOneTimeSync(context, constraints)
-    }
 
     private fun enqueueOneTimeSync(
         context: android.content.Context,

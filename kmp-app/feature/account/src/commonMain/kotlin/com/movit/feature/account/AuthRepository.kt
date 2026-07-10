@@ -6,6 +6,8 @@ data class AuthSessionUi(
     val userId: String,
     val name: String,
     val email: String,
+    /** UX.7 — guest outbox rows waiting for attribution after this auth. */
+    val guestOutboxCount: Int? = null,
 )
 
 interface AuthRepository {

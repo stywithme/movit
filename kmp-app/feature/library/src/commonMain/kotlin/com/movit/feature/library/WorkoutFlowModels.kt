@@ -1,7 +1,9 @@
 package com.movit.feature.library
 
 import com.movit.core.data.cache.MovitLruCache
+import com.movit.core.network.MovitClock
 import com.movit.core.training.session.TrainingFlowItem
+import kotlin.random.Random
 
 data class WorkoutFlowExerciseUi(
     val id: String,
@@ -127,6 +129,7 @@ sealed interface TrainingStartAction {
 object WorkoutFlowCache {
     private const val MAX_WORKOUTS = 4
     private val configs = MovitLruCache<String, WorkoutFlowConfigUi>(MAX_WORKOUTS)
+    private val workoutGroupIds = mutableMapOf<String, String>()
 
     fun put(config: WorkoutFlowConfigUi) {
         configs.put(config.workoutId, config)
@@ -138,12 +141,22 @@ object WorkoutFlowCache {
 
     fun get(workoutId: String): WorkoutFlowConfigUi? = configs.get(workoutId)
 
+    /** Stable group id for all execution uploads in one explore/workout run (P1.7). */
+    fun ensureWorkoutGroupId(workoutId: String): String =
+        workoutGroupIds.getOrPut(workoutId) {
+            "wkg-${MovitClock.nowEpochMs()}-${Random.nextInt(1_000_000)}"
+        }
+
+    fun workoutGroupIdOrNull(workoutId: String): String? = workoutGroupIds[workoutId]
+
     fun clear(workoutId: String) {
         configs.remove(workoutId)
+        workoutGroupIds.remove(workoutId)
     }
 
     internal fun clearAll() {
         configs.clear()
+        workoutGroupIds.clear()
     }
 }
 

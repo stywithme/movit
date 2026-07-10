@@ -434,6 +434,24 @@ class RepCounter(
         targetReachedEmitted = false
     }
 
+    /**
+     * Journal restore (P1.5): seed the live counter so UI / target checks continue
+     * from completed reps. Does not reconstruct per-rep [RepResult] history.
+     */
+    fun seedCompletedCount(completedReps: Int) {
+        if (completedReps <= 0) return
+        count = completedReps
+        countedCount = completedReps
+        uncountedCount = 0
+        invalidatedCount = 0
+        // Per-rep history is not restored — average score stays 0 until new reps.
+        totalScore = 0f
+        _repResults.clear()
+        resetCurrentRepTracking()
+        lastRepTime = 0L
+        targetReachedEmitted = count >= targetReps
+    }
+
     fun hasStarted(): Boolean = count > 0
 
     fun getLastRepResult(): RepResult? = _repResults.lastOrNull()

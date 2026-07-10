@@ -12,6 +12,14 @@ sqldelight {
     databases {
         create("MovitDatabase") {
             packageName.set("com.movit.core.data.db")
+            // sqlite-jdbc native extract fails on some Windows agents (AccessDenied under
+            // C:\WINDOWS). Default off locally; CI passes -PverifySqlMigrations=true.
+            // OutboxSchemaMigrationTest still covers migrate(1→2) without this flag.
+            verifyMigrations.set(
+                providers.gradleProperty("verifySqlMigrations")
+                    .map { it.equals("true", ignoreCase = true) }
+                    .orElse(false),
+            )
         }
     }
 }
@@ -39,6 +47,7 @@ kotlin {
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.koin.core)
+            implementation(libs.sqldelight.sqlite.driver)
         }
         androidMain.dependencies {
             implementation(libs.androidx.security.crypto)

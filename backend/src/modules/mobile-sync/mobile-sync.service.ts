@@ -23,6 +23,9 @@ import type {
   UserProgramExport,
   PlannedWorkoutReportExport,
   ExploreData,
+  IncludeReportsMode,
+  SystemMessageTemplate,
+  AudioManifest,
 } from './mobile-sync.types';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -31,9 +34,18 @@ import {
   buildMessageLibrary,
   loadSystemMessages,
 } from './mobile-audio-manifest.service';
+import { computeSafeSyncWatermark } from './mobile-sync-watermark';
+
+export { computeSafeSyncWatermark } from './mobile-sync-watermark';
 
 // Server version for API compatibility
 const SERVER_VERSION = '1.0.0';
+
+function parseIncludeReports(raw: IncludeReportsMode | undefined): IncludeReportsMode {
+  // Legacy clients omit the param → full report JSON (backward compatible).
+  if (raw === 'summary' || raw === 'full' || raw === 'none') return raw;
+  return 'full';
+}
 
 /** Legacy mobile sync keys (pre workoutTemplates rename). */
 function withLegacyWorkoutSyncAliases<T>(workouts: T[]) {
@@ -308,10 +320,10 @@ export const mobileSyncService = {
   async sync(params: SyncRequestParams, baseUrl: string, userId?: string | null): Promise<MobileSyncResponse> {
     const prisma = await getPrisma();
     const now = new Date();
-    // Explicit boolean for type safety
     const isFullSync: boolean = !params.updatedAfter || params.forceRefresh === true;
-    
-    // Parse the updatedAfter timestamp if provided
+    const includeReports = parseIncludeReports(params.includeReports);
+    const watermarkCandidates: Array<Date | string | null | undefined> = [now];
+
     let updatedAfterDate: Date | null = null;
     if (params.updatedAfter && !params.forceRefresh) {
       try {
@@ -323,81 +335,74 @@ export const mobileSyncService = {
         updatedAfterDate = null;
       }
     }
-    
-    // Build query conditions
+
     const whereCondition: Record<string, unknown> = {
       status: 'published',
       deletedAt: null,
     };
-    
-    // For incremental sync, filter by updatedAt
     if (updatedAfterDate) {
-      whereCondition.updatedAt = {
-        gt: updatedAfterDate,
-      };
+      whereCondition.updatedAt = { gt: updatedAfterDate };
     }
-    
-    // Fetch exercises
+
     const exercises = await prisma.exercise.findMany({
       where: whereCondition,
       include: exerciseFullInclude,
       orderBy: { updatedAt: 'desc' },
     });
-    
-    // Get total count of published exercises
+    for (const e of exercises) watermarkCandidates.push(e.updatedAt);
+
     const totalExercises = await prisma.exercise.count({
-      where: {
-        status: 'published',
-        deletedAt: null,
-      },
+      where: { status: 'published', deletedAt: null },
     });
-    
-    // Get removed exercise IDs (for incremental sync)
-    // This includes both:
-    // 1. Deleted exercises (deletedAt > updatedAfter)
-    // 2. Unpublished exercises (status changed from 'published' to 'draft' after updatedAfter)
+
     let deletedExerciseIds: string[] = [];
     if (updatedAfterDate) {
-      // Deleted exercises
       const deletedExercises = await prisma.exercise.findMany({
-        where: {
-          deletedAt: {
-            gt: updatedAfterDate,
-          },
-        },
-        select: { id: true },
+        where: { deletedAt: { gt: updatedAfterDate } },
+        select: { id: true, deletedAt: true },
       });
-      
-      // Unpublished exercises (were updated after timestamp and are now draft)
-      // These should be removed from mobile cache
       const unpublishedExercises = await prisma.exercise.findMany({
         where: {
           status: 'draft',
           deletedAt: null,
-          updatedAt: {
-            gt: updatedAfterDate,
-          },
+          updatedAt: { gt: updatedAfterDate },
         },
-        select: { id: true },
+        select: { id: true, updatedAt: true },
       });
-      
       deletedExerciseIds = [
-        ...deletedExercises.map(e => e.id),
-        ...unpublishedExercises.map(e => e.id),
+        ...deletedExercises.map((e) => e.id),
+        ...unpublishedExercises.map((e) => e.id),
       ];
+      for (const e of deletedExercises) watermarkCandidates.push(e.deletedAt);
+      for (const e of unpublishedExercises) watermarkCandidates.push(e.updatedAt);
     }
-    
-    // Build message library (deduplicated) from exercises in this sync batch
+
     const messageLibrary = buildMessageLibrary(exercises as Parameters<typeof buildExerciseConfig>[0][]);
-
-    const systemMessages = await loadSystemMessages();
-
-    // Always compute global message stats (across ALL published exercises)
-    // so mobile can detect stale caches even during incremental syncs
     const messageLibraryStats = await this.getGlobalMessageStats(prisma);
 
-    // Transform exercises to mobile format with metadata (message assignments only)
-    const exercisesWithMeta: ExerciseConfigWithMeta[] = exercises.map(exercise => {
+    // H24: systemMessages on full or systemTplMax change; audioManifest on fingerprint time change.
+    const fpParts = messageLibraryStats.fingerprint.split(':');
+    const linkedTplMaxMs = Number(fpParts[0] ?? '0');
+    const systemTplMaxMs = Number(fpParts[1] ?? '0');
+    const assignCreatedMaxMs = Number(fpParts[2] ?? '0');
+    const watermarkMs = updatedAfterDate?.getTime() ?? 0;
+    const includeSystemMessages =
+      isFullSync ||
+      (!!updatedAfterDate && !Number.isNaN(systemTplMaxMs) && systemTplMaxMs > watermarkMs);
+    const includeAudioManifest =
+      isFullSync ||
+      (!!updatedAfterDate &&
+        [linkedTplMaxMs, systemTplMaxMs, assignCreatedMaxMs].some(
+          (ms) => !Number.isNaN(ms) && ms > watermarkMs,
+        ));
+
+    let systemMessages: SystemMessageTemplate[] = [];
+    if (includeSystemMessages) {
+      systemMessages = await loadSystemMessages();
+      for (const sm of systemMessages) watermarkCandidates.push(sm.updatedAt);
+    }
+
+    const exercisesWithMeta: ExerciseConfigWithMeta[] = exercises.map((exercise) => {
       const config = buildExerciseConfig(exercise as Parameters<typeof buildExerciseConfig>[0], {
         includeMessages: false,
         includeAssignments: true,
@@ -409,19 +414,15 @@ export const mobileSyncService = {
         updatedAt: exercise.updatedAt.toISOString(),
       };
     });
-    
-    // Fetch workouts
+
     const workoutWhereCondition: Record<string, unknown> = {
       status: 'published',
       deletedAt: null,
     };
-    
     if (updatedAfterDate) {
-      workoutWhereCondition.updatedAt = {
-        gt: updatedAfterDate,
-      };
+      workoutWhereCondition.updatedAt = { gt: updatedAfterDate };
     }
-    
+
     const workouts = await prisma.workoutTemplate.findMany({
       where: workoutWhereCondition,
       include: {
@@ -460,48 +461,46 @@ export const mobileSyncService = {
       },
       orderBy: { updatedAt: 'desc' },
     });
-    
-    // Get total count of published workouts
+    for (const w of workouts) watermarkCandidates.push(w.updatedAt);
+
     const totalWorkoutTemplates = await prisma.workoutTemplate.count({
-      where: {
-        status: 'published',
-        deletedAt: null,
-      },
+      where: { status: 'published', deletedAt: null },
     });
-    
-    // Get deleted workout IDs (for incremental sync)
+
     let deletedWorkoutTemplateIds: string[] = [];
     if (updatedAfterDate) {
       const deletedWorkouts = await prisma.workoutTemplate.findMany({
-        where: {
-          deletedAt: { gt: updatedAfterDate },
-        },
-        select: { id: true },
+        where: { deletedAt: { gt: updatedAfterDate } },
+        select: { id: true, deletedAt: true },
       });
-      
       const unpublishedWorkouts = await prisma.workoutTemplate.findMany({
         where: {
           status: 'draft',
           deletedAt: null,
           updatedAt: { gt: updatedAfterDate },
         },
-        select: { id: true },
+        select: { id: true, updatedAt: true },
       });
-      
       deletedWorkoutTemplateIds = [
-        ...deletedWorkouts.map(w => w.id),
-        ...unpublishedWorkouts.map(w => w.id),
+        ...deletedWorkouts.map((w) => w.id),
+        ...unpublishedWorkouts.map((w) => w.id),
       ];
+      for (const w of deletedWorkouts) watermarkCandidates.push(w.deletedAt);
+      for (const w of unpublishedWorkouts) watermarkCandidates.push(w.updatedAt);
     }
-    
-    // Transform workouts to mobile format
-    const workoutsExport: WorkoutExport[] = workouts.map(workout => {
-      const result = workoutService.buildWorkoutExport(workout as Parameters<typeof workoutService.buildWorkoutExport>[0]);
-      return result!;
-    }).filter((w): w is WorkoutExport => w !== null);
-    
-    // Fetch programs
+
+    const workoutsExport: WorkoutExport[] = workouts
+      .map((workout) =>
+        workoutService.buildWorkoutExport(
+          workout as Parameters<typeof workoutService.buildWorkoutExport>[0],
+        ),
+      )
+      .filter((w): w is WorkoutExport => w !== null);
+
     const filteredPrograms = await programService.getPublishedForMobile(updatedAfterDate);
+    for (const p of filteredPrograms) {
+      if (p.updatedAt) watermarkCandidates.push(p.updatedAt);
+    }
 
     const totalPrograms = await prisma.program.count({
       where: { isPublished: true, deletedAt: null },
@@ -510,44 +509,55 @@ export const mobileSyncService = {
     let deletedProgramIds: string[] = [];
     if (updatedAfterDate) {
       const deletedPrograms = await prisma.program.findMany({
-        where: {
-          deletedAt: { gt: updatedAfterDate },
-        },
-        select: { id: true },
+        where: { deletedAt: { gt: updatedAfterDate } },
+        select: { id: true, deletedAt: true },
       });
-
       const unpublishedPrograms = await prisma.program.findMany({
         where: {
           isPublished: false,
           deletedAt: null,
           updatedAt: { gt: updatedAfterDate },
         },
-        select: { id: true },
+        select: { id: true, updatedAt: true },
       });
-
       deletedProgramIds = [
         ...deletedPrograms.map((p) => p.id),
         ...unpublishedPrograms.map((p) => p.id),
       ];
+      for (const p of deletedPrograms) watermarkCandidates.push(p.deletedAt);
+      for (const p of unpublishedPrograms) watermarkCandidates.push(p.updatedAt);
     }
 
-    // Build audio manifest from message library + system messages + inline exercise audio URLs
-    const audioManifest = await buildAudioManifest(
-      messageLibrary,
-      systemMessages,
-      exercisesWithMeta,
-      baseUrl
-    );
-    
+    // H24: skip file-size I/O on empty deltas when fingerprint unchanged.
+    let audioManifest: AudioManifest = { baseUrl: `${baseUrl}/audio/tts`, files: [] };
+    if (includeAudioManifest) {
+      const messagesForManifest =
+        systemMessages.length > 0 ? systemMessages : await loadSystemMessages();
+      audioManifest = await buildAudioManifest(
+        messageLibrary,
+        messagesForManifest,
+        exercisesWithMeta,
+        baseUrl,
+      );
+    }
+
     let userPrograms: UserProgramExport[] | undefined;
     let plannedWorkoutReports: PlannedWorkoutReportExport[] | undefined;
     let userExercisePreferences: Awaited<ReturnType<typeof listUserExercisePreferences>> | undefined;
     if (userId) {
       userExercisePreferences = await listUserExercisePreferences(userId);
+      for (const pref of userExercisePreferences) {
+        if (pref.updatedAt) watermarkCandidates.push(pref.updatedAt);
+      }
+
+      const userProgramWhere: Record<string, unknown> = { userId };
+      if (updatedAfterDate) {
+        userProgramWhere.updatedAt = { gt: updatedAfterDate };
+      }
 
       const [userProgramRows, trainingProfile] = await Promise.all([
         prisma.userProgram.findMany({
-          where: { userId },
+          where: userProgramWhere,
           orderBy: { updatedAt: 'desc' },
         }),
         prisma.trainingProfile.findUnique({
@@ -556,51 +566,67 @@ export const mobileSyncService = {
         }),
       ]);
       const trainingWeekdays = trainingProfile?.trainingWeekdays ?? [];
-      userPrograms = userProgramRows.map((row) => ({
-        id: row.id,
-        programId: row.programId,
-        name: row.name ? toSyncLocalizedText(row.name as Record<string, unknown>) : undefined,
-        startDate: row.startDate.toISOString(),
-        isActive: row.isActive,
-        customizations: (row.customizations as Record<string, unknown>) || null,
-        updatedAt: row.updatedAt.toISOString(),
-        customizationsUpdatedAt: row.customizationsUpdatedAt?.toISOString() ?? null,
-        trainingWeekdays,
-      }));
+      userPrograms = userProgramRows.map((row) => {
+        watermarkCandidates.push(row.updatedAt);
+        if (row.customizationsUpdatedAt) watermarkCandidates.push(row.customizationsUpdatedAt);
+        return {
+          id: row.id,
+          programId: row.programId,
+          name: row.name ? toSyncLocalizedText(row.name as Record<string, unknown>) : undefined,
+          startDate: row.startDate.toISOString(),
+          isActive: row.isActive,
+          customizations: (row.customizations as Record<string, unknown>) || null,
+          updatedAt: row.updatedAt.toISOString(),
+          customizationsUpdatedAt: row.customizationsUpdatedAt?.toISOString() ?? null,
+          trainingWeekdays,
+        };
+      });
 
-      // Fetch completed planned workout reports for this user
-      const reportRows = await prisma.plannedWorkoutReport.findMany({
-        where: {
+      if (includeReports !== 'none') {
+        const reportWhere: Record<string, unknown> = {
           userId,
           status: 'completed',
-        },
-        orderBy: [{ weekNumber: 'asc' }, { dayNumber: 'asc' }],
-      });
-      plannedWorkoutReports = reportRows.map((r) => ({
-        id: r.id,
-        plannedWorkoutId: r.plannedWorkoutId,
-        programId: r.programId ?? '',
-        weekNumber: r.weekNumber,
-        dayNumber: r.dayNumber,
-        startedAt: r.startedAt.toISOString(),
-        completedAt: r.completedAt?.toISOString() ?? r.startedAt.toISOString(),
-        status: r.status,
-        totalDurationMs: r.totalDurationMs ?? 0,
-        totalExercises: r.totalExercises ?? 0,
-        totalSets: r.totalSets ?? 0,
-        completedSets: r.completedSets ?? 0,
-        totalReps: r.totalReps ?? 0,
-        avgAccuracy: r.avgAccuracy ?? 0,
-        avgFormScore: r.avgFormScore ?? undefined,
-        rpe: r.rpe ?? undefined,
-        report: r.report ?? undefined,
-      }));
+        };
+        if (updatedAfterDate) {
+          reportWhere.updatedAt = { gt: updatedAfterDate };
+        }
+        const reportRows = await prisma.plannedWorkoutReport.findMany({
+          where: reportWhere,
+          orderBy: [{ weekNumber: 'asc' }, { dayNumber: 'asc' }],
+        });
+        plannedWorkoutReports = reportRows.map((r) => {
+          watermarkCandidates.push(r.updatedAt);
+          const base: PlannedWorkoutReportExport = {
+            id: r.id,
+            plannedWorkoutId: r.plannedWorkoutId,
+            programId: r.programId ?? '',
+            weekNumber: r.weekNumber,
+            dayNumber: r.dayNumber,
+            startedAt: r.startedAt.toISOString(),
+            completedAt: r.completedAt?.toISOString() ?? r.startedAt.toISOString(),
+            status: r.status,
+            totalDurationMs: r.totalDurationMs ?? 0,
+            totalExercises: r.totalExercises ?? 0,
+            totalSets: r.totalSets ?? 0,
+            completedSets: r.completedSets ?? 0,
+            totalReps: r.totalReps ?? 0,
+            avgAccuracy: r.avgAccuracy ?? 0,
+            avgFormScore: r.avgFormScore ?? undefined,
+            rpe: r.rpe ?? undefined,
+          };
+          if (includeReports === 'full') {
+            base.report = r.report ?? undefined;
+          }
+          return base;
+        });
+      }
     }
 
-    // Build response
-    const response: MobileSyncResponse = {
+    const timestamp = computeSafeSyncWatermark(now, watermarkCandidates);
+
+    return {
       success: true,
-      timestamp: now.toISOString(),
+      timestamp,
       data: {
         exercises: exercisesWithMeta,
         messageLibrary,
@@ -626,8 +652,6 @@ export const mobileSyncService = {
         messageLibraryStats,
       },
     };
-    
-    return response;
   },
 
   /**

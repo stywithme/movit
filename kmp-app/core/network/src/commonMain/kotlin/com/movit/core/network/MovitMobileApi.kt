@@ -1,6 +1,8 @@
 package com.movit.core.network
 
 import com.movit.core.network.dto.AuthApiResponse
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
 import com.movit.core.network.dto.AuthDataDto
 import com.movit.core.network.dto.AuthTokensDto
 import com.movit.core.network.dto.ExploreApiResponse
@@ -30,6 +32,7 @@ import com.movit.core.network.dto.MetricsScope
 import com.movit.core.network.dto.PlannedWorkoutApiResponse
 import com.movit.core.network.dto.PlannedWorkoutCompleteRequestDto
 import com.movit.core.network.dto.PlannedWorkoutStartRequestDto
+import com.movit.core.network.dto.PlanCompleteRequestDto
 import com.movit.core.network.dto.PlanMutationResponse
 import com.movit.core.network.dto.LevelProfileHistoryApiResponse
 import com.movit.core.network.dto.LevelsListApiResponse
@@ -52,6 +55,7 @@ import com.movit.core.network.dto.TrainingProfileApiResponse
 import com.movit.core.network.dto.TrainingProfilePutRequest
 import com.movit.core.network.dto.UpdateSettingsRequestDto
 import com.movit.core.network.dto.UserProgramExportDto
+import com.movit.core.network.dto.UserProgramsApiResponse
 import com.movit.core.network.dto.UserProgramUpdateRequest
 import com.movit.core.network.dto.UserPublicDto
 import io.ktor.client.HttpClient
@@ -93,20 +97,33 @@ class MovitMobileApi(
             updatedAfter?.let { parameter("updatedAfter", it) }
             limit?.let { parameter("limit", it) }
         }
-        if (!response.status.isSuccess()) {
-            error("Explore request failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Explore request failed")
         response.body<ExploreApiResponse>()
     }
 
-    suspend fun fetchHome(authorization: String? = null): Result<HomeApiResponse> = runCatching {
+    /**
+     * @param ifNoneMatch optional ETag from a prior home response (P2.4).
+     * On 304, returns [HomeApiResponse] with `success=true` and `data=null` (caller keeps cache).
+     */
+    suspend fun fetchHome(
+        authorization: String? = null,
+        ifNoneMatch: String? = null,
+    ): Result<HomeApiResponse> = runCatching {
         val response = client.get(base("api/mobile/home")) {
             applyBearerAuthorization(authorization)
+            ifNoneMatch?.takeIf { it.isNotBlank() }?.let { header("If-None-Match", it) }
         }
-        if (!response.status.isSuccess()) {
-            error("Home request failed (${response.status.value})")
+        if (response.status.value == 304) {
+            return@runCatching HomeApiResponse(success = true, data = null)
         }
-        response.body<HomeApiResponse>()
+        ensureSuccess(response, "Home request failed")
+        val body = response.body<HomeApiResponse>()
+        val etag = response.headers["ETag"]
+        if (etag != null && body.data != null) {
+            body.copy(etag = etag)
+        } else {
+            body
+        }
     }
 
     suspend fun fetchReportsDashboard(
@@ -121,9 +138,7 @@ class MovitMobileApi(
             parameter("period", period)
             parameter("source", source)
         }
-        if (!response.status.isSuccess()) {
-            error("Reports dashboard request failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Reports dashboard request failed")
         response.body<ReportsDashboardApiResponse>()
     }
 
@@ -146,9 +161,7 @@ class MovitMobileApi(
                 parameter("includeChildren", true)
             }
         }
-        if (!response.status.isSuccess()) {
-            error("Metrics request failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Metrics request failed")
         response.body<MetricsApiResponse>()
     }
 
@@ -173,9 +186,7 @@ class MovitMobileApi(
         val response = client.get(base("api/mobile/programs/$programId")) {
             applyBearerAuthorization(authorization)
         }
-        if (!response.status.isSuccess()) {
-            error("Program request failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Program request failed")
         response.body<ProgramExportApiResponse>()
     }
 
@@ -186,9 +197,7 @@ class MovitMobileApi(
         val response = client.get(base("api/mobile/programs/$programId/preview")) {
             applyBearerAuthorization(authorization)
         }
-        if (!response.status.isSuccess()) {
-            error("Program preview request failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Program preview request failed")
         response.body<ProgramPreviewApiResponse>()
     }
 
@@ -199,9 +208,7 @@ class MovitMobileApi(
         val response = client.get(base("api/mobile/user-programs/$userProgramId/progress-metrics")) {
             applyBearerAuthorization(authorization)
         }
-        if (!response.status.isSuccess()) {
-            error("Program progress metrics request failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Program progress metrics request failed")
         response.body<ProgramProgressMetricsApiResponse>()
     }
 
@@ -216,9 +223,7 @@ class MovitMobileApi(
             parameter("week", weekNumber)
             parameter("day", dayNumber)
         }
-        if (!response.status.isSuccess()) {
-            error("Effective plan request failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Effective plan request failed")
         response.body<EffectivePlanApiResponse>()
     }
 
@@ -232,9 +237,7 @@ class MovitMobileApi(
             parameter("slug", slug)
             parameter("limit", limit)
         }
-        if (!response.status.isSuccess()) {
-            error("Substitution request failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Substitution request failed")
         response.body<SubstitutionExercisesApiResponse>()
     }
 
@@ -248,9 +251,7 @@ class MovitMobileApi(
             contentType(ContentType.Application.Json)
             setBody(request)
         }
-        if (!response.status.isSuccess()) {
-            error("User program update failed (${response.status.value})")
-        }
+        ensureSuccess(response, "User program update failed")
     }
 
     suspend fun login(request: LoginRequestDto): Result<AuthApiResponse<AuthDataDto>> = runCatching {
@@ -258,9 +259,7 @@ class MovitMobileApi(
             contentType(ContentType.Application.Json)
             setBody(request)
         }
-        if (!response.status.isSuccess()) {
-            error("Login failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Login failed")
         response.body<AuthApiResponse<AuthDataDto>>()
     }
 
@@ -269,9 +268,7 @@ class MovitMobileApi(
             contentType(ContentType.Application.Json)
             setBody(request)
         }
-        if (!response.status.isSuccess()) {
-            error("Registration failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Registration failed")
         response.body<AuthApiResponse<AuthDataDto>>()
     }
 
@@ -280,9 +277,7 @@ class MovitMobileApi(
             contentType(ContentType.Application.Json)
             setBody(request)
         }
-        if (!response.status.isSuccess()) {
-            error("Google sign-in failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Google sign-in failed")
         response.body<AuthApiResponse<AuthDataDto>>()
     }
 
@@ -291,9 +286,7 @@ class MovitMobileApi(
             contentType(ContentType.Application.Json)
             setBody(request)
         }
-        if (!response.status.isSuccess()) {
-            error("Forgot password failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Forgot password failed")
         response.body<AuthApiResponse<AuthDataDto>>()
     }
 
@@ -302,9 +295,7 @@ class MovitMobileApi(
             contentType(ContentType.Application.Json)
             setBody(RefreshTokenRequestDto(refreshToken))
         }
-        if (!response.status.isSuccess()) {
-            error("Token refresh failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Token refresh failed")
         response.body<AuthApiResponse<AuthTokensDto>>()
     }
 
@@ -317,9 +308,7 @@ class MovitMobileApi(
             contentType(ContentType.Application.Json)
             setBody(request)
         }
-        if (!response.status.isSuccess()) {
-            error("Logout failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Logout failed")
         response.body<AuthApiResponse<AuthDataDto>>()
     }
 
@@ -327,9 +316,7 @@ class MovitMobileApi(
         val response = client.delete(base("api/mobile/auth/account")) {
             applyBearerAuthorization(authorization)
         }
-        if (!response.status.isSuccess()) {
-            error("Delete account failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Delete account failed")
         response.body<AuthApiResponse<Unit>>()
     }
 
@@ -337,9 +324,7 @@ class MovitMobileApi(
         val response = client.get(base("api/mobile/auth/profile")) {
             applyBearerAuthorization(authorization)
         }
-        if (!response.status.isSuccess()) {
-            error("Profile request failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Profile request failed")
         response.body<AuthApiResponse<UserPublicDto>>()
     }
 
@@ -352,9 +337,7 @@ class MovitMobileApi(
             contentType(ContentType.Application.Json)
             setBody(request)
         }
-        if (!response.status.isSuccess()) {
-            error("Settings update failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Settings update failed")
         response.body<AuthApiResponse<UserPublicDto>>()
     }
 
@@ -362,9 +345,7 @@ class MovitMobileApi(
         val response = client.get(base("api/mobile/level-profile")) {
             applyBearerAuthorization(authorization)
         }
-        if (!response.status.isSuccess()) {
-            error("Level profile request failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Level profile request failed")
         response.body<LevelProfileApiResponse>()
     }
 
@@ -374,9 +355,7 @@ class MovitMobileApi(
         val response = client.get(base("api/mobile/level-profile/history")) {
             applyBearerAuthorization(authorization)
         }
-        if (!response.status.isSuccess()) {
-            error("Level profile history request failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Level profile history request failed")
         response.body<LevelProfileHistoryApiResponse>()
     }
 
@@ -386,9 +365,7 @@ class MovitMobileApi(
         val response = client.get(base("api/mobile/level-profile/levels")) {
             applyBearerAuthorization(authorization)
         }
-        if (!response.status.isSuccess()) {
-            error("Level definitions request failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Level definitions request failed")
         response.body<LevelsListApiResponse>()
     }
 
@@ -396,9 +373,7 @@ class MovitMobileApi(
         val response = client.get(base("api/mobile/plan")) {
             applyBearerAuthorization(authorization)
         }
-        if (!response.status.isSuccess()) {
-            error("Active plan request failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Active plan request failed")
         response.body<ActivePlanApiResponse>()
     }
 
@@ -406,9 +381,7 @@ class MovitMobileApi(
         val response = client.get(base("api/mobile/plan/today")) {
             applyBearerAuthorization(authorization)
         }
-        if (!response.status.isSuccess()) {
-            error("Today plan request failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Today plan request failed")
         response.body<TodayPlanApiResponse>()
     }
 
@@ -421,9 +394,7 @@ class MovitMobileApi(
             contentType(ContentType.Application.Json)
             setBody(EnrollProgramRequestDto(programId))
         }
-        if (!response.status.isSuccess()) {
-            error("Enrollment failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Enrollment failed")
         response.body<ActivePlanApiResponse>()
     }
 
@@ -431,6 +402,8 @@ class MovitMobileApi(
         updatedAfter: String? = null,
         forceRefresh: Boolean = false,
         authorization: String? = null,
+        /** P2.2: prefer summary reports on sync; details via /mobile/reports/metrics. */
+        includeReports: String = "summary",
     ): Result<MobileSyncApiResponse> = runCatching {
         val response = client.get(base("api/mobile/sync")) {
             applyBearerAuthorization(authorization)
@@ -438,10 +411,9 @@ class MovitMobileApi(
             if (forceRefresh) {
                 parameter("forceRefresh", true)
             }
+            parameter("includeReports", includeReports)
         }
-        if (!response.status.isSuccess()) {
-            error("Sync request failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Sync request failed")
         val body = response.body<MobileSyncApiResponse>()
         if (!body.success) {
             error(body.error ?: "Sync request failed.")
@@ -449,25 +421,42 @@ class MovitMobileApi(
         body
     }
 
+    suspend fun fetchUserPrograms(
+        updatedAfter: String? = null,
+        authorization: String? = null,
+    ): Result<List<UserProgramExportDto>> = runCatching {
+        val response = client.get(base("api/mobile/user-programs")) {
+            applyBearerAuthorization(authorization)
+            updatedAfter?.let { parameter("updatedAfter", it) }
+        }
+        ensureSuccess(response, "User programs request failed")
+        val body = response.body<UserProgramsApiResponse>()
+        if (!body.success) {
+            error(body.error ?: "User programs request failed.")
+        }
+        body.userPrograms
+    }
+
     suspend fun fetchSyncUserPrograms(
         forceRefresh: Boolean = false,
         authorization: String? = null,
-    ): Result<List<UserProgramExportDto>> = runCatching {
-        fetchSync(forceRefresh = forceRefresh, authorization = authorization).getOrThrow()
-            .data
-            ?.userPrograms
-            .orEmpty()
-    }
+        updatedAfter: String? = null,
+    ): Result<List<UserProgramExportDto>> = fetchUserPrograms(
+        updatedAfter = if (forceRefresh) null else updatedAfter,
+        authorization = authorization,
+    )
 
     /** Alias for sync orchestration (WS-3) — returns full payload including meta + audio manifest. */
     suspend fun fetchMobileSync(
         updatedAfter: String? = null,
         forceRefresh: Boolean = false,
         authorization: String? = null,
+        includeReports: String = "summary",
     ): Result<MobileSyncApiResponse> = fetchSync(
         updatedAfter = updatedAfter,
         forceRefresh = forceRefresh,
         authorization = authorization,
+        includeReports = includeReports,
     )
 
     suspend fun fetchWorkoutTrainingConfig(
@@ -477,9 +466,7 @@ class MovitMobileApi(
         val response = client.get(base("api/mobile/workout-templates/$workoutTemplateId/training-config")) {
             applyBearerAuthorization(authorization)
         }
-        if (!response.status.isSuccess()) {
-            error("Training config request failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Training config request failed")
         response.body<TrainingConfigApiResponse>()
     }
 
@@ -490,9 +477,7 @@ class MovitMobileApi(
         val response = client.get(base("api/mobile/workout-templates/$slug/audio-manifest")) {
             applyBearerAuthorization(authorization)
         }
-        if (!response.status.isSuccess()) {
-            error("Workout audio manifest request failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Workout audio manifest request failed")
         response.body<EntityAudioManifestApiResponse>()
     }
 
@@ -503,9 +488,7 @@ class MovitMobileApi(
         val response = client.get(base("api/mobile/exercises/$slug/audio-manifest")) {
             applyBearerAuthorization(authorization)
         }
-        if (!response.status.isSuccess()) {
-            error("Exercise audio manifest request failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Exercise audio manifest request failed")
         response.body<EntityAudioManifestApiResponse>()
     }
 
@@ -519,9 +502,7 @@ class MovitMobileApi(
             contentType(ContentType.Application.Json)
             setBody(request)
         }
-        if (!response.status.isSuccess()) {
-            error("Planned workout start failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Planned workout start failed")
         response.body<PlannedWorkoutApiResponse>()
     }
 
@@ -535,9 +516,7 @@ class MovitMobileApi(
             contentType(ContentType.Application.Json)
             setBody(request)
         }
-        if (!response.status.isSuccess()) {
-            error("Planned workout complete failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Planned workout complete failed")
         response.body<PlannedWorkoutApiResponse>()
     }
 
@@ -551,9 +530,7 @@ class MovitMobileApi(
             contentType(ContentType.Application.Json)
             setBody(request)
         }
-        if (!response.status.isSuccess()) {
-            error("Planned workout report failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Planned workout report failed")
         response.body<PlannedWorkoutApiResponse>()
     }
 
@@ -566,9 +543,7 @@ class MovitMobileApi(
             contentType(ContentType.Application.Json)
             setBody(request)
         }
-        if (!response.status.isSuccess()) {
-            error("Workout execution upload failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Workout execution upload failed")
         response.body<WorkoutExecutionApiResponse>()
     }
 
@@ -581,9 +556,7 @@ class MovitMobileApi(
             contentType(ContentType.Application.Json)
             setBody(request)
         }
-        if (!response.status.isSuccess()) {
-            error("Explore workout upload failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Explore workout upload failed")
         response.body<ExploreWorkoutApiResponse>()
     }
 
@@ -591,9 +564,7 @@ class MovitMobileApi(
         val response = client.get(base("api/mobile/reassessment/upcoming")) {
             applyBearerAuthorization(authorization)
         }
-        if (!response.status.isSuccess()) {
-            error("Reassessment request failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Reassessment request failed")
         response.body<ReassessmentListApiResponse>()
     }
 
@@ -605,9 +576,7 @@ class MovitMobileApi(
             applyBearerAuthorization(authorization)
             parameter("mode", mode)
         }
-        if (!response.status.isSuccess()) {
-            error("Assessment template request failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Assessment template request failed")
         response.body<AssessmentTemplateApiResponse>()
     }
 
@@ -620,9 +589,7 @@ class MovitMobileApi(
             contentType(ContentType.Application.Json)
             setBody(request)
         }
-        if (!response.status.isSuccess()) {
-            error("Assessment upload failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Assessment upload failed")
         response.body<AssessmentApiResponse>()
     }
 
@@ -632,9 +599,7 @@ class MovitMobileApi(
         val response = client.get(base("api/assessment/latest")) {
             applyBearerAuthorization(authorization)
         }
-        if (!response.status.isSuccess()) {
-            error("Latest assessment request failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Latest assessment request failed")
         response.body<AssessmentApiResponse>()
     }
 
@@ -644,9 +609,7 @@ class MovitMobileApi(
         val response = client.get(base("api/assessment/progress")) {
             applyBearerAuthorization(authorization)
         }
-        if (!response.status.isSuccess()) {
-            error("Assessment progress request failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Assessment progress request failed")
         response.body<AssessmentProgressApiResponse>()
     }
 
@@ -656,9 +619,7 @@ class MovitMobileApi(
         val response = client.get(base("api/mobile/training-profile")) {
             applyBearerAuthorization(authorization)
         }
-        if (!response.status.isSuccess()) {
-            error("Training profile request failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Training profile request failed")
         response.body<TrainingProfileApiResponse>()
     }
 
@@ -671,19 +632,20 @@ class MovitMobileApi(
             contentType(ContentType.Application.Json)
             setBody(request)
         }
-        if (!response.status.isSuccess()) {
-            error("Training profile update failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Training profile update failed")
         response.body<TrainingProfileApiResponse>()
     }
 
-    suspend fun completePlan(authorization: String? = null): Result<PlanMutationResponse> = runCatching {
+    suspend fun completePlan(
+        authorization: String? = null,
+        request: PlanCompleteRequestDto = PlanCompleteRequestDto(),
+    ): Result<PlanMutationResponse> = runCatching {
         val response = client.post(base("api/mobile/plan/complete")) {
             applyBearerAuthorization(authorization)
+            contentType(ContentType.Application.Json)
+            setBody(request)
         }
-        if (!response.status.isSuccess()) {
-            error("Plan complete failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Plan complete failed")
         response.body<PlanMutationResponse>()
     }
 
@@ -697,9 +659,7 @@ class MovitMobileApi(
             contentType(ContentType.Application.Json)
             setBody(request)
         }
-        if (!response.status.isSuccess()) {
-            error("Exercise preference upsert failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Exercise preference upsert failed")
     }
 
     suspend fun deleteExercisePreference(
@@ -709,9 +669,7 @@ class MovitMobileApi(
         val response = client.delete(base("api/mobile/exercise-preferences/$exerciseId")) {
             applyBearerAuthorization(authorization)
         }
-        if (!response.status.isSuccess()) {
-            error("Exercise preference delete failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Exercise preference delete failed")
     }
 
     suspend fun createUserProgramOverride(
@@ -724,9 +682,7 @@ class MovitMobileApi(
             contentType(ContentType.Application.Json)
             setBody(request)
         }
-        if (!response.status.isSuccess()) {
-            error("User program override create failed (${response.status.value})")
-        }
+        ensureSuccess(response, "User program override create failed")
         response.body<UserProgramOverrideCreateResponse>()
     }
 
@@ -740,9 +696,7 @@ class MovitMobileApi(
         ) {
             applyBearerAuthorization(authorization)
         }
-        if (!response.status.isSuccess()) {
-            error("User program override delete failed (${response.status.value})")
-        }
+        ensureSuccess(response, "User program override delete failed")
     }
 
     suspend fun fetchProgressionHistory(
@@ -751,9 +705,7 @@ class MovitMobileApi(
         val response = client.get(base("api/mobile/progression/history")) {
             applyBearerAuthorization(authorization)
         }
-        if (!response.status.isSuccess()) {
-            error("Progression history request failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Progression history request failed")
         response.body<ProgressionHistoryApiResponse>()
     }
 
@@ -763,9 +715,7 @@ class MovitMobileApi(
         val response = client.get(base("api/mobile/progression/recent")) {
             applyBearerAuthorization(authorization)
         }
-        if (!response.status.isSuccess()) {
-            error("Recent progression request failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Recent progression request failed")
         response.body<ProgressionHistoryApiResponse>()
     }
 
@@ -776,9 +726,7 @@ class MovitMobileApi(
         val response = client.get(base("api/mobile/progression/session/$sessionId")) {
             applyBearerAuthorization(authorization)
         }
-        if (!response.status.isSuccess()) {
-            error("Session progression request failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Session progression request failed")
         response.body<ProgressionHistoryApiResponse>()
     }
 
@@ -791,9 +739,18 @@ class MovitMobileApi(
             contentType(ContentType.Application.Json)
             setBody(request)
         }
-        if (!response.status.isSuccess()) {
-            error("Progression mark-seen failed (${response.status.value})")
-        }
+        ensureSuccess(response, "Progression mark-seen failed")
         response.body<ProgressionMarkSeenResponse>()
+    }
+
+    private suspend fun ensureSuccess(response: HttpResponse, label: String) {
+        if (!response.status.isSuccess()) {
+            val body = runCatching { response.bodyAsText() }.getOrNull()
+            throw MovitApiException(
+                status = response.status.value,
+                body = body,
+                message = "$label (${response.status.value})",
+            )
+        }
     }
 }

@@ -52,6 +52,8 @@ internal object WorkoutExportMapper {
 
     private fun mapExercise(exercise: WorkoutExportExerciseDto, index: Int): WorkoutTemplateExerciseDto {
         val slug = exercise.exercise.trim()
+        val displayName = exercise.name?.toNameMap()?.takeIf { it.isNotEmpty() }
+            ?: mapOf("en" to slug)
         return WorkoutTemplateExerciseDto(
             workoutExerciseId = "we-$index",
             sortOrder = index,
@@ -64,7 +66,7 @@ internal object WorkoutExportMapper {
             weightPerSet = exercise.weightPerSet,
             exercise = WorkoutTemplateEmbeddedExerciseDto(
                 slug = slug,
-                name = mapOf("en" to slug),
+                name = displayName,
             ),
         )
     }

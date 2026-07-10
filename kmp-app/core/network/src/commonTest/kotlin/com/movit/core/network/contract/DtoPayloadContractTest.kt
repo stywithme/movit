@@ -8,8 +8,10 @@ import com.movit.core.network.dto.ExploreWorkoutUploadRequestDto
 import com.movit.core.network.dto.HomeApiResponse
 import com.movit.core.network.dto.MobileSyncApiResponse
 import com.movit.core.network.dto.PlannedWorkoutApiResponse
+import com.movit.core.network.dto.SyncMessageTemplateDto
 import com.movit.core.network.dto.TrainingConfigApiResponse
 import com.movit.core.network.dto.WorkoutExecutionUploadRequestDto
+import com.movit.core.network.dto.UserProgramsApiResponse
 import com.movit.core.network.dto.SubscriptionApiEnvelope
 import com.movit.core.network.dto.VerifyAppStoreRequest
 import com.movit.core.network.dto.VerifyAppStoreResponse
@@ -77,6 +79,32 @@ class DtoPayloadContractTest {
     assertEquals("2026-06-10T00:00:00Z", parsed.data?.userPrograms?.first()?.updatedAt)
     assertEquals(listOf(1, 3, 5), parsed.data?.userPrograms?.first()?.trainingWeekdays)
     assertTrue(parsed.data?.userPrograms?.first()?.isActive == true)
+  }
+
+  @Test
+  fun userProgramsEndpointResponse_parsesEnrollmentList() {
+    val raw = """
+      {
+        "success": true,
+        "userPrograms": [
+          {
+            "id": "up-001",
+            "programId": "prog-001",
+            "name": { "en": "Foundation", "ar": "أساس" },
+            "startDate": "2026-01-01",
+            "isActive": true,
+            "updatedAt": "2026-06-10T00:00:00Z",
+            "trainingWeekdays": [1, 3, 5]
+          }
+        ]
+      }
+    """.trimIndent()
+    val parsed = MovitJson.decodeFromString(UserProgramsApiResponse.serializer(), raw)
+
+    assertTrue(parsed.success)
+    assertEquals(1, parsed.userPrograms.size)
+    assertEquals("up-001", parsed.userPrograms.first().id)
+    assertEquals("prog-001", parsed.userPrograms.first().programId)
   }
 
   @Test
@@ -149,6 +177,39 @@ class DtoPayloadContractTest {
       MovitJson.parseToJsonElement(exploreJson),
       MovitJson.parseToJsonElement(standaloneJson),
     )
+  }
+
+  @Test
+  fun syncMessageLibraryFixture_parsesAudioUrlsInContent() {
+    val parsed = MovitJson.decodeFromString(MobileSyncApiResponse.serializer(), readFixture("sync-message-library-audio.json"))
+    val message = parsed.data?.messageLibrary?.single()
+    assertNotNull(message)
+    assertEquals("msg-audio-001", message.id)
+    assertEquals("Great depth", message.content.en)
+    assertEquals("عمق ممتاز", message.content.ar)
+    assertEquals("https://cdn.example/tts_en.wav", message.content.audioEn)
+    assertEquals("https://cdn.example/tts_ar.wav", message.content.audioAr)
+
+    val reencoded = MovitJson.encodeToString(SyncMessageTemplateDto.serializer(), message)
+    val roundTrip = MovitJson.decodeFromString(SyncMessageTemplateDto.serializer(), reencoded)
+    assertEquals(message, roundTrip)
+    assertEquals(message.content, roundTrip.content)
+  }
+
+  @Test
+  fun syncDeltaEmptyAuthenticatedFixture_isLeanPayload() {
+    val raw = readFixture("sync-delta-empty-authenticated.json")
+    val parsed = MovitJson.decodeFromString(MobileSyncApiResponse.serializer(), raw)
+
+    assertTrue(parsed.success)
+    assertEquals(false, parsed.meta?.isFullSync)
+    assertEquals(0, parsed.data?.exercises?.size)
+    assertEquals(0, parsed.data?.systemMessages?.size)
+    assertEquals(0, parsed.data?.plannedWorkoutReports?.size)
+    assertEquals(0, parsed.data?.audioManifest?.files?.size)
+    assertEquals(0, parsed.data?.userPrograms?.size)
+    // Golden budget: empty authenticated delta body stays under 2 KB uncompressed.
+    assertTrue(raw.length < 2_000, "empty delta fixture grew to ${raw.length} bytes")
   }
 
   @Test

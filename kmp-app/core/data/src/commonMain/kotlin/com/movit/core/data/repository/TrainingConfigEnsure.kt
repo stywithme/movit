@@ -24,8 +24,8 @@ sealed interface TrainingConfigEnsureResult {
 }
 
 /**
- * Ensures a training config exists locally. When missing and online, tries sync then optional
- * workout-template training-config fetch before reporting unavailable.
+ * Ensures a training config exists locally. When missing and online, tries the
+ * workout-template training-config endpoint only — never auto-escalates to full refresh (P2.11).
  */
 suspend fun TrainingConfigRepository.ensure(
     slug: String,
@@ -58,12 +58,11 @@ suspend fun TrainingConfigRepository.ensure(
         if (supports(normalized)) return TrainingConfigEnsureResult.Available
     }
 
+    // Delta sync may bring the config; wait if another cycle holds the lock (P2.7 / B-N3).
     runSyncAttempt(resolvedSync, forceCheck = true)
     if (supports(normalized)) return TrainingConfigEnsureResult.Available
 
-    runSyncAttempt(resolvedSync, forceFullRefresh = true)
-    if (supports(normalized)) return TrainingConfigEnsureResult.Available
-
+    // P2.11: retry single-template endpoint only — never forceFullRefresh=true here.
     if (templateId != null) {
         fetchAndApplyWorkoutTemplateConfigs(
             templateId = templateId,
@@ -82,11 +81,10 @@ suspend fun TrainingConfigRepository.ensure(
 private suspend fun runSyncAttempt(
     sync: MovitSyncOrchestrator,
     forceCheck: Boolean = false,
-    forceFullRefresh: Boolean = false,
 ) {
-    when {
-        forceFullRefresh -> sync.fullRefresh()
-        else -> sync.syncIfNeeded(forceCheck = forceCheck)
+    val outcome = sync.syncIfNeeded(forceCheck = forceCheck)
+    if (outcome is MovitSyncOrchestrator.SyncOutcome.Skipped) {
+        sync.awaitSyncIdle()
     }
 }
 

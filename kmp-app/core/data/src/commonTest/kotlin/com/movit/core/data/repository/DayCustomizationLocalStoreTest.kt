@@ -2,6 +2,7 @@ package com.movit.core.data.repository
 
 import com.movit.core.data.outbox.DayCustomizationCacheDto
 import com.movit.core.network.dto.EffectivePlannedWorkoutDto
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -35,7 +36,7 @@ class DayCustomizationLocalStoreTest {
     }
 
     @Test
-    fun hydrateFromBackend_skipsUserModifiedDay() {
+    fun hydrateFromBackend_skipsDayWithPendingOutbox() = runBlocking {
         val localStore = testLocalStore()
         val store = DayCustomizationLocalStore(localStore)
         store.saveUserCustomizations(
@@ -45,19 +46,19 @@ class DayCustomizationLocalStoreTest {
             plannedWorkouts = listOf(EffectivePlannedWorkoutDto(id = "pw-local")),
         )
 
-        val serverCustomizations = buildJsonObject {
-            putJsonArray("day_1_1") {
-                add(
-                    buildJsonObject {
-                        put("id", JsonPrimitive("pw-server"))
-                    },
-                )
-            }
-        }
         store.hydrateFromBackend(
             userProgramId = "up-1",
-            customizations = serverCustomizations,
+            customizations = buildJsonObject {
+                putJsonArray("day_1_1") {
+                    add(
+                        buildJsonObject {
+                            put("id", JsonPrimitive("pw-server"))
+                        },
+                    )
+                }
+            },
             serverCustomizationsUpdatedAt = "2099-01-01T00:00:00.000Z",
+            pendingDayKeys = setOf(com.movit.core.data.outbox.DayCustomizationDayKey("up-1", 1, 1)),
         )
 
         val cached = store.get("up-1", 1, 1)
@@ -67,7 +68,7 @@ class DayCustomizationLocalStoreTest {
     }
 
     @Test
-    fun hydrateFromBackend_importsServerDayWhenNoLocalOverride() {
+    fun hydrateFromBackend_importsServerDayWhenNoLocalOverride() = runBlocking {
         val localStore = testLocalStore()
         val store = DayCustomizationLocalStore(localStore)
         val serverCustomizations = buildJsonObject {

@@ -52,6 +52,14 @@ class ProgramFlowSyncRepository(
     }
 
     suspend fun syncExplore(): AppResult<ExploreDataDto> =
+        when (val result = exploreSync.sync()) {
+            is AppResult.Success -> result
+            is AppResult.Failure -> exploreSync.readCached()?.let { AppResult.Success(it) }
+                ?: AppResult.Failure(result.message)
+        }
+
+    /** Full catalog repair — UX.2 «إصلاح الكتالوج» / drift only. */
+    suspend fun repairExploreCatalog(): AppResult<ExploreDataDto> =
         when (val result = exploreSync.syncFull()) {
             is AppResult.Success -> result
             is AppResult.Failure -> exploreSync.readCached()?.let { AppResult.Success(it) }
@@ -65,7 +73,6 @@ class ProgramFlowSyncRepository(
     suspend fun syncProgram(programId: String): AppResult<ProgramExportDto> {
         val bindings = platform()
         val store = localStore()
-        val cacheKey = MovitCacheKeys.programKey(programId)
         val cached = readCachedProgram(programId)
 
         val response = api.fetchProgram(
@@ -81,15 +88,21 @@ class ProgramFlowSyncRepository(
                 ?: AppResult.Failure(response.error ?: "Unable to load program.")
         }
 
+        val dto = response.data!!
+        // P2.12: normalize slug → id before write; lazy-remove slug-keyed duplicate.
+        val canonicalId = dto.id.ifBlank { programId }
         MovitCachePolicy.writeJson(
             store,
             MovitCacheKeys.PROGRAM_STORE,
-            cacheKey,
-            response.data!!,
+            MovitCacheKeys.programKey(canonicalId),
+            dto,
             ProgramExportDto.serializer(),
         )
+        if (programId != canonicalId) {
+            store.removeJsonCache(MovitCacheKeys.PROGRAM_STORE, MovitCacheKeys.programKey(programId))
+        }
 
-        return AppResult.Success(response.data!!)
+        return AppResult.Success(dto)
     }
 
     suspend fun syncProgressMetrics(

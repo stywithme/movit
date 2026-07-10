@@ -187,7 +187,7 @@ class TrainingConfigEnsureTest {
         val reports = ReportsSyncRepository(api, { platform }, { localStore })
         val plan = testPlanSyncRepository(api, platform, localStore, home)
         val audioManifestCache = com.movit.core.data.cache.AudioManifestCache(localStore)
-        val offlineWrites = com.movit.core.data.outbox.OfflineWriteQueue(localStore, api) { platform }
+        val offlineWrites = com.movit.core.data.outbox.OfflineWriteQueue(localStore, api, { platform })
         val catalogOffline = SyncCatalogOfflineRepository(localStore, trainingConfig)
         return com.movit.core.data.sync.MovitSyncOrchestrator(
             api = api,

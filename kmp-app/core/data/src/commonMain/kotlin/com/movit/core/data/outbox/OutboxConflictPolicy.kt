@@ -1,43 +1,75 @@
 package com.movit.core.data.outbox
 
+import kotlin.random.Random
+
 /**
  * Documented conflict and retry policy for offline write replay.
  *
  * ## Idempotency
- * Each outbox row has a stable client [OutboxEntry.id] stored as `idempotency_key` locally.
- * Replay skips rows already marked [OutboxStatus.SUCCEEDED] or [OutboxStatus.FAILED_PERMANENT],
- * so a successful flush is never sent twice.
- * Legacy mobile write endpoints do not accept `Idempotency-Key` header or body field — server
- * deduplication is not wired; client-side operation id is the sole guard against double replay.
+ * Each outbox row has a stable client [OutboxEntry.id]. Replay skips rows already marked
+ * [OutboxStatus.SUCCEEDED] or [OutboxStatus.FAILED_PERMANENT], so a successful flush is never
+ * sent twice. Enqueue replaces an existing row only when it is [OutboxStatus.FAILED_PERMANENT].
  *
  * ## Server wins (conflict)
- * HTTP **409** or an explicit stale-version response: the server state is authoritative.
- * The entry is marked [OutboxStatus.SUCCEEDED] (dropped from the queue) and callers should
- * invalidate affected read caches on the next sync so UI reflects server data.
+ * HTTP **409**: mark [OutboxStatus.SUCCEEDED] (dropped) and refresh read caches on next sync.
  *
- * ## Retries
- * Network errors and HTTP **5xx** increment [OutboxEntry.attempts] and stay [OutboxStatus.PENDING]
- * until [MAX_ATTEMPTS] is reached, then [OutboxStatus.FAILED_PERMANENT].
- *
- * ## Permanent client errors
- * HTTP **4xx** (except 409): no retry — [OutboxStatus.FAILED_PERMANENT].
+ * ## Retries (P1.2)
+ * - Network / timeout / **5xx** ([OutboxDispatchOutcome.RETRYABLE_NETWORK]): **no attempt ceiling**;
+ *   exponential backoff via [OutboxEntry.nextAttemptAtEpochMs] (30s → 2m → 10m → 30m cap + jitter).
+ * - Unexpected decode/mapping ([OutboxDispatchOutcome.RETRYABLE_UNEXPECTED]): ceiling
+ *   [UNEXPECTED_MAX_ATTEMPTS] then [OutboxStatus.FAILED_PERMANENT].
+ * - HTTP **4xx** (except 409): [OutboxStatus.FAILED_PERMANENT] immediately.
  *
  * ## Optimistic local writes
- * UI-facing repositories update local cache immediately, enqueue the outbox row, then attempt
- * inline replay when online. User sees local state until server sync or server-wins invalidation.
+ * UI updates local cache, enqueues, then attempts inline replay when online.
  */
 object OutboxConflictPolicy {
-    const val MAX_ATTEMPTS: Int = 3
+    /** Decode/mapping bugs only — network retries are uncapped. */
+    const val UNEXPECTED_MAX_ATTEMPTS: Int = 50
+
+    private val BACKOFF_STEPS_MS = longArrayOf(
+        30_000L,
+        120_000L,
+        600_000L,
+        1_800_000L,
+    )
 
     fun isServerWins(httpStatus: Int): Boolean = httpStatus == 409
 
     fun isPermanentClientError(httpStatus: Int): Boolean =
         httpStatus in 400..499 && !isServerWins(httpStatus)
 
-    fun isRetryable(httpStatus: Int?): Boolean =
+    fun isRetryableHttp(httpStatus: Int?): Boolean =
         httpStatus == null || httpStatus >= 500
 
-    fun shouldMarkPermanent(attempts: Int, httpStatus: Int?): Boolean =
-        (httpStatus != null && isPermanentClientError(httpStatus)) ||
-            (attempts >= MAX_ATTEMPTS && isRetryable(httpStatus))
+    /**
+     * @param attempts attempt count **after** the failed dispatch (1 = first failure).
+     * @param outcome classified dispatch result — pass the real outcome (never invent null status).
+     */
+    internal fun shouldMarkPermanent(attempts: Int, outcome: OutboxDispatchOutcome): Boolean =
+        when (outcome) {
+            OutboxDispatchOutcome.PERMANENT_FAILURE -> true
+            OutboxDispatchOutcome.RETRYABLE_UNEXPECTED -> attempts >= UNEXPECTED_MAX_ATTEMPTS
+            OutboxDispatchOutcome.RETRYABLE_NETWORK -> false
+            OutboxDispatchOutcome.SUCCESS,
+            OutboxDispatchOutcome.SERVER_WINS,
+            -> false
+        }
+
+    /** Delay before the next retry after [attempts] failures (1-based). First post-enqueue try waits 0. */
+    fun nextAttemptDelayMs(attempts: Int, random: Random = Random.Default): Long {
+        if (attempts <= 0) return 0L
+        val step = BACKOFF_STEPS_MS[(attempts - 1).coerceAtMost(BACKOFF_STEPS_MS.lastIndex)]
+        val jitter = random.nextLong(0L, (step / 5).coerceAtLeast(1L))
+        return step + jitter
+    }
+
+    fun nextAttemptAtEpochMs(
+        nowEpochMs: Long,
+        attempts: Int,
+        random: Random = Random.Default,
+    ): Long? {
+        val delay = nextAttemptDelayMs(attempts, random)
+        return if (delay <= 0L) null else nowEpochMs + delay
+    }
 }

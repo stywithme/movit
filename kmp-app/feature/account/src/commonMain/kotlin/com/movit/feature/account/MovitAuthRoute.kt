@@ -33,4 +33,12 @@ fun MovitAuthRoute(
         onEvent = viewModel::onEvent,
         modifier = modifier,
     )
+
+    state.guestOutboxPromptCount?.let { count ->
+        GuestOutboxAttributionDialog(
+            guestRowCount = count,
+            onAccept = { viewModel.onEvent(MovitAuthEvent.GuestOutboxAcceptClicked) },
+            onDiscard = { viewModel.onEvent(MovitAuthEvent.GuestOutboxDiscardClicked) },
+        )
+    }
 }

@@ -16,9 +16,13 @@ sealed interface MovitProfileEvent {
     data object AppearanceClicked : MovitProfileEvent
     data object LogoutClicked : MovitProfileEvent
     data object LogoutConfirmed : MovitProfileEvent
+    data object LogoutUploadThenSignOut : MovitProfileEvent
+    data object LogoutDiscardPending : MovitProfileEvent
     data object LogoutDismissed : MovitProfileEvent
     data object DeleteAccountClicked : MovitProfileEvent
     data object DeleteAccountConfirmed : MovitProfileEvent
+    data object DeleteAccountUploadThenDelete : MovitProfileEvent
+    data object DeleteAccountDiscardPending : MovitProfileEvent
     data object DeleteAccountDismissed : MovitProfileEvent
     data object PickerDismissed : MovitProfileEvent
     data class LanguageSelected(val languageCode: String) : MovitProfileEvent
@@ -26,4 +30,6 @@ sealed interface MovitProfileEvent {
     data class AudioCuesChanged(val enabled: Boolean) : MovitProfileEvent
     data class HapticChanged(val enabled: Boolean) : MovitProfileEvent
     data object TrainingDebugLabClicked : MovitProfileEvent
+    data object SyncRetryClicked : MovitProfileEvent
+    data object SyncRepairCatalogClicked : MovitProfileEvent
 }

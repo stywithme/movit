@@ -1,0 +1,30 @@
+{
+  "success": true,
+  "timestamp": "2026-07-09T12:00:00Z",
+  "data": {
+    "messageLibrary": [
+      {
+        "id": "msg-audio-001",
+        "code": "exmsg_squat_mot_0",
+        "category": "motivational",
+        "context": "motivational",
+        "content": {
+          "en": "Great depth",
+          "ar": "عمق ممتاز",
+          "audioEn": "https://cdn.example/tts_en.wav",
+          "audioAr": "https://cdn.example/tts_ar.wav"
+        }
+      }
+    ],
+    "exercises": [],
+    "workouts": [],
+    "programs": []
+  },
+  "meta": {
+    "messageLibraryStats": {
+      "totalMessages": 1,
+      "totalWithAudio": 1,
+      "fingerprint": "abc123"
+    }
+  }
+}

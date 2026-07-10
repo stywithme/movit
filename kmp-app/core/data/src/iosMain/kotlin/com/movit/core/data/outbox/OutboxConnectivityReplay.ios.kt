@@ -16,6 +16,8 @@ fun registerOutboxConnectivityReplay() {
 internal fun replayPendingOutboxIfInstalled() {
     if (!MovitData.isInstalled) return
     replayScope.launch {
-        runCatching { MovitData.offlineWrites.replayPending() }
+        runCatching {
+            MovitData.offlineWrites.replayPending(OutboxReplayAcquisition.TrySkipIfBusy)
+        }
     }
 }

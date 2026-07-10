@@ -1,7 +1,7 @@
 package com.movit.feature.account
 
 import com.movit.core.data.MovitData
-import com.movit.core.data.platform.AuthSessionSnapshot
+import com.movit.core.data.repository.AuthenticatedSessionResult
 import com.movit.shared.AppResult
 
 class SharedAuthRepository : AuthRepository {
@@ -61,8 +61,9 @@ class SharedAuthRepository : AuthRepository {
 
 private const val DATA_LAYER_NOT_INSTALLED = "App data layer is not installed."
 
-private fun AuthSessionSnapshot.toUi(): AuthSessionUi = AuthSessionUi(
-    userId = userId,
-    name = name,
-    email = email,
+private fun AuthenticatedSessionResult.toUi(): AuthSessionUi = AuthSessionUi(
+    userId = session.userId,
+    name = session.name,
+    email = session.email,
+    guestOutboxCount = guestOutboxPrompt?.guestRowCount,
 )

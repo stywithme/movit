@@ -84,8 +84,20 @@ private fun MovitAppShellRouteContent(
     val state by shellViewModel.state.collectAsState()
     val language = LocalMovitLanguage.current
 
-    LaunchedEffect(state.dataRevision, state.selectedDestination, state.currentInnerRoute) {
-        if (state.dataRevision == 0 || state.currentInnerRoute != null) return@LaunchedEffect
+    LaunchedEffect(state.dataRevision, state.selectedDestination) {
+        if (state.dataRevision == 0) return@LaunchedEffect
+        kotlinx.coroutines.delay(300)
+        when (state.selectedDestination) {
+            MovitAppDestination.Home -> homeViewModel.load(isRefresh = false)
+            MovitAppDestination.Train -> trainViewModel.load(isRefresh = false)
+            MovitAppDestination.Explore -> exploreViewModel.load(isRefresh = false)
+            MovitAppDestination.Reports -> reportsViewModel.load(isRefresh = false)
+            MovitAppDestination.Profile -> Unit
+        }
+    }
+
+    LaunchedEffect(state.localeRevision, state.selectedDestination) {
+        if (state.localeRevision == 0) return@LaunchedEffect
         when (state.selectedDestination) {
             MovitAppDestination.Home -> homeViewModel.load(isRefresh = false)
             MovitAppDestination.Train -> trainViewModel.load(isRefresh = false)

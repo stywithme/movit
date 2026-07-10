@@ -120,7 +120,12 @@ class ProgramDetailViewModel(
 
 
 
-    private val _state = MutableStateFlow(ProgramDetailUiState(isLoading = true))
+    private val _state = MutableStateFlow(
+        ProgramDetailUiState(
+            isLoading = true,
+            isOffline = MovitData.isInstalled && !MovitData.requirePlatform().isNetworkAvailable(),
+        ),
+    )
 
     val state: StateFlow<ProgramDetailUiState> = _state.asStateFlow()
 
@@ -1214,6 +1219,8 @@ class ProgramDetailViewModel(
             subtitle = program.subtitle,
 
             weekOffline = resolveWeekOfflineState(program.id, selectedWeekNumber),
+
+            isOffline = MovitData.isInstalled && !MovitData.requirePlatform().isNetworkAvailable(),
 
         )
 

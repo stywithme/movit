@@ -4,6 +4,7 @@ import com.movit.core.data.db.MovitDatabase
 import com.movit.core.data.outbox.OutboxEntry
 import com.movit.core.data.outbox.OutboxOperationType
 import com.movit.core.data.outbox.OutboxStatus
+import com.movit.core.data.repository.MovitCacheKeys
 import com.movit.core.network.MovitClock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -16,6 +17,10 @@ class SqlDelightMovitLocalStore(
     private val syncQueries = database.syncMetadataQueries
     private val outboxQueries = database.outboxQueries
     private val journalQueries = database.sessionJournalQueries
+
+    override fun <T> transaction(block: () -> T): T = database.transactionWithResult {
+        block()
+    }
 
     override fun readJsonCache(store: String, key: String): String? =
         jsonQueries.selectByStoreAndKey(store, key).executeAsOneOrNull()
@@ -36,6 +41,16 @@ class SqlDelightMovitLocalStore(
     override fun listJsonCacheEntries(store: String): Map<String, String> =
         jsonQueries.selectAllByStore(store).executeAsList()
             .associate { row -> row.cache_key to row.json_payload }
+
+    override fun listJsonCacheEntriesWithTimestamps(store: String): List<JsonCacheEntryMeta> =
+        jsonQueries.selectAllByStoreWithTimestamps(store).executeAsList()
+            .map { row ->
+                JsonCacheEntryMeta(
+                    key = row.cache_key,
+                    payload = row.json_payload,
+                    updatedAtEpochMs = row.updated_at_epoch_ms,
+                )
+            }
 
     override fun readSyncMetadata(scope: String): SyncMetadata? =
         syncQueries.selectByScope(scope).executeAsOneOrNull()?.let {
@@ -71,8 +86,15 @@ class SqlDelightMovitLocalStore(
                 attempts = entry.attempts.toLong(),
                 status = entry.status.storageValue,
                 last_error = null,
+                owner_user_id = entry.ownerUserId,
+                next_attempt_at_epoch_ms = entry.nextAttemptAtEpochMs,
             )
         }
+    }
+
+    /** P0.2 upgrade backfill: attribute pre-migration outbox rows to the current session user. */
+    fun backfillOutboxOwnerUserId(ownerUserId: String) {
+        outboxQueries.backfillOwnerUserIdWhereNull(ownerUserId)
     }
 
     override suspend fun getOutboxById(id: String): OutboxEntry? = withContext(Dispatchers.IO) {
@@ -83,18 +105,28 @@ class SqlDelightMovitLocalStore(
         outboxQueries.selectPending().executeAsList().map { it.toOutboxEntry() }
     }
 
+    override suspend fun listAllOutbox(): List<OutboxEntry> = withContext(Dispatchers.IO) {
+        outboxQueries.selectAll().executeAsList().map { it.toOutboxEntry() }
+    }
+
     override suspend fun recoverInFlightOutbox() {
         withContext(Dispatchers.IO) {
             outboxQueries.recoverInFlight()
         }
     }
 
-    override suspend fun updateOutboxStatus(id: String, status: OutboxStatus, attempts: Int) {
+    override suspend fun updateOutboxStatus(
+        id: String,
+        status: OutboxStatus,
+        attempts: Int,
+        nextAttemptAtEpochMs: Long?,
+    ) {
         withContext(Dispatchers.IO) {
             outboxQueries.updateStatus(
                 status = status.storageValue,
                 attempts = attempts.toLong(),
                 last_error = null,
+                next_attempt_at_epoch_ms = nextAttemptAtEpochMs,
                 id = id,
             )
         }
@@ -116,13 +148,87 @@ class SqlDelightMovitLocalStore(
         outboxQueries.selectByStatus(status.storageValue).executeAsList().size.toLong()
     }
 
-    override suspend fun clearAllUserData() {
+    override suspend fun countGuestOutbox(): Long = withContext(Dispatchers.IO) {
+        outboxQueries.countGuest().executeAsOne()
+    }
+
+    override suspend fun deleteOutboxOwnedByOtherUsers(keepUserId: String) {
         withContext(Dispatchers.IO) {
+            outboxQueries.deleteOwnedByOtherUsers(keepUserId)
+        }
+    }
+
+    override suspend fun deleteAllGuestOutbox() {
+        withContext(Dispatchers.IO) {
+            outboxQueries.deleteAllGuest()
+        }
+    }
+
+    override suspend fun deleteGuestOutboxOlderThan(cutoffEpochMs: Long): Int = withContext(Dispatchers.IO) {
+        outboxQueries.deleteGuestOlderThan(cutoffEpochMs)
+        0
+    }
+
+    override suspend fun attributeGuestOutboxToUser(userId: String) {
+        withContext(Dispatchers.IO) {
+            outboxQueries.attributeGuestToUser(userId)
+        }
+    }
+
+    override suspend fun clearReadCaches() {
+        withContext(Dispatchers.IO) {
+            val preserved = mutableMapOf<Pair<String, String>, String>()
+            jsonQueries.selectAllStoreKeys().executeAsList().forEach { row ->
+                val keep =
+                    row.store == MovitCacheKeys.AUTH_LIFECYCLE_STORE ||
+                        (
+                            row.store == MovitCacheKeys.REPORTS_STORE &&
+                                MovitClearScopeKeys.isDurableReportsKey(row.cache_key)
+                            )
+                if (keep) {
+                    val payload = jsonQueries.selectByStoreAndKey(row.store, row.cache_key).executeAsOneOrNull()
+                    if (payload != null) {
+                        preserved[row.store to row.cache_key] = payload
+                    }
+                }
+            }
             jsonQueries.deleteAll()
             syncQueries.deleteAll()
+            preserved.forEach { (storeKey, payload) ->
+                val (store, key) = storeKey
+                jsonQueries.upsert(
+                    store = store,
+                    cache_key = key,
+                    json_payload = payload,
+                    updated_at_epoch_ms = MovitClock.nowEpochMs(),
+                )
+            }
+        }
+    }
+
+    override suspend fun clearDurableWrites() {
+        withContext(Dispatchers.IO) {
             outboxQueries.deleteAll()
             journalQueries.deleteAllJournals()
+            jsonQueries.selectAllStoreKeys().executeAsList()
+                .filter {
+                    it.store == MovitCacheKeys.REPORTS_STORE &&
+                        MovitClearScopeKeys.isDurableReportsKey(it.cache_key)
+                }
+                .forEach { row ->
+                    jsonQueries.deleteByStoreAndKey(row.store, row.cache_key)
+                }
+            jsonQueries.selectAllStoreKeys().executeAsList()
+                .filter { it.store == MovitCacheKeys.AUTH_LIFECYCLE_STORE }
+                .forEach { row ->
+                    jsonQueries.deleteByStoreAndKey(row.store, row.cache_key)
+                }
         }
+    }
+
+    override suspend fun clearAllUserData() {
+        clearReadCaches()
+        clearDurableWrites()
     }
 
     override fun upsertSessionJournal(
@@ -168,6 +274,8 @@ class SqlDelightMovitLocalStore(
             createdAt = created_at_epoch_ms,
             attempts = attempts.toInt(),
             status = outboxStatusFromStorage(status),
+            ownerUserId = owner_user_id,
+            nextAttemptAtEpochMs = next_attempt_at_epoch_ms,
         )
 }
 

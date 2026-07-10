@@ -273,7 +273,8 @@ object WorkoutSessionApiMapper {
             serverId = id,
             name = name.localized(language).ifBlank { slug },
             category = category,
-            imageUrl = imageUrlForSlug(resolvedSlug),
+            // P2.9: use explore DTO imageUrl directly (avoids N× blob decode via imageUrlForSlug).
+            imageUrl = imageUrl?.takeIf { it.isNotBlank() } ?: imageUrlForSlug(resolvedSlug),
         )
     }
 

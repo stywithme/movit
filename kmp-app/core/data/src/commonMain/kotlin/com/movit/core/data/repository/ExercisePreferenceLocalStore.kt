@@ -109,8 +109,11 @@ open class ExercisePreferenceLocalStore(
     companion object {
         suspend fun pendingExerciseIdsFromOutbox(localStore: MovitLocalStore): Set<String> {
             val ids = mutableSetOf<String>()
-            for (entry in localStore.listPendingOutbox()) {
-                if (entry.status != OutboxStatus.PENDING) continue
+            // P3.11: protect IN_FLIGHT as well as PENDING (listPendingOutbox is PENDING-only).
+            for (entry in localStore.listAllOutbox()) {
+                if (entry.status != OutboxStatus.PENDING && entry.status != OutboxStatus.IN_FLIGHT) {
+                    continue
+                }
                 when (entry.type) {
                     OutboxOperationType.EXERCISE_PREFERENCE_UPSERT -> {
                         runCatching {

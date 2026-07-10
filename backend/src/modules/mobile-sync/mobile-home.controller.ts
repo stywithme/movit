@@ -18,6 +18,7 @@
 
 import { Controller, Get, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
+import { createHash } from 'crypto';
 import { verifyMobileToken } from '@/modules/auth/auth.service';
 import { getPrisma } from '@/lib/prisma/client';
 import { PlannedWorkoutItemType, WorkoutExecutionContext } from '@prisma/client';
@@ -166,12 +167,21 @@ export class MobileHomeController {
 
       const userId = authResult.userId;
       const data = await buildHomeData(userId);
-
-      return {
+      const body = {
         success: true,
         data,
         timestamp: new Date().toISOString(),
       };
+      // P2.4: weak ETag so clients can send If-None-Match and receive 304.
+      const etag = `W/"${createHash('sha1').update(JSON.stringify(data)).digest('hex')}"`;
+      res.setHeader('ETag', etag);
+      const ifNoneMatch = req.headers['if-none-match'];
+      if (typeof ifNoneMatch === 'string' && ifNoneMatch === etag) {
+        res.status(304);
+        return;
+      }
+
+      return body;
     } catch (error) {
       console.error('[Mobile Home] Error building home data:', error);
       res.status(500);
@@ -333,7 +343,52 @@ async function buildTrainMode(
       : null;
 
   const activeSlot = activePlan?.programs?.find((slot: { status: string }) => slot.status === 'active');
-  const hasActiveProgram = !!(activeSlot?.userProgram?.program);
+  let hasActiveProgram = !!(activeSlot?.userProgram?.program);
+
+  // P2.4: if ActivePlan graph missed the program, fall back to an active UserProgram
+  // so clients do not need HomeTrainModeHydrator extra round-trips.
+  let fallbackUserProgram: {
+    id: string;
+    program: { id: string; name: unknown; durationWeeks: number; weeks: unknown[] } | null;
+    progress: unknown[];
+  } | null = null;
+  if (!hasActiveProgram) {
+    const prisma = await getPrisma();
+    fallbackUserProgram = await prisma.userProgram.findFirst({
+      where: { userId, isActive: true, deletedAt: null },
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        program: {
+          include: {
+            weeks: {
+              include: {
+                days: {
+                  include: {
+                    plannedWorkouts: {
+                      include: {
+                        workoutTemplate: {
+                          include: {
+                            phases: {
+                              include: {
+                                phase: true,
+                                exercises: { include: { exercise: true } },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        progress: true,
+      },
+    });
+    hasActiveProgram = !!(fallbackUserProgram?.program);
+  }
 
   // State 1: No assessment ever done
   if (!latestAssessment && !hasActiveProgram) {
@@ -367,8 +422,11 @@ async function buildTrainMode(
     };
   }
 
-  // State 3: No active program in plan
-  if (!activeSlot || !activeSlot.userProgram?.program) {
+  // State 3: No active program in plan (ActivePlan slot or UserProgram fallback)
+  const resolvedUserProgram = activeSlot?.userProgram?.program
+    ? activeSlot.userProgram
+    : fallbackUserProgram;
+  if (!resolvedUserProgram?.program) {
     return {
       status: 'no_plan',
       activeProgram: null,
@@ -381,8 +439,8 @@ async function buildTrainMode(
     };
   }
 
-  const program = activeSlot.userProgram.program;
-  const progressEntries: any[] = activeSlot.userProgram.progress ?? [];
+  const program = resolvedUserProgram.program;
+  const progressEntries: any[] = resolvedUserProgram.progress ?? [];
   const lastAt = await getLastPlannedWorkoutCompletedAt(userId, program.id);
   const now = new Date();
   const meta = resolveTrainingPositionMeta(program.weeks as any[], progressEntries, {

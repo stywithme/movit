@@ -8,19 +8,28 @@ import com.movit.core.data.platform.SecureAuthTokens
 import com.movit.core.network.MovitClock
 
 open class FakeMovitPlatformBindings(
-    private val auth: String? = "Bearer test-token",
+    auth: String? = "Bearer test-token",
     private val pro: Boolean = true,
     private var language: String = "en",
     private var storedThemeMode: String = MovitThemeModeStorage.SYSTEM,
     private var userProgramId: String? = "up-1",
+    private var storedUserId: String? = "user-test",
     private val secureSession: FakeSecureSessionStore = FakeSecureSessionStore(),
 ) : MovitPlatformBindings {
     private val cache = mutableMapOf<String, String>()
+    // Cleared with the session so logout tests don't keep the constructor fallback.
+    private var fallbackAuth: String? = auth
 
     override fun apiBaseUrl(): String = "https://test.movit.local"
 
     override fun authHeader(): String? =
-        secureSession.readAccessToken()?.let { "Bearer $it" } ?: auth
+        secureSession.readAccessToken()?.let { "Bearer $it" } ?: fallbackAuth
+
+    override fun userId(): String? = storedUserId
+
+    fun setUserId(userId: String?) {
+        storedUserId = userId
+    }
 
     override fun preferredLanguage(): String = language
 
@@ -65,6 +74,7 @@ open class FakeMovitPlatformBindings(
     }
 
     override fun persistAuthSession(snapshot: AuthSessionSnapshot) {
+        storedUserId = snapshot.userId
         val expiresAt = if (snapshot.expiresInSeconds > 0) {
             MovitClock.nowEpochMs() + snapshot.expiresInSeconds * 1000L
         } else {
@@ -80,6 +90,8 @@ open class FakeMovitPlatformBindings(
     }
 
     override fun clearAuthSession() {
+        storedUserId = null
+        fallbackAuth = null
         secureSession.clearTokens()
     }
 

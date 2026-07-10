@@ -118,6 +118,8 @@ class MovitAuthViewModel(
             is MovitAuthEvent.RememberMeChanged -> {
                 _state.update { it.copy(rememberMe = event.value) }
             }
+            MovitAuthEvent.GuestOutboxAcceptClicked -> resolveGuestOutbox(accept = true)
+            MovitAuthEvent.GuestOutboxDiscardClicked -> resolveGuestOutbox(accept = false)
         }
     }
 
@@ -139,7 +141,7 @@ class MovitAuthViewModel(
             when (val result = repository.login(email, password)) {
                 is AppResult.Success -> {
                     _state.update { it.copy(isLoading = false) }
-                    emitPostAuthNavigation()
+                    continueAfterAuth(result.value)
                 }
                 is AppResult.Failure -> {
                     _state.update { it.copy(isLoading = false, errorMessage = result.message) }
@@ -162,7 +164,7 @@ class MovitAuthViewModel(
             when (val result = repository.register(name, email, password)) {
                 is AppResult.Success -> {
                     _state.update { it.copy(isLoading = false) }
-                    emitPostAuthNavigation()
+                    continueAfterAuth(result.value)
                 }
                 is AppResult.Failure -> {
                     _state.update { it.copy(isLoading = false, errorMessage = result.message) }
@@ -182,7 +184,7 @@ class MovitAuthViewModel(
             when (val result = repository.googleSignIn(credentials)) {
                 is AppResult.Success -> {
                     _state.update { it.copy(isLoading = false) }
-                    emitPostAuthNavigation()
+                    continueAfterAuth(result.value)
                 }
                 is AppResult.Failure -> {
                     _state.update { it.copy(isLoading = false, errorMessage = result.message) }
@@ -217,8 +219,53 @@ class MovitAuthViewModel(
         }
     }
 
+    private fun continueAfterAuth(session: AuthSessionUi) {
+        val guestCount = session.guestOutboxCount
+        if (guestCount != null && guestCount > 0) {
+            _state.update {
+                it.copy(
+                    guestOutboxPromptCount = guestCount,
+                    authenticatedUserId = session.userId,
+                )
+            }
+            return
+        }
+        emitPostAuthNavigation()
+    }
+
+    private fun resolveGuestOutbox(accept: Boolean) {
+        val userId = _state.value.authenticatedUserId
+        workScope.launch {
+            if (MovitData.isInstalled && userId != null) {
+                if (accept) {
+                    MovitData.acceptGuestOutboxAttribution(userId)
+                } else {
+                    MovitData.discardGuestOutboxAttribution()
+                }
+            }
+            _state.update {
+                it.copy(guestOutboxPromptCount = null, authenticatedUserId = null)
+            }
+            emitPostAuthNavigation()
+        }
+    }
+
     private fun emitPostAuthNavigation() {
         workScope.launch {
+            // Cold ActiveSession / race: still ask if guest rows remain.
+            if (MovitData.isInstalled) {
+                val pending = MovitData.pendingGuestOutboxPrompt()
+                val userId = MovitData.requirePlatform().userId()
+                if (pending != null && userId != null && _state.value.guestOutboxPromptCount == null) {
+                    _state.update {
+                        it.copy(
+                            guestOutboxPromptCount = pending.guestRowCount,
+                            authenticatedUserId = userId,
+                        )
+                    }
+                    return@launch
+                }
+            }
             val needsOnboarding = if (MovitData.isInstalled) {
                 onboardingRepository.resolveNeedsOnboarding()
             } else {

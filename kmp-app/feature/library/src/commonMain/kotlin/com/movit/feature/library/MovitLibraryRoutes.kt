@@ -7,6 +7,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.movit.core.data.MovitData
 import kotlinx.coroutines.launch
 
 @Composable
@@ -97,6 +98,13 @@ fun ProgramDetailRoute(
             }
         }
     }
+    if (MovitData.isInstalled) {
+        LaunchedEffect(viewModel) {
+            MovitData.sync.cacheInvalidated.collect {
+                viewModel.load()
+            }
+        }
+    }
     ProgramDetailScreen(
         state = state,
         onBack = onBack,
@@ -163,6 +171,7 @@ fun WorkoutSessionRoute(
                     val session = viewModel.state.value.session ?: return@collect
                     val config = WorkoutFlowMapper.fromSession(session)
                     WorkoutFlowCache.put(workoutId, config)
+                    WorkoutFlowCache.ensureWorkoutGroupId(workoutId)
                     WorkoutRunProgressStore.clear(workoutId)
                     onStartWorkout(effect.firstExerciseId)
                 }

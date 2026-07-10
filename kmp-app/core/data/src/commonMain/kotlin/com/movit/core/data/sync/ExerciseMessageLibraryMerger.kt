@@ -1,6 +1,6 @@
 package com.movit.core.data.sync
 
-import com.movit.core.network.dto.LocalizedNameDto
+import com.movit.core.network.dto.SyncMessageContentDto
 import com.movit.core.network.dto.SyncMessageTemplateDto
 import com.movit.core.training.config.ExerciseConfig
 import com.movit.core.training.config.ExerciseConfigRecord
@@ -15,6 +15,28 @@ import com.movit.core.training.config.StateMessages
  * Mirrors legacy [com.movit.storage.SyncManager.resolveExerciseMessages].
  */
 internal object ExerciseMessageLibraryMerger {
+
+    /**
+     * Content-aware fingerprint so a template text/audio edit forces re-resolve
+     * even when id/code are unchanged.
+     */
+    fun fingerprint(messageLibrary: List<SyncMessageTemplateDto>): String =
+        messageLibrary
+            .sortedBy { it.id }
+            .joinToString("|") { template ->
+                val c = template.content
+                "${template.id}:${template.code}:${c.en}:${c.ar}:${c.audioEn.orEmpty()}:${c.audioAr.orEmpty()}"
+            }
+
+    fun needsResolve(
+        record: ExerciseConfigRecord,
+        messageLibrary: List<SyncMessageTemplateDto>,
+    ): Boolean {
+        if (messageLibrary.isEmpty()) return false
+        val current = fingerprint(messageLibrary)
+        if (record.messageLibraryFingerprint != current) return true
+        return hasUnresolvedAssignments(record, messageLibrary)
+    }
 
     fun hasUnresolvedAssignments(
         record: ExerciseConfigRecord,
@@ -55,14 +77,20 @@ internal object ExerciseMessageLibraryMerger {
     ): List<ExerciseConfigRecord> {
         if (messageLibrary.isEmpty()) return records
         val messageMap = messageLibrary.associateBy { it.id }
+        val fp = fingerprint(messageLibrary)
         return records.map { record ->
             val config = record.config
             val variants = config.poseVariants
-            if (variants.isEmpty()) return@map record
+            if (variants.isEmpty()) {
+                return@map record.copy(messageLibraryFingerprint = fp)
+            }
             val resolvedVariants = variants.map { variant ->
                 resolvePoseVariantMessages(variant, messageMap)
             }
-            record.copy(config = config.copy(poseVariants = resolvedVariants))
+            record.copy(
+                config = config.copy(poseVariants = resolvedVariants),
+                messageLibraryFingerprint = fp,
+            )
         }
     }
 
@@ -88,8 +116,10 @@ internal object ExerciseMessageLibraryMerger {
         val assignments = variant.messageAssignments.sortedBy { it.sortOrder }
         if (assignments.isEmpty()) return variant
 
-        val motivational = variant.feedbackMessages.motivational.toMutableList()
-        val tips = variant.feedbackMessages.tips.toMutableList()
+        // P2.6: replace feedback lists from assignments (never accumulate on prior merge).
+        val hasFeedbackAssignments = assignments.any { it.target == "feedback" }
+        val motivational = mutableListOf<LocalizedText>()
+        val tips = mutableListOf<LocalizedText>()
 
         val trackedJoints = variant.trackedJoints
         val jointMessageMap: MutableMap<String, StateMessages?> =
@@ -171,7 +201,7 @@ internal object ExerciseMessageLibraryMerger {
             if (message != null) check.copy(errorMessage = message) else check
         }
 
-        val updatedFeedback = if (motivational.isNotEmpty() || tips.isNotEmpty()) {
+        val updatedFeedback = if (hasFeedbackAssignments) {
             FeedbackMessages(motivational = motivational, tips = tips)
         } else {
             variant.feedbackMessages
@@ -256,6 +286,6 @@ internal object ExerciseMessageLibraryMerger {
         else -> null
     }
 
-    private fun LocalizedNameDto.toLocalizedText(): LocalizedText =
-        LocalizedText(en = en, ar = ar)
+    private fun SyncMessageContentDto.toLocalizedText(): LocalizedText =
+        LocalizedText(en = en, ar = ar, audioEn = audioEn, audioAr = audioAr)
 }

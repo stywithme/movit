@@ -65,6 +65,7 @@ class TrainingSessionWriteCoordinator(
         weekNumber: Int = 0,
         dayNumber: Int = 0,
         operationId: String? = null,
+        workoutGroupId: String? = null,
     ): AppResult<String> {
         reportsSync.recordPendingPlannedWorkoutCompletion(
             workoutId = workoutId,
@@ -73,7 +74,12 @@ class TrainingSessionWriteCoordinator(
             weekNumber = weekNumber,
             dayNumber = dayNumber,
         )
-        return mobileWrites.completePlannedWorkout(workoutId, request, operationId)
+        return mobileWrites.completePlannedWorkout(
+            workoutId = workoutId,
+            request = request,
+            operationId = operationId,
+            workoutGroupId = workoutGroupId,
+        )
     }
 
     suspend fun reportPlannedWorkout(
@@ -83,6 +89,7 @@ class TrainingSessionWriteCoordinator(
         weekNumber: Int = 0,
         dayNumber: Int = 0,
         operationId: String? = null,
+        workoutGroupId: String? = null,
     ): AppResult<String> {
         reportsSync.recordPendingPlannedWorkoutCompletion(
             workoutId = workoutId,
@@ -91,7 +98,12 @@ class TrainingSessionWriteCoordinator(
             weekNumber = weekNumber,
             dayNumber = dayNumber,
         )
-        return mobileWrites.reportPlannedWorkout(workoutId, request, operationId)
+        return mobileWrites.reportPlannedWorkout(
+            workoutId = workoutId,
+            request = request,
+            operationId = operationId,
+            workoutGroupId = workoutGroupId,
+        )
     }
 
     fun checkpointJournal(snapshot: SessionJournalSnapshot) {
@@ -103,6 +115,27 @@ class TrainingSessionWriteCoordinator(
     fun finalizeJournal(sessionId: String) {
         journalStore.markCompleted(sessionId)
     }
+
+    fun deleteJournal(sessionId: String) {
+        journalStore.delete(sessionId)
+    }
+
+    fun listActiveJournals(): List<SessionJournalSnapshot> = journalStore.listActiveCheckpoints()
+
+    fun cleanupOrphansAndFindResume(
+        exerciseId: String,
+        nowMs: Long? = null,
+        maxAgeMs: Long = SessionJournalStore.ORPHAN_MAX_AGE_MS,
+    ): SessionJournalSnapshot? =
+        if (nowMs == null) {
+            journalStore.cleanupOrphansAndFindResume(exerciseId = exerciseId, maxAgeMs = maxAgeMs)
+        } else {
+            journalStore.cleanupOrphansAndFindResume(
+                exerciseId = exerciseId,
+                nowMs = nowMs,
+                maxAgeMs = maxAgeMs,
+            )
+        }
 
     fun encodeSessionReport(report: MovitSessionReport): JsonElement =
         MovitJson.encodeToJsonElement(MovitSessionReport.serializer(), report)

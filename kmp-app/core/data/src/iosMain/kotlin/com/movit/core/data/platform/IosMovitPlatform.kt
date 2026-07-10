@@ -5,7 +5,10 @@ import com.movit.core.data.local.MovitLocalStore
 import com.movit.core.data.repository.MovitCacheKeys
 import com.movit.core.network.MovitApiConfig
 import kotlinx.cinterop.ExperimentalForeignApi
+import platform.Foundation.NSFileManager
 import platform.Foundation.NSUserDefaults
+import platform.Foundation.NSDocumentDirectory
+import platform.Foundation.NSUserDomainMask
 import platform.posix.time
 
 @OptIn(ExperimentalForeignApi::class)
@@ -26,6 +29,9 @@ class IosMovitPlatform(
         val token = secureSession.readAccessToken() ?: return null
         return if (token.startsWith("Bearer ")) token else "Bearer $token"
     }
+
+    override fun userId(): String? =
+        defaults.stringForKey(KEY_USER_ID)?.takeIf { it.isNotBlank() }
 
     override fun preferredLanguage(): String =
         defaults.stringForKey(KEY_LANGUAGE)?.takeIf { it.isNotBlank() } ?: "en"
@@ -131,6 +137,7 @@ class IosMovitPlatform(
                 expiresAtEpochMs = expiresAt,
             ),
         )
+        defaults.setObject(snapshot.userId, KEY_USER_ID)
         defaults.setObject(snapshot.name, KEY_USER_NAME)
         defaults.setObject(snapshot.email, KEY_USER_EMAIL)
         snapshot.avatarUrl?.let { defaults.setObject(it, KEY_AVATAR_URL) }
@@ -147,6 +154,7 @@ class IosMovitPlatform(
     override fun clearAuthSession() {
         secureSession.clearTokens()
         clearLegacyTokenKeysFromDefaults()
+        defaults.removeObjectForKey(KEY_USER_ID)
         defaults.removeObjectForKey(KEY_USER_EMAIL)
         defaults.removeObjectForKey(KEY_AVATAR_URL)
         defaults.removeObjectForKey(KEY_SUBSCRIPTION_EXPIRY)
@@ -159,6 +167,41 @@ class IosMovitPlatform(
         MovitLegacyUserCacheStores.sharedPreferenceNames.forEach { store ->
             clearCacheStore(store)
         }
+    }
+
+    override fun clearUserFiles() {
+        val fm = NSFileManager.defaultManager
+        val docs = fm.URLsForDirectory(NSDocumentDirectory, NSUserDomainMask)
+            .firstOrNull() as? platform.Foundation.NSURL
+            ?: return
+        listOf("frame_captures", "audio_cache").forEach { dirName ->
+            val url = docs.URLByAppendingPathComponent(dirName) ?: return@forEach
+            runCatching { fm.removeItemAtURL(url, null) }
+        }
+    }
+
+    override fun cleanupOrphanFrameCaptures(protectedSessionIds: Set<String>): Int {
+        val fm = NSFileManager.defaultManager
+        val docs = fm.URLsForDirectory(NSDocumentDirectory, NSUserDomainMask)
+            .firstOrNull() as? platform.Foundation.NSURL
+            ?: return 0
+        val root = docs.URLByAppendingPathComponent("frame_captures") ?: return 0
+        val path = root.path ?: return 0
+        if (!fm.fileExistsAtPath(path)) return 0
+        val children = fm.contentsOfDirectoryAtPath(path, null, null) as? List<*> ?: return 0
+        var removed = 0
+        for (name in children) {
+            val sessionId = name as? String ?: continue
+            if (sessionId in protectedSessionIds) continue
+            val sessionPath = "$path/$sessionId"
+            if (fm.fileExistsAtPath(sessionPath)) {
+                runCatching {
+                    fm.removeItemAtPath(sessionPath, null)
+                    removed++
+                }
+            }
+        }
+        return removed
     }
 
     override fun setOnboardingCompleted(completed: Boolean) {
@@ -228,6 +271,7 @@ class IosMovitPlatform(
     companion object {
         const val DEFAULT_BASE_URL = "https://back.mongz.online/"
         private const val KEY_API_BASE_URL = "movit_api_base_url"
+        private const val KEY_USER_ID = "user_id"
         private const val KEY_USER_NAME = "user_name"
         private const val KEY_USER_EMAIL = "user_email"
         private const val KEY_AVATAR_URL = "avatar_url"

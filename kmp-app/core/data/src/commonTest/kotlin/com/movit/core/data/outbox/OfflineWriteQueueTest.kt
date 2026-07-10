@@ -42,7 +42,7 @@ class OfflineWriteQueueTest {
                 override fun isNetworkAvailable(): Boolean = false
             }
             val localStore = InMemoryMovitLocalStore()
-            val queue = OfflineWriteQueue(localStore, testMobileApi(MockEngine { respond("{}", HttpStatusCode.OK) }, platform)) { platform }
+            val queue = OfflineWriteQueue(localStore, testMobileApi(MockEngine { respond("{}", HttpStatusCode.OK) }, platform), { platform })
 
             queue.enqueueSaveDayCustomizations(
                 userProgramId = "up-1",
@@ -85,7 +85,7 @@ class OfflineWriteQueueTest {
             }
             val api = testMobileApi(engine, platform)
             val localStore = InMemoryMovitLocalStore()
-            val queue = OfflineWriteQueue(localStore, api) { platform }
+            val queue = OfflineWriteQueue(localStore, api, { platform })
 
             val operationId = "op-test-save-day"
             queue.enqueueSaveDayCustomizations(
@@ -124,7 +124,7 @@ class OfflineWriteQueueTest {
                 var online = false
                 override fun isNetworkAvailable(): Boolean = online
             }
-            val queue = OfflineWriteQueue(InMemoryMovitLocalStore(), testMobileApi(engine, platform)) { platform }
+            val queue = OfflineWriteQueue(InMemoryMovitLocalStore(), testMobileApi(engine, platform), { platform })
 
             val operationId = "op-dedupe"
             queue.enqueuePlanComplete(operationId)
@@ -147,7 +147,7 @@ class OfflineWriteQueueTest {
             val platform = object : FakeMovitPlatformBindings() {
                 override fun isNetworkAvailable(): Boolean = false
             }
-            val queue = OfflineWriteQueue(InMemoryMovitLocalStore(), testMobileApi(engine, platform)) { platform }
+            val queue = OfflineWriteQueue(InMemoryMovitLocalStore(), testMobileApi(engine, platform), { platform })
 
             queue.enqueuePlanComplete("op-offline-gate")
             val result = queue.replayPending()
@@ -178,9 +178,10 @@ class OfflineWriteQueueTest {
                     createdAt = MovitClock.nowEpochMs(),
                     attempts = 0,
                     status = OutboxStatus.IN_FLIGHT,
+                    ownerUserId = platform.userId(),
                 ),
             )
-            val queue = OfflineWriteQueue(localStore, testMobileApi(engine, platform)) { platform }
+            val queue = OfflineWriteQueue(localStore, testMobileApi(engine, platform), { platform })
 
             val result = queue.replayPending()
 
@@ -207,7 +208,7 @@ class OfflineWriteQueueTest {
                     online = true
                 }
             }
-            val queue = OfflineWriteQueue(InMemoryMovitLocalStore(), testMobileApi(engine, platform)) { platform }
+            val queue = OfflineWriteQueue(InMemoryMovitLocalStore(), testMobileApi(engine, platform), { platform })
 
             queue.enqueueWorkoutExecutionUpload(sampleWorkoutExecutionUpload())
 
@@ -237,7 +238,7 @@ class OfflineWriteQueueTest {
                     online = true
                 }
             }
-            val queue = OfflineWriteQueue(InMemoryMovitLocalStore(), testMobileApi(engine, platform)) { platform }
+            val queue = OfflineWriteQueue(InMemoryMovitLocalStore(), testMobileApi(engine, platform), { platform })
 
             queue.enqueueProgressionMarkSeen(ProgressionMarkSeenRequest(ids = listOf("chg-1")))
             assertEquals(0, apiCalls.get())
@@ -258,7 +259,7 @@ class OfflineWriteQueueTest {
                 override fun isNetworkAvailable(): Boolean = online
             }
             val localStore = InMemoryMovitLocalStore()
-            val queue = OfflineWriteQueue(localStore, testMobileApi(engine, platform)) { platform }
+            val queue = OfflineWriteQueue(localStore, testMobileApi(engine, platform), { platform })
 
             queue.enqueuePlanComplete("op-409")
             platform.online = true
@@ -283,7 +284,7 @@ class OfflineWriteQueueTest {
                 var online = false
                 override fun isNetworkAvailable(): Boolean = online
             }
-            val queue = OfflineWriteQueue(InMemoryMovitLocalStore(), testMobileApi(engine, platform)) { platform }
+            val queue = OfflineWriteQueue(InMemoryMovitLocalStore(), testMobileApi(engine, platform), { platform })
             val executionId = "exec-stable-replay-1"
             val request = sampleWorkoutExecutionUpload(id = executionId)
 
@@ -318,7 +319,7 @@ class OfflineWriteQueueTest {
                 override fun isNetworkAvailable(): Boolean = true
             }
             val localStore = InMemoryMovitLocalStore()
-            val queue = OfflineWriteQueue(localStore, testMobileApi(engine, platform)) { platform }
+            val queue = OfflineWriteQueue(localStore, testMobileApi(engine, platform), { platform })
 
             val baseTime = MovitClock.nowEpochMs()
             localStore.insertOutbox(
@@ -334,6 +335,7 @@ class OfflineWriteQueueTest {
                     createdAt = baseTime,
                     attempts = 0,
                     status = OutboxStatus.PENDING,
+                    ownerUserId = platform.userId(),
                 ),
             )
             localStore.insertOutbox(
@@ -346,6 +348,7 @@ class OfflineWriteQueueTest {
                     createdAt = baseTime + 1,
                     attempts = 0,
                     status = OutboxStatus.PENDING,
+                    ownerUserId = platform.userId(),
                 ),
             )
 
@@ -364,7 +367,8 @@ class OfflineWriteQueueTest {
             val queue = OfflineWriteQueue(
                 InMemoryMovitLocalStore(),
                 testMobileApi(MockEngine { respond(planOkBody, HttpStatusCode.OK, jsonHeaders) }, platform),
-            ) { platform }
+                { platform },
+            )
 
             LegacyWorkoutSyncGate.legacyDrainRunner = {
                 delay(50)
@@ -398,7 +402,8 @@ class OfflineWriteQueueTest {
             val queue = OfflineWriteQueue(
                 localStore,
                 testMobileApi(MockEngine { respond(planOkBody, HttpStatusCode.OK, jsonHeaders) }, platform),
-            ) { platform }
+                { platform },
+            )
 
             val staleCreatedAt = MovitClock.nowEpochMs() - (8L * 24 * 60 * 60 * 1000)
             localStore.insertOutbox(

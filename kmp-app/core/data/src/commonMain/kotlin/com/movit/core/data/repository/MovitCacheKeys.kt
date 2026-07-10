@@ -7,6 +7,10 @@ object MovitCacheKeys {
 
     const val HOME_STORE = "home_cache"
     const val HOME_DATA = "home_data_json"
+    /** Weak ETag from last successful GET /mobile/home (P2.4). */
+    const val HOME_ETAG = "home_etag"
+    /** Set when complete/plan hit FAILED_PERMANENT — feeds UX.6 Home alert. */
+    const val HOME_UPLOAD_FAILED = "home_upload_failed"
 
     const val REPORTS_STORE = "reports_cache"
     const val REPORTS_DASHBOARD = "reports_dashboard_json"
@@ -90,6 +94,10 @@ object MovitCacheKeys {
     /** Set by [com.movit.core.data.local.MigratingMovitLocalStore] after one-time platform→SQLDelight migration. */
     const val LEGACY_CUTOVER_V1 = "legacy_cutover_v1"
 
+    /** Survives [com.movit.core.data.local.MovitLocalStore.clearReadCaches]; cleared on logout. */
+    const val AUTH_LIFECYCLE_STORE = "auth_lifecycle_prefs"
+    const val LAST_KNOWN_USER_ID = "last_known_user_id"
+
     const val SYNC_STORE = "sync_manager_prefs"
     const val SYNC_LAST_TIMESTAMP = "last_sync_timestamp"
     const val SYNC_SERVER_VERSION = "server_version"
@@ -100,6 +108,12 @@ object MovitCacheKeys {
     const val SYNC_MSG_AUDIO = "cached_message_audio_count"
     const val SYNC_MSG_ASSIGNMENTS = "cached_message_assignments"
     const val SYNC_MSG_FINGERPRINT = "cached_message_fingerprint"
+
+    const val SYNC_DIAG_LAST_CYCLE = "sync_diag_last_cycle_json"
+    const val SYNC_DIAG_ERROR_DECODE_COUNT = "sync_error_decode_count"
+    const val SYNC_DIAG_OUTBOX_FAILED_PERMANENT = "outbox_failed_permanent_count"
+    const val SYNC_DIAG_OUTBOX_RETRY_EXHAUSTED = "outbox_retry_exhausted_count"
+    const val SYNC_DIAG_CATALOG_INCOMPLETE = "sync_catalog_graph_incomplete_count"
 
     const val AUDIO_STORE = "audio_manifest_cache"
     const val AUDIO_BASE_URL = "audio_base_url"

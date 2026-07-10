@@ -10,6 +10,12 @@ data class SyncMetadata(
     val updatedAtEpochMs: Long,
 )
 
+data class JsonCacheEntryMeta(
+    val key: String,
+    val payload: String,
+    val updatedAtEpochMs: Long,
+)
+
 /**
  * Durable local persistence: JSON entity cache, sync metadata (WS-4), outbox queue (WS-2).
  */
@@ -28,6 +34,12 @@ interface MovitLocalStore {
 
     /** All entries in a logical cache namespace (used by one-time key canonicalization). */
     fun listJsonCacheEntries(store: String): Map<String, String> = emptyMap()
+
+    /** Entries with [updated_at_epoch_ms] for GC / LRU (P2.5). */
+    fun listJsonCacheEntriesWithTimestamps(store: String): List<JsonCacheEntryMeta> =
+        listJsonCacheEntries(store).map { (key, payload) ->
+            JsonCacheEntryMeta(key = key, payload = payload, updatedAtEpochMs = 0L)
+        }
 
     fun readInt(store: String, key: String, default: Int = 0): Int =
         readJsonCache(store, key)?.toIntOrNull() ?: default
@@ -50,10 +62,18 @@ interface MovitLocalStore {
 
     suspend fun listPendingOutbox(): List<OutboxEntry>
 
+    /** All outbox rows (any status) — used for ownership / guest attribution. */
+    suspend fun listAllOutbox(): List<OutboxEntry> = listPendingOutbox()
+
     /** Resets stale [OutboxStatus.IN_FLIGHT] rows after a crash mid-dispatch. */
     suspend fun recoverInFlightOutbox()
 
-    suspend fun updateOutboxStatus(id: String, status: OutboxStatus, attempts: Int)
+    suspend fun updateOutboxStatus(
+        id: String,
+        status: OutboxStatus,
+        attempts: Int,
+        nextAttemptAtEpochMs: Long? = null,
+    )
 
     suspend fun deleteOutbox(id: String)
 
@@ -62,7 +82,34 @@ interface MovitLocalStore {
 
     suspend fun countOutboxByStatus(status: OutboxStatus): Long
 
-    suspend fun clearAllUserData()
+    suspend fun countGuestOutbox(): Long = 0L
+
+    /** Deletes outbox rows owned by a different signed-in user (keeps guest + [keepUserId]). */
+    suspend fun deleteOutboxOwnedByOtherUsers(keepUserId: String) {}
+
+    suspend fun deleteAllGuestOutbox() {}
+
+    suspend fun deleteGuestOutboxOlderThan(cutoffEpochMs: Long): Int = 0
+
+    suspend fun attributeGuestOutboxToUser(userId: String) {}
+
+    /**
+     * PR-7 read scope: catalog/home/explore/metrics/delta blobs + sync_metadata + audio manifest.
+     * Preserves outbox, session journal, and unconfirmed post-training reports (+ indexes).
+     */
+    suspend fun clearReadCaches()
+
+    /**
+     * PR-7 durable writes: outbox + journal + unconfirmed post-training report blobs.
+     * Frame/audio files on disk are cleared via [com.movit.core.data.platform.MovitPlatformBindings.clearUserFiles].
+     */
+    suspend fun clearDurableWrites()
+
+    /** Full wipe — logout / delete account. Equivalent to read + durable. */
+    suspend fun clearAllUserData() {
+        clearReadCaches()
+        clearDurableWrites()
+    }
 
     fun upsertSessionJournal(
         sessionId: String,
@@ -77,4 +124,11 @@ interface MovitLocalStore {
     fun listActiveSessionJournals(): List<SessionJournalRow>
 
     fun deleteSessionJournal(sessionId: String)
+
+    /**
+     * Runs [block] inside a single SQLDelight transaction when backed by SQLite.
+     * In-memory / test stores execute [block] directly (no-op passthrough).
+     * Use for atomic full-sync apply (records + indexes + aliases).
+     */
+    fun <T> transaction(block: () -> T): T = block()
 }

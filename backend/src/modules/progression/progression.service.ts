@@ -115,7 +115,10 @@ async function getRecentMetrics(
     ),
     avgROM: avg(metrics.map((m) => intX10ToFloat(m.avgRom))),
     avgSymmetry: avg(metrics.filter((m) => m.avgSymmetry != null).map((m) => intX10ToFloat(m.avgSymmetry!))),
-    avgStability: avg(metrics.map((m) => intX10ToFloat(m.avgStability))),
+    // Null stability must not coerce to 0 — that would fake a perfect/zero score in quality gates.
+    avgStability: avg(
+      metrics.filter((m) => m.avgStability != null).map((m) => intX10ToFloat(m.avgStability!)),
+    ),
   };
 }
 

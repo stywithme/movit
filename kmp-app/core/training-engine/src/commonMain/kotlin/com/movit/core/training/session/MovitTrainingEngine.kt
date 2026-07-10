@@ -521,7 +521,12 @@ class MovitTrainingEngine(
 
     }
 
-
+    /** After [start], seed live rep count from a restored journal (P1.5). */
+    fun seedCompletedRepCount(completedReps: Int) {
+        if (completedReps <= 0) return
+        repCounter.seedCompletedCount(completedReps)
+        onRepCountChanged?.invoke(repCounter.count, repCounter.getAverageScore(), true)
+    }
 
     fun pause() {
         isPaused = true

@@ -170,6 +170,8 @@ fun TrainingSessionRoute(
       MovitData.trainingPreferences.setModelType(selection.modelType)
       poseModelPort?.setSelectedModel(PoseModelType.fromPreference(selection.modelType))
     },
+    onResumePriorSession = { viewModel.onEvent(TrainingSessionEvent.ResumePriorSession) },
+    onDiscardPriorSession = { viewModel.onEvent(TrainingSessionEvent.DiscardPriorSession) },
     debugFps = debugFps.takeIf { isTrainingDebugBuild() },
     cameraSlot = {
       if (state.requiresCamera()) {

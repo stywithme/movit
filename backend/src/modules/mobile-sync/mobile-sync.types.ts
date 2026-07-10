@@ -14,6 +14,8 @@ import type { WorkoutExport } from '@/modules/workout-templates/workout-template
 // REQUEST TYPES
 // ============================================
 
+export type IncludeReportsMode = 'summary' | 'full' | 'none';
+
 export interface SyncRequestParams {
   /**
    * ISO timestamp for incremental sync.
@@ -26,6 +28,14 @@ export interface SyncRequestParams {
    * Force a full refresh, ignoring updatedAfter.
    */
   forceRefresh?: boolean;
+
+  /**
+   * Planned-workout report payload mode (P2.2 / PR-3).
+   * - `summary`: metrics only (no bulky `report` JSON) — preferred by new clients
+   * - `full`: include `report` (legacy default when param omitted)
+   * - `none`: omit `plannedWorkoutReports` entirely
+   */
+  includeReports?: IncludeReportsMode;
 }
 
 export interface ExploreRequestParams {
@@ -154,7 +164,8 @@ export interface SyncData {
   messageLibrary: MessageTemplate[];
 
   /**
-   * Fixed-key system messages (training UI / TTS); editable text/audio from dashboard
+   * Fixed-key system messages (training UI / TTS); editable text/audio from dashboard.
+   * Omitted / empty on delta when unchanged; full sync with `[]` clears the client cache (B-N1).
    */
   systemMessages: SystemMessageTemplate[];
   
@@ -200,11 +211,13 @@ export interface SyncData {
   /**
    * Completed planned workout reports for the user (backend → mobile sync).
    * Ensures reports survive app reinstall and are consistent across devices.
+   * Delta-filtered by `updatedAt`; may omit bulky `report` when `includeReports=summary`.
    */
   plannedWorkoutReports?: PlannedWorkoutReportExport[];
   
   /**
-   * Audio files manifest for download
+   * Audio files manifest for download.
+   * Empty on delta when message/audio fingerprint unchanged (H24) — client keeps cache.
    */
   audioManifest: AudioManifest;
 }

@@ -1,6 +1,8 @@
 package com.movit.feature.account
 
 import com.movit.core.data.MovitData
+import com.movit.core.data.repository.AccountSyncRepository
+import com.movit.core.data.repository.LogoutOutboxPreparation
 import com.movit.shared.AppResult
 
 class SharedProfileRepository : ProfileRepository {
@@ -29,18 +31,27 @@ class SharedProfileRepository : ProfileRepository {
         }
     }
 
-    override suspend fun logout(): AppResult<Unit> {
+    override suspend fun prepareLogout(flushTimeoutMs: Long?): LogoutOutboxPreparation {
         if (!MovitData.isInstalled) {
-            return AppResult.Failure(DATA_LAYER_NOT_INSTALLED)
+            return LogoutOutboxPreparation(0, false)
         }
-        return MovitData.account.logout()
+        return MovitData.account.prepareLogout(
+            flushTimeoutMs = flushTimeoutMs ?: AccountSyncRepository.LOGOUT_FLUSH_TIMEOUT_MS,
+        )
     }
 
-    override suspend fun deleteAccount(): AppResult<Unit> {
+    override suspend fun logout(discardPendingOutbox: Boolean): AppResult<Unit> {
         if (!MovitData.isInstalled) {
             return AppResult.Failure(DATA_LAYER_NOT_INSTALLED)
         }
-        return MovitData.account.deleteAccount()
+        return MovitData.account.logout(discardPendingOutbox = discardPendingOutbox)
+    }
+
+    override suspend fun deleteAccount(discardPendingOutbox: Boolean): AppResult<Unit> {
+        if (!MovitData.isInstalled) {
+            return AppResult.Failure(DATA_LAYER_NOT_INSTALLED)
+        }
+        return MovitData.account.deleteAccount(discardPendingOutbox = discardPendingOutbox)
     }
 
     override suspend fun updateSettings(update: ProfileSettingsUpdate): AppResult<ProfileUi> {

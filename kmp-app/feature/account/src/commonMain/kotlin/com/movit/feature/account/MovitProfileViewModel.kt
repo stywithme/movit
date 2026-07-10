@@ -1,6 +1,9 @@
 package com.movit.feature.account
 
 import androidx.lifecycle.ViewModel
+import com.movit.core.data.MovitData
+import com.movit.core.data.outbox.OutboxStatus
+import com.movit.core.data.repository.AccountSyncRepository
 import com.movit.shared.AppResult
 import com.movit.shared.PlatformInfo
 import kotlinx.coroutines.CoroutineScope
@@ -42,6 +45,7 @@ class MovitProfileViewModel(
                         errorMessage = null,
                     )
                 }
+                refreshSyncSection()
             }
             is AppResult.Failure -> {
                 val signedOut = result.message.contains("Sign in", ignoreCase = true)
@@ -51,6 +55,7 @@ class MovitProfileViewModel(
                         isSignedIn = !signedOut,
                         profile = null,
                         errorMessage = if (signedOut) null else result.message,
+                        syncItems = emptyList(),
                     )
                 }
             }
@@ -89,18 +94,34 @@ class MovitProfileViewModel(
                 _state.update { it.copy(activePicker = ProfilePicker.Appearance) }
             }
             MovitProfileEvent.LogoutClicked -> {
-                _state.update { it.copy(activePicker = ProfilePicker.LogoutConfirm) }
+                workScope.launch { beginLogoutFlow() }
             }
             MovitProfileEvent.LogoutConfirmed -> {
                 _state.update { it.copy(activePicker = null) }
-                logout()
+                logout(discardPendingOutbox = false)
+            }
+            MovitProfileEvent.LogoutUploadThenSignOut -> {
+                _state.update { it.copy(activePicker = null) }
+                logoutAfterRetryFlush()
+            }
+            MovitProfileEvent.LogoutDiscardPending -> {
+                _state.update { it.copy(activePicker = null) }
+                logout(discardPendingOutbox = true)
             }
             MovitProfileEvent.DeleteAccountClicked -> {
-                _state.update { it.copy(activePicker = ProfilePicker.DeleteAccountConfirm) }
+                workScope.launch { beginDeleteAccountFlow() }
             }
             MovitProfileEvent.DeleteAccountConfirmed -> {
                 _state.update { it.copy(activePicker = null) }
-                deleteAccount()
+                deleteAccount(discardPendingOutbox = false)
+            }
+            MovitProfileEvent.DeleteAccountUploadThenDelete -> {
+                _state.update { it.copy(activePicker = null) }
+                deleteAccountAfterRetryFlush()
+            }
+            MovitProfileEvent.DeleteAccountDiscardPending -> {
+                _state.update { it.copy(activePicker = null) }
+                deleteAccount(discardPendingOutbox = true)
             }
             MovitProfileEvent.LogoutDismissed,
             MovitProfileEvent.DeleteAccountDismissed,
@@ -115,6 +136,57 @@ class MovitProfileViewModel(
             MovitProfileEvent.TrainingDebugLabClicked -> {
                 if (PlatformInfo.supportsTrainingDebugLab) {
                     _effects.tryEmit(MovitProfileEffect.OpenTrainingDebugLab)
+                }
+            }
+            MovitProfileEvent.SyncRetryClicked -> {
+                workScope.launch { retryFailedSync() }
+            }
+            MovitProfileEvent.SyncRepairCatalogClicked -> {
+                workScope.launch { repairCatalog() }
+            }
+        }
+    }
+
+    private suspend fun refreshSyncSection() {
+        if (!MovitData.isInstalled) return
+        val items = MovitData.offlineWrites.listVisibleOutbox().map { entry ->
+            ProfileSyncItemUi(
+                id = entry.id,
+                typeLabel = entry.type.name,
+                statusLabel = when (entry.status) {
+                    OutboxStatus.FAILED_PERMANENT -> "failed"
+                    OutboxStatus.IN_FLIGHT -> "inflight"
+                    else -> "pending"
+                },
+                isFailed = entry.status == OutboxStatus.FAILED_PERMANENT,
+            )
+        }
+        _state.update { it.copy(syncItems = items) }
+    }
+
+    private suspend fun retryFailedSync() {
+        if (!MovitData.isInstalled) return
+        _state.update { it.copy(isSyncBusy = true, syncStatusMessage = null) }
+        val reset = MovitData.offlineWrites.retryFailedPermanent()
+        refreshSyncSection()
+        _state.update {
+            it.copy(
+                isSyncBusy = false,
+                syncStatusMessage = if (reset > 0) "retry:$reset" else "retry:0",
+            )
+        }
+    }
+
+    private suspend fun repairCatalog() {
+        if (!MovitData.isInstalled) return
+        _state.update { it.copy(isSyncBusy = true, syncStatusMessage = null) }
+        when (val result = MovitData.programFlow.repairExploreCatalog()) {
+            is AppResult.Success -> {
+                _state.update { it.copy(isSyncBusy = false, syncStatusMessage = "repair:ok") }
+            }
+            is AppResult.Failure -> {
+                _state.update {
+                    it.copy(isSyncBusy = false, syncStatusMessage = result.message)
                 }
             }
         }
@@ -138,10 +210,36 @@ class MovitProfileViewModel(
         _effects.tryEmit(MovitProfileEffect.OpenSubscription(restorePurchases = restorePurchases))
     }
 
-    private fun logout() {
+    private suspend fun beginLogoutFlow() {
+        val prep = repository.prepareLogout()
+        _state.update {
+            it.copy(
+                activePicker = if (prep.requiresWarning) {
+                    ProfilePicker.LogoutPendingOutbox(prep.pendingCount)
+                } else {
+                    ProfilePicker.LogoutConfirm
+                },
+            )
+        }
+    }
+
+    private suspend fun beginDeleteAccountFlow() {
+        val prep = repository.prepareLogout()
+        _state.update {
+            it.copy(
+                activePicker = if (prep.requiresWarning) {
+                    ProfilePicker.DeleteAccountPendingOutbox(prep.pendingCount)
+                } else {
+                    ProfilePicker.DeleteAccountConfirm
+                },
+            )
+        }
+    }
+
+    private fun logout(discardPendingOutbox: Boolean) {
         workScope.launch {
             _state.update { it.copy(isLoggingOut = true) }
-            when (repository.logout()) {
+            when (val result = repository.logout(discardPendingOutbox = discardPendingOutbox)) {
                 is AppResult.Success -> {
                     _state.update {
                         MovitProfileUiState(
@@ -153,16 +251,45 @@ class MovitProfileViewModel(
                 }
                 is AppResult.Failure -> {
                     _state.update { it.copy(isLoggingOut = false) }
-                    _effects.tryEmit(MovitProfileEffect.ShowMessage("Unable to sign out."))
+                    if (resultIndicatesPendingOutbox(result.message)) {
+                        _state.update { state ->
+                            state.copy(
+                                activePicker = ProfilePicker.LogoutPendingOutbox(
+                                    pendingCountFromLogoutFailure(result.message),
+                                ),
+                            )
+                        }
+                    } else {
+                        _effects.tryEmit(MovitProfileEffect.ShowMessage("Unable to sign out."))
+                    }
                 }
             }
         }
     }
 
-    private fun deleteAccount() {
+    private fun logoutAfterRetryFlush() {
+        workScope.launch {
+            _state.update { it.copy(isLoggingOut = true) }
+            val prep = repository.prepareLogout(
+                flushTimeoutMs = AccountSyncRepository.LOGOUT_RETRY_FLUSH_TIMEOUT_MS,
+            )
+            if (prep.pendingCount > 0) {
+                _state.update {
+                    it.copy(
+                        isLoggingOut = false,
+                        activePicker = ProfilePicker.LogoutPendingOutbox(prep.pendingCount),
+                    )
+                }
+                return@launch
+            }
+            logout(discardPendingOutbox = false)
+        }
+    }
+
+    private fun deleteAccount(discardPendingOutbox: Boolean) {
         workScope.launch {
             _state.update { it.copy(isDeletingAccount = true) }
-            when (repository.deleteAccount()) {
+            when (val result = repository.deleteAccount(discardPendingOutbox = discardPendingOutbox)) {
                 is AppResult.Success -> {
                     _state.update {
                         MovitProfileUiState(
@@ -174,11 +301,46 @@ class MovitProfileViewModel(
                 }
                 is AppResult.Failure -> {
                     _state.update { it.copy(isDeletingAccount = false) }
-                    _effects.tryEmit(MovitProfileEffect.ShowLocalizedMessage("profile_delete_account_error"))
+                    if (resultIndicatesPendingOutbox(result.message)) {
+                        _state.update { state ->
+                            state.copy(
+                                activePicker = ProfilePicker.DeleteAccountPendingOutbox(
+                                    pendingCountFromLogoutFailure(result.message),
+                                ),
+                            )
+                        }
+                    } else {
+                        _effects.tryEmit(MovitProfileEffect.ShowLocalizedMessage("profile_delete_account_error"))
+                    }
                 }
             }
         }
     }
+
+    private fun deleteAccountAfterRetryFlush() {
+        workScope.launch {
+            _state.update { it.copy(isDeletingAccount = true) }
+            val prep = repository.prepareLogout(
+                flushTimeoutMs = AccountSyncRepository.LOGOUT_RETRY_FLUSH_TIMEOUT_MS,
+            )
+            if (prep.pendingCount > 0) {
+                _state.update {
+                    it.copy(
+                        isDeletingAccount = false,
+                        activePicker = ProfilePicker.DeleteAccountPendingOutbox(prep.pendingCount),
+                    )
+                }
+                return@launch
+            }
+            deleteAccount(discardPendingOutbox = false)
+        }
+    }
+
+    private fun resultIndicatesPendingOutbox(message: String): Boolean =
+        message.startsWith("${AccountSyncRepository.PENDING_OUTBOX_LOGOUT_CODE}:")
+
+    private fun pendingCountFromLogoutFailure(message: String): Long =
+        message.substringAfter(':').toLongOrNull() ?: 1L
 
     private fun selectLanguage(languageCode: String) {
         workScope.launch {

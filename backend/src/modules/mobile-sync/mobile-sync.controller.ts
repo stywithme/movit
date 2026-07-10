@@ -11,12 +11,18 @@ export class MobileSyncController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
     @Query('updatedAfter') updatedAfter?: string,
-    @Query('forceRefresh') forceRefresh?: string
+    @Query('forceRefresh') forceRefresh?: string,
+    @Query('includeReports') includeReports?: string,
   ) {
     try {
+      const reportsMode =
+        includeReports === 'summary' || includeReports === 'full' || includeReports === 'none'
+          ? includeReports
+          : undefined;
       const params: SyncRequestParams = {
         updatedAfter: updatedAfter || undefined,
         forceRefresh: forceRefresh === 'true',
+        includeReports: reportsMode,
       };
 
       const protocol = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'http';

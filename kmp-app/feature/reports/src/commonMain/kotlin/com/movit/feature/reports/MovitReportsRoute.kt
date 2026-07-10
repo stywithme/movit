@@ -64,6 +64,14 @@ fun ReportDetailRoute(
         viewModel.loadInitial()
     }
 
+    if (com.movit.core.data.MovitData.isInstalled) {
+        LaunchedEffect(viewModel) {
+            com.movit.core.data.MovitData.sync.cacheInvalidated.collect {
+                viewModel.load()
+            }
+        }
+    }
+
     LaunchedEffect(viewModel, language, shareAction) {
         viewModel.effects.collect { effect ->
             val payload = when (effect) {

@@ -145,7 +145,7 @@ class MovitSyncOrchestratorCatalogTest {
             metadataStore = MovitSyncMetadataStore(localStore),
             audioManifestCache = audioManifestCache,
             audioPrefetchRunner = AudioPrefetchRunner(audioManifestCache, FakeAudioFileDownloader()),
-            offlineWrites = OfflineWriteQueue(localStore, api) { platform },
+            offlineWrites = OfflineWriteQueue(localStore, api, { platform }),
             trainingConfig = trainingConfig,
             catalogOffline = catalogOffline,
             systemMessageCache = SystemMessageCache(localStore),

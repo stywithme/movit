@@ -27,4 +27,24 @@ class SystemMessageCacheTest {
         assertEquals("GO!", SystemMessageRegistry.get("training_go_overlay", "", "").en)
         assertEquals(1, cache.read().size)
     }
+
+    @Test
+    fun saveEmpty_clearsPersistedMessages() {
+        val store = testLocalStore(FakeMovitPlatformBindings())
+        val cache = SystemMessageCache(store)
+        cache.save(
+            listOf(
+                SyncSystemMessageDto(
+                    code = "training_go_overlay",
+                    content = LocalizedNameDto(ar = "انطلق!", en = "GO!"),
+                ),
+            ),
+        )
+        assertEquals(1, cache.read().size)
+
+        cache.save(emptyList())
+
+        assertEquals(0, cache.read().size)
+        assertEquals("", SystemMessageRegistry.get("training_go_overlay", "", "").en)
+    }
 }

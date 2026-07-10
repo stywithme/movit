@@ -80,7 +80,7 @@
 - **جهد:** S–M.
 
 ### P0.4 — قياس حمولة فعلي (baseline)
-- سكربت `curl --compressed` على حساب seed: full sync، دلتا فارغة، `/mobile/home`، `/mobile/explore` — bytes قبل/بعد gzip + عدد استعلامات Prisma (log middleware مؤقت). يُحفظ في `Docs/04-Research/data-layer-review/payload-baseline.md`.
+- سكربت `curl --compressed` على حساب seed: full sync، دلتا فارغة، `/mobile/home`، `/mobile/explore` — bytes قبل/بعد gzip + عدد استعلامات Prisma (log middleware مؤقت). النتائج موثّقة في `Data-Layer-Execution-Report.md` §4.
 - **تحقق أن ضغط gzip/br مفعّل فعلًا** على استجابات NestJS في الإنتاج وأن Ktor يرسل `Accept-Encoding` — مكسب مجاني كبير إن كان مغلقًا.
 - **جهد:** S.
 
@@ -333,7 +333,7 @@
 | P3.7 | عقد slug ثابت: توثيق + حماية باك (رفض تغيير slug لمنشور) | C-N4 | `exercises.service.ts` + docs | S |
 | P3.8 | إزالة الحقول الميتة `pausedAt/totalPausedDays` أو تصديرها فعليًا | H28 | DTO أو باك | S |
 | P3.9 | ~~watermark الباك~~ **نُقل إلى P2.2** (شرط PR-3) | B-N2 | — | — |
-| P3.10 | «سياسة البيانات» النهائية في `Docs/00-Active-Reference/Data-Policy.md` + تحديث `KMP-Mobile-As-Built.md` | 3.10 | docs | S |
+| P3.10 | «سياسة البيانات» النهائية في `Data-Layer-Execution-Report.md` §1 + تحديث `KMP-Mobile-As-Built.md` | 3.10 | docs | S |
 | P3.11 | حماية `IN_FLIGHT` في `pendingExerciseIdsFromOutbox` (J-N2) — *(J-N1 نُقلت إلى P1.4)* | J-N2 | `ExercisePreferenceLocalStore.kt` | S |
 | P3.12 | حذف استدعاء `rekeyPostTraining` الميت (no-op دائم — الـ id لا يتغير) أو توثيق سبب بقائه | E-N5 | `TrainingSessionViewModel.kt` | S |
 
@@ -453,3 +453,364 @@
 | عقد الباك الجديد مع عملاء قدامى | كل شيء خلف براميترات اختيارية؛ fixtures ذهبية في CI للطرفين |
 | transaction الجديد يخفي أخطاء كانت تظهر بالمسح الجزئي | telemetry P0.3 + `MovitSyncOrchestratorCrashMidFullTest` (فهارس + aliases) |
 | جدول 10 أسابيع بفريق أصغر من المفترض | الافتراض معلن (2 موبايل + ½ باك)؛ بمطوّر واحد: +40% وتسلسل كامل — البوابات لا تُقفز |
+
+---
+
+## 12. سجل التنفيذ (Execution Log)
+
+### الحالة العامة
+
+| بند | الحالة | الوكيل | التاريخ | ملاحظات |
+|---|---|---|---|---|
+| **P0.1** — إنزال diff + فجوة null | **مكتمل** | وكيل P0.1/P0.2 | 2026-07-09 | الـ working tree كان نظيفًا (diff مدمج في `Extract Metrics`)؛ أُغلق null على الباك + اختبارات. commit `df6a7e04` |
+| **P0.2** — أول SQLDelight migration | **مكتمل*** | وكيل P0.1/P0.2 | 2026-07-09 | `1.sqm` + `1.db` + `userId()` + backfill. *`verifyMigrations=false` على Windows (AccessDenied لـ sqlite-jdbc تحت `C:\WINDOWS`) — الاختبار يغطي upgrade |
+| **P0.3** — Telemetry وتصنيف أخطاء | **مكتمل** | وكيل تصفية | 2026-07-10 | commit `f8f44b13` — diagnostics + orchestrator classification |
+| **P0.4** — قياس حمولة baseline | **جزئي (توثيق)** | وكيل P0.4 + إغلاق فجوات | 2026-07-10 | موثّق في `Data-Layer-Execution-Report.md` §4؛ قياس curl حي على staging معلّق |
+| **P1.1** — دورة حياة الجلسة | **مكتمل** | وكيل P1.1 | 2026-07-09 | ClearScope + refresh classification + outbox ownership + UX.7 gate + no runBlocking |
+| **P1.2** — قفل outbox + IN_FLIGHT + retry | **مكتمل** | وكيل P1.1+P1.2 | 2026-07-10 | commit `e97ddfb0` — Mutex + IN_FLIGHT + backoff + dependency gate |
+| **P1.4** — تعارض تخصيصات + canonical id | **مكتمل** | وكيل تصفية | 2026-07-10 | commit `0e1743e6` (+ `18851345` إصلاح assertions) |
+| **P1.9** — دمج تقارير + streak | **مكتمل** | وكيل تصفية | 2026-07-10 | commit `0e1743e6` — field merge + ISO completedAt |
+| **P1.3** — Idempotency باك + مفتاح outbox | **مكتمل** | وكيل P1.3 | 2026-07-09 | مفتاح عميل = `operationId`؛ لا unique على `(userId, plannedWorkoutId)` |
+| **P1.5** — استعادة جلسة بعد crash | **مكتمل** | وكيل P1 بوابة | 2026-07-10 | commit `b7f2cb10` — journal API + restore بلا start + UX.3 |
+| **P1.6** — صوت الرسائل عند الدمج | **مكتمل** | وكيل تصفية | 2026-07-10 | commit `c1f86bd0` |
+| **P1.7** — متانة حزمة Explore | **مكتمل** | وكيل P1 بوابة | 2026-07-10 | enqueue فوري + حذف RAM batch؛ يتعايش مع P1.5 في نفس VM |
+| **P1.8** — Logout آمن | **مكتمل** | وكيل تصفية | 2026-07-10 | commit `0404971d` — flush + UX.4 + سلاسل i18n |
+| **UX.3** — حوار استئناف الجلسة | **مكتمل** | وكيل P1 بوابة | 2026-07-10 | مربوط بـ P1.5 (`resumePrompt` + أحداث Resume/Discard) |
+| **UX.4** — تحذير logout مع pending | **مكتمل** | وكيل تصفية | 2026-07-10 | commit `0404971d` |
+| **UX.7** — نسب ضيف بعد سؤال | **مكتمل** | وكيل P1.1 | 2026-07-09 | مع P1.1 |
+| **بوابة P1** — جاهزية فتح P2 | **مكتمل (كود)** | وكيل إغلاق فجوات | 2026-07-10 | كل بنود P1 مُلتزَمة؛ 27+ اختبار مركّز PASS؛ سيناريو «أسبوع الجيم» اليدوي ما زال تشغيليًا |
+| **P2.1** — Endpoint خفيف enrollments | **مكتمل** (مبكر) | وكيل تصفية | 2026-07-10 | commits `17d6461f` (باك) + `ace5ddb5` (KMP) |
+| **P2.2** — دلتا حمولة مستخدم + watermark | **مكتمل** (مبكر) | وكيل Composer | 2026-07-10 | `0fed24c0` — watermark آمن + includeReports=summary + gated systemMessages/audioManifest |
+| **P2.3** — Explore دلتا + watermark | **مكتمل** (مبكر) | وكيل تصفية | 2026-07-10 | commit `3cd56e35` |
+| **P2.4** — كاش سيرفر + ETag Home | **جزئي** | وكيل P2.4/P3/UX | 2026-07-10 | ETag+If-None-Match + trainMode fallback؛ Redis **محجوب** (غير موصول بسهولة) |
+| **P2.8** — optimistic موحّد + rollback | **مكتمل** | وكيل P2.4/P3/UX | 2026-07-10 | onSuccess/onServerWins/onPermanentFailure؛ لا isCompleted من report |
+| **P3.1** — MovitApiException typed | **مكتمل** | وكيل P2.4/P3/UX | 2026-07-10 | status+body؛ OutboxDispatcher يفضّل typed |
+| **P3.2** — parseIsoToEpochMs offsets | **مكتمل** | وكيل P2.4/P3/UX | 2026-07-10 | Z/±HH:MM + اختبار |
+| **P3.3** — لا fingerprint محلي | **مكتمل*** | وكيل P2.4/P3/UX | 2026-07-10 | *في orchestrator مع P2.6 WIP — لا كتابة بدون server stats |
+| **P3.4** — SyncCatalogGraphReport | **مكتمل*** | وكيل P2.4/P3/UX | 2026-07-10 | *log+diag بعد full؛ نفس ملف orchestrator مع P2.6 |
+| **P3.5** — deletedExercise في export | **مكتمل** | وكيل P2.4/P3/UX | 2026-07-10 | resolveExerciseMeta في exportPlannedWorkout |
+| **P3.6** — WorkoutExportMapper اسم | **مكتمل** | وكيل P2.4/P3/UX | 2026-07-10 | name من الباك + DTO |
+| **P3.7** — رفض تغيير slug منشور | **مكتمل** | وكيل P2.4/P3/UX | 2026-07-10 | BadRequestException |
+| **P3.8** — pausedAt/totalPausedDays | **مكتمل** | وكيل P2.4/P3/UX | 2026-07-10 | حُذفا من DTO العميل |
+| **P3.10** — سياسة البيانات | **مكتمل** | وكيل P2.4/P3/UX | 2026-07-10 | مدموجة في `Data-Layer-Execution-Report.md` §1 |
+| **P3.11** — IN_FLIGHT في pending prefs | **مكتمل** | وكيل P2.4/P3/UX | 2026-07-10 | listAllOutbox + PENDING/IN_FLIGHT |
+| **P3.12** — rekeyPostTraining | **مكتمل** | وكيل P2.4/P3/UX | 2026-07-10 | يُستدعى فقط إن اختلف id |
+| **UX.1** — شارة pending | **مكتمل** | وكيل P2.4/P3/UX | 2026-07-10 | Home chip + synced flash |
+| **UX.2a** — قسم مزامنة | **مكتمل** | وكيل P2.4/P3/UX | 2026-07-10 | Profile: قائمة + retry + repairExploreCatalog |
+| **UX.5** — banner أوفلاين | **مكتمل** | وكيل إغلاق فجوات | 2026-07-10 | training + Program Detail؛ سلسلة `training_offline_banner` |
+| **UX.6** — حالة رفع + failed Home | **مكتمل** | وكيل P2.4/P3/UX | 2026-07-10 | تقرير + تنبيه Home |
+| **P2.5** — JsonCacheMaintenance + GC | **مكتمل** | وكيل P2 المتبقي + إغلاق فجوات | 2026-07-10 | TTL/LRU + حماية outbox؛ `cleanupOrphanFrameCaptures` بعد sync ناجح |
+| **P2.9** — قراءة: imageUrl + IO + memo | **مكتمل** | وكيل P2 المتبقي | 2026-07-10 | explore.imageUrl مباشر؛ SWR/SharedExplore على IO؛ memo Home/Explore |
+| **P2.10** — dataRevision + cacheInvalidated | **مكتمل** | وكيل P2 المتبقي | 2026-07-10 | أُزيل شرط innerRoute؛ SharedFlow بعد sync/optimistic؛ locale→load؛ Program/Report Detail تشترك |
+| **P2.11** — محفزات + قفل تدريب | **مكتمل*** | وكيل P2 المتبقي + إغلاق فجوات | 2026-07-10 | WorkManager periodic `BatteryNotLow`؛ باقي: iOS didExpire / prefetch أصوات لغة |
+| **P2.12** — إلغاء ازدواج التخزين | **مكتمل** | وكيل P2 المتبقي | 2026-07-10 | لا كتابة training-config مشتق؛ journal SQL فقط (+ fallback هجرة)؛ syncProgram تحت program.id |
+
+### تفاصيل دفعة P2.5 / P2.9–P2.12 — 2026-07-10
+
+- **ما تغيّر:** `JsonCacheMaintenance` + timestamps query؛ orchestrator GC + `cacheInvalidated`؛ shell freshness؛ TrainingConfigEnsure بلا full؛ connectivity Android موحّد؛ P2.12 catalog/journal/program keys.
+- **اختبارات:** `JsonCacheMaintenanceTest`، `TrainingSessionSyncGateTest`، `SyncCatalogOfflineDerivedConfigTest`، `SessionJournalStoreTest`، `WorkoutSessionCatalogImageLookupTest` — **PASS**؛ compile shell/library/training/reports **OK**.
+- **لا push.**
+
+### تفاصيل دفعة P2.4 / P2.8 / P3 / UX — 2026-07-10
+
+- **محجوب / تجنّب:** Redis لكاش `getGlobalMessageStats` (BullMQ فقط؛ لا عميل Redis جاهز للمسار). ملفات P2.6 الجارية (`TrainingConfigRepository`, `ExerciseMessageLibraryMerger`, `ExerciseConfigModels`, cold-seed test) **لم تُلتزَم**. `MovitSyncOrchestrator` لمس خفيف لـ P3.3/P3.4 فوق WIP P2.6.
+- **اختبارات:** `ParseIsoToEpochMsTest` + `OfflineWriteOptimisticCacheTest` — **PASS** (`testAndroidHostTest`).
+- **لا push.**
+
+### تفاصيل P0.1
+
+- **ما تغيّر:** `schema.prisma` (`avgStability`/`avgAlignmentAccuracy`/`stability`/`alignmentAccuracy` → `Int?`)؛ migration `20260709210000_nullable_stability_alignment_metrics`؛ `workout-executions.types.ts` → `number | null`؛ `progression.service.ts` يتجاهل null في متوسط الاستقرار؛ اختبارات عقد باك + KMP mapper.
+- **قرارات:** guest enqueue الموجود مقبول مؤقتًا (لا إعلان). لا hotfix `?? 0` — migration الصحيح.
+- **اختبارات:** `workout-execution-null-metrics.contract.spec.ts` PASS؛ `WorkoutUploadMapperNullableMetricsTest` PASS (`testAndroidHostTest` + JBR 21).
+- **commits:** `df6a7e04` — `fix(data): accept null stability/alignment metrics (P0.1)`
+
+### تفاصيل P0.2
+
+- **ما تغيّر:** `Outbox.sq` + `migrations/1.sqm` + fixture `1.db`؛ `OutboxEntry.ownerUserId`/`nextAttemptAtEpochMs`؛ `SqlDelightMovitLocalStore` + backfill؛ `MigratingMovitLocalStore.backfillOutboxOwnerFromSession`؛ `MovitPlatformBindings.userId()` + Android/iOS (+ تخزين `user_id` على iOS)؛ enqueue يملأ `ownerUserId`؛ `OutboxSchemaMigrationTest`.
+- **قرارات:** `verifyMigrations` بقي `false` على هذا الجهاز (حظر استخراج native sqlite-jdbc) مع الإبقاء على `1.db`/`1.sqm` لإعادة التفعيل لاحقًا؛ اختبار upgrade عبر `JdbcSqliteDriver` + `Schema.migrate(1→2)`.
+- **اختبارات:** `OutboxSchemaMigrationTest` PASS؛ `OfflineWriteQueueTest` PASS.
+- **commits:** `66a85a1e` — `feat(data): first SQLDelight outbox migration with owner_user_id (P0.2)`
+  - ملاحظة: ضُمّ الحد الأدنى من ملفات تصنيف/telemetry (`SyncFailureClassifier`, `MovitSyncTelemetry`, مفاتيح diag) لأن `OfflineWriteQueue`/`OutboxDispatcher` كانا يعتمدان عليها من WIP P0.3 في نفس الشجرة.
+
+### تفاصيل P0.3
+
+- **الحالة:** مكتمل (وكيل P0.3 — Jul 9, 2026).
+- **الملفات المتغيرة:**
+  - `kmp-app/core/data/.../sync/SyncFailureClassifier.kt` (جديد) — تصنيف `Network` / `Decode` / `Http` / `Unknown`؛ إعادة رمي `CancellationException`.
+  - `kmp-app/core/data/.../sync/MovitSyncTelemetry.kt` (جديد) — آخر دورة sync + عدّادات أخطاء في `sync_manager_prefs`.
+  - `kmp-app/core/data/.../sync/MovitSyncOrchestrator.kt` — لا ابتلاع عام لـ `Throwable`؛ `Offline` للشبكة/5xx مع كاش؛ `Error(kind)` للـ decode/4xx/unknown؛ تسجيل telemetry لكل دورة.
+  - `kmp-app/core/data/.../outbox/OutboxDispatcher.kt` + `OutboxModels.kt` — `RETRYABLE_NETWORK` vs `RETRYABLE_UNEXPECTED` (بدل `RETRYABLE` الواحد).
+  - `kmp-app/core/data/.../outbox/OfflineWriteQueue.kt` — سطر log لكل replay؛ عدّادات `outbox_failed_permanent` / `outbox_retry_exhausted`.
+  - `kmp-app/core/data/.../cache/MovitCacheFreshnessDiagnostics.kt` + `MovitCacheKeys.kt` — حقول `lastSyncCycle` و`errorCounters` في التقرير و`toLogLine()`.
+  - `kmp-app/core/data/.../sync/MovitSyncOrchestratorErrorClassificationTest.kt` (جديد).
+- **الاختبارات ونتيجتها:** `./gradlew :core:data:testAndroidHostTest` — **BUILD SUCCESSFUL** (يشمل الاختبار الجديد + `MovitSyncOrchestratorTest` + `MovitCacheFreshnessDiagnosticsTest` + `OfflineWriteQueueTest`).
+- **commits:** `f8f44b13` — `feat(data): sync telemetry and error classification (P0.3)` (+ `60cb4c4a` إصلاح compile اختبار hydration)
+
+### تفاصيل P0.4
+
+- **قياس حي:** مرفوض — يُعاد على staging بعد `seed` (`alustadh.manager@gmail.com` / `password`).
+- **أكبر فجوة مؤكدة:** `systemMessages` + `plannedWorkoutReports` + `audioManifest` تُعاد في كل sync حتى «دلتا فارغة» — يخالف هدف بوابة P2 (&lt; 30 KB gzip).
+- **مكسب سريع:** تفعيل gzip على الباك أو nginx قبل P2.2.
+- **توثيق:** [`Data-Layer-Execution-Report.md`](Data-Layer-Execution-Report.md) §4
+
+### تفاصيل P1.1
+
+- **الحالة:** مكتمل (وكيل P1.1 — Jul 9, 2026).
+- **ما تغيّر:**
+  - `MovitHttpClientAuth.kt` — `RefreshOutcome` يميّز SessionExpired (401/403/`success=false`) عن TransientFailure (5xx/IO/parse).
+  - `MovitLocalStore` + SQLDelight/InMemory/Migrating — `clearReadCaches` / `clearDurableWrites` (PR-7)؛ استعلامات ملكية outbox + guest retention.
+  - `MovitData.kt` — إزالة `runBlocking`؛ `SupervisorJob+IO` + `sessionExpiredEvents` SharedFlow؛ `onAuthenticatedSession` + بوابة UX.7.
+  - `OfflineWriteQueue` — replay لصفوف المستخدم الحالي فقط؛ الضيف بعد `GuestOutboxAttributionGate.accept`.
+  - `AccountSyncRepository` — يستدعي `onAuthenticatedSession` بعد login/register/google.
+  - `MovitAppShellViewModel` — يستهلك `sessionExpiredEvents` على Main عبر `viewModelScope`.
+  - Android/iOS — `clearUserFiles()` لمجلدات `frame_captures`/`audio_cache` (logout فقط).
+- **قرارات:** نسب الضيف ليس صامتًا — UI يستعلم `pendingGuestOutboxPrompt()` ثم `accept`/`discard`. `AUTH_LIFECYCLE_STORE` يبقى عبر session expiry. Logout ما زال `clearAllUserData` (P1.8 لاحقًا للتحذير).
+- **اختبارات:** `MovitHttpClientAuthTest.refreshServerErrorDoesNotExpireSession`؛ `SessionExpiryPreservesOutboxTest`؛ `SessionExpiryPreservesUnconfirmedReportsTest`؛ `AccountSwitchClearsForeignCacheTest`؛ `GuestUploadAttributedAfterLoginTest`؛ `OfflineWriteQueueTest` + `MovitDataClearAllUserDataTest` — PASS (`testAndroidHostTest`).
+- **commits:** `ad8870b4` — `feat(data): preserve outbox across session expiry (P1.1)`
+
+### تفاصيل P1.2
+
+- **الحالة:** مكتمل (وكيل P1.1+P1.2 إكمال بعد timeout — Jul 10, 2026). **P1.1** كان مكتملًا مسبقًا (`ad8870b4`) ولم يُعدْ لمسه.
+- **ما تغيّر:**
+  - `OfflineWriteQueue` — `Mutex` واحد لـ enqueue+replay؛ استبدال صف فقط إن `FAILED_PERMANENT`؛ `IN_FLIGHT` قبل dispatch؛ `OutboxReplayAcquisition.Wait` (enqueue) vs `TrySkipIfBusy` (connectivity/periodic).
+  - `OutboxConflictPolicy` — شبكة/5xx بلا سقف + backoff عبر `next_attempt_at_epoch_ms`؛ unexpected سقف 50؛ 4xx → permanent؛ يمرَّر outcome الحقيقي لـ `shouldMarkPermanent`.
+  - `OutboxDependencyGate` + `PlannedWorkoutCompleteOutboxPayload.workoutGroupId` — تأجيل complete/report حتى executions نفس المجموعة (أو أقدم للصفوف القديمة null).
+  - تمرير `workoutGroupId` عبر `MobileWriteSyncRepository` / `TrainingSessionWriteCoordinator` / `TrainingSessionWriteHooks` / `TrainingSessionViewModel.finalizePlannedWorkoutDay`.
+  - Connectivity Android/iOS → `TrySkipIfBusy`؛ `updateOutboxStatus(..., nextAttemptAtEpochMs)`.
+  - اعتماد compile على `OutboxSuccessHooks` / `OutboxPendingScan` (من P1.4) بعد SUCCEEDED.
+- **قرارات:** الافتراضي لـ `replayPending()` = `TrySkipIfBusy`. Logout flush (P1.8) يستخدم `Wait` — بقي في working tree غير مُدمَج في هذا الـ commit إن وُجد تداخل.
+- **اختبارات:** `OfflineWriteQueueConcurrencyTest`، `OfflineWriteQueueRetryExhaustionTest`، `OutboxBackoffSchedulingTest`، `OutboxDependencyOrderingTest`، `OfflineWriteQueueTest` — **PASS** (`testAndroidHostTest` + JBR 21).
+- **commits:** `e97ddfb0` — `feat(data): harden outbox mutex, IN_FLIGHT, and retry policy (P1.2)`
+
+### تفاصيل P1.4
+
+- **الحالة:** مكتمل (وكيل Composer — PR#4 / Jul 9, 2026).
+- **ما تغيّر:**
+  - `OutboxSuccessHooks.kt` (جديد) + `OutboxPendingScan.kt` (جديد) — hook بعد `SUCCEEDED` يصفّر `isUserModified` لتخصيصات الأيام؛ مسح pending/in-flight للحماية أثناء hydrate.
+  - `DayCustomizationLocalStore` — `hydrateFromBackend` (suspend): حماية فقط مع outbox pending/in-flight لنفس `(userProgramId, week, day)`؛ غير ذلك مقارنة `customizationsUpdatedAt` vs `lastModifiedAt` (الأحدث يفوز؛ التعادل = server-wins)؛ `markServerAcknowledged` + `formatEpochMsToIsoUtc`.
+  - `MobileWriteSyncRepository` — حذف `applyCustomizationsToEffectivePlanCache` (يغطيه `OfflineWriteOptimisticCache` عند enqueue)؛ canonical exercise id في enqueue upsert/delete.
+  - `OfflineWriteOptimisticCache` — تطبيع canonical id لتفضيلات التمارين.
+  - `OfflineWriteQueue` — استدعاء `OutboxSuccessHooks.apply` بعد `SUCCEEDED` (كان موصولًا جزئيًا من P1.1).
+  - `MovitSyncOrchestrator` — يمرّر `pendingDayKeys` / `pendingPlannedWorkoutIds` إلى hydrate.
+- **اختبارات:** `DayCustomizationConflictResolutionTest`، `ExercisePreferenceOutboxCanonicalIdTest`.
+- **commits:** `0e1743e6` — `feat(data): day customization conflicts and report field merge (P1.4, P1.9)`؛ `18851345` — إصلاح assertions اختبار
+
+### تفاصيل P1.9
+
+- **الحالة:** مكتمل (وكيل Composer — PR#4 / Jul 9, 2026).
+- **ما تغيّر:**
+  - `ReportsSyncRepository.hydrateFromSync` — دمج حقول PR-6: pending/in-flight complete يحمي المحلي؛ السيرفر يفوز في `id`/`completedAt`/المقاييس؛ `report` الغني المحلي يُحفظ إن حمولة السيرفر ملخص/بلا `report`.
+  - `recordPendingPlannedWorkoutCompletion` — `completedAt` بصيغة ISO-8601 UTC (`formatEpochMsToIsoUtc`).
+  - `patchDashboardFromCompletion` — `daysTrained`/`currentStreak` من أيام تقويمية فريدة في `readAllCachedPlannedWorkoutReports()` (compute-then-show).
+- **اختبارات:** `ReportsSyncRepositoryHydrateTest` (+ regression summary لا تمحو التقرير الغني)، `ReportsDashboardPatchTest`.
+- **commits:** `0e1743e6` (مع P1.4)؛ `18851345` — إصلاح assertions
+- **قرارات:** `mergeReportFromServer` / `computeCurrentStreakFromUtcDays` exposed كـ `internal` في companion للاختبار فقط.
+
+### تفاصيل P1.3
+
+- **ما تغيّر:**
+  - Prisma: `PlannedWorkoutReport.idempotencyKey` + `@@unique([userId, idempotencyKey])`؛ `UserProgramOverride.idempotencyKey` + `@@unique([userProgramId, idempotencyKey])`.
+  - Migration: `20260709220000_planned_workout_report_idempotency` (عمود + تنظيف مكررات غير-null + unique index؛ NULL مسموح متعددًا في Postgres).
+  - Dry-run: `backend/prisma/scripts/p1-3-idempotency-dedupe-dry-run.mjs` (`--apply` يصفّر المفاتيح الأقدم).
+  - باك: `start`/`complete` يعيدان نفس الصف بمفتاح مسبوق؛ بلا مفتاح → fallback نفس اليوم التقويمي UTC لنفس `plannedWorkoutId`؛ CAS `updateMany(status=in_progress)` يمنع progression مزدوج؛ `PLAN_COMPLETE` no-op 200 بلا active slot؛ override create يعيد الصف الموجود بنفس المفتاح.
+  - موبايل: `OutboxDispatcher` يمرّر `entry.id` كـ `idempotencyKey` لـ start/complete/report/override/plan-complete؛ DTOs اختيارية.
+- **قرارات:** لا unique طبيعي على `(userId, plannedWorkoutId)` — إعادة إكمال في يوم تقويمي لاحق مسموحة. مفتاح قصير (&lt;8) يُتجاهل.
+- **اختبارات:** `planned-workout-complete.idempotency.spec.ts` — **PASS** (5). `prisma generate` OK.
+- **عوائق:** `prisma migrate deploy` فشل محليًا — `DATABASE_URL` غير مضبوط في `.env` (datasource.url مطلوب). طبّق الـ migration على staging/prod بعد dry-run.
+- **commits:** `cd3fc6c7` — `feat(data): server idempotency via client outbox keys (P1.3)`
+
+### تفاصيل P1.5
+
+- **الحالة:** مكتمل (وكيل P1.5 — Jul 10, 2026). منطق الاستعادة جاهز؛ **لا commit محلي** لأن `TrainingSessionViewModel` تداخل مع حذف RAM batch من P1.7 في نفس الشجرة.
+- **ما تغيّر:**
+  - `TrainingSessionWriteHooks.attach` — إن وُجد journal → `restore` + checkpoint فوري **بلا** `start()`؛ وإلا `start()` كالمعتاد؛ يعيد `completedRepMetrics.size`.
+  - `TrainingSessionViewModel` — hydrate `repCount`/`progressPercent` + `engine.seedCompletedRepCount`؛ orphan prompt (UX.3) عبر `cleanupOrphansAndFindResume`؛ أحداث `ResumePriorSession` / `DiscardPriorSession`.
+  - `SessionJournalStore` — `markCompleted` = `delete` مباشرة (H18)؛ `cleanupOrphansAndFindResume` يحذف >6 ساعات ويعيد أحدث journal لنفس التمرين.
+  - `RepCounter.seedCompletedCount` + `MovitTrainingEngine.seedCompletedRepCount` — بذرة عدّاد الواجهة بعد الاستعادة.
+  - UI: حوار استئناف في `TrainingSessionScreen` + سلاسل `training_session_resume_prior_*`.
+  - `TrainingSessionWriteCoordinator` — `deleteJournal` / `cleanupOrphansAndFindResume` / `listActiveJournals`.
+- **قرارات:** العدة الجارية وقت الـ crash تُفقد (متوقع). حوار الاستئناف يوقف `onExerciseLoaded` حتى اختيار المستخدم. نفس `sessionId` الحالي يُستعاد عبر attach بعد الموافقة (إعادة كتابة journal إن اختلف المعرف).
+- **اختبارات:** `TrainingSessionWriteHooksRestoreTest` (2) **PASS**؛ `SessionJournalOrphanCleanupTest` (4) **PASS** (`testAndroidHostTest`).
+- **commits:** لم يُنشأ — الشجرة غير معزولة (`TrainingSessionViewModel` يخلط P1.5 + حذف `WorkoutExecutionBatchCoordinator` من P1.7).
+
+#### إصلاح بوابة P1 (إعادة وصل بعد فقدان coordinator) — 2026-07-10
+
+- **المشكلة:** أثناء commit P1.2 أُعيد `TrainingSessionWriteCoordinator` إلى HEAD وفُقدت دوال journal (`deleteJournal` / `cleanupOrphansAndFindResume` / `listActiveJournals`) رغم بقائها في `SessionJournalStore` وUI/hooks الجزئية.
+- **ما أُصلح:**
+  - إعادة دوال journal على `TrainingSessionWriteCoordinator`.
+  - `TrainingSessionWriteHooks.attach` — restore بلا `start()` + ctor اختباري (`readJournal`/`checkpointJournal`)؛ يعيد عدد العدات المستعادة.
+  - `TrainingSessionViewModel` — UX.3 + `seedCompletedRepCount` + تعايش مع P1.7 (enqueue فوري، بلا `WorkoutExecutionBatchCoordinator`).
+- **اختبارات (JBR Android Studio):** `SessionJournalOrphanCleanupTest` + `ExploreWorkoutGroupIdOutboxTest` + `TrainingSessionWriteHooksRestoreTest` — **PASS**؛ `:feature:training:compileAndroidMain` **OK**.
+- **commits:** `b7f2cb10` — `fix(training): rewire P1.5 journal restore with P1.7 immediate enqueue`
+
+### تفاصيل P1.7
+
+- **الحالة:** مكتمل (وكيل Composer — Jul 10, 2026).
+- **ما تغيّر:**
+  - `WorkoutFlowCache.ensureWorkoutGroupId()` — يُولَّد عند بدء الـ workout run (`StartWorkout` في `MovitLibraryRoutes`).
+  - `MovitInnerHost.resolveTrainingUploadContext()` — يمرّر `WorkoutUploadContext` لمسارات explore/multi-exercise (`flowItems` + `workoutId`).
+  - `TrainingSessionViewModel` — كل `finalizeCurrentExercise` → `enqueueExecutionUpload` فوري بنفس `workoutGroupId`؛ حُذف `WorkoutExecutionBatchCoordinator` وطابور RAM.
+  - `WorkoutUploadContext.EXPLORE_WORKOUT_CONTEXT` — ثابت السياق نُقل من الـ coordinator المحذوف.
+- **قرارات:** `updateUserStats` مرة لكل تمرين (idempotent على الباك — مقبول per الخطة). برامج planned ما زالت تستخدم `plannedWorkoutId` كـ group id.
+- **اختبارات:** `ExploreWorkoutGroupIdOutboxTest` — 3 executions → 3 صفوف outbox بنفس `workoutGroupId`.
+- **commits:** لم يُنشأ (اختياري).
+
+#### توحيد مع P1.5 في نفس ViewModel — 2026-07-10
+
+- حُذف مسار `exploreBatch` / `flushExploreBatchIfNeeded` نهائيًا من VM؛ `enqueueUpload` دائمًا فوري.
+- لا تعارض مع استعادة journal: attach/restore يحدث عند `StartEngine` بعد موافقة UX.3؛ الرفع يبقى outbox-first.
+
+### ملاحظة بوابة P1 (2026-07-10 — بعد تصفية commits)
+
+| تحقق | النتيجة |
+|---|---|
+| اختبارات وحدة P1.5/P1.7 المركّزة | **PASS** (`SessionJournalOrphanCleanupTest`, `TrainingSessionWriteHooksRestoreTest`, `ExploreWorkoutGroupIdOutboxTest`) |
+| اختبارات مركّزة P0.3/P1.4/P1.6/P1.8/P1.9/P2.1/P2.3 | **PASS** — 27 اختبار (`:core:data:testAndroidHostTest` subset) |
+| تجميع `core:data` + `feature:training` (androidMain) | **OK** (سابقًا JBR) |
+| سيناريو «أسبوع الجيم» اليدوي (القسم 10) | **لم يُنفَّذ** |
+| commits لكل بنود P1 في الشجرة | **مكتمل** — انظر دفعة التصفية أدناه |
+| P2.2 | **مكتمل** محليًا (`0fed24c0`) — بلا push |
+| حكم فتح P2 كبوابة رسمية | **لا** — حتى يُمرَّر السيناريو اليدوي |
+
+### تفاصيل P1.8
+
+- **الحالة:** مكتمل (وكيل Composer — Jul 10, 2026).
+- **ما تغيّر:**
+  - `LogoutOutboxPreparation` + `AccountSyncRepository.prepareLogout()` — flush قصير (3s) عبر `replayPending`؛ `logout`/`deleteAccount` يقبلان `discardPendingOutbox`.
+  - `MovitDataModule` — حقن `OfflineWriteQueue` في `AccountSyncRepository`.
+  - `ProfileRepository` / `SharedProfileRepository` / `MovitProfileViewModel` — UX.4: `ProfilePicker.LogoutPendingOutbox` و`DeleteAccountPendingOutbox` مع حوار placeholder في `MovitProfilePickers`.
+  - سلاسل `profile_logout_pending_*` و`profile_delete_pending_*` في `MovitEnglishStrings`.
+- **قرارات:** لم تُمسّ mutex/IN_FLIGHT (P1.2) ولا ClearScope (P1.1). `prepareLogout` يستدعي `pendingCount`/`replayPending` الموجودين فقط.
+- **اختبارات:** `LogoutFlushesOrWarnsOutboxTest` — warn عند pending بعد flush؛ block بدون discard؛ نجاح مع `discardPendingOutbox=true`.
+- **commits:** `0404971d` — `feat(account): safe logout with outbox flush warning (P1.8)`
+
+### تفاصيل P1.6
+
+- **ما تغيّر:** `SyncMessageContentDto` (جديد) — `en`/`ar` + `audioEn?`/`audioAr?`؛ `SyncMessageTemplateDto.content` يستخدمه بدل `LocalizedNameDto`؛ `ExerciseMessageLibraryMerger.toLocalizedText()` ينسخ الصوت إلى `LocalizedText`.
+- **قرارات:** لم يُوسَّع `LocalizedNameDto` العام؛ `SyncSystemMessageDto` بقي على `LocalizedNameDto` (خارج نطاق C-N1).
+- **اختبارات:** `ExerciseMessageLibraryMergerAudioTest`؛ `DtoPayloadContractTest.syncMessageLibraryFixture_parsesAudioUrlsInContent` — ضمن subset **PASS**.
+- **commits:** `c1f86bd0` — `fix(data): preserve message audio URLs in sync merge (P1.6)`
+
+### تفاصيل P2.1
+
+- **الحالة:** مكتمل (وكيل Composer — Jul 10, 2026).
+- **ما تغيّر:**
+  - **باك:** `GET /api/mobile/user-programs` في `mobile-user-programs.controller.ts` — يعيد `{ success, userPrograms }` مع `updatedAfter` اختياري؛ `programService.listUserProgramsForMobile` بنفس شكل `UserProgramExport` في sync.
+  - **KMP:** `UserProgramsApiResponse` + `MovitMobileApi.fetchUserPrograms`؛ `fetchSyncUserPrograms` يفوّض إليه (لم يعد يستدعي `/mobile/sync`).
+  - `PlanSyncRepository` — enroll/refresh يستخدمان endpoint الخفيف؛ دلتا عبر `updatedAfter` من كاش enrollments عند refresh الجزئي.
+- **قرارات:** `userPrograms` تبقى داخل `/mobile/sync` للتوافق؛ لم يُمسّ `mobile-sync.service.ts`.
+- **اختبارات:** `mobile-user-programs-list.contract.spec.ts`؛ `PlanSyncRepositoryTest`؛ `DtoPayloadContractTest.userProgramsEndpointResponse_parsesEnrollmentList`.
+- **commits:** `17d6461f` (باك) + `ace5ddb5` (KMP)
+
+### تفاصيل P2.2
+
+- **الحالة:** مكتمل (وكيل Composer — Jul 10, 2026).
+- **ما تغيّر (باك):**
+  - `computeSafeSyncWatermark` — `timestamp = max(now, max entity.updatedAt)` (B-N2).
+  - `includeReports=summary|full|none` على `/mobile/sync` (غياب البراميتر = `full` للتوافق).
+  - دلتا: فلتر `updatedAt` لـ `userPrograms` + `plannedWorkoutReports`؛ `systemMessages`/`audioManifest` فقط عند full أو تغيّر fingerprint؛ `getPublishedForMobile` ids أولًا ثم الشجرة (H26).
+- **ما تغيّر (KMP):** `fetchSync(..., includeReports=summary)`؛ full بـ `systemMessages=[]` يمسح الكاش (B-N1)؛ دمج التقارير الغنية (P1.9) يبقى.
+- **اختبارات:** `mobile-sync.watermark.spec.ts`؛ `mobile-sync.delta-payload.contract.spec.ts`؛ `get-published-for-mobile-delta.contract.spec.ts`؛ `SyncPayloadBudgetContractTest` + fixture؛ `SystemMessageCacheTest`؛ hydrate B-N1 — **PASS**. P2.1 `user-programs` لم يُكسر.
+- **قياس حي:** تعذّر بدون `DATABASE_URL` / `.env` — تقدير التحسين في `Data-Layer-Execution-Report.md` §4.
+- **commits:** `0fed24c0` — `feat(sync): delta user payload with safe watermark (P2.2)` (محلي، بلا push).
+
+### تفاصيل P2.3
+
+- **الحالة:** مكتمل (وكيل Composer — Jul 10, 2026).
+- **ما تغيّر:**
+  - `SharedExploreRepository.refreshExploreContent` → `explore.sync()` (دلتا) بدل `syncFull`.
+  - `ProgramFlowSyncRepository.syncExplore` → `explore.sync()`؛ أُضيف `repairExploreCatalog()` → `syncFull` لزر الإصلاح/drift لاحقًا (UX.2).
+  - `MovitSyncOrchestrator` — بعد `exploreSync.applyFromSync` يكتب `syncResponse.timestamp` في `EXPLORE_LAST_SYNC` عبر `ExploreSyncRepository.writeExploreLastSync`.
+- **قرارات:** `syncFull` محفوظ صراحة لمسار الإصلاح فقط؛ لم تُمسّ Outbox/auth/TrainingSessionWriteCoordinator.
+- **اختبارات:** `SharedExploreRepositoryRefreshPolicyTest`؛ `ExploreSyncWatermarkParityTest`؛ تحديث `MovitSyncOrchestratorTest` (P2.1 يقلّل استدعاءات sync).
+- **commits:** `3cd56e35` — `feat(data): explore delta refresh with watermark parity (P2.3)`
+
+### تفاصيل P2.6
+
+- **الحالة:** مكتمل (وكيل P2 — Jul 10, 2026).
+- **ما تغيّر:**
+  - `resolvePoseVariantMessages` يستبدل قوائم feedback من assignments (لا `add` تراكمي).
+  - `ExerciseConfigRecord.messageLibraryFingerprint` + `ExerciseMessageLibraryMerger.fingerprint` (محتوى النص/الصوت)؛ `needsResolve` يعيد الدمج عند اختلاف البصمة.
+  - `TrainingConfigRepository` — lazy rewrite عند القراءة؛ LRU يُبطَل عند تغيّر المكتبة؛ `applySyncMessageLibrary` يحدّث السجلات ذات البصمة القديمة فقط؛ sync يمرّر المكتبة الكاملة بعد merge.
+- **قرارات:** بصمة إحصائيات sync-meta بقيت `id:code` (توافق drift مع السيرفر)؛ بصمة المحتوى للسجل فقط. الشق الخادمي `touchExercisesForMessageIds` كان موجودًا مسبقًا.
+- **اختبارات:** `ExerciseMessageLibraryMergerIdempotencyTest`؛ cold-install في `ColdOfflineBundleSeederTest` — **PASS**.
+- **commits:** `a3b9f712` — `fix(data): replace message merge and stamp library fingerprint (P2.6)`
+
+### تفاصيل P2.7
+
+- **الحالة:** مكتمل (وكيل P2 — Jul 10, 2026).
+- **ما تغيّر:**
+  - `Mutex.tryLock` حول `beginSync/endSync`؛ `awaitSyncIdle` لـ TrainingConfigEnsure عند Skipped.
+  - `MovitLocalStore.transaction {}` → SQLDelight `transactionWithResult`؛ full/delta catalog apply داخلها (hydrates معلّقة خارجها).
+  - `updateLocalEntityCounts` من `catalogOffline` indexes لا explore blob.
+- **اختبارات:** `MovitSyncOrchestratorConcurrencyTest`؛ `MovitSyncOrchestratorDriftLoopTest` — **PASS**.
+- **commits:** `2a970570` — `fix(data): atomic sync apply with mutex and catalog drift counts (P2.7)`
+
+### تفاصيل P2.5
+
+- **الحالة:** مكتمل (وكيل P2 — Jul 10, 2026).
+- **ما تغيّر:**
+  - `JsonCacheMaintenance` — سياسات: post_training (60 يوم + حماية outbox غير-SUCCEEDED)، planned reports (90/6 أشهر)، metrics LRU 50، effective plans (أسبوع ±1 أو TTL 21).
+  - `listJsonCacheEntriesWithTimestamps` + استعلام SQLDelight؛ يُستدعى بعد sync ناجح.
+- **اختبارات:** `JsonCacheMaintenanceTest` (حماية pending / غياب SUCCEEDED / LRU / TTL).
+- **commits:** `01053911` — `feat(data): JsonCacheMaintenance GC after successful sync (P2.5)`
+
+### تفاصيل P2.9 + P2.10
+
+- **الحالة:** مكتمل (وكيل P2 — Jul 10, 2026).
+- **ما تغيّر (P2.9):** `buildExerciseCatalog` يستخدم `exercise.imageUrl`؛ memoize Home/Explore؛ `withContext(IO)` في SWR وExplore map.
+- **ما تغيّر (P2.10):** أُزيل شرط `currentInnerRoute != null`؛ debounce 300ms؛ `localeRevision` يعيد load؛ `cacheInvalidated` SharedFlow من sync + optimistic عبر `MovitCacheInvalidation.emit`.
+- **اختبارات:** `WorkoutSessionCatalogImageLookupTest`.
+- **commits:** `63853af4` — `feat(data): read-path performance and cacheInvalidated freshness (P2.9, P2.10)`
+
+### تفاصيل P2.11
+
+- **الحالة:** مكتمل (وكيل P2 — Jul 10, 2026).
+- **ما تغيّر:** مسار connectivity Android واحد (بلا `requestNow`)؛ bootstrap قبل sync؛ `TrainingSessionSyncGate` يمنع full؛ TrainingConfigEnsure بلا auto-full؛ Pro → `syncDashboard`؛ محفزات موثّقة في `Data-Layer-Execution-Report.md` §1.3.
+- **اختبارات:** `TrainingSessionSyncGateTest`.
+- **commits:** `24240bf1` — `feat(data): unify sync triggers and gate full refresh in training (P2.11)`
+
+### تفاصيل P2.12
+
+- **الحالة:** مكتمل (وكيل P2 — Jul 10, 2026).
+- **ما تغيّر:** إيقاف كتابة training-config المشتق في `applyFromSync` (اشتقاق عند القراءة + تنظيف كسول)؛ journal يكتب SQL فقط مع fallback JSON لمرة؛ `syncProgram` يطبّع إلى `dto.id`.
+- **اختبارات:** `SyncCatalogOfflineDerivedConfigTest`.
+- **commits:** `d7b6ebaa` — `fix(data): stop dual training-config and journal writes (P2.12)`
+
+### دفعة تصفية working tree — 2026-07-10
+
+**وكيل:** تصفية وتوثيق طبقة البيانات. **لا push.**
+
+| commit | الرسالة | بنود |
+|---|---|---|
+| `c1f86bd0` | `fix(data): preserve message audio URLs in sync merge (P1.6)` | P1.6 |
+| `0e1743e6` | `feat(data): day customization conflicts and report field merge (P1.4, P1.9)` | P1.4 + P1.9 |
+| `3cd56e35` | `feat(data): explore delta refresh with watermark parity (P2.3)` | P2.3 |
+| `f8f44b13` | `feat(data): sync telemetry and error classification (P0.3)` | P0.3 |
+| `0404971d` | `feat(account): safe logout with outbox flush warning (P1.8)` | P1.8 + UX.4 |
+| `17d6461f` | `feat(backend): lightweight mobile user-programs list endpoint (P2.1)` | P2.1 باك |
+| `ace5ddb5` | `feat(data): route enrollment refresh through user-programs API (P2.1)` | P2.1 KMP |
+| `60cb4c4a` | `fix(data): add missing assertTrue import in hydration test` | compile |
+| `18851345` | `test(data): fix P1.4/P1.9 conflict regression assertions` | اختبارات |
+| `0fed24c0` | `feat(sync): delta user payload with safe watermark (P2.2)` | P2.2 |
+| `5d0d6e72` | `docs: mark P2.2 complete in remediation tracker` | P2.2 توثيق |
+| `a3b9f712` | `fix(data): replace message merge and stamp library fingerprint (P2.6)` | P2.6 |
+| `2a970570` | `fix(data): atomic sync apply with mutex and catalog drift counts (P2.7)` | P2.7 |
+| `01053911` | `feat(data): JsonCacheMaintenance GC after successful sync (P2.5)` | P2.5 |
+| `63853af4` | `feat(data): read-path performance and cacheInvalidated freshness (P2.9, P2.10)` | P2.9 + P2.10 |
+| `24240bf1` | `feat(data): unify sync triggers and gate full refresh in training (P2.11)` | P2.11 |
+| `d7b6ebaa` | `fix(data): stop dual training-config and journal writes (P2.12)` | P2.12 |
+
+**متروك غير مُلتزَم:** ملفات مراجعة أخرى (`Camera-Engine-Review-Brief.md`, `Main-Screens-Flow-Audit.md`). لم يُمسّ `mobile-sync.service.ts` (P2.2 وكيل آخر).
+
+### إغلاق الفجوات الجزئية — 2026-07-10
+
+- **UX.5:** `ProgramDetailUiState.isOffline` + banner في `ProgramDetailScreen` (نفس نمط training).
+- **P2.11 (جزئي):** `BackgroundSyncScheduler` Android — `setRequiresBatteryNotLow(true)` على periodic فقط.
+- **P2.5 (orphans):** `MovitPlatformBindings.cleanupOrphanFrameCaptures` (Android/iOS)؛ يُستدعى بعد `JsonCacheMaintenance` مع حماية outbox + post_training cache + journals نشطة.
+- **P0.4:** baseline مدمج في `Data-Layer-Execution-Report.md` §4.
+- **بوابة P1:** مكتمل برمجيًا؛ سيناريو أسبوع الجيم اليدوي يبقى تشغيليًا.
+
+### الخلاصة الختامية
+
+**الخطة منفّذة برمجيًا؛ المتبقي التشغيلي:** قياس curl حي، `migrate deploy`، سيناريو الجيم اليدوي، Redis اختياري.

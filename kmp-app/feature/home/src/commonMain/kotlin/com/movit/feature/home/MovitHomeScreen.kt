@@ -124,6 +124,28 @@ fun MovitHomeScreen(
                         )
                     }
 
+                    if (state.failedUploadCount > 0) {
+                        MovitInsightCard(
+                            title = movitText("home_upload_failed_alert", state.failedUploadCount.toString()),
+                            message = movitText("profile_sync_retry"),
+                            icon = Icons.Default.Warning,
+                            variant = MovitInsightVariant.Warning,
+                            modifier = Modifier.clickable {
+                                onEvent(MovitHomeEvent.RetryFailedUploadsClicked)
+                            },
+                        )
+                    } else if (state.pendingUploadCount > 0) {
+                        MovitTag(
+                            text = movitText("home_pending_uploads", state.pendingUploadCount.toString()),
+                            variant = MovitTagVariant.Gold,
+                        )
+                    } else if (state.showSyncedConfirmation) {
+                        MovitTag(
+                            text = movitText("home_pending_synced"),
+                            variant = MovitTagVariant.Lime,
+                        )
+                    }
+
                     HomeHeroSummary(
                         greetingEyebrow = state.greetingEyebrow,
                         greetingTitle = state.greetingTitle,

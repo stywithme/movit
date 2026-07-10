@@ -39,8 +39,8 @@ class PlanSyncRepositoryTest {
                         content = """{"success":true,"data":{"id":"plan-1","userId":"u1","status":"active","programs":[],"createdAt":"","updatedAt":""}}""",
                         headers = jsonHeaders(),
                     )
-                    request.url.encodedPath.endsWith("/sync") -> respond(
-                        content = """{"success":true,"data":{"userPrograms":[{"id":"up-enrolled","programId":"prog-1","isActive":true}]}}""",
+                    request.url.encodedPath.endsWith("/user-programs") -> respond(
+                        content = """{"success":true,"userPrograms":[{"id":"up-enrolled","programId":"prog-1","isActive":true}]}""",
                         headers = jsonHeaders(),
                     )
                     request.url.encodedPath.endsWith("/home") -> respond(
@@ -59,7 +59,7 @@ class PlanSyncRepositoryTest {
             assertTrue(result is AppResult.Success)
             assertEquals("up-enrolled", result.value)
             assertEquals("up-enrolled", platform.activeUserProgramId())
-            assertEquals(listOf("enroll", "sync", "home"), requestOrder)
+            assertEquals(listOf("enroll", "user-programs", "home"), requestOrder)
         }
     }
 
@@ -68,9 +68,10 @@ class PlanSyncRepositoryTest {
         runBlocking {
             val platform = FakeMovitPlatformBindings(userProgramId = null)
             val engine = MockEngine { request ->
-                assertEquals("true", request.url.parameters["forceRefresh"])
+                assertTrue(request.url.encodedPath.endsWith("/user-programs"))
+                assertEquals(null, request.url.parameters["updatedAfter"])
                 respond(
-                    content = """{"success":true,"data":{"userPrograms":[{"id":"up-active","programId":"prog-9","isActive":true}]}}""",
+                    content = """{"success":true,"userPrograms":[{"id":"up-active","programId":"prog-9","isActive":true}]}""",
                     headers = jsonHeaders(),
                 )
             }
@@ -91,17 +92,16 @@ class PlanSyncRepositoryTest {
         runBlocking {
             val platform = FakeMovitPlatformBindings(userProgramId = null)
             val engine = MockEngine { request ->
-                assertEquals("true", request.url.parameters["forceRefresh"])
+                assertTrue(request.url.encodedPath.endsWith("/user-programs"))
+                assertEquals(null, request.url.parameters["updatedAfter"])
                 respond(
                     content = """
                         {
                           "success": true,
-                          "data": {
-                            "userPrograms": [
+                          "userPrograms": [
                               {"id":"up-other","programId":"prog-other","isActive":true},
                               {"id":"up-target","programId":"prog-target","isActive":true}
                             ]
-                          }
                         }
                     """.trimIndent(),
                     headers = jsonHeaders(),

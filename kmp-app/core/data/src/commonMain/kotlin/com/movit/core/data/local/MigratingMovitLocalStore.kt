@@ -28,6 +28,12 @@ class MigratingMovitLocalStore(
         sqlStore.writeJsonCache(store, key, value)
     }
 
+    override fun listJsonCacheEntries(store: String): Map<String, String> =
+        sqlStore.listJsonCacheEntries(store)
+
+    override fun listJsonCacheEntriesWithTimestamps(store: String): List<JsonCacheEntryMeta> =
+        sqlStore.listJsonCacheEntriesWithTimestamps(store)
+
     override fun removeJsonCache(store: String, key: String) {
         sqlStore.removeJsonCache(store, key)
         platform().removeCache(store, key)
@@ -47,10 +53,16 @@ class MigratingMovitLocalStore(
 
     override suspend fun listPendingOutbox() = sqlStore.listPendingOutbox()
 
+    override suspend fun listAllOutbox() = sqlStore.listAllOutbox()
+
     override suspend fun recoverInFlightOutbox() = sqlStore.recoverInFlightOutbox()
 
-    override suspend fun updateOutboxStatus(id: String, status: OutboxStatus, attempts: Int) =
-        sqlStore.updateOutboxStatus(id, status, attempts)
+    override suspend fun updateOutboxStatus(
+        id: String,
+        status: OutboxStatus,
+        attempts: Int,
+        nextAttemptAtEpochMs: Long?,
+    ) = sqlStore.updateOutboxStatus(id, status, attempts, nextAttemptAtEpochMs)
 
     override suspend fun deleteOutbox(id: String) = sqlStore.deleteOutbox(id)
 
@@ -59,6 +71,23 @@ class MigratingMovitLocalStore(
 
     override suspend fun countOutboxByStatus(status: OutboxStatus): Long =
         sqlStore.countOutboxByStatus(status)
+
+    override suspend fun countGuestOutbox(): Long = sqlStore.countGuestOutbox()
+
+    override suspend fun deleteOutboxOwnedByOtherUsers(keepUserId: String) =
+        sqlStore.deleteOutboxOwnedByOtherUsers(keepUserId)
+
+    override suspend fun deleteAllGuestOutbox() = sqlStore.deleteAllGuestOutbox()
+
+    override suspend fun deleteGuestOutboxOlderThan(cutoffEpochMs: Long): Int =
+        sqlStore.deleteGuestOutboxOlderThan(cutoffEpochMs)
+
+    override suspend fun attributeGuestOutboxToUser(userId: String) =
+        sqlStore.attributeGuestOutboxToUser(userId)
+
+    override suspend fun clearReadCaches() = sqlStore.clearReadCaches()
+
+    override suspend fun clearDurableWrites() = sqlStore.clearDurableWrites()
 
     override suspend fun clearAllUserData() = sqlStore.clearAllUserData()
 
@@ -78,6 +107,8 @@ class MigratingMovitLocalStore(
 
     override fun deleteSessionJournal(sessionId: String) = sqlStore.deleteSessionJournal(sessionId)
 
+    override fun <T> transaction(block: () -> T): T = sqlStore.transaction(block)
+
     fun migrateKnownCachesFromPlatform() {
         val bindings = platform()
         KNOWN_STATIC_KEYS.forEach { (store, key) ->
@@ -95,7 +126,14 @@ class MigratingMovitLocalStore(
         }
         migrateActiveUserProgramId(bindings)
         CanonicalCacheKeyMigrator(sqlStore, platform).migrateIfNeeded()
+        backfillOutboxOwnerFromSession(bindings)
         markLegacyCutoverComplete()
+    }
+
+    private fun backfillOutboxOwnerFromSession(bindings: MovitPlatformBindings) {
+        val ownerUserId = bindings.userId()?.takeIf { it.isNotBlank() } ?: return
+        val sqlDelight = sqlStore as? SqlDelightMovitLocalStore ?: return
+        sqlDelight.backfillOutboxOwnerUserId(ownerUserId)
     }
 
     private fun markLegacyCutoverComplete() {

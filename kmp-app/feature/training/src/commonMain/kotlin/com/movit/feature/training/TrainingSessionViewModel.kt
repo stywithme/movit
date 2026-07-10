@@ -37,6 +37,7 @@ import com.movit.core.training.feedback.RepIncompleteFeedback
 import com.movit.core.training.feedback.FeedbackSeverity
 import com.movit.core.training.feedback.FeedbackSignal
 import com.movit.core.training.feedback.SetupFeedbackSignals
+import com.movit.core.training.journal.SessionJournalSnapshot
 import com.movit.core.training.journal.WorkoutUpload
 import com.movit.core.training.model.JointAngles
 import com.movit.core.training.model.PoseFrame
@@ -123,14 +124,9 @@ class TrainingSessionViewModel(
   private var lastFrameTimestampMs: Long = 0L
   private var writeHooks = createWriteHooks()
   private val writeDiagnostics = TrainingSessionWriteDiagnostics()
-  private val exploreBatch = uploadContext?.let {
-    WorkoutExecutionBatchCoordinator(
-      writes = writeCoordinator,
-      context = it.context,
-      onWriteOutcome = ::recordWriteOutcome,
-    )
-  }
   private var phasePauseSnapshot: PhasePauseSnapshot? = null
+  /** UX.3 / P1.5: orphan journal awaiting resume or discard. */
+  private var pendingResumeJournal: SessionJournalSnapshot? = null
 
   private val flowCoordinator = flowItems?.let { TrainingSessionFlowCoordinator(it) }
   private var restTimerJob: Job? = null
@@ -172,6 +168,7 @@ class TrainingSessionViewModel(
       exerciseSlug = activeSlug,
       exerciseName = resolveExerciseName(),
       targetReps = activeTargetReps,
+      isOffline = MovitData.isInstalled && !MovitData.requirePlatform().isNetworkAvailable(),
       configUnavailable = exerciseConfig == null,
       workoutFlowEnabled = flowCoordinator != null,
     ),
@@ -208,6 +205,8 @@ class TrainingSessionViewModel(
           _effects.tryEmit(TrainingSessionEffect.ViewReport(reportId))
         }
       }
+      TrainingSessionEvent.ResumePriorSession -> resumePriorSession()
+      TrainingSessionEvent.DiscardPriorSession -> discardPriorSession()
     }
   }
 
@@ -229,7 +228,7 @@ class TrainingSessionViewModel(
     flowCoordinator?.start()
     syncFlowUi()
     if (flowCoordinator == null) {
-      supervisor.onExerciseLoaded()
+      maybePromptOrLoadExercise()
     }
     if (plannedWorkout != null) {
       viewModelScope.launch { startPlannedWorkoutIfNeeded() }
@@ -238,7 +237,7 @@ class TrainingSessionViewModel(
 
   fun startWorkoutExercise() {
     flowCoordinator?.markExercising()
-    supervisor.onExerciseLoaded()
+    maybePromptOrLoadExercise()
     syncFlowUi()
   }
 
@@ -766,7 +765,18 @@ class TrainingSessionViewModel(
         lastTrainingTimestampMs = 0L
         engine?.start()
         engine?.let { eng ->
-          exerciseConfig?.let { config -> writeHooks.attach(eng, config) }
+          exerciseConfig?.let { config ->
+            val restoredReps = writeHooks.attach(eng, config)
+            if (restoredReps > 0) {
+              eng.seedCompletedRepCount(restoredReps)
+              _state.update {
+                it.copy(
+                  repCount = restoredReps,
+                  progressPercent = progressPercent(restoredReps, activeTargetReps),
+                )
+              }
+            }
+          }
         }
       }
       is SupervisorAction.PauseEngine -> {
@@ -898,7 +908,6 @@ class TrainingSessionViewModel(
         flowCoordinator.onExerciseCompleted()
         when (flowCoordinator.state.value) {
           TrainingSessionFlowCoordinator.State.WorkoutComplete -> {
-            flushExploreBatchIfNeeded()
             finalizePlannedWorkoutDay()
             _state.update {
               it.copy(
@@ -966,6 +975,7 @@ class TrainingSessionViewModel(
       programId = planned.programId,
       weekNumber = planned.weekNumber,
       dayNumber = planned.dayNumber,
+      workoutGroupId = uploadContext?.workoutGroupId,
       onOutcome = { recordWriteOutcome(it, TrainingSessionWriteDiagnostics.WriteKind.PLANNED_COMPLETE) },
     )
     TrainingSessionReportCache.putSession(planned.plannedWorkoutId, report)
@@ -1042,9 +1052,7 @@ class TrainingSessionViewModel(
       sessionExerciseKey = "$sessionId:$activeSlug",
       setNumber = _state.value.currentSetNumber,
     )
-    if (exploreBatch == null) {
-      markReportAvailable(upload.id)
-    }
+    markReportAvailable(upload.id)
   }
 
   private suspend fun enqueueUpload(upload: WorkoutUpload, summary: ExerciseWorkoutSummary) {
@@ -1061,12 +1069,7 @@ class TrainingSessionViewModel(
         repsTarget = activeTargetReps,
       )
     }
-    val legacyJson = postReport?.let { writeCoordinator.encodePostTrainingReport(it) }
-    val batch = exploreBatch
-    if (batch != null) {
-      batch.record(upload, legacyJson)
-      return
-    }
+    // P1.7: enqueue immediately (including Explore) — no RAM batch.
     val result = writeHooks.enqueueExecutionUpload(
       upload = upload,
       context = uploadContext?.context,
@@ -1078,7 +1081,11 @@ class TrainingSessionViewModel(
     when (result) {
       is com.movit.shared.AppResult.Success -> {
         val reportId = result.value
-        TrainingSessionReportCache.rekeyPostTraining(upload.id, reportId)
+        // P3.12: rekeyPostTraining is a no-op when operationId == upload.id (always true for
+        // outbox enqueue). Kept only if a future path returns a different server id.
+        if (reportId != upload.id) {
+          TrainingSessionReportCache.rekeyPostTraining(upload.id, reportId)
+        }
         postReport?.let {
           TrainingSessionReportCache.put(
             reportId,
@@ -1096,20 +1103,6 @@ class TrainingSessionViewModel(
   private fun markReportAvailable(reportId: String) {
     TrainingPipelineDiagnostics.logMilestone("report ready id=$reportId")
     _state.update { it.copy(reportDetailId = reportId) }
-  }
-
-  private suspend fun flushExploreBatchIfNeeded() {
-    val batch = exploreBatch ?: return
-    val groupId = uploadContext?.workoutGroupId ?: return
-    batch.flushAwait(
-      workoutGroupId = groupId,
-      workoutTemplateId = uploadContext.workoutTemplateId,
-      onEachEnqueued = { uploadId, reportId ->
-        TrainingSessionReportCache.rekeyPostTraining(uploadId, reportId)
-        markReportAvailable(reportId)
-      },
-      onComplete = { _, _ -> applyWriteStatus() },
-    )
   }
 
   private fun reloadForNextFlowItem() {
@@ -1417,6 +1410,48 @@ class TrainingSessionViewModel(
     wireEngineCallbacks()
   }
 
+  /** P1.5 / UX.3: orphan cleanup + optional resume dialog before setup. */
+  private fun maybePromptOrLoadExercise() {
+    if (_state.value.resumePrompt != null) return
+    val orphan = writeCoordinator.cleanupOrphansAndFindResume(activeSlug)
+    if (orphan != null && orphan.completedRepMetrics.isNotEmpty()) {
+      pendingResumeJournal = orphan
+      _state.update {
+        it.copy(
+          resumePrompt = TrainingSessionResumePrompt(
+            completedReps = orphan.completedRepMetrics.size,
+            exerciseSlug = activeSlug,
+          ),
+        )
+      }
+      return
+    }
+    pendingResumeJournal = null
+    supervisor.onExerciseLoaded()
+  }
+
+  private fun resumePriorSession() {
+    val orphan = pendingResumeJournal ?: return
+    val hooksSessionId = "$sessionId:$activeSlug"
+    if (orphan.sessionId != hooksSessionId) {
+      writeCoordinator.checkpointJournal(orphan.copy(sessionId = hooksSessionId))
+      writeCoordinator.deleteJournal(orphan.sessionId)
+    }
+    clearResumePrompt()
+    supervisor.onExerciseLoaded()
+  }
+
+  private fun discardPriorSession() {
+    pendingResumeJournal?.sessionId?.let(writeCoordinator::deleteJournal)
+    clearResumePrompt()
+    supervisor.onExerciseLoaded()
+  }
+
+  private fun clearResumePrompt() {
+    pendingResumeJournal = null
+    _state.update { it.copy(resumePrompt = null) }
+  }
+
   private fun createWriteHooks(): TrainingSessionWriteHooks = TrainingSessionWriteHooks(
     sessionId = "$sessionId:$activeSlug",
     exerciseSlug = activeSlug,
@@ -1549,8 +1584,12 @@ class TrainingSessionViewModel(
 data class WorkoutUploadContext(
   val workoutGroupId: String,
   val workoutTemplateId: String? = null,
-  val context: String = WorkoutExecutionBatchCoordinator.EXPLORE_WORKOUT_CONTEXT,
-)
+  val context: String = EXPLORE_WORKOUT_CONTEXT,
+) {
+  companion object {
+    const val EXPLORE_WORKOUT_CONTEXT = "explore_workout"
+  }
+}
 
 enum class WorkoutFlowPhase {
   NONE,
@@ -1569,6 +1608,8 @@ data class TrainingSessionUiState(
   val exerciseSlug: String,
   val exerciseName: String,
   val targetReps: Int,
+  /** UX.5 — thin offline banner when the device has no network. */
+  val isOffline: Boolean = false,
   val configUnavailable: Boolean = false,
   val workoutFlowEnabled: Boolean = false,
   val workoutFlowPhase: WorkoutFlowPhase = WorkoutFlowPhase.NONE,
@@ -1623,6 +1664,13 @@ data class TrainingSessionUiState(
   val workoutFlowProgressPercent: Int = 0,
   val writeStatus: TrainingSessionWriteStatus = TrainingSessionWriteStatus(),
   val uploadNotice: String? = null,
+  /** UX.3: non-null while the resume-or-discard dialog is showing. */
+  val resumePrompt: TrainingSessionResumePrompt? = null,
+)
+
+data class TrainingSessionResumePrompt(
+  val completedReps: Int,
+  val exerciseSlug: String,
 )
 
 /** Camera is only needed during live setup/training — not after completion or rest. */

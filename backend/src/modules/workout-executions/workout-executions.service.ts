@@ -917,11 +917,77 @@ function normalizePlannedWorkoutReportPayload(
     rpe,
   };
 }
+
+/** Normalize optional client outbox operationId (P1.3). */
+function normalizeIdempotencyKey(raw: unknown): string | undefined {
+  if (typeof raw !== 'string') return undefined;
+  const key = raw.trim();
+  if (key.length < 8 || key.length > 128) return undefined;
+  return key;
+}
+
+function isPrismaUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: string }).code === 'P2002'
+  );
+}
+
+/** UTC calendar-day window for legacy same-day fallback (P1.3). */
+function utcCalendarDayWindow(at: Date = new Date()): { start: Date; end: Date } {
+  const start = new Date(Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate()));
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 1);
+  return { start, end };
+}
+
+async function findReportByIdempotencyKey(userId: string, idempotencyKey: string) {
+  return prisma.plannedWorkoutReport.findUnique({
+    where: {
+      userId_idempotencyKey: { userId, idempotencyKey },
+    },
+  });
+}
+
+async function findSameDayReport(
+  userId: string,
+  plannedWorkoutId: string,
+  status?: 'in_progress' | 'completed',
+) {
+  const { start, end } = utcCalendarDayWindow();
+  return prisma.plannedWorkoutReport.findFirst({
+    where: {
+      userId,
+      plannedWorkoutId,
+      ...(status ? { status } : {}),
+      OR: [
+        { completedAt: { gte: start, lt: end } },
+        { completedAt: null, startedAt: { gte: start, lt: end } },
+        { completedAt: null, createdAt: { gte: start, lt: end } },
+      ],
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
 export async function startPlannedWorkoutReport(
   userId: string,
   plannedWorkoutId: string,
   payload: PlannedWorkoutStartPayload
 ) {
+  const idempotencyKey = normalizeIdempotencyKey(payload.idempotencyKey);
+
+  if (idempotencyKey) {
+    const byKey = await findReportByIdempotencyKey(userId, idempotencyKey);
+    if (byKey) return byKey;
+  } else {
+    // Legacy clients: reuse in_progress for same planned workout on the same UTC day.
+    const sameDayInProgress = await findSameDayReport(userId, plannedWorkoutId, 'in_progress');
+    if (sameDayInProgress) return sameDayInProgress;
+  }
+
   const plannedWorkout = await prisma.plannedWorkout.findFirst({
     where: { id: plannedWorkoutId },
     include: { day: { include: { week: true } } },
@@ -938,17 +1004,26 @@ export async function startPlannedWorkoutReport(
     throw new Error('Invalid week/day for planned workout');
   }
 
-  return prisma.plannedWorkoutReport.create({
-    data: {
-      userId,
-      programId: plannedWorkout.day.week.programId,
-      plannedWorkoutId: plannedWorkout.id,
-      weekNumber,
-      dayNumber,
-      startedAt: payload.startedAt ? new Date(payload.startedAt) : new Date(),
-      status: 'in_progress',
-    },
-  });
+  try {
+    return await prisma.plannedWorkoutReport.create({
+      data: {
+        userId,
+        programId: plannedWorkout.day.week.programId,
+        plannedWorkoutId: plannedWorkout.id,
+        weekNumber,
+        dayNumber,
+        startedAt: payload.startedAt ? new Date(payload.startedAt) : new Date(),
+        status: 'in_progress',
+        idempotencyKey,
+      },
+    });
+  } catch (error) {
+    if (idempotencyKey && isPrismaUniqueViolation(error)) {
+      const existing = await findReportByIdempotencyKey(userId, idempotencyKey);
+      if (existing) return existing;
+    }
+    throw error;
+  }
 }
 
 export async function completePlannedWorkoutReport(
@@ -956,6 +1031,25 @@ export async function completePlannedWorkoutReport(
   plannedWorkoutId: string,
   payload: PlannedWorkoutCompletePayload
 ) {
+  const idempotencyKey = normalizeIdempotencyKey(payload.idempotencyKey);
+
+  // Replay with known key → return prior result (no second progression).
+  if (idempotencyKey) {
+    const byKey = await findReportByIdempotencyKey(userId, idempotencyKey);
+    if (byKey?.status === 'completed') {
+      return byKey;
+    }
+    if (byKey) {
+      return finalizePlannedWorkoutReport(userId, plannedWorkoutId, byKey, payload, idempotencyKey);
+    }
+  } else {
+    // Legacy: same plannedWorkoutId completed earlier today → absorb duplicate.
+    const sameDayCompleted = await findSameDayReport(userId, plannedWorkoutId, 'completed');
+    if (sameDayCompleted) {
+      return sameDayCompleted;
+    }
+  }
+
   // Find the active report (or the most recent one for this planned workout)
   let report = await prisma.plannedWorkoutReport.findFirst({
     where: {
@@ -978,28 +1072,87 @@ export async function completePlannedWorkoutReport(
       throw new Error('Planned workout not found');
     }
 
-    report = await prisma.plannedWorkoutReport.create({
-      data: {
-        userId,
-        programId: plannedWorkout.day.week.programId,
-        plannedWorkoutId: plannedWorkout.id,
-        weekNumber: plannedWorkout.day.week.weekNumber,
-        dayNumber: plannedWorkout.day.dayNumber,
-        startedAt: new Date(),
-        status: 'in_progress',
-      },
-    });
+    try {
+      report = await prisma.plannedWorkoutReport.create({
+        data: {
+          userId,
+          programId: plannedWorkout.day.week.programId,
+          plannedWorkoutId: plannedWorkout.id,
+          weekNumber: plannedWorkout.day.week.weekNumber,
+          dayNumber: plannedWorkout.day.dayNumber,
+          startedAt: new Date(),
+          status: 'in_progress',
+          idempotencyKey,
+        },
+      });
+    } catch (error) {
+      if (idempotencyKey && isPrismaUniqueViolation(error)) {
+        const existing = await findReportByIdempotencyKey(userId, idempotencyKey);
+        if (existing?.status === 'completed') return existing;
+        if (existing) {
+          return finalizePlannedWorkoutReport(userId, plannedWorkoutId, existing, payload, idempotencyKey);
+        }
+      }
+      throw error;
+    }
+  } else if (idempotencyKey && !report.idempotencyKey) {
+    // Attach key to the open report so a parallel replay can find it.
+    try {
+      report = await prisma.plannedWorkoutReport.update({
+        where: { id: report.id },
+        data: { idempotencyKey },
+      });
+    } catch (error) {
+      if (isPrismaUniqueViolation(error)) {
+        const existing = await findReportByIdempotencyKey(userId, idempotencyKey);
+        if (existing?.status === 'completed') return existing;
+        if (existing) {
+          return finalizePlannedWorkoutReport(userId, plannedWorkoutId, existing, payload, idempotencyKey);
+        }
+      }
+      throw error;
+    }
+  }
+
+  return finalizePlannedWorkoutReport(userId, plannedWorkoutId, report, payload, idempotencyKey);
+}
+
+async function finalizePlannedWorkoutReport(
+  userId: string,
+  plannedWorkoutId: string,
+  report: {
+    id: string;
+    programId: string | null;
+    weekNumber: number;
+    dayNumber: number;
+    totalDurationMs: number | null;
+    totalExercises: number | null;
+    totalSets: number | null;
+    completedSets: number | null;
+    totalReps: number | null;
+    avgAccuracy: number | null;
+    avgFormScore: number | null;
+    report: Prisma.JsonValue | null;
+    status: string;
+    idempotencyKey: string | null;
+  },
+  payload: PlannedWorkoutCompletePayload,
+  idempotencyKey: string | undefined,
+) {
+  if (report.status === 'completed') {
+    return prisma.plannedWorkoutReport.findUniqueOrThrow({ where: { id: report.id } });
   }
 
   const completedAt = payload.completedAt ? new Date(payload.completedAt) : new Date();
   const normalizedPayload = normalizePlannedWorkoutReportPayload(payload);
 
-  // Update the report to completed
-  const updatedReport = await prisma.plannedWorkoutReport.update({
-    where: { id: report.id },
+  // CAS: only one parallel completer transitions in_progress → completed (P1.3).
+  const claimed = await prisma.plannedWorkoutReport.updateMany({
+    where: { id: report.id, status: 'in_progress' },
     data: {
       status: 'completed',
       completedAt,
+      idempotencyKey: idempotencyKey ?? report.idempotencyKey ?? undefined,
       totalDurationMs: normalizedPayload.totalDurationMs ?? report.totalDurationMs ?? undefined,
       totalExercises: normalizedPayload.totalExercises ?? report.totalExercises ?? undefined,
       totalSets: normalizedPayload.totalSets ?? report.totalSets ?? undefined,
@@ -1011,6 +1164,14 @@ export async function completePlannedWorkoutReport(
       report: normalizedPayload.report ?? (report.report as Prisma.InputJsonValue | undefined),
     },
   });
+
+  const updatedReport = await prisma.plannedWorkoutReport.findUniqueOrThrow({
+    where: { id: report.id },
+  });
+
+  if (claimed.count === 0) {
+    return updatedReport;
+  }
 
   // -- Activate UserProgramProgress --
   // Find the user's active program to update progress tracking

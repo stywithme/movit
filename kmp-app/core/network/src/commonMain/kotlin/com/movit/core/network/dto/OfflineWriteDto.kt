@@ -22,11 +22,18 @@ data class ProgressionMarkSeenResponse(
 )
 
 @Serializable
+data class PlanCompleteRequestDto(
+    /** Outbox operationId — accepted by backend for contract parity (P1.3). */
+    val idempotencyKey: String? = null,
+)
+
+@Serializable
 data class PlanMutationResponse(
     val success: Boolean = false,
     val error: String? = null,
     val data: ActivePlanDto? = null,
     val completion: ProgramCompletionDecisionDto? = null,
+    val noop: Boolean = false,
 )
 
 @Serializable
@@ -45,6 +52,8 @@ data class UserProgramOverrideCreateRequest(
     val overrideType: String,
     val reasonCode: String? = null,
     val data: JsonElement? = null,
+    /** Outbox operationId — server replay key (P1.3). */
+    val idempotencyKey: String? = null,
 )
 
 @Serializable

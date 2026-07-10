@@ -82,6 +82,80 @@ internal fun ProfileLogoutConfirmDialog(
 }
 
 @Composable
+internal fun ProfilePendingOutboxLogoutDialog(
+    pendingCount: Long,
+    onUploadThenSignOut: () -> Unit,
+    onDiscardAndSignOut: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = movitText("profile_logout_pending_title")) },
+        text = {
+            Text(
+                text = movitText("profile_logout_pending_message")
+                    .replace("%1\$d", pendingCount.toString()),
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onUploadThenSignOut) {
+                Text(text = movitText("profile_logout_pending_upload_then_sign_out"))
+            }
+        },
+        dismissButton = {
+            Column {
+                TextButton(onClick = onDiscardAndSignOut) {
+                    Text(
+                        text = movitText("profile_logout_pending_discard"),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+                TextButton(onClick = onDismiss) {
+                    Text(text = movitText("profile_cancel"))
+                }
+            }
+        },
+    )
+}
+
+@Composable
+internal fun ProfilePendingOutboxDeleteAccountDialog(
+    pendingCount: Long,
+    onUploadThenDelete: () -> Unit,
+    onDiscardAndDelete: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = movitText("profile_delete_pending_title")) },
+        text = {
+            Text(
+                text = movitText("profile_delete_pending_message")
+                    .replace("%1\$d", pendingCount.toString()),
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onUploadThenDelete) {
+                Text(text = movitText("profile_delete_pending_upload_then_delete"))
+            }
+        },
+        dismissButton = {
+            Column {
+                TextButton(onClick = onDiscardAndDelete) {
+                    Text(
+                        text = movitText("profile_delete_pending_discard"),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+                TextButton(onClick = onDismiss) {
+                    Text(text = movitText("profile_cancel"))
+                }
+            }
+        },
+    )
+}
+
+@Composable
 internal fun ProfileDeleteAccountConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,

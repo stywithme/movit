@@ -29,4 +29,6 @@ sealed interface MovitAppShellEvent {
     data class OnboardingEffectReceived(val effect: MovitOnboardingEffect) : MovitAppShellEvent
     data class AssessmentEffectReceived(val effect: MovitAssessmentEffect) : MovitAppShellEvent
     data class LevelEffectReceived(val effect: MovitLevelEffect) : MovitAppShellEvent
+    data object GuestOutboxAcceptClicked : MovitAppShellEvent
+    data object GuestOutboxDiscardClicked : MovitAppShellEvent
 }

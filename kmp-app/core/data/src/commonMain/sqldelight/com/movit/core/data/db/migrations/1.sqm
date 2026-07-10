@@ -1,0 +1,2 @@
+ALTER TABLE outbox_entry ADD COLUMN owner_user_id TEXT;
+ALTER TABLE outbox_entry ADD COLUMN next_attempt_at_epoch_ms INTEGER;

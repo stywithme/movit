@@ -29,6 +29,7 @@ import com.movit.feature.home.MovitHomeRoute
 import com.movit.feature.home.MovitHomeViewModel
 import com.movit.feature.reports.MovitReportsRoute
 import com.movit.feature.reports.MovitReportsViewModel
+import com.movit.feature.account.GuestOutboxAttributionDialog
 import com.movit.feature.account.MovitProfileViewModel
 import com.movit.feature.train.MovitTrainEffect
 import com.movit.feature.train.MovitTrainRoute
@@ -58,6 +59,14 @@ fun MovitAppShell(
     )
     val showFloatingNav = innerRoute == null
     val floatingNavInset = if (showFloatingNav) MovitFloatingNavContentInset else 0.dp
+
+    state.guestOutboxPromptCount?.let { count ->
+        GuestOutboxAttributionDialog(
+            guestRowCount = count,
+            onAccept = { onEvent(MovitAppShellEvent.GuestOutboxAcceptClicked) },
+            onDiscard = { onEvent(MovitAppShellEvent.GuestOutboxDiscardClicked) },
+        )
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),

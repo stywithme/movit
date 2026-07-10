@@ -18,4 +18,8 @@ sealed interface TrainingSessionEvent {
     data object BackPressed : TrainingSessionEvent
     data object FinishClicked : TrainingSessionEvent
     data object ViewReportClicked : TrainingSessionEvent
+    /** UX.3: continue from an orphan journal checkpoint. */
+    data object ResumePriorSession : TrainingSessionEvent
+    /** UX.3: discard orphan journal and start fresh. */
+    data object DiscardPriorSession : TrainingSessionEvent
 }

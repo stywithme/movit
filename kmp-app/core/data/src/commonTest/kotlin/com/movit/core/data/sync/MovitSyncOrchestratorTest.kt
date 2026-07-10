@@ -172,6 +172,12 @@ class MovitSyncOrchestratorTest {
                         }
                         respond(body, HttpStatusCode.OK, jsonHeaders)
                     }
+                    request.url.encodedPath.contains("user-programs") ->
+                        respond(
+                            """{"success":true,"userPrograms":[]}""",
+                            HttpStatusCode.OK,
+                            jsonHeaders,
+                        )
                     request.url.encodedPath.contains("explore") ->
                         respond(exploreOkBody(), HttpStatusCode.OK, jsonHeaders)
                     request.url.encodedPath.contains("home") ->
@@ -184,8 +190,8 @@ class MovitSyncOrchestratorTest {
 
             orchestrator.syncIfNeeded(forceCheck = true)
 
-            // delta → backfill full refresh → planSync.refreshActiveUserProgramId() (fetchSyncUserPrograms)
-            assertEquals(listOf(false, true, false), syncForceRefreshFlags)
+            // delta → backfill full refresh; enrollments resolve via lightweight user-programs (P2.1)
+            assertEquals(listOf(false, true), syncForceRefreshFlags)
             assertEquals(
                 trainingConfig.allCachedSlugs().size,
                 metadataStore.readEntityCounts().exercises,
@@ -217,7 +223,7 @@ class MovitSyncOrchestratorTest {
                 override fun isNetworkAvailable(): Boolean = true
             }
             val api = testMobileApi(engine, onlinePlatform)
-            val offlineWrites = OfflineWriteQueue(localStore, api) { onlinePlatform }
+            val offlineWrites = OfflineWriteQueue(localStore, api, { onlinePlatform })
             val orchestrator = buildOrchestrator(
                 api = api,
                 platform = onlinePlatform,
@@ -225,7 +231,7 @@ class MovitSyncOrchestratorTest {
                 offlineWrites = offlineWrites,
             )
 
-            OfflineWriteQueue(localStore, api) { platform }.enqueuePlanComplete("op-pending-before-sync")
+            OfflineWriteQueue(localStore, api, { platform }).enqueuePlanComplete("op-pending-before-sync")
             assertEquals(1L, offlineWrites.pendingCount())
 
             orchestrator.syncIfNeeded(forceCheck = true)
@@ -261,7 +267,7 @@ class MovitSyncOrchestratorTest {
                 }
             }
             val api = testMobileApi(engine, onlinePlatform)
-            val offlineWrites = OfflineWriteQueue(localStore, api) { onlinePlatform }
+            val offlineWrites = OfflineWriteQueue(localStore, api, { onlinePlatform })
             val orchestrator = buildOrchestrator(
                 api = api,
                 platform = onlinePlatform,
@@ -269,7 +275,7 @@ class MovitSyncOrchestratorTest {
                 offlineWrites = offlineWrites,
             )
 
-            OfflineWriteQueue(localStore, api) { offlinePlatform }.enqueuePlanComplete("op-before-sync")
+            OfflineWriteQueue(localStore, api, { offlinePlatform }).enqueuePlanComplete("op-before-sync")
 
             orchestrator.syncIfNeeded(forceCheck = true)
 
@@ -293,7 +299,7 @@ class MovitSyncOrchestratorTest {
         val reports = ReportsSyncRepository(api, { platform }, { localStore })
         val plan = testPlanSyncRepository(api, platform, localStore, home)
         val audioManifestCache = AudioManifestCache(localStore)
-        val queue = offlineWrites ?: OfflineWriteQueue(localStore, api) { platform }
+        val queue = offlineWrites ?: OfflineWriteQueue(localStore, api, { platform })
         val trainingConfig = TrainingConfigRepository(localStore, MessageLibraryCache(localStore))
         val catalogOffline = SyncCatalogOfflineRepository(localStore, trainingConfig)
         return MovitSyncOrchestrator(

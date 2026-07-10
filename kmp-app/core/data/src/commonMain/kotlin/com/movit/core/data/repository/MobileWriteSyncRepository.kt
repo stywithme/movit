@@ -7,12 +7,10 @@ import com.movit.core.data.platform.MovitPlatformBindings
 import com.movit.core.network.MovitJson
 import com.movit.core.network.dto.EffectivePlanApiResponse
 import com.movit.core.network.dto.EffectivePlanPayloadDto
-import com.movit.core.network.dto.HomeDataDto
 import com.movit.core.network.dto.ProgramCustomizationKeys
 import com.movit.core.network.dto.PlannedWorkoutCompleteRequestDto
 import com.movit.core.network.dto.PlannedWorkoutStartRequestDto
 import com.movit.core.network.dto.ProgressionMarkSeenRequest
-import com.movit.core.network.dto.TrainModeDto
 import com.movit.core.network.dto.UserExercisePreferenceUpsertRequest
 import com.movit.core.network.dto.UserProgramOverrideCreateRequest
 import com.movit.core.network.dto.UserProgramUpdateRequest
@@ -46,19 +44,24 @@ class MobileWriteSyncRepository(
         workoutId: String,
         request: PlannedWorkoutCompleteRequestDto,
         operationId: String? = null,
+        workoutGroupId: String? = null,
     ): AppResult<String> {
         if (!hasAuth()) return AppResult.Failure("Sign in to complete this workout.")
 
-        patchHomeTrainMode { mode ->
-            mode.copy(
-                todayWorkout = mode.todayWorkout?.copy(isCompleted = true),
-            )
-        }
-
+        // Optimistic home patch lives in OfflineWriteOptimisticCache (P2.8).
         val id = if (operationId != null) {
-            offlineWrites.enqueuePlannedWorkoutComplete(workoutId, request, operationId)
+            offlineWrites.enqueuePlannedWorkoutComplete(
+                workoutId = workoutId,
+                request = request,
+                operationId = operationId,
+                workoutGroupId = workoutGroupId,
+            )
         } else {
-            offlineWrites.enqueuePlannedWorkoutComplete(workoutId, request)
+            offlineWrites.enqueuePlannedWorkoutComplete(
+                workoutId = workoutId,
+                request = request,
+                workoutGroupId = workoutGroupId,
+            )
         }
         return AppResult.Success(id)
     }
@@ -67,19 +70,24 @@ class MobileWriteSyncRepository(
         workoutId: String,
         request: PlannedWorkoutCompleteRequestDto,
         operationId: String? = null,
+        workoutGroupId: String? = null,
     ): AppResult<String> {
         if (!hasAuth()) return AppResult.Failure("Sign in to submit this workout report.")
 
-        patchHomeTrainMode { mode ->
-            mode.copy(
-                todayWorkout = mode.todayWorkout?.copy(isCompleted = true),
-            )
-        }
-
+        // P2.8 / E-N7: do not mark isCompleted=true for legacy report path.
         val id = if (operationId != null) {
-            offlineWrites.enqueuePlannedWorkoutReport(workoutId, request, operationId)
+            offlineWrites.enqueuePlannedWorkoutReport(
+                workoutId = workoutId,
+                request = request,
+                operationId = operationId,
+                workoutGroupId = workoutGroupId,
+            )
         } else {
-            offlineWrites.enqueuePlannedWorkoutReport(workoutId, request)
+            offlineWrites.enqueuePlannedWorkoutReport(
+                workoutId = workoutId,
+                request = request,
+                workoutGroupId = workoutGroupId,
+            )
         }
         return AppResult.Success(id)
     }
@@ -87,10 +95,7 @@ class MobileWriteSyncRepository(
     suspend fun completePlan(operationId: String? = null): AppResult<String> {
         if (!hasAuth()) return AppResult.Failure("Sign in to complete your program.")
 
-        patchHomeTrainMode { mode ->
-            mode.copy(status = "completed", isPaused = false)
-        }
-
+        // Optimistic home patch lives in OfflineWriteOptimisticCache (P2.8).
         val id = operationId?.let { offlineWrites.enqueuePlanComplete(it) }
             ?: offlineWrites.enqueuePlanComplete()
         return AppResult.Success(id)
@@ -103,12 +108,14 @@ class MobileWriteSyncRepository(
     ): AppResult<String> {
         if (!hasAuth()) return AppResult.Failure("Sign in to save exercise preferences.")
 
-        cacheExercisePreference(exerciseId, request)
+        // J-N1: outbox must use canonical id — server PUT looks up by id only (slug → 404).
+        val canonicalId = ExerciseIdResolver(localStore()).resolveCanonicalExerciseId(exerciseId)
+        cacheExercisePreference(canonicalId, request)
 
         val id = if (operationId != null) {
-            offlineWrites.enqueueExercisePreferenceUpsert(exerciseId, request, operationId)
+            offlineWrites.enqueueExercisePreferenceUpsert(canonicalId, request, operationId)
         } else {
-            offlineWrites.enqueueExercisePreferenceUpsert(exerciseId, request)
+            offlineWrites.enqueueExercisePreferenceUpsert(canonicalId, request)
         }
         return AppResult.Success(id)
     }
@@ -119,17 +126,16 @@ class MobileWriteSyncRepository(
     ): AppResult<String> {
         if (!hasAuth()) return AppResult.Failure("Sign in to remove exercise preferences.")
 
+        val canonicalId = ExerciseIdResolver(localStore()).resolveCanonicalExerciseId(exerciseId)
         localStore().remove(
             MovitCacheKeys.PREFERENCES_STORE,
-            MovitCacheKeys.exercisePreferenceKey(
-                ExerciseIdResolver(localStore()).resolveCanonicalExerciseId(exerciseId),
-            ),
+            MovitCacheKeys.exercisePreferenceKey(canonicalId),
         )
 
         val id = if (operationId != null) {
-            offlineWrites.enqueueExercisePreferenceDelete(exerciseId, operationId)
+            offlineWrites.enqueueExercisePreferenceDelete(canonicalId, operationId)
         } else {
-            offlineWrites.enqueueExercisePreferenceDelete(exerciseId)
+            offlineWrites.enqueueExercisePreferenceDelete(canonicalId)
         }
         return AppResult.Success(id)
     }
@@ -219,30 +225,11 @@ class MobileWriteSyncRepository(
 
     private fun hasAuth(): Boolean = platform().authHeader() != null
 
-    private fun patchHomeTrainMode(transform: (TrainModeDto) -> TrainModeDto) {
-        val store = localStore()
-        val cached = MovitCachePolicy.readJson(
-            store,
-            MovitCacheKeys.HOME_STORE,
-            MovitCacheKeys.HOME_DATA,
-            HomeDataDto.serializer(),
-        ) ?: return
-        val trainMode = cached.trainMode ?: return
-        MovitCachePolicy.writeJson(
-            store,
-            MovitCacheKeys.HOME_STORE,
-            MovitCacheKeys.HOME_DATA,
-            cached.copy(trainMode = transform(trainMode)),
-            HomeDataDto.serializer(),
-        )
-    }
-
     private fun cacheExercisePreference(
-        exerciseId: String,
+        canonicalExerciseId: String,
         request: UserExercisePreferenceUpsertRequest,
     ) {
-        val canonicalId = ExerciseIdResolver(localStore()).resolveCanonicalExerciseId(exerciseId)
-        ExercisePreferenceLocalStore(localStore()).upsert(canonicalId, request)
+        ExercisePreferenceLocalStore(localStore()).upsert(canonicalExerciseId, request)
     }
 
     private fun applyCustomizationsToEffectivePlanCache(

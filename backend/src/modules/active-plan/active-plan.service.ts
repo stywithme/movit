@@ -650,10 +650,14 @@ export const activePlanService = {
   /**
    * Transition the active program (complete it and activate next).
    * Runs completion evaluation before mutating state.
+   *
+   * P1.3: when there is no active slot, return a no-op success shape (empty completion)
+   * so outbox replays of PLAN_COMPLETE do not 404 / double-advance.
    */
   async completeActiveProgram(userId: string): Promise<{
     plan: ActivePlanData;
     completion: ProgramCompletionDecision | null;
+    noop?: boolean;
   } | null> {
     const prisma = await getPrisma();
 
@@ -669,7 +673,10 @@ export const activePlanService = {
     if (!plan) return null;
 
     const activeSlot = plan.programs.find((p) => p.status === 'active');
-    if (!activeSlot) return null;
+    if (!activeSlot) {
+      const current = await this.getOrCreate(userId);
+      return { plan: current, completion: null, noop: true };
+    }
 
     const completion = await programCompletionService.evaluate(userId, activeSlot.userProgramId);
 

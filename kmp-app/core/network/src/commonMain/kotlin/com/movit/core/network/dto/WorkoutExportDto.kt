@@ -28,6 +28,8 @@ data class WorkoutExportPhaseDto(
 @Serializable
 data class WorkoutExportExerciseDto(
     val exercise: String = "",
+    /** Localized display name from backend (P3.6). Falls back to slug when absent. */
+    val name: LocalizedNameDto? = null,
     val variantIndex: Int = 0,
     val targetReps: Int? = null,
     val targetDuration: Int? = null,

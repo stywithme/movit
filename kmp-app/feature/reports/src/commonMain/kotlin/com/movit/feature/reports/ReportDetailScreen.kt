@@ -102,7 +102,10 @@ fun ReportDetailScreen(
                             },
                         )
                         when (state.selectedPage) {
-                            ReportDetailPage.Overview -> ReportOverviewPage(report)
+                            ReportDetailPage.Overview -> ReportOverviewPage(
+                                report = report,
+                                uploadStatus = state.uploadStatus,
+                            )
                             ReportDetailPage.Form -> ReportFormPage(report)
                             ReportDetailPage.Fatigue -> ReportFatiguePage(report)
                             ReportDetailPage.Tips -> ReportTipsPage(report, onExport = onExport)
@@ -211,7 +214,10 @@ private fun pageLabel(page: ReportDetailPage): String = when (page) {
 }
 
 @Composable
-private fun ReportOverviewPage(report: ReportDetailUi) {
+private fun ReportOverviewPage(
+    report: ReportDetailUi,
+    uploadStatus: ReportUploadStatus = ReportUploadStatus.Synced,
+) {
     val movit = MaterialTheme.movitColors
     val scoreDescription = movitText("report_detail_form_score_a11y", report.formScore)
     Column(
@@ -219,6 +225,20 @@ private fun ReportOverviewPage(report: ReportDetailUi) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(MovitSpacing.lg),
     ) {
+        when (uploadStatus) {
+            ReportUploadStatus.Pending -> MovitTag(
+                text = movitText("report_upload_pending"),
+                variant = MovitTagVariant.Gold,
+            )
+            ReportUploadStatus.Failed -> MovitTag(
+                text = movitText("report_upload_failed"),
+                variant = MovitTagVariant.Coral,
+            )
+            ReportUploadStatus.Synced -> MovitTag(
+                text = movitText("report_upload_synced"),
+                variant = MovitTagVariant.Lime,
+            )
+        }
         Column(
             modifier = Modifier
                 .fillMaxWidth()

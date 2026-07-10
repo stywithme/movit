@@ -136,6 +136,12 @@ fun MovitInnerHost(
             )
         }
         is MovitInnerRoute.TrainingSession -> {
+            androidx.compose.runtime.DisposableEffect(route) {
+                com.movit.core.data.sync.TrainingSessionSyncGate.trainingSessionActive = true
+                onDispose {
+                    com.movit.core.data.sync.TrainingSessionSyncGate.trainingSessionActive = false
+                }
+            }
             TrainingSessionRoute(
                 args = TrainingSessionRouteArgs(
                     exerciseSlug = route.exerciseSlug,
@@ -145,12 +151,7 @@ fun MovitInnerHost(
                     flowItems = route.flowItems,
                     startExerciseIndex = route.startExerciseIndex,
                     poseVariantIndex = route.poseVariantIndex,
-                    uploadContext = route.plannedWorkout?.let { planned ->
-                        WorkoutUploadContext(
-                            workoutGroupId = planned.plannedWorkoutId,
-                            context = "program",
-                        )
-                    },
+                    uploadContext = resolveTrainingUploadContext(route),
                     plannedWorkout = route.plannedWorkout?.let { planned ->
                         PlannedWorkoutContext(
                             plannedWorkoutId = planned.plannedWorkoutId,
@@ -273,6 +274,24 @@ fun MovitInnerHost(
             }
         }
     }
+}
+
+private fun resolveTrainingUploadContext(route: MovitInnerRoute.TrainingSession): WorkoutUploadContext? {
+    route.plannedWorkout?.let { planned ->
+        return WorkoutUploadContext(
+            workoutGroupId = planned.plannedWorkoutId,
+            context = "program",
+        )
+    }
+    val workoutId = route.workoutId
+    if (route.flowItems != null && !workoutId.isNullOrBlank()) {
+        return WorkoutUploadContext(
+            workoutGroupId = WorkoutFlowCache.workoutGroupIdOrNull(workoutId)
+                ?: WorkoutFlowCache.ensureWorkoutGroupId(workoutId),
+            workoutTemplateId = workoutId,
+        )
+    }
+    return null
 }
 
 private fun handleWorkoutTrainingFinish(

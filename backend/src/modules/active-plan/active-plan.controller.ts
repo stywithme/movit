@@ -115,13 +115,20 @@ export class ActivePlanController {
   }
 
   @Post('complete')
-  async completeProgram(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+  async completeProgram(
+    @Req() req: Request,
+    @Body() body: { idempotencyKey?: string } | undefined,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     try {
       const authResult = await verifyMobileToken(req);
       if (!authResult.success || !authResult.userId) {
         res.status(401);
         return { success: false, error: authResult.error || 'Unauthorized' };
       }
+
+      // idempotencyKey accepted for contract parity with outbox (P1.3); no-op when no active slot.
+      void body?.idempotencyKey;
 
       const result = await activePlanService.completeActiveProgram(authResult.userId);
       if (!result) {
@@ -133,6 +140,7 @@ export class ActivePlanController {
         success: true,
         data: result.plan,
         completion: result.completion,
+        noop: result.noop === true,
       };
     } catch (error) {
       console.error('[ActivePlan] Complete Error:', error);

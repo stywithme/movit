@@ -8,6 +8,8 @@ package com.movit.core.data.platform
 interface MovitPlatformBindings {
     fun apiBaseUrl(): String
     fun authHeader(): String?
+    /** Signed-in user id from the persisted auth profile; null when guest / logged out. */
+    fun userId(): String? = null
     fun preferredLanguage(): String
     fun userDisplayName(fallback: String = "Athlete"): String
     fun readCache(store: String, key: String): String?
@@ -59,6 +61,17 @@ interface MovitPlatformBindings {
     fun clearAuthSession() {}
 
     fun clearLegacyUserCaches() {}
+
+    /**
+     * Deletes on-disk user files (frame_captures/, audio_cache/) — PR-7 durable scope.
+     * Called from [com.movit.core.data.MovitData.clearDurableWrites], not session expiry.
+     */
+    fun clearUserFiles() {}
+
+    /**
+     * P2.5 — remove frame_captures/{sessionId}/ dirs not referenced by protected uploads or journals.
+     */
+    fun cleanupOrphanFrameCaptures(protectedSessionIds: Set<String>): Int = 0
 
     fun setOnboardingCompleted(completed: Boolean) {}
 

@@ -29,6 +29,10 @@ data class OutboxEntry(
     val createdAt: Long,
     val attempts: Int,
     val status: OutboxStatus,
+    /** Set from [com.movit.core.data.platform.MovitPlatformBindings.userId] at enqueue; null = guest. */
+    val ownerUserId: String? = null,
+    /** Earliest next retry (P1.2 backoff). Null = eligible immediately. */
+    val nextAttemptAtEpochMs: Long? = null,
 )
 
 data class OutboxReplayResult(
@@ -41,7 +45,10 @@ data class OutboxReplayResult(
 internal enum class OutboxDispatchOutcome {
     SUCCESS,
     SERVER_WINS,
-    RETRYABLE,
+    /** Network/timeout/5xx — retryable in P1.2. */
+    RETRYABLE_NETWORK,
+    /** Decode/mapping bug — distinct telemetry; same retry slot until P1.2. */
+    RETRYABLE_UNEXPECTED,
     PERMANENT_FAILURE,
 }
 

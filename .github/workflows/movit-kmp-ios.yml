@@ -5,6 +5,7 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - 'kmp-app/**'
@@ -55,7 +56,7 @@ jobs:
 
       - name: Run KMP iOS simulator unit tests
         run: |
-          ./gradlew --console=plain \
+          ./gradlew --console=plain -PverifySqlMigrations=true \
             :shared:iosSimulatorArm64Test \
             :core:data:iosSimulatorArm64Test \
             :core:network:iosSimulatorArm64Test \

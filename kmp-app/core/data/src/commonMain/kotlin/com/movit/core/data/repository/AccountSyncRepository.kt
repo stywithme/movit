@@ -1,6 +1,9 @@
 package com.movit.core.data.repository
 
 import com.movit.core.data.MovitData
+import com.movit.core.data.outbox.GuestOutboxAttributionPrompt
+import com.movit.core.data.outbox.OfflineWriteQueue
+import com.movit.core.data.outbox.OutboxReplayAcquisition
 import com.movit.core.data.platform.AuthSessionSnapshot
 import com.movit.core.data.platform.MovitPlatformBindings
 import com.movit.core.data.platform.toSnapshot
@@ -22,12 +25,25 @@ import com.movit.core.network.dto.LevelProfileDetailDto
 import com.movit.core.network.dto.ReassessmentDto
 import com.movit.core.network.dto.UserPublicDto
 import com.movit.shared.AppResult
+import kotlinx.coroutines.withTimeoutOrNull
+
+/** Login/register/google result — includes UX.7 guest-outbox prompt when present. */
+data class AuthenticatedSessionResult(
+    val session: AuthSessionSnapshot,
+    val guestOutboxPrompt: GuestOutboxAttributionPrompt? = null,
+)
 
 class AccountSyncRepository(
     private val api: MovitMobileApi,
     private val platform: () -> MovitPlatformBindings,
+    private val offlineWrites: (() -> OfflineWriteQueue)? = null,
 ) {
-    suspend fun login(email: String, password: String): AppResult<AuthSessionSnapshot> {
+    companion object {
+        const val LOGOUT_FLUSH_TIMEOUT_MS = 3_000L
+        const val LOGOUT_RETRY_FLUSH_TIMEOUT_MS = 15_000L
+        const val PENDING_OUTBOX_LOGOUT_CODE = "pending_outbox"
+    }
+    suspend fun login(email: String, password: String): AppResult<AuthenticatedSessionResult> {
         val response = api.login(LoginRequestDto(email, password)).getOrElse { error ->
             return AppResult.Failure(error.message ?: "Login failed.")
         }
@@ -37,7 +53,12 @@ class AccountSyncRepository(
         val data = response.data ?: return AppResult.Failure("Login response was empty.")
         val snapshot = data.toSnapshot()
         platform().persistAuthSession(snapshot)
-        return AppResult.Success(snapshot)
+        val guestPrompt = if (MovitData.isInstalled) {
+            MovitData.onAuthenticatedSession(snapshot.userId)
+        } else {
+            null
+        }
+        return AppResult.Success(AuthenticatedSessionResult(snapshot, guestPrompt))
     }
 
     suspend fun googleAuth(
@@ -46,7 +67,7 @@ class AccountSyncRepository(
         email: String,
         name: String,
         avatarUrl: String? = null,
-    ): AppResult<AuthSessionSnapshot> {
+    ): AppResult<AuthenticatedSessionResult> {
         val response = api.googleAuth(
             GoogleAuthRequestDto(
                 idToken = idToken,
@@ -64,10 +85,15 @@ class AccountSyncRepository(
         val data = response.data ?: return AppResult.Failure("Google sign-in response was empty.")
         val snapshot = data.toSnapshot()
         platform().persistAuthSession(snapshot)
-        return AppResult.Success(snapshot)
+        val guestPrompt = if (MovitData.isInstalled) {
+            MovitData.onAuthenticatedSession(snapshot.userId)
+        } else {
+            null
+        }
+        return AppResult.Success(AuthenticatedSessionResult(snapshot, guestPrompt))
     }
 
-    suspend fun register(name: String, email: String, password: String): AppResult<AuthSessionSnapshot> {
+    suspend fun register(name: String, email: String, password: String): AppResult<AuthenticatedSessionResult> {
         val response = api.register(RegisterRequestDto(name, email, password)).getOrElse { error ->
             return AppResult.Failure(error.message ?: "Registration failed.")
         }
@@ -78,7 +104,12 @@ class AccountSyncRepository(
         val snapshot = data.toSnapshot()
         platform().persistAuthSession(snapshot)
         platform().setOnboardingCompleted(false)
-        return AppResult.Success(snapshot)
+        val guestPrompt = if (MovitData.isInstalled) {
+            MovitData.onAuthenticatedSession(snapshot.userId)
+        } else {
+            null
+        }
+        return AppResult.Success(AuthenticatedSessionResult(snapshot, guestPrompt))
     }
 
     suspend fun forgotPassword(email: String): AppResult<Unit> {
@@ -91,8 +122,27 @@ class AccountSyncRepository(
         return AppResult.Success(Unit)
     }
 
-    suspend fun logout(): AppResult<Unit> {
+    suspend fun prepareLogout(flushTimeoutMs: Long = LOGOUT_FLUSH_TIMEOUT_MS): LogoutOutboxPreparation {
+        val writes = resolveOfflineWrites() ?: return LogoutOutboxPreparation(0, false)
+        if (writes.pendingCount() == 0L) return LogoutOutboxPreparation(0, false)
+        // Logout flush must wait — TrySkipIfBusy would silently skip if sync holds the mutex.
+        withTimeoutOrNull(flushTimeoutMs) {
+            writes.replayPending(OutboxReplayAcquisition.Wait)
+        }
+        return LogoutOutboxPreparation(
+            pendingCount = writes.pendingCount(),
+            flushAttempted = true,
+        )
+    }
+
+    suspend fun logout(discardPendingOutbox: Boolean = false): AppResult<Unit> {
         val bindings = platform()
+        if (!discardPendingOutbox) {
+            val prep = prepareLogout()
+            if (prep.pendingCount > 0) {
+                return AppResult.Failure("$PENDING_OUTBOX_LOGOUT_CODE:${prep.pendingCount}")
+            }
+        }
         val refresh = bindings.refreshToken()
         val auth = bindings.authHeader()
         if (auth != null && refresh != null) {
@@ -102,10 +152,16 @@ class AccountSyncRepository(
         return AppResult.Success(Unit)
     }
 
-    suspend fun deleteAccount(): AppResult<Unit> {
+    suspend fun deleteAccount(discardPendingOutbox: Boolean = false): AppResult<Unit> {
         val bindings = platform()
         val auth = bindings.authHeader()
             ?: return AppResult.Failure("Sign in to delete your account.")
+        if (!discardPendingOutbox) {
+            val prep = prepareLogout()
+            if (prep.pendingCount > 0) {
+                return AppResult.Failure("$PENDING_OUTBOX_LOGOUT_CODE:${prep.pendingCount}")
+            }
+        }
         val response = api.deleteAccount(authorization = auth).getOrElse { error ->
             return AppResult.Failure(error.message ?: "Delete account failed.")
         }
@@ -122,6 +178,10 @@ class AccountSyncRepository(
         }
         bindings.clearAuthSession()
     }
+
+    private fun resolveOfflineWrites(): OfflineWriteQueue? =
+        offlineWrites?.invoke()
+            ?: if (MovitData.isInstalled) MovitData.offlineWrites else null
 
     suspend fun fetchProfile(): AppResult<UserPublicDto> {
         val auth = platform().authHeader()

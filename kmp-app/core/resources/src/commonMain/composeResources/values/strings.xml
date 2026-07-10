@@ -56,6 +56,9 @@
     <string name="home_metric_this_week">This week</string>
     <string name="home_metric_form_avg">Form avg</string>
     <string name="home_metric_streak">Day streak</string>
+    <string name="home_pending_uploads">%1$d workouts waiting to upload</string>
+    <string name="home_pending_synced">Everything synced</string>
+    <string name="home_upload_failed_alert">%1$d uploads failed — tap to retry</string>
     <string name="home_your_level">Your level</string>
     <string name="home_level_title">Level %1$d%2$s</string>
     <string name="home_level_code_suffix"> · %1$s</string>
@@ -739,6 +742,10 @@
     <string name="training_session_status">Status</string>
     <string name="training_session_pause">Pause</string>
     <string name="training_session_resume">Resume</string>
+    <string name="training_session_resume_prior_title">Resume previous session?</string>
+    <string name="training_session_resume_prior_message">You have a previous session (%1$d reps). Resume or start over?</string>
+    <string name="training_session_resume_prior_continue">Resume</string>
+    <string name="training_session_resume_prior_start_fresh">Start over</string>
     <string name="training_session_stop">Stop</string>
     <string name="training_session_form_label">Form</string>
     <string name="training_phase_ready">Ready</string>
@@ -874,12 +881,28 @@
     <string name="auth_intro_icon_desc">Intro illustration</string>
     <string name="auth_forgot_success_icon_desc">Email sent</string>
     <string name="auth_intro_page_indicator">Intro page %1$d of %2$d</string>
+    <string name="auth_guest_outbox_title">Workouts before sign-in</string>
+    <string name="auth_guest_outbox_message">You have %1$d workouts from before signing in. Add them to this account?</string>
+    <string name="auth_guest_outbox_accept">Add</string>
+    <string name="auth_guest_outbox_discard">Delete</string>
 
     <!-- Profile (11) -->
     <string name="profile_loading">Loading profile…</string>
     <string name="profile_sign_in_sub">Sign in to sync workouts, reports, and your training level.</string>
     <string name="profile_preferences">Preferences</string>
+    <string name="profile_sync">Sync</string>
+    <string name="profile_sync_pending_empty">No pending uploads</string>
+    <string name="profile_sync_retry">Retry failed uploads</string>
+    <string name="profile_sync_repair_catalog">Repair catalog</string>
+    <string name="profile_sync_last_ok">Last sync: %1$s</string>
+    <string name="profile_sync_item_pending">Pending</string>
+    <string name="profile_sync_item_failed">Failed</string>
+    <string name="profile_sync_item_inflight">Uploading</string>
     <string name="profile_appearance">Appearance</string>
+    <string name="training_offline_banner">You're offline — everything is saved on this device</string>
+    <string name="report_upload_pending">Upload pending</string>
+    <string name="report_upload_synced">Uploaded</string>
+    <string name="report_upload_failed">Upload failed — needs attention</string>
     <string name="profile_appearance_sub">Light · Dark · System</string>
     <string name="profile_audio_cues">Audio cues</string>
     <string name="profile_haptic">Haptic feedback</string>
@@ -931,6 +954,14 @@
     <string name="profile_cancel">Cancel</string>
     <string name="profile_logout_confirm_title">Sign out?</string>
     <string name="profile_logout_confirm_message">You will need to sign in again to sync workouts and reports.</string>
+    <string name="profile_logout_pending_title">Workouts not uploaded</string>
+    <string name="profile_logout_pending_message">You have %1$d workouts waiting to upload. Sign out anyway?</string>
+    <string name="profile_logout_pending_upload_then_sign_out">Upload, then sign out</string>
+    <string name="profile_logout_pending_discard">Sign out and discard</string>
+    <string name="profile_delete_pending_title">Workouts not uploaded</string>
+    <string name="profile_delete_pending_message">You have %1$d workouts waiting to upload before your account is deleted.</string>
+    <string name="profile_delete_pending_upload_then_delete">Upload, then delete</string>
+    <string name="profile_delete_pending_discard">Delete and discard workouts</string>
     <string name="profile_delete_account">Delete account</string>
     <string name="profile_delete_account_sub">Permanently remove your account and data</string>
     <string name="profile_delete_account_confirm_title">Delete your account?</string>

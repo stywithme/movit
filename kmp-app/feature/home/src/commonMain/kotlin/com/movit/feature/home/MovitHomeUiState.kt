@@ -23,4 +23,10 @@ data class MovitHomeUiState(
     val catchUp: HomeCatchUpUi? = null,
     val isRefreshing: Boolean = false,
     val errorMessage: String? = null,
+    /** UX.1 — pending outbox uploads. */
+    val pendingUploadCount: Long = 0,
+    /** UX.6 — permanent failures needing attention. */
+    val failedUploadCount: Long = 0,
+    /** UX.1 — brief confirmation after pending hits zero. */
+    val showSyncedConfirmation: Boolean = false,
 )

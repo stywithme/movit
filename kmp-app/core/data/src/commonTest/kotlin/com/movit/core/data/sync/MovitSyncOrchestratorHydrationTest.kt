@@ -31,6 +31,7 @@ import com.movit.core.network.dto.MessageLibraryStatsDto
 import com.movit.core.network.dto.MobileSyncApiResponse
 import com.movit.core.network.dto.MobileSyncDataDto
 import com.movit.core.network.dto.PlannedWorkoutReportExportDto
+import com.movit.core.network.dto.SyncMessageContentDto
 import com.movit.core.network.dto.SyncMessageTemplateDto
 import com.movit.core.network.dto.SyncMetaDto
 import com.movit.core.network.dto.SyncSystemMessageDto
@@ -51,6 +52,7 @@ import kotlinx.serialization.json.putJsonArray
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class MovitSyncOrchestratorHydrationTest {
 
@@ -184,6 +186,65 @@ class MovitSyncOrchestratorHydrationTest {
         }
     }
 
+    @Test
+    fun runSyncCycle_fullSyncEmptySystemMessages_clearsCache() {
+        runBlocking {
+            val platform = FakeMovitPlatformBindings()
+            val localStore = testLocalStore(platform)
+            val systemMessageCache = RecordingSystemMessageCache(localStore)
+            systemMessageCache.save(
+                listOf(SyncSystemMessageDto(code = "STALE", content = LocalizedNameDto(en = "old"))),
+            )
+            assertEquals(1, systemMessageCache.read().size)
+
+            val trainingConfig = TrainingConfigRepository(localStore)
+            trainingConfig.seedRecord(
+                ExerciseConfigRecord.fromConfig(
+                    id = "ex-squat",
+                    slug = "bodyweight-squat",
+                    updatedAt = "2026-06-11",
+                    config = ExerciseConfigParser.parseConfigJson(readSquatFixture()),
+                ),
+            )
+
+            val engine = MockEngine { request ->
+                when {
+                    request.url.encodedPath.contains("sync") ->
+                        respond(
+                            MovitJson.encodeToString(
+                                MobileSyncApiResponse.serializer(),
+                                MobileSyncApiResponse(
+                                    success = true,
+                                    timestamp = "2026-06-12T00:00:00Z",
+                                    data = MobileSyncDataDto(systemMessages = emptyList()),
+                                    meta = SyncMetaDto(isFullSync = true),
+                                ),
+                            ),
+                            HttpStatusCode.OK,
+                            jsonHeaders,
+                        )
+                    request.url.encodedPath.contains("explore") ->
+                        respond(exploreOkBody(), HttpStatusCode.OK, jsonHeaders)
+                    request.url.encodedPath.contains("home") ->
+                        respond(homeOkBody(), HttpStatusCode.OK, jsonHeaders)
+                    else -> respond("{}", HttpStatusCode.NotFound)
+                }
+            }
+            val orchestrator = buildOrchestrator(
+                api = testMobileApi(engine, platform),
+                platform = platform,
+                localStore = localStore,
+                trainingConfig = trainingConfig,
+                systemMessageCache = systemMessageCache,
+            )
+
+            orchestrator.fullRefresh()
+
+            assertTrue(systemMessageCache.saveCalls.any { it.isEmpty() })
+            assertEquals(0, systemMessageCache.read().size)
+        }
+    }
+
     private class RecordingSystemMessageCache(store: MovitLocalStore) : SystemMessageCache(store) {
         val saveCalls = mutableListOf<List<SyncSystemMessageDto>>()
         var loadIntoRegistryCalls = 0
@@ -220,9 +281,12 @@ class MovitSyncOrchestratorHydrationTest {
     ) : ReportsSyncRepository(api, platform, localStore) {
         val hydrateCalls = mutableListOf<List<PlannedWorkoutReportExportDto>>()
 
-        override fun hydrateFromSync(exports: List<PlannedWorkoutReportExportDto>) {
+        override fun hydrateFromSync(
+            exports: List<PlannedWorkoutReportExportDto>,
+            pendingPlannedWorkoutIds: Set<String>,
+        ) {
             hydrateCalls += exports
-            super.hydrateFromSync(exports)
+            super.hydrateFromSync(exports, pendingPlannedWorkoutIds)
         }
     }
 
@@ -236,13 +300,19 @@ class MovitSyncOrchestratorHydrationTest {
 
         val hydrateCalls = mutableListOf<HydrateCall>()
 
-        override fun hydrateFromBackend(
+        override suspend fun hydrateFromBackend(
             userProgramId: String,
             customizations: kotlinx.serialization.json.JsonElement?,
             serverCustomizationsUpdatedAt: String?,
+            pendingDayKeys: Set<com.movit.core.data.outbox.DayCustomizationDayKey>?,
         ) {
             hydrateCalls += HydrateCall(userProgramId, customizations != null)
-            super.hydrateFromBackend(userProgramId, customizations, serverCustomizationsUpdatedAt)
+            super.hydrateFromBackend(
+                userProgramId,
+                customizations,
+                serverCustomizationsUpdatedAt,
+                pendingDayKeys,
+            )
         }
     }
 
@@ -275,7 +345,7 @@ class MovitSyncOrchestratorHydrationTest {
             metadataStore = MovitSyncMetadataStore(localStore),
             audioManifestCache = audioManifestCache,
             audioPrefetchRunner = AudioPrefetchRunner(audioManifestCache, FakeAudioFileDownloader()),
-            offlineWrites = OfflineWriteQueue(localStore, api) { platform },
+            offlineWrites = OfflineWriteQueue(localStore, api, { platform }),
             trainingConfig = trainingConfig,
             catalogOffline = catalogOffline,
             systemMessageCache = systemMessageCache,
@@ -333,7 +403,7 @@ class MovitSyncOrchestratorHydrationTest {
                         SyncMessageTemplateDto(
                             id = "msg-1",
                             code = "tip",
-                            content = LocalizedNameDto(en = "Keep going"),
+                            content = SyncMessageContentDto(en = "Keep going"),
                         ),
                     ),
                 ),
@@ -360,7 +430,7 @@ class MovitSyncOrchestratorHydrationTest {
                     SyncMessageTemplateDto(
                         id = "msg-1",
                         code = "tip",
-                        content = LocalizedNameDto(en = "Brace core"),
+                        content = SyncMessageContentDto(en = "Brace core"),
                     ),
                 ),
             ),

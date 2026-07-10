@@ -2,6 +2,7 @@ package com.movit.feature.training
 
 import com.movit.core.data.repository.TrainingSessionWriteCoordinator
 import com.movit.core.training.config.ExerciseConfig
+import com.movit.core.training.journal.SessionJournalSnapshot
 import com.movit.core.training.journal.TrainingMotionSession
 import com.movit.core.training.journal.WorkoutUpload
 import com.movit.core.training.report.AssessmentTrainingResult
@@ -19,23 +20,31 @@ import com.movit.shared.AppResult
 
 /**
  * WS-8 hooks: motion journal checkpoint + offline-safe mobileWrites from the session VM.
+ *
+ * [readJournal] / [checkpointJournal] default to [writes]; tests may inject fakes without a coordinator.
  */
 class TrainingSessionWriteHooks(
     private val sessionId: String,
     private val exerciseSlug: String,
-    private val writes: TrainingSessionWriteCoordinator,
+    private val writes: TrainingSessionWriteCoordinator? = null,
     private val poseVariantIndex: Int = 0,
     private val isAssessmentMode: Boolean = false,
     private val defaultWeightKg: Float? = null,
     private val weightUnit: String = "kg",
     private val timeProvider: () -> Long = { 0L },
+    private val readJournal: (String) -> SessionJournalSnapshot? = { id -> writes?.readJournal(id) },
+    private val checkpointJournal: (SessionJournalSnapshot) -> Unit = { snap -> writes?.checkpointJournal(snap) },
 ) {
     private var motionSession: TrainingMotionSession? = null
     var peakFrameCaptures: List<MovitPeakFrameCapture> = emptyList()
     var repReplayClips: List<MovitRepReplayClip> = emptyList()
 
-    fun attach(engine: MovitTrainingEngine, exerciseConfig: ExerciseConfig) {
-        if (motionSession != null) return
+    /**
+     * Attach motion journal. If a checkpoint exists → [TrainingMotionSession.restore] **without**
+     * [TrainingMotionSession.start] (P1.5). Returns restored completed-rep count (0 when fresh).
+     */
+    fun attach(engine: MovitTrainingEngine, exerciseConfig: ExerciseConfig): Int {
+        motionSession?.let { return it.completedRepCount() }
         val session = TrainingMotionSession(
             exerciseConfig = exerciseConfig,
             exerciseSlug = exerciseSlug,
@@ -45,12 +54,20 @@ class TrainingSessionWriteHooks(
             sessionId = sessionId,
             isAssessmentMode = isAssessmentMode,
             timeProvider = timeProvider,
-            onCheckpoint = writes::checkpointJournal,
+            onCheckpoint = checkpointJournal,
         )
         session.attach(engine)
-        writes.readJournal(sessionId)?.let(session::restore)
-        session.start(timeProvider())
+        val journal = readJournal(sessionId)
+        val restored = if (journal != null) {
+            session.restore(journal)
+            session.checkpoint()
+            journal.completedRepMetrics.size
+        } else {
+            session.start(timeProvider())
+            0
+        }
         motionSession = session
+        return restored
     }
 
     fun detach() {
@@ -125,17 +142,20 @@ class TrainingSessionWriteHooks(
         workoutGroupId: String? = null,
         workoutTemplateId: String? = null,
         legacyReport: MovitPostTrainingReport? = null,
-    ): AppResult<String> = writes.uploadWorkoutExecution(
-        upload = upload,
-        context = context,
-        workoutGroupId = workoutGroupId,
-        workoutTemplateId = workoutTemplateId,
-        legacyReport = legacyReport?.let(writes::encodePostTrainingReport),
-        operationId = upload.id,
-    )
+    ): AppResult<String> {
+        val coordinator = requireWrites()
+        return coordinator.uploadWorkoutExecution(
+            upload = upload,
+            context = context,
+            workoutGroupId = workoutGroupId,
+            workoutTemplateId = workoutTemplateId,
+            legacyReport = legacyReport?.let(coordinator::encodePostTrainingReport),
+            operationId = upload.id,
+        )
+    }
 
     fun finalizeExercise(upload: WorkoutUpload) {
-        writes.finalizeJournal(sessionId)
+        requireWrites().finalizeJournal(sessionId)
     }
 
     fun finalizeUpload(endTimestampMs: Long = timeProvider()): WorkoutUpload? =
@@ -167,7 +187,7 @@ class TrainingSessionWriteHooks(
         programId: String?,
         weekNumber: Int,
         dayNumber: Int,
-    ): AppResult<String> = writes.startPlannedWorkout(
+    ): AppResult<String> = requireWrites().startPlannedWorkout(
         workoutId = workoutId,
         programId = programId,
         weekNumber = weekNumber,
@@ -182,19 +202,22 @@ class TrainingSessionWriteHooks(
         weekNumber: Int,
         dayNumber: Int,
         rpe: Int? = null,
+        workoutGroupId: String? = null,
         onOutcome: (AppResult<String>) -> Unit = {},
     ): AppResult<String> {
-        val request = writes.buildPlannedCompleteRequest(
+        val coordinator = requireWrites()
+        val request = coordinator.buildPlannedCompleteRequest(
             report = report,
             completedAt = timeProvider(),
             rpe = rpe,
         )
-        val result = writes.completePlannedWorkout(
+        val result = coordinator.completePlannedWorkout(
             workoutId = workoutId,
             request = request,
             programId = programId,
             weekNumber = weekNumber,
             dayNumber = dayNumber,
+            workoutGroupId = workoutGroupId,
         )
         onOutcome(result)
         return result
@@ -211,18 +234,24 @@ class TrainingSessionWriteHooks(
         weekNumber: Int,
         dayNumber: Int,
         rpe: Int? = null,
+        workoutGroupId: String? = null,
     ): AppResult<String> {
-        val request = writes.buildPlannedCompleteRequest(
+        val coordinator = requireWrites()
+        val request = coordinator.buildPlannedCompleteRequest(
             report = report,
             completedAt = timeProvider(),
             rpe = rpe,
         )
-        return writes.reportPlannedWorkout(
+        return coordinator.reportPlannedWorkout(
             workoutId = workoutId,
             request = request,
             programId = programId,
             weekNumber = weekNumber,
             dayNumber = dayNumber,
+            workoutGroupId = workoutGroupId,
         )
     }
+
+    private fun requireWrites(): TrainingSessionWriteCoordinator =
+        requireNotNull(writes) { "TrainingSessionWriteCoordinator required for write paths" }
 }

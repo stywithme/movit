@@ -94,11 +94,13 @@ fun movitDataModule(
             messageLibraryCache = get(),
         )
     }
+    single { com.movit.core.data.outbox.GuestOutboxAttributionGate(get()) }
     single {
         OfflineWriteQueue(
             localStore = get(),
             api = get(),
             platform = { get() },
+            guestGate = get(),
         )
     }
     single { ExploreSyncRepository(api = get(), platform = { get() }, localStore = { get() }) }
@@ -148,7 +150,7 @@ fun movitDataModule(
             journalStore = get(),
         )
     }
-    single { AccountSyncRepository(api = get(), platform = { get() }) }
+    single { AccountSyncRepository(api = get(), platform = { get() }, offlineWrites = { get() }) }
     single { BillingSyncRepository(api = get(), platform = { get() }) }
     single { ExercisePreferenceLocalStore(get(), ExerciseIdResolver(get())) }
     single { DayCustomizationLocalStore(get()) }

@@ -12,10 +12,20 @@ import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 
 internal const val MOVIT_REFRESH_AHEAD_MS = 60 * 60 * 1000L
+
+/** Outcome of `/mobile/auth/refresh` — only [SessionExpired] clears the local session. */
+internal sealed class RefreshOutcome {
+    data class Success(val tokens: BearerTokens) : RefreshOutcome()
+    /** 401/403 or success=false — refresh token is dead. */
+    data object SessionExpired : RefreshOutcome()
+    /** 5xx / timeout / IO / parse — keep tokens; caller fails transiently. */
+    data object TransientFailure : RefreshOutcome()
+}
 
 internal fun shouldRefreshProactively(expiresAtEpochMs: Long, nowEpochMs: Long = movitNowEpochMs()): Boolean =
     expiresAtEpochMs > 0L && nowEpochMs >= expiresAtEpochMs - MOVIT_REFRESH_AHEAD_MS
@@ -38,23 +48,38 @@ internal fun isUnauthenticatedAuthPath(encodedPath: String): Boolean {
 
 internal suspend fun MovitHttpClientConfig.ensureFreshTokens() {
     if (!shouldRefreshProactively(tokenStore.readExpiresAtEpochMs())) return
-    refreshAndPersist(refreshHttpClient)
+    when (val outcome = refreshAndPersist(refreshHttpClient)) {
+        is RefreshOutcome.SessionExpired -> handleSessionExpired()
+        is RefreshOutcome.Success,
+        is RefreshOutcome.TransientFailure,
+        -> Unit
+    }
 }
 
-internal suspend fun MovitHttpClientConfig.refreshAndPersist(client: HttpClient): BearerTokens? {
-    val refreshToken = tokenStore.readRefreshToken()?.takeIf { it.isNotBlank() } ?: return null
+internal suspend fun MovitHttpClientConfig.refreshAndPersist(client: HttpClient): RefreshOutcome {
+    val refreshToken = tokenStore.readRefreshToken()?.takeIf { it.isNotBlank() }
+        ?: return RefreshOutcome.SessionExpired
     val response = runCatching {
         client.post(refreshUrl()) {
             contentType(ContentType.Application.Json)
             setBody(RefreshTokenRequestDto(refreshToken))
         }
-    }.getOrNull() ?: return null
+    }.getOrElse { return RefreshOutcome.TransientFailure }
 
-    if (!response.status.isSuccess()) return null
-    val body = runCatching { response.body<AuthApiResponse<AuthTokensDto>>() }.getOrNull() ?: return null
-    if (!body.success) return null
-    val tokens = body.data ?: return null
-    val access = tokens.accessToken.takeIf { it.isNotBlank() } ?: return null
+    val status = response.status
+    if (status == HttpStatusCode.Unauthorized || status == HttpStatusCode.Forbidden) {
+        return RefreshOutcome.SessionExpired
+    }
+    if (!status.isSuccess()) {
+        // 5xx and other non-auth failures are retryable — do not expire the session.
+        return RefreshOutcome.TransientFailure
+    }
+
+    val body = runCatching { response.body<AuthApiResponse<AuthTokensDto>>() }
+        .getOrElse { return RefreshOutcome.TransientFailure }
+    if (!body.success) return RefreshOutcome.SessionExpired
+    val tokens = body.data ?: return RefreshOutcome.SessionExpired
+    val access = tokens.accessToken.takeIf { it.isNotBlank() } ?: return RefreshOutcome.SessionExpired
     val refresh = tokens.refreshToken.takeIf { it.isNotBlank() } ?: refreshToken
     val expiresAt = if (tokens.expiresIn > 0) {
         movitNowEpochMs() + tokens.expiresIn * 1000L
@@ -62,7 +87,7 @@ internal suspend fun MovitHttpClientConfig.refreshAndPersist(client: HttpClient)
         tokenStore.readExpiresAtEpochMs()
     }
     tokenStore.saveTokens(access, refresh, expiresAt)
-    return BearerTokens(access, refresh)
+    return RefreshOutcome.Success(BearerTokens(access, refresh))
 }
 
 internal fun MovitHttpClientConfig.handleSessionExpired() {
@@ -88,9 +113,13 @@ internal fun io.ktor.client.HttpClientConfig<*>.installMovitAuth(config: MovitHt
                 }
             }
             refreshTokens {
-                config.refreshAndPersist(config.refreshHttpClient) ?: run {
-                    config.handleSessionExpired()
-                    null
+                when (val outcome = config.refreshAndPersist(config.refreshHttpClient)) {
+                    is RefreshOutcome.Success -> outcome.tokens
+                    is RefreshOutcome.SessionExpired -> {
+                        config.handleSessionExpired()
+                        null
+                    }
+                    is RefreshOutcome.TransientFailure -> null
                 }
             }
             sendWithoutRequest { request ->

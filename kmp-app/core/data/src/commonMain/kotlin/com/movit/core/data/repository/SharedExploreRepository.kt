@@ -5,6 +5,9 @@ import com.movit.core.model.ExploreContent
 import com.movit.core.model.ExploreRepository
 import com.movit.resources.strings.ExploreStrings
 import com.movit.shared.AppResult
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.withContext
 
 class SharedExploreRepository(
     private val fallback: ExploreRepository = InMemoryExploreRepository(),
@@ -18,7 +21,9 @@ class SharedExploreRepository(
         val language = platform.preferredLanguage()
         val strings = ExploreStrings.load(language)
         MovitData.explore.readCached()?.let { cached ->
-            return AppResult.Success(ExploreApiMapper.map(cached, language, strings))
+            return withContext(Dispatchers.IO) {
+                AppResult.Success(ExploreApiMapper.map(cached, language, strings))
+            }
         }
         return refreshExploreContent(language, strings)
     }
@@ -37,7 +42,7 @@ class SharedExploreRepository(
         language: String,
         strings: ExploreStrings,
     ): AppResult<ExploreContent> {
-        return when (val result = MovitData.explore.syncFull()) {
+        return when (val result = MovitData.explore.sync()) {
             is AppResult.Success -> AppResult.Success(
                 ExploreApiMapper.map(result.value, language, strings),
             )

@@ -113,6 +113,50 @@ class MovitHttpClientAuthTest {
   }
 
   @Test
+  fun refreshServerErrorDoesNotExpireSession() = runBlocking {
+    MovitClock.nowEpochMs = { baseNow }
+    val store = FakeMovitAuthTokenStore(
+      accessToken = "stale-access",
+      expiresAtEpochMs = baseNow + 86_400_000L,
+    )
+    val engine = MockEngine { request ->
+      when {
+        request.url.encodedPath.endsWith("/auth/refresh") -> respond(
+          content = """{"error":"unavailable"}""",
+          status = HttpStatusCode.ServiceUnavailable,
+          headers = jsonHeaders,
+        )
+        request.url.encodedPath.endsWith("/api/mobile/home") -> respond(
+          content = """{"error":"unauthorized"}""",
+          status = HttpStatusCode.Unauthorized,
+          headers = jsonHeaders,
+        )
+        else -> respond("{}", HttpStatusCode.NotFound, jsonHeaders)
+      }
+    }
+    var sessionExpired = false
+    val refreshClient = createMovitHttpClientWithEngine(engine = engine)
+    val client = createMovitHttpClientWithEngine(
+      engine = engine,
+      enableLogging = false,
+      auth = MovitHttpClientConfig(
+        tokenStore = store,
+        baseUrlProvider = { "https://test.movit.local" },
+        refreshHttpClient = refreshClient,
+        onSessionExpired = { sessionExpired = true },
+      ),
+    )
+
+    val api = MovitMobileApi(client) { "https://test.movit.local" }
+    val result = api.fetchHome()
+
+    assertTrue(result.isFailure)
+    assertFalse(sessionExpired)
+    assertFalse(store.cleared)
+    assertEquals("stale-access", store.access)
+  }
+
+  @Test
   fun locallyExpiredToken_refreshesBeforeCall() = runBlocking {
     MovitClock.nowEpochMs = { baseNow }
     val store = FakeMovitAuthTokenStore(

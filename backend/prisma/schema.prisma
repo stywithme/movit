@@ -615,11 +615,14 @@ model UserProgramOverride {
   reasonCode                OverrideReason?
   data                      Json?
   appliedBy                 OverrideAppliedBy        @default(USER)
+  /// Client outbox operationId — unique per userProgram when set (P1.3).
+  idempotencyKey            String?
   createdAt                 DateTime                 @default(now())
   userProgram               UserProgram              @relation(fields: [userProgramId], references: [id], onDelete: Cascade)
   plannedWorkoutItem        PlannedWorkoutItem?      @relation(fields: [plannedWorkoutItemId], references: [id], onDelete: Cascade)
   workoutTemplateExercise   WorkoutTemplateExercise? @relation(fields: [workoutTemplateExerciseId], references: [id], onDelete: Cascade)
 
+  @@unique([userProgramId, idempotencyKey])
   @@index([userProgramId, weekNumber, dayNumber])
   @@index([plannedWorkoutItemId])
   @@index([workoutTemplateExerciseId])
@@ -662,12 +665,15 @@ model PlannedWorkoutReport {
   /// User-reported perceived exertion (1–10) after workout completion.
   rpe              Int?
   report           Json?
+  /// Client outbox operationId — unique per user when set (P1.3).
+  idempotencyKey   String?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   program          Program?       @relation(fields: [programId], references: [id])
   plannedWorkout   PlannedWorkout @relation(fields: [plannedWorkoutId], references: [id], onDelete: Cascade)
   user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, idempotencyKey])
   @@index([userId])
   @@index([programId])
   @@index([plannedWorkoutId])
@@ -1215,10 +1221,10 @@ model WorkoutExecutionMetrics {
   workoutExecutionId   String           @unique
   avgRom               Int
   avgSymmetry          Int?
-  avgStability         Int
+  avgStability         Int?
   avgVelocity          Int?
   avgFormScore         Int
-  avgAlignmentAccuracy Int
+  avgAlignmentAccuracy Int?
   avgTempo             Json
   totalTUT             Int
   totalVolume          Float?
@@ -1246,10 +1252,10 @@ model RepMetrics {
   side               String?
   rom                Int
   symmetry           Int?
-  stability          Int
+  stability          Int?
   velocity           Int?
   formScore          Int
-  alignmentAccuracy  Int
+  alignmentAccuracy  Int?
   tempo              Json
   createdAt          DateTime         @default(now())
   workoutExecution   WorkoutExecution @relation(fields: [workoutExecutionId], references: [id], onDelete: Cascade)

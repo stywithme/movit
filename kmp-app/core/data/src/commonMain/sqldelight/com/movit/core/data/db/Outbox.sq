@@ -6,7 +6,9 @@ CREATE TABLE outbox_entry (
     created_at_epoch_ms INTEGER NOT NULL,
     attempts INTEGER NOT NULL,
     status TEXT NOT NULL,
-    last_error TEXT
+    last_error TEXT,
+    owner_user_id TEXT,
+    next_attempt_at_epoch_ms INTEGER
 );
 
 CREATE INDEX outbox_entry_status_created ON outbox_entry(status, created_at_epoch_ms);
@@ -14,9 +16,10 @@ CREATE INDEX outbox_entry_status_created ON outbox_entry(status, created_at_epoc
 insert:
 INSERT OR REPLACE INTO outbox_entry(
     id, operation_type, payload_json, idempotency_key,
-    created_at_epoch_ms, attempts, status, last_error
+    created_at_epoch_ms, attempts, status, last_error,
+    owner_user_id, next_attempt_at_epoch_ms
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectPending:
 SELECT *
@@ -39,14 +42,46 @@ SELECT *
 FROM outbox_entry
 WHERE status = ?;
 
+selectAll:
+SELECT *
+FROM outbox_entry
+ORDER BY created_at_epoch_ms ASC;
+
+countGuest:
+SELECT COUNT(*)
+FROM outbox_entry
+WHERE owner_user_id IS NULL;
+
 updateStatus:
 UPDATE outbox_entry
-SET status = ?, attempts = ?, last_error = ?
+SET status = ?, attempts = ?, last_error = ?, next_attempt_at_epoch_ms = ?
 WHERE id = ?;
+
+backfillOwnerUserIdWhereNull:
+UPDATE outbox_entry
+SET owner_user_id = ?
+WHERE owner_user_id IS NULL;
+
+attributeGuestToUser:
+UPDATE outbox_entry
+SET owner_user_id = ?
+WHERE owner_user_id IS NULL;
 
 deleteById:
 DELETE FROM outbox_entry
 WHERE id = ?;
+
+deleteOwnedByOtherUsers:
+DELETE FROM outbox_entry
+WHERE owner_user_id IS NOT NULL AND owner_user_id != ?;
+
+deleteAllGuest:
+DELETE FROM outbox_entry
+WHERE owner_user_id IS NULL;
+
+deleteGuestOlderThan:
+DELETE FROM outbox_entry
+WHERE owner_user_id IS NULL AND created_at_epoch_ms < ?;
 
 deleteAll:
 DELETE FROM outbox_entry;

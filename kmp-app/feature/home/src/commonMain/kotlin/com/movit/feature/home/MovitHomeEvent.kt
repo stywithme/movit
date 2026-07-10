@@ -18,4 +18,6 @@ sealed interface MovitHomeEvent {
     data class RecentActivityClicked(val reportId: String) : MovitHomeEvent
     data class QuickActionClicked(val actionId: String) : MovitHomeEvent
     data object CatchUpOpenClicked : MovitHomeEvent
+    /** UX.6 — retry permanent outbox failures from Home alert. */
+    data object RetryFailedUploadsClicked : MovitHomeEvent
 }

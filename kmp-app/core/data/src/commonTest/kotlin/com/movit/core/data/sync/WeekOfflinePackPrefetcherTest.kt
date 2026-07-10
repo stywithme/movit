@@ -1,5 +1,6 @@
 package com.movit.core.data.sync
 
+import com.movit.core.data.repository.FakeMovitPlatformBindings
 import com.movit.core.network.dto.LocalizedNameDto
 import com.movit.core.network.dto.ProgramExportDayDto
 import com.movit.core.network.dto.ProgramExportDto
@@ -60,5 +61,26 @@ class WeekOfflinePackPrefetcherTest {
             "ready_prog-1_2",
             WeekOfflinePackPrefetcher.offlineReadyKey("prog-1", weekNumber = 2),
         )
+    }
+
+    @Test
+    fun protectedOfflineWeekNumbers_readsReadyMarkers() {
+        val platform = FakeMovitPlatformBindings()
+        platform.writeCache(
+            WeekOfflinePackPrefetcher.OFFLINE_STORE,
+            WeekOfflinePackPrefetcher.offlineReadyKey("prog-1", weekNumber = 3),
+            "1",
+        )
+        platform.writeCache(
+            WeekOfflinePackPrefetcher.OFFLINE_STORE,
+            WeekOfflinePackPrefetcher.offlineReadyKey("prog-2", weekNumber = 7),
+            "1",
+        )
+        platform.writeCache(
+            WeekOfflinePackPrefetcher.OFFLINE_STORE,
+            "other_key",
+            "1",
+        )
+        assertEquals(setOf(3, 7), WeekOfflinePackPrefetcher.protectedOfflineWeekNumbers(platform))
     }
 }

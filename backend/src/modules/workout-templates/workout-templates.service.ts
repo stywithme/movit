@@ -687,7 +687,7 @@ export const workoutService = {
   },
 
   buildWorkoutExerciseExport(we: {
-    exercise: { slug: string };
+    exercise: { slug: string; name?: unknown };
     variantIndex: number;
     targetReps: number | null;
     targetRepsPerSet: unknown;
@@ -718,6 +718,7 @@ export const workoutService = {
 
     return {
       exercise: we.exercise.slug,
+      name: parseLocalizedText(we.exercise.name) || { ar: we.exercise.slug, en: we.exercise.slug },
       variantIndex: we.variantIndex,
       targetReps: targetRepsPerSet?.[0] ?? we.targetReps ?? undefined,
       targetRepsPerSet: targetRepsPerSet ?? undefined,

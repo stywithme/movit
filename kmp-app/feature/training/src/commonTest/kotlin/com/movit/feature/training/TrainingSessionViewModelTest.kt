@@ -11,7 +11,7 @@ import kotlin.test.assertTrue
 class TrainingSessionViewModelTest {
   @Test
   fun workoutUploadContext_usesExploreContextConstant() {
-    assertEquals("explore_workout", WorkoutExecutionBatchCoordinator.EXPLORE_WORKOUT_CONTEXT)
+    assertEquals("explore_workout", WorkoutUploadContext.EXPLORE_WORKOUT_CONTEXT)
   }
 
   @Test

@@ -12,6 +12,7 @@ import com.movit.core.network.dto.BundledColdOfflineDto
 import com.movit.core.network.dto.ExploreDataDto
 import com.movit.core.network.dto.HomeDataDto
 import com.movit.core.network.dto.LocalizedNameDto
+import com.movit.core.network.dto.SyncMessageContentDto
 import com.movit.core.network.dto.SyncMessageTemplateDto
 import com.movit.core.network.dto.SyncSystemMessageDto
 import io.ktor.client.engine.mock.MockEngine
@@ -49,7 +50,7 @@ class ColdOfflineBundleSeederTest {
                     id = "msg-1",
                     code = "knee_depth_tip",
                     category = "form",
-                    content = LocalizedNameDto(ar = "انزل أكثر", en = "Go deeper"),
+                    content = SyncMessageContentDto(ar = "انزل أكثر", en = "Go deeper"),
                 ),
             ),
             systemMessages = listOf(
@@ -70,7 +71,7 @@ class ColdOfflineBundleSeederTest {
             val home = HomeSyncRepository(api, { platform }, { localStore })
             val explore = ExploreSyncRepository(api, { platform }, { localStore })
             val systemMessages = SystemMessageCache(localStore)
-            val trainingConfig = TrainingConfigRepository(localStore)
+            val trainingConfig = TrainingConfigRepository(localStore, MessageLibraryCache(localStore))
             val messageLibrary = MessageLibraryCache(localStore)
             val seeder = ColdOfflineBundleSeeder(
                 localStore = localStore,
@@ -91,6 +92,35 @@ class ColdOfflineBundleSeederTest {
             assertEquals(1, messageLibrary.read().size)
             assertEquals(1, systemMessages.read().size)
             assertEquals("Go!", SystemMessageRegistry.get("training_countdown_go", "", "").en)
+        }
+    }
+
+    @Test
+    fun seedIfNeeded_offline_resolvesMessageLibraryIntoExerciseConfig() {
+        runBlocking {
+            val platform = FakeMovitPlatformBindings()
+            val localStore = testLocalStore(platform)
+            val api = testMobileApi(MockEngine { respond("{}", HttpStatusCode.OK) }, platform)
+            val messageLibrary = MessageLibraryCache(localStore)
+            val trainingConfig = TrainingConfigRepository(localStore, messageLibrary)
+            val seeder = ColdOfflineBundleSeeder(
+                localStore = localStore,
+                homeSync = HomeSyncRepository(api, { platform }, { localStore }),
+                exploreSync = ExploreSyncRepository(api, { platform }, { localStore }),
+                systemMessageCache = SystemMessageCache(localStore),
+                trainingConfig = trainingConfig,
+                messageLibraryCache = messageLibrary,
+                bundleJsonProvider = { bundledJsonWithMessageAssignment() },
+            )
+
+            assertTrue(seeder.seedIfNeeded())
+            assertEquals(1, messageLibrary.read().size)
+            val motivational = trainingConfig.getExercise("squat")
+                ?.poseVariants?.single()?.feedbackMessages?.motivational.orEmpty()
+            assertTrue(motivational.any { it.en == "Go deeper" })
+            assertTrue(
+                trainingConfig.resolveBySlug("squat")!!.messageLibraryFingerprint.isNotBlank(),
+            )
         }
     }
 
@@ -176,7 +206,7 @@ class ColdOfflineBundleSeederTest {
                     SyncMessageTemplateDto(
                         id = "existing-msg",
                         code = "existing",
-                        content = LocalizedNameDto(en = "x"),
+                        content = SyncMessageContentDto(en = "x"),
                     ),
                 ),
             )
@@ -211,6 +241,69 @@ class ColdOfflineBundleSeederTest {
         assertTrue(bundle.systemMessages.isNotEmpty())
         assertTrue("bicebs-mo8j7gg1" in bundledSlugs)
         assertTrue(trainingConfig.supports("bicebs-mo8j7gg1"))
+    }
+
+    private fun bundledJsonWithMessageAssignment(): String {
+        val exercise = MovitJson.parseToJsonElement(
+            """
+            {
+              "id": "ex-seed",
+              "slug": "squat",
+              "updatedAt": "2026-06-14T00:00:00.000Z",
+              "name": { "ar": "القرفصاء", "en": "Squat" },
+              "poseVariants": [
+                {
+                  "name": { "ar": "زاوية جانبية", "en": "Side View" },
+                  "trackedJoints": [
+                    {
+                      "joint": "left_knee",
+                      "role": "primary",
+                      "startPose": { "min": 120, "max": 180 }
+                    }
+                  ],
+                  "messageAssignments": [
+                    {
+                      "messageId": "msg-1",
+                      "target": "feedback",
+                      "context": "motivational",
+                      "sortOrder": 0
+                    }
+                  ]
+                }
+              ]
+            }
+            """.trimIndent(),
+        )
+        return MovitJson.encodeToString(
+            BundledColdOfflineDto.serializer(),
+            BundledColdOfflineDto(
+                home = HomeDataDto(user = com.movit.core.network.dto.HomeUserDto(name = "Guest")),
+                explore = ExploreDataDto(
+                    exercises = listOf(
+                        com.movit.core.network.dto.ExploreExerciseDto(
+                            id = "ex-seed",
+                            slug = "squat",
+                            name = LocalizedNameDto(en = "Squat", ar = "قرفصاء"),
+                        ),
+                    ),
+                ),
+                exercises = listOf(exercise),
+                messageLibrary = listOf(
+                    SyncMessageTemplateDto(
+                        id = "msg-1",
+                        code = "knee_depth_tip",
+                        category = "form",
+                        content = SyncMessageContentDto(ar = "انزل أكثر", en = "Go deeper"),
+                    ),
+                ),
+                systemMessages = listOf(
+                    SyncSystemMessageDto(
+                        code = "training_countdown_go",
+                        content = LocalizedNameDto(ar = "ابدأ!", en = "Go!"),
+                    ),
+                ),
+            ),
+        )
     }
 
     private fun seedExerciseConfig(): JsonObject =

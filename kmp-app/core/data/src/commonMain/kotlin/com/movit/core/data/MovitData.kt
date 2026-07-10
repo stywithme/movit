@@ -6,19 +6,24 @@ import com.movit.core.data.cache.ColdOfflineBundleSeeder
 import com.movit.core.data.cache.SystemMessageCache
 import com.movit.core.data.di.movitDataModule
 import com.movit.core.data.local.DefaultMovitLocalStoreFactory
+import com.movit.core.data.local.GUEST_OUTBOX_RETENTION_MS
 import com.movit.core.data.local.MovitLocalStore
 import com.movit.core.data.local.MovitLocalStoreFactory
 import com.movit.core.data.cache.logCacheFreshnessLine
 import com.movit.core.data.cache.MovitCacheFreshnessDiagnostics
 import com.movit.core.data.cache.MovitCacheFreshnessReport
+import com.movit.core.data.outbox.GuestOutboxAttributionGate
+import com.movit.core.data.outbox.GuestOutboxAttributionPrompt
 import com.movit.core.data.outbox.LegacyAnalyticsPendingCleaner
 import com.movit.core.data.outbox.LegacyWorkoutSyncGate
 import com.movit.core.data.outbox.OfflineWriteQueue
+import com.movit.core.data.outbox.OutboxReplayAcquisition
 import com.movit.core.data.platform.MovitPlatformBindings
 import com.movit.core.data.repository.AccountSyncRepository
 import com.movit.core.data.repository.ExploreSyncRepository
 import com.movit.core.data.repository.HomeSyncRepository
 import com.movit.core.data.repository.MobileWriteSyncRepository
+import com.movit.core.data.repository.MovitCacheKeys
 import com.movit.core.data.repository.PlanSyncRepository
 import com.movit.core.data.repository.ProgramFlowSyncRepository
 import com.movit.core.data.repository.ReportsSyncRepository
@@ -26,13 +31,22 @@ import com.movit.core.data.preferences.MovitTrainingPreferences
 import com.movit.core.data.repository.TrainingConfigRepository
 import com.movit.core.data.repository.TrainingSessionWriteCoordinator
 import com.movit.core.data.repository.WorkoutSessionSyncRepository
+import com.movit.core.data.sync.MovitCacheInvalidation
 import com.movit.core.data.sync.MovitSyncOrchestrator
 import com.movit.core.data.sync.WeekOfflinePackPrefetcher
+import com.movit.core.network.MovitClock
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.launch
 import org.koin.core.Koin
 import org.koin.core.KoinApplication
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
-import kotlinx.coroutines.runBlocking
 import org.koin.core.module.Module
 
 /**
@@ -47,7 +61,21 @@ import org.koin.core.module.Module
 object MovitData {
     private var koinApp: KoinApplication? = null
 
-    /** Invoked when refresh fails after 401; wire to shell auth gate. */
+    private val sessionScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private val _sessionExpiredEvents = MutableSharedFlow<Unit>(
+        replay = 1,
+        extraBufferCapacity = 1,
+        onBufferOverflow = kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST,
+    )
+
+    /** Shell collects on Main — fired after session-expiry clearReadCaches completes. */
+    val sessionExpiredEvents: SharedFlow<Unit> = _sessionExpiredEvents.asSharedFlow()
+
+    /**
+     * Legacy callback; prefer [sessionExpiredEvents]. Still invoked after the async clear
+     * so existing shell wiring keeps working until fully migrated.
+     */
     var onSessionExpired: (() -> Unit)? = null
 
     val isInstalled: Boolean
@@ -67,24 +95,76 @@ object MovitData {
         koinApp = startKoin {
             modules(movitDataModule(platform, localStoreFactory) + additionalModules)
         }
+        // P2.10: optimistic writes + sync success share one invalidation sink.
+        MovitCacheInvalidation.sink = {
+            runCatching { koin().get<HomeSyncRepository>().invalidateMemoized() }
+            runCatching { koin().get<ExploreSyncRepository>().invalidateMemoized() }
+            runCatching { koin().get<MovitSyncOrchestrator>().notifyCacheInvalidated() }
+        }
     }
 
     /**
      * Seeds bundled cold-start data and hydrates [SystemMessageRegistry] on first launch.
      * Call once after [install] from the shell entry point.
+     * Also backfills [MovitPlatformBindings.userId] for legacy sessions that have a token but no id (F3).
      */
     suspend fun bootstrapLocalCaches() {
         if (!isInstalled) return
         val koin = koin()
+        ensureUserIdFromProfileIfNeeded()
         koin.get<ColdOfflineBundleSeeder>().seedIfNeeded()
         koin.get<SystemMessageCache>().loadIntoRegistry()
     }
 
+    /**
+     * Legacy iOS/Android sessions may have an access token without a persisted userId.
+     * One profile fetch re-persists the full session so outbox replay can attribute rows.
+     */
+    suspend fun ensureUserIdFromProfileIfNeeded() {
+        if (!isInstalled) return
+        val platform = koin().get<MovitPlatformBindings>()
+        if (platform.authHeader().isNullOrBlank()) return
+        if (!platform.userId().isNullOrBlank()) return
+        runCatching { koin().get<AccountSyncRepository>().fetchProfile() }
+    }
+
+    /**
+     * Auth refresh concluded the session is dead (401/403). Clears read caches + tokens only;
+     * durable outbox / journal / unconfirmed reports stay (PR-7).
+     * Non-blocking — no [kotlinx.coroutines.runBlocking].
+     */
     internal fun notifySessionExpired() {
-        if (isInstalled) {
-            runBlocking { clearAllUserData() }
+        if (!isInstalled) {
+            onSessionExpired?.invoke()
+            _sessionExpiredEvents.tryEmit(Unit)
+            return
         }
-        onSessionExpired?.invoke()
+        sessionScope.launch {
+            runCatching { clearReadCaches() }
+            _sessionExpiredEvents.emit(Unit)
+            onSessionExpired?.invoke()
+        }
+    }
+
+    /** PR-7 read scope — session expiry. */
+    suspend fun clearReadCaches() {
+        if (!isInstalled) return
+        val koin = koin()
+        koin.get<MovitLocalStore>().clearReadCaches()
+        koin.get<AudioManifestCache>().clear()
+        // Legacy SharedPreferences may still hold durable report mirrors — wipe only on logout.
+    }
+
+    /** PR-7 durable writes — explicit logout / delete account (after P1.8 warning). */
+    suspend fun clearDurableWrites() {
+        if (!isInstalled) return
+        val koin = koin()
+        koin.get<MovitLocalStore>().clearDurableWrites()
+        LegacyAnalyticsPendingCleaner.clearIfRegistered()
+        koin.get<GuestOutboxAttributionGate>().clearAcceptance()
+        clearLastKnownUserId()
+        koin.get<MovitPlatformBindings>().clearLegacyUserCaches()
+        koin.get<MovitPlatformBindings>().clearUserFiles()
     }
 
     /**
@@ -93,11 +173,46 @@ object MovitData {
      */
     suspend fun clearAllUserData() {
         if (!isInstalled) return
-        val koin = koin()
-        koin.get<MovitLocalStore>().clearAllUserData()
-        koin.get<AudioManifestCache>().clear()
-        LegacyAnalyticsPendingCleaner.clearIfRegistered()
-        koin.get<MovitPlatformBindings>().clearLegacyUserCaches()
+        clearReadCaches()
+        clearDurableWrites()
+    }
+
+    /**
+     * After a successful login/register: account-switch hygiene + guest retention + UX.7 prompt.
+     * Returns a prompt when guest outbox rows exist (UI must ask before [acceptGuestOutboxAttribution]).
+     */
+    suspend fun onAuthenticatedSession(userId: String): GuestOutboxAttributionPrompt? {
+        if (!isInstalled || userId.isBlank()) return null
+        val store = koin().get<MovitLocalStore>()
+        val gate = koin().get<GuestOutboxAttributionGate>()
+        val previous = readLastKnownUserId()
+        if (previous != null && previous != userId) {
+            clearReadCaches()
+            store.deleteOutboxOwnedByOtherUsers(userId)
+            gate.clearAcceptance()
+        }
+        store.deleteGuestOutboxOlderThan(MovitClock.nowEpochMs() - GUEST_OUTBOX_RETENTION_MS)
+        writeLastKnownUserId(userId)
+        return gate.pendingPrompt()
+    }
+
+    /** UX.7 — attribute guest outbox rows to [userId] after the user accepts, then flush outbox. */
+    suspend fun acceptGuestOutboxAttribution(userId: String) {
+        if (!isInstalled) return
+        koin().get<GuestOutboxAttributionGate>().accept(userId)
+        // Accept alone only rewrites owner_user_id — replay immediately so uploads leave the device.
+        offlineWrites.replayPending(OutboxReplayAcquisition.Wait)
+    }
+
+    /** UX.7 — discard guest outbox rows. */
+    suspend fun discardGuestOutboxAttribution() {
+        if (!isInstalled) return
+        koin().get<GuestOutboxAttributionGate>().discard()
+    }
+
+    suspend fun pendingGuestOutboxPrompt(): GuestOutboxAttributionPrompt? {
+        if (!isInstalled) return null
+        return koin().get<GuestOutboxAttributionGate>().pendingPrompt()
     }
 
     fun requirePlatform(): MovitPlatformBindings = koin().get()
@@ -121,6 +236,7 @@ object MovitData {
     val offlineWrites: OfflineWriteQueue get() = koin().get()
     val sync: MovitSyncOrchestrator get() = koin().get()
     val weekOfflinePrefetch: WeekOfflinePackPrefetcher get() = koin().get()
+    val guestOutboxGate: GuestOutboxAttributionGate get() = koin().get()
 
     /**
      * Migrates legacy Android analytics pending files into the KMP outbox.
@@ -144,4 +260,22 @@ object MovitData {
         logCacheFreshnessLine(tag, line)
     }
 
+    private fun readLastKnownUserId(): String? =
+        localStore.readJsonCache(MovitCacheKeys.AUTH_LIFECYCLE_STORE, MovitCacheKeys.LAST_KNOWN_USER_ID)
+            ?.takeIf { it.isNotBlank() }
+
+    private fun writeLastKnownUserId(userId: String) {
+        localStore.writeJsonCache(
+            MovitCacheKeys.AUTH_LIFECYCLE_STORE,
+            MovitCacheKeys.LAST_KNOWN_USER_ID,
+            userId,
+        )
+    }
+
+    private fun clearLastKnownUserId() {
+        localStore.removeJsonCache(
+            MovitCacheKeys.AUTH_LIFECYCLE_STORE,
+            MovitCacheKeys.LAST_KNOWN_USER_ID,
+        )
+    }
 }

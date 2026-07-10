@@ -20,4 +20,8 @@ data class MovitAuthUiState(
     val infoMessage: String? = null,
     val forgotPasswordSent: Boolean = false,
     val pendingGoogleSignIn: Boolean = false,
+    /** UX.7 — non-null while the guest-attribution dialog is visible. */
+    val guestOutboxPromptCount: Int? = null,
+    /** User id for [guestOutboxPromptCount] accept path. */
+    val authenticatedUserId: String? = null,
 )

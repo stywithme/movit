@@ -33,6 +33,9 @@ class AndroidMovitPlatform(
         return "Bearer $token"
     }
 
+    override fun userId(): String? =
+        profilePrefs.getString(MovitAuthProfileKeys.KEY_USER_ID, null)?.takeIf { it.isNotBlank() }
+
     override fun preferredLanguage(): String =
         profilePrefs.getString(MovitAuthProfileKeys.KEY_LANGUAGE, "en") ?: "en"
 
@@ -193,6 +196,28 @@ class AndroidMovitPlatform(
                 .clear()
                 .apply()
         }
+    }
+
+    override fun clearUserFiles() {
+        listOf("frame_captures", "audio_cache").forEach { dirName ->
+            runCatching {
+                val dir = java.io.File(appContext.filesDir, dirName)
+                if (dir.exists()) dir.deleteRecursively()
+            }
+        }
+    }
+
+    override fun cleanupOrphanFrameCaptures(protectedSessionIds: Set<String>): Int {
+        val root = java.io.File(appContext.filesDir, "frame_captures")
+        if (!root.isDirectory) return 0
+        var removed = 0
+        root.listFiles()?.forEach { sessionDir ->
+            if (!sessionDir.isDirectory) return@forEach
+            if (sessionDir.name !in protectedSessionIds) {
+                if (sessionDir.deleteRecursively()) removed++
+            }
+        }
+        return removed
     }
 
     override fun setOnboardingCompleted(completed: Boolean) {
