@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
@@ -91,6 +92,7 @@ fun MovitSkeletonOverlay(
 ) {
     val overlayState = parity.copy(jointVisuals = jointStates.ifEmpty { parity.jointVisuals })
     val trackPath = remember { Path() }
+    val previewConnectionsPath = remember { Path() }
     val romMotionState = remember { SkeletonRomMotionState() }
     val romPalette = SkeletonRomColorPalette(
         transition = MaterialTheme.colorScheme.primary,
@@ -143,6 +145,7 @@ fun MovitSkeletonOverlay(
                     isBilateralFlipped = overlayState.isBilateralFlipped,
                     trainingPolish = false,
                     point = ::point,
+                    connectionsPath = previewConnectionsPath,
                 )
                 drawSkeletonJoints(
                     jointVisuals = overlayState.jointVisuals,
@@ -173,9 +176,34 @@ private fun DrawScope.drawSkeletonConnections(
     isBilateralFlipped: Boolean,
     trainingPolish: Boolean,
     point: (Int) -> Offset?,
+    connectionsPath: Path? = null,
 ) {
     val stroke = 4.dp.toPx()
     val trackedStroke = 6.dp.toPx()
+
+    if (connectionsPath != null && !trainingPolish) {
+        connectionsPath.reset()
+        var hasLines = false
+        for ((start, end) in POSE_CONNECTIONS) {
+            val p1 = point(start) ?: continue
+            val p2 = point(end) ?: continue
+            val startJoint = landmarkIndexToJointCode(start)
+            val endJoint = landmarkIndexToJointCode(end)
+            val relevant = resolveJointVisual(startJoint, endJoint, jointVisuals, isBilateralFlipped)
+            if (relevant?.dimmed == true) continue
+            connectionsPath.moveTo(p1.x, p1.y)
+            connectionsPath.lineTo(p2.x, p2.y)
+            hasLines = true
+        }
+        if (hasLines) {
+            drawPath(
+                path = connectionsPath,
+                color = Color.White.copy(alpha = 0.75f),
+                style = Stroke(width = stroke, cap = StrokeCap.Round),
+            )
+        }
+        return
+    }
 
     for ((start, end) in POSE_CONNECTIONS) {
         val p1 = point(start) ?: continue
@@ -300,6 +328,17 @@ private fun DrawScope.drawArcRomIndicator(
         bottom = center.y + radius,
     )
 
+    val colorStops = SkeletonRomGeometry.buildArcSweepColorStops(
+        invertAngles = indicator.invertAngles,
+        upRanges = indicator.upStateRanges,
+        downRanges = indicator.downStateRanges,
+        colorForState = { state -> palette.colorForState(state).copy(alpha = 0.92f) },
+    )
+    val arcBrush = Brush.sweepGradient(
+        colorStops = colorStops.toTypedArray(),
+        center = center,
+    )
+
     drawArc(
         color = palette.shadow,
         startAngle = -90f,
@@ -309,34 +348,15 @@ private fun DrawScope.drawArcRomIndicator(
         size = rect.size,
         style = Stroke(width = stroke + 2.dp.toPx(), cap = StrokeCap.Round),
     )
-
-    var startAngle = 0f
-    while (startAngle < 180f) {
-        val endAngle = (startAngle + 2f).coerceAtMost(180f)
-        val midVisualAngle = (startAngle + endAngle) / 2f
-        val originalAngle = SkeletonRomGeometry.originalAngleForVisual(midVisualAngle, indicator.invertAngles)
-        val color = palette.colorForState(
-            SkeletonRomGeometry.resolvedStateForAngle(
-                angleDeg = originalAngle,
-                upRanges = indicator.upStateRanges,
-                downRanges = indicator.downStateRanges,
-            ),
-        )
-        val (canvasStart, sweep) = SkeletonRomGeometry.arcSweepForJointRange(
-            rangeStartDeg = startAngle.toDouble(),
-            rangeEndDeg = endAngle.toDouble(),
-        )
-        drawArc(
-            color = color.copy(alpha = 0.92f),
-            startAngle = canvasStart,
-            sweepAngle = sweep,
-            useCenter = false,
-            topLeft = rect.topLeft,
-            size = rect.size,
-            style = Stroke(width = stroke, cap = StrokeCap.Round),
-        )
-        startAngle = endAngle
-    }
+    drawArc(
+        brush = arcBrush,
+        startAngle = -90f,
+        sweepAngle = 180f,
+        useCenter = false,
+        topLeft = rect.topLeft,
+        size = rect.size,
+        style = Stroke(width = stroke, cap = StrokeCap.Round),
+    )
 
     if (indicator.showCurrentMarker) {
         val visualCurrentAngle = SkeletonRomGeometry.visualAngleForIndicator(indicator)

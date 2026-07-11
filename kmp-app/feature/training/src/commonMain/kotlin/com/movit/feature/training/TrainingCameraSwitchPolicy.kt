@@ -6,7 +6,5 @@ internal object TrainingCameraSwitchPolicy {
         state.copy(
             isCameraSwitching = true,
             errorMessage = null,
-            landmarks = emptyList(),
-            jointVisuals = emptyMap(),
         )
 }

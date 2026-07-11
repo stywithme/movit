@@ -24,6 +24,10 @@ kotlin {
 
             implementation(libs.kotlinx.coroutines.core)
 
+            // ponytail: library only (same as training-engine) — plugin fails on androidMainClasses.
+            // Ceiling: manual atomic imports; upgrade: kotlinx.atomicfu plugin when shell has androidTarget.
+            implementation(libs.kotlinx.atomicfu)
+
         }
 
         androidMain.dependencies {

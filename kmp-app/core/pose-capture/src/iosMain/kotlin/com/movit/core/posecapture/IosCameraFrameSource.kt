@@ -1,8 +1,13 @@
 package com.movit.core.posecapture
 
+import com.movit.core.training.boundary.AdaptiveThroughputController
 import com.movit.core.training.boundary.CameraFrameSource
 import com.movit.core.training.boundary.CameraSourceConfiguration
 import com.movit.core.training.boundary.PoseDetectorConfiguration
+import com.movit.core.training.boundary.TrainingThroughputProfiles
+import com.movit.core.training.diagnostics.TrainingPipelineDiagnostics
+import com.movit.core.training.geometry.AngleModeStickyState
+import com.movit.core.training.geometry.ElbowAngleEstimator
 import com.movit.core.training.geometry.PoseFrameAssembler
 import com.movit.core.training.model.PoseFrame
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -15,7 +20,8 @@ import platform.AVFoundation.AVCaptureDevicePositionFront
 import platform.AVFoundation.AVCaptureDeviceTypeBuiltInWideAngleCamera
 import platform.AVFoundation.AVCaptureOutput
 import platform.AVFoundation.AVCaptureSession
-import platform.AVFoundation.AVCaptureSessionPresetHigh
+import platform.AVFoundation.AVCaptureSessionPreset352x288
+import platform.AVFoundation.AVCaptureSessionPreset640x480
 import platform.AVFoundation.AVCaptureVideoDataOutput
 import platform.AVFoundation.AVCaptureVideoDataOutputSampleBufferDelegateProtocol
 import platform.AVFoundation.AVCaptureVideoOrientationPortrait
@@ -52,6 +58,9 @@ class IosCameraFrameSource(
     private var lastSubmittedFrameMs = 0L
     // Shared One-Euro smoothing — identical to the Android MediaPipe path so pose-frame inputs match.
     private val landmarkSmoother = PoseLandmarkSmoother()
+    private val elbowAngleEstimator = ElbowAngleEstimator()
+    private val angleModeStickyState = AngleModeStickyState()
+    private val adaptiveThroughput = AdaptiveThroughputController()
     private val outputQueue = dispatch_queue_create("com.movit.pose-capture.video", null)
 
     override fun setFrameListener(listener: ((PoseFrame?) -> Unit)?) {
@@ -64,6 +73,32 @@ class IosCameraFrameSource(
 
     override fun setOnCameraBoundListener(listener: (() -> Unit)?) {
         onCameraBoundListener = listener
+    }
+
+    override fun resetAngleTracking() {
+        elbowAngleEstimator.reset()
+        angleModeStickyState.reset()
+    }
+
+    private fun maybeAdaptiveDowngrade(inferenceMs: Float) {
+        val current = TrainingThroughputProfiles.resolve(configuration.throughputProfileId)
+        val next = adaptiveThroughput.onInferenceMs(inferenceMs, current) ?: return
+        configuration = configuration.copy(
+            targetFps = next.targetFps,
+            analysisWidth = next.analysisWidth,
+            analysisHeight = next.analysisHeight,
+            throughputProfileId = next.id,
+        )
+        TrainingPipelineDiagnostics.logMilestone(
+            "adaptive throughput ${current.id} -> ${next.id} (fps throttle; resolution on next rebind)",
+        )
+        TrainingPipelineDiagnostics.setCameraConfig(
+            targetFps = next.targetFps,
+            analysisWidth = next.analysisWidth,
+            analysisHeight = next.analysisHeight,
+            appliedFpsRange = "adaptive",
+            throughputProfileId = next.id,
+        )
     }
 
     fun attachPreview(host: UIView) {
@@ -95,10 +130,21 @@ class IosCameraFrameSource(
         this.configuration = configuration
         lastSubmittedFrameMs = 0L
         landmarkSmoother.reset()
+        adaptiveThroughput.resetSession()
+        resetAngleTracking()
         stopSessionOnly()
+        val analysisW = configuration.analysisWidth.coerceAtLeast(1)
+        val analysisH = configuration.analysisHeight.coerceAtLeast(1)
+        poseDetector.setAnalysisImageSize(analysisW, analysisH)
         poseDetector.setListener(
             object : IosPoseDetector.Listener {
                 override fun onPoseDetected(result: IosPoseDetector.DetectionResult) {
+                    TrainingPipelineDiagnostics.recordPoseResult(
+                        inferenceMs = result.inferenceTimeMs,
+                        hasPose = true,
+                        busySkippedSinceLastResult = poseDetector.consumeBusySkipCount(),
+                    )
+                    maybeAdaptiveDowngrade(result.inferenceTimeMs.toFloat())
                     val timestampMs = result.timestampMs
                     val smoothed = landmarkSmoother.smooth(result.landmarks, timestampMs)
                     val smoothedWorld = result.worldLandmarks
@@ -110,11 +156,20 @@ class IosCameraFrameSource(
                         worldLandmarks = smoothedWorld,
                         analysisImageWidth = result.analysisImageWidth,
                         analysisImageHeight = result.analysisImageHeight,
+                        applyElbowCorrection = configuration.applyElbowCorrection,
+                        collectElbowDiagnostics = configuration.collectElbowDiagnostics,
+                        estimator = elbowAngleEstimator,
+                        stickyState = angleModeStickyState,
                     )
                     frameListener?.invoke(frame)
                 }
 
                 override fun onNoPoseDetected(@Suppress("UNUSED_PARAMETER") isFrontCamera: Boolean) {
+                    TrainingPipelineDiagnostics.recordPoseResult(
+                        inferenceMs = poseDetector.lastInferenceTimeMs,
+                        hasPose = false,
+                        busySkippedSinceLastResult = poseDetector.consumeBusySkipCount(),
+                    )
                     frameListener?.invoke(null)
                 }
 
@@ -124,8 +179,13 @@ class IosCameraFrameSource(
             },
         )
         poseDetector.warmUp(PoseDetectorConfiguration(useGpu = true))
+        val preferredPreset = sessionPresetFor(analysisW, analysisH)
         val session = AVCaptureSession().apply {
-            sessionPreset = AVCaptureSessionPresetHigh
+            sessionPreset = when {
+                canSetSessionPreset(preferredPreset) -> preferredPreset
+                canSetSessionPreset(AVCaptureSessionPreset640x480) -> AVCaptureSessionPreset640x480
+                else -> AVCaptureSessionPreset352x288
+            }
         }
         val device = discoverCamera(configuration.useFrontCamera) ?: run {
             failStart("Requested camera lens is not available")
@@ -150,8 +210,12 @@ class IosCameraFrameSource(
         }
         val delegate = SampleBufferDelegate { buffer ->
             val nowMs = IosPoseDetector.uptimeMillis()
-            if (nowMs - lastSubmittedFrameMs < minFrameIntervalMs) return@SampleBufferDelegate
+            if (nowMs - lastSubmittedFrameMs < minFrameIntervalMs) {
+                TrainingPipelineDiagnostics.recordCameraFrame(acceptedForAnalysis = false)
+                return@SampleBufferDelegate
+            }
             lastSubmittedFrameMs = nowMs
+            TrainingPipelineDiagnostics.recordCameraFrame(acceptedForAnalysis = true)
             poseDetector.detectAsync(buffer, useFront)
         }
         sampleDelegate = delegate
@@ -165,6 +229,7 @@ class IosCameraFrameSource(
             if (connection.isVideoOrientationSupported()) {
                 connection.setVideoOrientation(AVCaptureVideoOrientationPortrait)
             }
+            // B-02 blocked pending M6 landmark dump — do not remove capture mirroring yet.
             if (connection.isVideoMirroringSupported() && configuration.useFrontCamera) {
                 connection.setAutomaticallyAdjustsVideoMirroring(false)
                 connection.setVideoMirrored(true)
@@ -172,6 +237,13 @@ class IosCameraFrameSource(
         }
         videoOutput = output
         captureSession = session
+        TrainingPipelineDiagnostics.setCameraConfig(
+            targetFps = configuration.targetFps,
+            analysisWidth = analysisW,
+            analysisHeight = analysisH,
+            appliedFpsRange = "${configuration.targetFps}",
+            throughputProfileId = configuration.throughputProfileId,
+        )
         dispatch_get_main_queue().let { queue ->
             platform.darwin.dispatch_async(queue) {
                 session.startRunning()
@@ -221,6 +293,21 @@ class IosCameraFrameSource(
             position = position,
         )
         return discovery.devices.firstOrNull() as? AVCaptureDevice
+    }
+
+    /**
+     * B-01: bind capture preset to throughput analysis size (4:3).
+     * 320×240 → CIF 352×288 (Swift downscales to target before MediaPipe);
+     * larger profiles → VGA 640×480 then downscale.
+     */
+    private fun sessionPresetFor(analysisWidth: Int, analysisHeight: Int): String? {
+        val maxDim = maxOf(analysisWidth, analysisHeight)
+        // K/N AVFoundation binding types these platform constants as String?.
+        return if (maxDim <= 352) {
+            AVCaptureSessionPreset352x288
+        } else {
+            AVCaptureSessionPreset640x480
+        }
     }
 
     private class SampleBufferDelegate(

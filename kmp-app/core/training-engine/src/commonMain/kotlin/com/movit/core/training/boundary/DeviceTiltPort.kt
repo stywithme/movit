@@ -2,12 +2,17 @@ package com.movit.core.training.boundary
 
 /**
  * Read-only source for screen-plane tilt correction (WS-3).
- * Android: sensor-backed via [core:pose-capture]; iOS v1: no-op stub.
+ * Android: Gravity/Accelerometer sensor; iOS: CoreMotion device motion gravity.
+ *
+ * [gravityVector] is the latest (gx, gy, gz) when available — used by gravity-aligned
+ * 3D position checks (WP-20). May be null when the sensor is idle or unavailable.
  */
 interface DeviceTiltPort {
     val isAvailable: Boolean
     val correctionRadians: Float
     val rollDegrees: Float
+    /** Latest gravity sample in device/sensor space, or null. */
+    val gravityVector: FloatArray? get() = null
 }
 
 /**
@@ -23,4 +28,5 @@ object NoOpDeviceTiltPort : DeviceTiltPort {
     override val isAvailable: Boolean = false
     override val correctionRadians: Float = 0f
     override val rollDegrees: Float = 0f
+    override val gravityVector: FloatArray? = null
 }

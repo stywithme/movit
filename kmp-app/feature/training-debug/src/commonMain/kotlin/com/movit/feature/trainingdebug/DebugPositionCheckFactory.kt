@@ -34,8 +34,9 @@ object DebugPositionCheckFactory {
         tiltSource: com.movit.core.training.boundary.DeviceTiltPort? = null,
     ): PositionValidator = TrainingGateFactory.buildPositionValidator(
         positionChecks = listOf(buildCheck(config)),
-        posePositionCode = "standing_front",
         sceneExpectation = sceneExpectation,
         tiltSource = tiltSource,
+        // Debug lab analyzes single frames in IDLE/START — always surface per-check debug rows.
+        alwaysCollectDebugChecks = true,
     )
 }

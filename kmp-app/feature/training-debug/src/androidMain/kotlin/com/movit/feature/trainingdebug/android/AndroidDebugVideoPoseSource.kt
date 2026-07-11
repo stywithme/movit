@@ -10,6 +10,8 @@ import com.movit.core.data.MovitData
 import com.movit.core.posecapture.android.MediaPipeSyncPoseDetector
 import com.movit.core.posecapture.boundary.trainingdebug.MediaPipeSyncRunningMode
 import com.movit.core.posecapture.boundary.trainingdebug.TrainingDebugVideoFrameSelector
+import com.movit.core.training.geometry.AngleModeStickyState
+import com.movit.core.training.geometry.ElbowAngleEstimator
 import com.movit.feature.trainingdebug.TrainingDebugFrameInput
 import com.movit.feature.trainingdebug.TrainingDebugInputMode
 import com.movit.feature.trainingdebug.TrainingDebugPoseSource
@@ -45,6 +47,8 @@ class AndroidDebugVideoPoseSource(
     private var onProgress: ((Long, Long) -> Unit)? = null
     private var onSeekReset: (() -> Unit)? = null
     private var modelLabelCache = "full"
+    private val elbowAngleEstimator = ElbowAngleEstimator()
+    private val angleModeStickyState = AngleModeStickyState()
 
     fun setProgressListener(listener: (currentMs: Long, durationMs: Long) -> Unit) {
         onProgress = listener
@@ -56,6 +60,8 @@ class AndroidDebugVideoPoseSource(
 
     override suspend fun start(config: TrainingDebugSourceConfig) {
         this.config = config
+        elbowAngleEstimator.reset()
+        angleModeStickyState.reset()
         val detector = syncDetector ?: return
         val resolved = detector.warmUp(MediaPipeSyncRunningMode.VIDEO, config.toPoseCaptureConfig())
         modelLabelCache = resolved.displayLabel
@@ -71,6 +77,8 @@ class AndroidDebugVideoPoseSource(
 
     override suspend fun resetTracking(reason: String) {
         lastProcessedVideoTimestampMs = -1L
+        elbowAngleEstimator.reset()
+        angleModeStickyState.reset()
         syncDetector?.resetTracking(reason, recreateVideoLandmarker = true)
     }
 
@@ -160,7 +168,7 @@ class AndroidDebugVideoPoseSource(
         isProcessingFrame = true
         try {
             val frame = detector.detect(bitmap, videoTimestampMs) ?: return
-            frameFlow.tryEmit(frame.toDebugFrameInput(config.isFrontCamera))
+            frameFlow.tryEmit(frame.toDebugFrameInput(config.isFrontCamera, elbowAngleEstimator, angleModeStickyState))
         } finally {
             isProcessingFrame = false
         }

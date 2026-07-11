@@ -1,7 +1,9 @@
 package com.movit.feature.trainingdebug
 
+import com.movit.core.training.geometry.ElbowAngleEstimator
 import com.movit.core.training.geometry.ElbowCorrectionStrategy
 import com.movit.core.training.geometry.PoseFrameAssembler
+import com.movit.feature.trainingdebug.ElbowEstimatorDiagnosticsPort
 import com.movit.core.training.model.JointAngles
 import com.movit.core.training.model.Landmark
 import com.movit.core.training.model.PoseLandmarkIndices
@@ -80,13 +82,15 @@ class AngleDiagnosticsBuilderTest {
         norm[PoseLandmarkIndices.LEFT_WRIST] = Landmark(0.58f, 0.30f, 0f, 1f, 1f)
         norm[PoseLandmarkIndices.RIGHT_SHOULDER] = Landmark(0.55f, 0.30f, 0f, 1f, 1f)
 
+        val elbowEstimator = ElbowAngleEstimator()
         PoseFrameAssembler.assemble(
             landmarks = norm,
             timestampMs = 1_000L,
             isFrontCamera = false,
             worldLandmarks = world,
+            estimator = elbowEstimator,
         )
-        val snapshot = PoseFrameAssemblerElbowDiagnostics.snapshotForJoint("left_elbow")
+        val snapshot = ElbowEstimatorDiagnosticsPort(elbowEstimator).snapshotForJoint("left_elbow")
 
         assertNotNull(snapshot)
         assertEquals(ElbowCorrectionStrategy.STRAIGHT.legacyCode, snapshot.strategy)

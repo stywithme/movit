@@ -14,7 +14,7 @@ data class TimingPolicy(
     val defaultGracePeriodMs: Long = DEFAULT_GRACE_PERIOD_MS,
     val smoothingWindowSize: Int = DEFAULT_SMOOTHING_WINDOW_SIZE,
     val visibilityResumeCountdownMs: Long = 3000L,
-    val visibilityMinVisibility: Float = 0.3f,
+    val visibilityMinVisibility: Float = VisibilityDefaults.PAUSE_GATE,
     val visibilityGraceDurationMs: Long = 1000L,
     val visibilityWarningDurationMs: Long = 1000L,
     val visibilityPauseAfterMs: Long = 4000L,
@@ -40,9 +40,9 @@ data class TimingPolicy(
         ?: default
 
     companion object {
-        const val DEFAULT_MIN_REP_INTERVAL_MS = 400L
-        const val DEFAULT_MAX_REP_INTERVAL_MS = 5000L
-        const val DEFAULT_MIN_PHASE_DURATION_MS = 100L
+        const val DEFAULT_MIN_REP_INTERVAL_MS = TrainingTimingDefaults.MIN_REP_INTERVAL_MS
+        const val DEFAULT_MAX_REP_INTERVAL_MS = TrainingTimingDefaults.MAX_REP_INTERVAL_MS
+        const val DEFAULT_MIN_PHASE_DURATION_MS = TrainingTimingDefaults.MIN_PHASE_DURATION_MS
         const val DEFAULT_HOLD_DURATION_SECONDS = 30
         const val DEFAULT_GRACE_PERIOD_MS = 3000L
         const val DEFAULT_SMOOTHING_WINDOW_SIZE = 3

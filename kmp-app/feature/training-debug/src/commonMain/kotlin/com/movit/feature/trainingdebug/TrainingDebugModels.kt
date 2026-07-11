@@ -68,6 +68,7 @@ data class TrainingDebugFrameInput(
     val rawWorldLandmarks: List<com.movit.core.training.model.Landmark>?,
     val smoothedWorldLandmarks: List<com.movit.core.training.model.Landmark>?,
     val inferenceTimeMs: Long = 0L,
+    val elbowDiagnosticsPort: ElbowDiagnosticsPort = ElbowDiagnosticsPort.NoOp,
 ) {
     val timestampMs: Long get() = poseFrame.timestampMs
     val isFrontCamera: Boolean get() = poseFrame.isFrontCamera

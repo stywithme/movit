@@ -4,7 +4,7 @@ import com.movit.core.data.MovitData
 import com.movit.core.training.boundary.DeviceTiltPort
 import com.movit.core.training.config.ExerciseConfig
 import com.movit.core.training.engine.Phase
-import com.movit.core.training.geometry.PoseFrameAssembler
+import com.movit.core.training.geometry.ElbowAngleEstimator
 import com.movit.core.training.position.PoseSceneDetector
 import com.movit.core.training.position.PositionCheckDebugStatus
 import com.movit.core.training.position.PositionValidator
@@ -19,12 +19,14 @@ import kotlinx.serialization.json.putJsonArray
 
 class TrainingDebugAnalyzer {
     private val sceneDetector = PoseSceneDetector()
+    private val elbowAngleEstimator = ElbowAngleEstimator()
+    private val elbowDiagnosticsPort = ElbowEstimatorDiagnosticsPort(elbowAngleEstimator)
     private var setupGate: SetupReadinessGate? = null
     private var setupGateTiltEnabled: Boolean? = null
     private var positionValidator: PositionValidator? = null
 
     fun resetAnalysisState(reason: String) {
-        PoseFrameAssembler.resetElbowEstimator()
+        elbowAngleEstimator.reset()
         sceneDetector.reset()
         setupGate?.reset()
         setupGate = null
@@ -54,7 +56,8 @@ class TrainingDebugAnalyzer {
             rawWorld = frame.rawWorldLandmarks,
             smoothedWorld = frame.smoothedWorldLandmarks,
             isFrontCamera = poseFrame.isFrontCamera,
-            elbowDiagnosticsPort = PoseFrameAssemblerElbowDiagnostics,
+            elbowDiagnosticsPort = frame.elbowDiagnosticsPort.takeUnless { it === ElbowDiagnosticsPort.NoOp }
+                ?: elbowDiagnosticsPort,
         )
 
         val sceneExpectation = config.sceneExpectation.toPoseSceneExpectation()

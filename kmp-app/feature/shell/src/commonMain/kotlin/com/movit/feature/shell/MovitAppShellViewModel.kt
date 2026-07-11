@@ -43,6 +43,7 @@ import kotlinx.coroutines.launch
 
 class MovitAppShellViewModel : ViewModel() {
     // ponytail: host tests have no Main dispatcher (same as WorkoutSession preflight).
+    // Ceiling: backgroundScope outlives VM if not cancelled; upgrade: test Main rule or onCleared cancel.
     private val backgroundScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val _state = MutableStateFlow(MovitAppShellState())
     val state: StateFlow<MovitAppShellState> = _state.asStateFlow()

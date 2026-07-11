@@ -24,10 +24,14 @@ import androidx.lifecycle.LifecycleOwner
 import com.movit.core.posecapture.CameraStartGate
 import com.movit.core.posecapture.LensSwitchFrameGate
 import com.movit.core.posecapture.deliversToConsumers
+import com.movit.core.training.boundary.AdaptiveThroughputController
 import com.movit.core.training.boundary.CameraFrameSource
 import com.movit.core.training.boundary.CameraSourceConfiguration
 import com.movit.core.training.boundary.PoseDetectorConfiguration
+import com.movit.core.training.boundary.TrainingThroughputProfiles
 import com.movit.core.training.diagnostics.TrainingPipelineDiagnostics
+import com.movit.core.training.geometry.AngleModeStickyState
+import com.movit.core.training.geometry.ElbowAngleEstimator
 import com.movit.core.training.geometry.PoseFrameAssembler
 import com.movit.core.training.model.PoseFrame
 import java.util.concurrent.ExecutorService
@@ -69,6 +73,13 @@ class CameraXFrameSource(
     private val detectorWarmedUp = AtomicBoolean(false)
     private val switchingCamera = AtomicBoolean(false)
     private val bindingInProgress = AtomicBoolean(false)
+    @Volatile
+    private var pendingBindFacing: Boolean? = null
+    @Volatile
+    private var pendingProviderFacing: Boolean? = null
+    private val elbowAngleEstimator = ElbowAngleEstimator()
+    private val angleModeStickyState = AngleModeStickyState()
+    private val adaptiveThroughput = AdaptiveThroughputController()
     private var skippedAnalysisFrameCount = 0
     private var lastAcceptedAnalysisMs = 0L
 
@@ -108,8 +119,43 @@ class CameraXFrameSource(
 
     override fun start(configuration: CameraSourceConfiguration) {
         this.configuration = configuration
+        adaptiveThroughput.resetSession()
+        resetAngleTracking()
         handleGateAction(startGate.onStartRequested(configuration.useFrontCamera))
     }
+
+    /** WP-19: lower targetFps (and profile metadata) without full rebind when p95 inference is hot. */
+    private fun maybeAdaptiveDowngrade(inferenceMs: Float) {
+        val current = TrainingThroughputProfiles.resolve(configuration.throughputProfileId)
+        val next = adaptiveThroughput.onInferenceMs(inferenceMs, current) ?: return
+        configuration = configuration.copy(
+            targetFps = next.targetFps,
+            analysisWidth = next.analysisWidth,
+            analysisHeight = next.analysisHeight,
+            throughputProfileId = next.id,
+        )
+        TrainingPipelineDiagnostics.logMilestone(
+            "adaptive throughput ${current.id} -> ${next.id} (fps throttle; resolution on next rebind)",
+        )
+        TrainingPipelineDiagnostics.setCameraConfig(
+            targetFps = next.targetFps,
+            analysisWidth = next.analysisWidth,
+            analysisHeight = next.analysisHeight,
+            appliedFpsRange = "adaptive",
+            throughputProfileId = next.id,
+        )
+    }
+
+    override fun resetAngleTracking() {
+        elbowAngleEstimator.reset()
+        angleModeStickyState.reset()
+    }
+
+    /** @deprecated Use [resetAngleTracking]; kept for debug hosts. */
+    fun resetElbowTracking() = resetAngleTracking()
+
+    /** Debug/diagnostics hosts read elbow correction state from this session instance. */
+    fun currentElbowEstimator(): ElbowAngleEstimator = elbowAngleEstimator
 
     private fun handleGateAction(action: CameraStartGate.Action) {
         when (action) {
@@ -123,13 +169,13 @@ class CameraXFrameSource(
 
     private fun beginInitialSession() {
         ensurePoseDetectorReady()
-        ensureCameraProvider { bindUseCases(configuration.useFrontCamera, isSwitch = false) }
+        ensureCameraProvider(configuration.useFrontCamera, isSwitch = false)
     }
 
     private fun switchCamera(useFrontCamera: Boolean) {
         prepareForLensSwitch(useFrontCamera)
         if (!providerReady.get()) {
-            ensureCameraProvider { bindUseCases(useFrontCamera, isSwitch = true) }
+            ensureCameraProvider(useFrontCamera, isSwitch = true)
             return
         }
         bindUseCases(useFrontCamera, isSwitch = true)
@@ -139,7 +185,7 @@ class CameraXFrameSource(
         lensSwitchGate.beginAwaitingFrames(useFrontCamera)
         switchingCamera.set(true)
         poseDetector.resetTrackingState()
-        PoseFrameAssembler.resetElbowEstimator()
+        resetAngleTracking()
     }
 
     private fun emitPoseFrame(
@@ -181,7 +227,12 @@ class CameraXFrameSource(
                     worldLandmarks = result.worldLandmarks,
                     analysisImageWidth = result.analysisImageWidth,
                     analysisImageHeight = result.analysisImageHeight,
+                    applyElbowCorrection = configuration.applyElbowCorrection,
+                    collectElbowDiagnostics = configuration.collectElbowDiagnostics,
+                    estimator = elbowAngleEstimator,
+                    stickyState = angleModeStickyState,
                 )
+                maybeAdaptiveDowngrade(result.inferenceTimeMs.toFloat())
                 TrainingPipelineDiagnostics.recordPoseResult(
                     inferenceMs = result.inferenceTimeMs,
                     hasPose = true,
@@ -206,13 +257,13 @@ class CameraXFrameSource(
         poseDetector.warmUp(PoseDetectorConfiguration(useGpu = true))
     }
 
-    private fun ensureCameraProvider(onReady: () -> Unit) {
+    private fun ensureCameraProvider(useFrontCamera: Boolean, isSwitch: Boolean) {
         if (providerReady.get()) {
-            onReady()
+            bindUseCases(useFrontCamera, isSwitch)
             return
         }
         if (!providerInitializing.compareAndSet(false, true)) {
-            pendingProviderReady = onReady
+            pendingProviderFacing = useFrontCamera
             return
         }
         val providerFuture = ProcessCameraProvider.getInstance(context)
@@ -220,9 +271,13 @@ class CameraXFrameSource(
             try {
                 cameraProvider = providerFuture.get()
                 providerReady.set(true)
-                onReady()
-                pendingProviderReady?.invoke()
-                pendingProviderReady = null
+                providerInitializing.set(false)
+                bindUseCases(useFrontCamera, isSwitch)
+                val pendingFacing = pendingProviderFacing
+                pendingProviderFacing = null
+                if (pendingFacing != null && pendingFacing != useFrontCamera) {
+                    bindUseCases(pendingFacing, isSwitch = true)
+                }
             } catch (e: Exception) {
                 providerInitializing.set(false)
                 switchingCamera.set(false)
@@ -231,12 +286,11 @@ class CameraXFrameSource(
         }, ContextCompat.getMainExecutor(context))
     }
 
-    private var pendingProviderReady: (() -> Unit)? = null
-
     private fun bindUseCases(useFrontCamera: Boolean, isSwitch: Boolean) {
         if (!bindingInProgress.compareAndSet(false, true)) {
+            pendingBindFacing = useFrontCamera
             if (debugFpsEnabled.get()) {
-                Log.d(TAG, "Skipping duplicate bind (already in progress)")
+                Log.d(TAG, "Queued bind while in progress: front=$useFrontCamera")
             }
             return
         }
@@ -349,6 +403,11 @@ class CameraXFrameSource(
             reportError("Camera bind failed: ${e.message ?: "unknown error"}")
         } finally {
             bindingInProgress.set(false)
+            val pendingFacing = pendingBindFacing
+            if (pendingFacing != null) {
+                pendingBindFacing = null
+                bindUseCases(pendingFacing, isSwitch = true)
+            }
         }
     }
 
@@ -462,7 +521,8 @@ class CameraXFrameSource(
     override fun stop() {
         switchingCamera.set(false)
         bindingInProgress.set(false)
-        pendingProviderReady = null
+        pendingBindFacing = null
+        pendingProviderFacing = null
         val analysis = analysisUseCase
         runCatching { analysis?.clearAnalyzer() }
         runCatching { cameraProvider?.unbindAll() }

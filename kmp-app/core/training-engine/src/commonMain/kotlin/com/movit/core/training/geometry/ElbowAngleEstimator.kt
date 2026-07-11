@@ -42,16 +42,20 @@ class ElbowAngleEstimator {
         worldLandmarks: List<Landmark>,
         normLandmarks: List<Landmark>,
         timestampMs: Long,
+        aspectYScale: Float = 1f,
+        collectDiagnostics: Boolean = false,
     ): JointAngles {
         if (worldLandmarks.size < 33 || normLandmarks.size < 33) return angles
         val facing = computeFacingRatio(worldLandmarks)
         val left = estimateSide(
             LEFT, facing, worldLandmarks, normLandmarks, timestampMs,
             PoseLandmarkIndices.LEFT_SHOULDER, PoseLandmarkIndices.LEFT_ELBOW, PoseLandmarkIndices.LEFT_WRIST,
+            aspectYScale, collectDiagnostics,
         ) ?: angles.leftElbow
         val right = estimateSide(
             RIGHT, facing, worldLandmarks, normLandmarks, timestampMs,
             PoseLandmarkIndices.RIGHT_SHOULDER, PoseLandmarkIndices.RIGHT_ELBOW, PoseLandmarkIndices.RIGHT_WRIST,
+            aspectYScale, collectDiagnostics,
         ) ?: angles.rightElbow
         return angles.copy(leftElbow = left, rightElbow = right)
     }
@@ -88,12 +92,20 @@ class ElbowAngleEstimator {
         sIdx: Int,
         eIdx: Int,
         wIdx: Int,
+        aspectYScale: Float,
+        collectDiagnostics: Boolean,
     ): Double? {
         val ws = world[sIdx]; val we = world[eIdx]; val ww = world[wIdx]
         if (!ws.isVisible(0.5f) || !we.isVisible(0.5f) || !ww.isVisible(0.5f)) return holdOrNull(side, ts)
         val ns = norm[sIdx]; val ne = norm[eIdx]; val nw = norm[wIdx]
-        val ang2D = computeAngle(ns.x, ns.y, 0f, ne.x, ne.y, 0f, nw.x, nw.y, 0f)
+        // F3: aspect-correct normalized 2D before ang2D.
+        val ang2D = computeAngle(
+            ns.x, ns.y * aspectYScale, 0f,
+            ne.x, ne.y * aspectYScale, 0f,
+            nw.x, nw.y * aspectYScale, 0f,
+        ) ?: return holdOrNull(side, ts)
         val ang3D = computeAngle(ws.x, ws.y, ws.z, we.x, we.y, we.z, ww.x, ww.y, ww.z)
+            ?: return holdOrNull(side, ts)
         val uaLen = dist3D(ws.x, ws.y, ws.z, we.x, we.y, we.z)
         val uaDzRaw = if (uaLen > 0.01f) abs(we.z - ws.z) / uaLen else 0f
         val faLen = dist3D(we.x, we.y, we.z, ww.x, ww.y, ww.z)
@@ -145,19 +157,21 @@ class ElbowAngleEstimator {
         val clamped = output.coerceIn(0.0, MAX_ELBOW_ANGLE)
         if (isLowConfidence && !lastStable[side].isNaN() && ts - lastStableTs[side] < HOLD_TIMEOUT_MS) {
             smoothOut[side] = lastStable[side]
-            lastDiagnostics[side] = ElbowCorrectionDiagnostics(
-                strategy = ElbowCorrectionStrategy.HOLD,
-                facingRatio = facingRatio,
-                screenAngle = ang2D,
-                worldAngle = ang3D,
-                maxDzShare = maxDz,
-                dzImbalance = faDz - uaDz,
-                correctionPct = corrPct,
-                outputAngle = lastStable[side],
-                isHolding = true,
-                uaDzShare = uaDz,
-                faDzShare = faDz,
-            )
+            if (collectDiagnostics) {
+                lastDiagnostics[side] = ElbowCorrectionDiagnostics(
+                    strategy = ElbowCorrectionStrategy.HOLD,
+                    facingRatio = facingRatio,
+                    screenAngle = ang2D,
+                    worldAngle = ang3D,
+                    maxDzShare = maxDz,
+                    dzImbalance = faDz - uaDz,
+                    correctionPct = corrPct,
+                    outputAngle = lastStable[side],
+                    isHolding = true,
+                    uaDzShare = uaDz,
+                    faDzShare = faDz,
+                )
+            }
             return lastStable[side]
         }
         val smoothed = if (smoothOut[side].isNaN()) clamped
@@ -167,19 +181,21 @@ class ElbowAngleEstimator {
             lastStable[side] = smoothed
             lastStableTs[side] = ts
         }
-        lastDiagnostics[side] = ElbowCorrectionDiagnostics(
-            strategy = strategy,
-            facingRatio = facingRatio,
-            screenAngle = ang2D,
-            worldAngle = ang3D,
-            maxDzShare = maxDz,
-            dzImbalance = faDz - uaDz,
-            correctionPct = corrPct,
-            outputAngle = smoothed,
-            isHolding = false,
-            uaDzShare = uaDz,
-            faDzShare = faDz,
-        )
+        if (collectDiagnostics) {
+            lastDiagnostics[side] = ElbowCorrectionDiagnostics(
+                strategy = strategy,
+                facingRatio = facingRatio,
+                screenAngle = ang2D,
+                worldAngle = ang3D,
+                maxDzShare = maxDz,
+                dzImbalance = faDz - uaDz,
+                correctionPct = corrPct,
+                outputAngle = smoothed,
+                isHolding = false,
+                uaDzShare = uaDz,
+                faDzShare = faDz,
+            )
+        }
         return smoothed
     }
 
@@ -202,13 +218,13 @@ class ElbowAngleEstimator {
         ax: Float, ay: Float, az: Float,
         bx: Float, by: Float, bz: Float,
         cx: Float, cy: Float, cz: Float,
-    ): Double {
+    ): Double? {
         val baX = ax - bx; val baY = ay - by; val baZ = az - bz
         val bcX = cx - bx; val bcY = cy - by; val bcZ = cz - bz
         val dot = baX * bcX + baY * bcY + baZ * bcZ
         val magBA = sqrt(baX * baX + baY * baY + baZ * baZ)
         val magBC = sqrt(bcX * bcX + bcY * bcY + bcZ * bcZ)
-        if (magBA < 1e-7f || magBC < 1e-7f) return 0.0
+        if (magBA < 1e-7f || magBC < 1e-7f) return null
         val cos = (dot / (magBA * magBC)).coerceIn(-1f, 1f)
         return kotlin.math.acos(cos.toDouble()) * 180.0 / kotlin.math.PI
     }

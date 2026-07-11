@@ -32,14 +32,44 @@ class TrainingSessionReportCacheTest {
 
     @Test
     fun put_evictsOldestWhenOverCapacity() {
-        repeat(11) { index ->
+        repeat(25) { index ->
             TrainingSessionReportCache.put("upload-$index", samplePostTrainingReport("upload-$index"))
         }
         assertNull(TrainingSessionReportCache.get("upload-0"))
         assertEquals(
-            samplePostTrainingReport("upload-10"),
-            TrainingSessionReportCache.get("upload-10"),
+            samplePostTrainingReport("upload-24"),
+            TrainingSessionReportCache.get("upload-24"),
         )
+    }
+
+    @Test
+    fun put_twelveSetsSameExercise_getMergedForDisplaySeesAll() {
+        val sessionKey = "session:squat-12"
+        repeat(12) { index ->
+            val setNumber = index + 1
+            val report = samplePostTrainingReport("upload-set-$setNumber").copy(
+                setSummaries = listOf(
+                    com.movit.core.training.report.MovitSetSummary(
+                        setNumber = setNumber,
+                        repsCompleted = 2,
+                        repsTarget = 2,
+                        averageScore = 80f + setNumber,
+                        durationMs = 1_000,
+                        countedReps = 2,
+                        invalidatedReps = 0,
+                    ),
+                ),
+            )
+            TrainingSessionReportCache.put("upload-set-$setNumber", report, sessionKey, setNumber)
+        }
+        // Capacity pressure from unrelated reports must not drop siblings (H-05).
+        repeat(20) { index ->
+            TrainingSessionReportCache.put("other-$index", samplePostTrainingReport("other-$index"))
+        }
+
+        val merged = TrainingSessionReportCache.getMergedForDisplay("upload-set-12")
+        assertEquals(12, merged?.setSummaries?.size)
+        assertEquals(12, merged?.setSummaries?.map { it.setNumber }?.distinct()?.size)
     }
 
     @Test

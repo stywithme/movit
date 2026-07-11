@@ -1,6 +1,7 @@
 package com.movit.core.training.session
 
 import com.movit.core.training.visibility.VisibilityMonitor
+import com.movit.core.training.engine.policy.VisibilityDefaults
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -13,6 +14,7 @@ class PauseControllerResumeTest {
         val controller = PauseController(visibilityResumeCountdownMs = 3_000L) { now }
         val monitor = VisibilityMonitor(
             visibilityTrackedJoints = emptyList(),
+            minVisibility = VisibilityDefaults.PAUSE_GATE,
             timeProvider = { now },
         )
         controller.processVisibilityResult(
@@ -37,7 +39,11 @@ class PauseControllerResumeTest {
     @Test
     fun onUserOrSupervisorResume_noOpWhenNotPaused() {
         val controller = PauseController(visibilityResumeCountdownMs = 3_000L) { 0L }
-        val monitor = VisibilityMonitor(visibilityTrackedJoints = emptyList(), timeProvider = { 0L })
+        val monitor = VisibilityMonitor(
+            visibilityTrackedJoints = emptyList(),
+            minVisibility = VisibilityDefaults.PAUSE_GATE,
+            timeProvider = { 0L },
+        )
         assertFalse(controller.onUserOrSupervisorResume(monitor))
     }
 }

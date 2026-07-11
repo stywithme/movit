@@ -8,7 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -22,6 +21,8 @@ import com.movit.core.training.boundary.CameraFrameSource
 import com.movit.core.training.model.PoseFrame
 import com.movit.designsystem.components.MovitErrorState
 import com.movit.resources.movitText
+import java.util.concurrent.atomic.AtomicInteger
+import kotlinx.coroutines.delay
 import org.koin.core.component.get
 
 @Composable
@@ -33,6 +34,7 @@ actual fun TrainingSessionCameraHost(
     useFrontCamera: Boolean,
     modelType: String,
     onDebugFps: ((Int) -> Unit)?,
+    angleTrackingEpoch: Int,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -77,8 +79,20 @@ actual fun TrainingSessionCameraHost(
         runCatching { MovitData.koin().get<CameraFrameSource>() }.getOrNull()
     }
 
-    var frameCounter by remember { mutableIntStateOf(0) }
-    var fpsWindowStart by remember { mutableStateOf(0L) }
+    val debugFpsEnabled = onDebugFps != null && isTrainingDebugBuild()
+    val debugFrameCount = remember(debugFpsEnabled) {
+        if (debugFpsEnabled) AtomicInteger(0) else null
+    }
+
+    LaunchedEffect(debugFpsEnabled, onDebugFps) {
+        if (!debugFpsEnabled) return@LaunchedEffect
+        while (true) {
+            delay(1_000L)
+            val count = debugFrameCount?.getAndSet(0) ?: 0
+            onDebugFps?.invoke(count)
+        }
+    }
+
     var previewBound by remember { mutableStateOf(false) }
     var appliedModelType by remember { mutableStateOf(modelType) }
 
@@ -87,16 +101,7 @@ actual fun TrainingSessionCameraHost(
         source.setErrorListener(onError)
         source.setOnCameraBoundListener(onCameraReady)
         source.setFrameListener { frame ->
-            if (onDebugFps != null && isTrainingDebugBuild()) {
-                frameCounter++
-                val now = System.currentTimeMillis()
-                if (fpsWindowStart == 0L) fpsWindowStart = now
-                if (now - fpsWindowStart >= 1_000L) {
-                    onDebugFps(frameCounter)
-                    frameCounter = 0
-                    fpsWindowStart = now
-                }
-            }
+            debugFrameCount?.incrementAndGet()
             onFrame(frame)
         }
         onDispose {
@@ -124,6 +129,12 @@ actual fun TrainingSessionCameraHost(
             appliedModelType = modelType
         }
         cameraSource.start(resolveTrainingCameraConfiguration(useFrontCamera))
+    }
+
+    // E-08: reset elbow + sticky between flow exercises (epoch bumped in reloadForNextFlowItem).
+    LaunchedEffect(angleTrackingEpoch, cameraSource) {
+        if (angleTrackingEpoch <= 0) return@LaunchedEffect
+        cameraSource.resetAngleTracking()
     }
 
     TrainingCameraSurface(

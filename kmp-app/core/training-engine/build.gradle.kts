@@ -1,6 +1,7 @@
 plugins {
     id("movit.kmp.core")
     alias(libs.plugins.kotlin.serialization)
+    // ponytail: atomicfu *library* only — plugin fails on androidMainClasses (WP-03/WP-14).
 }
 
 movitKmp {
@@ -13,6 +14,7 @@ kotlin {
             implementation(project(":shared"))
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.kotlinx.atomicfu)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))

@@ -1,14 +1,18 @@
 package com.movit.core.training.visibility
 
 import com.movit.core.training.engine.Phase
+import com.movit.core.training.engine.policy.VisibilityDefaults
 
 /**
  * Tracks visibility of required joints and manages pause/resume timing.
  * Landmark → visibility mapping stays in the Android wrapper.
+ *
+ * [minVisibility] must be supplied from [com.movit.core.training.engine.policy.TimingPolicy]
+ * (typically [VisibilityDefaults.PAUSE_GATE]); there is no constructor default.
  */
 class VisibilityMonitor(
     visibilityTrackedJoints: List<VisibilityJointConfig>,
-    private val minVisibility: Float = 0.5f,
+    private val minVisibility: Float,
     private val graceDurationMs: Long = 500,
     private val warningDurationMs: Long = 1500,
     private val pauseAfterMs: Long = 3000,
@@ -33,10 +37,20 @@ class VisibilityMonitor(
         jointVisibilities: Map<String, Float>,
         currentRepCount: Int,
         currentPhase: Phase,
+    ): VisibilityCheckResult = checkVisibility(
+        details = evaluateJointVisibility(jointVisibilities),
+        currentRepCount = currentRepCount,
+        currentPhase = currentPhase,
+    )
+
+    /** D-02/I-07: evaluate joints once per frame, then pass details here. */
+    fun checkVisibility(
+        details: List<JointVisibility>,
+        currentRepCount: Int,
+        currentPhase: Phase,
     ): VisibilityCheckResult {
-        val visibilityDetails = evaluateJointVisibility(jointVisibilities)
-        if (visibilityDetails.isEmpty()) return VisibilityCheckResult.ContinueTraining
-        val allVisible = visibilityDetails.all { it.isVisible }
+        if (details.isEmpty()) return VisibilityCheckResult.ContinueTraining
+        val allVisible = details.all { it.isVisible }
         val now = timeProvider()
         return if (allVisible) {
             handleVisible(currentRepCount, currentPhase)
@@ -45,7 +59,7 @@ class VisibilityMonitor(
                 now = now,
                 repCount = currentRepCount,
                 phase = currentPhase,
-                visibilityDetails = visibilityDetails,
+                visibilityDetails = details,
             )
         }
     }

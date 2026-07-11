@@ -1,10 +1,8 @@
 package com.movit.shared
 
-import com.movit.shared.buildconfig.MovitGeneratedBuildConfig
-
-actual object PlatformInfo {
-    actual val name: String = "Android"
+actual object PlatformInfo {    actual val name: String = "Android"
     actual val supportsInAppSubscription: Boolean = true
     actual val supportsGoogleSignIn: Boolean = true
-    actual val supportsTrainingDebugLab: Boolean = MovitGeneratedBuildConfig.DEBUG
+    // WP-14: shell androidMain stub calls onBack(); real lab is iOS-only until shell gains androidTarget + debugImplementation.
+    actual val supportsTrainingDebugLab: Boolean = false
 }

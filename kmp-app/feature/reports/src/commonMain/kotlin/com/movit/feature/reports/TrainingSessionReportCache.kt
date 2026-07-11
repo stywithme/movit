@@ -12,7 +12,8 @@ import com.movit.core.training.report.MovitSessionReport
  * In-memory LRU for hot reads; SQL-backed when [MovitData] is installed.
  */
 object TrainingSessionReportCache {
-    private const val MAX_REPORTS = 10
+    /** WP-05 / H-05: room for multi-set siblings before merge; eviction protects active session keys. */
+    private const val MAX_REPORTS = 24
     private val reports = MovitLruCache<String, MovitPostTrainingReport>(MAX_REPORTS)
     private val sessionReports = MovitLruCache<String, MovitSessionReport>(MAX_REPORTS)
     private val setReportsBySessionExercise = mutableMapOf<String, MutableMap<Int, String>>()
@@ -28,9 +29,13 @@ object TrainingSessionReportCache {
         setNumber: Int? = null,
     ) {
         if (uploadId.isBlank()) return
-        reports.put(uploadId, report)
-        persistentStore()?.putPostTraining(uploadId, report)
+        // Register index first so trim can protect this session's siblings (H-05).
         registerSetReport(uploadId, sessionExerciseKey, setNumber)
+        reports.put(uploadId, report) { key ->
+            val keySession = reportSessionExerciseKeys[key]
+            keySession != null && setReportsBySessionExercise.containsKey(keySession)
+        }
+        persistentStore()?.putPostTraining(uploadId, report)
     }
 
     fun get(uploadId: String): MovitPostTrainingReport? {
@@ -106,7 +111,7 @@ object TrainingSessionReportCache {
         return sortedBySetNumber(disk)
     }
 
-    /** ponytail: LinkedHashMap from sorted entries — `toSortedMap` is JVM-only. */
+    /** ponytail: LinkedHashMap from sorted entries — `toSortedMap` is JVM-only. Upgrade: KMP sorted map helper. */
     private fun sortedBySetNumber(map: Map<Int, String>): Map<Int, String> =
         map.entries.sortedBy { it.key }.associate { it.key to it.value }
 }

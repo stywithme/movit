@@ -1,5 +1,6 @@
 package com.movit.feature.trainingdebug
 
+import com.movit.core.training.geometry.AngleModeStickyState
 import com.movit.core.training.geometry.PoseFrameAssembler
 import com.movit.core.training.model.Landmark
 import com.movit.core.training.model.PoseFrame
@@ -12,6 +13,7 @@ object TrainingDebugFrameFactory {
         rawWorldLandmarks: List<Landmark>?,
         smoothedWorldLandmarks: List<Landmark>?,
         inferenceTimeMs: Long = 0L,
+        elbowDiagnosticsPort: ElbowDiagnosticsPort = ElbowDiagnosticsPort.NoOp,
     ): TrainingDebugFrameInput = TrainingDebugFrameInput(
         poseFrame = poseFrame,
         rawLandmarks = rawLandmarks,
@@ -19,6 +21,7 @@ object TrainingDebugFrameFactory {
         rawWorldLandmarks = rawWorldLandmarks,
         smoothedWorldLandmarks = smoothedWorldLandmarks,
         inferenceTimeMs = inferenceTimeMs,
+        elbowDiagnosticsPort = elbowDiagnosticsPort,
     )
 
     fun fromLandmarks(
@@ -29,6 +32,9 @@ object TrainingDebugFrameFactory {
         analysisImageWidth: Int = 0,
         analysisImageHeight: Int = 0,
         inferenceTimeMs: Long = 0L,
+        elbowEstimator: com.movit.core.training.geometry.ElbowAngleEstimator =
+            com.movit.core.training.geometry.ElbowAngleEstimator(),
+        stickyState: AngleModeStickyState = AngleModeStickyState(),
     ): TrainingDebugFrameInput {
         val poseFrame = PoseFrameAssembler.assemble(
             landmarks = landmarks,
@@ -37,6 +43,8 @@ object TrainingDebugFrameFactory {
             worldLandmarks = worldLandmarks,
             analysisImageWidth = analysisImageWidth,
             analysisImageHeight = analysisImageHeight,
+            estimator = elbowEstimator,
+            stickyState = stickyState,
         )
         return fromAssembled(
             poseFrame = poseFrame,
@@ -45,6 +53,7 @@ object TrainingDebugFrameFactory {
             rawWorldLandmarks = worldLandmarks,
             smoothedWorldLandmarks = worldLandmarks,
             inferenceTimeMs = inferenceTimeMs,
+            elbowDiagnosticsPort = ElbowEstimatorDiagnosticsPort(elbowEstimator),
         )
     }
 }

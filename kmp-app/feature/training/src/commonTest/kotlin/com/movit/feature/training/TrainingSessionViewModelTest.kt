@@ -114,4 +114,33 @@ class TrainingSessionViewModelTest {
       ).requiresCamera(),
     )
   }
+
+  /**
+   * WP-01 / J-01: multi-exercise flow A (4 variants) → B (2 variants) with
+   * poseVariantIndex=2 must clamp against B's count (→ 1), not A's.
+   * Mirrors applyFlowExercise order: load new config, then resolve.
+   */
+  @Test
+  fun applyFlowExercise_clampsPoseVariantIndexAgainstNewExerciseVariantCount() {
+    val exerciseB = TrainingFlowItem.Exercise(
+      slug = "exercise-b",
+      displayName = "B",
+      poseVariantIndex = 2,
+    )
+    // After loading B (2 variants) — correct order:
+    val clamped = TrainingPoseVariantResolver.resolve(
+      routePoseVariantIndex = 0,
+      flowExercise = exerciseB,
+      variantCount = 2,
+    )
+    assertEquals(1, clamped)
+
+    // Bug reproduction: clamping against previous exercise A (4 variants) would keep 2.
+    val wronglyClampedAgainstA = TrainingPoseVariantResolver.resolve(
+      routePoseVariantIndex = 0,
+      flowExercise = exerciseB,
+      variantCount = 4,
+    )
+    assertEquals(2, wronglyClampedAgainstA)
+  }
 }

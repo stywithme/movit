@@ -32,6 +32,16 @@ class JointAngleCalculatorTest {
             pointB = PosePoint3D(0f, 0f, 0f),
             pointC = PosePoint3D(1f, 0f, 0f),
         )
-        assertEquals(90.0, angle, absoluteTolerance = 0.01)
+        assertEquals(90.0, angle!!, absoluteTolerance = 0.01)
+    }
+
+    @Test
+    fun angle3D_degenerate_returnsNull() {
+        val angle = JointAngleCalculator.angleDegrees3D(
+            pointA = PosePoint3D(0f, 0f, 0f),
+            pointB = PosePoint3D(0f, 0f, 0f),
+            pointC = PosePoint3D(1f, 0f, 0f),
+        )
+        assertEquals(null, angle)
     }
 }

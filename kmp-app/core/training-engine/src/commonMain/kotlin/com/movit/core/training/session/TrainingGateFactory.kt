@@ -13,14 +13,14 @@ import com.movit.core.training.position.resolveSceneExpectation
 object TrainingGateFactory {
     fun buildPositionValidator(
         positionChecks: List<PositionCheck>,
-        posePositionCode: String,
         sceneExpectation: PoseSceneExpectation,
         tiltSource: DeviceTiltPort? = null,
+        alwaysCollectDebugChecks: Boolean = false,
     ): PositionValidator = PositionValidator(
         positionChecks = positionChecks,
-        posePositionCode = posePositionCode,
         sceneExpectation = sceneExpectation,
         tiltSource = tiltSource,
+        alwaysCollectDebugChecks = alwaysCollectDebugChecks,
     )
 
     fun buildPositionValidatorForExercise(
@@ -32,7 +32,6 @@ object TrainingGateFactory {
         val poseVariant = exerciseConfig.poseVariants[poseVariantIndex]
         return buildPositionValidator(
             positionChecks = poseVariant.positionChecks,
-            posePositionCode = poseVariant.posePosition ?: poseVariant.cameraPosition ?: "standing_side",
             sceneExpectation = poseVariant.resolveSceneExpectation(),
             tiltSource = tiltSource,
         )

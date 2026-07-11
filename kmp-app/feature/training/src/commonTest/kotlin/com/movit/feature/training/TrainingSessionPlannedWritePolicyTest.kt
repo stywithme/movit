@@ -72,29 +72,11 @@ class TrainingSessionLifecyclePolicyTest {
     }
 
     @Test
-    fun onHostResumed_withinTimeout_resumes() {
-        val snapshot = PhasePauseSnapshot(pausedAtMs = 1_000L, wasTraining = true, phaseMaxContinueTimeMs = 60_000L)
+    fun onHostResumed_alwaysResumesWhenWasTraining() {
+        val snapshot = PhasePauseSnapshot(pausedAtMs = 1_000L, wasTraining = true)
         assertEquals(
             PhaseResumeAction.RESUMED,
-            TrainingSessionLifecyclePolicy.onHostResumed(snapshot, nowMs = 30_000L),
-        )
-    }
-
-    @Test
-    fun onHostResumed_afterTimeout_restartsPhase() {
-        val snapshot = PhasePauseSnapshot(pausedAtMs = 1_000L, wasTraining = true, phaseMaxContinueTimeMs = 5_000L)
-        assertEquals(
-            PhaseResumeAction.PHASE_RESTARTED_TIMEOUT,
             TrainingSessionLifecyclePolicy.onHostResumed(snapshot, nowMs = 10_000L),
-        )
-    }
-
-    @Test
-    fun onHostResumed_whenCannotContinue_restartsPhase() {
-        val snapshot = PhasePauseSnapshot(pausedAtMs = 1_000L, wasTraining = true, phaseCanContinue = false)
-        assertEquals(
-            PhaseResumeAction.PHASE_RESTARTED_NO_CONTINUE,
-            TrainingSessionLifecyclePolicy.onHostResumed(snapshot, nowMs = 2_000L),
         )
     }
 }

@@ -1,5 +1,6 @@
 package com.movit.designsystem.components
 
+import androidx.compose.ui.graphics.Color
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -60,5 +61,44 @@ class SkeletonRomGeometryTest {
         assertEquals(0xFF8ECFE3, SkeletonRomGeometry.stateColorArgb(SkeletonRomState.TRANSITION))
         assertEquals(0xFFE76D46, SkeletonRomGeometry.stateColorArgb(SkeletonRomState.WARNING))
         assertEquals(0xFFC62828, SkeletonRomGeometry.stateColorArgb(SkeletonRomState.DANGER))
+    }
+
+    @Test
+    fun canvasAngleToSweepStop_normalizesNegativeAngles() {
+        assertEquals(0.25f, SkeletonRomGeometry.canvasAngleToSweepStop(90f), 0.001f)
+        assertEquals(0.75f, SkeletonRomGeometry.canvasAngleToSweepStop(-90f), 0.001f)
+    }
+
+    @Test
+    fun buildArcSweepColorStops_matchesLegacyTwoDegreeResolution() {
+        val upRange = SkeletonRomStateRanges(
+            perfect = SkeletonRomAngleRange(150f, 170f),
+            normal = SkeletonRomAngleRange(140f, 180f),
+        )
+        val downRange = SkeletonRomStateRanges(
+            perfect = SkeletonRomAngleRange(30f, 50f),
+            normal = SkeletonRomAngleRange(20f, 60f),
+        )
+        val stops = SkeletonRomGeometry.buildArcSweepColorStops(
+            invertAngles = false,
+            upRanges = upRange,
+            downRanges = downRange,
+            colorForState = { state -> Color(SkeletonRomGeometry.stateColorArgb(state)) },
+        )
+        assertEquals(91, stops.size)
+        assertEquals(0.25f, stops.first { it.first == 0.25f }.first, 0.001f)
+        assertEquals(0.75f, stops.first { it.first == 0.75f }.first, 0.001f)
+        assertEquals(
+            SkeletonRomState.PERFECT,
+            SkeletonRomGeometry.resolvedStateForAngle(40f, upRange, downRange),
+        )
+        assertEquals(
+            SkeletonRomState.PERFECT,
+            SkeletonRomGeometry.resolvedStateForAngle(
+                SkeletonRomGeometry.originalAngleForVisual(40f, invertAngles = false),
+                upRange,
+                downRange,
+            ),
+        )
     }
 }

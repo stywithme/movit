@@ -51,7 +51,7 @@ class SetupReadinessGate(
             ?: return SetupReadinessResult.empty().also { jointWindow.add(false) }
 
         if (startPoseGate == null) {
-            startPoseGate = StartPoseGate(variant.trackedJoints, stabilityPolicy)
+            startPoseGate = StartPoseGate(variant.trackedJoints)
         }
 
         val expectation = variant.resolveSceneExpectation()
@@ -144,7 +144,7 @@ class SetupReadinessGate(
     ): Boolean {
         if (angles == null) return false
         val variant = exerciseConfig.poseVariants.getOrNull(poseVariantIndex) ?: return false
-        val gate = startPoseGate ?: StartPoseGate(variant.trackedJoints, stabilityPolicy).also { startPoseGate = it }
+        val gate = startPoseGate ?: StartPoseGate(variant.trackedJoints).also { startPoseGate = it }
         return gate.isInStartPose(
             trackedSetupAngles(
                 angles = angles,
@@ -168,7 +168,7 @@ class SetupReadinessGate(
     ): Boolean {
         if (angles == null) return false
         val variant = exerciseConfig.poseVariants.getOrNull(poseVariantIndex) ?: return false
-        val gate = startPoseGate ?: StartPoseGate(variant.trackedJoints, stabilityPolicy).also { startPoseGate = it }
+        val gate = startPoseGate ?: StartPoseGate(variant.trackedJoints).also { startPoseGate = it }
         return gate.isStartPoseRoughlyValid(
             currentAngles = trackedSetupAngles(
                 angles = angles,

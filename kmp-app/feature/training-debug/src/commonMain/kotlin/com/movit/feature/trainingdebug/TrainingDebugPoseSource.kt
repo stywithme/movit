@@ -1,5 +1,7 @@
 package com.movit.feature.trainingdebug
 
+import com.movit.core.training.geometry.AngleModeStickyState
+import com.movit.core.training.geometry.ElbowAngleEstimator
 import com.movit.core.training.model.Landmark
 import kotlinx.coroutines.flow.Flow
 
@@ -28,18 +30,24 @@ data class DebugPoseDetectionResult(
     val analysisImageHeight: Int,
     val inferenceTimeMs: Long = 0L,
 ) {
-    fun toFrameInput(): TrainingDebugFrameInput = TrainingDebugFrameFactory.fromLandmarks(
-        landmarks = smoothedLandmarks,
-        worldLandmarks = smoothedWorldLandmarks,
-        timestampMs = timestampMs,
-        isFrontCamera = isFrontCamera,
-        analysisImageWidth = analysisImageWidth,
-        analysisImageHeight = analysisImageHeight,
-        inferenceTimeMs = inferenceTimeMs,
-    ).let { assembled ->
-        assembled.copy(
-            rawLandmarks = rawLandmarks,
-            rawWorldLandmarks = rawWorldLandmarks,
-        )
-    }
+    fun toFrameInput(
+        elbowEstimator: ElbowAngleEstimator,
+        stickyState: AngleModeStickyState,
+    ): TrainingDebugFrameInput =
+        TrainingDebugFrameFactory.fromLandmarks(
+            landmarks = smoothedLandmarks,
+            worldLandmarks = smoothedWorldLandmarks,
+            timestampMs = timestampMs,
+            isFrontCamera = isFrontCamera,
+            analysisImageWidth = analysisImageWidth,
+            analysisImageHeight = analysisImageHeight,
+            inferenceTimeMs = inferenceTimeMs,
+            elbowEstimator = elbowEstimator,
+            stickyState = stickyState,
+        ).let { assembled ->
+            assembled.copy(
+                rawLandmarks = rawLandmarks,
+                rawWorldLandmarks = rawWorldLandmarks,
+            )
+        }
 }

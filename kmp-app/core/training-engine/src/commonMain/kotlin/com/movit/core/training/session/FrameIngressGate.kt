@@ -1,32 +1,34 @@
 package com.movit.core.training.session
 
+import kotlinx.atomicfu.atomic
+
 /**
- * I-5: single back-pressure point on the engine consumption side.
- * Upstream layers (CameraX / pose detector) may still drop; this gate ensures
- * at most one [MovitTrainingEngine.processFrame] runs at a time.
+ * Safety net — the contract is a single worker thread enforced at the call site
+ * ([TrainingSessionViewModel] pose-frame worker). This gate still ensures at most one
+ * [MovitTrainingEngine.processFrame] runs at a time if that contract is ever violated.
  */
 class FrameIngressGate {
-    private var processing: Boolean = false
+    private val processing = atomic(false)
+    private val dropped = atomic(0)
 
-    var droppedFrameCount: Int = 0
-        private set
+    val droppedFrameCount: Int
+        get() = dropped.value
 
     /** @return `true` when the frame may enter the pipeline. */
     fun tryAcquire(): Boolean {
-        if (processing) {
-            droppedFrameCount++
+        if (!processing.compareAndSet(expect = false, update = true)) {
+            dropped.incrementAndGet()
             return false
         }
-        processing = true
         return true
     }
 
     fun release() {
-        processing = false
+        processing.value = false
     }
 
     fun reset() {
-        processing = false
-        droppedFrameCount = 0
+        processing.value = false
+        dropped.value = 0
     }
 }

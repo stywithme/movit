@@ -20,7 +20,7 @@ class OneEuroFilter(
         val dt = if (lastTime == 0L) {
             1.0f / 30.0f
         } else {
-            ((timestampMs - lastTime) / 1000.0f).coerceIn(0.001f, 0.1f)
+            ((timestampMs - lastTime) / 1000.0f).coerceIn(0.001f, 0.25f)
         }
         lastTime = timestampMs
 

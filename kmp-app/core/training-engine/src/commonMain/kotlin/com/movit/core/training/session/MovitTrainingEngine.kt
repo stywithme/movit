@@ -24,10 +24,11 @@ import com.movit.core.training.config.JointRole
 import com.movit.core.training.config.LocalizedText
 import com.movit.core.training.config.TrackedJoint
 import com.movit.core.training.config.TrackingMode
+import com.movit.core.training.config.getMessagesForState
 import com.movit.core.training.engine.JointError
 import com.movit.core.training.engine.RepIncompleteReason
 import com.movit.core.training.engine.shouldDiscardRepAttemptOnIncomplete
-
+import com.movit.core.training.engine.ZoneType
 import com.movit.core.training.config.phaseTimingConfig
 
 import com.movit.core.training.config.primaryJointCodes
@@ -52,6 +53,7 @@ import com.movit.core.training.engine.StartPoseGate
 
 import com.movit.core.training.engine.evaluation.JointEvaluator
 import com.movit.core.training.observability.PipelineTrace
+import com.movit.core.training.observability.PipelineTraceConfig
 
 import com.movit.core.training.engine.feedback.FrameFeedbackEmitter
 
@@ -128,13 +130,28 @@ class MovitTrainingEngine(
     private val executionClock = ExecutionClock(wallClock)
     private val nowMs: () -> Long = { executionClock.nowMs() }
 
-    private val poseVariant = exerciseConfig.getPoseVariant(poseVariantIndex)
+    // WP-01: coerce OOB index instead of crashing; empty list still errors (gated by buildEngine).
+    private val resolvedPoseVariantIndex: Int =
+        if (exerciseConfig.poseVariants.isEmpty()) {
+            error("poseVariants is empty")
+        } else {
+            val clamped = poseVariantIndex.coerceIn(0, exerciseConfig.poseVariants.lastIndex)
+            if (clamped != poseVariantIndex) {
+                println(
+                    "[MovitTrainingEngine] pose variant $poseVariantIndex missing; coerced to $clamped",
+                )
+            }
+            clamped
+        }
 
-        ?: error("pose variant $poseVariantIndex missing")
+    private val poseVariant = exerciseConfig.poseVariants[resolvedPoseVariantIndex]
 
     private val trackedJoints: List<TrackedJoint> = poseVariant.trackedJoints
 
-    private val primaryJointCodes: Set<String> = exerciseConfig.primaryJointCodes(poseVariantIndex)
+    /** J-06: O(1) joint lookup for lazy message resolution. */
+    private val trackedJointsByCode: Map<String, TrackedJoint> = trackedJoints.associateBy { it.joint }
+
+    private val primaryJointCodes: Set<String> = exerciseConfig.primaryJointCodes(resolvedPoseVariantIndex)
 
     private val targetReps: Int = targetRepsOverride ?: exerciseConfig.defaultTargetReps()
 
@@ -188,12 +205,10 @@ class MovitTrainingEngine(
 
     private val frameIngress = FrameIngressGate()
 
-    val pipelineTrace = PipelineTrace()
+    val pipelineTrace: PipelineTrace?
+        get() = PipelineTraceConfig.current()
 
-    private val presenceBridge = PresenceSupervisorBridge(
-        thresholds = PresenceThresholds.fromTiming(timingPolicy),
-        nowMs = nowMs,
-    )
+    private val presenceBridge = PresenceSupervisorBridge()
 
     private val angleSmoother = AngleSmoother(timingPolicy.smoothingWindowSize)
 
@@ -203,13 +218,13 @@ class MovitTrainingEngine(
 
     private val frameEvalPipeline = FrameEvaluationPipeline(jointEvaluator)
 
-    private val startPoseGate = StartPoseGate(trackedJoints, stabilityPolicy)
+    private val startPoseGate = StartPoseGate(trackedJoints)
 
     private val stateMachine = PhaseStateMachine(
 
         countingMethod = exerciseConfig.countingMethod,
 
-        primaryJoints = exerciseConfig.primaryPhaseJointConfigs(poseVariantIndex),
+        primaryJoints = exerciseConfig.primaryPhaseJointConfigs(resolvedPoseVariantIndex),
 
         timing = exerciseConfig.phaseTimingConfig(),
 
@@ -397,17 +412,12 @@ class MovitTrainingEngine(
 
 
 
-    private var isRunning = false
+    var isRunning: Boolean = false
+        private set
 
     private var isPaused = false
 
-    private var executionStartMs: Long = 0L
-
     private var lastJointStateInfos: Map<String, JointStateInfo> = emptyMap()
-
-    private var lastSmoothedAngles: Map<String, Double> = emptyMap()
-
-    private var lastInStartPosition = false
 
 
 
@@ -476,13 +486,17 @@ class MovitTrainingEngine(
 
 
 
+    /**
+     * Begin a fresh run.
+     *
+     * Threading (WP-03): do not call [processFrame] concurrently from another thread
+     * while start/stop/pause/resume run. Production [processFrame] is worker-only.
+     */
     fun start() {
 
         isRunning = true
 
         isPaused = false
-
-        executionStartMs = 0L
 
         angleSmoother.reset()
 
@@ -500,9 +514,7 @@ class MovitTrainingEngine(
 
         frameIngress.reset()
 
-        presenceBridge.reset()
-
-        pipelineTrace.clear()
+        pipelineTrace?.clear()
 
         positionValidator?.clearCooldowns()
 
@@ -514,15 +526,16 @@ class MovitTrainingEngine(
 
         lastJointStateInfos = emptyMap()
 
-        lastInStartPosition = false
-
         holdStatus = null
 
         positionErrors = emptyList()
 
         sceneWarnings = emptyList()
 
-        (deviceTiltPort as? AcquirableDeviceTiltPort)?.acquire(TILT_OWNER)
+        // T7: only hold the sensor when position checks actually consume tilt.
+        if (positionValidator != null) {
+            (deviceTiltPort as? AcquirableDeviceTiltPort)?.acquire(TILT_OWNER)
+        }
 
     }
 
@@ -544,6 +557,10 @@ class MovitTrainingEngine(
         session.pauseController.onUserOrSupervisorResume(visibilityMonitor)
     }
 
+    /**
+     * Stop the run and build a summary.
+     * Must not race with [processFrame] (WP-03: processFrame is worker-only in production).
+     */
     fun stop(): ExerciseWorkoutSummary {
         isRunning = false
         isPaused = false
@@ -574,17 +591,18 @@ class MovitTrainingEngine(
 
 
 
+    /**
+     * Ingest one pose frame.
+     *
+     * Threading contract (WP-03): call only from the pose-frame worker thread.
+     * [start] / [stop] / [pause] / [resume] must not run concurrently with this method.
+     */
     fun processFrame(frame: PoseFrame) {
         if (!isRunning || isPaused) return
-
-        if (!frame.hasPose) {
-            presenceBridge.onNoPoseFrame(frame.timestampMs)?.let { emitPresence(it) }
-            return
-        }
-        presenceBridge.onPoseRestored()?.let { emitPresence(it) }
+        if (!frame.hasPose) return
 
         if (!frameIngress.tryAcquire()) {
-            pipelineTrace.record("drop:ingress_busy")
+            pipelineTrace?.record("drop:ingress_busy")
             return
         }
         try {
@@ -602,10 +620,6 @@ class MovitTrainingEngine(
         if (!session.shouldProcessFrame()) return
 
         session.onFrameClock(frame)
-
-        if (executionStartMs == 0L) executionStartMs = frame.timestampMs.takeIf { it > 0 } ?: nowMs()
-
-
 
         val workingFrame = if (frame.isFrontCamera) frame.mirrored() else frame
 
@@ -630,7 +644,7 @@ class MovitTrainingEngine(
         val allJointsVisible = visibilityDetails.isEmpty() || visibilityDetails.all { it.isVisible }
 
         val visibilityResult = visibilityMonitor.checkVisibility(
-            jointVisibilities = visibilities,
+            details = visibilityDetails,
             currentRepCount = repCounter.count,
             currentPhase = stateMachine.currentPhase,
         )
@@ -663,7 +677,9 @@ class MovitTrainingEngine(
 
             isFrontCamera = frame.isFrontCamera,
 
-            allJointsVisible = allJointsVisible,
+            angleModeSwitchedJoints = workingFrame.angleModeSwitchedJointCodes,
+
+            worldLandmarks = workingFrame.worldLandmarks,
 
         )
 
@@ -672,10 +688,8 @@ class MovitTrainingEngine(
         val lastPhase = currentPhase
         session.updatePhase(pipelineResult.currentPhase)
         if (pipelineResult.currentPhase != lastPhase) {
-            pipelineTrace.record("phase:$lastPhase->${pipelineResult.currentPhase}")
+            pipelineTrace?.record("phase:$lastPhase->${pipelineResult.currentPhase}")
         }
-
-        lastInStartPosition = pipelineResult.inStartPosition
 
 
 
@@ -733,7 +747,8 @@ class MovitTrainingEngine(
             for (error in jointErrors) {
                 repCounter.addError(error)
                 if (frameFeedback.shouldEmitJointError(error)) {
-                    val message = frameResult.jointEvals[error.jointCode]?.messages?.firstOrNull()
+                    val zone = frameResult.jointEvals[error.jointCode]?.zoneType ?: ZoneType.TRANSITION
+                    val message = resolveJointErrorMessage(error, zone, currentPhase)
                     onJointErrorFeedback?.invoke(error, message)
                 }
             }
@@ -784,8 +799,6 @@ class MovitTrainingEngine(
 
         isTargetReached = repCounter.isTargetReached(),
 
-        isInStartPosition = lastInStartPosition,
-
         jointStateInfos = lastJointStateInfos,
 
         holdStatus = holdStatus,
@@ -799,8 +812,6 @@ class MovitTrainingEngine(
         isBilateralFlipped = bilateral.isFlipped,
 
         isBilateralExercise = exerciseConfig.isBilateral,
-
-        positionErrorCount = positionErrors.size,
 
     )
 
@@ -834,7 +845,27 @@ class MovitTrainingEngine(
 
     }
 
-
+    /** J-05: resolve messages only on throttled emit path. */
+    private fun resolveJointErrorMessage(
+        error: JointError,
+        zone: ZoneType,
+        phase: Phase,
+    ): LocalizedText? {
+        val joint = trackedJointsByCode[error.jointCode] ?: return null
+        val phaseName = if (joint.role == JointRole.SECONDARY && joint.phaseRanges != null) {
+            when (phase) {
+                Phase.START -> "top"
+                Phase.DOWN -> "down"
+                Phase.BOTTOM -> "bottom"
+                Phase.UP -> "up"
+                Phase.COUNT -> "all"
+                Phase.IDLE -> null
+            }
+        } else {
+            null
+        }
+        return joint.getMessagesForState(error.state, zone, phaseName).firstOrNull()
+    }
 
     private fun emitPresence(event: PresenceSupervisorEvent) {
         onPresenceEvent?.invoke(event)
@@ -876,8 +907,6 @@ class MovitTrainingEngine(
 
         val isTargetReached: Boolean,
 
-        val isInStartPosition: Boolean,
-
         val jointStateInfos: Map<String, JointStateInfo>,
 
         val holdStatus: HoldStatus? = null,
@@ -891,8 +920,6 @@ class MovitTrainingEngine(
         val isBilateralFlipped: Boolean = false,
 
         val isBilateralExercise: Boolean = false,
-
-        val positionErrorCount: Int = 0,
 
     )
 

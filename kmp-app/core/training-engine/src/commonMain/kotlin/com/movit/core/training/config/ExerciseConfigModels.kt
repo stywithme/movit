@@ -5,6 +5,7 @@ package com.movit.core.training.config
 import com.movit.core.training.engine.CountingMethod
 import com.movit.core.training.engine.JointState
 import com.movit.core.training.engine.ZoneType
+import com.movit.core.training.geometry.ComputedAngleChannels
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonNames
@@ -137,6 +138,13 @@ data class ExerciseConfig(
             if (variant.trackedJoints.none { it.role == JointRole.PRIMARY }) {
                 out += "no primary joints in variant $poseVariantIndex"
             }
+            // WP-15A: reject joints with no angle producer (ghost channels).
+            for (joint in variant.trackedJoints) {
+                val code = joint.joint.trim().lowercase()
+                if (code.isNotEmpty() && code !in ComputedAngleChannels.CODES) {
+                    out += "joint '$code' has no computed angle source"
+                }
+            }
         }
         return out
     }
@@ -170,14 +178,29 @@ data class ExerciseConfigRecord(
     }
 }
 
+fun AngleRange.sanitized(): AngleRange =
+    if (min <= max) this else AngleRange(min = max, max = min)
+
+fun StateRanges.sanitized(): StateRanges = copy(
+    perfect = perfect.sanitized(),
+    normal = normal?.sanitized(),
+    pad = pad?.sanitized(),
+    warning = warning?.sanitized(),
+    danger = danger?.sanitized(),
+)
+
+private fun TrackedJoint.sanitized(): TrackedJoint = copy(
+    startPose = startPose.sanitized(),
+    upRange = upRange?.sanitized(),
+    downRange = downRange?.sanitized(),
+    range = range?.sanitized(),
+    phaseRanges = phaseRanges?.mapValues { (_, ranges) -> ranges.sanitized() },
+)
+
 fun ExerciseConfig.sanitizeDefaults(): ExerciseConfig = copy(
+    // J-09: flip inverted angle ranges only; empty variants stay (validationIssues in buildEngine).
     poseVariants = poseVariants.map { variant ->
-        variant.copy(
-            trackedJoints = variant.trackedJoints,
-            positionChecks = variant.positionChecks,
-            feedbackMessages = variant.feedbackMessages,
-            messageAssignments = variant.messageAssignments,
-        )
+        variant.copy(trackedJoints = variant.trackedJoints.map { it.sanitized() })
     },
     muscles = muscles,
     equipment = equipment,

@@ -8,6 +8,8 @@ import androidx.exifinterface.media.ExifInterface
 import com.movit.core.data.MovitData
 import com.movit.core.posecapture.android.MediaPipeSyncPoseDetector
 import com.movit.core.posecapture.boundary.trainingdebug.MediaPipeSyncRunningMode
+import com.movit.core.training.geometry.AngleModeStickyState
+import com.movit.core.training.geometry.ElbowAngleEstimator
 import com.movit.feature.trainingdebug.TrainingDebugFrameInput
 import com.movit.feature.trainingdebug.TrainingDebugInputMode
 import com.movit.feature.trainingdebug.TrainingDebugPoseSource
@@ -28,9 +30,13 @@ class AndroidDebugImagePoseSource(
     private var loadedBitmap: Bitmap? = null
     private var config = TrainingDebugSourceConfig()
     private var modelLabelCache = "full"
+    private val elbowAngleEstimator = ElbowAngleEstimator()
+    private val angleModeStickyState = AngleModeStickyState()
 
     override suspend fun start(config: TrainingDebugSourceConfig) {
         this.config = config
+        elbowAngleEstimator.reset()
+        angleModeStickyState.reset()
         val detector = syncDetector ?: return
         val resolved = detector.warmUp(MediaPipeSyncRunningMode.IMAGE, config.toPoseCaptureConfig())
         modelLabelCache = resolved.displayLabel
@@ -44,6 +50,8 @@ class AndroidDebugImagePoseSource(
     }
 
     override suspend fun resetTracking(reason: String) {
+        elbowAngleEstimator.reset()
+        angleModeStickyState.reset()
         syncDetector?.resetTracking(reason)
         syncDetector?.warmUp(MediaPipeSyncRunningMode.IMAGE, config.toPoseCaptureConfig())
         reanalyze()
@@ -69,7 +77,7 @@ class AndroidDebugImagePoseSource(
         val bitmap = loadedBitmap ?: return
         val detector = syncDetector ?: return
         val frame = detector.detect(bitmap, timestampMs = 0L) ?: return
-        frameFlow.tryEmit(frame.toDebugFrameInput(config.isFrontCamera))
+        frameFlow.tryEmit(frame.toDebugFrameInput(config.isFrontCamera, elbowAngleEstimator, angleModeStickyState))
     }
 
     fun hasImage(): Boolean = loadedBitmap != null

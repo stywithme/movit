@@ -166,6 +166,7 @@ fun TrainingSessionRoute(
   }
   TrainingSessionScreen(
     state = state,
+    overlayFlow = viewModel.overlay,
     onBack = { viewModel.onEvent(TrainingSessionEvent.BackPressed) },
     onPause = { viewModel.onEvent(TrainingSessionEvent.Pause) },
     onResume = { viewModel.onEvent(TrainingSessionEvent.Resume) },
@@ -207,6 +208,7 @@ fun TrainingSessionRoute(
           } else {
             null
           },
+          angleTrackingEpoch = state.angleTrackingEpoch,
           modifier = Modifier.fillMaxSize(),
         )
       }

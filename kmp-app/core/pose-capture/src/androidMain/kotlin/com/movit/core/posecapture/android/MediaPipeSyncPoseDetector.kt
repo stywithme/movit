@@ -47,7 +47,6 @@ class MediaPipeSyncPoseDetector(
         mode: MediaPipeSyncRunningMode,
         config: TrainingDebugSourceConfig,
     ): ResolvedPoseModel = synchronized(initLock) {
-        shutdownLandmarkerOnly()
         runningMode = mode
         lastConfig = config
         useGpu = config.useGpu
@@ -77,7 +76,10 @@ class MediaPipeSyncPoseDetector(
                 .setMinTrackingConfidence(config.minTrackingConfidence)
                 .setMinPosePresenceConfidence(config.minPresenceConfidence)
                 .build()
+            val previous = landmarker
             landmarker = PoseLandmarker.createFromOptions(context, options)
+            closeLandmarkerQuietly(previous)
+            landmarkSmoother.reset()
             Log.d(TAG, "Sync pose detector ready mode=$mode gpu=$useGpu model=${resolved.displayLabel}")
             if (resolved.scheduleHeavyUpgrade) {
                 scheduleHeavyUpgrade(mode, config)
@@ -161,12 +163,17 @@ class MediaPipeSyncPoseDetector(
     }
 
     private fun shutdownLandmarkerOnly() {
-        landmarker?.close()
+        closeLandmarkerQuietly(landmarker)
         landmarker = null
         runningMode = null
         resolvedModel = null
         landmarkSmoother.reset()
         heavyUpgradeInFlight = false
+    }
+
+    private fun closeLandmarkerQuietly(marker: PoseLandmarker?) {
+        if (marker == null) return
+        runCatching { marker.close() }
     }
 
     private fun scheduleHeavyUpgrade(
@@ -182,8 +189,10 @@ class MediaPipeSyncPoseDetector(
                 if (modelPort.getSelectedModel() != config.modelType) return@launch
                 val preview = modelPort.resolveForInitialization(config.modelType)
                 if (preview.usesHeavyFallback) return@launch
-                Log.i(TAG, "Heavy model cached — re-initializing sync pose detector")
-                warmUp(mode, config)
+                Log.i(TAG, "Heavy model cached — swapping sync pose detector")
+                synchronized(initLock) {
+                    warmUp(mode, config)
+                }
             } finally {
                 heavyUpgradeInFlight = false
             }

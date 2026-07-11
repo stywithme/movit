@@ -13,4 +13,6 @@ expect fun TrainingSessionCameraHost(
     useFrontCamera: Boolean = true,
     modelType: String = "full",
     onDebugFps: ((Int) -> Unit)? = null,
+    /** Bumped in [TrainingSessionViewModel.reloadForNextFlowItem] to reset elbow + sticky (E-08). */
+    angleTrackingEpoch: Int = 0,
 )

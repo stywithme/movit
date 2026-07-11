@@ -12,4 +12,6 @@ actual interface CameraFrameSource {
     actual fun setErrorListener(listener: ((String) -> Unit)?)
 
     actual fun setOnCameraBoundListener(listener: (() -> Unit)?)
+
+    actual fun resetAngleTracking()
 }

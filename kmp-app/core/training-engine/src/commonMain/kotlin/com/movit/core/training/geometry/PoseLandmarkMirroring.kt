@@ -16,18 +16,14 @@ object PoseLandmarkMirroring {
 
     fun mirroredIndex(index: Int): Int = swapMap[index] ?: index
 
-    fun mirrorLandmarks(landmarks: List<Landmark>): List<Landmark> {
-        if (landmarks.isEmpty()) return landmarks
-        val out = landmarks.toMutableList()
-        for ((left, right) in swapMap) {
-            if (left >= out.size || right >= out.size) continue
-            val l = out[left]
-            val r = out[right]
-            out[left] = r
-            out[right] = l
-        }
-        return out
-    }
+    /**
+     * Identity alias (WP-08 / E-03 / E-04).
+     *
+     * Landmarks stay MediaPipe-indexed; all L/R consumption remaps via [mirroredIndex]
+     * or check-name XOR when `isFrontCamera` is true. A real one-way buffer swap here
+     * without clearing that flag would reintroduce PF-11 desync.
+     */
+    fun mirrorLandmarks(landmarks: List<Landmark>): List<Landmark> = landmarks
 
     fun mirrorAngles(angles: JointAngles): JointAngles = angles.copy(
         leftElbow = angles.rightElbow,
@@ -49,4 +45,13 @@ object PoseLandmarkMirroring {
         neckLeft = angles.neckRight,
         neckRight = angles.neckLeft,
     )
+
+    fun mirrorJointCode(jointCode: String): String = when {
+        jointCode.startsWith("left_") -> "right_" + jointCode.removePrefix("left_")
+        jointCode.startsWith("right_") -> "left_" + jointCode.removePrefix("right_")
+        else -> jointCode
+    }
+
+    fun mirrorJointCodes(codes: Set<String>): Set<String> =
+        if (codes.isEmpty()) codes else codes.map(::mirrorJointCode).toSet()
 }

@@ -18,8 +18,14 @@ class AndroidTrainingFrameSnapshotPort(
         sessionId: String,
         captureId: String,
     ): PersistedFrameSnapshot? = withContext(Dispatchers.IO) {
-        val fullJpeg = detector.takeSnapshotJpeg(FULL_MAX_DIMENSION, FULL_JPEG_QUALITY) ?: return@withContext null
-        val thumbJpeg = detector.takeSnapshotJpeg(THUMB_MAX_DIMENSION, THUMB_JPEG_QUALITY) ?: fullJpeg
+        val jpegs = detector.takeSnapshotJpegs(
+            FULL_MAX_DIMENSION,
+            FULL_JPEG_QUALITY,
+            THUMB_MAX_DIMENSION,
+            THUMB_JPEG_QUALITY,
+        ) ?: return@withContext null
+        val fullJpeg = jpegs.full
+        val thumbJpeg = jpegs.thumb
         val dir = File(filesRoot, "frame_captures/$sessionId").apply { mkdirs() }
         val fullFile = File(dir, "$captureId.jpg")
         val thumbFile = File(dir, "${captureId}_thumb.jpg")

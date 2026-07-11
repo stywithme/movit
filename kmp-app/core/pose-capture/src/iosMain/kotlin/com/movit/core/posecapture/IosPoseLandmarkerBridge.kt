@@ -20,13 +20,28 @@ interface IosPoseLandmarkerBridge {
         sampleBuffer: CMSampleBufferRef?,
         isFrontCamera: Boolean,
         timestampMs: Long,
+        analysisImageWidth: Int,
+        analysisImageHeight: Int,
     )
 
     /** Latest upright camera frame as JPEG bytes for report evidence (optional). */
     fun takeSnapshotJpeg(maxDimension: Int, quality: Int): ByteArray?
 
+    /** One frame capture; full + thumb JPEG from the same source frame (A-13/H-07). */
+    fun takeSnapshotJpegs(
+        fullMaxDimension: Int,
+        fullQuality: Int,
+        thumbMaxDimension: Int,
+        thumbQuality: Int,
+    ): FrameSnapshotJpegs?
+
     fun shutdown()
 }
+
+data class FrameSnapshotJpegs(
+    val fullJpeg: ByteArray,
+    val thumbJpeg: ByteArray,
+)
 
 /** Async inference callbacks — Swift calls these from MediaPipe result listeners. */
 interface IosPoseLandmarkerResultHandler {

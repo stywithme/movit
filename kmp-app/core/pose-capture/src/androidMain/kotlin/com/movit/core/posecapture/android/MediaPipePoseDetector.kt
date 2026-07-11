@@ -63,10 +63,8 @@ class MediaPipePoseDetector(
 
     companion object {
         private const val TAG = "MediaPipePoseDetector"
-        private const val MIN_DETECTION = 0.5f
-        private const val MIN_TRACKING = 0.5f
-        private const val MIN_PRESENCE = 0.5f
         private const val INFERENCE_STALL_TIMEOUT_MS = 1_500L
+        private const val MAX_FRAME_CAMERA_STATE = 64
     }
 
     private var landmarker: PoseLandmarker? = null
@@ -80,6 +78,13 @@ class MediaPipePoseDetector(
     private val initLock = Any()
     private val bitmapLock = Any()
     private var lastFrameBitmap: Bitmap? = null
+    /**
+     * Double-buffer for rotation reuse (WP-09 tear fix): while [takeSnapshotJpegs] copies
+     * [lastFrameBitmap] under [bitmapLock], the next frame draws into the alternate buffer.
+     */
+    private var rotatedBitmapA: Bitmap? = null
+    private var rotatedBitmapB: Bitmap? = null
+    private var writeRotatedA = true
     private val transformMatrix = Matrix()
     private val srcRect = RectF()
     private val dstRect = RectF()
@@ -102,14 +107,8 @@ class MediaPipePoseDetector(
         lastConfiguration = configuration
         synchronized(initLock) {
             useGpu = configuration.useGpu
-            shutdownLandmarkerOnly()
             try {
-                val baseBuilder = BaseOptions.builder()
-                if (useGpu) {
-                    baseBuilder.setDelegate(Delegate.GPU)
-                } else {
-                    baseBuilder.setDelegate(Delegate.CPU)
-                }
+                val baseBuilder = buildBaseOptions(useGpu)
                 val resolved = PoseModelResolver.resolve(
                     context = context,
                     baseBuilder = baseBuilder,
@@ -123,14 +122,24 @@ class MediaPipePoseDetector(
                     .setNumPoses(1)
                     .setMinPoseDetectionConfidence(configuration.minDetectionConfidence)
                     .setMinTrackingConfidence(configuration.minTrackingConfidence)
-                    .setMinPosePresenceConfidence(MIN_PRESENCE)
+                    .setMinPosePresenceConfidence(configuration.minPosePresenceConfidence)
                     .setResultListener(this::onPoseResult)
                     .setErrorListener { e ->
                         inferenceInFlight.set(false)
+                        frameCameraState.clear()
                         listener?.onError(e.message ?: "Pose error")
                     }
                     .build()
+                val previous = landmarker
                 landmarker = PoseLandmarker.createFromOptions(context, options)
+                closeLandmarkerQuietly(previous)
+                frameCameraState.clear()
+                landmarkSmoother.reset()
+                inferenceInFlight.set(false)
+                lastSubmittedFrameMs.set(0L)
+                lastStallWarningMs.set(0L)
+                skippedBusyFrames.set(0)
+                heavyUpgradeInFlight = false
                 Log.d(TAG, "Pose landmarker ready gpu=$useGpu model=$modelLabel")
                 if (resolved.scheduleHeavyUpgrade) {
                     scheduleHeavyUpgrade(configuration)
@@ -143,6 +152,16 @@ class MediaPipePoseDetector(
                 }
             }
         }
+    }
+
+    private fun buildBaseOptions(useGpu: Boolean): BaseOptions.Builder {
+        val baseBuilder = BaseOptions.builder()
+        if (useGpu) {
+            baseBuilder.setDelegate(Delegate.GPU)
+        } else {
+            baseBuilder.setDelegate(Delegate.CPU)
+        }
+        return baseBuilder
     }
 
     override fun resetTrackingState() {
@@ -162,7 +181,7 @@ class MediaPipePoseDetector(
             return
         }
         try {
-            frameCameraState[frameTime] = isFrontCamera
+            rememberFrameCamera(frameTime, isFrontCamera)
             lastSubmittedFrameMs.set(frameTime)
             val rotationDegrees = imageProxy.imageInfo.rotationDegrees
             val sourceBitmap = imageProxy.toBitmap()
@@ -177,8 +196,12 @@ class MediaPipePoseDetector(
             lastAnalysisWidth = analysisBitmap.width
             lastAnalysisHeight = analysisBitmap.height
             synchronized(bitmapLock) {
-                lastFrameBitmap?.takeIf { it !== analysisBitmap }?.recycle()
+                val previous = lastFrameBitmap
                 lastFrameBitmap = analysisBitmap
+                // Recycle only one-shot (non-pool) bitmaps from rotationDegrees == 0 path.
+                if (previous != null && previous !== analysisBitmap && !isRotatedPoolBitmap(previous)) {
+                    previous.recycle()
+                }
             }
             val mpImage = BitmapImageBuilder(analysisBitmap).build()
             marker.detectAsync(mpImage, frameTime)
@@ -209,6 +232,9 @@ class MediaPipePoseDetector(
      * Front-camera horizontal mirror is **not** applied here — preview mirroring is handled
      * in [com.movit.core.training.geometry.DisplayLandmarkTransform] so engine math stays on
      * unmirrored landmarks + [com.movit.core.training.model.PoseFrame.mirrored].
+     *
+     * Alternates between two reusable buffers so snapshot copy of the published frame cannot
+     * tear against the next draw (WP-09).
      */
     internal fun rotateBitmapForAnalysis(source: Bitmap, rotationDegrees: Int): Bitmap {
         transformMatrix.reset()
@@ -217,7 +243,8 @@ class MediaPipePoseDetector(
         transformMatrix.mapRect(dstRect, srcRect)
         val outWidth = dstRect.width().roundToInt().coerceAtLeast(1)
         val outHeight = dstRect.height().roundToInt().coerceAtLeast(1)
-        val output = Bitmap.createBitmap(outWidth, outHeight, Bitmap.Config.ARGB_8888)
+        val output = obtainRotatedWriteBuffer(outWidth, outHeight)
+        output.eraseColor(0)
         Canvas(output).apply {
             translate(-dstRect.left, -dstRect.top)
             concat(transformMatrix)
@@ -226,18 +253,66 @@ class MediaPipePoseDetector(
         return output
     }
 
+    private fun obtainRotatedWriteBuffer(outWidth: Int, outHeight: Int): Bitmap {
+        val useA = writeRotatedA
+        writeRotatedA = !writeRotatedA
+        val existing = if (useA) rotatedBitmapA else rotatedBitmapB
+        val reusable = existing?.takeIf {
+            it.width == outWidth && it.height == outHeight && !it.isRecycled
+        }
+        if (reusable != null) return reusable
+        val created = Bitmap.createBitmap(outWidth, outHeight, Bitmap.Config.ARGB_8888)
+        synchronized(bitmapLock) {
+            val published = lastFrameBitmap
+            if (useA) {
+                rotatedBitmapA?.takeIf { it !== created && it !== published }?.recycle()
+                rotatedBitmapA = created
+            } else {
+                rotatedBitmapB?.takeIf { it !== created && it !== published }?.recycle()
+                rotatedBitmapB = created
+            }
+        }
+        return created
+    }
+
+    private fun isRotatedPoolBitmap(bitmap: Bitmap): Boolean =
+        bitmap === rotatedBitmapA || bitmap === rotatedBitmapB
+
     /**
      * Returns a downscaled JPEG of the most recent camera frame for report evidence.
      * Held only until the next frame arrives — not persisted until the caller writes it.
      */
     fun takeSnapshotJpeg(maxDimension: Int, quality: Int): ByteArray? {
-        val source = synchronized(bitmapLock) { lastFrameBitmap } ?: return null
-        val working = source.copy(source.config ?: Bitmap.Config.ARGB_8888, false)
+        val working = copyLastFrameBitmap() ?: return null
         return try {
             compressBitmapToJpeg(working, maxDimension, quality)
         } finally {
             working.recycle()
         }
+    }
+
+    /** One bitmap copy under [bitmapLock]; full + thumb JPEG from the same frame (A-13/H-07). */
+    fun takeSnapshotJpegs(
+        fullMaxDimension: Int,
+        fullQuality: Int,
+        thumbMaxDimension: Int,
+        thumbQuality: Int,
+    ): SnapshotJpegPair? {
+        val working = copyLastFrameBitmap() ?: return null
+        return try {
+            val full = compressBitmapToJpeg(working, fullMaxDimension, fullQuality) ?: return null
+            val thumb = compressBitmapToJpeg(working, thumbMaxDimension, thumbQuality) ?: full
+            SnapshotJpegPair(full, thumb)
+        } finally {
+            working.recycle()
+        }
+    }
+
+    data class SnapshotJpegPair(val full: ByteArray, val thumb: ByteArray)
+
+    private fun copyLastFrameBitmap(): Bitmap? = synchronized(bitmapLock) {
+        val source = lastFrameBitmap ?: return null
+        source.copy(source.config ?: Bitmap.Config.ARGB_8888, false)
     }
 
     private fun compressBitmapToJpeg(bitmap: Bitmap, maxDimension: Int, quality: Int): ByteArray? {
@@ -262,54 +337,43 @@ class MediaPipePoseDetector(
         return Bitmap.createScaledBitmap(bitmap, width, height, true)
     }
 
-    override fun buildPoseFrame(
-        landmarks: List<Landmark>,
-        timestampMs: Long,
-        isFrontCamera: Boolean,
-    ): PoseFrame = PoseFrameAssembler.assemble(
-        landmarks = landmarks,
-        timestampMs = timestampMs,
-        isFrontCamera = isFrontCamera,
-    )
-
     private fun onPoseResult(result: PoseLandmarkerResult, @Suppress("UNUSED_PARAMETER") input: com.google.mediapipe.framework.image.MPImage) {
         val finishMs = SystemClock.uptimeMillis()
         val frameTs = result.timestampMs()
         lastInferenceTimeMs = finishMs - frameTs
         val isFrontCamera = frameCameraState.remove(frameTs) ?: false
-        try {
-            if (result.landmarks().isEmpty()) {
-                listener?.onNoPoseDetected(isFrontCamera)
-                return
-            }
-            val norm = result.landmarks()[0]
-            val world = result.worldLandmarks().firstOrNull()
-            val rawNormalized = MediaPipeLandmarkMapper.mapNormalizedRaw(norm)
-            val rawWorld = world?.let(MediaPipeLandmarkMapper::mapWorldRaw)
-            val smoothed = landmarkSmoother.smooth(norm, frameTs)
-            val refinedLandmarks = if (poseRefiner.isAvailable) {
-                poseRefiner.refineLandmarks(smoothed)
-            } else {
-                smoothed
-            }
-            val smoothedWorld = world?.let { landmarkSmoother.smoothWorld(it, frameTs) }
-            listener?.onPoseDetected(
-                DetectionResult(
-                    landmarks = refinedLandmarks,
-                    worldLandmarks = smoothedWorld,
-                    rawNormalizedLandmarks = rawNormalized,
-                    rawWorldLandmarks = rawWorld,
-                    timestampMs = frameTs,
-                    inferenceTimeMs = lastInferenceTimeMs,
-                    isFrontCamera = isFrontCamera,
-                    analysisImageWidth = lastAnalysisWidth,
-                    analysisImageHeight = lastAnalysisHeight,
-                    modelDisplayLabel = modelLabel,
-                ),
-            )
-        } finally {
+        if (result.landmarks().isEmpty()) {
             inferenceInFlight.set(false)
+            listener?.onNoPoseDetected(isFrontCamera)
+            return
         }
+        val norm = result.landmarks()[0]
+        val world = result.worldLandmarks().firstOrNull()
+        val rawNormalized = MediaPipeLandmarkMapper.mapNormalizedRaw(norm)
+        val rawWorld = world?.let(MediaPipeLandmarkMapper::mapWorldRaw)
+        // A-02: release before smooth/assemble — MediaPipe callbacks for one landmarker are serial.
+        inferenceInFlight.set(false)
+        val smoothed = landmarkSmoother.smooth(norm, frameTs)
+        val refinedLandmarks = if (poseRefiner.isAvailable) {
+            poseRefiner.refineLandmarks(smoothed)
+        } else {
+            smoothed
+        }
+        val smoothedWorld = world?.let { landmarkSmoother.smoothWorld(it, frameTs) }
+        listener?.onPoseDetected(
+            DetectionResult(
+                landmarks = refinedLandmarks,
+                worldLandmarks = smoothedWorld,
+                rawNormalizedLandmarks = rawNormalized,
+                rawWorldLandmarks = rawWorld,
+                timestampMs = frameTs,
+                inferenceTimeMs = lastInferenceTimeMs,
+                isFrontCamera = isFrontCamera,
+                analysisImageWidth = lastAnalysisWidth,
+                analysisImageHeight = lastAnalysisHeight,
+                modelDisplayLabel = modelLabel,
+            ),
+        )
     }
 
     override fun shutdown() {
@@ -317,13 +381,18 @@ class MediaPipePoseDetector(
             shutdownLandmarkerOnly()
         }
         synchronized(bitmapLock) {
-            lastFrameBitmap?.recycle()
+            lastFrameBitmap?.takeIf { !isRotatedPoolBitmap(it) }?.recycle()
             lastFrameBitmap = null
         }
+        rotatedBitmapA?.recycle()
+        rotatedBitmapA = null
+        rotatedBitmapB?.recycle()
+        rotatedBitmapB = null
+        writeRotatedA = true
     }
 
     private fun shutdownLandmarkerOnly() {
-        landmarker?.close()
+        closeLandmarkerQuietly(landmarker)
         landmarker = null
         frameCameraState.clear()
         landmarkSmoother.reset()
@@ -332,6 +401,19 @@ class MediaPipePoseDetector(
         lastStallWarningMs.set(0L)
         skippedBusyFrames.set(0)
         heavyUpgradeInFlight = false
+    }
+
+    private fun closeLandmarkerQuietly(marker: PoseLandmarker?) {
+        if (marker == null) return
+        runCatching { marker.close() }
+    }
+
+    private fun rememberFrameCamera(frameTime: Long, isFrontCamera: Boolean) {
+        while (frameCameraState.size >= MAX_FRAME_CAMERA_STATE) {
+            val oldest = frameCameraState.keys.minOrNull() ?: break
+            frameCameraState.remove(oldest)
+        }
+        frameCameraState[frameTime] = isFrontCamera
     }
 
     private fun scheduleHeavyUpgrade(configuration: PoseDetectorConfiguration) {
@@ -345,8 +427,35 @@ class MediaPipePoseDetector(
                 if (modelPort.getSelectedModel() != PoseModelType.HEAVY) return@launch
                 val preview = modelPort.resolveForInitialization(PoseModelType.HEAVY)
                 if (preview.usesHeavyFallback) return@launch
-                Log.i(TAG, "Heavy model cached — re-initializing pose landmarker")
-                warmUp(lastConfiguration ?: configuration)
+                Log.i(TAG, "Heavy model cached — swapping pose landmarker")
+                synchronized(initLock) {
+                    val config = lastConfiguration ?: configuration
+                    val baseBuilder = buildBaseOptions(useGpu)
+                    val resolved = PoseModelResolver.resolve(
+                        context = context,
+                        baseBuilder = baseBuilder,
+                        configuration = config,
+                        modelPort = modelPort,
+                    )
+                    modelLabel = resolved.displayLabel
+                    val options = PoseLandmarker.PoseLandmarkerOptions.builder()
+                        .setBaseOptions(baseBuilder.build())
+                        .setRunningMode(RunningMode.LIVE_STREAM)
+                        .setNumPoses(1)
+                        .setMinPoseDetectionConfidence(config.minDetectionConfidence)
+                        .setMinTrackingConfidence(config.minTrackingConfidence)
+                        .setMinPosePresenceConfidence(config.minPosePresenceConfidence)
+                        .setResultListener(this@MediaPipePoseDetector::onPoseResult)
+                        .setErrorListener { e ->
+                            inferenceInFlight.set(false)
+                            frameCameraState.clear()
+                            listener?.onError(e.message ?: "Pose error")
+                        }
+                        .build()
+                    val previous = landmarker
+                    landmarker = PoseLandmarker.createFromOptions(context, options)
+                    closeLandmarkerQuietly(previous)
+                }
             } finally {
                 heavyUpgradeInFlight = false
             }

@@ -381,6 +381,11 @@ object PostTrainingReportLegacyJson {
         meta.jointCoverageRatio?.let { put("jointCoverageRatio", JsonPrimitive(roundScore(it))) }
         put("visibilityPauseCount", JsonPrimitive(meta.visibilityPauseCount))
         put("cameraWarningCount", JsonPrimitive(meta.cameraWarningCount))
+        meta.throughputProfileId?.let { put("throughputProfileId", JsonPrimitive(it)) }
+        meta.avgAchievedFps?.let { put("avgAchievedFps", JsonPrimitive(roundScore(it))) }
+        if (meta.adaptiveDowngrades > 0) {
+            put("adaptiveDowngrades", JsonPrimitive(meta.adaptiveDowngrades))
+        }
     }
 
     private fun encodeDangerAlerts(alerts: List<MovitDangerAlert>): JsonArray = buildJsonArray {

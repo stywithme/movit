@@ -240,6 +240,15 @@ data class RepCountingConfig(
 }
 
 @Serializable
+enum class CheckSpace {
+    @SerialName("image_2d")
+    IMAGE_2D,
+
+    @SerialName("gravity_3d")
+    GRAVITY_3D,
+}
+
+@Serializable
 enum class PositionCheckType {
     @SerialName("forward_comparison")
     FORWARD_COMPARISON,
@@ -318,6 +327,8 @@ data class PositionCheck(
     val severity: CheckSeverity = CheckSeverity.WARNING,
     val cooldownMs: Long = 2_000,
     val minErrorFrames: Int = 3,
+    /** WP-20: IMAGE_2D keeps legacy tilt-corrected path; GRAVITY_3D uses world+gravity. */
+    val space: CheckSpace = CheckSpace.IMAGE_2D,
 )
 
 @Serializable

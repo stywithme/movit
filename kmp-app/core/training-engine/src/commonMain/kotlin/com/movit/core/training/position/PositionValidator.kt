@@ -2,6 +2,7 @@ package com.movit.core.training.position
 
 import com.movit.core.training.boundary.DeviceTiltPort
 import com.movit.core.training.config.CheckSeverity
+import com.movit.core.training.config.CheckSpace
 import com.movit.core.training.config.LandmarkGroup
 import com.movit.core.training.config.LocalizedText
 import com.movit.core.training.config.PositionCheck
@@ -9,6 +10,7 @@ import com.movit.core.training.config.PositionCheckType
 import com.movit.core.training.config.PositionOperator
 import com.movit.core.training.engine.JointAngleTracker
 import com.movit.core.training.engine.Phase
+import com.movit.core.training.geometry.GravityAlignedSpace
 import com.movit.core.training.geometry.JointLandmarkMapping
 import com.movit.core.training.geometry.LandmarkTiltCorrector
 import com.movit.core.training.model.Landmark
@@ -31,10 +33,11 @@ import kotlin.math.sqrt
  */
 class PositionValidator(
     private val positionChecks: List<PositionCheck>,
-    private val posePositionCode: String,
     val sceneExpectation: PoseSceneExpectation,
     private val visibilityThreshold: Float = 0.5f,
-    private val tiltSource: DeviceTiltPort? = null
+    private val tiltSource: DeviceTiltPort? = null,
+    /** Debug-lab consumers analyze single frames in IDLE/START — bypass the D-04 phase gate. */
+    private val alwaysCollectDebugChecks: Boolean = false,
 ) {
     
     companion object {
@@ -46,9 +49,6 @@ class PositionValidator(
     
     /** Full 3-axis scene detector (direction + posture + region). */
     private val sceneDetector = PoseSceneDetector()
-    
-    /** @deprecated Kept for legacy callers. Use [sceneExpectation] instead. */
-    val resolvedPosition: PosePosition? = PosePosition.fromCode(posePositionCode)
     
     private var cachedSceneResult: PoseSceneResult? = null
     private var cachedCameraResult: CameraPositionDetector.CameraDetectionResult? = null
@@ -67,24 +67,33 @@ class PositionValidator(
         landmarks: List<Landmark>,
         currentPhase: Phase,
         isBilateralFlipped: Boolean = false,
-        isFrontCamera: Boolean = false
+        isFrontCamera: Boolean = false,
+        worldLandmarks: List<Landmark>? = null,
     ): PositionValidationResult {
+        // D-04: keep IDLE/START hints; skip per-check debug allocations outside counting phases.
+        val collectDebugChecks = alwaysCollectDebugChecks ||
+            (currentPhase != Phase.IDLE && currentPhase != Phase.START)
+
         if (landmarks.size < 33) {
             return PositionValidationResult.empty().copy(
-                debugChecks = positionChecks.map { check ->
-                    val requiredFrames = check.minErrorFrames.takeIf { it > 0 } ?: DEFAULT_MIN_ERROR_FRAMES
-                    PositionCheckDebug(
-                        checkId = check.id,
-                        type = check.type,
-                        status = PositionCheckDebugStatus.SKIPPED,
-                        actualValue = null,
-                        threshold = check.condition.threshold,
-                        skipReason = "Insufficient landmarks (${landmarks.size})",
-                        frameCount = 0,
-                        requiredFrames = requiredFrames,
-                        landmark1 = check.landmarks.primary,
-                        landmark2 = check.landmarks.secondary
-                    )
+                debugChecks = if (!collectDebugChecks) {
+                    emptyList()
+                } else {
+                    positionChecks.map { check ->
+                        val requiredFrames = check.minErrorFrames.takeIf { it > 0 } ?: DEFAULT_MIN_ERROR_FRAMES
+                        PositionCheckDebug(
+                            checkId = check.id,
+                            type = check.type,
+                            status = PositionCheckDebugStatus.SKIPPED,
+                            actualValue = null,
+                            threshold = check.condition.threshold,
+                            skipReason = "Insufficient landmarks (${landmarks.size})",
+                            frameCount = 0,
+                            requiredFrames = requiredFrames,
+                            landmark1 = check.landmarks.primary,
+                            landmark2 = check.landmarks.secondary
+                        )
+                    }
                 }
             )
         }
@@ -113,7 +122,7 @@ class PositionValidator(
         val errors = mutableListOf<PositionError>()
         val warnings = mutableListOf<PositionError>()
         val tips = mutableListOf<PositionError>()
-        val debugChecks = mutableListOf<PositionCheckDebug>()
+        val debugChecks = if (collectDebugChecks) mutableListOf<PositionCheckDebug>() else null
         
         for (check in positionChecks) {
             val requiredFrames = check.minErrorFrames.takeIf { it > 0 } ?: DEFAULT_MIN_ERROR_FRAMES
@@ -122,7 +131,7 @@ class PositionValidator(
             if (!isActiveInPhase(check, currentPhase)) {
                 // Reset frame count when not active
                 errorFrameCounts.remove(check.id)
-                debugChecks.add(
+                debugChecks?.add(
                     PositionCheckDebug(
                         checkId = check.id,
                         type = check.type,
@@ -145,7 +154,22 @@ class PositionValidator(
             // XOR: if both active, they cancel out (double mirror = no mirror)
             val shouldMirrorLandmarks = isBilateralFlipped xor isFrontCamera
             val effectiveCheck = if (shouldMirrorLandmarks) mirrorCheckLandmarks(check) else check
-            val result = validateCheck(effectiveCheck, effectiveLandmarks, cameraResult, effectiveFacing)
+            val gravityAligned = if (
+                effectiveCheck.space == CheckSpace.GRAVITY_3D &&
+                worldLandmarks != null &&
+                worldLandmarks.size >= 33
+            ) {
+                tiltSource?.gravityVector?.let { GravityAlignedSpace.alignToGravity(worldLandmarks, it) }
+            } else {
+                null
+            }
+            val result = validateCheck(
+                check = effectiveCheck,
+                landmarks = effectiveLandmarks,
+                cameraResult = cameraResult,
+                facing = effectiveFacing,
+                gravityAlignedWorld = gravityAligned,
+            )
             
             if (!result.passed && !result.skipped) {
                 // Increment frame count for stability (cap at requiredFrames)
@@ -155,7 +179,7 @@ class PositionValidator(
                 // After confirmation, keep returning the issue every frame (visual overlay stays visible)
                 if (frameCount >= requiredFrames) {
                     val error = result.error ?: continue  // Skip if error is unexpectedly null
-                    debugChecks.add(
+                    debugChecks?.add(
                         PositionCheckDebug(
                             checkId = check.id,
                             type = check.type,
@@ -174,7 +198,7 @@ class PositionValidator(
                         CheckSeverity.TIP -> tips.add(error)
                     }
                 } else {
-                    debugChecks.add(
+                    debugChecks?.add(
                         PositionCheckDebug(
                             checkId = check.id,
                             type = check.type,
@@ -191,7 +215,7 @@ class PositionValidator(
             } else {
                 // Reset frame count on success or skip
                 errorFrameCounts.remove(check.id)
-                debugChecks.add(
+                debugChecks?.add(
                     PositionCheckDebug(
                         checkId = check.id,
                         type = check.type,
@@ -216,7 +240,7 @@ class PositionValidator(
             sceneWarnings = sceneWarnings,
             detectedCameraPosition = cameraResult.position,
             detectedFacing = cameraResult.facingDirection,
-            debugChecks = debugChecks
+            debugChecks = debugChecks.orEmpty()
         )
     }
 
@@ -297,8 +321,16 @@ class PositionValidator(
         check: PositionCheck,
         landmarks: List<Landmark>,
         cameraResult: CameraPositionDetector.CameraDetectionResult,
-        facing: CameraPositionDetector.DetectedFacing
+        facing: CameraPositionDetector.DetectedFacing,
+        gravityAlignedWorld: List<Landmark>? = null,
     ): CheckResult {
+        // WP-20: gravity-aligned 3D path for natural check types when space requests it.
+        if (check.space == CheckSpace.GRAVITY_3D && gravityAlignedWorld != null) {
+            val gravity3d = validateGravity3dCheck(check, gravityAlignedWorld)
+            if (gravity3d != null) return gravity3d
+            // Fall through to 2D tilt-corrected path when landmarks missing.
+        }
+
         // Get landmarks
         val primary = getLandmark(check.landmarks.primary, landmarks) 
             ?: return CheckResult.skipped("Primary landmark not found")
@@ -335,6 +367,52 @@ class PositionValidator(
             
             PositionCheckType.DEPTH_ALIGNMENT -> 
                 validateDepthAlignment(check, primary, secondary, threshold)
+        }
+    }
+
+    /**
+     * GRAVITY_3D operators for vertical alignment + metric distance (WP-20 phase 2).
+     * Returns null to fall back to IMAGE_2D for unsupported types / missing landmarks.
+     */
+    private fun validateGravity3dCheck(
+        check: PositionCheck,
+        alignedWorld: List<Landmark>,
+    ): CheckResult? {
+        val threshold = check.condition.threshold
+        return when (check.type) {
+            PositionCheckType.VERTICAL_ALIGNMENT,
+            PositionCheckType.VERTICAL_COMPARISON,
+            -> {
+                val tilt = GravityAlignedSpace.torsoTiltDegrees(alignedWorld)
+                    ?: return CheckResult.skipped("Torso landmarks unavailable")
+                // threshold in degrees from upright; standing ≈ small tilt.
+                val passed = when (check.condition.operator) {
+                    PositionOperator.SHOULD_NOT_EXCEED -> tilt <= threshold
+                    PositionOperator.SHOULD_EXCEED -> tilt >= threshold
+                    PositionOperator.APPROXIMATELY_EQUAL -> abs(tilt - threshold) <= 5.0
+                    else -> true
+                }
+                if (passed) CheckResult.passed(tilt, threshold)
+                else CheckResult.failed(createError(check, tilt, threshold))
+            }
+            PositionCheckType.DISTANCE_RATIO -> {
+                val primary = getLandmark(check.landmarks.primary, alignedWorld)
+                    ?: return CheckResult.skipped("Primary landmark not found")
+                val secondary = getLandmark(check.landmarks.secondary, alignedWorld)
+                    ?: return CheckResult.skipped("Secondary landmark not found")
+                // Threshold treated as meters when space is GRAVITY_3D.
+                val dist = GravityAlignedSpace.distanceMeters(primary, secondary).toDouble()
+                val passed = when (check.condition.operator) {
+                    PositionOperator.SHOULD_NOT_EXCEED -> dist <= threshold
+                    PositionOperator.SHOULD_EXCEED -> dist >= threshold
+                    PositionOperator.APPROXIMATELY_EQUAL -> abs(dist - threshold) <= (threshold * 0.15).coerceAtLeast(0.02)
+                    PositionOperator.GREATER_THAN_RATIO -> dist >= threshold
+                    PositionOperator.LESS_THAN_RATIO -> dist <= threshold
+                }
+                if (passed) CheckResult.passed(dist, threshold)
+                else CheckResult.failed(createError(check, dist, threshold))
+            }
+            else -> null
         }
     }
     

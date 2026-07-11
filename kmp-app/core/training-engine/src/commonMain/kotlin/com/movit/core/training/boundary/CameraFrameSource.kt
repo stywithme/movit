@@ -16,4 +16,10 @@ expect interface CameraFrameSource {
 
     /** Invoked after a successful bind (initial start or lens switch). */
     fun setOnCameraBoundListener(listener: (() -> Unit)?)
+
+    /**
+     * Clears elbow estimator + sticky 3D/2D state for this frame source (E-08).
+     * Call on lens switch / session start / flow exercise boundaries.
+     */
+    fun resetAngleTracking()
 }

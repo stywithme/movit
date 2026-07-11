@@ -1,6 +1,7 @@
 ﻿package com.movit.designsystem.components
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -126,5 +127,36 @@ object SkeletonRomGeometry {
         val deviation = kotlin.math.abs(effectiveAngle - LINE_CENTER_ANGLE_DEG)
         val normalized = (deviation / LINE_CENTER_ANGLE_DEG).coerceIn(0f, 1f)
         return normalized * maxLengthPx
+    }
+
+    /** Compose [androidx.compose.ui.graphics.Brush.sweepGradient] stop for canvas degrees (0° = 3 o'clock). */
+    fun canvasAngleToSweepStop(canvasDeg: Float): Float {
+        val normalized = if (canvasDeg < 0f) canvasDeg + 360f else canvasDeg
+        return normalized / 360f
+    }
+
+    /**
+     * Color stops for the static ROM arc track (visual 0°→180°), matching legacy 2° segment resolution.
+     * Pair first = sweep stop in [0, 1]; second = segment color.
+     */
+    fun buildArcSweepColorStops(
+        invertAngles: Boolean,
+        upRanges: SkeletonRomStateRanges?,
+        downRanges: SkeletonRomStateRanges?,
+        colorForState: (SkeletonRomState) -> Color,
+        stepDeg: Float = 2f,
+    ): List<Pair<Float, Color>> {
+        val stops = ArrayList<Pair<Float, Color>>((180f / stepDeg).toInt() + 2)
+        var visualAngle = 0f
+        while (true) {
+            val canvasDeg = jointAngleToCanvasDegrees(visualAngle.toDouble())
+            val stop = canvasAngleToSweepStop(canvasDeg)
+            val original = originalAngleForVisual(visualAngle, invertAngles)
+            val state = resolvedStateForAngle(original, upRanges, downRanges)
+            stops.add(stop to colorForState(state))
+            if (visualAngle >= 180f) break
+            visualAngle = (visualAngle + stepDeg).coerceAtMost(180f)
+        }
+        return stops.sortedBy { it.first }
     }
 }

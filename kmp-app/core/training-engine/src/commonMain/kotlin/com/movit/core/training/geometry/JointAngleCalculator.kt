@@ -34,7 +34,7 @@ object JointAngleCalculator {
         pointA: PosePoint3D,
         pointB: PosePoint3D,
         pointC: PosePoint3D,
-    ): Double {
+    ): Double? {
         val baX = pointA.x - pointB.x
         val baY = pointA.y - pointB.y
         val baZ = pointA.z - pointB.z
@@ -45,7 +45,8 @@ object JointAngleCalculator {
         val dot = baX * bcX + baY * bcY + baZ * bcZ
         val magBa = sqrt(baX * baX + baY * baY + baZ * baZ)
         val magBc = sqrt(bcX * bcX + bcY * bcY + bcZ * bcZ)
-        if (magBa == 0f || magBc == 0f) return 0.0
+        // F6: degenerate (coincident points) is unknown — not 0° (full bend).
+        if (magBa == 0f || magBc == 0f) return null
 
         val cosAngle = (dot / (magBa * magBc)).coerceIn(-1f, 1f)
         return acos(cosAngle.toDouble()) * (180.0 / PI)

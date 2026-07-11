@@ -16,6 +16,12 @@ data class SessionQualityMeta(
     val jointCoverageRatio: Float? = null,
     val visibilityPauseCount: Int = 0,
     val cameraWarningCount: Int = 0,
+    /** WP-19 / INNOV-6: actual camera throughput profile id. */
+    val throughputProfileId: String? = null,
+    /** Achieved analysis fps estimate for the session (nullable until measured). */
+    val avgAchievedFps: Float? = null,
+    /** Count of adaptive throughput step-downs during the session. */
+    val adaptiveDowngrades: Int = 0,
 ) {
     companion object {
         fun fromFrameStats(
@@ -25,6 +31,9 @@ data class SessionQualityMeta(
             jointCoverageRatio: Float?,
             visibilityPauseCount: Int = 0,
             cameraWarningCount: Int = 0,
+            throughputProfileId: String? = null,
+            avgAchievedFps: Float? = null,
+            adaptiveDowngrades: Int = 0,
         ): SessionQualityMeta {
             val dropRate = if (framesOffered > 0) {
                 (framesDropped.toFloat() / framesOffered.toFloat()) * 100f
@@ -39,6 +48,9 @@ data class SessionQualityMeta(
                 jointCoverageRatio = jointCoverageRatio,
                 visibilityPauseCount = visibilityPauseCount,
                 cameraWarningCount = cameraWarningCount,
+                throughputProfileId = throughputProfileId,
+                avgAchievedFps = avgAchievedFps,
+                adaptiveDowngrades = adaptiveDowngrades,
             )
         }
     }

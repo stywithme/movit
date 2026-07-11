@@ -42,7 +42,6 @@ kotlin {
             implementation(project(":core:training-engine"))
             implementation(project(":feature:library"))
             implementation(project(":feature:training"))
-            implementation(project(":feature:training-debug"))
             // Swift bridges in iosApp implement protocols from pose-capture (exported in framework).
             implementation(project(":core:pose-capture"))
             // Account effect types (e.g. MovitProfileEffect) are part of shell's public API
@@ -53,6 +52,9 @@ kotlin {
             implementation(libs.jetbrains.lifecycle.viewmodel)
             implementation(libs.jetbrains.lifecycle.viewmodel.compose)
             implementation(libs.jetbrains.lifecycle.runtime.compose)
+        }
+        iosMain.dependencies {
+            implementation(project(":feature:training-debug"))
         }
         commonTest.dependencies {
             implementation(kotlin("test"))

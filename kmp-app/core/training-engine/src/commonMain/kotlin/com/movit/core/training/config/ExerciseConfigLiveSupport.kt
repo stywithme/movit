@@ -7,6 +7,7 @@ import com.movit.core.training.engine.Phase
 import com.movit.core.training.engine.PhaseJointConfig
 import com.movit.core.training.engine.PhaseTimingConfig
 import com.movit.core.training.engine.ZoneType
+import com.movit.core.training.engine.policy.TrainingTimingDefaults
 
 private data class ConfigJointEval(
     override val code: String,
@@ -35,9 +36,9 @@ private data class ConfigJointEval(
 }
 
 object ExerciseConfigDefaults {
-    const val MIN_REP_INTERVAL_MS: Long = 400L
-    const val MAX_REP_INTERVAL_MS: Long = 5_000L
-    const val MIN_PHASE_DURATION_MS: Long = 100L
+    const val MIN_REP_INTERVAL_MS: Long = TrainingTimingDefaults.MIN_REP_INTERVAL_MS
+    const val MAX_REP_INTERVAL_MS: Long = TrainingTimingDefaults.MAX_REP_INTERVAL_MS
+    const val MIN_PHASE_DURATION_MS: Long = TrainingTimingDefaults.MIN_PHASE_DURATION_MS
 }
 
 fun ExerciseConfig.primaryPhaseJointConfigs(variantIndex: Int = 0): List<PhaseJointConfig> =

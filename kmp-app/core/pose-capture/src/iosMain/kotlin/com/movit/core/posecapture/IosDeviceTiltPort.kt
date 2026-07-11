@@ -1,11 +1,14 @@
 package com.movit.core.posecapture
 
 import com.movit.core.training.boundary.AcquirableDeviceTiltPort
+import com.movit.core.training.boundary.TiltDefaults
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.useContents
 import platform.CoreMotion.CMAttitudeReferenceFrameXArbitraryZVertical
 import platform.CoreMotion.CMMotionManager
 import platform.Foundation.NSOperationQueue
+import platform.UIKit.UIDevice
+import platform.UIKit.UIDeviceOrientation
 import kotlin.concurrent.Volatile
 import kotlin.math.PI
 import kotlin.math.abs
@@ -16,9 +19,9 @@ import kotlin.math.atan2
  */
 @OptIn(ExperimentalForeignApi::class)
 class IosDeviceTiltPort(
-    private val enabled: Boolean = true,
-    private val deadZoneDegrees: Float = 2f,
-    private val smoothingTauMs: Long = 120L,
+    private val enabled: Boolean = TiltDefaults.ENABLED,
+    private val deadZoneDegrees: Float = TiltDefaults.DEAD_ZONE_DEGREES,
+    private val smoothingTauMs: Long = TiltDefaults.SMOOTHING_TAU_MS,
 ) : AcquirableDeviceTiltPort {
     private val motionManager = CMMotionManager()
     private val owners = mutableSetOf<String>()
@@ -31,6 +34,9 @@ class IosDeviceTiltPort(
     @Volatile
     private var rollDegreesValue: Float = 0f
 
+    @Volatile
+    private var gravityVectorValue: FloatArray? = null
+
     override var isRunning: Boolean = false
         private set
 
@@ -42,6 +48,9 @@ class IosDeviceTiltPort(
 
     override val rollDegrees: Float
         get() = rollDegreesValue
+
+    override val gravityVector: FloatArray?
+        get() = gravityVectorValue
 
     override fun acquire(owner: String) {
         if (owner.isBlank() || !isAvailable) return
@@ -56,7 +65,7 @@ class IosDeviceTiltPort(
     }
 
     private fun startLocked() {
-        motionManager.deviceMotionUpdateInterval = 1.0 / 60.0
+        motionManager.deviceMotionUpdateInterval = TiltDefaults.SAMPLE_INTERVAL_SECONDS
         motionManager.startDeviceMotionUpdatesUsingReferenceFrame(
             CMAttitudeReferenceFrameXArbitraryZVertical,
             toQueue = NSOperationQueue.mainQueue,
@@ -64,6 +73,7 @@ class IosDeviceTiltPort(
                 val gravity = motion?.gravity ?: return@startDeviceMotionUpdatesUsingReferenceFrame
                 val timestampMs = ((motion.timestamp) * 1000.0).toLong()
                 gravity.useContents {
+                    gravityVectorValue = floatArrayOf(x.toFloat(), y.toFloat(), z.toFloat())
                     updateFromGravity(x.toFloat(), y.toFloat(), timestampMs)
                 }
             },
@@ -76,17 +86,28 @@ class IosDeviceTiltPort(
         isRunning = false
         correctionRadiansValue = 0f
         rollDegreesValue = 0f
+        gravityVectorValue = null
         smoothedCorrectionRadians = null
         lastEventTimestampMs = 0L
     }
 
     private fun updateFromGravity(gx: Float, gy: Float, timestampMs: Long) {
         val rollRadians = atan2(gx, gy)
-        val rawCorrection = -rollRadians
+        // T6: subtract display rotation so landscape mounts still correct to gravity-up.
+        val rawCorrection = -(rollRadians - displayRotationOffsetRadians())
         val corrected = smoothCorrection(rawCorrection, timestampMs)
         val deadZoneRadians = (deadZoneDegrees * PI / 180.0).toFloat()
         correctionRadiansValue = if (abs(corrected) < deadZoneRadians) 0f else corrected
         rollDegreesValue = (rollRadians * 180.0 / PI).toFloat()
+    }
+
+    private fun displayRotationOffsetRadians(): Float {
+        return when (UIDevice.currentDevice.orientation) {
+            UIDeviceOrientation.UIDeviceOrientationLandscapeLeft -> (PI / 2.0).toFloat()
+            UIDeviceOrientation.UIDeviceOrientationLandscapeRight -> (3.0 * PI / 2.0).toFloat()
+            UIDeviceOrientation.UIDeviceOrientationPortraitUpsideDown -> PI.toFloat()
+            else -> 0f
+        }
     }
 
     private fun smoothCorrection(rawCorrection: Float, timestampMs: Long): Float {

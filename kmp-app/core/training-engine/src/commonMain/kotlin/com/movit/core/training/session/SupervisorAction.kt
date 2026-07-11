@@ -1,72 +1,45 @@
 package com.movit.core.training.session
 
-import com.movit.core.training.model.JointAngles
-import com.movit.core.training.model.Landmark
-
 /**
  * SupervisorAction - Output commands issued by SessionSupervisor
- * 
+ *
  * These actions are executed by TrainingViewModel which:
  * - Forwards engine commands to TrainingEngine
  * - Forwards UI commands to TrainingActivity via events
- * - Handles pose validation
+ *
+ * Frame processing and pose validation run on the pose-frame worker directly
+ * (WP-03) — they are not supervisor actions.
  */
 sealed class SupervisorAction {
-    
+
     // ==================== Engine Commands ====================
-    
+
     /** Start TrainingEngine (fresh start) */
     object StartEngine : SupervisorAction()
-    
+
     /** Pause TrainingEngine */
     object PauseEngine : SupervisorAction()
-    
+
     /** Resume TrainingEngine (after manual pause) */
     object ResumeEngine : SupervisorAction()
-    
+
     /** Stop TrainingEngine and get summary */
     object StopEngine : SupervisorAction()
-    
+
     /** Resume from visibility pause - preserves rep count */
     object ResumeFromVisibilityPause : SupervisorAction()
 
     /** Reset engine for video seek (stop + start) */
     object ResetEngine : SupervisorAction()
-    
-    // ==================== Frame Processing ====================
-    
-    /**
-     * Process frame through TrainingEngine
-     * Only emitted when state is TRAINING
-     */
-    data class ProcessFrame(
-        val angles: JointAngles,
-        val landmarks: List<Landmark>?,
-        val isFrontCamera: Boolean,
-        val timestampMs: Long
-    ) : SupervisorAction()
-    
-    /**
-     * Validate pose through PoseSetupGuide
-     * Emitted during SETUP_POSE, COUNTDOWN, RESUME_SETUP, RESUME_COUNTDOWN
-     *
-     * Carries both angles and landmarks so PoseSetupGuide can run
-     * camera-position detection alongside joint-angle validation.
-     */
-    data class ValidatePose(
-        val angles: JointAngles,
-        val landmarks: List<Landmark>?,
-        val isFrontCamera: Boolean = false
-    ) : SupervisorAction()
-    
+
     // ==================== UI Commands ====================
-    
+
     /** Show setup pose panel */
     object ShowSetupPose : SupervisorAction()
-    
+
     /** Start countdown timer (3-2-1-GO) */
     object StartCountdown : SupervisorAction()
-    
+
     /** Cancel countdown and return to setup */
     object CancelCountdown : SupervisorAction()
 
@@ -75,16 +48,16 @@ sealed class SupervisorAction {
 
     /** Unfreeze the countdown - pose recovered */
     object UnfreezeCountdown : SupervisorAction()
-    
+
     /** Show auto-paused overlay with reason */
     data class ShowAutoPaused(val reason: PauseReason) : SupervisorAction()
-    
+
     /** Show warning when no pose detected (before auto-pause) */
     data class ShowNoPoseWarning(val elapsedMs: Long) : SupervisorAction()
 
     /** Prompt user to stand in frame during setup (SETUP_POSE / RESUME_SETUP) */
     object ShowSetupNoPoseHint : SupervisorAction()
-    
+
     /** Show completed panel */
     object ShowCompleted : SupervisorAction()
 
@@ -103,10 +76,10 @@ sealed class SupervisorAction {
 enum class PauseReason {
     /** User pressed pause button */
     MANUAL,
-    
+
     /** Required joints not visible (from VisibilityMonitor) */
     VISIBILITY,
-    
+
     /** No pose detected for 4 seconds */
     NO_POSE
 }

@@ -28,10 +28,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -52,14 +52,15 @@ import com.movit.designsystem.components.MovitButtonVariant
 import com.movit.designsystem.components.MovitChromeButtonStyle
 import com.movit.designsystem.components.MovitChromeIconButton
 import com.movit.designsystem.components.MovitErrorState
-import com.movit.designsystem.components.MovitSkeletonOverlay
 import com.movit.designsystem.movitColors
 import com.movit.resources.movitText
+import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 @Suppress("UNUSED_PARAMETER")
 fun TrainingSessionScreen(
     state: TrainingSessionUiState,
+    overlayFlow: StateFlow<TrainingOverlayState>,
     onBack: () -> Unit,
     onPause: () -> Unit,
     onResume: () -> Unit,
@@ -83,34 +84,6 @@ fun TrainingSessionScreen(
     debugFps: Int? = null,
 ) {
     var showSettingsDialog by remember { mutableStateOf(false) }
-    val romIndicators = remember(
-        state.landmarks,
-        state.jointStateInfos,
-        state.skeletonOverlayParity.isBilateralFlipped,
-        state.skeletonOverlayParity.jointVisuals,
-        trainingPreferences.indicatorType,
-    ) {
-        buildSkeletonRomIndicators(
-            landmarks = state.landmarks,
-            jointStateInfos = state.jointStateInfos,
-            anySideDimmedJointCodes = state.skeletonOverlayParity.jointVisuals
-                .filterValues { it.dimmed }
-                .keys,
-            isBilateralFlipped = state.skeletonOverlayParity.isBilateralFlipped,
-            indicatorType = trainingPreferences.indicatorType,
-        )
-    }
-    val landmarkProjector = remember(
-        state.skeletonAnalysisWidth,
-        state.skeletonAnalysisHeight,
-        state.skeletonMirrorPreview,
-    ) {
-        skeletonLandmarkProjector(
-            analysisWidth = state.skeletonAnalysisWidth,
-            analysisHeight = state.skeletonAnalysisHeight,
-            mirrorPreview = state.skeletonMirrorPreview,
-        )
-    }
     val localizedPhase = localizedTrainingPhase(state.phaseLabel)
 
     Box(
@@ -160,12 +133,8 @@ fun TrainingSessionScreen(
                     cameraSlot()
 
                     if (state.requiresCamera()) {
-                        MovitSkeletonOverlay(
-                            landmarks = state.landmarks,
-                            parity = state.skeletonOverlayParity,
-                            romIndicators = romIndicators,
-                            landmarkProjector = landmarkProjector,
-                            showBilateralSideHint = false,
+                        MovitSkeletonOverlayHost(
+                            overlayFlow = overlayFlow,
                             modifier = Modifier.fillMaxSize(),
                         )
 

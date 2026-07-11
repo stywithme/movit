@@ -1,29 +1,39 @@
 package com.movit.core.training.session
 
 import com.movit.core.training.engine.currentTimeMillis
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 /**
  * SessionSupervisor - Unified State Machine for a single-exercise workout run
- * 
+ *
  * This is the Single Source of Truth for run state management.
  * It receives signals from UI, pose detection, and engine, then issues
  * commands to control the training flow.
- * 
+ *
  * Key responsibilities:
  * - Manage workout-run state transitions
  * - Handle NoPose auto-pause (4s timeout)
- * - Coordinate countdown ? training flow
+ * - Coordinate countdown → training flow
  * - Distinguish between fresh start and resume (preserving rep count)
  * - Handle video mode specifics (pause video on auto-pause)
- * 
+ *
+ * Threading (WP-03): all mutations are serialized on a single consumer coroutine.
+ * [processSignal] / [reset] / [onExerciseLoaded] / [onTrainingPoseFrameProcessed]
+ * only enqueue work via [signalChannel]; they must not touch internal fields.
+ *
  * Usage:
- * 1. Create instance in ViewModel
+ * 1. Create instance in ViewModel (pass [scope] = viewModelScope)
  * 2. Collect `state` flow to update UI
  * 3. Collect `actions` flow to execute commands
  * 4. Call `processSignal()` for all events
@@ -31,8 +41,10 @@ import kotlinx.coroutines.flow.asStateFlow
 class SessionSupervisor(
     private val setupValidation: SetupValidationConfig = SetupValidationConfig(),
     private val timeProvider: () -> Long = { currentTimeMillis() },
+    scope: CoroutineScope? = null,
+    dispatcher: CoroutineDispatcher = if (scope != null) Dispatchers.Default else Dispatchers.Unconfined,
 ) {
-    
+
     companion object {
         private const val TAG = "SessionSupervisor"
 
@@ -41,12 +53,23 @@ class SessionSupervisor(
         private const val NO_POSE_WARN_MS  = 2000L  // 2s  - show warning (handled by UI)
         private const val NO_POSE_PAUSE_MS = 4000L  // 4s  - trigger auto-pause
     }
-    
+
+    private sealed class InboxMessage {
+        data class Signal(val signal: SupervisorSignal) : InboxMessage()
+        data object Reset : InboxMessage()
+        data object ExerciseLoaded : InboxMessage()
+        data object TrainingPoseSeen : InboxMessage()
+    }
+
+    private val ownedJob = if (scope == null) SupervisorJob() else null
+    private val signalChannel = Channel<InboxMessage>(Channel.UNLIMITED)
+    private val consumerScope = scope ?: CoroutineScope(ownedJob!! + dispatcher)
+
     // ==================== State ====================
-    
+
     private val _state = MutableStateFlow(SessionRunState.IDLE)
     val state: StateFlow<SessionRunState> = _state.asStateFlow()
-    
+
     private val _actions = MutableSharedFlow<SupervisorAction>(
         replay = 0,
         extraBufferCapacity = 64,
@@ -54,20 +77,20 @@ class SessionSupervisor(
     var droppedActionCount: Int = 0
         private set
     val actions: SharedFlow<SupervisorAction> = _actions.asSharedFlow()
-    
+
     // ==================== Configuration ====================
-    
+
     /** Whether in video mode (affects pause behavior) */
     var isVideoMode: Boolean = false
-    
+
     // ==================== Internal State ====================
-    
+
     /** Reason for current pause (MANUAL, VISIBILITY, NO_POSE) */
     private var pauseReason: PauseReason? = null
-    
+
     /** Timestamp when NoPose started (for 4s timeout) */
     private var noPoseStartTime: Long = 0L
-    
+
     /** Whether current countdown is for resume (preserves rep count) vs fresh start */
     private var isResumeCountdown: Boolean = false
 
@@ -82,24 +105,94 @@ class SessionSupervisor(
 
     /** Whether setup no-pose hint was already shown (cleared on PoseFrame). */
     private var setupNoPoseHintActive: Boolean = false
-    
+
+    init {
+        consumerScope.launch(dispatcher) {
+            for (message in signalChannel) {
+                when (message) {
+                    is InboxMessage.Signal -> dispatchSignal(message.signal)
+                    InboxMessage.Reset -> performReset()
+                    InboxMessage.ExerciseLoaded -> performOnExerciseLoaded()
+                    InboxMessage.TrainingPoseSeen -> {
+                        noPoseStartTime = 0L
+                    }
+                }
+            }
+        }
+    }
+
     // ==================== Public API ====================
-    
+
     /**
-     * Process an incoming signal and update state accordingly
-     * 
-     * This is the main entry point. All events (UI, pose, engine) 
-     * should be routed through this method.
+     * Enqueue an incoming signal for serialized processing on the supervisor consumer.
      */
     fun processSignal(signal: SupervisorSignal) {
+        signalChannel.trySend(InboxMessage.Signal(signal))
+    }
+
+    /**
+     * Notify that exercise was loaded - transitions from IDLE to SETUP_POSE (camera)
+     * or stays in IDLE (video mode, waiting for user to press play)
+     */
+    fun onExerciseLoaded() {
+        signalChannel.trySend(InboxMessage.ExerciseLoaded)
+    }
+
+    /**
+     * Get current pause reason (for UI display)
+     */
+    fun getPauseReason(): PauseReason? = pauseReason
+
+    /**
+     * Reset supervisor to initial state
+     */
+    fun reset() {
+        signalChannel.trySend(InboxMessage.Reset)
+    }
+
+    /**
+     * Some high-frequency training frames are processed directly by the VM to avoid
+     * SharedFlow back-pressure. Keep the supervisor's no-pose timer in sync.
+     */
+    fun onTrainingPoseFrameProcessed() {
+        signalChannel.trySend(InboxMessage.TrainingPoseSeen)
+    }
+
+    /** Cancel the owned consumer when this supervisor was created without an external [scope]. */
+    fun close() {
+        signalChannel.close()
+        ownedJob?.cancel()
+    }
+
+    private fun performOnExerciseLoaded() {
+        if (_state.value == SessionRunState.IDLE) {
+            if (isVideoMode) {
+            } else {
+                transitionTo(SessionRunState.SETUP_POSE)
+                emit(SupervisorAction.ShowSetupPose)
+            }
+        }
+    }
+
+    private fun performReset() {
+        _state.value = SessionRunState.IDLE
+        pauseReason = null
+        noPoseStartTime = 0L
+        isResumeCountdown = false
+        activityPausedEngine = false
+        isVideoMode = false
+        countdownInvalidStartMs = 0L
+        countdownFrozen = false
+        setupNoPoseHintActive = false
+    }
+
+    private fun dispatchSignal(signal: SupervisorSignal) {
         val currentState = _state.value
-        
-        // Handle global signals that work from any state
+
         if (handleGlobalSignal(signal, currentState)) {
             return
         }
-        
-        // Handle state-specific signals
+
         when (currentState) {
             SessionRunState.IDLE -> handleIdle(signal)
             SessionRunState.SETUP_POSE -> handleSetupPose(signal)
@@ -112,51 +205,9 @@ class SessionSupervisor(
             SessionRunState.COMPLETED -> handleCompleted(signal)
         }
     }
-    
-    /**
-     * Notify that exercise was loaded - transitions from IDLE to SETUP_POSE (camera)
-     * or stays in IDLE (video mode, waiting for user to press play)
-     */
-    fun onExerciseLoaded() {
-        if (_state.value == SessionRunState.IDLE) {
-            if (isVideoMode) {
-            } else {
-                transitionTo(SessionRunState.SETUP_POSE)
-                emit(SupervisorAction.ShowSetupPose)
-            }
-        }
-    }
-    
-    /**
-     * Get current pause reason (for UI display)
-     */
-    fun getPauseReason(): PauseReason? = pauseReason
-    
-    /**
-     * Reset supervisor to initial state
-     */
-    fun reset() {
-        _state.value = SessionRunState.IDLE
-        pauseReason = null
-        noPoseStartTime = 0L
-        isResumeCountdown = false
-        activityPausedEngine = false
-        isVideoMode = false
-        countdownInvalidStartMs = 0L
-        countdownFrozen = false
-        setupNoPoseHintActive = false
-    }
 
-    /**
-     * Some high-frequency training frames are processed directly by the VM to avoid
-     * SharedFlow back-pressure. Keep the supervisor's no-pose timer in sync.
-     */
-    fun onTrainingPoseFrameProcessed() {
-        noPoseStartTime = 0L
-    }
-    
     // ==================== Global Signal Handler ====================
-    
+
     /**
      * Handle signals that can occur from any state
      * @return true if signal was handled, false to continue to state-specific handler
@@ -172,7 +223,7 @@ class SessionSupervisor(
                     return true
                 }
             }
-            
+
             is SupervisorSignal.VideoSeeked -> {
                 if (currentState == SessionRunState.TRAINING) {
                     emit(SupervisorAction.ResetEngine)
@@ -195,19 +246,17 @@ class SessionSupervisor(
                     return true
                 }
             }
-            
+
             else -> {}
         }
         return false
     }
-    
+
     // ==================== State Handlers ====================
-    
+
     private fun handleIdle(signal: SupervisorSignal) {
-        // Most signals ignored in IDLE - waiting for exercise to load
         when (signal) {
             is SupervisorSignal.StartRequested -> {
-                // Video mode can start immediately from IDLE if exercise is loaded
                 if (isVideoMode) {
                     transitionTo(SessionRunState.TRAINING)
                     emit(SupervisorAction.StartEngine)
@@ -216,18 +265,16 @@ class SessionSupervisor(
             else -> {}
         }
     }
-    
+
     private fun handleSetupPose(signal: SupervisorSignal) {
         when (signal) {
             is SupervisorSignal.PoseFrame -> {
                 setupNoPoseHintActive = false
-                // Forward to PoseSetupGuide (carries landmarks for camera check)
-                emit(SupervisorAction.ValidatePose(signal.angles, signal.landmarks, signal.isFrontCamera))
+                // Pose validation runs on the VM worker (WP-03 / I-12) — no ValidatePose action.
             }
 
             is SupervisorSignal.PoseConfirmed -> {
                 setupNoPoseHintActive = false
-                // Rolling window confirmed - start countdown
                 countdownInvalidStartMs = 0L
                 countdownFrozen = false
                 transitionTo(SessionRunState.COUNTDOWN)
@@ -269,7 +316,7 @@ class SessionSupervisor(
             }
 
             is SupervisorSignal.PoseFrame -> {
-                emit(SupervisorAction.ValidatePose(signal.angles, signal.landmarks, signal.isFrontCamera))
+                // Validation on worker — no per-frame action (closes G-09 buffer pressure).
             }
 
             is SupervisorSignal.CountdownPoseValid -> {
@@ -294,12 +341,12 @@ class SessionSupervisor(
 
     /**
      * Time-based countdown invalidation (device-FPS-independent):
-     * - < toleranceMs  ? silently ignored (noise)
-     * - < cancelMs     ? freeze countdown + warn user
-     * - = cancelMs     ? cancel countdown, back to SETUP_POSE
+     * - < toleranceMs  → silently ignored (noise)
+     * - < cancelMs     → freeze countdown + warn user
+     * - = cancelMs     → cancel countdown, back to SETUP_POSE
      */
     private fun handleCountdownPoseLost(
-        cfg: com.movit.core.training.session.SetupValidationConfig,
+        cfg: SetupValidationConfig,
         signalTimestampMs: Long,
     ) {
         val now = effectivePresenceNow(signalTimestampMs)
@@ -310,7 +357,7 @@ class SessionSupervisor(
 
         when {
             durationMs < cfg.countdownToleranceMs -> {
-                // Grace: tiny glitch ? ignore silently
+                // Grace: tiny glitch → ignore silently
             }
             durationMs < cfg.countdownCancelMs -> {
                 if (!countdownFrozen) {
@@ -319,7 +366,6 @@ class SessionSupervisor(
                 }
             }
             else -> {
-                val elapsed = durationMs
                 countdownInvalidStartMs = 0L
                 countdownFrozen = false
                 transitionTo(SessionRunState.SETUP_POSE)
@@ -328,32 +374,25 @@ class SessionSupervisor(
             }
         }
     }
-    
+
     private fun handleTraining(signal: SupervisorSignal) {
         when (signal) {
             is SupervisorSignal.PoseFrame -> {
-                // Reset NoPose timer
+                // WP-03: engine.processFrame only on the pose-frame worker — never via action.
                 noPoseStartTime = 0L
-                // Process frame through engine
-                emit(SupervisorAction.ProcessFrame(
-                    signal.angles,
-                    signal.landmarks,
-                    signal.isFrontCamera,
-                    signal.timestampMs
-                ))
             }
-            
+
             is SupervisorSignal.NoPoseFrame -> {
                 handleNoPoseDuringTraining(signal.timestampMs)
             }
-            
+
             is SupervisorSignal.PauseRequested -> {
                 pauseReason = PauseReason.MANUAL
                 transitionTo(SessionRunState.PAUSED)
                 emit(SupervisorAction.PauseEngine)
                 if (isVideoMode) emit(SupervisorAction.PauseVideo)
             }
-            
+
             is SupervisorSignal.TargetReached -> {
                 transitionTo(SessionRunState.COMPLETED)
                 emit(SupervisorAction.StopEngine)
@@ -372,11 +411,11 @@ class SessionSupervisor(
                 emit(SupervisorAction.StopEngine)
                 emit(SupervisorAction.ShowCompleted)
             }
-            
+
             else -> {}
         }
     }
-    
+
     private fun handlePaused(signal: SupervisorSignal) {
         when (signal) {
             is SupervisorSignal.ResumeRequested -> {
@@ -390,11 +429,11 @@ class SessionSupervisor(
                     emit(SupervisorAction.StartCountdown)
                 }
             }
-            
+
             else -> {}
         }
     }
-    
+
     private fun handleAutoPaused(signal: SupervisorSignal) {
         when (signal) {
             is SupervisorSignal.PoseFrame -> {
@@ -416,7 +455,7 @@ class SessionSupervisor(
                     emit(SupervisorAction.StartCountdown)
                 }
             }
-            
+
             is SupervisorSignal.ResumeRequested -> {
                 if (isVideoMode) {
                     transitionTo(SessionRunState.TRAINING)
@@ -427,33 +466,32 @@ class SessionSupervisor(
                     emit(SupervisorAction.ShowSetupPose)
                 }
             }
-            
+
             else -> {}
         }
     }
-    
+
     private fun handleResumeSetup(signal: SupervisorSignal) {
         when (signal) {
             is SupervisorSignal.PoseFrame -> {
-                emit(SupervisorAction.ValidatePose(signal.angles, signal.landmarks, signal.isFrontCamera))
+                // Validation on worker — no ValidatePose action.
             }
-            
+
             is SupervisorSignal.PoseConfirmed -> {
                 transitionTo(SessionRunState.RESUME_COUNTDOWN)
                 emit(SupervisorAction.StartCountdown)
             }
-            
+
             is SupervisorSignal.NoPoseFrame -> {
-                // Lost pose during resume setup - go back to AUTO_PAUSED
                 transitionTo(SessionRunState.AUTO_PAUSED)
                 emit(SupervisorAction.ShowAutoPaused(pauseReason ?: PauseReason.NO_POSE))
                 if (isVideoMode) emit(SupervisorAction.PauseVideo)
             }
-            
+
             else -> {}
         }
     }
-    
+
     private fun handleResumeCountdown(signal: SupervisorSignal) {
         val cfg = setupValidation
         when (signal) {
@@ -461,12 +499,11 @@ class SessionSupervisor(
                 countdownInvalidStartMs = 0L
                 countdownFrozen = false
                 transitionTo(SessionRunState.TRAINING)
-                // KEY: Use ResumeFromVisibilityPause to preserve rep count
                 emit(SupervisorAction.ResumeFromVisibilityPause)
             }
 
             is SupervisorSignal.PoseFrame -> {
-                emit(SupervisorAction.ValidatePose(signal.angles, signal.landmarks, signal.isFrontCamera))
+                // Validation on worker — no ValidatePose action.
             }
 
             is SupervisorSignal.CountdownPoseValid -> {
@@ -497,16 +534,15 @@ class SessionSupervisor(
             else -> {}
         }
     }
-    
+
     private fun handleCompleted(signal: SupervisorSignal) {
         // Most signals ignored in COMPLETED state
-        // Could handle restart here if needed
     }
-    
+
     // ==================== NoPose Logic ====================
-    
+
     /**
-     * Handle NoPose frames during TRAINING with 4s timeout
+     * Full-body absence during TRAINING (layer 1 — see [PresenceSupervisorBridge] for partial visibility).
      */
     private fun handleNoPoseDuringTraining(signalTimestampMs: Long) {
         val now = effectivePresenceNow(signalTimestampMs)
@@ -517,10 +553,9 @@ class SessionSupervisor(
         }
 
         val duration = now - noPoseStartTime
-        
+
         when {
             duration >= NO_POSE_PAUSE_MS -> {
-                // 4s elapsed - trigger auto-pause
                 pauseReason = PauseReason.NO_POSE
                 transitionTo(SessionRunState.AUTO_PAUSED)
                 emit(SupervisorAction.PauseEngine)
@@ -528,16 +563,16 @@ class SessionSupervisor(
                 if (isVideoMode) emit(SupervisorAction.PauseVideo)
                 noPoseStartTime = 0L
             }
-            duration >= NO_POSE_WARN_MS -> {
-                // 2s elapsed - show warning to user
-                emit(SupervisorAction.ShowNoPoseWarning(duration))
-            }
-            // < 2s: grace period, ignored
+            duration >= NO_POSE_WARN_MS -> emitNoPoseWarning(duration)
         }
     }
-    
+
+    private fun emitNoPoseWarning(elapsedMs: Long) {
+        emit(SupervisorAction.ShowNoPoseWarning(elapsedMs))
+    }
+
     // ==================== Helpers ====================
-    
+
     internal fun testEffectivePresenceNow(signalMs: Long): Long = effectivePresenceNow(signalMs)
 
     internal var testNoPoseStartTimeMs: Long
@@ -553,10 +588,9 @@ class SessionSupervisor(
     }
 
     private fun transitionTo(newState: SessionRunState) {
-        val oldState = _state.value
         _state.value = newState
     }
-    
+
     private fun emit(action: SupervisorAction) {
         if (!_actions.tryEmit(action)) {
             droppedActionCount++

@@ -34,8 +34,14 @@ class IosTrainingFrameSnapshotPort(
         captureId: String,
     ): PersistedFrameSnapshot? = withContext(Dispatchers.IO) {
         val bridge = IosPoseLandmarkerBridgeRegistry.current() ?: return@withContext null
-        val fullJpeg = bridge.takeSnapshotJpeg(FULL_MAX_DIMENSION, FULL_JPEG_QUALITY) ?: return@withContext null
-        val thumbJpeg = bridge.takeSnapshotJpeg(THUMB_MAX_DIMENSION, THUMB_JPEG_QUALITY) ?: fullJpeg
+        val jpegs = bridge.takeSnapshotJpegs(
+            FULL_MAX_DIMENSION,
+            FULL_JPEG_QUALITY,
+            THUMB_MAX_DIMENSION,
+            THUMB_JPEG_QUALITY,
+        ) ?: return@withContext null
+        val fullJpeg = jpegs.fullJpeg
+        val thumbJpeg = jpegs.thumbJpeg
         val dir = "$filesRoot/frame_captures/$sessionId"
         NSFileManager.defaultManager.createDirectoryAtPath(dir, withIntermediateDirectories = true, attributes = null, error = null)
         val fullPath = "$dir/$captureId.jpg"

@@ -20,6 +20,9 @@ out/
 *.dex
 *.class
 .gradle/
+# Agent/local temp Gradle homes (e.g. GRADLE_USER_HOME=kmp-app/.gradle-wp01)
+.gradle-wp*/
+**/.gradle-wp*/
 kmp-app/.kotlin/
 local.properties
 kmp-app/api.properties

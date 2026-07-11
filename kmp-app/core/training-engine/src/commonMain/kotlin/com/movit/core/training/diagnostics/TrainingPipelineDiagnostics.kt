@@ -2,9 +2,8 @@ package com.movit.core.training.diagnostics
 
 import com.movit.core.training.boundary.TrainingThroughputProfiles
 import com.movit.core.training.session.SessionRunState
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import kotlinx.atomicfu.atomic
+import kotlin.concurrent.Volatile
 
 /**
  * Single, low-noise diagnostics channel for the live training capture pipeline.
@@ -17,39 +16,44 @@ import kotlinx.coroutines.sync.withLock
 object TrainingPipelineDiagnostics {
     private const val LOG_INTERVAL_MS = 2_000L
 
-    private val mutex = Mutex()
+    private val lastLogMs = atomic(0L)
 
-    private var lastLogMs = 0L
+    @Volatile
     private var cameraTargetFps = 0
+
+    @Volatile
     private var cameraAnalysisSize = "?"
+
+    @Volatile
     private var cameraAppliedFps = "?"
-    private var cameraThroughputProfile = TrainingThroughputProfiles.STABLE.id
 
-    private var cameraAccepted = 0
-    private var cameraSkipped = 0
-    private var poseWithBody = 0
-    private var poseNoBody = 0
-    private var poseBusySkipped = 0
-    private var poseInferenceMsTotal = 0L
-    private var poseInferenceSamples = 0
-    private var poseStallEvents = 0
+    @Volatile
+    private var cameraThroughputProfile = TrainingThroughputProfiles.HIGH.id
 
-    private var vmIngress = 0
-    private var vmProcessed = 0
-    private var vmConflated = 0
+    private val cameraAccepted = atomic(0)
+    private val cameraSkipped = atomic(0)
+    private val poseWithBody = atomic(0)
+    private val poseNoBody = atomic(0)
+    private val poseBusySkipped = atomic(0)
+    private val poseInferenceMsTotal = atomic(0L)
+    private val poseInferenceSamples = atomic(0)
+    private val poseStallEvents = atomic(0)
+
+    private val vmIngress = atomic(0)
+    private val vmProcessed = atomic(0)
+    private val vmConflated = atomic(0)
+
+    /** Public gate for callers that must skip per-frame snapshot work in release (WP-07 / K-07). */
+    fun isEnabled(): Boolean = isTrainingPipelineDiagnosticsEnabled()
 
     fun reset() {
         if (!isTrainingPipelineDiagnosticsEnabled()) return
-        runBlocking {
-            mutex.withLock {
-                resetWindowCounters()
-                lastLogMs = 0L
-                cameraTargetFps = 0
-                cameraAnalysisSize = "?"
-                cameraAppliedFps = "?"
-                cameraThroughputProfile = TrainingThroughputProfiles.STABLE.id
-            }
-        }
+        resetWindowCounters()
+        lastLogMs.value = 0L
+        cameraTargetFps = 0
+        cameraAnalysisSize = "?"
+        cameraAppliedFps = "?"
+        cameraThroughputProfile = TrainingThroughputProfiles.HIGH.id
     }
 
     fun setCameraConfig(
@@ -57,17 +61,13 @@ object TrainingPipelineDiagnostics {
         analysisWidth: Int,
         analysisHeight: Int,
         appliedFpsRange: String,
-        throughputProfileId: String = TrainingThroughputProfiles.STABLE.id,
+        throughputProfileId: String = TrainingThroughputProfiles.HIGH.id,
     ) {
         if (!isTrainingPipelineDiagnosticsEnabled()) return
-        runBlocking {
-            mutex.withLock {
-                cameraTargetFps = targetFps
-                cameraAnalysisSize = "${analysisWidth}x$analysisHeight"
-                cameraAppliedFps = appliedFpsRange
-                cameraThroughputProfile = throughputProfileId
-            }
-        }
+        cameraTargetFps = targetFps
+        cameraAnalysisSize = "${analysisWidth}x$analysisHeight"
+        cameraAppliedFps = appliedFpsRange
+        cameraThroughputProfile = throughputProfileId
         logMilestone(
             "throughput profile=$throughputProfileId " +
                 "target=${targetFps}fps analysis=${analysisWidth}x$analysisHeight ae=$appliedFpsRange",
@@ -76,51 +76,41 @@ object TrainingPipelineDiagnostics {
 
     fun recordCameraFrame(acceptedForAnalysis: Boolean) {
         if (!isTrainingPipelineDiagnosticsEnabled()) return
-        runBlocking {
-            mutex.withLock {
-                if (acceptedForAnalysis) cameraAccepted++ else cameraSkipped++
-            }
+        if (acceptedForAnalysis) {
+            cameraAccepted.incrementAndGet()
+        } else {
+            cameraSkipped.incrementAndGet()
         }
     }
 
     fun recordPoseResult(inferenceMs: Long, hasPose: Boolean, busySkippedSinceLastResult: Int) {
         if (!isTrainingPipelineDiagnosticsEnabled()) return
-        runBlocking {
-            mutex.withLock {
-                if (hasPose) poseWithBody++ else poseNoBody++
-                poseInferenceMsTotal += inferenceMs.coerceAtLeast(0L)
-                poseInferenceSamples++
-                poseBusySkipped += busySkippedSinceLastResult.coerceAtLeast(0)
-            }
+        if (hasPose) {
+            poseWithBody.incrementAndGet()
+        } else {
+            poseNoBody.incrementAndGet()
         }
+        poseInferenceMsTotal.addAndGet(inferenceMs.coerceAtLeast(0L))
+        poseInferenceSamples.incrementAndGet()
+        poseBusySkipped.addAndGet(busySkippedSinceLastResult.coerceAtLeast(0))
     }
 
     fun recordInferenceStall() {
         if (!isTrainingPipelineDiagnosticsEnabled()) return
-        runBlocking {
-            mutex.withLock {
-                poseStallEvents++
-            }
-        }
+        poseStallEvents.incrementAndGet()
     }
 
     fun recordVmIngress(wasConflated: Boolean) {
         if (!isTrainingPipelineDiagnosticsEnabled()) return
-        runBlocking {
-            mutex.withLock {
-                vmIngress++
-                if (wasConflated) vmConflated++
-            }
+        vmIngress.incrementAndGet()
+        if (wasConflated) {
+            vmConflated.incrementAndGet()
         }
     }
 
     fun recordVmProcessed() {
         if (!isTrainingPipelineDiagnosticsEnabled()) return
-        runBlocking {
-            mutex.withLock {
-                vmProcessed++
-            }
-        }
+        vmProcessed.incrementAndGet()
     }
 
     fun logMilestone(message: String) {
@@ -143,27 +133,79 @@ object TrainingPipelineDiagnostics {
         cameraActive: Boolean,
     ): Boolean {
         if (!isTrainingPipelineDiagnosticsEnabled() || !cameraActive) return false
-        return runBlocking {
-            mutex.withLock {
-                if (lastLogMs > 0L && nowMs - lastLogMs < LOG_INTERVAL_MS) return@withLock false
-                val line = buildPeriodicLine(
-                    runState = runState,
-                    phase = phase,
-                    repCount = repCount,
-                    targetReps = targetReps,
-                    formScore = formScore,
-                    droppedEngine = droppedEngine,
-                    droppedSupervisor = droppedSupervisor,
-                )
-                trainingPipelineLog(line)
-                resetWindowCounters()
-                lastLogMs = nowMs
-                true
-            }
-        }
+        val previousLogMs = lastLogMs.value
+        if (previousLogMs > 0L && nowMs - previousLogMs < LOG_INTERVAL_MS) return false
+        if (!lastLogMs.compareAndSet(previousLogMs, nowMs)) return false
+
+        val snapshot = captureWindowSnapshot()
+        val line = buildPeriodicLine(
+            snapshot = snapshot,
+            runState = runState,
+            phase = phase,
+            repCount = repCount,
+            targetReps = targetReps,
+            formScore = formScore,
+            droppedEngine = droppedEngine,
+            droppedSupervisor = droppedSupervisor,
+        )
+        trainingPipelineLog(line)
+        return true
     }
 
-    private fun buildPeriodicLine(
+    internal data class WindowSnapshot(
+        val cameraAccepted: Int,
+        val cameraSkipped: Int,
+        val cameraTargetFps: Int,
+        val cameraAnalysisSize: String,
+        val cameraAppliedFps: String,
+        val cameraThroughputProfile: String,
+        val poseWithBody: Int,
+        val poseNoBody: Int,
+        val poseInferenceMsTotal: Long,
+        val poseInferenceSamples: Int,
+        val poseBusySkipped: Int,
+        val poseStallEvents: Int,
+        val vmIngress: Int,
+        val vmProcessed: Int,
+        val vmConflated: Int,
+    )
+
+    private fun captureWindowSnapshot(): WindowSnapshot {
+        return WindowSnapshot(
+            cameraAccepted = cameraAccepted.getAndSet(0),
+            cameraSkipped = cameraSkipped.getAndSet(0),
+            cameraTargetFps = cameraTargetFps,
+            cameraAnalysisSize = cameraAnalysisSize,
+            cameraAppliedFps = cameraAppliedFps,
+            cameraThroughputProfile = cameraThroughputProfile,
+            poseWithBody = poseWithBody.getAndSet(0),
+            poseNoBody = poseNoBody.getAndSet(0),
+            poseInferenceMsTotal = poseInferenceMsTotal.getAndSet(0L),
+            poseInferenceSamples = poseInferenceSamples.getAndSet(0),
+            poseBusySkipped = poseBusySkipped.getAndSet(0),
+            poseStallEvents = poseStallEvents.getAndSet(0),
+            vmIngress = vmIngress.getAndSet(0),
+            vmProcessed = vmProcessed.getAndSet(0),
+            vmConflated = vmConflated.getAndSet(0),
+        )
+    }
+
+    private fun resetWindowCounters() {
+        cameraAccepted.value = 0
+        cameraSkipped.value = 0
+        poseWithBody.value = 0
+        poseNoBody.value = 0
+        poseBusySkipped.value = 0
+        poseInferenceMsTotal.value = 0L
+        poseInferenceSamples.value = 0
+        poseStallEvents.value = 0
+        vmIngress.value = 0
+        vmProcessed.value = 0
+        vmConflated.value = 0
+    }
+
+    internal fun buildPeriodicLine(
+        snapshot: WindowSnapshot,
         runState: SessionRunState,
         phase: String?,
         repCount: Int,
@@ -172,34 +214,34 @@ object TrainingPipelineDiagnostics {
         droppedEngine: Int,
         droppedSupervisor: Int,
     ): String {
-        val camFps = cameraAccepted
-        val camSkip = cameraSkipped
-        val poseFps = poseWithBody + poseNoBody
-        val avgInference = if (poseInferenceSamples == 0) {
+        val camFps = snapshot.cameraAccepted
+        val camSkip = snapshot.cameraSkipped
+        val poseFps = snapshot.poseWithBody + snapshot.poseNoBody
+        val avgInference = if (snapshot.poseInferenceSamples == 0) {
             0
         } else {
-            (poseInferenceMsTotal / poseInferenceSamples).toInt()
+            (snapshot.poseInferenceMsTotal / snapshot.poseInferenceSamples).toInt()
         }
         val phaseLabel = phase ?: "-"
         return buildString {
             append("window=${LOG_INTERVAL_MS / 1_000}s")
             append(" | cam=${camFps}fps")
             append("(skipThrottle=$camSkip")
-            append(" profile=$cameraThroughputProfile")
-            append(" target=$cameraTargetFps")
-            append(" ae=$cameraAppliedFps")
-            append(" analysis=$cameraAnalysisSize)")
+            append(" profile=${snapshot.cameraThroughputProfile}")
+            append(" target=${snapshot.cameraTargetFps}")
+            append(" ae=${snapshot.cameraAppliedFps}")
+            append(" analysis=${snapshot.cameraAnalysisSize})")
             append(" | pose=${poseFps}fps")
-            append("(body=$poseWithBody nopose=$poseNoBody")
+            append("(body=${snapshot.poseWithBody} nopose=${snapshot.poseNoBody}")
             append(" inferMs=$avgInference")
-            append(" busySkip=$poseBusySkipped")
-            if (poseStallEvents > 0) append(" stalls=$poseStallEvents")
+            append(" busySkip=${snapshot.poseBusySkipped}")
+            if (snapshot.poseStallEvents > 0) append(" stalls=${snapshot.poseStallEvents}")
             append(')')
-            append(" | vm=in $vmIngress")
-            append(" proc=$vmProcessed")
-            val backlog = vmIngress - vmProcessed
-            if (backlog > 0) append(" backlog=$backlog")
-            if (vmConflated > 0) append(" conflated=$vmConflated")
+            append(" | vm=in ${snapshot.vmIngress}")
+            append(" proc=${snapshot.vmProcessed}")
+            val workerLag = snapshot.vmIngress - snapshot.vmProcessed
+            if (workerLag > 0) append(" workerLag=$workerLag")
+            append(" conflated=${snapshot.vmConflated}")
             append(" | engine=state=$runState")
             append(" phase=$phaseLabel")
             append(" reps=$repCount/$targetReps")
@@ -207,71 +249,5 @@ object TrainingPipelineDiagnostics {
             append(" drop=$droppedEngine")
             append(" | supervisor=drop=$droppedSupervisor")
         }
-    }
-
-    private fun resetWindowCounters() {
-        cameraAccepted = 0
-        cameraSkipped = 0
-        poseWithBody = 0
-        poseNoBody = 0
-        poseBusySkipped = 0
-        poseInferenceMsTotal = 0L
-        poseInferenceSamples = 0
-        poseStallEvents = 0
-        vmIngress = 0
-        vmProcessed = 0
-        vmConflated = 0
-    }
-}
-
-/** Test-only formatter access. */
-internal fun formatTrainingPipelinePeriodicForTest(
-    cameraAccepted: Int,
-    cameraSkipped: Int,
-    cameraTargetFps: Int,
-    cameraAnalysisSize: String,
-    cameraAppliedFps: String,
-    cameraThroughputProfile: String = TrainingThroughputProfiles.STABLE.id,
-    poseWithBody: Int,
-    poseNoBody: Int,
-    avgInferenceMs: Int,
-    poseBusySkipped: Int,
-    poseStallEvents: Int,
-    vmIngress: Int,
-    vmProcessed: Int,
-    vmConflated: Int,
-    runState: SessionRunState,
-    phase: String?,
-    repCount: Int,
-    targetReps: Int,
-    formScore: Int,
-    droppedEngine: Int,
-    droppedSupervisor: Int,
-): String {
-    val poseFps = poseWithBody + poseNoBody
-    val phaseLabel = phase ?: "-"
-    return buildString {
-        append("window=2s")
-        append(" | cam=${cameraAccepted}fps")
-        append("(skipThrottle=$cameraSkipped")
-        append(" profile=$cameraThroughputProfile")
-        append(" target=$cameraTargetFps")
-        append(" ae=$cameraAppliedFps")
-        append(" analysis=$cameraAnalysisSize)")
-        append(" | pose=${poseFps}fps")
-        append("(body=$poseWithBody nopose=$poseNoBody")
-        append(" inferMs=$avgInferenceMs")
-        append(" busySkip=$poseBusySkipped")
-        if (poseStallEvents > 0) append(" stalls=$poseStallEvents")
-        append(')')
-        append(" | vm=in $vmIngress")
-        append(" proc=$vmProcessed")
-        if (vmConflated > 0) append(" conflated=$vmConflated")
-        append(" | engine=state=$runState")
-        append(" phase=$phaseLabel")
-        append(" reps=$repCount/$targetReps")
-        append(" score=$formScore")
-        append(" drop=$droppedEngine")
-        append(" | supervisor=drop=$droppedSupervisor")
     }
 }

@@ -4,7 +4,6 @@ import com.movit.core.training.config.JointRole
 import com.movit.core.training.config.OutwardDirection
 import com.movit.core.training.config.StateRanges
 import com.movit.core.training.config.TrackedJoint
-import com.movit.core.training.config.getMessagesForState
 import com.movit.core.training.config.getPhaseRange
 import com.movit.core.training.config.getStateHoldRange
 import com.movit.core.training.engine.JointState
@@ -112,12 +111,8 @@ class JointEvaluator(
         }
 
         val state = applyHysteresis(joint.joint, rawState, angle, stateRanges, isOutwardFallback)
-        val phaseName = if (joint.role == JointRole.SECONDARY && joint.phaseRanges != null) {
-            mapPhaseToName(currentPhase)
-        } else {
-            null
-        }
 
+        // J-05: messages resolved lazily on throttled feedback paths (VM / engine cache).
         return JointEval(
             code = joint.joint,
             rawAngle = rawAngle,
@@ -127,7 +122,6 @@ class JointEvaluator(
             stateRanges = stateRanges,
             upStateRanges = upStateRanges,
             downStateRanges = downStateRanges,
-            messages = joint.getMessagesForState(state, zoneType, phaseName),
             isPrimary = isPrimary,
             invertIndicator = joint.invertIndicator,
         )

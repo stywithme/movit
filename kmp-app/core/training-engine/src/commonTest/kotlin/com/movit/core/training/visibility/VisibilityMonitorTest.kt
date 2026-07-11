@@ -1,6 +1,7 @@
 package com.movit.core.training.visibility
 
 import com.movit.core.training.engine.Phase
+import com.movit.core.training.engine.policy.VisibilityDefaults
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -17,6 +18,7 @@ class VisibilityMonitorTest {
     fun visibleJoints_continueTraining() {
         val monitor = VisibilityMonitor(
             visibilityTrackedJoints = listOf(leftElbow),
+            minVisibility = VisibilityDefaults.PAUSE_GATE,
             timeProvider = { 0L },
         )
         val result = monitor.checkVisibility(
@@ -33,6 +35,7 @@ class VisibilityMonitorTest {
         var now = 0L
         val monitor = VisibilityMonitor(
             visibilityTrackedJoints = listOf(leftElbow),
+            minVisibility = VisibilityDefaults.PAUSE_GATE,
             graceDurationMs = 500,
             warningDurationMs = 1500,
             pauseAfterMs = 3000,
@@ -49,6 +52,7 @@ class VisibilityMonitorTest {
         var now = 0L
         val monitor = VisibilityMonitor(
             visibilityTrackedJoints = listOf(leftElbow),
+            minVisibility = VisibilityDefaults.PAUSE_GATE,
             graceDurationMs = 500,
             warningDurationMs = 1500,
             pauseAfterMs = 3000,
@@ -73,6 +77,7 @@ class VisibilityMonitorTest {
         var now = 0L
         val monitor = VisibilityMonitor(
             visibilityTrackedJoints = listOf(leftElbow),
+            minVisibility = VisibilityDefaults.PAUSE_GATE,
             pauseAfterMs = 1000,
             warningDurationMs = 500,
             graceDurationMs = 0,
@@ -106,6 +111,7 @@ class VisibilityMonitorTest {
                     pairedWith = "left_shoulder",
                 ),
             ),
+            minVisibility = VisibilityDefaults.PAUSE_GATE,
             timeProvider = { 0L },
         )
         val result = monitor.checkVisibility(
@@ -124,6 +130,7 @@ class VisibilityMonitorTest {
         var now = 0L
         val monitor = VisibilityMonitor(
             visibilityTrackedJoints = listOf(leftElbow),
+            minVisibility = VisibilityDefaults.PAUSE_GATE,
             graceDurationMs = 0,
             warningDurationMs = 0,
             pauseAfterMs = 100,

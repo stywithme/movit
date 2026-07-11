@@ -2,13 +2,11 @@ package com.movit.core.posecapture
 
 import com.movit.core.training.boundary.PoseDetector
 import com.movit.core.training.boundary.PoseDetectorConfiguration
-import com.movit.core.training.geometry.PoseFrameAssembler
 import com.movit.core.training.model.Landmark
-import com.movit.core.training.model.PoseFrame
+import kotlinx.atomicfu.atomic
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.CoreMedia.CMSampleBufferRef
-import platform.Foundation.NSDate
-import platform.Foundation.timeIntervalSince1970
+import platform.QuartzCore.CACurrentMediaTime
 
 /**
  * iOS pose ML boundary (D3).
@@ -37,6 +35,10 @@ class IosPoseDetector : PoseDetector {
     private var listener: Listener? = null
     private var warmedUp = false
     private var bridgeStatus: IosPoseBridgeStatus = IosPoseBridgeStatus.NOT_INSTALLED
+    private var analysisImageWidth: Int = 0
+    private var analysisImageHeight: Int = 0
+    private val inferenceInFlight = atomic(false)
+    private val skippedBusyFrames = atomic(0)
 
     var lastInferenceTimeMs: Long = 0L
         private set
@@ -50,6 +52,13 @@ class IosPoseDetector : PoseDetector {
 
     fun bridgeStatus(): IosPoseBridgeStatus = bridgeStatus
 
+    fun consumeBusySkipCount(): Int = skippedBusyFrames.getAndSet(0)
+
+    fun setAnalysisImageSize(width: Int, height: Int) {
+        analysisImageWidth = width.coerceAtLeast(0)
+        analysisImageHeight = height.coerceAtLeast(0)
+    }
+
     fun setListener(listener: Listener?) {
         this.listener = listener
     }
@@ -60,6 +69,9 @@ class IosPoseDetector : PoseDetector {
             bridge == null -> IosPoseBridgeStatus.NOT_INSTALLED
             !bridge.isAvailable -> IosPoseBridgeStatus.INSTALLED_UNAVAILABLE
             bridge.warmUp(configuration) -> IosPoseBridgeStatus.READY
+            // B-08: GPU warmUp fail → retry CPU before INSTALLED_UNAVAILABLE.
+            configuration.useGpu && bridge.warmUp(configuration.copy(useGpu = false)) ->
+                IosPoseBridgeStatus.READY
             else -> IosPoseBridgeStatus.INSTALLED_UNAVAILABLE
         }
         if (bridgeStatus == IosPoseBridgeStatus.READY) {
@@ -67,6 +79,8 @@ class IosPoseDetector : PoseDetector {
         } else {
             bridge?.bindResultHandler(null)
         }
+        inferenceInFlight.value = false
+        skippedBusyFrames.value = 0
         warmedUp = true
     }
 
@@ -86,18 +100,15 @@ class IosPoseDetector : PoseDetector {
             listener?.onNoPoseDetected(isFrontCamera)
             return
         }
-        bridge.detectAsync(sampleBuffer, isFrontCamera, uptimeMillis())
+        if (!tryAcquireInferenceSlot()) return
+        bridge.detectAsync(
+            sampleBuffer = sampleBuffer,
+            isFrontCamera = isFrontCamera,
+            timestampMs = uptimeMillis(),
+            analysisImageWidth = analysisImageWidth,
+            analysisImageHeight = analysisImageHeight,
+        )
     }
-
-    override fun buildPoseFrame(
-        landmarks: List<Landmark>,
-        timestampMs: Long,
-        isFrontCamera: Boolean,
-    ): PoseFrame = PoseFrameAssembler.assemble(
-        landmarks = landmarks,
-        timestampMs = timestampMs,
-        isFrontCamera = isFrontCamera,
-    )
 
     override fun shutdown() {
         warmedUp = false
@@ -106,7 +117,19 @@ class IosPoseDetector : PoseDetector {
             null -> IosPoseBridgeStatus.NOT_INSTALLED
             else -> IosPoseBridgeStatus.INSTALLED_UNAVAILABLE
         }
+        inferenceInFlight.value = false
+        skippedBusyFrames.value = 0
         listener = null
+    }
+
+    private fun tryAcquireInferenceSlot(): Boolean {
+        if (inferenceInFlight.compareAndSet(expect = false, update = true)) return true
+        skippedBusyFrames.incrementAndGet()
+        return false
+    }
+
+    private fun releaseInferenceSlot() {
+        inferenceInFlight.value = false
     }
 
     private val resultHandler = object : IosPoseLandmarkerResultHandler {
@@ -119,7 +142,11 @@ class IosPoseDetector : PoseDetector {
             analysisImageWidth: Int,
             analysisImageHeight: Int,
         ) {
+            // A-02/B-03: early release — flat arrays already copied into Kotlin.
+            releaseInferenceSlot()
             lastInferenceTimeMs = inferenceTimeMs
+            // ponytail: B-02/M6 dump hook — no-op until landmark dump lands; do not touch mirroring.
+            IosLandmarkDumpScaffold.onPoseLandmarks(landmarksFlat, isFrontCamera)
             runCatching {
                 DetectionResult(
                     landmarks = PoseLandmarkFlatCodec.decode(landmarksFlat),
@@ -138,18 +165,32 @@ class IosPoseDetector : PoseDetector {
         }
 
         override fun onNoPoseDetected(isFrontCamera: Boolean) {
+            releaseInferenceSlot()
             lastInferenceTimeMs = 0L
             listener?.onNoPoseDetected(isFrontCamera)
         }
 
         override fun onError(message: String) {
+            releaseInferenceSlot()
             lastInferenceTimeMs = 0L
             listener?.onError(message)
         }
     }
 
     companion object {
+        /** Monotonic ms (B-04) — mirrors Android [android.os.SystemClock.uptimeMillis]. */
         fun uptimeMillis(): Long =
-            (NSDate().timeIntervalSince1970 * 1000.0).toLong()
+            (CACurrentMediaTime() * 1000.0).toLong()
     }
+}
+
+/**
+ * B-02 / M6 scaffolding: future side-by-side L/R landmark dump.
+ * Blocked until M6 device capture — do **not** remove `setVideoMirrored(true)` before that.
+ */
+internal object IosLandmarkDumpScaffold {
+    fun onPoseLandmarks(
+        @Suppress("UNUSED_PARAMETER") landmarksFlat: FloatArray,
+        @Suppress("UNUSED_PARAMETER") isFrontCamera: Boolean,
+    ) = Unit
 }

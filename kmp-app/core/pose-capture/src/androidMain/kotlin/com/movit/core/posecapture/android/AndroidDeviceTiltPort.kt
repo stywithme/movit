@@ -5,22 +5,28 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.os.Build
+import android.view.Surface
+import android.view.WindowManager
 import com.movit.core.training.boundary.AcquirableDeviceTiltPort
+import com.movit.core.training.boundary.TiltDefaults
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.atan2
 
 /**
- * Android sensor-backed [DeviceTiltPort] (legacy DeviceTiltProvider pattern).
+ * Android sensor-backed [com.movit.core.training.boundary.DeviceTiltPort]
+ * (legacy DeviceTiltProvider pattern).
  */
 class AndroidDeviceTiltPort(
-    context: Context,
-    private val enabled: Boolean = true,
-    private val deadZoneDegrees: Float = 2f,
-    private val smoothingTauMs: Long = 120L,
+    private val context: Context,
+    private val enabled: Boolean = TiltDefaults.ENABLED,
+    private val deadZoneDegrees: Float = TiltDefaults.DEAD_ZONE_DEGREES,
+    private val smoothingTauMs: Long = TiltDefaults.SMOOTHING_TAU_MS,
 ) : SensorEventListener, AcquirableDeviceTiltPort {
 
-    private val sensorManager = context.applicationContext.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+    private val sensorManager =
+        context.applicationContext.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     private val tiltSensor: Sensor? =
         sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY)
             ?: sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
@@ -35,12 +41,16 @@ class AndroidDeviceTiltPort(
     @Volatile
     private var rollDegreesValue: Float = 0f
 
+    @Volatile
+    private var gravityVectorValue: FloatArray? = null
+
     override var isRunning: Boolean = false
         private set
 
     override val isAvailable: Boolean get() = enabled && tiltSensor != null
     override val correctionRadians: Float get() = correctionRadiansValue
     override val rollDegrees: Float get() = rollDegreesValue
+    override val gravityVector: FloatArray? get() = gravityVectorValue
 
     override fun acquire(owner: String) {
         if (owner.isBlank() || !isAvailable) return
@@ -61,6 +71,8 @@ class AndroidDeviceTiltPort(
     override fun onSensorChanged(event: SensorEvent) {
         val gx = event.values.getOrNull(0) ?: return
         val gy = event.values.getOrNull(1) ?: return
+        val gz = event.values.getOrNull(2) ?: 0f
+        gravityVectorValue = floatArrayOf(gx, gy, gz)
         updateFromGravity(gx, gy, event.timestamp)
     }
 
@@ -68,7 +80,12 @@ class AndroidDeviceTiltPort(
 
     private fun registerLocked() {
         val sensor = tiltSensor ?: return
-        isRunning = sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME)
+        // SENSOR_DELAY_UI ~60ms; explicit 200_000µs matches legacy ~5Hz battery budget.
+        isRunning = sensorManager.registerListener(
+            this,
+            sensor,
+            TiltDefaults.SAMPLE_INTERVAL_MICROS,
+        )
     }
 
     private fun unregisterLocked() {
@@ -76,17 +93,39 @@ class AndroidDeviceTiltPort(
         isRunning = false
         correctionRadiansValue = 0f
         rollDegreesValue = 0f
+        gravityVectorValue = null
         smoothedCorrectionRadians = null
         lastEventTimestampNs = 0L
     }
 
     private fun updateFromGravity(gx: Float, gy: Float, timestampNs: Long) {
         val rollRadians = atan2(gx, gy)
-        val rawCorrection = -rollRadians
+        // T6: subtract display rotation so landscape mounts still correct to gravity-up.
+        val rawCorrection = -(rollRadians - displayRotationOffsetRadians())
         val corrected = smoothCorrection(rawCorrection, timestampNs)
         val deadZoneRadians = Math.toRadians(deadZoneDegrees.toDouble()).toFloat()
         correctionRadiansValue = if (abs(corrected) < deadZoneRadians) 0f else corrected
         rollDegreesValue = Math.toDegrees(rollRadians.toDouble()).toFloat()
+    }
+
+    private fun displayRotationOffsetRadians(): Float {
+        val rotation = currentDisplayRotation()
+        return when (rotation) {
+            Surface.ROTATION_90 -> (PI / 2.0).toFloat()
+            Surface.ROTATION_180 -> PI.toFloat()
+            Surface.ROTATION_270 -> (3.0 * PI / 2.0).toFloat()
+            else -> 0f
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun currentDisplayRotation(): Int {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            context.display?.rotation ?: Surface.ROTATION_0
+        } else {
+            val wm = context.getSystemService(Context.WINDOW_SERVICE) as? WindowManager
+            wm?.defaultDisplay?.rotation ?: Surface.ROTATION_0
+        }
     }
 
     private fun smoothCorrection(rawCorrection: Float, timestampNs: Long): Float {

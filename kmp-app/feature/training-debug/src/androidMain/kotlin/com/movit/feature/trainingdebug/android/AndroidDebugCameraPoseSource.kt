@@ -8,8 +8,9 @@ import com.movit.core.posecapture.android.MediaPipePoseDetector
 import com.movit.core.posecapture.boundary.trainingdebug.PoseModelTypePort
 import com.movit.core.training.boundary.CameraFrameSource
 import com.movit.core.training.boundary.PoseDetectorConfiguration
-import com.movit.core.training.geometry.PoseFrameAssembler
 import com.movit.feature.training.resolveTrainingCameraConfiguration
+import com.movit.feature.trainingdebug.ElbowDiagnosticsPort
+import com.movit.feature.trainingdebug.ElbowEstimatorDiagnosticsPort
 import com.movit.feature.trainingdebug.DebugPoseModelType
 import com.movit.feature.trainingdebug.TrainingDebugFrameInput
 import com.movit.feature.trainingdebug.TrainingDebugInputMode
@@ -68,7 +69,10 @@ class AndroidDebugCameraPoseSource : TrainingDebugPoseSource {
                 return@setDebugFrameListener
             }
             modelLabelCache = detection?.modelDisplayLabel?.ifBlank { modelLabelCache } ?: modelLabelCache
-            frameFlow.tryEmit(detection!!.toDebugFrameInput(poseFrame))
+            val diagnosticsPort = cameraSource?.let { source ->
+                ElbowEstimatorDiagnosticsPort(source.currentElbowEstimator())
+            } ?: ElbowDiagnosticsPort.NoOp
+            frameFlow.tryEmit(detection!!.toDebugFrameInput(poseFrame, diagnosticsPort))
         }
         source.setFrameListener { /* debug path uses setDebugFrameListener */ }
         source.start(resolveTrainingCameraConfiguration(isFrontCamera))
@@ -82,7 +86,7 @@ class AndroidDebugCameraPoseSource : TrainingDebugPoseSource {
 
     override suspend fun resetTracking(reason: String) {
         poseDetector?.resetTrackingState()
-        PoseFrameAssembler.resetElbowEstimator()
+        cameraSource?.resetElbowTracking()
     }
 
     fun switchCamera() {

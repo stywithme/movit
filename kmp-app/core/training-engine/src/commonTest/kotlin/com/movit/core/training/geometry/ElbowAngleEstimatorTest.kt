@@ -23,8 +23,8 @@ class ElbowAngleEstimatorTest {
         val input = JointAngles(leftElbow = 90.0, rightElbow = 90.0)
         val ts = 1_000L
 
-        val outA = estimatorA.correct(input, world, norm, ts)
-        val outB = estimatorB.correct(input, world, norm, ts)
+        val outA = estimatorA.correct(input, world, norm, ts, collectDiagnostics = true)
+        val outB = estimatorB.correct(input, world, norm, ts, collectDiagnostics = true)
 
         assertEquals(outA.leftElbow, outB.leftElbow)
         assertEquals(outA.rightElbow, outB.rightElbow)
@@ -55,7 +55,7 @@ class ElbowAngleEstimatorTest {
         val norm = visibleLandmarks()
         placeStraightLeftArm(world, norm)
 
-        estimator.correct(JointAngles(leftElbow = 100.0), world, norm, 1_000L)
+        estimator.correct(JointAngles(leftElbow = 100.0), world, norm, 1_000L, collectDiagnostics = true)
 
         assertEquals(ElbowCorrectionStrategy.STRAIGHT, estimator.lastDiagnostics[LEFT]?.strategy)
         assertEquals(false, estimator.lastDiagnostics[LEFT]?.isHolding)
@@ -68,7 +68,7 @@ class ElbowAngleEstimatorTest {
         val norm = visibleLandmarks()
         placeTrust3DLeftElbow(world, norm)
 
-        estimator.correct(JointAngles(leftElbow = 80.0), world, norm, 1_000L)
+        estimator.correct(JointAngles(leftElbow = 80.0), world, norm, 1_000L, collectDiagnostics = true)
 
         assertEquals(ElbowCorrectionStrategy.TRUST_3D, estimator.lastDiagnostics[LEFT]?.strategy)
     }
@@ -82,7 +82,7 @@ class ElbowAngleEstimatorTest {
 
         var angles = JointAngles(leftElbow = 70.0)
         repeat(8) { frame ->
-            angles = estimator.correct(angles, world, norm, 1_000L + frame * 33L)
+            angles = estimator.correct(angles, world, norm, 1_000L + frame * 33L, collectDiagnostics = true)
         }
         assertNotNull(angles.leftElbow)
         assertNotEquals(ElbowCorrectionStrategy.HOLD, estimator.lastDiagnostics[LEFT]!!.strategy)
@@ -90,12 +90,51 @@ class ElbowAngleEstimatorTest {
         placeHighDepthInflatedLeftElbow(world, norm)
         var held = angles
         repeat(4) { frame ->
-            held = estimator.correct(held, world, norm, 1_300L + frame * 33L)
+            held = estimator.correct(held, world, norm, 1_300L + frame * 33L, collectDiagnostics = true)
         }
 
         assertEquals(ElbowCorrectionStrategy.HOLD, estimator.lastDiagnostics[LEFT]?.strategy)
         assertEquals(true, estimator.lastDiagnostics[LEFT]?.isHolding)
         assertEquals(angles.leftElbow, held.leftElbow)
+    }
+
+    @Test
+    fun reset_onOneInstance_doesNotClearOther() {
+        val estimatorA = ElbowAngleEstimator()
+        val estimatorB = ElbowAngleEstimator()
+        val world = visibleLandmarks()
+        val norm = visibleLandmarks()
+        placeBentLeftElbowSideView(world, norm)
+
+        estimatorA.correct(JointAngles(leftElbow = 80.0), world, norm, 1_000L, collectDiagnostics = true)
+        estimatorB.correct(JointAngles(leftElbow = 80.0), world, norm, 1_000L, collectDiagnostics = true)
+        assertNotNull(estimatorA.lastDiagnostics[LEFT])
+        assertNotNull(estimatorB.lastDiagnostics[LEFT])
+
+        estimatorA.reset()
+
+        assertNull(estimatorA.lastDiagnostics[LEFT])
+        assertNotNull(estimatorB.lastDiagnostics[LEFT])
+    }
+
+    @Test
+    fun twoInstances_keepIndependentHoldState() {
+        val estimatorA = ElbowAngleEstimator()
+        val estimatorB = ElbowAngleEstimator()
+        val world = visibleLandmarks()
+        val norm = visibleLandmarks()
+        placeBentLeftElbowSideView(world, norm)
+        val input = JointAngles(leftElbow = 70.0)
+
+        repeat(8) { frame ->
+            estimatorA.correct(input, world, norm, 1_000L + frame * 33L, collectDiagnostics = true)
+        }
+        placeHighDepthInflatedLeftElbow(world, norm)
+        repeat(4) { frame ->
+            estimatorA.correct(input, world, norm, 1_300L + frame * 33L, collectDiagnostics = true)
+        }
+        assertEquals(ElbowCorrectionStrategy.HOLD, estimatorA.lastDiagnostics[LEFT]?.strategy)
+        assertNull(estimatorB.lastDiagnostics[LEFT])
     }
 
     @Test
@@ -105,13 +144,25 @@ class ElbowAngleEstimatorTest {
         val norm = visibleLandmarks()
         placeBentLeftElbowSideView(world, norm)
 
-        estimator.correct(JointAngles(leftElbow = 80.0), world, norm, 1_000L)
+        estimator.correct(JointAngles(leftElbow = 80.0), world, norm, 1_000L, collectDiagnostics = true)
         assertNotNull(estimator.lastDiagnostics[LEFT])
 
         estimator.reset()
 
         assertNull(estimator.lastDiagnostics[LEFT])
         assertNull(estimator.lastDiagnostics[RIGHT])
+    }
+
+    @Test
+    fun withoutCollectDiagnostics_skipsAllocation() {
+        val estimator = ElbowAngleEstimator()
+        val world = visibleLandmarks()
+        val norm = visibleLandmarks()
+        placeBentLeftElbowSideView(world, norm)
+
+        val out = estimator.correct(JointAngles(leftElbow = 80.0), world, norm, 1_000L)
+        assertNotNull(out.leftElbow)
+        assertNull(estimator.lastDiagnostics[LEFT])
     }
 
   private companion object {

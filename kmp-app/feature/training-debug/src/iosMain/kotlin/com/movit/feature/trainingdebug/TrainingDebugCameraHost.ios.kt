@@ -5,7 +5,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -17,6 +16,8 @@ import com.movit.feature.training.resolveTrainingCameraConfiguration
 import com.movit.designsystem.components.MovitErrorState
 import com.movit.resources.movitText
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.coroutines.delay
+import kotlin.concurrent.Volatile
 import platform.UIKit.UIView
 
 @OptIn(ExperimentalForeignApi::class)
@@ -30,13 +31,20 @@ actual fun TrainingDebugCameraHost(
 ) {
     var previewReady by remember { mutableStateOf(false) }
     var cameraError by remember { mutableStateOf<String?>(null) }
-    var frameCounter by remember { mutableIntStateOf(0) }
-    var fpsWindowStart by remember { mutableStateOf(0L) }
+    val debugFrameCount = remember { DebugFpsFrameCounter() }
     val currentOnFrame by rememberUpdatedState(onFrame)
     val currentOnError by rememberUpdatedState(onError)
     val currentOnSourceFps by rememberUpdatedState(onSourceFps)
     val cameraSource = remember { MovitPoseCaptureIosBindings.createCameraFrameSource() }
     val cameraUnavailableMessage = movitText("training_session_camera_unavailable")
+
+    LaunchedEffect(previewReady) {
+        if (!previewReady) return@LaunchedEffect
+        while (true) {
+            delay(1_000L)
+            currentOnSourceFps(debugFrameCount.drain())
+        }
+    }
 
     DisposableEffect(cameraSource) {
         cameraSource.setErrorListener { message ->
@@ -44,14 +52,7 @@ actual fun TrainingDebugCameraHost(
             currentOnError(message)
         }
         cameraSource.setFrameListener { frame ->
-            frameCounter += 1
-            val now = iosNowMillis()
-            if (fpsWindowStart == 0L) fpsWindowStart = now
-            if (now - fpsWindowStart >= 1_000L) {
-                currentOnSourceFps(frameCounter)
-                frameCounter = 0
-                fpsWindowStart = now
-            }
+            debugFrameCount.increment()
             if (frame == null) {
                 currentOnFrame(null)
                 return@setFrameListener
@@ -107,4 +108,17 @@ actual fun TrainingDebugCameraHost(
     )
 }
 
-private fun iosNowMillis(): Long = trainingDebugWallClockMs()
+private class DebugFpsFrameCounter {
+    @Volatile
+    private var count = 0
+
+    fun increment() {
+        count++
+    }
+
+    fun drain(): Int {
+        val snapshot = count
+        count = 0
+        return snapshot
+    }
+}

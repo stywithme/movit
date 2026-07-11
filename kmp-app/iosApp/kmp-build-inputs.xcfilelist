@@ -328,8 +328,6 @@ $(SRCROOT)/../core/network/src/iosMain/kotlin/com/movit/core/network/MovitApiCon
 $(SRCROOT)/../core/network/src/iosMain/kotlin/com/movit/core/network/MovitClock.ios.kt
 $(SRCROOT)/../core/network/src/iosMain/kotlin/com/movit/core/network/MovitHttpClient.ios.kt
 $(SRCROOT)/../core/pose-capture/build.gradle.kts
-$(SRCROOT)/../core/pose-capture/src/androidMain/kotlin/com/movit/core/posecapture/StubCameraFrameSource.kt
-$(SRCROOT)/../core/pose-capture/src/androidMain/kotlin/com/movit/core/posecapture/StubPoseDetector.kt
 $(SRCROOT)/../core/pose-capture/src/androidMain/kotlin/com/movit/core/posecapture/android/AndroidDeviceTiltPort.kt
 $(SRCROOT)/../core/pose-capture/src/androidMain/kotlin/com/movit/core/posecapture/android/AndroidPoseModelTypePort.kt
 $(SRCROOT)/../core/pose-capture/src/androidMain/kotlin/com/movit/core/posecapture/android/AndroidPoseRefiner.kt
@@ -413,12 +411,14 @@ $(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training
 $(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/boundary/CameraFrameSource.kt
 $(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/boundary/CameraSourceConfiguration.kt
 $(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/boundary/DeviceTiltPort.kt
+$(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/boundary/TiltDefaults.kt
 $(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/boundary/HapticsPort.kt
 $(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/boundary/PoseDetector.kt
 $(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/boundary/PoseDetectorConfiguration.kt
 $(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/boundary/SpeechSynthesizer.kt
 $(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/boundary/TrainingFrameSnapshotPort.kt
 $(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/boundary/TrainingThroughputProfile.kt
+$(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/boundary/AdaptiveThroughputController.kt
 $(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/config/ExerciseConfigLiveSupport.kt
 $(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/config/ExerciseConfigModels.kt
 $(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/config/ExerciseConfigParser.kt
@@ -469,6 +469,8 @@ $(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training
 $(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/geometry/JointAngleCalculator.kt
 $(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/geometry/JointLandmarkMapping.kt
 $(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/geometry/LandmarkTiltCorrector.kt
+$(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/geometry/ComputedAngleChannels.kt
+$(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/geometry/GravityAlignedSpace.kt
 $(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/geometry/PoseFrameAssembler.kt
 $(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/geometry/PoseLandmarkMirroring.kt
 $(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/geometry/PosePoint.kt
@@ -524,6 +526,7 @@ $(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training
 $(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/session/SetupAxisStatus.kt
 $(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/session/SetupJointGuidance.kt
 $(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/session/SetupProbeDefaults.kt
+$(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/session/SetupPoseTiltOwner.kt
 $(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/session/SetupReadinessGate.kt
 $(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/session/SetupValidationConfig.kt
 $(SRCROOT)/../core/training-engine/src/commonMain/kotlin/com/movit/core/training/session/SetupVoiceGuidanceGate.kt
@@ -1048,7 +1051,6 @@ $(SRCROOT)/../feature/training/src/commonMain/kotlin/com/movit/feature/training/
 $(SRCROOT)/../feature/training/src/commonMain/kotlin/com/movit/feature/training/TrainingSessionWriteDiagnostics.kt
 $(SRCROOT)/../feature/training/src/commonMain/kotlin/com/movit/feature/training/TrainingSessionWriteHooks.kt
 $(SRCROOT)/../feature/training/src/commonMain/kotlin/com/movit/feature/training/TrainingThroughputFlags.kt
-$(SRCROOT)/../feature/training/src/commonMain/kotlin/com/movit/feature/training/WorkoutExecutionBatchCoordinator.kt
 $(SRCROOT)/../feature/training/src/commonTest/kotlin/com/movit/feature/training/SetupGuidanceMapperTest.kt
 $(SRCROOT)/../feature/training/src/commonTest/kotlin/com/movit/feature/training/SkeletonOverlayMapperTest.kt
 $(SRCROOT)/../feature/training/src/commonTest/kotlin/com/movit/feature/training/TrainingCameraSwitchPolicyTest.kt

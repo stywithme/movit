@@ -7,7 +7,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -18,6 +17,8 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
 import com.movit.feature.trainingdebug.android.AndroidDebugCameraPoseSource
+import java.util.concurrent.atomic.AtomicInteger
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -38,9 +39,16 @@ actual fun TrainingDebugCameraHost(
         )
     }
     val cameraSource = remember { AndroidDebugCameraPoseSource() }
-    var frameCounter by remember { mutableIntStateOf(0) }
-    var fpsWindowStart by remember { mutableStateOf(0L) }
+    val debugFrameCount = remember { AtomicInteger(0) }
     var bound by remember { mutableStateOf(false) }
+
+    LaunchedEffect(bound) {
+        if (!bound) return@LaunchedEffect
+        while (true) {
+            delay(1_000L)
+            onSourceFps(debugFrameCount.getAndSet(0))
+        }
+    }
 
     LaunchedEffect(isFrontCamera, bound) {
         if (!bound || !permissionGranted) return@LaunchedEffect
@@ -54,14 +62,7 @@ actual fun TrainingDebugCameraHost(
     DisposableEffect(cameraSource) {
         val job = scope.launch {
             cameraSource.frames.collect { frame ->
-                frameCounter++
-                val now = System.currentTimeMillis()
-                if (fpsWindowStart == 0L) fpsWindowStart = now
-                if (now - fpsWindowStart >= 1_000L) {
-                    onSourceFps(frameCounter)
-                    frameCounter = 0
-                    fpsWindowStart = now
-                }
+                debugFrameCount.incrementAndGet()
                 onFrame(frame)
             }
         }

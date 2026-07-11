@@ -17,6 +17,7 @@ data class JointEval(
     val stateRanges: StateRanges? = null,
     val upStateRanges: StateRanges? = null,
     val downStateRanges: StateRanges? = null,
+    /** Unused on hot path (WP-08 / J-05); resolve via [TrackedJoint.getMessagesForState] lazily. */
     val messages: List<LocalizedText> = emptyList(),
     override val isPrimary: Boolean = true,
     val invertIndicator: Boolean = false,

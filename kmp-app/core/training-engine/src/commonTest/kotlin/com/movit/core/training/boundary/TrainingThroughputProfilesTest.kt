@@ -5,10 +5,10 @@ import kotlin.test.assertEquals
 
 class TrainingThroughputProfilesTest {
     @Test
-    fun resolve_defaultsToStableWhenNullOrUnknown() {
-        assertEquals(TrainingThroughputProfiles.STABLE, TrainingThroughputProfiles.resolve(null))
-        assertEquals(TrainingThroughputProfiles.STABLE, TrainingThroughputProfiles.resolve(""))
-        assertEquals(TrainingThroughputProfiles.STABLE, TrainingThroughputProfiles.resolve("unknown"))
+    fun resolve_defaultsToHighWhenNullOrUnknown() {
+        assertEquals(TrainingThroughputProfiles.HIGH, TrainingThroughputProfiles.resolve(null))
+        assertEquals(TrainingThroughputProfiles.HIGH, TrainingThroughputProfiles.resolve(""))
+        assertEquals(TrainingThroughputProfiles.HIGH, TrainingThroughputProfiles.resolve("unknown"))
     }
 
     @Test
@@ -17,14 +17,15 @@ class TrainingThroughputProfilesTest {
         assertEquals(TrainingThroughputProfiles.HIGH, TrainingThroughputProfiles.resolve("high"))
         assertEquals(TrainingThroughputProfiles.LEGACY_PARITY, TrainingThroughputProfiles.resolve("legacy"))
         assertEquals(TrainingThroughputProfiles.MEDIUM, TrainingThroughputProfiles.resolve("boost_15"))
+        assertEquals(TrainingThroughputProfiles.STABLE, TrainingThroughputProfiles.resolve("stable"))
     }
 
     @Test
-    fun stableProfile_matchesCurrentProductionDefaults() {
-        val stable = TrainingThroughputProfiles.STABLE
-        assertEquals(320, stable.analysisWidth)
-        assertEquals(240, stable.analysisHeight)
-        assertEquals(10, stable.targetFps)
+    fun highProfile_matchesFlagshipDefaults() {
+        val high = TrainingThroughputProfiles.HIGH
+        assertEquals(640, high.analysisWidth)
+        assertEquals(480, high.analysisHeight)
+        assertEquals(30, high.targetFps)
     }
 
     @Test

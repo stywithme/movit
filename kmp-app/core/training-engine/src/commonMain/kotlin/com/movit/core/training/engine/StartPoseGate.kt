@@ -6,16 +6,11 @@ import com.movit.core.training.config.TrackingMode
 import com.movit.core.training.config.getStateHoldRange
 import com.movit.core.training.config.isInCountedState
 import com.movit.core.training.config.isInStartPose
-import com.movit.core.training.engine.policy.StabilityPolicy
 import kotlin.math.ceil
 
 class StartPoseGate(
     private val trackedJoints: List<TrackedJoint>,
-    stabilityPolicy: StabilityPolicy = StabilityPolicy.default(),
 ) {
-    @Suppress("unused")
-    private val boundaryBuffer: Double = stabilityPolicy.boundaryBuffer
-
     /**
      * Pre-run setup / countdown — config [TrackedJoint.startPose] box with legacy
      * [StartPosePresence.allPrimaryJointsPresent] any-side pairing.

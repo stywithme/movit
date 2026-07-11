@@ -324,6 +324,7 @@ class WorkoutSessionViewModel(
             return
         }
         // ponytail: Default scope — preflight must not require Main (host tests / early init).
+        // Ceiling: persistScope outlives VM; upgrade: inject test dispatcher + cancel in onCleared.
         preflightJob = persistScope.launch {
             applyLaunchReadiness(LaunchReadiness.Preparing)
             applyLaunchReadiness(evaluateLaunchReadiness(session))

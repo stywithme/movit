@@ -52,6 +52,7 @@ suspend fun resolveTrainingStart(
     }
 
     // ponytail: lockStartIndex covers WorkoutFirstExercise; unlocked path keeps solo-in-workout match.
+    // Ceiling: heuristic index resolve; upgrade: explicit start route when flow model grows.
     val resolvedIndex = when {
         lockStartIndex || flowItems != null -> startExerciseIndex.coerceAtLeast(0)
         startExerciseIndex > 0 -> startExerciseIndex

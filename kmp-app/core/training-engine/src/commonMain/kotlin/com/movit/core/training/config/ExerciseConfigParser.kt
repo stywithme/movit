@@ -34,8 +34,26 @@ object ExerciseConfigParser {
         )
     }
 
-    fun parseRecords(elements: List<JsonElement>): List<ExerciseConfigRecord> =
-        elements.mapNotNull { runCatching { parseRecord(it) }.getOrNull() }
+    fun parseRecords(elements: List<JsonElement>): List<ExerciseConfigRecord> {
+        var dropped = 0
+        val out = elements.mapNotNull { element ->
+            runCatching { parseRecord(element) }
+                .onFailure { error ->
+                    dropped++
+                    val slug = runCatching {
+                        element.jsonObject["slug"]?.jsonPrimitive?.content
+                    }.getOrNull().orEmpty().ifBlank { "<unknown>" }
+                    println(
+                        "[ExerciseConfigParser] dropped slug=$slug reason=${error.message ?: error::class.simpleName}",
+                    )
+                }
+                .getOrNull()
+        }
+        if (dropped > 0) {
+            println("[ExerciseConfigParser] dropped $dropped of ${elements.size} records")
+        }
+        return out
+    }
 
     private fun JsonObject.stringOrEmpty(key: String): String =
         get(key)?.jsonPrimitive?.content.orEmpty()

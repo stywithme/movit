@@ -27,8 +27,6 @@ import com.movit.feature.training.PlannedWorkoutContext
 import com.movit.feature.training.TrainingSessionRoute
 import com.movit.feature.training.TrainingSessionRouteArgs
 import com.movit.feature.training.WorkoutUploadContext
-import com.movit.feature.trainingdebug.TrainingDebugRoute
-import com.movit.feature.trainingdebug.isTrainingDebugLabEnabled
 import com.movit.feature.library.TrainingStartAction
 import com.movit.feature.library.WorkoutSessionRoute
 import com.movit.feature.library.WorkoutsLibraryRoute
@@ -326,23 +324,19 @@ fun MovitInnerHost(
             )
         }
         is MovitInnerRoute.TrainingDebugLab -> {
-            if (isTrainingDebugLabEnabled()) {
-                TrainingDebugRoute(
-                    exerciseSlug = route.exerciseSlug,
-                    onBack = onBack,
-                    onCopy = { text ->
-                        onShellEffect(
-                            MovitAppShellEffect.ShareText(
-                                subject = "Training Debug Lab",
-                                text = text,
-                            ),
-                        )
-                    },
-                    modifier = modifier,
-                )
-            } else {
-                onBack()
-            }
+            TrainingDebugLabHost(
+                exerciseSlug = route.exerciseSlug,
+                onBack = onBack,
+                onCopy = { text ->
+                    onShellEffect(
+                        MovitAppShellEffect.ShareText(
+                            subject = "Training Debug Lab",
+                            text = text,
+                        ),
+                    )
+                },
+                modifier = modifier,
+            )
         }
     }
 }

@@ -27,14 +27,27 @@ class PositionValidatorTest {
         val variant = config.poseVariants.first()
         val validator = PositionValidator(
             positionChecks = variant.positionChecks,
-            posePositionCode = variant.cameraPosition ?: "front_view",
             sceneExpectation = variant.resolveSceneExpectation(),
         )
         val landmarks = deskPoseLandmarks()
-        val result = validator.validate(landmarks, Phase.START, isFrontCamera = true)
+        val result = validator.validate(landmarks, Phase.DOWN, isFrontCamera = true)
         assertTrue(result.debugChecks.isNotEmpty())
         val symmetry = result.debugChecks.first { it.checkId == "wrist_symmetry" }
         assertEquals(PositionCheckDebugStatus.PASS, symmetry.status)
+    }
+
+    @Test
+    fun startPhase_keepsValidationButSkipsDebugAllocations() {
+        val config = ExerciseConfigParser.parseConfigJson(readExerciseFixture("position-checks-desk.json"))
+        val variant = config.poseVariants.first()
+        val validator = PositionValidator(
+            positionChecks = variant.positionChecks,
+            sceneExpectation = variant.resolveSceneExpectation(),
+        )
+        val startResult = validator.validate(deskPoseLandmarks(), Phase.START, isFrontCamera = true)
+        assertTrue(startResult.debugChecks.isEmpty())
+        val downResult = validator.validate(deskPoseLandmarks(), Phase.DOWN, isFrontCamera = true)
+        assertTrue(downResult.debugChecks.isNotEmpty())
     }
 
     @Test
@@ -43,11 +56,10 @@ class PositionValidatorTest {
         val tilted = LandmarkTiltCorrector.correct(original, (PI / 6.0).toFloat())
         val validator = PositionValidator(
             positionChecks = listOf(verticalKneeToAnkleCheck()),
-            posePositionCode = "standing_side",
             sceneExpectation = PoseSceneExpectation.fromLegacyCode("standing_side"),
             tiltSource = FakeTiltSource((-PI / 6.0).toFloat()),
         )
-        val result = validator.validate(tilted, Phase.START)
+        val result = validator.validate(tilted, Phase.DOWN)
         assertEquals(-0.20, result.debugChecks.first().actualValue ?: 0.0, 0.001)
     }
 
