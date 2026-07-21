@@ -56,6 +56,8 @@ data class SyncMetaDto(
     val workoutTemplatesInResponse: Int = 0,
     val programsInResponse: Int = 0,
     val messageLibraryStats: MessageLibraryStatsDto? = null,
+    /** B1-3: catalog OK but preferences/programs/reports slice failed on server. */
+    val userSlicesDegraded: Boolean = false,
 )
 
 @Serializable

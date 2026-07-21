@@ -2,8 +2,11 @@ package com.movit.feature.account
 
 import androidx.lifecycle.ViewModel
 import com.movit.core.data.MovitData
+import com.movit.core.data.cache.MovitSyncMetadataStore
 import com.movit.core.data.outbox.OutboxStatus
 import com.movit.core.data.repository.AccountSyncRepository
+import com.movit.core.data.sync.MovitSyncOrchestrator
+import com.movit.core.data.sync.MovitSyncTelemetry
 import com.movit.shared.AppResult
 import com.movit.shared.PlatformInfo
 import kotlinx.coroutines.CoroutineScope
@@ -144,6 +147,9 @@ class MovitProfileViewModel(
             MovitProfileEvent.SyncRepairCatalogClicked -> {
                 workScope.launch { repairCatalog() }
             }
+            MovitProfileEvent.SyncNowClicked -> {
+                workScope.launch { syncAllNow() }
+            }
         }
     }
 
@@ -161,36 +167,116 @@ class MovitProfileViewModel(
                 isFailed = entry.status == OutboxStatus.FAILED_PERMANENT,
             )
         }
-        _state.update { it.copy(syncItems = items) }
+        val lastOk = readLastSuccessfulSyncAt()
+        _state.update {
+            it.copy(
+                syncItems = items,
+                lastSuccessfulSyncAt = lastOk,
+            )
+        }
+    }
+
+    private fun readLastSuccessfulSyncAt(): String? {
+        if (!MovitData.isInstalled) return null
+        val store = MovitData.localStore
+        val cycle = MovitSyncTelemetry(store).readLastSyncCycle()
+        if (cycle != null && cycle.outcome != "success") {
+            // Still show last successful watermark when available.
+        }
+        return MovitSyncMetadataStore(store).readLastSyncTimestamp()
     }
 
     private suspend fun retryFailedSync() {
         if (!MovitData.isInstalled) return
-        _state.update { it.copy(isSyncBusy = true, syncStatusMessage = null) }
+        _state.update {
+            it.copy(
+                isSyncBusy = true,
+                syncStatusMessage = "profile_sync_syncing",
+                syncStatusMessageArg = null,
+            )
+        }
         val reset = MovitData.offlineWrites.retryFailedPermanent()
         refreshSyncSection()
         _state.update {
             it.copy(
                 isSyncBusy = false,
-                syncStatusMessage = if (reset > 0) "retry:$reset" else "retry:0",
+                syncStatusMessage = if (reset > 0) {
+                    "profile_sync_retry_done"
+                } else {
+                    "profile_sync_retry_none"
+                },
+                syncStatusMessageArg = if (reset > 0) reset.toString() else null,
             )
         }
     }
 
-    private suspend fun repairCatalog() {
+    private suspend fun syncAllNow() {
         if (!MovitData.isInstalled) return
-        _state.update { it.copy(isSyncBusy = true, syncStatusMessage = null) }
-        when (val result = MovitData.programFlow.repairExploreCatalog()) {
-            is AppResult.Success -> {
-                _state.update { it.copy(isSyncBusy = false, syncStatusMessage = "repair:ok") }
-            }
-            is AppResult.Failure -> {
-                _state.update {
-                    it.copy(isSyncBusy = false, syncStatusMessage = result.message)
-                }
-            }
+        _state.update {
+            it.copy(
+                isSyncBusy = true,
+                syncStatusMessage = "profile_sync_syncing",
+                syncStatusMessageArg = null,
+            )
+        }
+        val outcome = MovitData.sync.fullRefresh()
+        refreshSyncSection()
+        _state.update {
+            it.copy(
+                isSyncBusy = false,
+                syncStatusMessage = outcomeToStatusKey(outcome),
+                syncStatusMessageArg = null,
+                lastSuccessfulSyncAt = when (outcome) {
+                    is MovitSyncOrchestrator.SyncOutcome.Success ->
+                        readLastSuccessfulSyncAt() ?: it.lastSuccessfulSyncAt
+                    else -> it.lastSuccessfulSyncAt
+                },
+            )
         }
     }
+
+    /** R2: repair = full refresh (catalog + configs + messages), not explore-only. */
+    private suspend fun repairCatalog() {
+        if (!MovitData.isInstalled) return
+        _state.update {
+            it.copy(
+                isSyncBusy = true,
+                syncStatusMessage = "profile_sync_syncing",
+                syncStatusMessageArg = null,
+            )
+        }
+        val outcome = MovitData.sync.fullRefresh()
+        refreshSyncSection()
+        _state.update {
+            it.copy(
+                isSyncBusy = false,
+                syncStatusMessage = when (outcome) {
+                    is MovitSyncOrchestrator.SyncOutcome.Success -> "profile_sync_repair_done"
+                    else -> outcomeToStatusKey(outcome)
+                },
+                syncStatusMessageArg = null,
+                lastSuccessfulSyncAt = when (outcome) {
+                    is MovitSyncOrchestrator.SyncOutcome.Success ->
+                        readLastSuccessfulSyncAt() ?: it.lastSuccessfulSyncAt
+                    else -> it.lastSuccessfulSyncAt
+                },
+            )
+        }
+    }
+
+    private fun outcomeToStatusKey(outcome: MovitSyncOrchestrator.SyncOutcome): String =
+        when (outcome) {
+            is MovitSyncOrchestrator.SyncOutcome.Success -> "profile_sync_success"
+            is MovitSyncOrchestrator.SyncOutcome.Offline -> "profile_sync_failed_offline"
+            MovitSyncOrchestrator.SyncOutcome.Skipped -> "profile_sync_skipped"
+            is MovitSyncOrchestrator.SyncOutcome.Error -> when (outcome.kind) {
+                MovitSyncOrchestrator.SyncOutcome.ErrorKind.Network -> "profile_sync_failed_offline"
+                MovitSyncOrchestrator.SyncOutcome.ErrorKind.Http,
+                MovitSyncOrchestrator.SyncOutcome.ErrorKind.Decode,
+                MovitSyncOrchestrator.SyncOutcome.ErrorKind.Unknown,
+                -> "profile_sync_failed_server"
+            }
+        }
 
     private fun openSubscription() {
         if (!PlatformInfo.supportsInAppSubscription) {

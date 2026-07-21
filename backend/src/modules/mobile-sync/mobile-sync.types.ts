@@ -338,6 +338,12 @@ export interface SyncMeta {
     /** Stable-ish signal for message/audio/assignment changes beyond raw counts */
     fingerprint: string;
   };
+
+  /**
+   * True when authenticated user slices (preferences / programs / reports)
+   * failed to load — catalog + exercise configs are still returned.
+   */
+  userSlicesDegraded?: boolean;
 }
 
 // ============================================

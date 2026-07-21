@@ -27,7 +27,8 @@ export class RequestLoggingInterceptor implements NestInterceptor {
       tap(() => {
         const statusCode = httpContext.getResponse().statusCode;
         const duration = Date.now() - startTime;
-        const result = statusCode >= 200 && statusCode < 300 ? 'OK' : 'FAIL';
+        // 2xx + 3xx (incl. 304 NOT_MODIFIED) are success; failure from 400+.
+        const result = statusCode >= 200 && statusCode < 400 ? 'OK' : 'FAIL';
         console.log(
           `[${new Date().toISOString()}] ${method} ${path} | ${statusCode} ${result} | ${duration}ms | ${ip} | ${userAgent}`,
         );

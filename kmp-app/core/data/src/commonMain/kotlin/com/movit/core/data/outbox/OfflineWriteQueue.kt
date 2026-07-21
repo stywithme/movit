@@ -3,6 +3,7 @@ package com.movit.core.data.outbox
 import com.movit.core.data.local.MovitLocalStore
 import com.movit.core.data.platform.MovitPlatformBindings
 import com.movit.core.data.sync.MovitSyncTelemetry
+import com.movit.core.data.sync.SyncStatusBus
 import com.movit.core.network.MovitClock
 import com.movit.core.network.MovitJson
 import com.movit.core.network.MovitMobileApi
@@ -37,6 +38,7 @@ class OfflineWriteQueue(
     private val api: MovitMobileApi,
     private val platform: () -> MovitPlatformBindings,
     private val guestGate: GuestOutboxAttributionGate = GuestOutboxAttributionGate(localStore),
+    private val syncStatusBus: SyncStatusBus? = null,
 ) {
     private val dispatcher = OutboxDispatcher(api)
     private val telemetry = MovitSyncTelemetry(localStore)
@@ -220,6 +222,15 @@ class OfflineWriteQueue(
             return OutboxReplayResult(0, 0, 0, 0)
         }
 
+        syncStatusBus?.onOutboxReplayStarted()
+        return try {
+            replayPendingLockedInner(auth)
+        } finally {
+            syncStatusBus?.onOutboxReplayFinished()
+        }
+    }
+
+    private suspend fun replayPendingLockedInner(auth: String): OutboxReplayResult {
         localStore.recoverInFlightOutbox()
 
         val currentUserId = platform().userId()?.takeIf { it.isNotBlank() }

@@ -5,13 +5,19 @@ import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.disk.DiskCache
 import coil3.disk.directory
+import coil3.request.ImageRequest
 import coil3.request.crossfade
+
+private var movitCoilAppContext: Context? = null
+
+internal fun movitCoilApplicationContext(): Context? = movitCoilAppContext
 
 /**
  * F12 — installs Coil 3 singleton with a bounded disk cache for KMP Compose images.
  */
 fun installMovitCoilImageLoader(context: Context) {
     val appContext = context.applicationContext
+    movitCoilAppContext = appContext
     SingletonImageLoader.setSafe { ctx ->
         ImageLoader.Builder(ctx)
             .crossfade(true)

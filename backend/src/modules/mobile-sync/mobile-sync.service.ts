@@ -544,81 +544,94 @@ export const mobileSyncService = {
     let userPrograms: UserProgramExport[] | undefined;
     let plannedWorkoutReports: PlannedWorkoutReportExport[] | undefined;
     let userExercisePreferences: Awaited<ReturnType<typeof listUserExercisePreferences>> | undefined;
+    let userSlicesDegraded = false;
     if (userId) {
-      userExercisePreferences = await listUserExercisePreferences(userId);
-      for (const pref of userExercisePreferences) {
-        if (pref.updatedAt) watermarkCandidates.push(pref.updatedAt);
-      }
-
-      const userProgramWhere: Record<string, unknown> = { userId };
-      if (updatedAfterDate) {
-        userProgramWhere.updatedAt = { gt: updatedAfterDate };
-      }
-
-      const [userProgramRows, trainingProfile] = await Promise.all([
-        prisma.userProgram.findMany({
-          where: userProgramWhere,
-          orderBy: { updatedAt: 'desc' },
-        }),
-        prisma.trainingProfile.findUnique({
-          where: { userId },
-          select: { trainingWeekdays: true },
-        }),
-      ]);
-      const trainingWeekdays = trainingProfile?.trainingWeekdays ?? [];
-      userPrograms = userProgramRows.map((row) => {
-        watermarkCandidates.push(row.updatedAt);
-        if (row.customizationsUpdatedAt) watermarkCandidates.push(row.customizationsUpdatedAt);
-        return {
-          id: row.id,
-          programId: row.programId,
-          name: row.name ? toSyncLocalizedText(row.name as Record<string, unknown>) : undefined,
-          startDate: row.startDate.toISOString(),
-          isActive: row.isActive,
-          customizations: (row.customizations as Record<string, unknown>) || null,
-          updatedAt: row.updatedAt.toISOString(),
-          customizationsUpdatedAt: row.customizationsUpdatedAt?.toISOString() ?? null,
-          trainingWeekdays,
-        };
-      });
-
-      if (includeReports !== 'none') {
-        const reportWhere: Record<string, unknown> = {
-          userId,
-          status: 'completed',
-        };
-        if (updatedAfterDate) {
-          reportWhere.updatedAt = { gt: updatedAfterDate };
+      // B1-3: user-slice failure must not kill catalog / exercise configs.
+      try {
+        userExercisePreferences = await listUserExercisePreferences(userId);
+        for (const pref of userExercisePreferences) {
+          if (pref.updatedAt) watermarkCandidates.push(pref.updatedAt);
         }
-        const reportRows = await prisma.plannedWorkoutReport.findMany({
-          where: reportWhere,
-          orderBy: [{ weekNumber: 'asc' }, { dayNumber: 'asc' }],
-        });
-        plannedWorkoutReports = reportRows.map((r) => {
-          watermarkCandidates.push(r.updatedAt);
-          const base: PlannedWorkoutReportExport = {
-            id: r.id,
-            plannedWorkoutId: r.plannedWorkoutId,
-            programId: r.programId ?? '',
-            weekNumber: r.weekNumber,
-            dayNumber: r.dayNumber,
-            startedAt: r.startedAt.toISOString(),
-            completedAt: r.completedAt?.toISOString() ?? r.startedAt.toISOString(),
-            status: r.status,
-            totalDurationMs: r.totalDurationMs ?? 0,
-            totalExercises: r.totalExercises ?? 0,
-            totalSets: r.totalSets ?? 0,
-            completedSets: r.completedSets ?? 0,
-            totalReps: r.totalReps ?? 0,
-            avgAccuracy: r.avgAccuracy ?? 0,
-            avgFormScore: r.avgFormScore ?? undefined,
-            rpe: r.rpe ?? undefined,
+
+        const userProgramWhere: Record<string, unknown> = { userId };
+        if (updatedAfterDate) {
+          userProgramWhere.updatedAt = { gt: updatedAfterDate };
+        }
+
+        const [userProgramRows, trainingProfile] = await Promise.all([
+          prisma.userProgram.findMany({
+            where: userProgramWhere,
+            orderBy: { updatedAt: 'desc' },
+          }),
+          prisma.trainingProfile.findUnique({
+            where: { userId },
+            select: { trainingWeekdays: true },
+          }),
+        ]);
+        const trainingWeekdays = trainingProfile?.trainingWeekdays ?? [];
+        userPrograms = userProgramRows.map((row) => {
+          watermarkCandidates.push(row.updatedAt);
+          if (row.customizationsUpdatedAt) watermarkCandidates.push(row.customizationsUpdatedAt);
+          return {
+            id: row.id,
+            programId: row.programId,
+            name: row.name ? toSyncLocalizedText(row.name as Record<string, unknown>) : undefined,
+            startDate: row.startDate.toISOString(),
+            isActive: row.isActive,
+            customizations: (row.customizations as Record<string, unknown>) || null,
+            updatedAt: row.updatedAt.toISOString(),
+            customizationsUpdatedAt: row.customizationsUpdatedAt?.toISOString() ?? null,
+            trainingWeekdays,
           };
-          if (includeReports === 'full') {
-            base.report = r.report ?? undefined;
-          }
-          return base;
         });
+
+        if (includeReports !== 'none') {
+          const reportWhere: Record<string, unknown> = {
+            userId,
+            status: 'completed',
+          };
+          if (updatedAfterDate) {
+            reportWhere.updatedAt = { gt: updatedAfterDate };
+          }
+          const reportRows = await prisma.plannedWorkoutReport.findMany({
+            where: reportWhere,
+            orderBy: [{ weekNumber: 'asc' }, { dayNumber: 'asc' }],
+          });
+          plannedWorkoutReports = reportRows.map((r) => {
+            watermarkCandidates.push(r.updatedAt);
+            const base: PlannedWorkoutReportExport = {
+              id: r.id,
+              plannedWorkoutId: r.plannedWorkoutId,
+              programId: r.programId ?? '',
+              weekNumber: r.weekNumber,
+              dayNumber: r.dayNumber,
+              startedAt: r.startedAt.toISOString(),
+              completedAt: r.completedAt?.toISOString() ?? r.startedAt.toISOString(),
+              status: r.status,
+              totalDurationMs: r.totalDurationMs ?? 0,
+              totalExercises: r.totalExercises ?? 0,
+              totalSets: r.totalSets ?? 0,
+              completedSets: r.completedSets ?? 0,
+              totalReps: r.totalReps ?? 0,
+              avgAccuracy: r.avgAccuracy ?? 0,
+              avgFormScore: r.avgFormScore ?? undefined,
+              rpe: r.rpe ?? undefined,
+            };
+            if (includeReports === 'full') {
+              base.report = r.report ?? undefined;
+            }
+            return base;
+          });
+        }
+      } catch (error) {
+        userSlicesDegraded = true;
+        userPrograms = undefined;
+        plannedWorkoutReports = undefined;
+        userExercisePreferences = undefined;
+        console.error(
+          '[MobileSync] user slices failed — returning catalog without preferences/programs/reports:',
+          error,
+        );
       }
     }
 
@@ -650,6 +663,7 @@ export const mobileSyncService = {
         ...withLegacyWorkoutMetaAliases(totalWorkoutTemplates, workoutsExport.length),
         programsInResponse: filteredPrograms.length,
         messageLibraryStats,
+        ...(userSlicesDegraded ? { userSlicesDegraded: true } : {}),
       },
     };
   },
@@ -776,5 +790,32 @@ export const mobileSyncService = {
     }
     
     return files;
+  },
+
+  /**
+   * Single published exercise training config (R4).
+   * Same builder as /mobile/sync exercise payloads.
+   */
+  async getExerciseTrainingConfig(slug: string): Promise<ExerciseConfigWithMeta | null> {
+    const trimmed = slug?.trim();
+    if (!trimmed) return null;
+
+    const prisma = await getPrisma();
+    const exercise = await prisma.exercise.findFirst({
+      where: { slug: trimmed, status: 'published', deletedAt: null },
+      include: exerciseFullInclude,
+    });
+    if (!exercise) return null;
+
+    const config = buildExerciseConfig(exercise as Parameters<typeof buildExerciseConfig>[0], {
+      includeMessages: false,
+      includeAssignments: true,
+    });
+    return {
+      ...config,
+      id: exercise.id,
+      slug: exercise.slug,
+      updatedAt: exercise.updatedAt.toISOString(),
+    };
   },
 };

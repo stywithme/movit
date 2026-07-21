@@ -470,6 +470,21 @@ class MovitMobileApi(
         response.body<TrainingConfigApiResponse>()
     }
 
+    /**
+     * R4: per-exercise training config for TrainingConfigEnsure step 3.
+     * GET api/mobile/exercises/{slug}/training-config
+     */
+    suspend fun fetchExerciseTrainingConfig(
+        slug: String,
+        authorization: String? = null,
+    ): Result<TrainingConfigApiResponse> = runCatching {
+        val response = client.get(base("api/mobile/exercises/$slug/training-config")) {
+            applyBearerAuthorization(authorization)
+        }
+        ensureSuccess(response, "Exercise training config request failed")
+        response.body<TrainingConfigApiResponse>()
+    }
+
     suspend fun fetchWorkoutAudioManifest(
         slug: String,
         authorization: String? = null,

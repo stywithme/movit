@@ -244,4 +244,22 @@ describe('mobile-sync delta payload (P2.2)', () => {
 
     expect(new Date(res.timestamp).getTime()).toBeGreaterThanOrEqual(entityAt.getTime());
   });
+
+  it('B1-3: user-slice failure returns catalog with meta.userSlicesDegraded', async () => {
+    plannedWorkoutReportFindMany.mockRejectedValue(
+      Object.assign(new Error('P2022 column missing'), { code: 'P2022' }),
+    );
+
+    const res = await mobileSyncService.sync(
+      { updatedAfter: watermark, includeReports: 'summary' },
+      'http://localhost',
+      'user-1',
+    );
+
+    expect(res.success).toBe(true);
+    expect(res.data.exercises).toEqual([]);
+    expect(res.data.plannedWorkoutReports).toBeUndefined();
+    expect(res.data.userPrograms).toBeUndefined();
+    expect(res.meta.userSlicesDegraded).toBe(true);
+  });
 });

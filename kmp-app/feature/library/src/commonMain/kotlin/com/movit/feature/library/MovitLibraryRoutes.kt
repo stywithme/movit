@@ -357,6 +357,7 @@ fun ExercisePrepareRoute(
         state = state,
         onBack = onBack,
         onStart = { viewModel.onEvent(ExercisePrepareEvent.StartClicked(workoutId = workoutId)) },
+        onDownloadConfig = { viewModel.onEvent(ExercisePrepareEvent.DownloadConfigClicked) },
         onSkipRest = { viewModel.onEvent(ExercisePrepareEvent.SkipRest) },
         onToggleRestPause = { viewModel.onEvent(ExercisePrepareEvent.ToggleRestPause) },
         onAddRestTime = { viewModel.onEvent(ExercisePrepareEvent.AddRestTime) },

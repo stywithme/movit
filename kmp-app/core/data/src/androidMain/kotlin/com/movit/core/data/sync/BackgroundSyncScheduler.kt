@@ -35,7 +35,8 @@ actual object BackgroundSyncScheduler {
             ExistingPeriodicWorkPolicy.UPDATE,
             request,
         )
-        enqueueOneTimeSync(context, oneTimeConstraints())
+        // P0 / Option 1: do not enqueue one-time sync at cold start — races first Home frame.
+        // Delta sync is owned by the shell after post-first-frame (schedulePostFirstFrameWork).
     }
 
     actual fun cancel() {

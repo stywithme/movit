@@ -100,6 +100,7 @@ class ExercisePrepareViewModel(
     fun onEvent(event: ExercisePrepareEvent) {
         when (event) {
             is ExercisePrepareEvent.StartClicked -> requestTrainingStart(workoutId = event.workoutId)
+            ExercisePrepareEvent.DownloadConfigClicked -> downloadTrainingConfig()
             ExercisePrepareEvent.SkipRest -> skipRest()
             ExercisePrepareEvent.ToggleRestPause -> toggleRestPause()
             ExercisePrepareEvent.AddRestTime -> addRestTime()
@@ -204,6 +205,11 @@ class ExercisePrepareViewModel(
 
     fun requestTrainingStart(workoutId: String? = null) {
         if (_state.value.isEnsuringConfig || _state.value.isLaunching) return
+        // When config is missing, Start becomes Download — don't silent-block.
+        if (_state.value.trainingConfigUnavailableMessage != null) {
+            downloadTrainingConfig()
+            return
+        }
         // Preview must not start training or change workout start index.
         if (launchMode is ExercisePrepareMode.WorkoutPreview) {
             _effects.tryEmit(ExercisePrepareEffect.ReturnToWorkoutSession)
@@ -284,6 +290,17 @@ class ExercisePrepareViewModel(
             }
             _effects.emit(ExercisePrepareEffect.StartTraining(resolved))
             _startEffects.emit(resolved)
+        }
+    }
+
+    /** R3: explicit download action when config is missing — runs ensure with progress. */
+    fun downloadTrainingConfig() {
+        if (_state.value.isEnsuringConfig || _state.value.isLaunching) return
+        if (launchMode is ExercisePrepareMode.WorkoutPreview) return
+        val exercise = _state.value.displayExercise ?: return
+        val slug = exercise.legacyFileName.ifBlank { exercise.exerciseSlug }
+        viewModelScope.launch {
+            preflightConfig(slug = slug, workoutTemplateId = workoutId)
         }
     }
 

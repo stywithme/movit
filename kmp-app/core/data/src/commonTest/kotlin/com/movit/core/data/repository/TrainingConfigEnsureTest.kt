@@ -130,6 +130,101 @@ class TrainingConfigEnsureTest {
         assertEquals(1, exercises?.size)
     }
 
+    @Test
+    fun ensure_negativeCaches404_andSkipsRepeatWithinTtl() {
+        runBlocking {
+            TrainingConfigEnsureGate.resetForTests()
+            val store = InMemoryMovitLocalStore()
+            val repo = TrainingConfigRepository(store)
+            var syncHits = 0
+            var exerciseConfigHits = 0
+            val engine = MockEngine { request ->
+                when {
+                    request.url.encodedPath.contains("/exercises/") &&
+                        request.url.encodedPath.contains("training-config") -> {
+                        exerciseConfigHits++
+                        respond("{}", HttpStatusCode.NotFound, jsonHeaders)
+                    }
+                    request.url.encodedPath.contains("sync") -> {
+                        syncHits++
+                        respond(syncEmptyBody(), HttpStatusCode.OK, jsonHeaders)
+                    }
+                    request.url.encodedPath.contains("explore") ->
+                        respond(exploreOkBody(), HttpStatusCode.OK, jsonHeaders)
+                    request.url.encodedPath.contains("home") ->
+                        respond(homeOkBody(), HttpStatusCode.OK, jsonHeaders)
+                    else -> respond("{}", HttpStatusCode.NotFound, jsonHeaders)
+                }
+            }
+            val platform = FakeMovitPlatformBindings()
+            val api = testMobileApi(engine, platform)
+            val orchestrator = buildTestOrchestrator(api, platform, store, repo)
+
+            val first = repo.ensure(
+                slug = "bicep-curl",
+                sync = orchestrator,
+                api = api,
+                platform = platform,
+            )
+            val second = repo.ensure(
+                slug = "bicep-curl",
+                sync = orchestrator,
+                api = api,
+                platform = platform,
+            )
+
+            assertIs<TrainingConfigEnsureResult.Unavailable>(first)
+            assertIs<TrainingConfigEnsureResult.Unavailable>(second)
+            assertEquals(1, syncHits)
+            assertEquals(1, exerciseConfigHits)
+        }
+    }
+
+    @Test
+    fun ensure_appliesExerciseTrainingConfigEndpoint() {
+        runBlocking {
+            TrainingConfigEnsureGate.resetForTests()
+            val store = InMemoryMovitLocalStore()
+            val repo = TrainingConfigRepository(store)
+            val squatJson = readSquatFixture().withTrainingSlug("bodyweight-squat")
+            val engine = MockEngine { request ->
+                when {
+                    request.url.encodedPath.contains("/exercises/") &&
+                        request.url.encodedPath.contains("training-config") -> respond(
+                        """
+                        {
+                          "success": true,
+                          "data": $squatJson
+                        }
+                        """.trimIndent(),
+                        HttpStatusCode.OK,
+                        jsonHeaders,
+                    )
+                    request.url.encodedPath.contains("sync") ->
+                        respond(syncEmptyBody(), HttpStatusCode.OK, jsonHeaders)
+                    request.url.encodedPath.contains("explore") ->
+                        respond(exploreOkBody(), HttpStatusCode.OK, jsonHeaders)
+                    request.url.encodedPath.contains("home") ->
+                        respond(homeOkBody(), HttpStatusCode.OK, jsonHeaders)
+                    else -> respond("{}", HttpStatusCode.NotFound)
+                }
+            }
+            val platform = FakeMovitPlatformBindings()
+            val api = testMobileApi(engine, platform)
+            val orchestrator = buildTestOrchestrator(api, platform, store, repo)
+
+            val result = repo.ensure(
+                slug = "bodyweight-squat",
+                sync = orchestrator,
+                api = api,
+                platform = platform,
+            )
+
+            assertIs<TrainingConfigEnsureResult.Available>(result)
+            assertTrue(repo.supports("bodyweight-squat"))
+        }
+    }
+
     private fun seedSquat(repo: TrainingConfigRepository) {
         val json = readSquatFixture()
         val config = ExerciseConfigParser.parseConfigJson(json)

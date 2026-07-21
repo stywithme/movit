@@ -34,7 +34,10 @@ import com.movit.core.data.repository.TrainingSessionWriteCoordinator
 import com.movit.core.data.repository.WorkoutSessionSyncRepository
 import com.movit.core.data.sync.MovitCacheInvalidation
 import com.movit.core.data.sync.MovitSyncOrchestrator
+import com.movit.core.data.sync.SyncStatusBus
 import com.movit.core.data.sync.WeekOfflinePackPrefetcher
+import com.movit.core.data.readiness.BackgroundMediaPrefetcher
+import com.movit.core.data.readiness.DataReadinessGate
 import com.movit.core.network.MovitClock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -240,6 +243,9 @@ object MovitData {
     val audioPrefetch: AudioPrefetchRunner get() = koin().get()
     val offlineWrites: OfflineWriteQueue get() = koin().get()
     val sync: MovitSyncOrchestrator get() = koin().get()
+    val syncStatus: SyncStatusBus get() = koin().get()
+    val dataReadiness: DataReadinessGate get() = koin().get()
+    val backgroundMediaPrefetch: BackgroundMediaPrefetcher get() = koin().get()
     val weekOfflinePrefetch: WeekOfflinePackPrefetcher get() = koin().get()
     val guestOutboxGate: GuestOutboxAttributionGate get() = koin().get()
 

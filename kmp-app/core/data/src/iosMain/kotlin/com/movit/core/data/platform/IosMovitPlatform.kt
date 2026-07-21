@@ -52,12 +52,11 @@ class IosMovitPlatform(
 
     override fun isProUser(): Boolean = defaults.boolForKey(KEY_IS_PRO)
 
-    override fun activeUserProgramId(): String? {
-        if (MovitData.isInstalled) {
-            MovitData.plan.readCachedActiveUserProgramId()?.let { return it }
-        }
-        return defaults.stringForKey(KEY_ACTIVE_USER_PROGRAM_ID)?.takeIf { it.isNotBlank() }
-    }
+    // Raw cache only — must not call PlanSyncRepository (avoids StackOverflow with readCachedActiveUserProgramId).
+    override fun activeUserProgramId(): String? =
+        readCache(MovitCacheKeys.PROGRAM_STORE, MovitCacheKeys.ACTIVE_USER_PROGRAM_ID)
+            ?.takeIf { it.isNotBlank() }
+            ?: defaults.stringForKey(KEY_ACTIVE_USER_PROGRAM_ID)?.takeIf { it.isNotBlank() }
 
     override fun setActiveUserProgramId(userProgramId: String?) {
         if (MovitData.isInstalled) {
@@ -73,9 +72,11 @@ class IosMovitPlatform(
             }
         }
         if (userProgramId.isNullOrBlank()) {
+            removeCache(MovitCacheKeys.PROGRAM_STORE, MovitCacheKeys.ACTIVE_USER_PROGRAM_ID)
             defaults.removeObjectForKey(KEY_ACTIVE_USER_PROGRAM_ID)
         } else {
-            defaults.removeObjectForKey(KEY_ACTIVE_USER_PROGRAM_ID)
+            writeCache(MovitCacheKeys.PROGRAM_STORE, MovitCacheKeys.ACTIVE_USER_PROGRAM_ID, userProgramId)
+            defaults.setObject(userProgramId, KEY_ACTIVE_USER_PROGRAM_ID)
         }
     }
 

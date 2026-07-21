@@ -181,6 +181,7 @@ class MovitMobileApiContractTest {
         val auth = "Bearer token"
 
         api.fetchWorkoutTrainingConfig("wt-1", auth).getOrThrow()
+        api.fetchExerciseTrainingConfig("bicep_curl", auth).getOrThrow()
         api.fetchWorkoutAudioManifest("leg-day", auth).getOrThrow()
         api.fetchExerciseAudioManifest("squat", auth).getOrThrow()
         api.startPlannedWorkout(
@@ -208,6 +209,7 @@ class MovitMobileApiContractTest {
         assertEquals(1, explorePayload.executions.size)
         assertNotNull(explorePayload.executions.first().executionMetrics)
         assertTrue(paths.any { it.endsWith("/api/mobile/workout-templates/wt-1/training-config") })
+        assertTrue(paths.any { it.endsWith("/api/mobile/exercises/bicep_curl/training-config") })
         assertTrue(paths.any { it.endsWith("/api/mobile/workout-templates/leg-day/audio-manifest") })
         assertTrue(paths.any { it.endsWith("/api/mobile/exercises/squat/audio-manifest") })
         assertTrue(paths.any { it.endsWith("/api/mobile/planned-workouts/pw-1/start") })

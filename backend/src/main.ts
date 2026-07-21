@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import os from 'os';
 import { AppModule } from './app.module';
 import { RequestLoggingInterceptor } from './lib/interceptors/request-logging.interceptor';
+import { assertPrismaMigrationsApplied } from './lib/prisma/assert-migrations';
 
 function getLanIp(): string | null {
   const interfaces = os.networkInterfaces();
@@ -20,6 +21,8 @@ function getLanIp(): string | null {
 }
 
 async function bootstrap() {
+  assertPrismaMigrationsApplied();
+
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api');
   app.useGlobalInterceptors(new RequestLoggingInterceptor());

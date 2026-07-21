@@ -1,5 +1,6 @@
 package com.movit.feature.shell
 
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -13,9 +14,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.movit.core.data.MovitData
 import com.movit.designsystem.MovitTheme
 import com.movit.designsystem.MovitThemeMode
+import com.movit.designsystem.components.LocalMovitOnSyncStatusClick
+import com.movit.designsystem.components.LocalMovitSyncAvatarState
+import com.movit.designsystem.components.MovitSyncStatusSheet
+import com.movit.designsystem.components.MovitSyncStatusSheetModel
 import com.movit.resources.LocalMovitLanguage
 import com.movit.resources.MovitLocaleProvider
 import com.movit.resources.localizedString
+import com.movit.resources.movitText
 import com.movit.feature.account.MovitProfileViewModel
 import com.movit.feature.explore.MovitExploreViewModel
 import com.movit.feature.home.MovitHomeViewModel
@@ -39,6 +45,8 @@ fun MovitAppShellRoute(
     onShareText: (subject: String, text: String) -> Boolean = { _, _ -> false },
 ) {
     val shellState by shellViewModel.state.collectAsState()
+    val syncStatus by shellViewModel.syncStatus.collectAsState()
+    val syncAvatar = syncStatus.toAvatarState()
 
     ShellSyncLifecycleEffects(shellViewModel)
 
@@ -52,7 +60,13 @@ fun MovitAppShellRoute(
 
     MovitLocaleProvider(languageCode = language) {
         MovitTheme(themeMode = MovitThemeMode.fromStorageKey(shellState.themeMode)) {
-            MovitAppShellRouteContent(
+            CompositionLocalProvider(
+                LocalMovitSyncAvatarState provides syncAvatar,
+                LocalMovitOnSyncStatusClick provides {
+                    shellViewModel.onEvent(MovitAppShellEvent.SyncStatusSheetRequested)
+                },
+            ) {
+                MovitAppShellRouteContent(
                 shellViewModel = shellViewModel,
                 homeViewModel = homeViewModel,
                 trainViewModel = trainViewModel,
@@ -65,6 +79,7 @@ fun MovitAppShellRoute(
                 onLaunchPlatformSubscription = onLaunchPlatformSubscription,
                 onShareText = onShareText,
             )
+            }
         }
     }
 }
@@ -84,7 +99,23 @@ private fun MovitAppShellRouteContent(
     onShareText: (subject: String, text: String) -> Boolean,
 ) {
     val state by shellViewModel.state.collectAsState()
+    val syncStatus by shellViewModel.syncStatus.collectAsState()
+    val syncAvatar = syncStatus.toAvatarState()
     val language = LocalMovitLanguage.current
+
+    if (state.showSyncStatusSheet) {
+        MovitSyncStatusSheet(
+            model = MovitSyncStatusSheetModel(
+                title = movitText("sync_status_sheet_title"),
+                message = movitText(syncStatus.statusMessageKey()),
+                pendingOutbox = syncStatus.pendingOutbox,
+                failedOutbox = syncStatus.failedOutbox,
+                syncNowLabel = movitText("sync_status_sync_now"),
+            ),
+            onDismiss = { shellViewModel.onEvent(MovitAppShellEvent.SyncStatusSheetDismissed) },
+            onSyncNow = { shellViewModel.onEvent(MovitAppShellEvent.SyncNowClicked) },
+        )
+    }
 
     var deferredDataRefresh by remember { mutableStateOf(false) }
 
@@ -168,6 +199,8 @@ private fun MovitAppShellRouteContent(
         snackbarHostState = snackbarHostState,
         onTrainEffect = onTrainEffect,
         onShellEffect = shellViewModel::emitShellEffect,
+        syncAvatarState = syncStatus.toAvatarState(),
+        onSyncStatusClick = { shellViewModel.onEvent(MovitAppShellEvent.SyncStatusSheetRequested) },
     )
 }
 

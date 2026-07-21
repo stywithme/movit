@@ -62,6 +62,22 @@ class ProgramDetailViewModelTest {
     }
 
     @Test
+    fun load_withoutEnrollment_doesNotCrash() = kotlinx.coroutines.runBlocking {
+        // R1 regression: ProgramDetail must open when there is no active enrollment.
+        val viewModel = ProgramDetailViewModel(
+            programId = "program-starter",
+            repository = FakeProgramLibraryRepository(sampleProgram),
+            activeUserProgramIdProvider = { null },
+        )
+        viewModel.load()
+
+        val state = viewModel.state.value
+        assertEquals("Starter Strength Plan", state.title)
+        assertEquals(false, state.enrollment.isEnrolled)
+        assertTrue(state.edit.daySessions.isEmpty())
+    }
+
+    @Test
     fun weekSelection_updatesSelectedWeek() = kotlinx.coroutines.runBlocking {
         val viewModel = ProgramDetailViewModel(
             programId = "program-starter",

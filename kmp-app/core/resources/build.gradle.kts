@@ -45,6 +45,7 @@ val generateMovitEnglishStrings by tasks.registering {
             entryRegex.findAll(xml).forEach { match ->
                 val name = match.groupValues[1]
                 val unescaped = match.groupValues[2]
+                    .removeSurrounding("\"")
                     .replace("\\'", "'")
                     .replace("\\\"", "\"")
                     .replace("\\n", "\n")

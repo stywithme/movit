@@ -148,6 +148,42 @@ class PlanSyncRepositoryTest {
         }
     }
 
+    @Test
+    fun readCachedActiveUserProgramId_emptyStore_returnsNullWithoutRecursion() {
+        // R1 regression: platform must read raw cache only (not call PlanSyncRepository).
+        val platform = object : FakeMovitPlatformBindings(userProgramId = null) {
+            override fun activeUserProgramId(): String? =
+                readCache(MovitCacheKeys.PROGRAM_STORE, MovitCacheKeys.ACTIVE_USER_PROGRAM_ID)
+                    ?.takeIf { it.isNotBlank() }
+        }
+        val engine = MockEngine { respond("", HttpStatusCode.NotFound) }
+        val api = testMobileApi(engine, platform)
+        val localStore = testLocalStore(platform)
+        val repo = planSyncRepository(api, platform, localStore)
+
+        assertEquals(null, repo.readCachedActiveUserProgramId())
+    }
+
+    @Test
+    fun readCachedActiveUserProgramId_fallsBackToRawPlatformCache() {
+        val platform = object : FakeMovitPlatformBindings(userProgramId = null) {
+            override fun activeUserProgramId(): String? =
+                readCache(MovitCacheKeys.PROGRAM_STORE, MovitCacheKeys.ACTIVE_USER_PROGRAM_ID)
+                    ?.takeIf { it.isNotBlank() }
+        }
+        platform.writeCache(
+            MovitCacheKeys.PROGRAM_STORE,
+            MovitCacheKeys.ACTIVE_USER_PROGRAM_ID,
+            "up-raw",
+        )
+        val engine = MockEngine { respond("", HttpStatusCode.NotFound) }
+        val api = testMobileApi(engine, platform)
+        val localStore = testLocalStore(platform)
+        val repo = planSyncRepository(api, platform, localStore)
+
+        assertEquals("up-raw", repo.readCachedActiveUserProgramId())
+    }
+
     private fun jsonHeaders() = headersOf(
         HttpHeaders.ContentType,
         "application/json",

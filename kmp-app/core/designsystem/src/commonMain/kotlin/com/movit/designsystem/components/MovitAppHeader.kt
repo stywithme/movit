@@ -36,6 +36,8 @@ fun MovitAppHeader(
     hasUnreadNotifications: Boolean = false,
     onNotificationClick: (() -> Unit)? = null,
     onProfileClick: (() -> Unit)? = null,
+    syncAvatarState: MovitSyncAvatarState? = null,
+    onSyncStatusClick: (() -> Unit)? = null,
     actions: @Composable () -> Unit = {},
 ) {
     when (variant) {
@@ -49,6 +51,8 @@ fun MovitAppHeader(
             hasUnreadNotifications = hasUnreadNotifications,
             onNotificationClick = onNotificationClick,
             onProfileClick = onProfileClick,
+            syncAvatarState = syncAvatarState,
+            onSyncStatusClick = onSyncStatusClick,
             actions = actions,
         )
         MovitHeaderVariant.TabPage -> TabPageAppHeader(
@@ -57,6 +61,8 @@ fun MovitAppHeader(
             pageTitle = pageTitle,
             pageSubtitle = pageSubtitle,
             onProfileClick = onProfileClick,
+            syncAvatarState = syncAvatarState,
+            onSyncStatusClick = onSyncStatusClick,
             actions = actions,
         )
     }
@@ -73,6 +79,8 @@ private fun HomeAppHeader(
     hasUnreadNotifications: Boolean,
     onNotificationClick: (() -> Unit)?,
     onProfileClick: (() -> Unit)?,
+    syncAvatarState: MovitSyncAvatarState?,
+    onSyncStatusClick: (() -> Unit)?,
     actions: @Composable () -> Unit,
 ) {
     Row(
@@ -84,6 +92,8 @@ private fun HomeAppHeader(
         ProfileAvatarSurface(
             userName = userName,
             onClick = onProfileClick,
+            syncAvatarState = syncAvatarState,
+            onSyncStatusClick = onSyncStatusClick,
         )
 
         Column(
@@ -125,6 +135,8 @@ private fun TabPageAppHeader(
     pageTitle: String?,
     pageSubtitle: String?,
     onProfileClick: (() -> Unit)?,
+    syncAvatarState: MovitSyncAvatarState?,
+    onSyncStatusClick: (() -> Unit)?,
     actions: @Composable () -> Unit,
 ) {
     Row(
@@ -149,6 +161,8 @@ private fun TabPageAppHeader(
             ProfileAvatarSurface(
                 userName = userName,
                 onClick = onProfileClick,
+                syncAvatarState = syncAvatarState,
+                onSyncStatusClick = onSyncStatusClick,
             )
         }
     }
@@ -178,7 +192,18 @@ private fun HeaderTitleBlock(
 private fun ProfileAvatarSurface(
     userName: String,
     onClick: (() -> Unit)?,
+    syncAvatarState: MovitSyncAvatarState? = null,
+    onSyncStatusClick: (() -> Unit)? = null,
 ) {
+    if (syncAvatarState != null) {
+        MovitSyncStatusAvatar(
+            userName = userName,
+            state = syncAvatarState,
+            onClick = onClick,
+            onStatusClick = onSyncStatusClick,
+        )
+        return
+    }
     if (onClick != null) {
         Surface(
             onClick = onClick,

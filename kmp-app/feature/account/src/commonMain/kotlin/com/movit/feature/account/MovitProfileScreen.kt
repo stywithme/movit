@@ -140,6 +140,9 @@ fun MovitProfileScreen(
                         profile = state.profile,
                         syncItems = state.syncItems,
                         isSyncBusy = state.isSyncBusy,
+                        syncStatusMessage = state.syncStatusMessage,
+                        syncStatusMessageArg = state.syncStatusMessageArg,
+                        lastSuccessfulSyncAt = state.lastSuccessfulSyncAt,
                         onEvent = onEvent,
                     )
                 }
@@ -153,6 +156,9 @@ private fun ProfileContent(
     profile: ProfileUi,
     syncItems: List<ProfileSyncItemUi>,
     isSyncBusy: Boolean,
+    syncStatusMessage: String?,
+    syncStatusMessageArg: String?,
+    lastSuccessfulSyncAt: String?,
     onEvent: (MovitProfileEvent) -> Unit,
 ) {
     ProfileHero(profile = profile, onEvent = onEvent)
@@ -183,6 +189,31 @@ private fun ProfileContent(
     val trainingProfileA11y = movitText("profile_training_profile_a11y")
 
     SettingsGroup(title = movitText("profile_sync")) {
+        MovitListRow(
+            title = if (isSyncBusy) {
+                movitText("profile_sync_syncing")
+            } else {
+                movitText("profile_sync_now")
+            },
+            onClick = { if (!isSyncBusy) onEvent(MovitProfileEvent.SyncNowClicked) },
+        )
+        if (lastSuccessfulSyncAt != null) {
+            MovitListRow(
+                title = movitText("profile_sync_last_ok", lastSuccessfulSyncAt),
+                showChevron = false,
+            )
+        }
+        if (syncStatusMessage != null) {
+            val statusText = if (syncStatusMessageArg != null) {
+                movitText(syncStatusMessage, syncStatusMessageArg)
+            } else {
+                movitText(syncStatusMessage)
+            }
+            MovitListRow(
+                title = statusText,
+                showChevron = false,
+            )
+        }
         if (syncItems.isEmpty()) {
             MovitListRow(
                 title = movitText("profile_sync_pending_empty"),

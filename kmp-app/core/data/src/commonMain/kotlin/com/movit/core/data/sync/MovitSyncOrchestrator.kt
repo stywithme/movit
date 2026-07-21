@@ -27,13 +27,19 @@ import com.movit.core.network.dto.ExploreDataDto
 import com.movit.core.network.dto.HomeDataDto
 import com.movit.core.network.dto.MobileSyncApiResponse
 import com.movit.core.network.dto.ReportsDashboardApiResponse
+import com.movit.core.network.dto.SyncMessageTemplateDto
 import com.movit.core.network.dto.SyncMetaDto
 import com.movit.shared.AppResult
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 
 class MovitSyncOrchestrator(
@@ -55,6 +61,9 @@ class MovitSyncOrchestrator(
     private val dayCustomizationLocalStore: DayCustomizationLocalStore,
     private val messageLibraryCache: MessageLibraryCache,
     private val userProgramEnrollmentLocalStore: UserProgramEnrollmentLocalStore,
+    private val syncStatusBus: SyncStatusBus? = null,
+  /** P2 / Option 2: deferred message-library writes (delta + warm cache). Tests may pass [runBlocking]. */
+    private val deferredApplyScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
     sealed class SyncOutcome {
         data class Success(
@@ -92,6 +101,8 @@ class MovitSyncOrchestrator(
 
     private val syncMutex = Mutex()
     private var lastSyncAttemptMs = 0L
+    /** B3: after HTTP 5xx, suppress forceCheck sync attempts until this epoch ms. */
+    private var httpErrorCooldownUntilMs = 0L
     private val telemetry = MovitSyncTelemetry(localStore)
 
     private val _cacheInvalidated = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
@@ -117,27 +128,36 @@ class MovitSyncOrchestrator(
     suspend fun syncIfNeeded(
         forceCheck: Boolean = false,
         minIntervalMs: Long = DEFAULT_MIN_SYNC_INTERVAL_MS,
+        /** Manual "Sync now" / fullRefresh passes true to bypass the 5xx cooldown. */
+        bypassHttpCooldown: Boolean = false,
     ): SyncOutcome {
         if (!forceCheck && shouldSkipSync(minIntervalMs)) return SyncOutcome.Skipped
+        // B3: cooldown after 5xx — ensure forceCheck still respects it; profile Sync now uses fullRefresh.
+        if (!bypassHttpCooldown && isInHttpErrorCooldown()) return SyncOutcome.Skipped
         if (!beginSync()) return SyncOutcome.Skipped
 
         lastSyncAttemptMs = currentTimeMs()
+        syncStatusBus?.onSyncStarted()
         return try {
-            runSyncCycle(
+            val outcome = runSyncCycle(
                 forceFullRefresh = false,
                 reason = "syncIfNeeded",
                 escalatedToFull = false,
             )
+            syncStatusBus?.onSyncFinished(outcome)
+            outcome
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
-            outcomeFromThrowable(
+            val outcome = outcomeFromThrowable(
                 error = e,
                 reason = "syncIfNeeded",
                 forceFullRefresh = false,
                 updatedAfter = metadataStore.readLastSyncTimestamp(),
                 escalatedToFull = false,
             )
+            syncStatusBus?.onSyncFinished(outcome)
+            outcome
         } finally {
             endSync()
         }
@@ -147,25 +167,32 @@ class MovitSyncOrchestrator(
         if (TrainingSessionSyncGate.trainingSessionActive) {
             return SyncOutcome.Skipped
         }
+        // Manual sync clears HTTP cooldown (B3 exception for profile "Sync all now").
+        httpErrorCooldownUntilMs = 0L
         if (!beginSync()) return SyncOutcome.Skipped
 
         lastSyncAttemptMs = currentTimeMs()
+        syncStatusBus?.onSyncStarted()
         return try {
-            runSyncCycle(
+            val outcome = runSyncCycle(
                 forceFullRefresh = true,
                 reason = "fullRefresh",
                 escalatedToFull = false,
             )
+            syncStatusBus?.onSyncFinished(outcome)
+            outcome
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
-            outcomeFromThrowable(
+            val outcome = outcomeFromThrowable(
                 error = e,
                 reason = "fullRefresh",
                 forceFullRefresh = true,
                 updatedAfter = null,
                 escalatedToFull = false,
             )
+            syncStatusBus?.onSyncFinished(outcome)
+            outcome
         } finally {
             endSync()
         }
@@ -299,7 +326,9 @@ class MovitSyncOrchestrator(
                 }
             }
 
-            // P2.7: atomic catalog/config/explore apply (SQLDelight transaction; InMemory passthrough).
+            // P2 / Option 2: critical path only inside one DB transaction — explore, configs,
+            // catalog exports, system messages, user slices. Message library (~2.6k JSON) is
+            // applied after the transaction closes (full sync) or deferred after Success (delta).
             localStore.transaction {
                 trainingConfig.applySyncExercises(
                     exercises = payload.exercises,
@@ -316,16 +345,6 @@ class MovitSyncOrchestrator(
                         isFullSync = isFullSync,
                     )
                 }
-                if (payload.messageLibrary.isNotEmpty()) {
-                    if (isFullSync) {
-                        messageLibraryCache.replaceFull(payload.messageLibrary)
-                    } else {
-                        messageLibraryCache.mergePartial(payload.messageLibrary)
-                    }
-                    trainingConfig.applySyncMessageLibrary(
-                        messageLibrary = messageLibraryCache.read(),
-                    )
-                }
                 exploreData = exploreSync.applyFromSync(payload, isFullSync)
                 val catalogReport = catalogOffline.applyFromSync(payload, isFullSync)
                 if (isFullSync && !catalogReport.isComplete) {
@@ -340,21 +359,26 @@ class MovitSyncOrchestrator(
                     exploreSync.writeExploreLastSync(syncResponse.timestamp)
                 }
             }
+
+            val libraryPayload = payload.messageLibrary
+            val deferLibrary = shouldDeferMessageLibraryApply(isFullSync, libraryPayload)
+            if (libraryPayload.isNotEmpty() && !deferLibrary) {
+                applyMessageLibraryFromSync(libraryPayload, isFullSync)
+                writeMessageLibraryStatsFromSync(syncResponse, libraryPayload)
+            }
         }
 
         metadataStore.writeFromSyncMeta(syncResponse.meta)
         if (syncResponse.timestamp.isNotBlank()) {
             metadataStore.writeLastSyncTimestamp(syncResponse.timestamp)
         }
-        syncResponse.meta?.messageLibraryStats?.let(metadataStore::writeMessageStats)
-            ?: syncResponse.data?.messageLibrary?.takeIf { it.isNotEmpty() }?.let { library ->
-                metadataStore.writeMessageStats(
-                    trainingConfig.computeMessageLibraryStats(
-                        messageLibrary = library,
-                        assignmentsInCachedExercises = trainingConfig.countMessageAssignmentsInCache(),
-                    ),
-                )
-            }
+        val deferredLibrary = syncResponse.data?.messageLibrary
+            ?.takeIf { it.isNotEmpty() && shouldDeferMessageLibraryApply(isFullSync, it) }
+        if (deferredLibrary != null) {
+            scheduleDeferredMessageLibraryApply(syncResponse, deferredLibrary, isFullSync)
+        } else if (syncResponse.data?.messageLibrary.isNullOrEmpty()) {
+            syncResponse.meta?.messageLibraryStats?.let(metadataStore::writeMessageStats)
+        }
 
         planSync.refreshActiveUserProgramId()
 
@@ -439,6 +463,10 @@ class MovitSyncOrchestrator(
             escalatedToFull = escalatedToFull,
             outcome = outcome,
         )
+        if (outcome is SyncOutcome.Error && outcome.kind == SyncOutcome.ErrorKind.Http) {
+            // B3: 30–60s cooldown after 5xx/HTTP errors from sync (45s mid-point).
+            httpErrorCooldownUntilMs = currentTimeMs() + HTTP_ERROR_COOLDOWN_MS
+        }
         return outcome
     }
 
@@ -530,6 +558,60 @@ class MovitSyncOrchestrator(
         return isFullSync
     }
 
+    /**
+     * Full sync / empty local library must block until persisted (bootstrap CoreReady).
+     * Delta with warm cache can defer — merge-on-read keeps exercise configs correct.
+     */
+    private fun shouldDeferMessageLibraryApply(
+        isFullSync: Boolean,
+        incoming: List<SyncMessageTemplateDto>,
+    ): Boolean {
+        if (incoming.isEmpty()) return false
+        if (isFullSync || messageLibraryCache.read().isEmpty()) return false
+        return true
+    }
+
+    private fun applyMessageLibraryFromSync(
+        templates: List<SyncMessageTemplateDto>,
+        isFullSync: Boolean,
+    ) {
+        if (templates.isEmpty()) return
+        if (isFullSync) {
+            messageLibraryCache.replaceFull(templates)
+        } else {
+            messageLibraryCache.mergePartial(templates)
+        }
+        // F5 / Splash hang: do NOT eagerly rewrite every exercise config here.
+        // Merge-on-read covers correctness without N× full-library rewrites.
+    }
+
+    private fun writeMessageLibraryStatsFromSync(
+        syncResponse: MobileSyncApiResponse,
+        library: List<SyncMessageTemplateDto>,
+    ) {
+        syncResponse.meta?.messageLibraryStats?.let(metadataStore::writeMessageStats)
+            ?: library.takeIf { it.isNotEmpty() }?.let { templates ->
+                metadataStore.writeMessageStats(
+                    trainingConfig.computeMessageLibraryStats(
+                        messageLibrary = templates,
+                        assignmentsInCachedExercises = trainingConfig.countMessageAssignmentsInCache(),
+                    ),
+                )
+            }
+    }
+
+    private fun scheduleDeferredMessageLibraryApply(
+        syncResponse: MobileSyncApiResponse,
+        templates: List<SyncMessageTemplateDto>,
+        isFullSync: Boolean,
+    ) {
+        deferredApplyScope.launch {
+            applyMessageLibraryFromSync(templates, isFullSync)
+            writeMessageLibraryStatsFromSync(syncResponse, templates)
+            notifyCacheInvalidated()
+        }
+    }
+
     private fun needsTrainingConfigBackfill(meta: SyncMetaDto?): Boolean {
         if (meta == null) return false
         val serverExercises = meta.totalExercises
@@ -553,6 +635,9 @@ class MovitSyncOrchestrator(
         return currentTimeMs() - lastSyncAttemptMs < minIntervalMs
     }
 
+    private fun isInHttpErrorCooldown(): Boolean =
+        httpErrorCooldownUntilMs > 0L && currentTimeMs() < httpErrorCooldownUntilMs
+
     /** Atomic try-lock — prevents concurrent sync cycles (H14). */
     private fun beginSync(): Boolean = syncMutex.tryLock()
 
@@ -562,6 +647,8 @@ class MovitSyncOrchestrator(
 
     companion object {
         const val DEFAULT_MIN_SYNC_INTERVAL_MS = 5 * 60 * 1000L
+        /** B3: mid-point of 30–60s after HTTP sync failures. */
+        const val HTTP_ERROR_COOLDOWN_MS = 45_000L
     }
 }
 

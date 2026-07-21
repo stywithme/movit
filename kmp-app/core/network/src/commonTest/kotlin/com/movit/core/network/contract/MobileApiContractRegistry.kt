@@ -88,6 +88,7 @@ object MobileApiContractRegistry {
         "GET api/mobile/progression/session/{sessionId}",
         // Phase 07 training block (WS-1)
         "GET api/mobile/workout-templates/{id}/training-config",
+        "GET api/mobile/exercises/{slug}/training-config",
         "GET api/mobile/workout-templates/{slug}/audio-manifest",
         "GET api/mobile/exercises/{slug}/audio-manifest",
         "POST api/mobile/planned-workouts/{workoutId}/start",

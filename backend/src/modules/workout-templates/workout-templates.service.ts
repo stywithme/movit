@@ -746,37 +746,39 @@ export const workoutService = {
    * Get full training configuration for a workout.
    * Returns everything the mobile training engine needs to run the workout:
    * exercise data, pose variants, tracking config, position checks, etc.
+   *
+   * Resolves by UUID id first, then falls back to slug (mobile may send either).
    */
-  async getTrainingConfig(workoutId: string) {
+  async getTrainingConfig(idOrSlug: string) {
     const prisma = await getPrisma();
+    const trimmed = idOrSlug?.trim();
+    if (!trimmed) return null;
 
-    const workout = await prisma.workoutTemplate.findUnique({
-      where: { id: workoutId, status: 'published', deletedAt: null },
-      include: {
+    const include = {
         level: {
           select: { id: true, number: true, code: true, name: true },
         },
         phases: {
-          orderBy: { sortOrder: 'asc' },
+          orderBy: { sortOrder: 'asc' as const },
           include: {
             phase: true,
             exercises: {
-              orderBy: { sortOrder: 'asc' },
+              orderBy: { sortOrder: 'asc' as const },
               include: {
                 exercise: {
                   include: {
                     poseVariants: {
-                      orderBy: { sortOrder: 'asc' },
+                      orderBy: { sortOrder: 'asc' as const },
                       include: {
                         posePosition: {
                           select: { id: true, code: true, name: true, postures: true, directions: true },
                         },
                         difficultyLevels: {
-                          orderBy: { sortOrder: 'asc' },
+                          orderBy: { sortOrder: 'asc' as const },
                           include: { difficultyType: { select: { code: true, name: true } } },
                         },
                         positionChecks: {
-                          orderBy: { sortOrder: 'asc' },
+                          orderBy: { sortOrder: 'asc' as const },
                         },
                         messageAssignments: {
                           include: { message: { select: { content: true, category: true, context: true } } },
@@ -793,22 +795,22 @@ export const workoutService = {
           },
         },
         exercises: {
-          orderBy: { sortOrder: 'asc' },
+          orderBy: { sortOrder: 'asc' as const },
           include: {
             exercise: {
               include: {
                 poseVariants: {
-                  orderBy: { sortOrder: 'asc' },
+                  orderBy: { sortOrder: 'asc' as const },
                   include: {
                     posePosition: {
                       select: { id: true, code: true, name: true, postures: true, directions: true },
                     },
                     difficultyLevels: {
-                      orderBy: { sortOrder: 'asc' },
+                      orderBy: { sortOrder: 'asc' as const },
                       include: { difficultyType: { select: { code: true, name: true } } },
                     },
                     positionChecks: {
-                      orderBy: { sortOrder: 'asc' },
+                      orderBy: { sortOrder: 'asc' as const },
                     },
                     messageAssignments: {
                       include: { message: { select: { content: true, category: true, context: true } } },
@@ -822,8 +824,19 @@ export const workoutService = {
             },
           },
         },
-      },
+    };
+
+    // Prefer exact id match, then slug (same key often used interchangeably by clients).
+    let workout = await prisma.workoutTemplate.findFirst({
+      where: { id: trimmed, status: 'published', deletedAt: null },
+      include,
     });
+    if (!workout) {
+      workout = await prisma.workoutTemplate.findFirst({
+        where: { slug: trimmed, status: 'published', deletedAt: null },
+        include,
+      });
+    }
 
     if (!workout) return null;
 

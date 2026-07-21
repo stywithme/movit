@@ -3,7 +3,9 @@ package com.movit.core.network.dto
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 
-// ── Training config (GET workout-templates/{id}/training-config) ───────────────
+// ── Training config ────────────────────────────────────────────────────────────
+// GET workout-templates/{id|slug}/training-config
+// GET exercises/{slug}/training-config (R4 standalone ensure)
 
 @Serializable
 data class TrainingConfigApiResponse(

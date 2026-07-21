@@ -3,6 +3,7 @@ import type { Request, Response } from 'express';
 import { verifyMobileToken } from '@/modules/auth/auth.service';
 import { exerciseService } from '@/modules/exercises/exercises.service';
 import { buildAudioManifestForExerciseSlug } from './mobile-audio-manifest.service';
+import { mobileSyncService } from './mobile-sync.service';
 
 @Controller('mobile/exercises')
 export class MobileExercisesController {
@@ -30,6 +31,40 @@ export class MobileExercisesController {
       console.error('[MobileExercises] substitutions:', error);
       res.status(500);
       return { success: false, error: 'Failed to fetch substitutions' };
+    }
+  }
+
+  /**
+   * Full training config for one published exercise (standalone ensure path).
+   * GET /mobile/exercises/:slug/training-config
+   */
+  @Get(':slug/training-config')
+  async trainingConfig(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+    @Param('slug') slug: string,
+  ) {
+    try {
+      const authResult = await verifyMobileToken(req);
+      if (!authResult.success || !authResult.userId) {
+        res.status(401);
+        return { success: false, error: authResult.error || 'Unauthorized' };
+      }
+      const trimmed = slug?.trim();
+      if (!trimmed) {
+        res.status(400);
+        return { success: false, error: 'slug is required' };
+      }
+      const config = await mobileSyncService.getExerciseTrainingConfig(trimmed);
+      if (!config) {
+        res.status(404);
+        return { success: false, error: 'Exercise not found or not published' };
+      }
+      return { success: true, data: config };
+    } catch (error) {
+      console.error('[MobileExercises] training-config:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to fetch exercise training config' };
     }
   }
 

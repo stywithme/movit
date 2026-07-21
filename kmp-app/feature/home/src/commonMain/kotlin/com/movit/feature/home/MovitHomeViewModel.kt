@@ -55,7 +55,10 @@ class MovitHomeViewModel(
         }
         repository.observeDashboard().collect { cacheState ->
             when (cacheState) {
-                is CacheState.Cached -> applyDashboard(cacheState.value)
+                is CacheState.Cached -> {
+                    applyDashboard(cacheState.value)
+                    println("[MovitHomeFirstFrame] source=cache")
+                }
                 is CacheState.Fresh -> applyDashboard(cacheState.value)
                 is CacheState.Error -> {
                     if (_state.value.metricTiles.isEmpty() &&

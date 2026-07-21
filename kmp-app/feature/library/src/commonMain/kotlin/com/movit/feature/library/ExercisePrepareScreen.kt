@@ -64,6 +64,7 @@ fun ExercisePrepareScreen(
     state: ExercisePrepareUiState,
     onBack: () -> Unit,
     onStart: () -> Unit,
+    onDownloadConfig: () -> Unit = onStart,
     onSkipRest: () -> Unit,
     onToggleRestPause: () -> Unit,
     onAddRestTime: () -> Unit,
@@ -101,12 +102,15 @@ fun ExercisePrepareScreen(
         bottomBar = {
             when {
                 state.phase == ExercisePreparePhase.Prepare && state.exercise != null -> {
+                    val needsDownload = state.trainingConfigUnavailableMessage != null &&
+                        !state.isPreviewOnly
                     PrepareStartDock(
                         sessionSummary = state.exercise.sessionSummary,
-                        onStart = onStart,
+                        onStart = if (needsDownload) onDownloadConfig else onStart,
                         enabled = !state.isEnsuringConfig && !state.isLaunching,
                         isEnsuringConfig = state.isEnsuringConfig || state.isLaunching,
                         isPreviewOnly = state.isPreviewOnly,
+                        needsConfigDownload = needsDownload,
                         modifier = Modifier.padding(MovitSpacing.lg),
                     )
                 }
@@ -450,6 +454,7 @@ private fun PrepareStartDock(
     enabled: Boolean,
     isEnsuringConfig: Boolean,
     isPreviewOnly: Boolean = false,
+    needsConfigDownload: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     MovitCard(
@@ -468,6 +473,7 @@ private fun PrepareStartDock(
                         when {
                             isPreviewOnly -> "prepare_preview_hint"
                             isEnsuringConfig -> "session_cta_preparing"
+                            needsConfigDownload -> "training_config_unavailable_title"
                             else -> "session_ready_to_train"
                         },
                     ),
@@ -485,13 +491,18 @@ private fun PrepareStartDock(
                     when {
                         isPreviewOnly -> "prepare_back_to_workout"
                         isEnsuringConfig -> "training_config_ensuring"
+                        needsConfigDownload -> "training_config_download_setup"
                         else -> "session_start"
                     },
                 ),
                 onClick = onStart,
                 variant = MovitButtonVariant.Filled,
                 enabled = enabled || isPreviewOnly,
-                leadingIcon = Icons.Default.PlayArrow,
+                leadingIcon = if (needsConfigDownload && !isEnsuringConfig) {
+                    null
+                } else {
+                    Icons.Default.PlayArrow
+                },
             )
         }
     }

@@ -32,4 +32,5 @@ sealed interface MovitProfileEvent {
     data object TrainingDebugLabClicked : MovitProfileEvent
     data object SyncRetryClicked : MovitProfileEvent
     data object SyncRepairCatalogClicked : MovitProfileEvent
+    data object SyncNowClicked : MovitProfileEvent
 }

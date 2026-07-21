@@ -37,7 +37,10 @@ import com.movit.core.data.journal.SessionJournalStore
 import com.movit.core.data.repository.TrainingSessionWriteCoordinator
 import com.movit.core.data.repository.WorkoutSessionSyncRepository
 import com.movit.core.data.sync.MovitSyncOrchestrator
+import com.movit.core.data.sync.SyncStatusBus
 import com.movit.core.data.sync.WeekOfflinePackPrefetcher
+import com.movit.core.data.readiness.BackgroundMediaPrefetcher
+import com.movit.core.data.readiness.DataReadinessGate
 import com.movit.core.network.MovitAuthTokenStore
 import com.movit.core.network.MovitBillingApi
 import com.movit.core.network.MovitHttpClientConfig
@@ -95,12 +98,14 @@ fun movitDataModule(
         )
     }
     single { com.movit.core.data.outbox.GuestOutboxAttributionGate(get()) }
+    single { SyncStatusBus(platform = { get() }, localStore = get()) }
     single {
         OfflineWriteQueue(
             localStore = get(),
             api = get(),
             platform = { get() },
             guestGate = get(),
+            syncStatusBus = get(),
         )
     }
     single { ExploreSyncRepository(api = get(), platform = { get() }, localStore = { get() }) }
@@ -178,6 +183,26 @@ fun movitDataModule(
             dayCustomizationLocalStore = get(),
             messageLibraryCache = get(),
             userProgramEnrollmentLocalStore = get(),
+            syncStatusBus = get(),
+        )
+    }
+    single {
+        DataReadinessGate(
+            exploreSync = get(),
+            trainingConfig = get(),
+            catalogOffline = get(),
+            messageLibraryCache = get(),
+            systemMessageCache = get(),
+            homeSync = get(),
+        )
+    }
+    single {
+        BackgroundMediaPrefetcher(
+            audioPrefetch = get(),
+            exploreSync = get(),
+            homeSync = get(),
+            planSync = get(),
+            syncStatusBus = get(),
         )
     }
     single {

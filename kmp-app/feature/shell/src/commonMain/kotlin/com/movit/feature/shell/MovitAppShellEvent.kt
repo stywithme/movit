@@ -43,4 +43,9 @@ sealed interface MovitAppShellEvent {
     data class LevelEffectReceived(val effect: MovitLevelEffect) : MovitAppShellEvent
     data object GuestOutboxAcceptClicked : MovitAppShellEvent
     data object GuestOutboxDiscardClicked : MovitAppShellEvent
+    data object BootstrapRetryClicked : MovitAppShellEvent
+    data object BootstrapContinuePartialClicked : MovitAppShellEvent
+    data object SyncStatusSheetDismissed : MovitAppShellEvent
+    data object SyncStatusSheetRequested : MovitAppShellEvent
+    data object SyncNowClicked : MovitAppShellEvent
 }

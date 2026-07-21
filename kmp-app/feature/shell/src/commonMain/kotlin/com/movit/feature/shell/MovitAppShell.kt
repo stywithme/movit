@@ -48,6 +48,8 @@ fun MovitAppShell(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     onTrainEffect: (MovitTrainEffect) -> Boolean = { false },
     onShellEffect: (MovitAppShellEffect) -> Unit = {},
+    syncAvatarState: com.movit.designsystem.components.MovitSyncAvatarState? = null,
+    onSyncStatusClick: (() -> Unit)? = null,
 ) {
     val innerRoute = state.currentInnerRoute
     val interceptSystemBack = innerRoute != null || state.selectedDestination != MovitAppDestination.Home
@@ -57,7 +59,7 @@ fun MovitAppShell(
         isBackEnabled = interceptSystemBack,
         onBackCompleted = { onEvent(MovitAppShellEvent.BackPressed) },
     )
-    val showFloatingNav = innerRoute == null
+    val showFloatingNav = innerRoute == null && !state.blocksMainTabs
     val floatingNavInset = if (showFloatingNav) MovitFloatingNavContentInset else 0.dp
 
     state.guestOutboxPromptCount?.let { count ->
@@ -87,6 +89,13 @@ fun MovitAppShell(
                         onNavigate = { onEvent(MovitAppShellEvent.InnerRoutePushed(it)) },
                         onShellEvent = onEvent,
                         onShellEffect = onShellEffect,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else if (state.blocksMainTabs) {
+                    BootstrapSplashScreen(
+                        state = state.bootstrap,
+                        onRetry = { onEvent(MovitAppShellEvent.BootstrapRetryClicked) },
+                        onContinuePartial = { onEvent(MovitAppShellEvent.BootstrapContinuePartialClicked) },
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else when (state.selectedDestination) {

@@ -27,6 +27,8 @@ fun MovitScaffold(
     hasUnreadNotifications: Boolean = false,
     onNotificationClick: (() -> Unit)? = null,
     onProfileClick: (() -> Unit)? = null,
+    syncAvatarState: MovitSyncAvatarState? = LocalMovitSyncAvatarState.current,
+    onSyncStatusClick: (() -> Unit)? = LocalMovitOnSyncStatusClick.current,
     actions: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
@@ -43,6 +45,8 @@ fun MovitScaffold(
                 hasUnreadNotifications = hasUnreadNotifications,
                 onNotificationClick = onNotificationClick,
                 onProfileClick = onProfileClick,
+                syncAvatarState = syncAvatarState,
+                onSyncStatusClick = onSyncStatusClick,
                 actions = actions,
             )
         },

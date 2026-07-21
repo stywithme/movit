@@ -21,6 +21,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.movit.core.model.ExploreItemType
 import com.movit.designsystem.MovitSpacing
+import com.movit.designsystem.components.MovitDataEmptyReason
+import com.movit.designsystem.components.MovitDataEmptyState
 import com.movit.designsystem.components.MovitEmptyState
 import com.movit.designsystem.components.MovitErrorState
 import com.movit.designsystem.components.MovitInsightCard
@@ -137,6 +139,12 @@ fun MovitExploreScreen(
                         title = movitText("common_error_title"),
                         message = state.errorMessage,
                         actionLabel = movitText("common_retry"),
+                        onRetry = { onEvent(MovitExploreEvent.RetryClicked) },
+                    )
+                }
+                state.isEmpty && state.isOffline -> {
+                    MovitDataEmptyState(
+                        reason = MovitDataEmptyReason.Offline,
                         onRetry = { onEvent(MovitExploreEvent.RetryClicked) },
                     )
                 }

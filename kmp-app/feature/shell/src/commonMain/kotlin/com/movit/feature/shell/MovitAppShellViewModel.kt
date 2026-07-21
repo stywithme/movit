@@ -3,7 +3,11 @@ package com.movit.feature.shell
 import androidx.lifecycle.ViewModel
 import com.movit.core.data.MovitData
 import com.movit.core.data.platform.MovitConnectivitySignals
+import com.movit.core.data.readiness.DataReadinessResult
+import com.movit.core.data.readiness.MovitDataImageWarmup
 import com.movit.core.data.sync.MovitSyncOrchestrator
+import com.movit.core.data.sync.SyncUiStatus
+import com.movit.designsystem.platform.prefetchMovitImageUrls
 import com.movit.feature.account.AuthBootstrapContext
 import com.movit.feature.account.AuthBootstrapTarget
 import com.movit.feature.account.MovitAssessmentEffect
@@ -40,6 +44,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.Job
 
 class MovitAppShellViewModel : ViewModel() {
     // ponytail: host tests have no Main dispatcher (same as WorkoutSession preflight).
@@ -48,8 +55,17 @@ class MovitAppShellViewModel : ViewModel() {
     private val _state = MutableStateFlow(MovitAppShellState())
     val state: StateFlow<MovitAppShellState> = _state.asStateFlow()
 
-    private val _syncOutcome = MutableStateFlow<MovitSyncOrchestrator.SyncOutcome?>(null)
-    val syncOutcome: StateFlow<MovitSyncOrchestrator.SyncOutcome?> = _syncOutcome.asStateFlow()
+    private val _syncStatus = MutableStateFlow(SyncUiStatus())
+    val syncStatus: StateFlow<SyncUiStatus> = _syncStatus.asStateFlow()
+
+    private var bootstrapJob: Job? = null
+
+    /**
+     * Gate: no syncIfNeeded / background prefetch until Home's first composition can settle.
+     * Set true by [schedulePostFirstFrameWork] after [POST_FIRST_FRAME_WORK_DELAY_MS].
+     */
+    private var allowBackgroundSync = false
+    private var postFirstFrameWorkScheduled = false
 
     private val _cacheInvalidated = MutableSharedFlow<Unit>(extraBufferCapacity = 8)
     val cacheInvalidated: SharedFlow<Unit> = _cacheInvalidated.asSharedFlow()
@@ -79,11 +95,16 @@ class MovitAppShellViewModel : ViewModel() {
                 )
             }
             if (bootstrap.hasActiveSession) {
-                // P2.11: await bootstrap before first sync (cold-start ordering).
+                MovitDataImageWarmup.warmup = { urls -> prefetchMovitImageUrls(urls) }
                 backgroundScope.launch {
                     MovitData.bootstrapLocalCaches()
                     maybeShowGuestOutboxPrompt()
-                    requestSyncIfNeeded()
+                    runDataBootstrapIfNeeded()
+                }
+                backgroundScope.launch {
+                    MovitData.syncStatus.status.collect { status ->
+                        _syncStatus.value = status
+                    }
                 }
                 ensureOnboardingGateIfNeeded()
             }
@@ -122,12 +143,189 @@ class MovitAppShellViewModel : ViewModel() {
     private fun requestSyncIfNeeded(forceCheck: Boolean = false) {
         if (!MovitData.isInstalled) return
         if (!AuthBootstrapContext.fromMovitData().hasActiveSession) return
+        if (_state.value.blocksMainTabs) return
+        // Option 1: keep first Home frame free of sync / WorkManager races.
+        if (!allowBackgroundSync) {
+            println("[MovitHomeFirstFrame] sync suppressed until post-first-frame")
+            return
+        }
 
         backgroundScope.launch {
-            val outcome = MovitData.sync.syncIfNeeded(forceCheck = forceCheck)
-            _syncOutcome.value = outcome
-            // dataRevision / cacheInvalidated come from sync.cacheInvalidated (P2.10).
+            MovitData.sync.syncIfNeeded(forceCheck = forceCheck)
         }
+    }
+
+    fun requestFullSyncNow() {
+        if (!MovitData.isInstalled) return
+        backgroundScope.launch {
+            MovitData.sync.fullRefresh()
+        }
+    }
+
+    private suspend fun runDataBootstrapIfNeeded() {
+        if (!MovitData.isInstalled) return
+        if (!AuthBootstrapContext.fromMovitData().hasActiveSession) return
+
+        // CoreReady = Explore + exercise configs; CatalogExports / message library / home soft.
+        if (canEnterTabsAfterBootstrapSync()) {
+            _state.update { it.copy(bootstrap = DataBootstrapUiState.Hidden) }
+            schedulePostFirstFrameWork()
+            return
+        }
+
+        when (val readiness = MovitData.dataReadiness.evaluate(requireHome = false)) {
+            DataReadinessResult.Ready -> {
+                _state.update { it.copy(bootstrap = DataBootstrapUiState.Hidden) }
+                schedulePostFirstFrameWork()
+            }
+            is DataReadinessResult.Missing -> runBootstrapFullRefresh(readiness.hasPartialCache)
+        }
+    }
+
+    private suspend fun runBootstrapFullRefresh(allowPartialContinue: Boolean) {
+        bootstrapJob?.cancel()
+        bootstrapJob = backgroundScope.launch {
+            var stageIndex = 0
+            val stageRotator = launch {
+                while (true) {
+                    _state.update {
+                        it.copy(
+                            bootstrap = DataBootstrapUiState.Loading(
+                                BOOTSTRAP_STAGES[stageIndex % BOOTSTRAP_STAGES.size],
+                            ),
+                        )
+                    }
+                    stageIndex++
+                    delay(2_500)
+                }
+            }
+            var outcome = withTimeoutOrNull(BOOTSTRAP_TIMEOUT_MS) {
+                MovitData.sync.fullRefresh()
+            }
+            // Race with MovitBackgroundSyncWorker: fullRefresh uses tryLock → Skipped.
+            if (outcome is MovitSyncOrchestrator.SyncOutcome.Skipped) {
+                MovitData.sync.awaitSyncIdle(timeoutMs = 20_000)
+                if (!canEnterTabsAfterBootstrapSync()) {
+                    outcome = withTimeoutOrNull(BOOTSTRAP_TIMEOUT_MS) {
+                        MovitData.sync.fullRefresh()
+                    } ?: outcome
+                }
+            }
+            stageRotator.cancel()
+
+            val canEnter = canEnterTabsAfterBootstrapSync() &&
+                (
+                    outcome is MovitSyncOrchestrator.SyncOutcome.Success ||
+                        outcome is MovitSyncOrchestrator.SyncOutcome.Skipped
+                    )
+            println(
+                "[MovitBootstrap] outcome=${outcome?.let { it::class.simpleName }}" +
+                    " canEnter=$canEnter" +
+                    " readiness=${MovitData.dataReadiness.evaluate(requireHome = false, includeSoftGaps = true)}",
+            )
+
+            when {
+                canEnter -> {
+                    _state.update { it.copy(bootstrap = DataBootstrapUiState.Hidden) }
+                    schedulePostFirstFrameWork()
+                }
+                outcome == null -> {
+                    _state.update {
+                        it.copy(
+                            bootstrap = DataBootstrapUiState.Failed(
+                                errorKey = "bootstrap_error_timeout",
+                                allowPartialContinue = allowPartialContinue,
+                            ),
+                        )
+                    }
+                }
+                else -> {
+                    val errorKey = bootstrapErrorKey(outcome)
+                    _state.update {
+                        it.copy(
+                            bootstrap = DataBootstrapUiState.Failed(
+                                errorKey = errorKey,
+                                allowPartialContinue = allowPartialContinue,
+                            ),
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Enter tabs when CoreReady: Explore + exercise configs.
+     * CatalogExports / message library / home / system messages are soft — background sync.
+     */
+    private fun canEnterTabsAfterBootstrapSync(): Boolean =
+        MovitData.dataReadiness.isCoreReady(requireHome = false)
+
+    private fun bootstrapErrorKey(outcome: MovitSyncOrchestrator.SyncOutcome): String =
+        when (outcome) {
+            is MovitSyncOrchestrator.SyncOutcome.Error -> when (outcome.kind) {
+                MovitSyncOrchestrator.SyncOutcome.ErrorKind.Http ->
+                    if (outcome.message.contains("500") ||
+                        outcome.message.contains("502") ||
+                        outcome.message.contains("503")
+                    ) {
+                        "bootstrap_error_server"
+                    } else {
+                        "bootstrap_error_unreachable"
+                    }
+                MovitSyncOrchestrator.SyncOutcome.ErrorKind.Network ->
+                    if (MovitData.requirePlatform().isNetworkAvailable()) {
+                        "bootstrap_error_unreachable"
+                    } else {
+                        "bootstrap_error_offline"
+                    }
+                else -> "bootstrap_error_generic"
+            }
+            is MovitSyncOrchestrator.SyncOutcome.Offline ->
+                if (MovitData.requirePlatform().isNetworkAvailable()) {
+                    "bootstrap_error_server"
+                } else {
+                    "bootstrap_error_offline"
+                }
+            is MovitSyncOrchestrator.SyncOutcome.Success,
+            is MovitSyncOrchestrator.SyncOutcome.Skipped,
+            -> "bootstrap_error_generic"
+            else -> "bootstrap_error_generic"
+        }
+
+    private fun startBackgroundPrefetch() {
+        backgroundScope.launch {
+            runCatching { MovitData.backgroundMediaPrefetch.runAfterBootstrap() }
+        }
+    }
+
+    /**
+     * After Splash/tabs are shown: wait for a stable first Home frame, then sync + prefetch.
+     * Avoids competing with Compose on the cold-open path (message-library decode via prefetch).
+     */
+    private fun schedulePostFirstFrameWork() {
+        if (postFirstFrameWorkScheduled) return
+        postFirstFrameWorkScheduled = true
+        backgroundScope.launch {
+            println(
+                "[MovitHomeFirstFrame] deferring sync/prefetch ${POST_FIRST_FRAME_WORK_DELAY_MS}ms",
+            )
+            delay(POST_FIRST_FRAME_WORK_DELAY_MS)
+            if (_state.value.blocksMainTabs) {
+                postFirstFrameWorkScheduled = false
+                return@launch
+            }
+            allowBackgroundSync = true
+            println("[MovitHomeFirstFrame] releasing sync/prefetch")
+            startBackgroundPrefetch()
+            requestSyncIfNeeded(forceCheck = true)
+        }
+    }
+
+    private fun continueBootstrapPartial() {
+        MovitData.syncStatus.setDegraded(true)
+        _state.update { it.copy(bootstrap = DataBootstrapUiState.Hidden) }
+        schedulePostFirstFrameWork()
     }
 
     override fun onCleared() {
@@ -208,6 +406,20 @@ class MovitAppShellViewModel : ViewModel() {
             is MovitAppShellEvent.LevelEffectReceived -> handleLevelEffect(event.effect)
             MovitAppShellEvent.GuestOutboxAcceptClicked -> resolveGuestOutbox(accept = true)
             MovitAppShellEvent.GuestOutboxDiscardClicked -> resolveGuestOutbox(accept = false)
+            MovitAppShellEvent.BootstrapRetryClicked -> {
+                backgroundScope.launch { runDataBootstrapIfNeeded() }
+            }
+            MovitAppShellEvent.BootstrapContinuePartialClicked -> continueBootstrapPartial()
+            MovitAppShellEvent.SyncStatusSheetDismissed -> {
+                _state.update { it.copy(showSyncStatusSheet = false) }
+            }
+            MovitAppShellEvent.SyncStatusSheetRequested -> {
+                _state.update { it.copy(showSyncStatusSheet = true) }
+            }
+            MovitAppShellEvent.SyncNowClicked -> {
+                _state.update { it.copy(showSyncStatusSheet = false) }
+                requestFullSyncNow()
+            }
         }
     }
 
@@ -294,16 +506,18 @@ class MovitAppShellViewModel : ViewModel() {
             MovitAuthEffect.OpenShell -> {
                 popInner()
                 backgroundScope.launch {
+                    MovitData.bootstrapLocalCaches()
                     maybeShowGuestOutboxPrompt()
-                    requestSyncIfNeeded(forceCheck = true)
+                    runDataBootstrapIfNeeded()
                 }
             }
             MovitAuthEffect.OpenOnboarding -> {
                 popInner()
                 pushInner(MovitInnerRoute.ProfileOnboarding)
                 backgroundScope.launch {
+                    MovitData.bootstrapLocalCaches()
                     maybeShowGuestOutboxPrompt()
-                    requestSyncIfNeeded(forceCheck = true)
+                    runDataBootstrapIfNeeded()
                 }
             }
             is MovitAuthEffect.ShowMessage -> {
@@ -349,6 +563,7 @@ class MovitAppShellViewModel : ViewModel() {
         when (effect) {
             MovitOnboardingEffect.Completed -> {
                 popInner()
+                allowBackgroundSync = true
                 requestSyncIfNeeded(forceCheck = true)
             }
             is MovitOnboardingEffect.ShowMessage -> {
@@ -633,6 +848,17 @@ class MovitAppShellViewModel : ViewModel() {
     }
 
     companion object {
+        // Large messageLibrary apply (2k+) on emulator can exceed 25s before home finishes.
+        private const val BOOTSTRAP_TIMEOUT_MS = 60_000L
+        /** Delay after tabs shown before sync/prefetch — isolates first Home composition. */
+        private const val POST_FIRST_FRAME_WORK_DELAY_MS = 1_500L
+        private val BOOTSTRAP_STAGES = listOf(
+            "bootstrap_stage_exercises",
+            "bootstrap_stage_catalog",
+            "bootstrap_stage_messages",
+            "bootstrap_stage_home",
+        )
+
         internal fun resolveStartupInnerStack(
             bootstrap: AuthBootstrapContext,
         ): List<MovitInnerRoute> {

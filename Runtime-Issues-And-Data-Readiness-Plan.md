@@ -267,14 +267,14 @@ CoreReady = exercise configs (كل slugs الفهرس) ✓
 |---|---|---|---|
 | **B0** 🔴 الآن | `npx prisma migrate deploy` على `pose_db` + إعادة تشغيل الباك + توليد TTS (B4) — **بدونها كل ما بعدها بلا معنى** | تشغيلي | دقائق |
 | **R0-ب** 🔴 فوري | B1-2 حارس المهاجرات عند الإقلاع + B1-3 مرونة user-slices (الكتالوج لا يموت بفشل شريحة) + B2 حلّ slug-or-id في training-config + B5 تصنيف 304 | `main.ts`/bootstrap, `mobile-sync.service.ts`, `workout-templates.service.ts`, logger middleware | M |
-| **R1** 🔴 فوري | كسر حلقة `activeUserProgramId` (Android+iOS) + اختباران regression | `AndroidMovitPlatform.kt`, `IosMovitPlatform.kt`, `PlanSyncRepositoryTest` | S |
-| **R2** 🔴 فوري | زر «مزامنة الكل الآن» في البروفايل = full refresh حقيقي؛ «إصلاح الكتالوج» يصير full أيضًا؛ رسائل مترجمة بدل الأكواد | `MovitProfileViewModel/Screen`, strings | S–M |
-| **R3** 🔴 فوري | بوابة Start تفاعلية: زر «تنزيل إعداد التمرين» + حذف نص Sync-now الميت + **B3: single-flight + negative-cache 60ث + cooldown بعد 5xx** | `ExercisePrepareViewModel/Screen`, `TrainingConfigEnsure.kt`, strings | M |
-| **R4** | endpoint `GET /mobile/exercises/:slug/training-config` + خطوة ثالثة في ensure | باك (builder جاهز) + `TrainingConfigEnsure.kt` + contract test | M |
-| **R5** | `SyncStatusBus` + `MovitSyncStatusAvatar` (الحلقة الملونة المتحركة) في الهيدر + ورقة الحالة — **بثلاث حالات خطأ: لا شبكة / لا وصول للخادم / الخادم يرد 5xx** | `core/data` جديد, `MovitAppHeader.kt`, shell | M |
-| **R6** | `DataReadinessGate` + شاشة `BootstrapSplash` بتقدم مرحلي + شاشة فشل صريحة + fresh-on-open (تجاوز throttle عند الفتح البارد) | `core/data` جديد, shell routes, orchestrator hook | M–L |
-| **R7** | Prefetch خلفي للصوت (فوري بعد Splash) والصور (كتالوج + برنامج نشط) + التحميل المتوازي عند فتح ناقص | `AudioPrefetchRunner`, Image prefetch port, session hooks | M |
-| **R8** | توسيع البذرة الباردة لكل التمارين المنشورة (سكربت CI) + empty-states موحدة بالسبب | `scripts/cold-offline-bundle`, screens | S–M |
+| **R1** 🔴 فوري ✅ | كسر حلقة `activeUserProgramId` (Android+iOS) + اختباران regression | `AndroidMovitPlatform.kt`, `IosMovitPlatform.kt`, `PlanSyncRepositoryTest` | S |
+| **R2** 🔴 فوري ✅ | زر «مزامنة الكل الآن» في البروفايل = full refresh حقيقي؛ «إصلاح الكتالوج» يصير full أيضًا؛ رسائل مترجمة بدل الأكواد | `MovitProfileViewModel/Screen`, strings | S–M |
+| **R3** 🔴 فوري ✅ | بوابة Start تفاعلية: زر «تنزيل إعداد التمرين» + حذف نص Sync-now الميت + **B3: single-flight + negative-cache 60ث + cooldown بعد 5xx** | `ExercisePrepareViewModel/Screen`, `TrainingConfigEnsure.kt`, strings | M |
+| **R4** ✅ (باك + عميل ensure) | endpoint `GET /mobile/exercises/:slug/training-config` + خطوة ثالثة في ensure | باك (builder جاهز) + `TrainingConfigEnsure.kt` + contract test | M |
+| **R5** | ✅ | `SyncStatusBus` + `MovitSyncStatusAvatar` (الحلقة الملونة المتحركة) في الهيدر + ورقة الحالة — **بثلاث حالات خطأ: لا شبكة / لا وصول للخادم / الخادم يرد 5xx** | `core/data` جديد, `MovitAppHeader.kt`, shell | M |
+| **R6** | ✅ | `DataReadinessGate` + شاشة `BootstrapSplash` بتقدم مرحلي + شاشة فشل صريحة + fresh-on-open (تجاوز throttle عند الفتح البارد) | `core/data` جديد, shell routes, orchestrator hook | M–L |
+| **R7** | ✅ | Prefetch خلفي للصوت (فوري بعد Splash) والصور (كتالوج + برنامج نشط) + التحميل المتوازي عند فتح ناقص | `AudioPrefetchRunner`, `prefetchMovitImageUrls`, session hooks | M |
+| **R8** | ✅ جزئي | توسيع البذرة الباردة لكل التمارين المنشورة (سكربت CI) + empty-states موحدة بالسبب | `scripts/cold-offline-bundle`, `MovitDataEmptyState` | S–M |
 
 **اختبار القبول (يعيد سيناريوهات الجلستين حرفيًا):**
 1. **سيناريو لوج الباك:** بعد B0/R0-ب — فتح التطبيق → `/mobile/sync` يرجع 200 (وليس 500)، الـ configs تصل، وBicep Curl يبدأ من أول ضغطة؛ طلب template بالـ slug يرجع 200؛ تعمّد ترك migration معلقة → السيرفر يرفض الإقلاع برسالة واضحة (وليس 500 صامتة).
@@ -285,8 +285,205 @@ CoreReady = exercise configs (كل slugs الفهرس) ✓
 
 ## 6. Checklist بيئة التطوير (تُنفَّذ الآن قبل أي إعادة تشغيل)
 
-1. ☐ **`cd backend && npx prisma migrate deploy`** — تطبيق migration الـ idempotency المعلقة (سبب كل الـ 500). ثم إعادة تشغيل السيرفر والتحقق أن `GET /api/mobile/sync` يرجع 200.
-2. ☐ **توليد صوت الرسائل** (`POST /messages/bulk-audio` من الأدمن للغتين) — حتى يصبح `withAudio > 0` بدل 2662/0.
+1. ☑ **`cd backend && npx prisma migrate deploy`** — طُبّقت (2026-07-11): أُزيل BOM من `20260709210000_…` ثم deploy لـ nullable-metrics + idempotency. `prisma migrate status` = up to date. استعلام `plannedWorkoutReport.findMany` ناجح (لا P2022).
+2. ☐ **توليد صوت الرسائل** (`POST /messages/bulk-audio` من الأدمن للغتين) — **ما زال معلقًا تشغيليًا:** `withAudio=0` مؤكد في DB؛ `GEMINI_API_KEY` فارغ في `.env` — يحتاج مفتاح Gemini + تشغيل يدوي من الأدمن.
 3. ☐ تأكد أن الباك يعمل وقت تجربة الهاتف وأن `api.physical_device_ip` (حاليًا `192.168.68.136`) هو IP جهاز التطوير الحالي — في نافذة run-log لم يصل أي طلب إطلاقًا (السيرفر كان متوقفًا وقتها على الأرجح).
 4. ☐ سطر `Configuration locales [en_GB,ar_EG] → [en]` — التطبيق ثبّت الإنجليزية؛ راجع تفضيل اللغة المخزن إن كنت تتوقع العربية.
-5. ☐ بعد B0 + R0-ب + R1–R3: إعادة تشغيل سيناريوهات القبول الثلاثة (§5) وتحديث هذا الملف بالنتائج.
+5. ☐ بعد B0 + R0-ب + R1–R3 + **R5–R8**: إعادة تشغيل سيناريوهات القبول الثلاثة (§5) وتحديث هذا الملف بالنتائج.
+
+---
+
+## 7. نتائج التنفيذ (2026-07-11)
+
+### 7.ج — جاهزية البيانات (R5 / R6 / R7 / R8)
+
+**الحالة:** منفّذ end-to-end على الموبايل (KMP) — اختبارات `:core:data:testDebugUnitTest` خضراء (يشمل `SyncStatusBusTest` + `DataReadinessGateTest`).
+
+#### R5 — `SyncStatusBus` + حلقة الهيدر ✅
+
+| المكوّن | المسار |
+|---|---|
+| `SyncUiStatus` / `SyncRingState` / `SyncProblemKind` | `core/data/.../sync/SyncUiStatus.kt` |
+| `SyncStatusBus` (`StateFlow`) | `core/data/.../sync/SyncStatusBus.kt` |
+| تغذية من orchestrator + outbox replay | `MovitSyncOrchestrator.kt`, `OfflineWriteQueue.kt` |
+| `MovitSyncStatusAvatar` + ورقة الحالة | `core/designsystem/.../MovitSyncStatusAvatar.kt`, `MovitSyncStatusSheet.kt` |
+| لفّ الصورة في الهيدر | `MovitAppHeader.kt` + `LocalMovitSyncAvatarState` |
+| ضغط مطوّل / نقطة حمراء → ورقة + «مزامنة الآن» | `MovitAppShellRoute.kt` |
+
+**الحالات:** 🟢 نجاح · 🟡 sync/outbox/prefetch · 🔴 مشكلة (لا وصول / 5xx / outbox / degraded) · ⚪ دون شبكة.
+
+#### R6 — `DataReadinessGate` + `BootstrapSplash` ✅
+
+| المكوّن | المسار |
+|---|---|
+| `DataReadinessGate.evaluate()` | `core/data/.../readiness/DataReadinessGate.kt` |
+| شاشة Splash مرحلية + فشل + «متابعة بما هو متاح» | `BootstrapSplashScreen.kt`, `MovitAppShellViewModel.kt` |
+| cold start `syncIfNeeded(forceCheck=true)` بعد الجاهزية | `MovitAppShellViewModel.requestSyncIfNeeded` |
+| timeout 25ث | `BOOTSTRAP_TIMEOUT_MS` في `MovitAppShellViewModel` |
+
+**فجوة مقصودة:** manifest الصوت الفارغ (`withAudio=0`) لا يحجب الـ Splash — الاعتماد على message library + configs فقط.
+
+#### R7 — Prefetch خلفي ✅ (حد أدنى)
+
+| الوسيط | التنفيذ |
+|---|---|
+| صوت | `BackgroundMediaPrefetcher` → `AudioPrefetchRunner` بعد Splash ناجح |
+| صور | `prefetchMovitImageUrls` (Coil 3، Android+iOS) — حتى 24 URL من كتالوج Explore + برنامج نشط |
+| لا حجب UI | الوسائط تُحمَّل بالخلفية؛ الشاشات لا تنتظرها |
+
+**لم يُنفَّذ:** `ImagePrefetchPort` منفصل في `core/data` — Coil يبقى في `designsystem` عبر `MovitDataImageWarmup`.
+
+#### R8 — بذرة + empty states ✅ جزئي
+
+| البند | الحالة |
+|---|---|
+| سكربت `generate-cold-offline-bundle.mjs` | **جاهز** — يحتاج سيرفرًا حيًا + `prisma migrate deploy` (B0) لتوليد بذرة بكل التمارين المنشورة. **لم يُشغَّل** في هذه الجلسة (لا DB حية). |
+| `MovitDataEmptyState` (سبب + إعادة محاولة) | `core/designsystem/.../MovitDataEmptyState.kt` |
+| تطبيق نموذجي | `MovitExploreScreen` — empty + offline |
+
+**متبقٍ:** تعميم `MovitDataEmptyState` على Home/Train/Reports/ProgramList؛ تشغيل السكربت في CI بعد B0.
+
+#### ملفات الاختبار المضافة
+
+- `core/data/src/commonTest/.../sync/SyncStatusBusTest.kt`
+- `core/data/src/commonTest/.../readiness/DataReadinessGateTest.kt`
+
+---
+
+## 7. نتائج التنفيذ (2026-07-11)
+
+### 7.أ — Backend (B0 / R0-ب / R4 / B4 / B5)
+
+#### ما نُفّذ
+
+| بند | الحالة | التفصيل |
+|---|---|---|
+| **B0 migrate** | ✅ | حُلّت هجرة فاشلة (`P3009`/`42601` بسبب UTF-8 BOM في `migration.sql`) عبر strip BOM + `migrate resolve --rolled-back` ثم `migrate deploy`. طُبّقت: `20260709210000_nullable_stability_alignment_metrics` + `20260709220000_planned_workout_report_idempotency`. |
+| **B0 تحقق sync** | ✅ | استدعاء حي `mobileSyncService.sync({includeReports:'summary', forceRefresh:true})` → `success:true`, exercises=184, workouts=7, programs=22 — بلا P2022. (السيرفر HTTP لم يُشغَّل هنا؛ أعد `npm run start:dev` للتحقق من السطر في اللوجر.) |
+| **B4 TTS** | ⏳ يدوي | `feedback_message_templates` → صفوف بـ `audioAr`/`audioEn` = **0**. `GEMINI_API_KEY=` فارغ. مسار التوليد: أدمن `POST /api/messages/bulk-audio` (صلاحية `update FeedbackMessage`) بعد ضبط المفتاح. |
+| **B1-2 حارس المهاجرات** | ✅ | `assertPrismaMigrationsApplied()` عند إقلاع `main.ts` (fail-fast). `package.json`: `start` / `start:dev` / `start:debug` / `start:prod` تبدأ بـ `prisma migrate deploy &&`. |
+| **B1-3 مرونة user-slices** | ✅ | try/catch حول preferences/programs/reports في `mobileSyncService.sync` → حمولة كتالوج + `meta.userSlicesDegraded=true` + log. |
+| **B2 slug-or-id** | ✅ | `workoutService.getTrainingConfig` يبحث بالـ id ثم fallback slug. |
+| **B5 لوج 304** | ✅ | `RequestLoggingInterceptor`: 2xx/3xx = OK. |
+| **R4 exercise training-config** | ✅ | `GET /api/mobile/exercises/:slug/training-config` عبر `buildExerciseConfig`. KMP: `MovitMobileApi.fetchExerciseTrainingConfig` + `SyncMetaDto.userSlicesDegraded`. |
+
+#### ملفات لُمست (باك)
+
+- `backend/prisma/migrations/20260709210000_nullable_stability_alignment_metrics/migration.sql` (إزالة BOM)
+- `backend/package.json` (migrate deploy قبل start)
+- `backend/src/main.ts`
+- `backend/src/lib/prisma/assert-migrations.ts` *(جديد)*
+- `backend/src/lib/interceptors/request-logging.interceptor.ts`
+- `backend/src/modules/mobile-sync/mobile-sync.service.ts`
+- `backend/src/modules/mobile-sync/mobile-sync.types.ts`
+- `backend/src/modules/mobile-sync/mobile-exercises.controller.ts`
+- `backend/src/modules/workout-templates/workout-templates.service.ts`
+
+#### ملفات شبكة KMP (R4 / B1-3 عقد)
+
+- `kmp-app/core/network/.../MovitMobileApi.kt` — `fetchExerciseTrainingConfig`
+- `kmp-app/core/network/.../dto/TrainingApiDto.kt` — تعليق المسار
+- `kmp-app/core/network/.../dto/PlanSyncDto.kt` — `userSlicesDegraded`
+- `kmp-app/core/network/.../contract/MobileApiContractRegistry.kt` + `MovitMobileApiContractTest.kt`
+
+#### اختبارات
+
+```
+npx jest --testPathPatterns="training-config-by-slug|exercise-training-config|request-logging.interceptor|mobile-sync.delta-payload"
+→ 4 suites / 15 tests PASSED
+```
+
+- `workout-templates/__tests__/training-config-by-slug.spec.ts` *(جديد — B2)*
+- `mobile-sync/__tests__/exercise-training-config.contract.spec.ts` *(جديد — R4)*
+- `lib/interceptors/__tests__/request-logging.interceptor.spec.ts` *(جديد — B5)*
+- `mobile-sync/__tests__/mobile-sync.delta-payload.contract.spec.ts` *(+ حالة userSlicesDegraded)*
+
+#### مسار متوقع للموبايل (R4 خطوة ensure الثالثة)
+
+`GET /api/mobile/exercises/{slug}/training-config` → `{ success, data: ExerciseConfigWithMeta }`  
+عميل جاهز: `MovitMobileApi.fetchExerciseTrainingConfig(slug, auth)` — وكيل الموبايل يضيفها كخطوة 3 في `TrainingConfigEnsure`.
+
+#### ما تبقى تشغيليًا
+
+1. إعادة تشغيل الباك (`npm run start:dev`) والتحقق يدويًا أن `GET /api/mobile/sync?includeReports=summary` = 200.
+2. ضبط `GEMINI_API_KEY` وتشغيل `POST /messages/bulk-audio` حتى `messageLibraryStats.totalWithAudio > 0`.
+3. بنود الموبايل R5–R8 (R1–R3 + خطوة ensure لـ R4 نُفّذت في §7.ب).
+
+### 7.ب — Mobile فوري (R1 / R2 / R3+B3)
+
+#### ما نُفّذ
+
+| بند | الحالة | التفصيل |
+|---|---|---|
+| **R1 StackOverflow** | ✅ | `AndroidMovitPlatform` / `IosMovitPlatform.activeUserProgramId` يقرآن المفتاح الخام فقط (`PROGRAM_STORE` / `ACTIVE_USER_PROGRAM_ID`) — لا يستدعيان `PlanSyncRepository`. `setActiveUserProgramId` يكتب المفتاح الخام (كان يحذفه بالخطأ). التركيب يبقى في `readCachedActiveUserProgramId` (enrollments ثم الخام). |
+| **R1 اختبارات** | ✅ | `PlanSyncRepositoryTest`: مخزن فارغ → `null` بلا حلقة؛ fallback من الكاش الخام. `ProgramDetailViewModelTest.load_withoutEnrollment_doesNotCrash`. |
+| **R2 Sync البروفايل** | ✅ | زر رئيسي «مزامنة الكل الآن» → `MovitData.sync.fullRefresh()` مع progress. «إصلاح الكتالوج» → نفس full refresh (ليس explore-only). رسائل مترجمة بدل `retry:0` / `repair:ok` + عرض `lastSuccessfulSyncAt` من metadata. |
+| **R3 Start تفاعلي** | ✅ | عند نقص config: الزر يصبح «تنزيل إعداد التمرين» → `ensure` بتقدم؛ Start يُفعَّل عند النجاح. نص Sync-now الميت استُبدل. |
+| **B3 anti-storm** | ✅ | `TrainingConfigEnsureGate`: single-flight per slug + negative-cache 60ث لـ 404/5xx. `MovitSyncOrchestrator`: cooldown 45ث بعد `Error(Http)`؛ `fullRefresh()` (زر يدوي) يصفّر الـ cooldown. |
+| **R4 خطوة ensure** | ✅ | خطوة ثالثة: `GET /mobile/exercises/:slug/training-config` عبر `fetchExerciseTrainingConfig` (الباك جاهز في §7.أ). |
+
+#### ملفات رئيسية
+
+- `kmp-app/core/data/.../AndroidMovitPlatform.kt`, `IosMovitPlatform.kt`
+- `kmp-app/core/data/.../TrainingConfigEnsure.kt` (+ Gate)
+- `kmp-app/core/data/.../MovitSyncOrchestrator.kt` (HTTP cooldown)
+- `kmp-app/feature/account/.../MovitProfileViewModel.kt`, `MovitProfileScreen.kt`, events/state
+- `kmp-app/feature/library/.../ExercisePrepareViewModel.kt`, `ExercisePrepareScreen.kt`, routes/events
+- `kmp-app/core/resources/.../strings.xml` (en + ar) + `MovitEnglishStrings.kt`
+
+#### اختبارات (وحدة)
+
+```
+:core:data:testAndroidHostTest --tests PlanSyncRepositoryTest,TrainingConfigEnsureTest → BUILD SUCCESSFUL
+:feature:library:testAndroidHostTest --tests ProgramDetailViewModelTest → BUILD SUCCESSFUL
+:feature:account:testAndroidHostTest → BUILD SUCCESSFUL
+```
+
+JAVA_HOME = Android Studio JBR.
+
+#### ملاحظة R4
+
+عميل الموبايل يستدعي المسار كخطوة 3 قبل الاستسلام؛ إن رجع 404 يُوضع في negative-cache 60ث (لا قصف). الباك جاهز (§7.أ).
+
+### 7.د — إصلاح عاجل: Splash فشل بعد sync 200 (2026-07-16)
+
+**العَرَض:** بعد login + `GET /mobile/sync` = 200 تظهر `Couldn't load data` / `Something went wrong` (مع `\'` حرفي في الواجهة).
+
+**الجذر:**
+1. بوابة `DataReadinessGate` كانت تطلب مطابقة 1:1 بين بطاقات Explore وكل config/export — بينما الـ mapper لين والـ parser يسقط صفوفًا تالفة → `Success` من الـ orchestrator ثم `Missing` → `bootstrap_error_generic`.
+2. فشل `/mobile/home` داخل `Result.map { error(...) }` كان يرمي استثناءً فيُصنَّف Unknown/generic رغم نجاح كتالوج الـ sync.
+3. Compose Resources لا يفك `\'` كـ Android — ظهر الـ backslash للمستخدم.
+
+**الإصلاح (أصغر diff):**
+- Gate = فحوصات حضور (indexes غير فارغة) لا 1:1؛ الصوت/الصور ما زالا خارج النواة.
+- بعد `SyncOutcome.Success` الدخول للـ tabs إن وُجدت Explore + configs + message library (home/system messages لا تحجب).
+- `HomeSyncRepository` يعيد `Result.failure` بدل رمي؛ timeout Splash → 60ث؛ `bootstrapLocalCaches` عند OpenShell.
+- `strings.xml`: apostrophe داخل `"..."`؛ مولّد `MovitEnglishStrings` ينزع علامات الاقتباس الخارجية.
+
+**ليس السبب:** `withAudio=0` — لم يكن شرطًا في الـ Gate.
+
+### 7.ه — تشخيص لوج 18:25 + تعليق applySyncMessageLibrary (2026-07-16)
+
+**قراءة لوج المحاكي (18:25):**
+- تشغيل **Debug مع debugger** (`Waiting for debugger` / Application suspending) — يجمّد الإقلاع مبكرًا.
+- محاكي (`10.0.2.16` / GFXSTREAM) — الـ URL صحيح عبر `10.0.2.2:4000`.
+- **صفر طلبات HTTP** في اللقطة؛ لا سطور MovitBootstrap — غالبًا لم يُكمل login أو الـ sync عُلّق قبل الإرجاع.
+- `Signal Catcher` signal 3 ≈ طلب thread dump (Studio/ANR).
+
+**لوج 17:40 (run-log.md) الأوضح:** بعد ظهور لوحة المفاتيح (شاشة دخول) يظهر `Long db operation: movit_local.db` + GC ضخم (LOS → 60MB) — يتوافق مع إعادة كتابة كل exercise configs عند تطبيق مكتبة رسائل كاملة (~2662) داخل `fullRefresh`.
+
+**الإصلاح:** إزالة الاستدعاء المتزامن لـ `trainingConfig.applySyncMessageLibrary(...)` من مسار apply الـ sync. المكتبة تُحفظ (`replaceFull`/`mergePartial`) والدمج يتم عند القراءة (merge-on-read) كما نصّت F5. هذا يمنع تعليق Splash بعد HTTP 200. أُضيف log `[MovitBootstrap]` للنتيجة والجاهزية.
+
+### 7.و — `outcome=Skipped` + سباق BackgroundSyncWorker (2026-07-16 18:30)
+
+**اللوج:**
+```
+[MovitBootstrap] outcome=Skipped canEnter=false readiness=Missing(parts=[CatalogExports])
+```
+
+**الجذر:** `fullRefresh()` يستخدم `Mutex.tryLock()` → إن كان `MovitBackgroundSyncWorker` يملك القفل يُرجع `Skipped` فورًا. الـ Splash كان يشترط `Success` فقط فيفشل رغم أن النواة موجودة (Explore/configs/messages) والنقص الوحيد `CatalogExports` (ليس حاجز دخول).
+
+**الإصلاح:**
+1. إن كانت النواة جاهزة (`canEnterTabs`) → دخول tabs فورًا بدون Splash (حتى مع Missing CatalogExports).
+2. عند `Skipped`: `awaitSyncIdle` ثم إعادة محاولة؛ الدخول مسموح عند `Success|Skipped` + نواة جاهزة.
+

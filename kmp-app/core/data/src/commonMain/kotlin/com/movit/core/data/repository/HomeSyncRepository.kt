@@ -48,27 +48,36 @@ class HomeSyncRepository(
                 api.fetchHome(
                     authorization = bindings.authHeader(),
                     ifNoneMatch = etag,
-                ).map { response ->
-                    // P2.4: 304 → keep cache (success with null data).
-                    if (response.success && response.data == null && cached != null) {
-                        return@map cached
-                    }
-                    if (!response.success || response.data == null) {
-                        error(response.error ?: "Home sync failed.")
-                    }
-                    response.etag?.let { value ->
-                        localStore().writeString(
-                            MovitCacheKeys.HOME_STORE,
-                            MovitCacheKeys.HOME_ETAG,
-                            value,
-                        )
-                    }
-                    HomeTrainModeHydrator.hydrateIfNeeded(
-                        home = response.data!!,
-                        api = api,
-                        authorization = bindings.authHeader(),
-                    )
-                }
+                ).fold(
+                    onFailure = { Result.failure(it) },
+                    onSuccess = { response ->
+                        // P2.4: 304 → keep cache (success with null data).
+                        when {
+                            response.success && response.data == null && cached != null ->
+                                Result.success(cached)
+                            !response.success || response.data == null ->
+                                Result.failure(
+                                    IllegalStateException(response.error ?: "Home sync failed."),
+                                )
+                            else -> {
+                                response.etag?.let { value ->
+                                    localStore().writeString(
+                                        MovitCacheKeys.HOME_STORE,
+                                        MovitCacheKeys.HOME_ETAG,
+                                        value,
+                                    )
+                                }
+                                Result.success(
+                                    HomeTrainModeHydrator.hydrateIfNeeded(
+                                        home = response.data!!,
+                                        api = api,
+                                        authorization = bindings.authHeader(),
+                                    ),
+                                )
+                            }
+                        }
+                    },
+                )
             },
             isSuccess = { true },
             errorMessage = { "Home sync failed." },

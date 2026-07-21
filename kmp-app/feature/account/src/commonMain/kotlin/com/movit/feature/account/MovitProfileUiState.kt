@@ -21,7 +21,11 @@ data class MovitProfileUiState(
     /** UX.2a — pending/failed outbox rows for the Sync settings section. */
     val syncItems: List<ProfileSyncItemUi> = emptyList(),
     val isSyncBusy: Boolean = false,
+    /** Localization key for sync status (use with [syncStatusMessageArg]). */
     val syncStatusMessage: String? = null,
+    val syncStatusMessageArg: String? = null,
+    /** ISO timestamp of last successful sync, when known. */
+    val lastSuccessfulSyncAt: String? = null,
 )
 
 data class ProfileSyncItemUi(

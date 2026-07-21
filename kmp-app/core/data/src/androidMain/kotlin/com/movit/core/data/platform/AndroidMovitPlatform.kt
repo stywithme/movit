@@ -71,13 +71,10 @@ class AndroidMovitPlatform(
     override fun isProUser(): Boolean =
         profilePrefs.getBoolean(MovitAuthProfileKeys.KEY_IS_PRO, false)
 
-    override fun activeUserProgramId(): String? {
-        if (MovitData.isInstalled) {
-            MovitData.plan.readCachedActiveUserProgramId()?.let { return it }
-        }
-        return readCache(MovitCacheKeys.PROGRAM_STORE, MovitCacheKeys.ACTIVE_USER_PROGRAM_ID)
+    // Raw cache only — must not call PlanSyncRepository (avoids StackOverflow with readCachedActiveUserProgramId).
+    override fun activeUserProgramId(): String? =
+        readCache(MovitCacheKeys.PROGRAM_STORE, MovitCacheKeys.ACTIVE_USER_PROGRAM_ID)
             ?.takeIf { it.isNotBlank() }
-    }
 
     override fun setActiveUserProgramId(userProgramId: String?) {
         if (MovitData.isInstalled) {
@@ -95,7 +92,7 @@ class AndroidMovitPlatform(
         if (userProgramId.isNullOrBlank()) {
             removeCache(MovitCacheKeys.PROGRAM_STORE, MovitCacheKeys.ACTIVE_USER_PROGRAM_ID)
         } else {
-            removeCache(MovitCacheKeys.PROGRAM_STORE, MovitCacheKeys.ACTIVE_USER_PROGRAM_ID)
+            writeCache(MovitCacheKeys.PROGRAM_STORE, MovitCacheKeys.ACTIVE_USER_PROGRAM_ID, userProgramId)
         }
     }
 
