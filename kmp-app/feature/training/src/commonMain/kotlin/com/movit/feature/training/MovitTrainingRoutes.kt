@@ -209,6 +209,7 @@ fun TrainingSessionRoute(
             null
           },
           angleTrackingEpoch = state.angleTrackingEpoch,
+          elbowTracked = state.elbowTracked,
           modifier = Modifier.fillMaxSize(),
         )
       }

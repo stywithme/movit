@@ -21,6 +21,20 @@ data class PoseFrame(
      * Engine clears [com.movit.core.training.engine.AngleSmoother] buffers for these.
      */
     val angleModeSwitchedJointCodes: Set<String> = emptySet(),
+    /**
+     * WP-23: per-joint trust in [angles], keyed by joint code, values in `[0,1]`.
+     *
+     * **An absent key means "no confidence information"** and must be treated as fully
+     * trusted — only producers that can actually measure their own doubt populate it
+     * (today: the elbows, via `ElbowAngleEstimator`).
+     */
+    val angleConfidence: Map<String, Float> = emptyMap(),
+    /**
+     * WP-24: per-joint measurement geometry quality in `[0,1]`, keyed by joint code.
+     * `0` means the joint's motion plane contains the optical axis — no algorithm can
+     * recover the angle from this camera position; only moving the camera helps.
+     */
+    val angleObservability: Map<String, Float> = emptyMap(),
 ) {
     val hasPose: Boolean get() = landmarks != null
 
@@ -40,6 +54,10 @@ data class PoseFrame(
             worldLandmarks = worldLandmarks,
             angles = PoseLandmarkMirroring.mirrorAngles(angles),
             angleModeSwitchedJointCodes = PoseLandmarkMirroring.mirrorJointCodes(angleModeSwitchedJointCodes),
+            // WP-23: keys must travel with the angles they describe, or confidence
+            // silently describes the opposite arm on the front camera.
+            angleConfidence = PoseLandmarkMirroring.mirrorJointKeyedMap(angleConfidence),
+            angleObservability = PoseLandmarkMirroring.mirrorJointKeyedMap(angleObservability),
             isFrontCamera = false,
         )
     }

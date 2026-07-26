@@ -1,5 +1,6 @@
 package com.movit.core.training.geometry
 
+import com.movit.core.training.diagnostics.TrainingPipelineDiagnostics
 import com.movit.core.training.engine.policy.VisibilityDefaults
 import com.movit.core.training.model.JointAngles
 import com.movit.core.training.model.Landmark
@@ -37,6 +38,8 @@ object PoseFrameAssembler {
             stickyState = stickyState,
             aspectYScale = aspectYScale,
         )
+        var confidence: Map<String, Float> = emptyMap()
+        var observability: Map<String, Float> = emptyMap()
         if (applyElbowCorrection && worldLandmarks != null && worldLandmarks.size >= 33) {
             val elbowEstimator = estimator ?: ElbowAngleEstimator()
             angles = elbowEstimator.correct(
@@ -47,6 +50,9 @@ object PoseFrameAssembler {
                 aspectYScale = aspectYScale,
                 collectDiagnostics = collectElbowDiagnostics,
             )
+            confidence = sideMap(elbowEstimator.lastConfidence)
+            observability = sideMap(elbowEstimator.lastObservability)
+            recordWorldVisibilitySample(worldLandmarks)
         }
         return PoseFrame(
             angles = angles,
@@ -57,6 +63,8 @@ object PoseFrameAssembler {
             analysisImageWidth = analysisImageWidth,
             analysisImageHeight = analysisImageHeight,
             angleModeSwitchedJointCodes = switched,
+            angleConfidence = confidence,
+            angleObservability = observability,
         )
     }
 
@@ -161,6 +169,38 @@ object PoseFrameAssembler {
                 PoseLandmarkIndices.RIGHT_KNEE, PoseLandmarkIndices.RIGHT_ANKLE, PoseLandmarkIndices.RIGHT_FOOT_INDEX,
             ),
         )
+    }
+
+    /**
+     * M-A (WP-22): samples the elbow chain's **world** visibility so the periodic diagnostics
+     * line can answer whether MediaPipe fills that field at all, or whether both platforms
+     * only ever see their `orElse(1f)` default. Debug builds only.
+     */
+    private fun recordWorldVisibilitySample(world: List<Landmark>) {
+        if (!TrainingPipelineDiagnostics.isEnabled()) return
+        TrainingPipelineDiagnostics.recordWorldVisibilitySample(
+            minOf(
+                world[PoseLandmarkIndices.LEFT_SHOULDER].visibility,
+                world[PoseLandmarkIndices.LEFT_ELBOW].visibility,
+                world[PoseLandmarkIndices.LEFT_WRIST].visibility,
+            ),
+        )
+    }
+
+    /**
+     * WP-23: turns the estimator's `[left, right]` side array into a joint-keyed map.
+     * `NaN` entries are dropped — an absent key means "no information", not "zero trust".
+     */
+    private fun sideMap(perSide: FloatArray): Map<String, Float> {
+        val left = perSide.getOrNull(0)
+        val right = perSide.getOrNull(1)
+        val hasLeft = left != null && !left.isNaN()
+        val hasRight = right != null && !right.isNaN()
+        if (!hasLeft && !hasRight) return emptyMap()
+        return buildMap(2) {
+            if (hasLeft) put("left_elbow", left)
+            if (hasRight) put("right_elbow", right)
+        }
     }
 
     /** Aspect fix for normalized 2D: stretch y so x/y share the same metric (F3). */

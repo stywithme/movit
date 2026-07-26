@@ -80,6 +80,16 @@ class IosCameraFrameSource(
         angleModeStickyState.reset()
     }
 
+    /** Debug/diagnostics hosts read elbow correction state from this session instance. */
+    fun currentElbowEstimator(): ElbowAngleEstimator = elbowAngleEstimator
+
+    /** EL-11: live toggle — `configuration` is read per frame, so no session restart is needed. */
+    override fun setElbowCorrectionEnabled(enabled: Boolean) {
+        if (configuration.applyElbowCorrection == enabled) return
+        configuration = configuration.copy(applyElbowCorrection = enabled)
+        elbowAngleEstimator.reset()
+    }
+
     private fun maybeAdaptiveDowngrade(inferenceMs: Float) {
         val current = TrainingThroughputProfiles.resolve(configuration.throughputProfileId)
         val next = adaptiveThroughput.onInferenceMs(inferenceMs, current) ?: return
@@ -128,6 +138,7 @@ class IosCameraFrameSource(
 
     override fun start(configuration: CameraSourceConfiguration) {
         this.configuration = configuration
+        elbowAngleEstimator.reconstructionEnabled = configuration.elbowDepthReconstruction
         lastSubmittedFrameMs = 0L
         landmarkSmoother.reset()
         adaptiveThroughput.resetSession()

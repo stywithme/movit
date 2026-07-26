@@ -35,6 +35,7 @@ actual fun TrainingSessionCameraHost(
     modelType: String,
     onDebugFps: ((Int) -> Unit)?,
     angleTrackingEpoch: Int,
+    elbowTracked: Boolean,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -135,6 +136,11 @@ actual fun TrainingSessionCameraHost(
     LaunchedEffect(angleTrackingEpoch, cameraSource) {
         if (angleTrackingEpoch <= 0) return@LaunchedEffect
         cameraSource.resetAngleTracking()
+    }
+
+    // EL-11: applied to the live configuration — no camera rebind between exercises.
+    LaunchedEffect(elbowTracked, cameraSource) {
+        cameraSource.setElbowCorrectionEnabled(elbowTracked)
     }
 
     TrainingCameraSurface(

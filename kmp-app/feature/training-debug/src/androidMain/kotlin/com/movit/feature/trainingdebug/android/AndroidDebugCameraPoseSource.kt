@@ -75,7 +75,10 @@ class AndroidDebugCameraPoseSource : TrainingDebugPoseSource {
             frameFlow.tryEmit(detection!!.toDebugFrameInput(poseFrame, diagnosticsPort))
         }
         source.setFrameListener { /* debug path uses setDebugFrameListener */ }
-        source.start(resolveTrainingCameraConfiguration(isFrontCamera))
+        source.start(
+            // Debug lab: the elbow panel reads this session's estimator, so it has to collect.
+            resolveTrainingCameraConfiguration(isFrontCamera).copy(collectElbowDiagnostics = true),
+        )
     }
 
     override suspend fun stop() {
@@ -93,7 +96,10 @@ class AndroidDebugCameraPoseSource : TrainingDebugPoseSource {
         isFrontCamera = !isFrontCamera
         config = config.copy(isFrontCamera = isFrontCamera)
         val source = cameraSource ?: return
-        source.start(resolveTrainingCameraConfiguration(isFrontCamera))
+        source.start(
+            // Debug lab: the elbow panel reads this session's estimator, so it has to collect.
+            resolveTrainingCameraConfiguration(isFrontCamera).copy(collectElbowDiagnostics = true),
+        )
     }
 
     fun skippedBusyFrames(): Int = poseDetector?.consumeBusySkipCount() ?: 0

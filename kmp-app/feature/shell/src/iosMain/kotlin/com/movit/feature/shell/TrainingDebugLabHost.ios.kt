@@ -3,6 +3,7 @@ package com.movit.feature.shell
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import com.movit.core.data.access.TrainingDebugAccess
 import com.movit.feature.trainingdebug.TrainingDebugRoute
 import com.movit.feature.trainingdebug.isTrainingDebugLabEnabled
 
@@ -13,7 +14,7 @@ actual fun TrainingDebugLabHost(
     onCopy: (String) -> Unit,
     modifier: Modifier,
 ) {
-    if (isTrainingDebugLabEnabled()) {
+    if (TrainingDebugAccess.isLabAvailable(isTrainingDebugLabEnabled())) {
         TrainingDebugRoute(
             exerciseSlug = exerciseSlug,
             onBack = onBack,

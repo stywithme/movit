@@ -143,6 +143,7 @@ fun MovitProfileScreen(
                         syncStatusMessage = state.syncStatusMessage,
                         syncStatusMessageArg = state.syncStatusMessageArg,
                         lastSuccessfulSyncAt = state.lastSuccessfulSyncAt,
+                        showTrainingDebugLab = state.showTrainingDebugLab,
                         onEvent = onEvent,
                     )
                 }
@@ -159,6 +160,8 @@ private fun ProfileContent(
     syncStatusMessage: String?,
     syncStatusMessageArg: String?,
     lastSuccessfulSyncAt: String?,
+    /** Debug build, or the primary admin account signed in on any build. */
+    showTrainingDebugLab: Boolean,
     onEvent: (MovitProfileEvent) -> Unit,
 ) {
     ProfileHero(profile = profile, onEvent = onEvent)
@@ -286,7 +289,7 @@ private fun ProfileContent(
                 )
             },
         )
-        if (PlatformInfo.supportsTrainingDebugLab) {
+        if (showTrainingDebugLab) {
             MovitListRow(
                 title = "Training Debug Lab",
                 subtitle = "Internal pose diagnostics",

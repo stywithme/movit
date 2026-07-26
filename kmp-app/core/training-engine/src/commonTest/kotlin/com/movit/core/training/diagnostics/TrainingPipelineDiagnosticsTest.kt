@@ -35,7 +35,8 @@ class TrainingPipelineDiagnosticsTest {
             droppedSupervisor = 0,
         )
         assertTrue("cam=10fps" in line)
-        assertTrue("profile=stable" in line)
+        // WP-19 moved the default profile to HIGH; the snapshot above declares HIGH.
+        assertTrue("profile=high" in line)
         assertTrue("analysis=320x240" in line)
         assertTrue("pose=8fps" in line)
         assertTrue("inferMs=44" in line)

@@ -54,4 +54,11 @@ object PoseLandmarkMirroring {
 
     fun mirrorJointCodes(codes: Set<String>): Set<String> =
         if (codes.isEmpty()) codes else codes.map(::mirrorJointCode).toSet()
+
+    /**
+     * Swaps L/R in the **keys** of any joint-keyed side-channel (WP-23: confidence,
+     * observability). Values are carried through untouched.
+     */
+    fun <T> mirrorJointKeyedMap(source: Map<String, T>): Map<String, T> =
+        if (source.isEmpty()) source else source.mapKeys { mirrorJointCode(it.key) }
 }

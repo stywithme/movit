@@ -77,6 +77,26 @@ class TrainingDebugAnalyzerTest {
         assertNotNull(elbow.strategy)
     }
 
+    /**
+     * WP-23/24: the lab is where these two numbers have to be visible — a confidence that only
+     * exists inside the data model cannot be used to diagnose anything.
+     */
+    @Test
+    fun analyze_elbowTab_showsConfidenceAndObservabilityInInfoPanel() {
+        val frame = bentElbowFrame()
+
+        val result = analyzer.analyze(
+            frame = frame,
+            config = TrainingDebugConfig(
+                selectedJoints = setOf("left_elbow"),
+                activeTab = TrainingDebugTab.ANGLE_DIAGNOSTICS,
+            ),
+        )
+
+        assertTrue(result.infoPanelText.contains("confidence="), result.infoPanelText)
+        assertTrue(result.infoPanelText.contains("observability="), result.infoPanelText)
+    }
+
     @Test
     fun analyze_positionTab_reportsSyntheticCheckStatus() {
         val frame = squatFrame(kneeAngle = 95.0)

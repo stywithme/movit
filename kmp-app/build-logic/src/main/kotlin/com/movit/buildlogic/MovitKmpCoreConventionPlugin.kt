@@ -61,6 +61,22 @@ class MovitKmpCoreConventionPlugin : Plugin<Project> {
         val generateTask = tasks.register("generateMovitAndroidBuildMetadata") {
             val outputDir = layout.buildDirectory.dir("generated/movitAndroidBuild/kotlin")
             outputs.dir(outputDir)
+
+            val localProps = rootProject.file("local.properties")
+            val apiProps = rootProject.file("api.properties")
+            if (localProps.isFile) inputs.file(localProps)
+            if (apiProps.isFile) inputs.file(apiProps)
+            inputs.property("movitBuildConfigFingerprint") {
+                buildString {
+                    extension.buildConfigStrings.entries.sortedBy { it.key }.forEach { (key, value) ->
+                        append(key).append('=').append(value).append(';')
+                    }
+                    extension.buildConfigInts.entries.sortedBy { it.key }.forEach { (key, value) ->
+                        append(key).append('=').append(value).append(';')
+                    }
+                }
+            }
+
             doLast {
                 val outRoot = outputDir.get().asFile
                 val packageName = "$namespace.buildconfig"

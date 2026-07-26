@@ -29,6 +29,8 @@ class ElbowEstimatorDiagnosticsPort(
         outputAngle = outputAngle,
         isHolding = isHolding,
         strategy = strategy.legacyCode,
+        confidence = confidence,
+        armPlaneObservability = armPlaneObservability.takeIf { !it.isNaN() },
     )
 }
 

@@ -10,4 +10,9 @@ data class CameraSourceConfiguration(
     val applyElbowCorrection: Boolean = true,
     /** WP-18: allocate elbow diagnostics only for debug consumers. */
     val collectElbowDiagnostics: Boolean = false,
+    /**
+     * WP-25: bone-length depth reconstruction as a third candidate. Default **off** — it stays
+     * gated until the M-E recordings show it beats the arbiter on cross-camera consistency.
+     */
+    val elbowDepthReconstruction: Boolean = false,
 )

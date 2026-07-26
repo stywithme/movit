@@ -147,6 +147,10 @@ data class ElbowDiagnosticsSnapshot(
     val outputAngle: Double? = null,
     val isHolding: Boolean = false,
     val strategy: String? = null,
+    /** WP-23: how much the arbiter trusts [outputAngle] this frame. */
+    val confidence: Float? = null,
+    /** WP-24: `|n_z| / ‖n‖` of the arm plane; 0 = angle not observable from this camera spot. */
+    val armPlaneObservability: Float? = null,
 )
 
 data class TrainingDebugFpsCounters(

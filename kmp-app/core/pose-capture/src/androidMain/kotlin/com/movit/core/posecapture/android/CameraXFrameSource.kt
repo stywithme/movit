@@ -119,6 +119,7 @@ class CameraXFrameSource(
 
     override fun start(configuration: CameraSourceConfiguration) {
         this.configuration = configuration
+        elbowAngleEstimator.reconstructionEnabled = configuration.elbowDepthReconstruction
         adaptiveThroughput.resetSession()
         resetAngleTracking()
         handleGateAction(startGate.onStartRequested(configuration.useFrontCamera))
@@ -149,6 +150,13 @@ class CameraXFrameSource(
     override fun resetAngleTracking() {
         elbowAngleEstimator.reset()
         angleModeStickyState.reset()
+    }
+
+    /** EL-11: live toggle — `configuration` is read per frame, so no rebind is needed. */
+    override fun setElbowCorrectionEnabled(enabled: Boolean) {
+        if (configuration.applyElbowCorrection == enabled) return
+        configuration = configuration.copy(applyElbowCorrection = enabled)
+        elbowAngleEstimator.reset()
     }
 
     /** @deprecated Use [resetAngleTracking]; kept for debug hosts. */

@@ -797,6 +797,7 @@
     <string name="training_session_camera_denied_message">Allow camera access in Settings to train with live form feedback.</string>
     <string name="training_session_camera_denied_ios">Camera training on iOS is not available in this build yet.</string>
     <string name="training_session_open_settings">Open Settings</string>
+    <string name="training_camera_angle_hint">Move the camera a little to the side so your elbow angle can be measured.</string>
     <string name="training_session_camera_unavailable">Pose capture is not available. Restart the app.</string>
     <string name="training_session_flip_camera_a11y">Switch camera</string>
     <string name="training_session_camera_switch_failed">Could not switch camera. Try again.</string>

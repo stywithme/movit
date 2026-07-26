@@ -20,6 +20,8 @@ internal fun poseFrameToDebugInput(
     rawWorldLandmarks: List<Landmark>? = poseFrame.worldLandmarks,
     smoothedWorldLandmarks: List<Landmark>? = poseFrame.worldLandmarks,
     inferenceTimeMs: Long = 0L,
+    /** Without a real port the debug lab's elbow panel stays empty (WP-23/24 readouts included). */
+    elbowDiagnosticsPort: ElbowDiagnosticsPort = ElbowDiagnosticsPort.NoOp,
 ): TrainingDebugFrameInput = TrainingDebugFrameFactory.fromAssembled(
     poseFrame = poseFrame,
     rawLandmarks = rawLandmarks,
@@ -27,4 +29,5 @@ internal fun poseFrameToDebugInput(
     rawWorldLandmarks = rawWorldLandmarks,
     smoothedWorldLandmarks = smoothedWorldLandmarks,
     inferenceTimeMs = inferenceTimeMs,
+    elbowDiagnosticsPort = elbowDiagnosticsPort,
 )

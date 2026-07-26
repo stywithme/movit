@@ -771,6 +771,7 @@ internal val movitEnglishStrings: Map<String, String> = mapOf(
     "training_session_camera_denied_message" to "Allow camera access in Settings to train with live form feedback.",
     "training_session_camera_denied_ios" to "Camera training on iOS is not available in this build yet.",
     "training_session_open_settings" to "Open Settings",
+    "training_camera_angle_hint" to "Move the camera a little to the side so your elbow angle can be measured.",
     "training_session_camera_unavailable" to "Pose capture is not available. Restart the app.",
     "training_session_flip_camera_a11y" to "Switch camera",
     "training_session_camera_switch_failed" to "Could not switch camera. Try again.",

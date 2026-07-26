@@ -39,6 +39,10 @@ object TrainingPipelineDiagnostics {
     private val poseInferenceSamples = atomic(0)
     private val poseStallEvents = atomic(0)
 
+    private val worldVisSamples = atomic(0)
+    private val worldVisSaturated = atomic(0)
+    private val worldVisMinMilli = atomic(1_000)
+
     private val vmIngress = atomic(0)
     private val vmProcessed = atomic(0)
     private val vmConflated = atomic(0)
@@ -98,6 +102,27 @@ object TrainingPipelineDiagnostics {
     fun recordInferenceStall() {
         if (!isTrainingPipelineDiagnosticsEnabled()) return
         poseStallEvents.incrementAndGet()
+    }
+
+    /**
+     * M-A gate (WP-22): does MediaPipe actually populate `visibility` on **world** landmarks,
+     * or do both platforms only ever see their `orElse(1f)` default?
+     *
+     * Angle gating moved to normalized visibility (EL-07); this counter exists to answer the
+     * question with data instead of assumption. `constant=1.0` for a whole session means the
+     * old world-visibility gate was a no-op, exactly as suspected.
+     *
+     * @param worst the smallest world visibility across the sampled joint chain.
+     */
+    fun recordWorldVisibilitySample(worst: Float) {
+        if (!isTrainingPipelineDiagnosticsEnabled()) return
+        worldVisSamples.incrementAndGet()
+        if (worst >= 1f) worldVisSaturated.incrementAndGet()
+        val milli = (worst.coerceIn(0f, 1f) * 1000f).toInt()
+        while (true) {
+            val current = worldVisMinMilli.value
+            if (milli >= current || worldVisMinMilli.compareAndSet(current, milli)) break
+        }
     }
 
     fun recordVmIngress(wasConflated: Boolean) {
@@ -168,6 +193,12 @@ object TrainingPipelineDiagnostics {
         val vmIngress: Int,
         val vmProcessed: Int,
         val vmConflated: Int,
+        /** M-A: world-landmark visibility samples in this window. */
+        val worldVisSamples: Int = 0,
+        /** M-A: how many of them were exactly 1.0 (the platform default when absent). */
+        val worldVisSaturated: Int = 0,
+        /** M-A: smallest world visibility seen, in per-mille. */
+        val worldVisMinMilli: Int = 1_000,
     )
 
     private fun captureWindowSnapshot(): WindowSnapshot {
@@ -187,6 +218,9 @@ object TrainingPipelineDiagnostics {
             vmIngress = vmIngress.getAndSet(0),
             vmProcessed = vmProcessed.getAndSet(0),
             vmConflated = vmConflated.getAndSet(0),
+            worldVisSamples = worldVisSamples.getAndSet(0),
+            worldVisSaturated = worldVisSaturated.getAndSet(0),
+            worldVisMinMilli = worldVisMinMilli.getAndSet(1_000),
         )
     }
 
@@ -202,6 +236,9 @@ object TrainingPipelineDiagnostics {
         vmIngress.value = 0
         vmProcessed.value = 0
         vmConflated.value = 0
+        worldVisSamples.value = 0
+        worldVisSaturated.value = 0
+        worldVisMinMilli.value = 1_000
     }
 
     internal fun buildPeriodicLine(
@@ -248,6 +285,12 @@ object TrainingPipelineDiagnostics {
             append(" score=$formScore")
             append(" drop=$droppedEngine")
             append(" | supervisor=drop=$droppedSupervisor")
+            if (snapshot.worldVisSamples > 0) {
+                val saturatedAll = snapshot.worldVisSaturated == snapshot.worldVisSamples
+                append(" | worldVis=n=${snapshot.worldVisSamples}")
+                append(" min=${snapshot.worldVisMinMilli / 1_000.0}")
+                append(" constant1=$saturatedAll")
+            }
         }
     }
 }

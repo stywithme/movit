@@ -38,6 +38,7 @@ class IosTrainingDebugPoseSource : TrainingDebugPoseSource {
                 ),
             )
         }
+        // Diagnostics are collected downstream, where TrainingDebugFrameFactory re-assembles.
         cameraSource.start(CameraSourceConfiguration())
     }
 

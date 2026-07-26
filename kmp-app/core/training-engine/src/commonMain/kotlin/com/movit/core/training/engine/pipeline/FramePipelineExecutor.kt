@@ -30,6 +30,12 @@ class FramePipelineExecutor(
         /** WP-02/E-11: joints whose 3D/2D mode flipped — clear MA buffer on switch. */
         angleModeSwitchedJoints: Set<String> = emptySet(),
         worldLandmarks: List<Landmark>? = null,
+        /**
+         * WP-23: a primary joint's angle is not observable this frame. Hold the phase where it
+         * is instead of advancing it on a value we do not trust — freezing, never cancelling,
+         * so no rep can close on an unmeasurable frame.
+         */
+        freezePhase: Boolean = false,
     ): MainPathFrameResult {
         val clearer = skippedForFrame + angleModeSwitchedJoints
         if (clearer.isNotEmpty()) {
@@ -39,7 +45,7 @@ class FramePipelineExecutor(
         val primaryAngles = smoothedAngles.filterKeys { primaryJointCodes.contains(it) }
 
         val inStartPos = startPoseGate.isInStartPosition(smoothedAngles)
-        val currentPhase = stateMachine.update(primaryAngles)
+        val currentPhase = if (freezePhase) stateMachine.currentPhase else stateMachine.update(primaryAngles)
         var positionResult: PositionValidationResult? = null
         val validator = positionValidator
         if (landmarks != null && validator != null) {

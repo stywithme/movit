@@ -53,6 +53,9 @@ kotlin {
             implementation(libs.jetbrains.lifecycle.viewmodel.compose)
             implementation(libs.jetbrains.lifecycle.runtime.compose)
         }
+        androidMain.dependencies {
+            implementation(project(":feature:training-debug"))
+        }
         iosMain.dependencies {
             implementation(project(":feature:training-debug"))
         }

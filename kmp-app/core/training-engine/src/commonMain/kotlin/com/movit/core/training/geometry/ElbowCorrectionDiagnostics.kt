@@ -16,7 +16,16 @@ data class ElbowCorrectionDiagnostics(
     val uaDzShare: Float,
     val faDzShare: Float,
     val strategy: ElbowCorrectionStrategy,
+    /** WP-23: how much [outputAngle] deserves trust this frame, `[0,1]`. */
+    val confidence: Float = 1f,
+    /** WP-24: `|n_z| / ‖n‖` of the arm plane normal; 0 = angle not observable. `NaN` if unknown. */
+    val armPlaneObservability: Float = Float.NaN,
 )
+
+/**
+ * Diagnostics label only — since WP-21 the output is one continuous blend, not a branch pick.
+ * The names are kept for Legacy `ElbowDiagnostics` parity in the debug lab.
+ */
 
 enum class ElbowCorrectionStrategy(val legacyCode: String) {
     STRAIGHT("STRAIGHT"),

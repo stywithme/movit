@@ -1,5 +1,7 @@
 plugins {
     id("movit.kmp.feature")
+    // WP-26: @Serializable DTOs for the M-E reference-recording codec.
+    alias(libs.plugins.kotlin.serialization)
 }
 
 movitKmp {

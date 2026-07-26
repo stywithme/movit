@@ -26,6 +26,8 @@ data class MovitProfileUiState(
     val syncStatusMessageArg: String? = null,
     /** ISO timestamp of last successful sync, when known. */
     val lastSuccessfulSyncAt: String? = null,
+    /** Debug build, or the primary admin account signed in on any build. */
+    val showTrainingDebugLab: Boolean = false,
 )
 
 data class ProfileSyncItemUi(

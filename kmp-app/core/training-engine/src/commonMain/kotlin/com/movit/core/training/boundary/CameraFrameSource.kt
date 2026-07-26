@@ -22,4 +22,13 @@ expect interface CameraFrameSource {
      * Call on lens switch / session start / flow exercise boundaries.
      */
     fun resetAngleTracking()
+
+    /**
+     * Enables/disables the elbow arbiter for the running session (EL-11 / WP-22).
+     *
+     * Applied to the live configuration without rebinding the camera, so it is safe to call
+     * on every flow exercise boundary. Exercises that track no elbow skip the arbiter — its
+     * EMA state, hold window and confidence output have no consumer there.
+     */
+    fun setElbowCorrectionEnabled(enabled: Boolean)
 }

@@ -2,6 +2,7 @@ package com.movit.feature.account
 
 import androidx.lifecycle.ViewModel
 import com.movit.core.data.MovitData
+import com.movit.core.data.access.TrainingDebugAccess
 import com.movit.core.data.cache.MovitSyncMetadataStore
 import com.movit.core.data.outbox.OutboxStatus
 import com.movit.core.data.repository.AccountSyncRepository
@@ -46,6 +47,10 @@ class MovitProfileViewModel(
                         isSignedIn = true,
                         profile = result.value,
                         errorMessage = null,
+                        // Identity is only known once the profile has loaded.
+                        showTrainingDebugLab = TrainingDebugAccess.isLabAvailable(
+                            PlatformInfo.supportsTrainingDebugLab,
+                        ),
                     )
                 }
                 refreshSyncSection()
@@ -137,7 +142,7 @@ class MovitProfileViewModel(
             is MovitProfileEvent.AudioCuesChanged -> toggleAudioCues(event.enabled)
             is MovitProfileEvent.HapticChanged -> toggleHaptic(event.enabled)
             MovitProfileEvent.TrainingDebugLabClicked -> {
-                if (PlatformInfo.supportsTrainingDebugLab) {
+                if (TrainingDebugAccess.isLabAvailable(PlatformInfo.supportsTrainingDebugLab)) {
                     _effects.tryEmit(MovitProfileEffect.OpenTrainingDebugLab)
                 }
             }

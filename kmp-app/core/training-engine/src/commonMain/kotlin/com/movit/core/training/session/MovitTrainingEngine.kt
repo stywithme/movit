@@ -63,6 +63,10 @@ import com.movit.core.training.engine.pipeline.FrameEvaluationPipeline
 
 import com.movit.core.training.engine.pipeline.FramePipelineExecutor
 
+import com.movit.core.training.engine.policy.AngleConfidenceMonitor
+import com.movit.core.training.engine.policy.CameraPlacementAdvisor
+import com.movit.core.training.engine.policy.CameraPlacementHint
+import com.movit.core.training.engine.policy.AngleConfidenceReport
 import com.movit.core.training.engine.policy.FeedbackPolicy
 
 import com.movit.core.training.engine.policy.StabilityPolicy
@@ -215,6 +219,12 @@ class MovitTrainingEngine(
     private val jointTracker = JointAngleTracker(trackedJoints, stabilityPolicy)
 
     private val jointEvaluator = JointEvaluator(trackedJoints, stabilityPolicy)
+
+    /** WP-23: decides what is too untrusted to score, and when the phase must freeze. */
+    private val angleConfidence = AngleConfidenceMonitor(jointTracker.primaryJointCodes)
+
+    /** WP-24: watches measurement geometry so a bad camera spot is named, not silently endured. */
+    private val cameraPlacement = CameraPlacementAdvisor()
 
     private val frameEvalPipeline = FrameEvaluationPipeline(jointEvaluator)
 
@@ -377,6 +387,12 @@ class MovitTrainingEngine(
 
     var onPositionIssuesChanged: ((List<PositionError>, List<SceneAxisWarning>) -> Unit)? = null
 
+    /**
+     * WP-24: emitted at most once per episode, and only between reps — the camera is worth
+     * talking about before the set, never in the middle of one.
+     */
+    var onCameraPlacementHint: ((CameraPlacementHint) -> Unit)? = null
+
     var onVisibilityEvent: ((PauseControllerEvent) -> Unit)? = null
     var onVisibilityCheck: ((VisibilityCheckResult) -> Unit)? = null
     var onPresenceEvent: ((PresenceSupervisorEvent) -> Unit)? = null
@@ -506,6 +522,10 @@ class MovitTrainingEngine(
 
         jointEvaluator.reset()
 
+        angleConfidence.reset()
+
+        cameraPlacement.reset()
+
         repCompletion.clear()
 
         bilateral.resetToConfigStart()
@@ -614,6 +634,14 @@ class MovitTrainingEngine(
 
     fun droppedFrameCount(): Int = frameIngress.droppedFrameCount
 
+    /**
+     * WP-23: how much of this session the engine could actually measure.
+     *
+     * Feeds the camera-placement hint (WP-24) and the M-E comparison (WP-26). A high
+     * `frozenFrameShare` means the user's camera position, not their form, is the problem.
+     */
+    fun angleConfidenceReport(): AngleConfidenceReport = angleConfidence.snapshot()
+
     internal fun testPauseController(): PauseController = session.pauseController
 
     private fun processPoseFrame(frame: PoseFrame) {
@@ -636,6 +664,12 @@ class MovitTrainingEngine(
         )
 
         lastAnySideDimmedJointCodes = angleExtract.skippedJointCodes
+
+        // WP-23: what the arbiter could not actually measure this frame.
+        val confidenceVerdict = angleConfidence.evaluate(
+            confidence = workingFrame.angleConfidence,
+            isBilateralFlipped = bilateral.isFlipped,
+        )
 
         val visibilities = buildJointVisibilities(workingFrame.landmarks, frame.isFrontCamera)
 
@@ -681,9 +715,19 @@ class MovitTrainingEngine(
 
             worldLandmarks = workingFrame.worldLandmarks,
 
+            freezePhase = confidenceVerdict.freezePhase,
+
         )
 
 
+
+        // WP-24: geometry advice belongs between reps, never inside one.
+        cameraPlacement.onFrame(workingFrame.angleObservability, frame.timestampMs)?.let { hint ->
+            val phase = pipelineResult.currentPhase
+            if (phase == Phase.IDLE || phase == Phase.START) {
+                onCameraPlacementHint?.invoke(hint)
+            }
+        }
 
         val lastPhase = currentPhase
         session.updatePhase(pipelineResult.currentPhase)
@@ -731,7 +775,15 @@ class MovitTrainingEngine(
 
         if (shouldTrackState) {
 
-            val scoringEvals = frameResult.forScoring(angleExtract.skippedJointCodes)
+            // WP-23: untrusted joints are dropped from scoring only — never from the smoother,
+            // whose history must survive a low-confidence stretch to stay continuous.
+            val unscored = if (confidenceVerdict.untrustedJointCodes.isEmpty()) {
+                angleExtract.skippedJointCodes
+            } else {
+                angleExtract.skippedJointCodes + confidenceVerdict.untrustedJointCodes
+            }
+
+            val scoringEvals = frameResult.forScoring(unscored)
 
             repCounter.updateJointEvals(scoringEvals)
 
@@ -740,10 +792,17 @@ class MovitTrainingEngine(
                 currentPhase,
                 pipelineResult.smoothedAngles,
                 frameResult.jointStateInfos,
-                angleExtract.skippedJointCodes,
+                unscored,
             )
 
-            val jointErrors = JointErrorCollection.collectJointErrors(frameResult.jointEvals)
+            // Feedback drops untrusted joints only — ANY_SIDE skipping keeps its own semantics.
+            val feedbackEvals = if (confidenceVerdict.untrustedJointCodes.isEmpty()) {
+                frameResult.jointEvals
+            } else {
+                frameResult.jointEvals.filterKeys { it !in confidenceVerdict.untrustedJointCodes }
+            }
+
+            val jointErrors = JointErrorCollection.collectJointErrors(feedbackEvals)
             for (error in jointErrors) {
                 repCounter.addError(error)
                 if (frameFeedback.shouldEmitJointError(error)) {

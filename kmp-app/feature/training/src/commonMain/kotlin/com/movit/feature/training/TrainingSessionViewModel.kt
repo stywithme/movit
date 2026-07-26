@@ -32,6 +32,7 @@ import com.movit.core.training.engine.feedback.TrainingFeedbackEventRouter
 import com.movit.core.training.engine.feedback.TrainingSystemMessagePort
 import com.movit.core.training.engine.feedback.VignetteCue
 import com.movit.core.training.session.HoldState
+import com.movit.core.training.engine.policy.CameraPlacementHint
 import com.movit.core.training.engine.policy.TimingPolicy
 import com.movit.core.training.feedback.CoachIntensity
 import com.movit.core.training.feedback.FeedbackInterruptPolicy
@@ -197,6 +198,7 @@ class TrainingSessionViewModel(
       isOffline = MovitData.isInstalled && !MovitData.requirePlatform().isNetworkAvailable(),
       configUnavailable = exerciseConfig == null,
       workoutFlowEnabled = flowCoordinator != null,
+      elbowTracked = resolveElbowTracked(),
     ),
   )
   val state: StateFlow<TrainingSessionUiState> = _state.asStateFlow()
@@ -894,6 +896,23 @@ class TrainingSessionViewModel(
         )
       }
     }
+    // WP-24: the camera position, not the user's form, is what this one is about.
+    engine?.onCameraPlacementHint = { hint ->
+      feedback.submit(
+        FeedbackSignal(
+          kind = FeedbackKind.SETUP,
+          severity = FeedbackSeverity.INFO,
+          text = systemMessage(
+            CameraPlacementHint.MESSAGE_CODE,
+            "حرّك الكاميرا جانباً قليلاً حتى يمكن قياس زاوية الكوع.",
+            "Move the camera a little to the side so your elbow angle can be measured.",
+          ),
+          dedupeKey = "camera_placement:${hint.jointCode}",
+          messageCode = CameraPlacementHint.MESSAGE_CODE,
+          allowVisual = true,
+        ),
+      )
+    }
     engine?.onPresenceEvent = { event -> handlePresenceEvent(event) }
     engine?.onJointStateMessage = { jointCode, state, zone ->
       frameCaptureCoordinator.onJointState(
@@ -1436,6 +1455,8 @@ class TrainingSessionViewModel(
         elapsedLabel = formatElapsed(lastElapsedMs),
         // E-08: camera hosts reset elbow + sticky for the next exercise.
         angleTrackingEpoch = it.angleTrackingEpoch + 1,
+        // EL-11: the next exercise may not track an elbow at all.
+        elbowTracked = resolveElbowTracked(),
       )
     }
   }
@@ -1461,6 +1482,19 @@ class TrainingSessionViewModel(
       ?.trackedJoints
       ?.associateBy { it.joint }
       .orEmpty()
+  }
+
+  /**
+   * EL-11: the elbow arbiter only earns its state (EMA, hold window, confidence) when an
+   * elbow is actually tracked. Unknown config ⇒ `true`, so a missing config never silently
+   * disables a measurement the exercise may need.
+   */
+  private fun resolveElbowTracked(): Boolean {
+    val joints = exerciseConfig
+      ?.poseVariants?.getOrNull(activePoseVariantIndex)
+      ?.trackedJoints
+      ?: return true
+    return joints.any { it.joint == "left_elbow" || it.joint == "right_elbow" }
   }
 
   private fun applyFlowOverridesFromItem(exercise: TrainingFlowItem.Exercise?, setNumber: Int) {
@@ -1985,6 +2019,8 @@ data class TrainingSessionUiState(
   val exitPrompt: TrainingSessionExitPrompt? = null,
   /** E-08: incremented in reloadForNextFlowItem so camera hosts reset elbow + sticky. */
   val angleTrackingEpoch: Int = 0,
+  /** EL-11: whether the active pose variant tracks an elbow at all. */
+  val elbowTracked: Boolean = true,
 )
 
 data class TrainingSessionResumePrompt(

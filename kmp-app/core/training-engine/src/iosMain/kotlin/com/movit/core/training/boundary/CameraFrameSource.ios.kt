@@ -14,4 +14,6 @@ actual interface CameraFrameSource {
     actual fun setOnCameraBoundListener(listener: (() -> Unit)?)
 
     actual fun resetAngleTracking()
+
+    actual fun setElbowCorrectionEnabled(enabled: Boolean)
 }

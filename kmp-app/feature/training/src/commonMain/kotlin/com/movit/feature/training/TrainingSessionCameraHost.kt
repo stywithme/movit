@@ -15,4 +15,6 @@ expect fun TrainingSessionCameraHost(
     onDebugFps: ((Int) -> Unit)? = null,
     /** Bumped in [TrainingSessionViewModel.reloadForNextFlowItem] to reset elbow + sticky (E-08). */
     angleTrackingEpoch: Int = 0,
+    /** EL-11: skip the elbow arbiter for exercises that track no elbow. */
+    elbowTracked: Boolean = true,
 )

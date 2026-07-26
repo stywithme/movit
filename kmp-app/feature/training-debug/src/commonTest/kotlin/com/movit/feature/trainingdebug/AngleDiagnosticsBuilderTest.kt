@@ -88,6 +88,7 @@ class AngleDiagnosticsBuilderTest {
             timestampMs = 1_000L,
             isFrontCamera = false,
             worldLandmarks = world,
+            collectElbowDiagnostics = true,
             estimator = elbowEstimator,
         )
         val snapshot = ElbowEstimatorDiagnosticsPort(elbowEstimator).snapshotForJoint("left_elbow")

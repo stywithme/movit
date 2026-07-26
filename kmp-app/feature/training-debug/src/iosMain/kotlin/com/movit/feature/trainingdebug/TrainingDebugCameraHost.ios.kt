@@ -58,7 +58,12 @@ actual fun TrainingDebugCameraHost(
                 return@setFrameListener
             }
             currentOnFrame(
-                poseFrameToDebugInput(poseFrame = frame),
+                poseFrameToDebugInput(
+                    poseFrame = frame,
+                    elbowDiagnosticsPort = ElbowEstimatorDiagnosticsPort(
+                        cameraSource.currentElbowEstimator(),
+                    ),
+                ),
             )
         }
         onDispose {
@@ -72,7 +77,10 @@ actual fun TrainingDebugCameraHost(
         if (!previewReady) return@LaunchedEffect
         cameraError = null
         runCatching {
-            cameraSource.start(resolveTrainingCameraConfiguration(isFrontCamera))
+            cameraSource.start(
+                // Debug lab: the elbow panel reads this session's estimator, so it has to collect.
+                resolveTrainingCameraConfiguration(isFrontCamera).copy(collectElbowDiagnostics = true),
+            )
         }.onFailure { error ->
             val message = error.message ?: cameraUnavailableMessage
             cameraError = message

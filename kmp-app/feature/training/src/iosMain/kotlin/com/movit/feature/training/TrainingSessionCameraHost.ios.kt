@@ -31,6 +31,7 @@ actual fun TrainingSessionCameraHost(
     modelType: String,
     onDebugFps: ((Int) -> Unit)?,
     angleTrackingEpoch: Int,
+    elbowTracked: Boolean,
 ) {
     var previewReady by remember { mutableStateOf(false) }
     var cameraError by remember { mutableStateOf<String?>(null) }
@@ -94,6 +95,11 @@ actual fun TrainingSessionCameraHost(
     LaunchedEffect(angleTrackingEpoch, cameraSource) {
         if (angleTrackingEpoch <= 0) return@LaunchedEffect
         cameraSource.resetAngleTracking()
+    }
+
+    // EL-11: applied to the live configuration — no camera rebind between exercises.
+    LaunchedEffect(elbowTracked, cameraSource) {
+        cameraSource.setElbowCorrectionEnabled(elbowTracked)
     }
 
     val message = cameraError

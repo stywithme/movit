@@ -6,8 +6,10 @@ import android.os.Bundle
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import android.util.Log
 import com.movit.billing.installBillingHost
 import com.movit.core.data.local.MovitAndroidRuntime
+import com.movit.core.network.MovitApiConfig
 import com.movit.core.data.sync.BackgroundSyncScheduler
 import com.movit.core.posecapture.android.PoseLandmarkerHeavyModelStore
 import com.movit.ui.theme.AppThemeManager
@@ -37,6 +39,9 @@ class PoseApp : Application() {
         super.onCreate()
         _instance = this
         MovitAndroidRuntime.applicationContext = applicationContext
+        if (BuildConfig.DEBUG) {
+            Log.i("MovitApi", "baseUrl=${MovitApiConfig.getEffectiveBaseUrl()}")
+        }
         BackgroundSyncScheduler.schedule()
         AppThemeManager.applySavedMode(this)
         installBillingHost(this)

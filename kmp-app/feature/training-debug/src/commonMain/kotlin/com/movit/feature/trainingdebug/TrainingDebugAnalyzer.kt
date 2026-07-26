@@ -187,7 +187,16 @@ class TrainingDebugAnalyzer {
             TrainingDebugTab.ANGLE_DIAGNOSTICS -> {
                 angleDiagnostics.forEach { item ->
                     appendLine("joint=${item.displayJointCode} angle=${item.displayedAngle} source=${item.pipelineSourceLabel}")
-                    item.elbowDiagnostics?.strategy?.let { appendLine("  elbow strategy=$it holding=${item.elbowDiagnostics.isHolding}") }
+                    item.elbowDiagnostics?.let { elbow ->
+                        elbow.strategy?.let {
+                            appendLine("  elbow strategy=$it holding=${elbow.isHolding}")
+                        }
+                        // WP-23/24: the two numbers that say whether this angle is worth trusting.
+                        appendLine(
+                            "  elbow confidence=${elbow.confidence} " +
+                                "observability=${elbow.armPlaneObservability}",
+                        )
+                    }
                 }
             }
             TrainingDebugTab.POSITION_CHECK -> {
@@ -230,6 +239,10 @@ class TrainingDebugAnalyzer {
                             item.displayedAngle?.let { put("angle", it) }
                             put("pipeline", item.pipelineSourceLabel)
                             item.elbowDiagnostics?.strategy?.let { put("elbowStrategy", it) }
+                            item.elbowDiagnostics?.confidence?.let { put("elbowConfidence", it) }
+                            item.elbowDiagnostics?.armPlaneObservability?.let {
+                                put("elbowObservability", it)
+                            }
                         },
                     )
                 }

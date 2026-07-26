@@ -2,6 +2,7 @@ package com.movit.feature.shell
 
 import androidx.lifecycle.ViewModel
 import com.movit.core.data.MovitData
+import com.movit.core.data.access.TrainingDebugAccess
 import com.movit.core.data.platform.MovitConnectivitySignals
 import com.movit.core.data.readiness.DataReadinessResult
 import com.movit.core.data.readiness.MovitDataImageWarmup
@@ -494,7 +495,7 @@ class MovitAppShellViewModel : ViewModel() {
                 _effects.tryEmit(MovitAppShellEffect.ShowMessage(effect.message))
             }
             MovitProfileEffect.OpenTrainingDebugLab -> {
-                if (PlatformInfo.supportsTrainingDebugLab) {
+                if (TrainingDebugAccess.isLabAvailable(PlatformInfo.supportsTrainingDebugLab)) {
                     pushInner(MovitInnerRoute.TrainingDebugLab())
                 }
             }

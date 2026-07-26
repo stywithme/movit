@@ -48,6 +48,8 @@ fun TrainingDebugPoseFrame.toDebugFrameInput(
         worldLandmarks = smoothedWorldLandmarks,
         analysisImageWidth = analysisImageWidth,
         analysisImageHeight = analysisImageHeight,
+        // The debug lab exists to show this state — always collect it here.
+        collectElbowDiagnostics = true,
         estimator = elbowEstimator,
         stickyState = stickyState,
     )

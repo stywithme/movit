@@ -274,7 +274,8 @@ dependencies {
 
     debugImplementation(libs.compose.ui.tooling)
 
-    debugImplementation(project(":feature:training-debug"))
+    // Admin-gated in release (TrainingDebugAccess); the debug launcher Activity still uses it too.
+    implementation(project(":feature:training-debug"))
 
 
 
