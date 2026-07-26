@@ -32,6 +32,7 @@ import com.movit.core.data.preferences.MovitTrainingPreferences
 import com.movit.core.data.repository.TrainingConfigRepository
 import com.movit.core.data.repository.TrainingSessionWriteCoordinator
 import com.movit.core.data.repository.WorkoutSessionSyncRepository
+import com.movit.core.data.image.ImagePrefetchRunner
 import com.movit.core.data.sync.MovitCacheInvalidation
 import com.movit.core.data.sync.MovitSyncOrchestrator
 import com.movit.core.data.sync.SyncStatusBus
@@ -241,6 +242,7 @@ object MovitData {
     val trainingPreferences: MovitTrainingPreferences get() = koin().get()
     val audioManifest: AudioManifestCache get() = koin().get()
     val audioPrefetch: AudioPrefetchRunner get() = koin().get()
+    val imagePrefetch: ImagePrefetchRunner get() = koin().get()
     val offlineWrites: OfflineWriteQueue get() = koin().get()
     val sync: MovitSyncOrchestrator get() = koin().get()
     val syncStatus: SyncStatusBus get() = koin().get()

@@ -2,7 +2,9 @@ package com.movit.core.data.sync
 
 import com.movit.core.data.audio.AudioPrefetchRunner
 import com.movit.core.data.audio.EntityAudioManifestFetcher
+import com.movit.core.data.image.ImagePrefetchRunner
 import com.movit.core.data.platform.MovitPlatformBindings
+import com.movit.core.data.repository.ReportsSyncRepository
 import com.movit.core.data.repository.TrainingConfigRepository
 import com.movit.core.data.repository.WorkoutSessionSyncRepository
 import com.movit.core.network.dto.ProgramExportDto
@@ -17,8 +19,10 @@ import com.movit.shared.AppResult
 class WeekOfflinePackPrefetcher(
     private val sync: MovitSyncOrchestrator,
     private val audioPrefetch: AudioPrefetchRunner,
+    private val imagePrefetch: ImagePrefetchRunner,
     private val workoutSession: WorkoutSessionSyncRepository,
     private val trainingConfig: TrainingConfigRepository,
+    private val reportsSync: ReportsSyncRepository,
     private val platform: () -> MovitPlatformBindings,
 ) {
     data class WeekPrefetchPlan(
@@ -40,6 +44,8 @@ class WeekOfflinePackPrefetcher(
             Syncing,
             LoadingPlans,
             CachingAudio,
+            CachingImages,
+            CachingReports,
             Finishing,
         }
     }
@@ -58,19 +64,67 @@ class WeekOfflinePackPrefetcher(
         return bindings.readCache(OFFLINE_STORE, offlineReadyKey(programId, weekNumber)) == READY_MARKER
     }
 
+    /** Weeks of [program] that already have a full offline pack. */
+    fun offlineReadyWeeks(program: ProgramExportDto): List<Int> {
+        val programId = program.id.ifBlank { program.slug }
+        return program.weeks.map { it.weekNumber }.filter { isWeekReadyOffline(programId, it) }
+    }
+
+    /**
+     * Prefetches a run of weeks in one pass — the whole program by default.
+     *
+     * A single week is not enough for gym-offline: effective plans are cached per (week, day), so
+     * any week the user had not opened while online came back empty with no connection.
+     *
+     * @param weekNumbers weeks to cover; defaults to every week in the program.
+     * @param skipReadyWeeks keeps repeat runs cheap by not re-walking already packed weeks.
+     */
+    suspend fun prefetchWeeks(
+        program: ProgramExportDto,
+        weekNumbers: List<Int> = program.weeks.map { it.weekNumber },
+        skipReadyWeeks: Boolean = true,
+        onProgress: (WeekPrefetchProgress) -> Unit = {},
+    ): List<PrefetchOutcome> {
+        val programId = program.id.ifBlank { program.slug }
+        val targets = weekNumbers
+            .distinct()
+            .sorted()
+            .filterNot { skipReadyWeeks && isWeekReadyOffline(programId, it) }
+        if (targets.isEmpty()) return emptyList()
+
+        // One delta sync covers every week — prefetchWeek would otherwise re-sync per week.
+        when (val syncOutcome = sync.syncIfNeeded(forceCheck = true)) {
+            is MovitSyncOrchestrator.SyncOutcome.Error ->
+                return listOf(PrefetchOutcome.Failed(syncOutcome.message))
+            else -> Unit
+        }
+
+        return targets.mapIndexed { index, weekNumber ->
+            val weekBase = (index * 100) / targets.size
+            val weekSpan = 100 / targets.size
+            prefetchWeek(program, weekNumber, runSync = false) { progress ->
+                onProgress(progress.copy(percent = weekBase + (progress.percent * weekSpan / 100)))
+            }
+        }
+    }
+
     suspend fun prefetchWeek(
         program: ProgramExportDto,
         weekNumber: Int,
+        /** False when the caller already synced — [prefetchWeeks] syncs once for the whole run. */
+        runSync: Boolean = true,
         onProgress: (WeekPrefetchProgress) -> Unit = {},
     ): PrefetchOutcome {
         val basePlan = Companion.planFromProgram(program, weekNumber) ?: return PrefetchOutcome.SkippedNoWeek
 
         onProgress(WeekPrefetchProgress(WeekPrefetchProgress.Phase.Syncing, percent = 5))
 
-        when (val syncOutcome = sync.syncIfNeeded(forceCheck = true)) {
-            is MovitSyncOrchestrator.SyncOutcome.Error ->
-                return PrefetchOutcome.Failed(syncOutcome.message)
-            else -> Unit
+        if (runSync) {
+            when (val syncOutcome = sync.syncIfNeeded(forceCheck = true)) {
+                is MovitSyncOrchestrator.SyncOutcome.Error ->
+                    return PrefetchOutcome.Failed(syncOutcome.message)
+                else -> Unit
+            }
         }
 
         onProgress(WeekPrefetchProgress(WeekPrefetchProgress.Phase.Syncing, percent = 25))
@@ -130,7 +184,24 @@ class WeekOfflinePackPrefetcher(
             ),
         )
 
-        // TODO(N-25): platform Coil3 prefetch for [imageUrls] once a common ImagePrefetchPort exists.
+        onProgress(WeekPrefetchProgress(WeekPrefetchProgress.Phase.CachingImages, percent = 85))
+        imagePrefetch.prefetch(
+            imagePrefetch.manifestFor(exerciseSlugs = exerciseSlugs, extraUrls = imageUrls),
+        )
+
+        // Report metrics are cached per query — without warming them here, opening a week's
+        // report in the gym shows nothing at all.
+        onProgress(WeekPrefetchProgress(WeekPrefetchProgress.Phase.CachingReports, percent = 90))
+        runCatching {
+            reportsSync.syncWeekMetrics(programId = basePlan.programId, weekNumber = weekNumber)
+            workoutDays.forEach { dayNumber ->
+                reportsSync.syncDayMetrics(
+                    programId = basePlan.programId,
+                    weekNumber = weekNumber,
+                    dayNumber = dayNumber,
+                )
+            }
+        }
 
         onProgress(WeekPrefetchProgress(WeekPrefetchProgress.Phase.Finishing, percent = 95))
 

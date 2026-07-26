@@ -12,6 +12,10 @@ import com.movit.core.data.cache.MessageLibraryCache
 import com.movit.core.data.cache.MovitCacheFreshnessDiagnostics
 import com.movit.core.data.cache.MovitSyncMetadataStore
 import com.movit.core.data.cache.SystemMessageCache
+import com.movit.core.data.image.ImageAssetManifestBuilder
+import com.movit.core.data.image.ImageFileDownloadPort
+import com.movit.core.data.image.ImageFileDownloader
+import com.movit.core.data.image.ImagePrefetchRunner
 import com.movit.core.data.local.DefaultMovitLocalStoreFactory
 import com.movit.core.data.local.MovitLocalStore
 import com.movit.core.data.local.MovitLocalStoreFactory
@@ -86,6 +90,21 @@ fun movitDataModule(
         )
     }
     single { AudioPrefetchRunner(get(), get(), get()) }
+    single<ImageFileDownloadPort> { ImageFileDownloader() }
+    single {
+        ImageAssetManifestBuilder(
+            exploreSync = get(),
+            trainingConfig = get(),
+            catalogOffline = get(),
+        )
+    }
+    single {
+        ImagePrefetchRunner(
+            manifestBuilder = get(),
+            downloader = get(),
+            platform = { get() },
+        )
+    }
     single { SystemMessageCache(get()) }
     single {
         ColdOfflineBundleSeeder(
@@ -184,6 +203,7 @@ fun movitDataModule(
             messageLibraryCache = get(),
             userProgramEnrollmentLocalStore = get(),
             syncStatusBus = get(),
+            imagePrefetchRunner = get(),
         )
     }
     single {
@@ -199,6 +219,7 @@ fun movitDataModule(
     single {
         BackgroundMediaPrefetcher(
             audioPrefetch = get(),
+            imagePrefetch = get(),
             exploreSync = get(),
             homeSync = get(),
             planSync = get(),
@@ -209,8 +230,10 @@ fun movitDataModule(
         WeekOfflinePackPrefetcher(
             sync = get(),
             audioPrefetch = get(),
+            imagePrefetch = get(),
             workoutSession = get(),
             trainingConfig = get(),
+            reportsSync = get(),
             platform = { get() },
         )
     }

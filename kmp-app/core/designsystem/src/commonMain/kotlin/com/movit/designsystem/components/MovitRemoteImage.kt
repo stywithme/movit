@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import coil3.compose.AsyncImage
+import com.movit.designsystem.platform.MovitLocalImageSource
 
 /**
  * Cross-platform remote image (Coil 3 / Compose Multiplatform).
@@ -16,6 +17,9 @@ import coil3.compose.AsyncImage
  *
  * Disk cache: [com.movit.designsystem.platform.MovitImageCachePolicy.DISK_MAX_BYTES] (64 MiB) via
  * [com.movit.designsystem.platform.installMovitCoilImageLoader] on shell startup (Android + iOS).
+ *
+ * Offline: when the catalog image has been downloaded to durable storage, the local file is loaded
+ * instead of the URL ([com.movit.designsystem.platform.MovitLocalImageSource]).
  */
 @Composable
 fun MovitRemoteImage(
@@ -29,7 +33,7 @@ fun MovitRemoteImage(
         return
     }
     AsyncImage(
-        model = imageUrl,
+        model = MovitLocalImageSource.modelFor(imageUrl),
         contentDescription = contentDescription,
         modifier = modifier,
         contentScale = ContentScale.Crop,

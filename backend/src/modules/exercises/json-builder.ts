@@ -102,6 +102,12 @@ interface DbExercise {
   // Bilateral configuration
   isBilateral?: boolean | null;
   bilateralConfig?: unknown | null;
+
+  // Substitution grouping (offline swap)
+  familyKey?: string | null;
+  familyOrder?: number | null;
+  movementPattern?: string | null;
+  archetype?: string | null;
 }
 
 interface DbPoseVariant {
@@ -217,6 +223,20 @@ export function buildExerciseConfig(
   const primaryImage = dbExercise.media?.find(m => m.type === 'image' && m.isPrimary);
   if (primaryImage?.url) {
     config.imageUrl = primaryImage.url;
+  }
+
+  // Substitution grouping — mirrors exerciseSubstitutionsService so mobile can swap offline.
+  if (dbExercise.familyKey) {
+    config.familyKey = dbExercise.familyKey;
+  }
+  if (dbExercise.familyOrder != null) {
+    config.familyOrder = dbExercise.familyOrder;
+  }
+  if (dbExercise.movementPattern) {
+    config.movementPattern = dbExercise.movementPattern;
+  }
+  if (dbExercise.archetype) {
+    config.archetype = dbExercise.archetype;
   }
 
   // Only include optional fields if they have values

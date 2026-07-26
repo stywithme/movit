@@ -7,6 +7,7 @@ import com.movit.core.data.cache.MessageLibraryCache
 import com.movit.core.data.cache.MovitCacheDriftDetector
 import com.movit.core.data.cache.MovitSyncMetadataStore
 import com.movit.core.data.cache.SystemMessageCache
+import com.movit.core.data.image.ImagePrefetchRunner
 import com.movit.core.data.journal.SessionJournalStore
 import com.movit.core.data.local.MovitLocalStore
 import com.movit.core.data.outbox.LegacyWorkoutSyncGate
@@ -62,6 +63,8 @@ class MovitSyncOrchestrator(
     private val messageLibraryCache: MessageLibraryCache,
     private val userProgramEnrollmentLocalStore: UserProgramEnrollmentLocalStore,
     private val syncStatusBus: SyncStatusBus? = null,
+    /** Durable catalog image download. Null in tests that do not exercise media. */
+    private val imagePrefetchRunner: ImagePrefetchRunner? = null,
   /** P2 / Option 2: deferred message-library writes (delta + warm cache). Tests may pass [runBlocking]. */
     private val deferredApplyScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
@@ -386,6 +389,7 @@ class MovitSyncOrchestrator(
         val reportsResult = if (bindings.isProUser()) reportsSync.syncDashboard() else null
 
         updateLocalEntityCounts()
+        scheduleCatalogImagePrefetch(isFullSync)
         LegacyWorkoutSyncGate.drainLegacyExecutionsIfRegistered()
         offlineWrites.replayPending(OutboxReplayAcquisition.TrySkipIfBusy)
         val activeWeek = (homeResult as? AppResult.Success)?.value?.trainMode?.activeProgram?.weekNumber
@@ -609,6 +613,19 @@ class MovitSyncOrchestrator(
             applyMessageLibraryFromSync(templates, isFullSync)
             writeMessageLibraryStatsFromSync(syncResponse, templates)
             notifyCacheInvalidated()
+        }
+    }
+
+    /**
+     * Downloads catalog images to durable storage off the sync critical path.
+     * Deferred because a first full sync can fetch hundreds of files — blocking here would
+     * reintroduce the Splash hang that F5 removed for the message library.
+     * Orphan cleanup runs on full sync only, mirroring the audio manifest.
+     */
+    private fun scheduleCatalogImagePrefetch(isFullSync: Boolean) {
+        val runner = imagePrefetchRunner ?: return
+        deferredApplyScope.launch {
+            runCatching { runner.prefetchCatalog(removeOrphans = isFullSync) }
         }
     }
 

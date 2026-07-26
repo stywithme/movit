@@ -8,6 +8,7 @@ import com.movit.core.data.readiness.DataReadinessResult
 import com.movit.core.data.readiness.MovitDataImageWarmup
 import com.movit.core.data.sync.MovitSyncOrchestrator
 import com.movit.core.data.sync.SyncUiStatus
+import com.movit.designsystem.platform.MovitLocalImageSource
 import com.movit.designsystem.platform.prefetchMovitImageUrls
 import com.movit.feature.account.AuthBootstrapContext
 import com.movit.feature.account.AuthBootstrapTarget
@@ -94,6 +95,11 @@ class MovitAppShellViewModel : ViewModel() {
                     themeMode = platform.themeMode(),
                     innerStack = startupStack + deepLinkStack,
                 )
+            }
+            // Offline: catalog images downloaded to durable storage render from the local file.
+            // Installed for guests too — Explore renders before sign-in.
+            MovitLocalImageSource.resolveLocalPath = { url ->
+                runCatching { MovitData.imagePrefetch.localPathFor(url) }.getOrNull()
             }
             if (bootstrap.hasActiveSession) {
                 MovitDataImageWarmup.warmup = { urls -> prefetchMovitImageUrls(urls) }

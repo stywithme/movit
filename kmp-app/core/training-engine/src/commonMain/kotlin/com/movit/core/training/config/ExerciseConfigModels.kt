@@ -105,6 +105,11 @@ data class ExerciseConfig(
     val hasPositionChecks: Boolean = false,
     val isBilateral: Boolean = false,
     val bilateralConfig: BilateralConfig? = null,
+    /** Substitution grouping from `/mobile/sync` — lets the swap sheet resolve candidates offline. */
+    val familyKey: String? = null,
+    val familyOrder: Int? = null,
+    val movementPattern: String? = null,
+    val archetype: String? = null,
 ) {
     fun getPoseVariant(index: Int = 0): PoseVariant? = poseVariants.getOrNull(index)
 

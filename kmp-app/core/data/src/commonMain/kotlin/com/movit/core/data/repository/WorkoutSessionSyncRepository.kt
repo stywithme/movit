@@ -153,24 +153,47 @@ class WorkoutSessionSyncRepository(
             is AppResult.Failure -> result
         }
 
+    /**
+     * Swap candidates for an exercise. Falls back to the locally synced catalog whenever the
+     * network call cannot be made or fails, so swapping works in a gym with no connection.
+     */
     suspend fun fetchSubstitutionCandidates(
         replacingSlug: String,
     ): AppResult<List<SubstitutionExerciseDto>> {
         val bindings = platform()
         val auth = bindings.authHeader()
-            ?: return AppResult.Failure("Sign in to find swap options.")
+            ?: return offlineSubstitutions(replacingSlug)
+                ?: AppResult.Failure("Sign in to find swap options.")
+
+        if (!bindings.isNetworkAvailable()) {
+            offlineSubstitutions(replacingSlug)?.let { return it }
+        }
 
         val response = api.fetchSubstitutionExercises(
             slug = replacingSlug,
             authorization = auth,
         ).getOrElse { error ->
-            return AppResult.Failure(error.message ?: "Substitution lookup failed.")
+            return offlineSubstitutions(replacingSlug)
+                ?: AppResult.Failure(error.message ?: "Substitution lookup failed.")
         }
 
         if (!response.success) {
-            return AppResult.Failure(response.error ?: "Substitution lookup failed.")
+            return offlineSubstitutions(replacingSlug)
+                ?: AppResult.Failure(response.error ?: "Substitution lookup failed.")
         }
 
-        return AppResult.Success(response.data.orEmpty())
+        val candidates = response.data.orEmpty()
+        if (candidates.isEmpty()) {
+            offlineSubstitutions(replacingSlug)?.let { return it }
+        }
+        return AppResult.Success(candidates)
+    }
+
+    /** Null when the local catalog yields nothing — callers then surface the network error. */
+    private fun offlineSubstitutions(replacingSlug: String): AppResult<List<SubstitutionExerciseDto>>? {
+        val replacing = trainingConfig.resolveBySlug(replacingSlug) ?: return null
+        val catalog = trainingConfig.allCachedSlugs().mapNotNull { trainingConfig.resolveBySlug(it) }
+        val candidates = OfflineSubstitutionResolver.resolve(replacing, catalog)
+        return if (candidates.isEmpty()) null else AppResult.Success(candidates)
     }
 }

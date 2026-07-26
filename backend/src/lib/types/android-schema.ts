@@ -401,6 +401,19 @@ export interface ExerciseConfig {
 
   /** Bilateral configuration (per-rep side alternation) */
   bilateralConfig?: BilateralConfig;
+
+  // ═══════════════════════════════════════════════════════════════
+  // SUBSTITUTION GROUPING (offline swap)
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * Same fields `exerciseSubstitutionsService` groups by, shipped to mobile so the swap sheet
+   * resolves candidates from the local catalog with no network.
+   */
+  familyKey?: string;
+  familyOrder?: number;
+  movementPattern?: string;
+  archetype?: string;
 }
 
 // ============================================
